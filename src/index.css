@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+/*
+  Stirheim is a single dark theme by design: a ledger read by phone-light at the gaming table.
+  Tokens are declared once here and exposed to Tailwind as colours (bg-surface, text-ink, ...).
+*/
+@theme {
+  --color-surface: #131110;
+  --color-surface-low: #1b1816;
+  --color-surface-high: #262220;
+  --color-border: #3d352f;
+  --color-ink: #ece3d2;
+  --color-ink-dim: #b3a790;
+  --color-accent: #b8402f;
+  --color-accent-strong: #d9553f;
+  --color-brass: #c9962c;
+  --color-ok: #6a9955;
+  --color-warn: #d1a13a;
+
+  --font-headline: 'Newsreader', Georgia, 'Iowan Old Style', serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+}

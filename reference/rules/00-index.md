@@ -51,3 +51,19 @@ Spot-checked the core combat charts here against `src/engine/*.ts`:
 - Grade 2b/3 warbands (hosted at broheim.net, a different site).
 - Individual narrative scenario write-ups nested under `campaign-settings/` (e.g. the Procession of Morr mini-campaign) — only the general Scenarios rules/index page was captured.
 - The Nemesis Crown campaign-settings subtree.
+
+## Rescrape 2026-09-03 (Stirheim)
+
+Added for the Stirheim campaign tracker, converted from mordheimer.net with `scratchpad/convert.mjs`
+(Docusaurus article -> GFM Markdown, headings demoted one level, each page prefixed with its
+**Source:** URL):
+
+| File | Covers |
+|---|---|
+| [03a-income-page-rescrape.md](03a-income-page-rescrape.md) | The Income page again; confirms the wyrdstone income chart is an image on the site — see [wyrdstone-income-table.jpg](wyrdstone-income-table.jpg) |
+| [04-hired-swords.md](04-hired-swords.md) | Hired Swords index + Grade 1A/1B/1C/2A pages with full profiles, equipment, skills and special rules (72 entries) |
+| [05-dramatis-personae.md](05-dramatis-personae.md) | Dramatis Personae index + grade pages with full entries (30) |
+| [06-scenarios.md](06-scenarios.md) | Every scenario page under /docs/campaigns/scenarios (103 pages: rulebook, Town Cryer, Archive Pestilen, Fanatic Magazine, Fanatic Online, other) with full rules text |
+
+Not yet rescraped: campaign-setting scenario sets (Border Town Burning, Nemesis Crown, Procession
+of Morr, Empire in Flames, Albion, Khemri, Lustria) and the campaign-setting hired sword pages.

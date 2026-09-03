@@ -12,3 +12,7 @@ export * from "./hiredSwords";
 export * from "./dramatisPersonae";
 export * from "./scenarios";
 export * from "./warbandSkills";
+
+// Deliberately NOT re-exported: ./scenarioDetails (~1.3 MB of scenario rules text). Import it
+// lazily where the Scenario Library needs it:
+//   const { SCENARIO_DETAILS } = await import("./scenarioDetails");

@@ -54,7 +54,7 @@ export const WARBAND_SIZE_BANDS = ["1-3", "4-6", "7-9", "10-12", "13-15", "16+"]
  *
  * The scrape at 03:597-611 keeps the prose of "selling wyrdstone" but the table itself is MISSING,
  * so these figures are the canonical Mordheim Rulebook, Income chart.
- * TODO verify against mordheimer.net/docs/campaigns/income
+ * Verified 2026-09-03 against the site's income table image (reference/rules/wyrdstone-income-table.jpg): all values match.
  */
 export const WYRDSTONE_INCOME: IncomeRow[] = [
   { shardsSold: 1, byWarbandSize: [45, 40, 35, 30, 30, 25] },

@@ -70,9 +70,52 @@ describe("hired swords", () => {
     expect(thief.notes).toBeDefined();
   });
 
-  it("has unique ids and no invented detail", () => {
+  it("has unique ids", () => {
     expectUniqueIds(HIRED_SWORDS, "hired swords");
-    for (const h of HIRED_SWORDS) expect(h.detail).toBeUndefined();
+  });
+
+  it("has a detail write-up for every index row", () => {
+    // All 72 index rows matched a "### Name" entry on the Grade 1A/1B/1C/2A pages in
+    // reference/rules/04-hired-swords.md — none are missing.
+    expect(HIRED_SWORDS.filter((h) => h.detail).length).toBe(72);
+    expect(HIRED_SWORDS.length).toBe(72);
+    for (const h of HIRED_SWORDS) {
+      expect(h.detail!.sourceFile, h.name).toMatch(/^04-hired-swords\.md:\d+-\d+$/);
+      expect(h.detail!.profiles.length, `${h.name} has no profile`).toBeGreaterThan(0);
+    }
+  });
+
+  it("captures the Dwarf Troll Slayer write-up verbatim", () => {
+    const d = findHiredSword("dwarf_troll_slayer")!.detail!;
+    expect(d.sourceLine).toMatch(/^Source: Mordheim Rulebook/);
+    expect(d.hireLine).toBe("25 gold crowns to hire +10 gold crowns upkeep");
+    expect(d.profiles).toEqual([
+      { name: "Troll Slayer", stats: { M: 3, WS: 4, BS: 3, S: 3, T: 4, W: 1, I: 2, A: 1, Ld: 9 } },
+    ]);
+    expect(d.rating).toContain("12 points");
+    expect(d.mayBeHired).toMatch(/^Mercenaries and Witch Hunters may hire a Dwarf Troll Slayer/);
+    expect(d.weaponsArmour).toBe("Two Axes or a Double-Handed Axe (the hiring player may choose).");
+    expect(d.specialRules.map((r) => r.name)).toEqual(["Deathwish", "Hard to Kill", "Hard Head"]);
+    expect(d.uniqueSkills?.tableName).toBe("TROLL SLAYER SKILLS");
+    expect(d.uniqueSkills?.skills.map((s) => s.name)).toEqual(["Ferocious Charge", "Monster Slayer", "Berserker"]);
+    // The scraper's review markers are stripped, nothing else.
+    expect(d.uniqueSkills?.skills[2].text).toBe("The Dwarf may add +1 to his to hit rolls during the turn in which he charges.");
+  });
+
+  it("captures the Ogre Bodyguard profile and hoists Skills out of its Special Rules block", () => {
+    const d = findHiredSword("ogre_bodyguard")!.detail!;
+    expect(d.profiles).toEqual([{ name: "Ogre", stats: { M: 6, WS: 3, BS: 2, S: 4, T: 4, W: 3, I: 3, A: 2, Ld: 7 } }]);
+    expect(d.rating).toContain("+25 points");
+    expect(d.specialRules.map((r) => r.name)).toEqual(["Fear", "Large Target"]);
+    expect(d.skills).toBe("An Ogre may choose from Combat and Strength skills when he gains new skills.");
+  });
+
+  it("keeps every profile row, including mounts and companions", () => {
+    expect(findHiredSword("freelancer")!.detail!.profiles.map((p) => p.name)).toEqual(["Freelancer", "Warhorse"]);
+    expect(findHiredSword("wolf_priest_of_ulric")!.detail!.profiles.map((p) => p.name)).toEqual(["Wolf Priests", "Wolf"]);
+    // Tables without a Profile column fall back to the entry name.
+    expect(findHiredSword("weaponsmith")!.detail!.profiles[0].name).toBe("Weaponsmith");
+    expect(findHiredSword("ogre_slave_master")!.detail!.profiles[0].save).toBe("6+");
   });
 });
 
@@ -101,9 +144,67 @@ describe("dramatis personae", () => {
     expect(johann.upkeep).toEqual({ base: 30, text: "30 gc" });
   });
 
-  it("has unique ids and no invented detail", () => {
+  it("has unique ids", () => {
     expectUniqueIds(DRAMATIS_PERSONAE, "dramatis personae");
-    for (const p of DRAMATIS_PERSONAE) expect(p.detail).toBeUndefined();
+  });
+
+  it("has a detail write-up for every index row", () => {
+    // All 30 index rows matched an entry in reference/rules/05-dramatis-personae.md.
+    expect(DRAMATIS_PERSONAE.filter((p) => p.detail).length).toBe(30);
+    for (const p of DRAMATIS_PERSONAE) {
+      expect(p.detail!.sourceFile, p.name).toMatch(/^05-dramatis-personae\.md:\d+-\d+$/);
+      expect(p.detail!.profiles.length, `${p.name} has no profile`).toBeGreaterThan(0);
+    }
+  });
+
+  it("captures Johann the Knife's fixed profile and named skills", () => {
+    const d = findPersona("johann_the_knife")!.detail!;
+    expect(d.profiles).toEqual([{ name: "Johann", stats: { M: 4, WS: 3, BS: 6, S: 4, T: 3, W: 2, I: 6, A: 1, Ld: 7 } }]);
+    expect(d.hireLine).toMatch(/^70 gold crowns to hire; \+30 gold crowns upkeep cost\./);
+    expect(d.skills).toBe("Johann has the following skills: Dodge, Scale Sheer Surfaces, Quick Shot, Eagle Eyes and Knife Fighter.");
+    expect(d.specialRules.map((r) => r.name)).toEqual(["Knife Fighter Extraordinaire"]);
+  });
+
+  it("models a conditional hire fee and a paired character", () => {
+    const bertha = findPersona("bertha_bestraufrung_high_matriarch_of_the_sisterhood")!.detail!;
+    expect(bertha.hireLine).toBe("");
+    expect(bertha.hireFee).toMatch(/^None\. Bertha will come to the aid of any Sisters of Sigmar warband/);
+    expect(bertha.profiles[0].stats.Ld).toBe(10);
+
+    const pair = findPersona("ulli_and_marquand")!.detail!;
+    expect(pair.profiles.map((p) => p.name)).toEqual(["Marquand", "Ulli"]);
+    expect(pair.otherSections?.map((s) => s.name)).toEqual(["Marquand Volker", "Ulli Leitpold"]);
+  });
+
+  it("keeps non-integer characteristics verbatim alongside the parsed integers", () => {
+    const belandysh = findPersona("belandysh_condemned_champion_of_chen")!.detail!.profiles[0];
+    expect(belandysh.rawStats).toEqual(["4", "D6", "0", "D6", "D6", "3", "D6", "D3", "10"]);
+    expect(belandysh.stats.WS).toBe(0);
+  });
+});
+
+describe("detail write-ups", () => {
+  const all = [...HIRED_SWORDS, ...DRAMATIS_PERSONAE].map((x) => ({ name: x.name, detail: x.detail! }));
+
+  it("has integer characteristics between 0 and 10 on every profile", () => {
+    for (const { name, detail } of all) {
+      for (const p of detail.profiles) {
+        for (const [k, v] of Object.entries(p.stats)) {
+          expect(Number.isInteger(v), `${name} / ${p.name} ${k}=${v}`).toBe(true);
+          expect(v, `${name} / ${p.name} ${k}`).toBeGreaterThanOrEqual(0);
+          expect(v, `${name} / ${p.name} ${k}`).toBeLessThanOrEqual(10);
+        }
+      }
+    }
+  });
+
+  it("strips the scraper's review markers and nothing else", () => {
+    for (const { name, detail } of all) {
+      const json = JSON.stringify(detail);
+      expect(json, name).not.toMatch(/❓|✏️/);
+      expect(detail.sourceLine, name).toMatch(/^Source: /);
+      for (const r of detail.specialRules) expect(r.name, `${name}: ${r.name}`).not.toMatch(/[:.]$/);
+    }
   });
 });
 

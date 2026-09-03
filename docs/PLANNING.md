@@ -95,14 +95,14 @@ The mordheimer.net scrape in `reference/rules` is missing three things the app n
 from canonical rulebook values where possible, otherwise left as typed optional fields to be
 populated by a follow-up scrape:
 
-1. **Wyrdstone income chart** (shards sold × warband size): the prose is there but the table was
-   not captured. Encoded from the Mordheim rulebook values; verify against
-   https://mordheimer.net/docs/campaigns/income.
-2. **Hired Swords and Dramatis Personae**: only the summary tables (name, cost, upkeep, grade,
-   source). Stat lines, equipment, skills and special rules for each need scraping from their
-   individual pages.
-3. **Scenarios**: only the index table (title, one-line description, setting, author, source).
-   Full rules text for the core rulebook scenarios needs scraping for the Scenario Library.
+1. **Wyrdstone income chart** — RESOLVED 2026-09-03. The site renders it as an image
+   (`reference/rules/wyrdstone-income-table.jpg`); the encoded values match it exactly.
+2. **Hired Swords and Dramatis Personae** — RESOLVED 2026-09-03 by rescraping the grade pages
+   into `reference/rules/04-hired-swords.md` and `05-dramatis-personae.md`; full detail is being
+   extracted into the `detail` fields.
+3. **Scenarios** — RESOLVED 2026-09-03 by rescraping all 103 scenario pages into
+   `reference/rules/06-scenarios.md`; full rules text is being extracted per scenario. The
+   campaign-setting scenario sets (Border Town Burning etc.) are not yet scraped.
 5. **Scraper uncertainty markers.** About 55 equipment rule texts carried "❓" or "✏️" markers
    from the mordheimer.net scrape (transcription doubts, mostly "takes a complete turn to
    reload" on blackpowder weapons, Lance cavalry bonus, Gromril/Ithilmar armour). Stripped from

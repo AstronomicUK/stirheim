@@ -1,12 +1,14 @@
 // Campaign content catalogues: Hired Swords, Dramatis Personae and Scenarios.
 //
-// These model what the mordheimer.net scrape actually captured (reference/rules/
-// 03-campaigns-magic-optional-rules.md lines 1097-1446): the general rules text plus the summary
-// index tables. The per-entry detail (stat lines, equipment, special rules, full scenario rules)
-// was NOT captured, so it lives behind clearly optional fields that stay undefined until a later
-// extraction pass fills them in. Nothing here should be invented to fill those gaps.
+// The summary rows (name / cost / upkeep / grade / source) come from the index tables captured in
+// reference/rules/03-campaigns-magic-optional-rules.md lines 1097-1446. The per-entry write-ups
+// (`detail`) come from the per-grade sub-pages rescraped into reference/rules/04-hired-swords.md and
+// 05-dramatis-personae.md. Everything in `detail` is verbatim source text (only the scraper's review
+// markers are stripped); nothing is invented to fill gaps, so a field the page doesn't have is "".
+// Scenario rules text is still not captured.
 
-import type { NamedRule, Price, Stats } from "./common";
+import type { NamedRule, Stats } from "./common";
+import type { Price } from "./common";
 
 /**
  * mordheimer.net's content grade, kept as the source's own string: "core" (original rulebook),
@@ -16,21 +18,55 @@ import type { NamedRule, Price, Stats } from "./common";
  */
 export type ContentGrade = "core" | "1a" | "1b" | "1c" | "2a" | "2b" | "3" | string;
 
+/** One row of a profile table. Most entries have one; mounts, companions and pairs add more. */
+export interface StatProfile {
+  /** The table's first-column label ("Troll Slayer", "Warhorse", "Ulli"); the entry or section name when the column is blank. */
+  name: string;
+  /**
+   * Integer characteristics. Where the source cell isn't a plain integer ("5*", "1(2)", "D6", "-")
+   * this holds the leading integer (0 when there is none) and `rawStats` keeps the cells verbatim.
+   */
+  stats: Stats;
+  /** Present only when some cell wasn't a plain integer: the nine cells verbatim, in M..Ld order. */
+  rawStats?: string[];
+  /** The extra "Save" column a few fan entries add, e.g. "6+". */
+  save?: string;
+}
+
 /**
- * Full write-up for a Hired Sword or special character. Not in the scrape yet — populate in a
- * later pass from mordheimer.net/docs/hired-swords/<slug> (and the Dramatis Personae equivalents).
+ * Full write-up for a Hired Sword or Dramatis Persona, verbatim from the rescraped per-grade pages.
+ * Text fields keep the page's Markdown (links, italics, tables). Fields the page lacks are "".
  */
 export interface HiredSwordDetail {
-  stats: Stats;
-  /** Equipment lines verbatim, e.g. "Dwarf axe, double-handed axe, helmet". */
-  equipment: string[];
-  /** Skill tables the Hired Sword may pick from when he gains an advance, e.g. "Combat", "Strength". */
-  skillTables: string[];
-  specialRules: NamedRule[];
-  /** "May be hired by" text verbatim, e.g. "Any warband except Skaven, Undead and Possessed". */
-  mayBeHiredBy: string;
-  /** Warband rating contribution text verbatim, e.g. "+25 points plus 1 point for each Experience point". */
+  /** The "_Source: …_" line minus the italics, e.g. "Source: Mordheim Rulebook ([PDF](…))". */
+  sourceLine: string;
+  /** The hire/upkeep line verbatim, e.g. "25 gold crowns to hire +10 gold crowns upkeep". "" where the page has none (see `hireFee`). */
+  hireLine: string;
+  /** Text after "**Hire Fee:**" — mostly Dramatis Personae whose fee is conditional or "None". */
+  hireFee?: string;
+  /** The flavour paragraphs (italic and otherwise), verbatim, joined by blank lines. */
+  flavour: string;
+  /** Text after "**May be Hired:**" (or empty). */
+  mayBeHired: string;
+  /** Text after "**Rating:**". */
   rating: string;
+  profiles: StatProfile[];
+  /** Text after "**Weapons/Armour:**" (or "**Weapons and Armour:**"). */
+  weaponsArmour: string;
+  /** Text after "**Equipment:**" — the label some pages use instead of Weapons/Armour. */
+  equipment?: string;
+  /** Text after "**Skills:**", or the body of a "SKILLS" block (personae list named skills there). */
+  skills: string;
+  /** Text after "**Spells:**"/"**Prayers:**", or the body of a "SPELLS"/"PRAYERS …" block. */
+  spells?: string;
+  /** The "Special Rules" block, one entry per "**Name:** text" paragraph (sub-headings and tables kept in `text`). */
+  specialRules: NamedRule[];
+  /** A skills table unique to this Hired Sword, e.g. "TROLL SLAYER SKILLS". */
+  uniqueSkills?: { tableName: string; intro?: string; skills: NamedRule[] };
+  /** Any other "####" block, name = heading, text = verbatim body (e.g. "Dark Magic", "Wolf Companion", a second "Special Rules (…)"). */
+  otherSections?: NamedRule[];
+  /** "04-hired-swords.md:<start>-<end>" — the entry's line range in reference/rules. */
+  sourceFile: string;
 }
 
 export interface HiredSwordSummary {
@@ -46,7 +82,7 @@ export interface HiredSwordSummary {
   source: string;
   /** Anything the index flags but doesn't explain (e.g. an asterisked upkeep whose footnote wasn't captured). */
   notes?: string;
-  /** Not in the scrape yet. Populate in a later pass from mordheimer.net/docs/hired-swords/<slug>. */
+  /** Full write-up from the per-grade page; absent only if no page entry matched this index row. */
   detail?: HiredSwordDetail;
 }
 
@@ -62,8 +98,8 @@ export interface DramatisPersonaSummary {
   source: string;
   /** Anything the index flags but doesn't explain (e.g. an asterisked upkeep whose footnote wasn't captured). */
   notes?: string;
-  /** Not in the scrape yet. Same shape as a Hired Sword's write-up. */
-  detail?: HiredSwordSummary["detail"];
+  /** Full write-up from the per-grade page; same shape as a Hired Sword's. */
+  detail?: HiredSwordDetail;
 }
 
 /** The setting filter values used by mordheimer.net's scenario index. */

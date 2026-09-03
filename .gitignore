@@ -30,3 +30,6 @@ dist-ssr
 supabase/.temp
 supabase/.branches
 .claude/
+scripts/scrape/node_modules
+scripts/scrape/scrape
+scripts/scrape/package*.json

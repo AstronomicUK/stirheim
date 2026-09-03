@@ -89,6 +89,29 @@ Recorded 2026-09-03 from Tom's answers.
   and divides the city (core rulebook, Sisters of Sigmar background). Domains
   stirheim.com/.app/.net showed no DNS records on 2026-09-03; register before launch.
 
+## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
+
+The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled
+from canonical rulebook values where possible, otherwise left as typed optional fields to be
+populated by a follow-up scrape:
+
+1. **Wyrdstone income chart** (shards sold × warband size): the prose is there but the table was
+   not captured. Encoded from the Mordheim rulebook values; verify against
+   https://mordheimer.net/docs/campaigns/income.
+2. **Hired Swords and Dramatis Personae**: only the summary tables (name, cost, upkeep, grade,
+   source). Stat lines, equipment, skills and special rules for each need scraping from their
+   individual pages.
+3. **Scenarios**: only the index table (title, one-line description, setting, author, source).
+   Full rules text for the core rulebook scenarios needs scraping for the Scenario Library.
+5. **Scraper uncertainty markers.** About 55 equipment rule texts carried "❓" or "✏️" markers
+   from the mordheimer.net scrape (transcription doubts, mostly "takes a complete turn to
+   reload" on blackpowder weapons, Lance cavalry bonus, Gromril/Ithilmar armour). Stripped from
+   `src/rules/data/items/*.ts`; the markers remain in `reference/rules/02-*.md` for review.
+6. **Magical artefacts** are unique per campaign per the source; nothing enforces that yet.
+4. **XP thresholds** are not stated in the text (they are boxes on the roster sheet); encoded
+   from the rulebook: heroes 2,4,6,8,11,14,17,20,24,28,32,36,41,46,51,57,63,69,76,83,90 and
+   henchmen 2,5,9,14.
+
 Assumptions taken without asking (flag if wrong):
 - Players may edit only their own warbands through the rules-driven flows; a labelled manual
   editor exists for corrections (as in R&R), and the GM's edits are logged.

@@ -218,6 +218,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/cult-of-the-possessed",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Possessed warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- Mercenaries (Core) — one page, four named sub-warbands ----
@@ -382,6 +388,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/mercenaries",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Mercenary warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
   {
     id: "mercenaries_middenheim",
@@ -551,6 +563,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/mercenaries",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Mercenary warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
   {
     id: "mercenaries_marienburg",
@@ -710,6 +728,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/mercenaries",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Mercenary warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
   // TODO: Ostermark Mercenaries were published without a skill table (source: "When clarified at
   // a later date, it was said the player could choose their set from one of the other Mercenary
@@ -880,6 +904,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/mercenaries",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Mercenary warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- The Sisters of Sigmar (Core) ----
@@ -1031,6 +1061,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/sisters-of-sigmar",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Sisters of Sigmar warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- Skaven of Clan Eshin (Core) ----
@@ -1234,6 +1270,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/skaven-eshin",
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: "A Skaven warband must include a minimum of three models. You have 500 gold crowns (representing your resources) which you can use to recruit and equip your initial warband. The maximum number of warriors in the warband may never exceed 20.",
+    },
   },
 
   // ---- The Undead (Core) ----
@@ -1386,6 +1428,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/undead",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Undead warband must include a minimum of three models. You have 500 gold crowns to recruit your warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- Witch Hunters (Core) ----
@@ -1568,6 +1616,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/witch-hunters",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Witch Hunter warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 
   // ---- Averlander Mercenaries (Grade 1a) ----
@@ -1763,6 +1817,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/averlander",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Averlander warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- Beastmen Raiders (Grade 1a) ----
@@ -1972,6 +2032,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/beastmen-raiders",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Beastmen warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband is 15, though some buildings in the warband's encampment may increase this.",
+    },
   },
 
   // ---- Carnival of Chaos (Grade 1a) ----
@@ -2212,6 +2278,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/carnival-of-chaos",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Carnival of Chaos warband must include a minimum of three models. You have 500 Gold Crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- Dwarf Treasure Hunters (Grade 1a) ----
@@ -2402,6 +2474,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/dwarf-treasure-hunters",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Dwarf warband must include a minimum of 3 models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 12.",
+    },
   },
 
   // ---- Kislevites (Grade 1a) ----
@@ -2628,6 +2706,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/kislevites",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Kislevite warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---- Orc Mob (Grade 1a) ----
@@ -2851,6 +2935,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/orc-mob",
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: "An Orc warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 20.",
+    },
   },
 
   // ---- Ostlander Mercenaries (Grade 1a) ----
@@ -3078,5 +3168,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1a-warbands/ostlander",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Ostlander warband is often made up of an extended family of Ostlanders. Fathers, uncles, brothers, cousins and even the occasional tough-as-nails aunt all join together to form the warband. The 'family' must include a minimum of 3 models and a maximum of 15. You have 500 Gold Crowns that you can use to recruit your initial warband.",
+    },
   },
 ];

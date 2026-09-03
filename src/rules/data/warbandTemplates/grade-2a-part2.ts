@@ -241,6 +241,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/order-of-the-mare",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Order of the Mare warband must include a minimum of three models. You have 500 gc which you can use to recruit your initial warband. The maximum number of warriors in your warband may never exceed 15.",
+    },
   },
 
   // ============================================================
@@ -376,6 +382,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/outlaws-of-stirwood-forest-redux",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Outlaws of Stirwood Forest Warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ============================================================
@@ -576,6 +588,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/protectorate-of-sigmar",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Protectorate of Sigmar Warband must include a minimum of 3 models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors may not exceed 15.",
+    },
   },
 
   // ============================================================
@@ -817,6 +835,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/skaven-of-clan-moulder",
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: "A Clan Moulder Warband must include a minimum of 3 models. You have 500 Warp Tokens (equivalent to Gold Crowns) to recruit and equip your initial Warband. The maximum number of models in the Warband may never exceed 20.",
+    },
   },
 
   // ============================================================
@@ -1188,6 +1212,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/snotlings",
+    composition: {
+      minModels: 3,
+      maxModels: 30,
+      startingGold: 500,
+      text: "A Snotling Warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband is 30 (Warband size: 3-30).",
+    },
   },
 
   // ============================================================
@@ -1362,6 +1392,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/sorcerous-society",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Sorcerous Society warband must include a minimum of three models. You have 500 gold Crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ============================================================
@@ -1574,6 +1610,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/survivors-of-strigos",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Survivors of Strigos Warband must include a minimum of 3 models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 
   // ============================================================
@@ -1781,6 +1823,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/vampire-hunters-of-sylvania",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Slayer Warband must include a minimum of 3 models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 
   // ============================================================
@@ -1951,5 +1999,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/wood-elves-of-athel-loren",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Wood Elf Warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit your initial warband. Maximum number of warriors in the warband is 12.",
+    },
   },
 ];

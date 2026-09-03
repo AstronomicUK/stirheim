@@ -230,6 +230,17 @@ export interface WarbandTemplate {
   heroTemplates: UnitTemplate[];
   henchmanTemplates: UnitTemplate[];
   sourceUrl: string;
+  /** Roster composition limits from the "Choice of Warriors" paragraph. */
+  composition?: {
+    /** Minimum models at creation (usually 3). Null if not stated. */
+    minModels: number | null;
+    /** Maximum warriors in the warband. Null if not stated or unlimited. */
+    maxModels: number | null;
+    /** Gold crowns available to recruit the initial warband (usually 500). Null if not stated. */
+    startingGold: number | null;
+    /** The paragraph, verbatim, so the UI can show the exact wording (incl. caveats). */
+    text: string;
+  };
 }
 
 export interface WarbandRoster {

@@ -5,7 +5,7 @@ modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the ru
 combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-03): **Phase 1 (rules data extraction) complete.** Live at
+Status (2026-09-03): **Phase 2 (rules resolvers) complete.** Live at
 https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 

@@ -273,5 +273,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "rules/warbands/restless-dead-variant.md",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "An Undead Liche warband must include a minimum of three models. You have 500 gold crowns to recruit your warband. The maximum number of warriors may not exceed 12.",
+    },
   },
 ];

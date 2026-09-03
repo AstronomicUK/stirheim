@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WARBAND_TEMPLATES, findWarbandTemplate } from "../warbandTemplates";
+import { WARBAND_TEMPLATES, findWarbandTemplate, heroCapacity, rosterLimitUpperBound } from "../warbandTemplates";
 import { TRAITS } from "../traits";
 import { SKILLS } from "../skills";
 
@@ -35,5 +35,40 @@ describe("warband templates", () => {
     const goliath = w.henchmanTemplates.find((h) => h.name === "Bone Goliath")!;
     expect(goliath.stats).toEqual({ M: 5, WS: 3, BS: 0, S: 5, T: 5, W: 3, I: 2, A: 3, Ld: 6 });
     expect(goliath.traitIds).toContain("undead_construct");
+  });
+
+  it("every template carries a Choice of Warriors composition with verbatim text", () => {
+    for (const w of WARBAND_TEMPLATES) {
+      expect(w.composition, `${w.id}: missing composition`).toBeDefined();
+      expect(w.composition!.text.trim().length, `${w.id}: empty composition text`).toBeGreaterThan(0);
+      expect(w.composition!.minModels, `${w.id}: minModels`).toBe(3);
+    }
+  });
+
+  it("parses the well-known roster limits", () => {
+    const comp = (id: string) => findWarbandTemplate(id)!.composition!;
+    expect(comp("cult_of_the_possessed")).toMatchObject({ minModels: 3, maxModels: 15, startingGold: 500 });
+    expect(comp("skaven_of_clan_eshin").maxModels).toBe(20);
+    expect(comp("witch_hunters").maxModels).toBe(12);
+    expect(comp("beastmen_raiders").maxModels).toBe(15);
+    expect(comp("merchant_caravans").startingGold).toBe(600);
+    expect(comp("snotlings").maxModels).toBe(30);
+  });
+
+  it("states a maximum warband size for every template", () => {
+    // Every published Choice of Warriors paragraph names a maximum (no ids currently have null maxModels).
+    const noMax = WARBAND_TEMPLATES.filter((w) => w.composition!.maxModels === null).map((w) => w.id);
+    expect(noMax).toEqual([]);
+    expect(noMax.length).toBe(0);
+  });
+
+  it("derives hero capacity from hero rosterLimit upper bounds", () => {
+    expect(rosterLimitUpperBound("1")).toBe(1);
+    expect(rosterLimitUpperBound("0-2")).toBe(2);
+    expect(rosterLimitUpperBound("0-2 (shares its recruitment slot with the Cleric)")).toBe(2);
+    expect(rosterLimitUpperBound("1+")).toBeNull();
+    expect(rosterLimitUpperBound("any")).toBeNull();
+    // Mercenaries (Reikland): 1 Captain + 0-2 Champions + 0-2 Youngbloods.
+    expect(heroCapacity(findWarbandTemplate("mercenaries_reikland")!)).toBe(5);
   });
 });

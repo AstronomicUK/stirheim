@@ -33,3 +33,28 @@ export function findUnitTemplate(warband: WarbandTemplate, unitId: string) {
 export function findEquipmentList(warband: WarbandTemplate, listId: string) {
   return warband.equipmentLists.find((l) => l.id === listId);
 }
+
+/**
+ * Upper bound of a UnitTemplate.rosterLimit string: "1" -> 1, "0-2" -> 2, "0-2 (caveat)" -> 2.
+ * Open-ended or non-numeric limits ("1+", "any", "may not exceed …") return null (unlimited).
+ */
+export function rosterLimitUpperBound(rosterLimit: string): number | null {
+  const m = rosterLimit.trim().match(/^(\d+)(?:\s*[-–]\s*(\d+))?(?:\s*\(.*)?$/s);
+  if (!m) return null;
+  return Number(m[2] ?? m[1]);
+}
+
+/**
+ * Maximum number of Heroes implied by the hero templates' rosterLimit values (sum of upper bounds),
+ * e.g. Mercenaries (Reikland): 1 Captain + 0-2 Champions + 0-2 Youngbloods -> 5. Null if any hero
+ * line is unlimited ("1+", "any" …), since the total is then unbounded.
+ */
+export function heroCapacity(template: WarbandTemplate): number | null {
+  let total = 0;
+  for (const hero of template.heroTemplates) {
+    const upper = rosterLimitUpperBound(hero.rosterLimit);
+    if (upper === null) return null;
+    total += upper;
+  }
+  return total;
+}

@@ -253,6 +253,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/imperial-outriders`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `An Imperial Outrider warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.`,
+    },
   },
 
   // =========================================================================================
@@ -473,6 +479,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/lizardmen`,
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: `Your Warband must include a minimum of 3 models and a maximum of 20 models. You have 500 gcs (or the Lizardmen equivalent) to assemble your Warband with.`,
+    },
   },
 
   // =========================================================================================
@@ -626,6 +638,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/mootlanders`,
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: `A Halfling Warband must include a minimum of 3 models. You have 500 gold crowns. The maximum number of models in the Warband may never exceed 20.`,
+    },
   },
 
   // =========================================================================================
@@ -850,6 +868,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/norse`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Norse Warband must include a minimum of three models. You have 500 gold crowns to recruit your initial Warband. The maximum number of warriors in the Warband may never exceed 15.`,
+    },
   },
 
   // =========================================================================================
@@ -1013,6 +1037,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/outlaws-of-stirwood-forest`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `An Outlaw warband must include a minimum of three models. You have 500 gold crowns that you can use to recruit and equip your warband. The maximum number of warriors in the warband is 15.`,
+    },
   },
 
   // =========================================================================================
@@ -1295,6 +1325,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/pirates`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Pirate warband must include a minimum of three models. You have 500 Gold Crowns which you can use to recruit and equip your Warband. The maximum number of warriors in the Warband is 15 (this represents the landing party; the rest of the crew are aboard the ship in case some other scurvy sea dogs dare to attack!).`,
+    },
   },
 
   // =========================================================================================
@@ -1519,6 +1555,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/pit-fighters`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Pit Fighter Warband must include a minimum of 3 models. You have 500 Gold Crowns that you can use to recruit your initial Warband. The maximum number of warriors in the Warband is 15, though some buildings in the Warband's encampment may increase this.`,
+    },
   },
 
   // =========================================================================================
@@ -1693,6 +1735,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/shadow-warriors`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Shadow Warrior Warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit your initial warband. Maximum number of warriors in the warband is 12.`,
+    },
   },
 
   // =========================================================================================
@@ -1912,6 +1960,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/skaven-pestilens`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Clan Pestilens band must include a minimum of 3 models. You start with 500 warp tokens to form your warband with. The warband can have a maximum of 15 models.`,
+    },
   },
 
   // =========================================================================================
@@ -2087,6 +2141,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/tileans`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `Your warband must include a minimum of 3 models to a maximum of 15 models. You have 500 points to assemble your warband with (Trantios add the bonus GC noted above). The maximum characteristics for each type will be the same as any Mordheim mercenary warband.`,
+    },
   },
 
   // =========================================================================================
@@ -2265,6 +2325,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/tileans`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `Your warband must include a minimum of 3 models to a maximum of 15 models. You have 500 points to assemble your warband with (Trantios add the bonus GC noted above). The maximum characteristics for each type will be the same as any Mordheim mercenary warband.`,
+    },
   },
 
   // =========================================================================================
@@ -2432,6 +2498,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/tileans`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `Your warband must include a minimum of 3 models to a maximum of 15 models. You have 500 points to assemble your warband with (Trantios add the bonus GC noted above). The maximum characteristics for each type will be the same as any Mordheim mercenary warband.`,
+    },
   },
 
   // =========================================================================================
@@ -2653,5 +2725,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1b-warbands/tomb-guardians`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `The Warriors of the Dead must include at least three models. You have 500 Gold Crowns with which to form your warband. The maximum number of models in the warband is 15.`,
+    },
   },
 ];

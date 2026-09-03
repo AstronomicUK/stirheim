@@ -249,6 +249,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/battle-monks-of-cathay`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Battle Monks warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 15.`,
+    },
   },
 
   // ===================================================================================
@@ -450,6 +456,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/black-dwarfs`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Chaos Dwarf warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 15.`,
+    },
   },
 
   // ===================================================================================
@@ -693,6 +705,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/bretonnian-chapel-guard`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Bretonnian Chapel Guard warband must include a minimum of three models. You start with 500gc to buy your initial warband. The maximum number of warriors in your warband may never exceed 15.`,
+    },
   },
 
   // ===================================================================================
@@ -935,6 +953,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/court-of-the-profane-pleasures`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Court of profane Pleasures warband must include a minimum of three models. You have 500 gold crowns available to spend to recruit your warband. The maximum number of warriors is 15, though some items like the Halfling Cookbook may increase this number.`,
+    },
   },
 
   // ===================================================================================
@@ -1213,6 +1237,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/cursed-cavalcade`,
+    composition: {
+      minModels: 3,
+      maxModels: 13,
+      startingGold: 500,
+      text: `A Cursed Cavalcade must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit and equip your initial Warband. The maximum number of Warriors in this Warband may not initially exceed 13.`,
+    },
   },
 
   // ===================================================================================
@@ -1481,6 +1511,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/lustrian-reavers`,
+    composition: {
+      minModels: 3,
+      maxModels: 10,
+      startingGold: 500,
+      text: `A Lustrian Reaver warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors is 10, though some items like the Halfling Cookbook may increase this number as normal. (Note that the War Beasts from the Beastmaster also count towards your maximum number of models in the warband!)`,
+    },
   },
 
   // ===================================================================================
@@ -1708,6 +1744,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/maneaters`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `An Ogre warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 12.`,
+    },
   },
 
   // ===================================================================================
@@ -1977,6 +2019,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/marauders-of-chaos`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Marauders of Chaos warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 15 (except for Hung warbands).`,
+    },
   },
 
   // ===================================================================================
@@ -2211,6 +2259,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/merchant-caravans`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 600,
+      text: `A Merchant Caravan must include a minimum of three models. You have 600 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 12.`,
+    },
   },
 
   // ===================================================================================
@@ -2437,6 +2491,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/night-goblins`,
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: `A Night Goblin warband must include a minimum of 3 models. You have 500 gold crowns, which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 20.`,
+    },
   },
 
   // ===================================================================================
@@ -2772,6 +2832,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/night-goblins-web`,
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: `A Night Goblin warband must include a minimum of three models. You have 500 gold crowns with which you can use to recruit and equip your warband. The maximum number of warriors may never exceed 20.`,
+    },
   },
 
   // ===================================================================================
@@ -3014,6 +3080,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/restless-dead`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Restless Dead warband must include a minimum of three models. You have 500 gold crowns to recruit your warband. The maximum number of warriors may not exceed 12.`,
+    },
   },
 
   // ===================================================================================
@@ -3223,5 +3295,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/sons-of-hashut`,
+    composition: {
+      minModels: 3,
+      maxModels: 14,
+      startingGold: 500,
+      text: `A Chaos Dwarf warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 14.`,
+    },
   },
 ];

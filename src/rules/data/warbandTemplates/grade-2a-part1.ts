@@ -286,6 +286,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/dreamwalkers-cult-of-morr`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Dreamwalker warband must include a minimum of three models. You have 500 gold crowns available to spend. The maximum number of warriors in the warband may never exceed 12.`,
+    },
   },
 
   // ===================================================================================
@@ -576,6 +582,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/druchii`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Druchii warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in a warband may never exceed 12.`,
+    },
   },
 
   // ===================================================================================
@@ -844,6 +856,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/dwarf-slayer-cult`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Slayer warband must include a minimum of 3 models. You have 500 gold crowns to recruit and equip your warband. Maximum number of warriors is 12.`,
+    },
   },
 
   // ===================================================================================
@@ -1011,6 +1029,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/grave-robbers`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Grave Robber Warband must include a minimum of 3 models. You have 500 Gold Crowns to recruit your initial warband. Maximum number of warriors in the warband is 15.`,
+    },
   },
 
   // ===================================================================================
@@ -1245,6 +1269,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/halflings`,
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: `A Halfling Warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit your initial warband. Maximum number of warriors allowed in the warband is 20.`,
+    },
   },
 
   // ===================================================================================
@@ -1455,6 +1485,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/masters-of-horror`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Horror Warband must include a minimum of 3 models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.`,
+    },
   },
 
   // ===================================================================================
@@ -1703,6 +1739,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/mazzalupo`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Mazzalupo warband must include a minimum of three models. You have 500 gold crowns to recruit your warband. The maximum number of warriors in the warband may never exceed 15.`,
+    },
   },
 
   // ===================================================================================
@@ -1948,6 +1990,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/necrarchs-the-soul-stealers`,
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: `A Necrarch Warband must include a minimum of 3 models. You have 500 Gold Crowns to recruit your initial warband. The maximum number of warriors in the warband is 15.`,
+    },
   },
 
   // ===================================================================================
@@ -2225,6 +2273,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/nipponese-expedition`,
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: `A Nippon warband must include a minimum of 3 models. You have 500 Gold Crowns, which you can use to recruit and equip your warband. The maximum number of warriors in the warband may never exceed 12.`,
+    },
   },
 
   // ===================================================================================
@@ -2474,5 +2528,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-2a-warbands/ogre-hunting-party`,
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: `An Ogre warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 20.`,
+    },
   },
 ];

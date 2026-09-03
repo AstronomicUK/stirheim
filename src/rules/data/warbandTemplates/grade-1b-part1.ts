@@ -214,6 +214,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/amazons-lustria",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Amazon Warband must include a minimum of 3 models. You have 500 gcs to recruit your initial Warband. The maximum number of models in the Warband is 15.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -374,6 +380,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/amazons",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Amazon warband must include a minimum of three models. You have 500 gcs to recruit your initial warband. The maximum number of models in the warband is 15.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -530,6 +542,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/arabian-tomb-raiders",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "An Araby Nomad warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -743,6 +761,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/black-orcs",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Black Orc warband must include a minimum of three models. You have 500 Gold Crowns with which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -937,6 +961,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/bretonnian",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Questing Knight's warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -1135,6 +1165,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/dark-elves",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Dark Elf warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -1358,6 +1394,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/dwarf-rangers",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Dwarf Rangers warband must include a minimum of 3 models. You have 500 Gold Crowns with which you can use to recruit and equip your warband. The maximum number of warriors in the warband is 12.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -1536,6 +1578,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/forest-goblins",
+    composition: {
+      minModels: 3,
+      maxModels: 20,
+      startingGold: 500,
+      text: "A Forest Goblin warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 20.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -1723,6 +1771,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/gunnery-school-of-nuln",
+    composition: {
+      minModels: 3,
+      maxModels: 15,
+      startingGold: 500,
+      text: "A Gunnery School warband must include a minimum of three models. You have 500 gold crowns to recruit your initial warband. The maximum number of warriors in the warband may never exceed 15.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -1970,6 +2024,12 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/hochland-bandits",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Bandit warband must include a minimum of 3 models. You have 500 Gold Crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband is 12.",
+    },
   },
 
   // ---------------------------------------------------------------------
@@ -2151,5 +2211,11 @@ export const WARBANDS: WarbandTemplate[] = [
       },
     ],
     sourceUrl: "https://mordheimer.net/docs/warbands/grade-1b-warbands/horned-hunters",
+    composition: {
+      minModels: 3,
+      maxModels: 12,
+      startingGold: 500,
+      text: "A Horned Hunter warband is a cult composed of feral devotees to Taal, the God of nature and the wilds. The warband must include a minimum of three models. You have 500 gold crowns which you can use to recruit your initial warband. The maximum number of warriors in the warband may never exceed 12.",
+    },
   },
 ];

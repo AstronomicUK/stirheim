@@ -96,6 +96,9 @@ export function groupMatches<T extends Datable>(matches: T[]): Record<MatchGroup
 
 // ---- Labels ----
 
+/** Tag tone for a report's result (or the absence of one) wherever it is shown. */
+export const RESULT_TONES: Record<'won' | 'lost' | 'draw' | 'none', 'neutral' | 'warn' | 'brass'> = { won: 'brass', lost: 'warn', draw: 'neutral', none: 'neutral' }
+
 /** "Reikland Watch vs Claws of Eshin" (three or more warbands are all joined with "vs"). */
 export function versusLabel(participants: Pick<MatchParticipantView, 'warband_name'>[]): string {
   if (participants.length === 0) return 'No warbands'

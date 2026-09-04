@@ -387,11 +387,16 @@ export const matchReportRowSchema = z.object({
   warband_id: uuidSchema,
   submitted_by: uuidSchema,
   won: z.boolean(),
+  /** Phase 7 (migration 7): how the player recorded it; `won` drives the rules. */
+  result: z.enum(["won", "lost", "draw"]).default("lost"),
+  routed: z.boolean().default(false),
   xp_log: reportLogSchema,
   ooa: reportLogSchema,
   injuries: reportLogSchema,
   loot: reportObjectSchema,
   exploration: reportObjectSchema,
+  /** ReportApplied (src/domain/report.ts): the roster patches applied when filed. */
+  applied: reportObjectSchema.default({}),
   veteran_pool_roll: z.number().int().min(2).max(12).nullable(),
   notes: z.string(),
   submitted_at: timestampSchema,

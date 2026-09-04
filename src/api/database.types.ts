@@ -404,6 +404,7 @@ export type Database = {
       }
       match_reports: {
         Row: {
+          applied: Json
           exploration: Json
           id: string
           injuries: Json
@@ -411,6 +412,8 @@ export type Database = {
           match_id: string
           notes: string
           ooa: Json
+          result: string
+          routed: boolean
           submitted_at: string
           submitted_by: string
           veteran_pool_roll: number | null
@@ -419,6 +422,7 @@ export type Database = {
           xp_log: Json
         }
         Insert: {
+          applied?: Json
           exploration?: Json
           id?: string
           injuries?: Json
@@ -426,6 +430,8 @@ export type Database = {
           match_id: string
           notes?: string
           ooa?: Json
+          result?: string
+          routed?: boolean
           submitted_at?: string
           submitted_by: string
           veteran_pool_roll?: number | null
@@ -434,6 +440,7 @@ export type Database = {
           xp_log?: Json
         }
         Update: {
+          applied?: Json
           exploration?: Json
           id?: string
           injuries?: Json
@@ -441,6 +448,8 @@ export type Database = {
           match_id?: string
           notes?: string
           ooa?: Json
+          result?: string
+          routed?: boolean
           submitted_at?: string
           submitted_by?: string
           veteran_pool_roll?: number | null
@@ -455,6 +464,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "matches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_reports_submitted_by_profile_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "match_reports_warband_id_fkey"
@@ -814,9 +830,17 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
       }
+      submit_battle_report: {
+        Args: { p_match_id: string; p_report: Json; p_warband_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
       update_roster: {
         Args: { p_changes: Json; p_reason: string; p_warband_id: string }
         Returns: number
+      }
+      withdraw_battle_report: {
+        Args: { p_match_id: string; p_warband_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
       }
     }
     Enums: {

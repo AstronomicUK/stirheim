@@ -6,3 +6,4 @@ export * from "./settings";
 export * from "./rows";
 export * from "./roster";
 export * from "./battle";
+export * from "./report";

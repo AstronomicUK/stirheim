@@ -177,6 +177,27 @@ Recorded 2026-09-03 from Tom's answers.
   all the rulebook formula needs, so the match query embeds a slim projection of each roster.
 - **Attack calculator is still the first post-v1 upgrade**, not part of the battle helper.
 
+## Phase 7 decisions (2026-09-04)
+
+- **Rules are resolved on the phone, applied by the database.** The wizard runs the Phase 2
+  resolvers with the dice the player rolled and sends one `BattleReport` (src/domain/report.ts)
+  holding both the narrative (rolls, injury names, xp reasons, exploration) and the resulting
+  roster patches. `submit_battle_report` stores the narrative, applies the patches to heroes,
+  groups and treasury, adds stash items, removes lost items, creates `pending_advances`, and
+  completes the match once every participant has filed. This departs from the framework's
+  "re-run the rules in an edge function" idea: the group is small, every roll is on record, and
+  the GM can withdraw a report and fix a roster by hand. Revisit if strangers ever share a campaign.
+- **Reports are insert-once**; the GM's `withdraw_battle_report` deletes one and reopens the
+  match, but does not undo roster changes (they are in audit_log and the report's `applied`).
+- **Advances are not resolved in the wizard**: crossing a threshold creates a pending advance;
+  rolling and choosing happens in Phase 8's advancement flow. `level_ups` increments there.
+- **Hired swords** roll D6 for injuries (henchman style) per the mordheimer text, and earn xp
+  as heroes.
+- **Filing with the match still "in progress"** is allowed and moves it to awaiting reports, for
+  tables that forget to tap "Battle over".
+- **Battle records** are read straight from matches + match_reports; CSV export is built in the
+  browser (RFC 4180) so no server work is needed.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

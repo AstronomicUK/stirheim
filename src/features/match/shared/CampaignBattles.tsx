@@ -3,6 +3,7 @@
 // new one.
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { Link } from 'react-router'
 import { useCampaignMatches, useRespondToChallenge } from '../../../api/matches'
 import { Notice, Spinner } from '../../../ui'
 import { Card, Disclosure, LinkButton, Section } from '../../campaign/bits'
@@ -43,8 +44,17 @@ export function CampaignBattles({ campaignId, userId, isGm, isMember, archived }
   const canCreate = !archived && (isGm || isMember)
   const createLabel = isGm ? 'Schedule a battle' : 'Challenge'
 
+  const aside = (
+    <span className="flex items-center gap-3">
+      {query.data ? <span>{open} open</span> : null}
+      <Link to={`/campaigns/${campaignId}/records`} className="text-brass underline-offset-4 hover:underline">
+        Battle records
+      </Link>
+    </span>
+  )
+
   return (
-    <Section title="Battles" aside={query.data ? `${open} open` : undefined}>
+    <Section title="Battles" aside={aside}>
       {query.isPending ? (
         <div className="flex justify-center py-4">
           <Spinner label="Loading battles" />

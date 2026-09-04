@@ -12,6 +12,8 @@ import { NewCampaignPage } from '../features/campaign/NewCampaignPage'
 import { BattlePage } from '../features/match/BattlePage'
 import { MatchPage } from '../features/match/MatchPage'
 import { NewMatchPage } from '../features/match/NewMatchPage'
+import { PostBattlePage } from '../features/postBattle/PostBattlePage'
+import { BattleRecordsPage } from '../features/records/BattleRecordsPage'
 import { BuilderPage } from '../features/roster/BuilderPage'
 import { EditWarbandPage } from '../features/roster/EditWarbandPage'
 import { NewWarbandPage } from '../features/roster/NewWarbandPage'
@@ -53,6 +55,8 @@ export const router = createBrowserRouter([
       { path: 'campaigns/:id/matches/new', element: <RequireAuth><NewMatchPage /></RequireAuth> },
       { path: 'matches/:id', element: <RequireAuth><MatchPage /></RequireAuth> },
       { path: 'matches/:id/battle', element: <RequireAuth><BattlePage /></RequireAuth> },
+      { path: 'matches/:id/report/:warbandId', element: <RequireAuth><PostBattlePage /></RequireAuth> },
+      { path: 'campaigns/:id/records', element: <RequireAuth><BattleRecordsPage /></RequireAuth> },
       { path: 'scenarios', element: <RequireAuth><ScenarioLibraryPage /></RequireAuth> },
       { path: 'scenarios/new', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
       { path: 'scenarios/custom/:id/edit', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },

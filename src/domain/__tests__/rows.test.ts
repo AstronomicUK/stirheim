@@ -268,7 +268,8 @@ describe("row schemas parse realistic seed rows", () => {
       notes: "",
       submitted_at: T0,
     };
-    expect(matchReportRowSchema.parse(report)).toEqual(report);
+    // Migration 7 columns fill in from defaults when absent (older rows / partial selects).
+    expect(matchReportRowSchema.parse(report)).toEqual({ ...report, result: "lost", routed: false, applied: {} });
     expect(matchReportRowSchema.safeParse({ ...report, veteran_pool_roll: 1 }).success).toBe(false);
 
     const advance = {

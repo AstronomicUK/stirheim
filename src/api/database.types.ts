@@ -803,9 +803,23 @@ export type Database = {
       }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
       owns_warband: { Args: { p_warband_id: string }; Returns: boolean }
+      record_trade: {
+        Args: {
+          p_changes?: Json
+          p_heroes_searched?: string[]
+          p_match_id?: string
+          p_warband_id: string
+          p_wyrdstone_sold?: boolean
+        }
+        Returns: number
+      }
       regenerate_invite_code: {
         Args: { p_campaign_id: string }
         Returns: string
+      }
+      resolve_pending_advance: {
+        Args: { p_advance_id: string; p_changes: Json; p_resolution: Json }
+        Returns: number
       }
       respond_to_challenge: {
         Args: { p_accept: boolean; p_match_id: string; p_warband_id: string }

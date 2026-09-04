@@ -91,11 +91,18 @@ live in `20260904000002_rls.sql`:
   so `insert ... returning` would otherwise fail its select check with a misleading
   "violates row-level security policy" error.
 
-Roster writes go through two SQL functions (`20260904000004_roster_functions.sql`), both
-SECURITY INVOKER so RLS still applies: `create_warband(payload)` inserts the warband, its
-warriors and items in one transaction; `update_roster(warband_id, reason, changes)` applies a
-batch of whitelisted row changes atomically and labels the audit entries with `reason`
-(`manual_edit`, `trading`, `post_battle`, ...). The client never inserts roster rows directly.
+Roster writes go through SQL functions, all SECURITY INVOKER so RLS still applies. The client
+never inserts roster rows directly.
+
+| Function | Migration | Purpose |
+|---|---|---|
+| `create_warband(payload)` | 4 | Warband, warriors and items in one transaction. |
+| `update_roster(warband_id, reason, changes)` | 4, re-created in 8 | A batch of whitelisted row changes, atomic, audited with `reason` (`manual_edit`, `trading`, `recruitment`, `advancement`, `post_battle`, ...). Since migration 8 an `insert` honours the change's `id` (uuid) so items can reference a warrior created earlier in the same batch. |
+| `join_campaign(invite_code, warband_id)`, `leave_campaign`, `campaign_preview`, `regenerate_invite_code` | 5 | Membership without reading the campaign first. |
+| `schedule_match`, `respond_to_challenge`, `start_match`, `end_match`, `cancel_match`, `save_battle_session` | 6 | Match lifecycle and the live battle sheet. |
+| `submit_battle_report(match_id, warband_id, report)`, `withdraw_battle_report` | 7 | File a post-battle report and apply its roster patches; GM removes one. |
+| `resolve_pending_advance(advance_id, resolution, changes)` | 8 | Apply an advance's roster changes (reason `advancement`) and close the `pending_advances` row; refuses one already resolved. |
+| `record_trade(warband_id, match_id, changes, wyrdstone_sold, heroes_searched)` | 8 | Apply a trading-post batch (reason `trading`); with a match, enforce and record the once-per-phase limits in `trade_phase_state`. `match_id` null = no limits. |
 
 Every write to warbands, warriors, items, campaigns, memberships, matches and reports is
 recorded in `audit_log` with the acting user and the row before and after. The app can label a

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { usePendingAdvances } from '../../api/advances'
 import { useDeleteWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -56,6 +57,10 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
   const byHolder = useMemo(() => itemsByHolder(items), [items])
 
   const isOwner = user?.id === warband.owner_id
+  // Between-battles flows are for whoever may write the roster; the GM's view stays read-only for now.
+  const canEdit = isOwner
+  const pending = usePendingAdvances(canEdit ? warband.id : undefined)
+  const advancesDue = pending.data?.length ?? 0
   const activeHeroes = heroes.filter((h) => !h.is_hired_sword)
   const hiredSwords = heroes.filter((h) => h.is_hired_sword)
   const stash = byHolder.get('') ?? []
@@ -128,6 +133,18 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Notice>
       ) : null}
       {actionError ? <Notice tone="error">{actionError}</Notice> : null}
+
+      {canEdit ? (
+        <Section title="Between battles">
+          <div className="grid grid-cols-3 gap-3">
+            <BetweenBattlesLink to={`/warbands/${warband.id}/advances`} badge={advancesDue > 0 ? `${advancesDue} due` : null}>
+              Advances
+            </BetweenBattlesLink>
+            <BetweenBattlesLink to={`/warbands/${warband.id}/trade`}>Trading post</BetweenBattlesLink>
+            <BetweenBattlesLink to={`/warbands/${warband.id}/recruit`}>Recruit</BetweenBattlesLink>
+          </div>
+        </Section>
+      ) : null}
 
       <Section title="Heroes" aside={`${activeHeroes.length}`}>
         {activeHeroes.length === 0 ? <p className="text-sm text-ink-dim">No heroes on the roster.</p> : null}
@@ -235,5 +252,19 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </div>
       </Sheet>
     </>
+  )
+}
+
+function BetweenBattlesLink({ to, badge, children }: { to: string; badge?: string | null; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className="relative inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface-high px-3 text-center text-sm font-medium text-ink hover:border-ink-dim"
+    >
+      {children}
+      {badge ? (
+        <span className="absolute -top-2 -right-1 rounded-full border border-brass/60 bg-surface px-1.5 text-[10px] leading-4 text-brass">{badge}</span>
+      ) : null}
+    </Link>
   )
 }

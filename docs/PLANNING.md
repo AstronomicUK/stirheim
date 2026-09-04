@@ -198,6 +198,45 @@ Recorded 2026-09-03 from Tom's answers.
 - **Battle records** are read straight from matches + match_reports; CSV export is built in the
   browser (RFC 4180) so no server work is needed.
 
+## Phase 8 decisions (2026-09-04)
+
+- **Client-supplied ids on insert.** `update_roster` (re-created in
+  `20260904000008_advances_trading.sql`) takes the change's `id` as the new row's uuid for
+  `insert` on heroes, henchman_groups and items. A phone can therefore hire a hero and hand him
+  his kit in one atomic batch: the item inserts use the hero's uuid as `holder_id`, and the
+  holder-check trigger sees him because the rows land in order in the same transaction. Ids are
+  generated with `crypto.randomUUID()`; `diffRoster` refuses anything that is not a uuid.
+- **`diffRoster(rows, next)`** (`src/domain/rosterDiff.ts`) is the bridge between the Phase 2
+  resolvers and the database: a screen runs `buyItem` / `recruitHero` / `promoteHenchman` /
+  `hireHiredSword` / `payUpkeep` / `applyStatIncrease` on the loaded `RosterWarband`, and the
+  diff against the loaded rows becomes the `update_roster` batch. It sends only changed columns,
+  reconciles items per holder by `(item_rules_id ?? custom_name)`, turns a stack that moved
+  between holders into a holder update (the row keeps its identity), and leaves the kit of a
+  deleted warrior to the `*_release_items` trigger unless the resolver put it somewhere else.
+- **`resolve_pending_advance(advance_id, resolution, changes)`** applies the diff with reason
+  `advancement` and closes the `pending_advances` row in one transaction; an already-resolved
+  advance is refused. `resolution` is the narrative (roll, choice) and its shape belongs to the
+  advances screen (`advanceResolutionSchema` stays a loose record until it settles).
+- **`record_trade(warband_id, match_id, changes, wyrdstone_sold, heroes_searched)`** applies the
+  diff with reason `trading` and, when a match is given, upserts `trade_phase_state` and refuses
+  a second wyrdstone sale or a repeat rare-item search by the same hero in that phase.
+- **The trading phase is the warband's latest match report** (`useLatestReport`): the
+  trading post passes that report's `match_id`. A warband that has never filed a report has no
+  phase, passes `null`, and trades with no once-per-phase limits. This is deliberate for fresh
+  warbands at campaign start; a GM who wants a stricter rule can withdraw/refile reports.
+- **Recruitment** needs no new SQL: screens call `diffRoster` then `useUpdateRoster` with reason
+  `recruitment`. The veteran pool is written back by the henchmen screen (the resolver only
+  returns `poolRemaining`), so the `warbands.veteran_pool` check was relaxed to 0-12: null still
+  means "no pool rolled", 0 means "spent".
+- **Promotion queues its follow-ups.** "The lad's got talent" resolves with
+  `resolution.followUps = [{subjectType, subjectId, thresholdXp}]`; `resolve_pending_advance`
+  inserts those as new `pending_advances` (the new hero's immediate hero-table roll and the
+  remaining group's re-roll), so nothing has to be remembered by hand.
+- **Hired sword restrictions are prose** in the scraped data, so the recruit screen reads them
+  heuristically (named / excluded / check) and only hard-blocks duplicates and non-gold fees;
+  otherwise it warns and lets the player "hire anyway". Casters are detected from known spells or
+  the wizard-allocation labels, since templates do not flag them.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

@@ -5,5 +5,7 @@ export * from "./json";
 export * from "./settings";
 export * from "./rows";
 export * from "./roster";
+export * from "./rosterChange";
+export * from "./rosterDiff";
 export * from "./battle";
 export * from "./report";

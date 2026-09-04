@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AccountPage } from '../features/account/AccountPage'
+import { AdvancesPage } from '../features/advances/AdvancesPage'
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage'
 import { ResetPasswordPage } from '../features/account/ResetPasswordPage'
 import { SignInPage } from '../features/account/SignInPage'
@@ -13,6 +14,7 @@ import { BattlePage } from '../features/match/BattlePage'
 import { MatchPage } from '../features/match/MatchPage'
 import { NewMatchPage } from '../features/match/NewMatchPage'
 import { PostBattlePage } from '../features/postBattle/PostBattlePage'
+import { RecruitmentPage } from '../features/recruitment/RecruitmentPage'
 import { BattleRecordsPage } from '../features/records/BattleRecordsPage'
 import { BuilderPage } from '../features/roster/BuilderPage'
 import { EditWarbandPage } from '../features/roster/EditWarbandPage'
@@ -23,6 +25,7 @@ import { WarbandPage } from '../features/roster/WarbandPage'
 import { ScenarioFormPage } from '../features/scenarios/ScenarioFormPage'
 import { ScenarioLibraryPage } from '../features/scenarios/ScenarioLibraryPage'
 import { ScenarioPage } from '../features/scenarios/ScenarioPage'
+import { TradingPage } from '../features/trading/TradingPage'
 import { AppShell } from './AppShell'
 import { NotFoundPage } from './NotFoundPage'
 import { RequireAuth, RequireGuest } from './RequireAuth'
@@ -46,6 +49,9 @@ export const router = createBrowserRouter([
       { path: 'warbands/:id', element: <RequireAuth><WarbandPage /></RequireAuth> },
       { path: 'warbands/:id/edit', element: <RequireAuth><EditWarbandPage /></RequireAuth> },
       { path: 'warbands/:id/print', element: <RequireAuth><PrintPage /></RequireAuth> },
+      { path: 'warbands/:id/advances', element: <RequireAuth><AdvancesPage /></RequireAuth> },
+      { path: 'warbands/:id/trade', element: <RequireAuth><TradingPage /></RequireAuth> },
+      { path: 'warbands/:id/recruit', element: <RequireAuth><RecruitmentPage /></RequireAuth> },
       { path: 'campaigns', element: <RequireAuth><CampaignListPage /></RequireAuth> },
       { path: 'campaigns/new', element: <RequireAuth><NewCampaignPage /></RequireAuth> },
       { path: 'campaigns/join', element: <RequireAuth><JoinCampaignPage /></RequireAuth> },

@@ -5,6 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Json } from './database.types'
 import type { HenchmanGroupRow, HeroRow, ItemRow, WarbandRow } from '../domain'
+import type { RosterChange } from '../domain/rosterChange'
 import { toRosterWarband } from '../domain'
 import type { RosterWarband } from '../rules/types/roster'
 import type { CreateWarbandPayload } from '../rules/resolve/builder'
@@ -103,14 +104,7 @@ export async function createWarband(payload: CreateWarbandPayload): Promise<stri
   return data
 }
 
-export type RosterTable = 'warbands' | 'heroes' | 'henchman_groups' | 'items'
-
-export interface RosterChange {
-  table: RosterTable
-  op: 'insert' | 'update' | 'delete'
-  id?: string
-  data?: Record<string, unknown>
-}
+export type { RosterChange, RosterTable } from '../domain/rosterChange'
 
 /** Reasons the audit log distinguishes. Free text is allowed but keep to these where possible. */
 export type RosterChangeReason = 'manual_edit' | 'trading' | 'recruitment' | 'post_battle' | 'advancement' | 'archive' | (string & {})

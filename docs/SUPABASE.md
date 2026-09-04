@@ -91,6 +91,12 @@ live in `20260904000002_rls.sql`:
   so `insert ... returning` would otherwise fail its select check with a misleading
   "violates row-level security policy" error.
 
+Roster writes go through two SQL functions (`20260904000004_roster_functions.sql`), both
+SECURITY INVOKER so RLS still applies: `create_warband(payload)` inserts the warband, its
+warriors and items in one transaction; `update_roster(warband_id, reason, changes)` applies a
+batch of whitelisted row changes atomically and labels the audit entries with `reason`
+(`manual_edit`, `trading`, `post_battle`, ...). The client never inserts roster rows directly.
+
 Every write to warbands, warriors, items, campaigns, memberships, matches and reports is
 recorded in `audit_log` with the acting user and the row before and after. The app can label a
 transaction (`set_config('stirheim.audit_reason', 'manual_edit', true)`) so GM edits and manual

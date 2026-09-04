@@ -29,3 +29,5 @@ export function findItem(id: string): Item | undefined {
 export function itemsByCategory(category: ItemCategory): Item[] {
   return ITEMS.filter((item) => item.category === category);
 }
+
+export * from "./aliases";

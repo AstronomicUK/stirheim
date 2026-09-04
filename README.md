@@ -5,7 +5,7 @@ modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the ru
 combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-04): **Phase 3 (database, security, auth screens) complete.** Live at
+Status (2026-09-04): **Phase 4 (rosters: builder, view, print, manual editor) complete.** Live at
 https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 
@@ -37,12 +37,13 @@ src/
     engine/       exact-probability combat engine (from mordheim-simulator, unchanged)
     data/         warband templates, unit types, weapons, skills, traits (from the simulator);
                   further tables added in Phase 1
-    resolve/      Phase 2: rating, thresholds, injuries, advances, exploration, income, trading
+    resolve/      rating, thresholds, injuries, advances, exploration, income, trading,
+                  recruitment, roster validation, warband builder draft model
     types/        rules-level TypeScript types (from the simulator)
     domain/       opponent-scenario helpers (from the simulator)
   domain/         zod schemas for every table row + row <-> RosterWarband mappers
   api/            Supabase client, auth wrappers, generated database.types.ts, RLS tests
-  features/       one folder per screen group (account, home so far)
+  features/       one folder per screen group (account, roster so far)
   ui/             shared components
   app/            router, app shell, session store, auth gate
 supabase/

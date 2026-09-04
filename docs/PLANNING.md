@@ -119,6 +119,27 @@ Recorded 2026-09-03 from Tom's answers.
   immediately; the hosted project should keep them on. Password-reset mails land in the local
   Mailpit at http://127.0.0.1:54324.
 
+## Phase 4 decisions (2026-09-04)
+
+- **Builder is a pure draft model** (`src/rules/resolve/builder.ts`): the screen only calls
+  `newWarbandDraft`, `addDraftHero`, `addDraftEquipment`, `draftCosts`, `validateDraft`,
+  `draftToCreatePayload`. Drafts persist in localStorage so a phone lock does not lose them.
+- **Equipment-list costs are parsed from the source strings** (`equipmentCost.ts`): "1st free/2 gc"
+  gives one free dagger per model, "15 gc (30 for a brace)" prices pairs, "3 times the cost" and
+  similar are `unknown` and the player types the price. 62 distinct cost strings are covered.
+- **Equipment-list names map to the item catalogue** via `src/rules/data/items/aliases.ts`
+  (86% of 253 names). The 35 unresolved names (warband-specific gear such as Katana, Draich,
+  Bone Helmet) are kept as custom-named items with the list's cost; the test pins the list so
+  new gaps are noticed.
+- **Two SQL functions own roster writes**: `create_warband(payload)` and
+  `update_roster(warband_id, reason, changes)`; both run under the caller's RLS. The manual
+  editor sends a minimal diff with reason `manual_edit`, so GM edits and manual edits are
+  distinguishable in `audit_log`.
+- **Screens**: `/` list, `/warbands/new` template picker, `/warbands/new/:templateId` builder,
+  `/warbands/:id` roster view, `/warbands/:id/edit` manual editor, `/warbands/:id/print` sheet.
+- **Bundle size**: the rules data makes the main chunk about 1.3 MB; route-level code splitting
+  and a lazy scenario library are noted for Phase 9 polish.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

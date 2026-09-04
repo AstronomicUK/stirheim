@@ -721,6 +721,7 @@ export type Database = {
       can_edit_warband: { Args: { p_warband_id: string }; Returns: boolean }
       can_read_campaign: { Args: { p_campaign_id: string }; Returns: boolean }
       can_read_warband: { Args: { p_warband_id: string }; Returns: boolean }
+      create_warband: { Args: { payload: Json }; Returns: string }
       generate_invite_code: { Args: never; Returns: string }
       is_campaign_gm: { Args: { p_campaign_id: string }; Returns: boolean }
       is_campaign_member: { Args: { p_campaign_id: string }; Returns: boolean }
@@ -744,6 +745,10 @@ export type Database = {
       }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
       owns_warband: { Args: { p_warband_id: string }; Returns: boolean }
+      update_roster: {
+        Args: { p_changes: Json; p_reason: string; p_warband_id: string }
+        Returns: number
+      }
     }
     Enums: {
       advance_subject: "hero" | "group"

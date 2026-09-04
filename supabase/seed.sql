@@ -45,19 +45,19 @@ values
    'Claws of Eshin', 'skaven_of_clan_eshin', 20, 2, 'Seed warband.');
 
 -- Reikland Watch
-insert into public.heroes (id, warband_id, name, unit_type_rules_id, stats, xp, skill_tables, sort_order)
+insert into public.heroes (id, warband_id, name, unit_type_rules_id, stats, xp, level_ups, skill_tables, sort_order)
 values
   ('bbbbbbbb-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000001', 'Captain Ulrich Brandt',
-   'mercenaries_reikland_captain', '{"M":4,"WS":4,"BS":4,"S":3,"T":3,"W":1,"I":4,"A":1,"Ld":8}', 20,
+   'mercenaries_reikland_captain', '{"M":4,"WS":4,"BS":4,"S":3,"T":3,"W":1,"I":4,"A":1,"Ld":8}', 20, 8,
    '{combat,shooting,academic,strength,speed}', 0),
   ('bbbbbbbb-0000-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-000000000001', 'Marta Voss',
-   'mercenaries_reikland_champions', '{"M":4,"WS":4,"BS":3,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":7}', 8,
+   'mercenaries_reikland_champions', '{"M":4,"WS":4,"BS":3,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":7}', 8, 4,
    '{combat,shooting,strength}', 1),
   ('bbbbbbbb-0000-4000-8000-000000000003', 'aaaaaaaa-0000-4000-8000-000000000001', 'Klaus Reiter',
-   'mercenaries_reikland_champions', '{"M":4,"WS":4,"BS":3,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":7}', 8,
+   'mercenaries_reikland_champions', '{"M":4,"WS":4,"BS":3,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":7}', 8, 4,
    '{combat,shooting,strength}', 2),
   ('bbbbbbbb-0000-4000-8000-000000000004', 'aaaaaaaa-0000-4000-8000-000000000001', 'Pieter',
-   'mercenaries_reikland_youngbloods', '{"M":4,"WS":2,"BS":2,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":6}', 0,
+   'mercenaries_reikland_youngbloods', '{"M":4,"WS":2,"BS":2,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":6}', 0, 0,
    '{combat,shooting,speed}', 3);
 
 insert into public.henchman_groups (id, warband_id, name, unit_type_rules_id, size, stats, sort_order)
@@ -82,16 +82,16 @@ values
   ('aaaaaaaa-0000-4000-8000-000000000001', 'stash', null, 'dagger', 1);
 
 -- Claws of Eshin
-insert into public.heroes (id, warband_id, name, unit_type_rules_id, stats, xp, skill_tables, sort_order)
+insert into public.heroes (id, warband_id, name, unit_type_rules_id, stats, xp, level_ups, skill_tables, sort_order)
 values
   ('bbbbbbbb-0000-4000-8000-000000000011', 'aaaaaaaa-0000-4000-8000-000000000002', 'Skritch Nightblade',
-   'skaven_assassin_adept', '{"M":6,"WS":4,"BS":4,"S":4,"T":3,"W":1,"I":5,"A":1,"Ld":7}', 20,
+   'skaven_assassin_adept', '{"M":6,"WS":4,"BS":4,"S":4,"T":3,"W":1,"I":5,"A":1,"Ld":7}', 20, 8,
    '{combat,shooting,academic,strength,speed,skaven_of_clan_eshin_skills}', 0),
   ('bbbbbbbb-0000-4000-8000-000000000012', 'aaaaaaaa-0000-4000-8000-000000000002', 'Queek',
-   'skaven_black_skaven', '{"M":6,"WS":4,"BS":3,"S":4,"T":3,"W":1,"I":5,"A":1,"Ld":6}', 8,
+   'skaven_black_skaven', '{"M":6,"WS":4,"BS":3,"S":4,"T":3,"W":1,"I":5,"A":1,"Ld":6}', 8, 4,
    '{combat,strength,speed,skaven_of_clan_eshin_skills}', 1),
   ('bbbbbbbb-0000-4000-8000-000000000013', 'aaaaaaaa-0000-4000-8000-000000000002', 'Sneek',
-   'skaven_night_runners', '{"M":6,"WS":2,"BS":3,"S":3,"T":3,"W":1,"I":5,"A":1,"Ld":4}', 0,
+   'skaven_night_runners', '{"M":6,"WS":2,"BS":3,"S":3,"T":3,"W":1,"I":5,"A":1,"Ld":4}', 0, 0,
    '{combat,shooting,speed}', 2);
 
 insert into public.henchman_groups (id, warband_id, name, unit_type_rules_id, size, stats, sort_order)

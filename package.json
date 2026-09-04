@@ -14,7 +14,7 @@
     "db:reset": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase db reset",
     "db:status": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase status",
     "db:types": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase gen types typescript --local --schema public > src/api/database.types.ts",
-    "test:integration": "SUPABASE_LOCAL=1 vitest run src/api/__tests__"
+    "test:integration": "SUPABASE_LOCAL=1 vitest run --no-file-parallelism src/api/__tests__"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",

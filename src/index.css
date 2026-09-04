@@ -43,3 +43,36 @@ body {
   outline: 2px solid var(--color-brass);
   outline-offset: 2px;
 }
+
+/*
+  Print: the roster sheet (features/roster/PrintPage) is the only screen meant for paper. The app
+  shell's header and anything marked data-print-hide are dropped, the phone-width column is opened
+  up to the page, and the page is forced black on white whatever the screen theme says.
+*/
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  #root > div {
+    max-width: none;
+    min-height: 0;
+  }
+  #root > div > header,
+  [data-print-hide] {
+    display: none !important;
+  }
+  #root > div > main {
+    padding: 0;
+    gap: 0;
+  }
+  [data-print-sheet] {
+    margin: 0;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

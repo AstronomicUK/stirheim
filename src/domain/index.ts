@@ -5,3 +5,4 @@ export * from "./json";
 export * from "./settings";
 export * from "./rows";
 export * from "./roster";
+export * from "./battle";

@@ -520,6 +520,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "matches_created_by_profile_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "matches_custom_scenario_id_fkey"
             columns: ["custom_scenario_id"]
             isOneToOne: false
@@ -716,7 +723,15 @@ export type Database = {
           veteran_pool?: number | null
           wyrdstone?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "warbands_owner_profile_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
     }
     Views: {
@@ -736,7 +751,15 @@ export type Database = {
       can_edit_warband: { Args: { p_warband_id: string }; Returns: boolean }
       can_read_campaign: { Args: { p_campaign_id: string }; Returns: boolean }
       can_read_warband: { Args: { p_warband_id: string }; Returns: boolean }
+      cancel_match: {
+        Args: { p_match_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
       create_warband: { Args: { payload: Json }; Returns: string }
+      end_match: {
+        Args: { p_match_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
       generate_invite_code: { Args: never; Returns: string }
       is_campaign_gm: { Args: { p_campaign_id: string }; Returns: boolean }
       is_campaign_member: { Args: { p_campaign_id: string }; Returns: boolean }
@@ -767,6 +790,29 @@ export type Database = {
       regenerate_invite_code: {
         Args: { p_campaign_id: string }
         Returns: string
+      }
+      respond_to_challenge: {
+        Args: { p_accept: boolean; p_match_id: string; p_warband_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
+      save_battle_session: {
+        Args: { p_live_state: Json; p_match_id: string; p_warband_id: string }
+        Returns: string
+      }
+      schedule_match: {
+        Args: {
+          p_campaign_id: string
+          p_custom_scenario_id?: string
+          p_notes?: string
+          p_scenario_rules_id?: string
+          p_scheduled_for?: string
+          p_warband_ids: string[]
+        }
+        Returns: string
+      }
+      start_match: {
+        Args: { p_match_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
       }
       update_roster: {
         Args: { p_changes: Json; p_reason: string; p_warband_id: string }

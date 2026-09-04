@@ -158,6 +158,25 @@ Recorded 2026-09-03 from Tom's answers.
 - **Navigation**: a four-tab bottom bar (Warbands, Campaigns, Scenarios, Account) replaces the
   header link; it is hidden when printing.
 
+## Phase 6 decisions (2026-09-04)
+
+- **Match lifecycle is six SQL functions** (`schedule_match`, `respond_to_challenge`,
+  `start_match`, `end_match`, `cancel_match`, `save_battle_session`), all SECURITY INVOKER so
+  RLS still decides who may act. The GM books games with everyone pre-accepted; a member's
+  challenge must include exactly one of their own warbands and the others accept or decline.
+  Declining a two-warband challenge cancels it. Edge functions were not needed.
+- **Battle sheets are per warband** (`battle_sessions.live_state`, shape in
+  `src/domain/battle.ts`): turn, routed flag, wyrdstone found, loot lines, notes, and a tally
+  per warrior or group (enemies out of action, own out of action, note). They are tallies, not
+  reports; Phase 7's wizard reads them to pre-fill the report. Each participant creates their own
+  row on first save (so RLS stays simple); saving is allowed while in progress or awaiting
+  reports.
+- **Realtime** subscriptions on matches, participants and battle_sessions for one match keep
+  every phone at the table in step; the client just invalidates its queries on any change.
+- **Rating on match pages** is computed from counts, experience and large flags only, which is
+  all the rulebook formula needs, so the match query embeds a slim projection of each roster.
+- **Attack calculator is still the first post-v1 upgrade**, not part of the battle helper.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

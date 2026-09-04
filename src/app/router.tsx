@@ -9,6 +9,9 @@ import { CampaignPage } from '../features/campaign/CampaignPage'
 import { CampaignSettingsPage } from '../features/campaign/CampaignSettingsPage'
 import { JoinCampaignPage } from '../features/campaign/JoinCampaignPage'
 import { NewCampaignPage } from '../features/campaign/NewCampaignPage'
+import { BattlePage } from '../features/match/BattlePage'
+import { MatchPage } from '../features/match/MatchPage'
+import { NewMatchPage } from '../features/match/NewMatchPage'
 import { BuilderPage } from '../features/roster/BuilderPage'
 import { EditWarbandPage } from '../features/roster/EditWarbandPage'
 import { NewWarbandPage } from '../features/roster/NewWarbandPage'
@@ -47,6 +50,9 @@ export const router = createBrowserRouter([
       { path: 'campaigns/join/:code', element: <RequireAuth><JoinCampaignPage /></RequireAuth> },
       { path: 'campaigns/:id', element: <RequireAuth><CampaignPage /></RequireAuth> },
       { path: 'campaigns/:id/settings', element: <RequireAuth><CampaignSettingsPage /></RequireAuth> },
+      { path: 'campaigns/:id/matches/new', element: <RequireAuth><NewMatchPage /></RequireAuth> },
+      { path: 'matches/:id', element: <RequireAuth><MatchPage /></RequireAuth> },
+      { path: 'matches/:id/battle', element: <RequireAuth><BattlePage /></RequireAuth> },
       { path: 'scenarios', element: <RequireAuth><ScenarioLibraryPage /></RequireAuth> },
       { path: 'scenarios/new', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
       { path: 'scenarios/custom/:id/edit', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },

@@ -4,6 +4,7 @@ import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
 import { Button, Markdown, Notice, Sheet, Spinner } from '../../ui'
+import { CampaignBattles } from '../match/shared/CampaignBattles'
 import { activityLines, formatRelativeTime } from './activity'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
 import { InviteCard } from './InviteCard'
@@ -109,13 +110,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         ) : null}
       </Section>
 
-      <Section title="Battles">
-        <Card className="px-4 py-4">
-          <p className="text-sm leading-relaxed text-ink-dim">
-            No battles scheduled. Scheduling, the live battle helper and match reports arrive in Phase 6; until then, keep using the roster editor after each game.
-          </p>
-        </Card>
-      </Section>
+      <CampaignBattles campaignId={campaign.id} userId={user?.id} isGm={isGm} isMember={mine.length > 0} archived={campaign.archived} />
 
       <Section title="Settings and house rules">
         <Card className="flex flex-col gap-3 px-4 py-3">

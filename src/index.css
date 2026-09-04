@@ -76,3 +76,74 @@ body {
     margin: 12mm;
   }
 }
+
+/* Rendered Markdown (rules text, campaign notes). Kept typographic, not app-like. */
+.markdown {
+  line-height: 1.6;
+}
+.markdown > * + * {
+  margin-top: 0.75em;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  font-family: var(--font-headline);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.25em;
+}
+.markdown h1 { font-size: 1.5rem; }
+.markdown h2 { font-size: 1.3rem; }
+.markdown h3 { font-size: 1.15rem; }
+.markdown h4 { font-size: 1rem; }
+.markdown p,
+.markdown li {
+  color: var(--color-ink);
+}
+.markdown em {
+  color: var(--color-ink-dim);
+}
+.markdown ul,
+.markdown ol {
+  padding-left: 1.25rem;
+}
+.markdown ul { list-style: disc; }
+.markdown ol { list-style: decimal; }
+.markdown li + li { margin-top: 0.25em; }
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown th {
+  background: var(--color-surface-high);
+  font-weight: 600;
+}
+.markdown blockquote {
+  border-left: 3px solid var(--color-brass);
+  padding-left: 0.85rem;
+  color: var(--color-ink-dim);
+}
+.markdown a {
+  color: var(--color-brass);
+  text-decoration: underline;
+}
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+.markdown code {
+  font-size: 0.9em;
+  background: var(--color-surface-high);
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+}

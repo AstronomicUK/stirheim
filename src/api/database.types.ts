@@ -121,6 +121,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campaign_members_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "campaign_members_warband_id_fkey"
             columns: ["warband_id"]
             isOneToOne: false
@@ -163,7 +170,15 @@ export type Database = {
           settings?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_gm_profile_fkey"
+            columns: ["gm_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       henchman_groups: {
         Row: {
@@ -743,8 +758,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      leave_campaign: {
+        Args: { p_campaign_id: string; p_warband_id: string }
+        Returns: undefined
+      }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
       owns_warband: { Args: { p_warband_id: string }; Returns: boolean }
+      regenerate_invite_code: {
+        Args: { p_campaign_id: string }
+        Returns: string
+      }
       update_roster: {
         Args: { p_changes: Json; p_reason: string; p_warband_id: string }
         Returns: number

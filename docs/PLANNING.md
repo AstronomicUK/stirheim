@@ -140,6 +140,24 @@ Recorded 2026-09-03 from Tom's answers.
 - **Bundle size**: the rules data makes the main chunk about 1.3 MB; route-level code splitting
   and a lazy scenario library are noted for Phase 9 polish.
 
+## Phase 5 decisions (2026-09-04)
+
+- **Campaign membership and settings stay in the tables from Phase 3**; Phase 5 adds only two
+  SQL helpers (`regenerate_invite_code`, `leave_campaign`) and foreign keys from
+  `campaign_members.user_id` / `campaigns.gm_id` to `profiles` so PostgREST can embed display
+  names in one query.
+- **Rating on the dashboard is computed client-side** from each member warband's heroes and
+  groups (items are not needed for rating), using the same `warbandRating` as the roster view.
+- **Activity feed = the audit log** filtered to the campaign and its member warbands, rendered as
+  plain sentences. No separate events table.
+- **Rules text is Markdown** rendered with marked and sanitised with DOMPurify (the only two
+  runtime dependencies added since Phase 0), because GMs and other members author some of it.
+- **Scenarios**: the nine core rulebook scenarios and the rest of the ~100-strong library ship
+  with the client; full text is loaded lazily from a separate chunk. Custom scenarios are rows
+  in `scenarios`, optionally scoped to a campaign the author runs, readable by everyone signed in.
+- **Navigation**: a four-tab bottom bar (Warbands, Campaigns, Scenarios, Account) replaces the
+  header link; it is hidden when printing.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

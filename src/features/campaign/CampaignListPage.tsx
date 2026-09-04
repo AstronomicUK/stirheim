@@ -4,9 +4,11 @@ import { useMyCampaigns, type CampaignSummary } from '../../api/campaigns'
 import { useMyWarbands } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { Notice, PageHeader, Spinner } from '../../ui'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { Disclosure, LinkButton, Tag, TextLink } from './bits'
 
 export function CampaignListPage() {
+  usePageTitle('Your campaigns')
   const user = useSession((s) => s.user)
   const campaigns = useMyCampaigns(user?.id)
   const warbands = useMyWarbands(user?.id)

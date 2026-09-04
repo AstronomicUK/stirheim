@@ -213,7 +213,10 @@ function RecordCard({ record, rows }: { record: BattleRecord; rows: RecordRow[] 
             <span className="truncate font-medium text-ink">{record.scenario_title}</span>
             <span className="text-sm text-ink-dim">{date ? formatMatchTime(date) : 'No date'}</span>
           </span>
-          <MatchStateTag state={record.state} />
+          <span className="flex shrink-0 items-center gap-1.5">
+            {record.created_via === 'import' ? <Tag>Imported</Tag> : null}
+            <MatchStateTag state={record.state} />
+          </span>
         </Link>
         <ul className="flex flex-col divide-y divide-border/60 border-t border-border">
           {rows.map((row) => (

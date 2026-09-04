@@ -232,6 +232,7 @@ describe("row schemas parse realistic seed rows", () => {
     expect(matchRowSchema.safeParse({ ...match, custom_scenario_id: SCENARIO_ID }).success).toBe(false);
     expect(matchRowSchema.safeParse({ ...match, state: "done" }).success).toBe(false);
     expect(matchRowSchema.safeParse({ ...match, created_via: "player" }).success).toBe(false);
+    expect(matchRowSchema.parse({ ...match, created_via: "import" }).created_via).toBe("import");
 
     const participant = {
       match_id: MATCH_ID,

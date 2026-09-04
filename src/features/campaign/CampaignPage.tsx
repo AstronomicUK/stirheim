@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail, type CampaignMemberView } from '../../api/campaigns'
+import { useCampaignMatches } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
 import { Button, Markdown, Notice, Sheet, Spinner } from '../../ui'
 import { CampaignBattles } from '../match/shared/CampaignBattles'
+import { GmChecklist } from '../onboarding/GmChecklist'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { activityLines, formatRelativeTime } from './activity'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
 import { InviteCard } from './InviteCard'
@@ -13,6 +16,7 @@ import { dicePolicyLabel } from './settingsForm'
 export function CampaignPage() {
   const { id } = useParams<{ id: string }>()
   const query = useCampaign(id)
+  usePageTitle(query.data?.campaign.name ?? 'Campaign')
 
   if (query.isPending) {
     return (
@@ -39,6 +43,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
   const navigate = useNavigate()
   const user = useSession((s) => s.user)
   const activity = useCampaignActivity(campaign.id)
+  // Same query CampaignBattles runs, so this is a cache read; it only feeds the GM checklist.
+  const matches = useCampaignMatches(campaign.id, user?.id)
   const leave = useLeaveCampaign()
   const [showFormer, setShowFormer] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
@@ -72,8 +78,9 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
             <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{campaign.name}</h1>
           </div>
           {isGm ? (
-            <div className="shrink-0 pt-1">
+            <div className="flex shrink-0 flex-col items-end pt-1">
               <TextLink to={`/campaigns/${campaign.id}/settings`}>Settings</TextLink>
+              <TextLink to={`/campaigns/${campaign.id}/import`}>Import battle records</TextLink>
             </div>
           ) : null}
         </div>
@@ -90,7 +97,9 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         </Notice>
       ) : null}
 
-      <InviteCard code={campaign.invite_code} archived={campaign.archived} />
+      {isGm && !campaign.archived ? <GmChecklist key={campaign.id} campaignId={campaign.id} memberCount={members.length} matchCount={matches.data?.length ?? 0} /> : null}
+
+      <InviteCard code={campaign.invite_code} archived={campaign.archived} campaignName={campaign.name} />
 
       <Section title="Warbands" aside={`${members.length} enrolled${settings.maxRosters ? ` of ${settings.maxRosters}` : ''}`}>
         {members.length === 0 ? (

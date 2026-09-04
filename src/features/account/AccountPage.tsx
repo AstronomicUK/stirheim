@@ -1,12 +1,16 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { signOut, updateDisplayName } from '../../api/auth'
 import { queryClient } from '../../app/queryClient'
 import { useSession } from '../../app/session'
 import { Button, Notice, PageHeader, TextField } from '../../ui'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { DISPLAY_NAME_MAX, displayNameFormSchema, validate } from './schemas'
 
+const APP_VERSION: string = import.meta.env.VITE_APP_VERSION ?? 'dev'
+
 export function AccountPage() {
+  usePageTitle('Account')
   const navigate = useNavigate()
   const user = useSession((s) => s.user)
   const profile = useSession((s) => s.profile)
@@ -96,6 +100,22 @@ export function AccountPage() {
       </section>
 
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+
+      <section aria-label="Help and about" className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
+        <Link to="/help" className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 no-underline hover:bg-surface-high">
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-ink">Help</span>
+            <span className="text-sm text-ink-dim">The field manual: warbands, campaigns, battles and moving over from Relic & Ruin.</span>
+          </span>
+          <span aria-hidden className="shrink-0 text-ink-dim">
+            ›
+          </span>
+        </Link>
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <span className="text-xs uppercase tracking-wider text-ink-dim">Version</span>
+          <span className="font-mono text-sm text-ink-dim">{APP_VERSION}</span>
+        </div>
+      </section>
 
       <div className="mt-auto pt-4">
         <Button variant="danger" block pending={pending === 'signout'} onClick={onSignOut}>

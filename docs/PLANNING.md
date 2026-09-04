@@ -237,6 +237,45 @@ Recorded 2026-09-03 from Tom's answers.
   otherwise it warns and lets the player "hire anyway". Casters are detected from known spells or
   the wizard-allocation labels, since templates do not flag them.
 
+## Phase 9 decisions (2026-09-04)
+
+- **Importer (Q16) is tolerant CSV plus column mapping**, not a parser for one known file: we
+  still have no sample of Relic & Ruin's Battle Records export, so `/campaigns/:id/import` (GM
+  only) reads any RFC 4180 CSV (`src/domain/csv.ts`), guesses which column is the date, warband,
+  result, match id, scenario, player, XP, casualties, notes, winner or second warband from header
+  synonyms (`src/features/importer/model.ts` `SYNONYMS`), and lets the GM correct the guess before a
+  preview. Two row shapes are handled: one row per warband report (grouped by match id, else by
+  date + scenario in file order) and one row per battle with an opponent column. **Re-check the
+  synonym defaults against a real export once Tom saves one** and add its headers to
+  `model.test.ts`.
+- **Imports write history only.** `import_battle_records(campaign_id, matches)` (migration 10,
+  SECURITY INVOKER, GM only, audit reason `import`) inserts completed `matches` with the new
+  `match_origin` value `'import'` (migration 9, its own file because a new enum value cannot be
+  used in the transaction that adds it), pre-accepted `match_participants`, and one
+  `match_reports` row per participant filed by the GM at the battle's date. XP and casualties are
+  stored as a single summary line each in `xp_log` / `ooa`, shaped like the wizard's lines so the
+  records page and standings add them up. Rosters, treasuries and pending advances are **not**
+  touched: players re-enter their warbands with the builder and manual editor. Warband names in
+  the file must match warbands already enrolled in the campaign; the screen blocks otherwise.
+  Scenario names are matched to the built-in library by normalised title, else kept at the top of
+  the match notes. There is no undo beyond `withdraw_battle_report`; imported matches cannot be
+  deleted from the app (`cancel_match` refuses a completed match).
+- **Onboarding** is a checklist, not a tour: the empty home screen lists the three first steps
+  (build a warband, join or start a campaign, "from Relic & Ruin"), the GM dashboard carries a
+  dismissible checklist (localStorage `stirheim.gmChecklist.<campaignId>`), invites offer copy
+  link + Web Share, and `/help` is a single plain-English field manual with anchors.
+- **Installable**: `public/manifest.webmanifest` + SVG icons, no service worker (the app needs
+  the network anyway; offline drafts stay in localStorage).
+- **Route-level code splitting**: every screen is a `lazy()` chunk (`lazyPage` in
+  `src/app/router.tsx`, Suspense fallback in `AppShell`). The scenario library and warband
+  templates are the largest chunks and load only when visited.
+- **Playwright** runs on a Pixel 7 viewport against the local Supabase seed, one worker, five
+  numbered specs (auth, builder, campaign, match + both post-battle reports, between battles);
+  global setup runs `db reset` and waits for GoTrue. CI runs it in a second job with
+  `supabase start`. Fixed on the way: the new-match form's fieldsets needed `min-w-0` so the
+  sticky submit stayed tappable on phones.
+
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

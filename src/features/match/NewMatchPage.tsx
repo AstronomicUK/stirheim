@@ -166,7 +166,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
         </div>
       ) : null}
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex min-w-0 flex-col gap-2">
         <legend className="mb-2 text-sm font-medium text-ink-dim">
           {copy.warbands}
           <span className="ml-2 font-normal">{mode === 'gm' ? 'Pick two or more' : 'Pick one or more'}</span>
@@ -205,7 +205,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
         )}
       </fieldset>
 
-      <fieldset className="flex flex-col gap-3">
+      <fieldset className="flex min-w-0 flex-col gap-3">
         <legend className="mb-2 text-sm font-medium text-ink-dim">Scenario</legend>
         <SegmentedControl options={SCENARIO_SOURCE_OPTIONS} value={source} onChange={setSource} label="Where to pick the scenario from" />
 

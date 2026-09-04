@@ -120,7 +120,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           <MatchStateTag state={match.state} />
           {pending ? <Tag tone="warn">{pending}</Tag> : null}
           <span className="text-sm text-ink-dim">
-            {match.created_via === 'gm' ? 'Scheduled by' : 'Challenge from'} {match.created_by_display_name}
+            {match.created_via === 'gm' ? 'Scheduled by' : match.created_via === 'import' ? 'Imported by' : 'Challenge from'} {match.created_by_display_name}
           </span>
         </div>
         <dl className="grid grid-cols-2 gap-3 border-t border-border pt-3">

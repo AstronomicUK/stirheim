@@ -777,6 +777,10 @@ export type Database = {
         Returns: Database["public"]["Enums"]["match_state"]
       }
       generate_invite_code: { Args: never; Returns: string }
+      import_battle_records: {
+        Args: { p_campaign_id: string; p_matches: Json }
+        Returns: number
+      }
       is_campaign_gm: { Args: { p_campaign_id: string }; Returns: boolean }
       is_campaign_member: { Args: { p_campaign_id: string }; Returns: boolean }
       is_match_participant: { Args: { p_match_id: string }; Returns: boolean }
@@ -860,7 +864,7 @@ export type Database = {
     Enums: {
       advance_subject: "hero" | "group"
       item_holder: "stash" | "hero" | "group"
-      match_origin: "gm" | "challenge"
+      match_origin: "gm" | "challenge" | "import"
       match_state:
         | "scheduled"
         | "in_progress"
@@ -997,7 +1001,7 @@ export const Constants = {
     Enums: {
       advance_subject: ["hero", "group"],
       item_holder: ["stash", "hero", "group"],
-      match_origin: ["gm", "challenge"],
+      match_origin: ["gm", "challenge", "import"],
       match_state: [
         "scheduled",
         "in_progress",

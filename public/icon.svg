@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Stirheim</title>
+  <rect width="512" height="512" rx="96" fill="#131110"/>
+  <rect x="24" y="24" width="464" height="464" rx="80" fill="none" stroke="#3d352f" stroke-width="6"/>
+  <text x="256" y="352" text-anchor="middle" font-family="Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif" font-weight="700" font-size="320" fill="#b8402f">S</text>
+  <rect x="152" y="404" width="208" height="10" rx="5" fill="#c9962c"/>
+</svg>

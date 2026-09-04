@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { Json } from './database.types'
-import type { HenchmanGroupRow, HeroRow, ItemRow, MatchRow, MatchState, WarbandRow } from '../domain'
+import type { HenchmanGroupRow, HeroRow, ItemRow, MatchOrigin, MatchRow, MatchState, WarbandRow } from '../domain'
 import { parseBattleLiveState, toRosterWarband, type BattleLiveState } from '../domain'
 import type { RosterWarband } from '../rules/types/roster'
 import { findWarbandTemplate } from '../rules/data/warbandTemplates'
@@ -37,7 +37,7 @@ export interface MatchSummary {
   id: string
   campaign_id: string
   state: MatchState
-  created_via: 'gm' | 'challenge'
+  created_via: MatchOrigin
   created_by: string
   created_by_display_name: string
   scenario_rules_id: string | null

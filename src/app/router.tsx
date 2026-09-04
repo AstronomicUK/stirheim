@@ -1,32 +1,46 @@
+import { lazy, type ComponentType } from 'react'
+
+/**
+ * Route-level code splitting: each screen ships in its own chunk and loads on first visit.
+ * `AppShell` renders the Suspense fallback around the outlet.
+ */
+function lazyPage<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
+  return lazy(async () => ({ default: (await load())[name] }))
+}
+
 import { createBrowserRouter, Navigate } from 'react-router'
-import { AccountPage } from '../features/account/AccountPage'
-import { AdvancesPage } from '../features/advances/AdvancesPage'
-import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage'
-import { ResetPasswordPage } from '../features/account/ResetPasswordPage'
-import { SignInPage } from '../features/account/SignInPage'
-import { SignUpPage } from '../features/account/SignUpPage'
-import { CampaignListPage } from '../features/campaign/CampaignListPage'
-import { CampaignPage } from '../features/campaign/CampaignPage'
-import { CampaignSettingsPage } from '../features/campaign/CampaignSettingsPage'
-import { JoinCampaignPage } from '../features/campaign/JoinCampaignPage'
-import { NewCampaignPage } from '../features/campaign/NewCampaignPage'
-import { BattlePage } from '../features/match/BattlePage'
-import { MatchPage } from '../features/match/MatchPage'
-import { NewMatchPage } from '../features/match/NewMatchPage'
-import { PostBattlePage } from '../features/postBattle/PostBattlePage'
-import { RecruitmentPage } from '../features/recruitment/RecruitmentPage'
-import { BattleRecordsPage } from '../features/records/BattleRecordsPage'
-import { BuilderPage } from '../features/roster/BuilderPage'
-import { EditWarbandPage } from '../features/roster/EditWarbandPage'
-import { NewWarbandPage } from '../features/roster/NewWarbandPage'
-import { PrintPage } from '../features/roster/PrintPage'
-import { WarbandListPage } from '../features/roster/WarbandListPage'
-import { WarbandPage } from '../features/roster/WarbandPage'
-import { ScenarioFormPage } from '../features/scenarios/ScenarioFormPage'
-import { ScenarioLibraryPage } from '../features/scenarios/ScenarioLibraryPage'
-import { ScenarioPage } from '../features/scenarios/ScenarioPage'
-import { TradingPage } from '../features/trading/TradingPage'
 import { AppShell } from './AppShell'
+
+const AccountPage = lazyPage(() => import('../features/account/AccountPage'), 'AccountPage')
+const AdvancesPage = lazyPage(() => import('../features/advances/AdvancesPage'), 'AdvancesPage')
+const ForgotPasswordPage = lazyPage(() => import('../features/account/ForgotPasswordPage'), 'ForgotPasswordPage')
+const ResetPasswordPage = lazyPage(() => import('../features/account/ResetPasswordPage'), 'ResetPasswordPage')
+const SignInPage = lazyPage(() => import('../features/account/SignInPage'), 'SignInPage')
+const SignUpPage = lazyPage(() => import('../features/account/SignUpPage'), 'SignUpPage')
+const CampaignListPage = lazyPage(() => import('../features/campaign/CampaignListPage'), 'CampaignListPage')
+const CampaignPage = lazyPage(() => import('../features/campaign/CampaignPage'), 'CampaignPage')
+const CampaignSettingsPage = lazyPage(() => import('../features/campaign/CampaignSettingsPage'), 'CampaignSettingsPage')
+const ImportPage = lazyPage(() => import('../features/importer/ImportPage'), 'ImportPage')
+const JoinCampaignPage = lazyPage(() => import('../features/campaign/JoinCampaignPage'), 'JoinCampaignPage')
+const NewCampaignPage = lazyPage(() => import('../features/campaign/NewCampaignPage'), 'NewCampaignPage')
+const BattlePage = lazyPage(() => import('../features/match/BattlePage'), 'BattlePage')
+const MatchPage = lazyPage(() => import('../features/match/MatchPage'), 'MatchPage')
+const NewMatchPage = lazyPage(() => import('../features/match/NewMatchPage'), 'NewMatchPage')
+const PostBattlePage = lazyPage(() => import('../features/postBattle/PostBattlePage'), 'PostBattlePage')
+const RecruitmentPage = lazyPage(() => import('../features/recruitment/RecruitmentPage'), 'RecruitmentPage')
+const BattleRecordsPage = lazyPage(() => import('../features/records/BattleRecordsPage'), 'BattleRecordsPage')
+const BuilderPage = lazyPage(() => import('../features/roster/BuilderPage'), 'BuilderPage')
+const EditWarbandPage = lazyPage(() => import('../features/roster/EditWarbandPage'), 'EditWarbandPage')
+const NewWarbandPage = lazyPage(() => import('../features/roster/NewWarbandPage'), 'NewWarbandPage')
+const PrintPage = lazyPage(() => import('../features/roster/PrintPage'), 'PrintPage')
+const WarbandListPage = lazyPage(() => import('../features/roster/WarbandListPage'), 'WarbandListPage')
+const WarbandPage = lazyPage(() => import('../features/roster/WarbandPage'), 'WarbandPage')
+const ScenarioFormPage = lazyPage(() => import('../features/scenarios/ScenarioFormPage'), 'ScenarioFormPage')
+const ScenarioLibraryPage = lazyPage(() => import('../features/scenarios/ScenarioLibraryPage'), 'ScenarioLibraryPage')
+const ScenarioPage = lazyPage(() => import('../features/scenarios/ScenarioPage'), 'ScenarioPage')
+const TradingPage = lazyPage(() => import('../features/trading/TradingPage'), 'TradingPage')
+const HelpPage = lazyPage(() => import('../features/help/HelpPage'), 'HelpPage')
+
 import { NotFoundPage } from './NotFoundPage'
 import { RequireAuth, RequireGuest } from './RequireAuth'
 
@@ -63,6 +77,7 @@ export const router = createBrowserRouter([
       { path: 'matches/:id/battle', element: <RequireAuth><BattlePage /></RequireAuth> },
       { path: 'matches/:id/report/:warbandId', element: <RequireAuth><PostBattlePage /></RequireAuth> },
       { path: 'campaigns/:id/records', element: <RequireAuth><BattleRecordsPage /></RequireAuth> },
+      { path: 'campaigns/:id/import', element: <RequireAuth><ImportPage /></RequireAuth> },
       { path: 'scenarios', element: <RequireAuth><ScenarioLibraryPage /></RequireAuth> },
       { path: 'scenarios/new', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
       { path: 'scenarios/custom/:id/edit', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
@@ -94,6 +109,7 @@ export const router = createBrowserRouter([
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       // No guest gate: the recovery link signs the user in before this screen renders.
       { path: 'reset-password', element: <ResetPasswordPage /> },
+      { path: 'help', element: <RequireAuth><HelpPage /></RequireAuth> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

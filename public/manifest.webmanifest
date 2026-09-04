@@ -1,0 +1,15 @@
+{
+  "name": "Stirheim",
+  "short_name": "Stirheim",
+  "description": "Mordheim campaign ledger: warbands, battles, post-battle sequence and campaign history.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#131110",
+  "theme_color": "#131110",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

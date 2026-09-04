@@ -1,19 +1,31 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
+import { useMyCampaigns } from '../../api/campaigns'
 import { useMyWarbands, type WarbandSummary } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { Notice, PageHeader, Spinner } from '../../ui'
+import { PrimaryLink } from '../onboarding/bits'
+import { GettingStartedChecklist, JoinCampaignNudge } from '../onboarding/GettingStarted'
+import { homeStage } from '../onboarding/checklist'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { useDraftStore } from './builder/draftStore'
 import { splitArchived } from './builder/helpers'
 import { warbandTypeName } from './shared/names'
 
 export function WarbandListPage() {
+  usePageTitle('Your warbands')
   const user = useSession((s) => s.user)
   const warbands = useMyWarbands(user?.id)
+  const campaigns = useMyCampaigns(user?.id)
   const draft = useDraftStore((s) => s.draft)
   const [showArchived, setShowArchived] = useState(false)
 
   const split = warbands.data ? splitArchived(warbands.data) : null
+  // Archived warbands do not count: someone whose only warband is put away is back at the start.
+  const stage = homeStage({
+    warbands: split ? split.active.length : null,
+    campaigns: campaigns.data ? campaigns.data.filter((c) => !c.archived).length : null,
+  })
 
   return (
     <>
@@ -47,15 +59,27 @@ export function WarbandListPage() {
             Try again
           </button>
         </Notice>
-      ) : split && split.active.length === 0 && split.archived.length === 0 ? (
-        <EmptyState />
+      ) : stage === 'new_user' && split ? (
+        <>
+          <GettingStartedChecklist />
+          {split.archived.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                aria-expanded={showArchived}
+                onClick={() => setShowArchived((v) => !v)}
+                className="inline-flex min-h-11 items-center self-start text-sm text-ink-dim hover:text-ink"
+              >
+                {showArchived ? 'Hide archived' : 'Show archived'} ({split.archived.length})
+              </button>
+              {showArchived ? <WarbandRows warbands={split.archived} /> : null}
+            </div>
+          ) : null}
+        </>
       ) : split ? (
         <>
-          {split.active.length > 0 ? (
-            <WarbandRows warbands={split.active} />
-          ) : (
-            <p className="text-sm text-ink-dim">Every warband is archived.</p>
-          )}
+          <WarbandRows warbands={split.active} />
+          {stage === 'no_campaign' ? <JoinCampaignNudge /> : null}
 
           {split.archived.length > 0 ? (
             <div className="flex flex-col gap-3">
@@ -75,32 +99,7 @@ export function WarbandListPage() {
         </>
       ) : null}
 
-      <p className="mt-auto pt-4 text-sm text-ink-dim">Campaigns, battles and the map arrive in Phase 5.</p>
     </>
-  )
-}
-
-/** A router link dressed as the primary button (a button inside an anchor is not valid HTML). */
-function PrimaryLink({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <Link
-      to={to}
-      className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-4 text-base font-medium text-ink no-underline transition-colors hover:bg-accent-strong"
-    >
-      {children}
-    </Link>
-  )
-}
-
-function EmptyState() {
-  return (
-    <section className="flex flex-col gap-4 rounded-md border border-dashed border-border px-5 py-8 text-center">
-      <p className="font-headline text-xl text-ink">No warbands yet</p>
-      <p className="text-sm leading-relaxed text-ink-dim">
-        Pick a warband type, spend your starting gold and the ledger keeps the roster from here on.
-      </p>
-      <PrimaryLink to="/warbands/new">Create your first warband</PrimaryLink>
-    </section>
   )
 }
 

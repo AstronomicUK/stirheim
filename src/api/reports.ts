@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Json } from './database.types'
-import { battleReportSchema, type BattleReport, type MatchState } from '../domain'
+import { battleReportSchema, type BattleReport, type MatchOrigin, type MatchState } from '../domain'
 import { findScenario } from '../rules/data/campaign/scenarios'
 import { campaignKeys } from './campaigns'
 import { matchKeys } from './matches'
@@ -52,6 +52,8 @@ export interface ReportView {
 export interface BattleRecord {
   match_id: string
   state: MatchState
+  /** 'import' marks history brought over from another tracker (Phase 9). */
+  created_via: MatchOrigin
   scenario_title: string
   scheduled_for: string | null
   started_at: string | null
@@ -99,7 +101,7 @@ export async function fetchMatchReports(matchId: string): Promise<ReportView[]> 
 export async function fetchBattleRecords(campaignId: string): Promise<BattleRecord[]> {
   const { data, error } = await supabase
     .from('matches')
-    .select('id, state, scenario_rules_id, scheduled_for, started_at, completed_at, scenarios(name), match_participants(warband_id, warbands(name, profiles!warbands_owner_profile_fkey(display_name)))')
+    .select('id, state, created_via, scenario_rules_id, scheduled_for, started_at, completed_at, scenarios(name), match_participants(warband_id, warbands(name, profiles!warbands_owner_profile_fkey(display_name)))')
     .eq('campaign_id', campaignId)
     .in('state', ['completed', 'cancelled', 'awaiting_reports'])
     .order('completed_at', { ascending: false, nullsFirst: true })
@@ -118,6 +120,7 @@ export async function fetchBattleRecords(campaignId: string): Promise<BattleReco
   return data.map((m) => ({
     match_id: m.id,
     state: m.state,
+    created_via: m.created_via,
     scenario_title: m.scenario_rules_id ? (findScenario(m.scenario_rules_id)?.title ?? m.scenario_rules_id) : (m.scenarios?.name ?? 'Decided at the table'),
     scheduled_for: m.scheduled_for,
     started_at: m.started_at,

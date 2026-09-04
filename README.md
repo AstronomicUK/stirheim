@@ -5,7 +5,7 @@ modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the ru
 combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-04): **Phase 8 (advancements, trading post, stash, recruitment, hired swords) complete.** Live at
+Status (2026-09-04): **Phase 9 (Relic & Ruin importer, onboarding, help, installable app, code splitting, Playwright e2e) complete.** Live at
 https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 
@@ -28,6 +28,37 @@ Rules and resolvers need only Node. The database work needs Docker Desktop (Appl
 build) and the Supabase CLI; copy `.env.example` to `.env.local` and paste the anon key from
 `npm run db:status`. Seed sign-ins: gm@stirheim.test / player@stirheim.test, password
 `stirheim-dev`.
+
+## Testing
+
+Three layers, from fastest to slowest:
+
+| Command | What runs | Needs |
+|---|---|---|
+| `npm test` | Vitest: rules, resolvers, domain mappers, screen helpers (`src/**/*.test.ts`) | Node only |
+| `npm run test:integration` | RLS and SQL-function tests in `src/api/__tests__/*.integration.test.ts` | local Supabase (`npm run db:start`) and `.env.local` |
+| `npm run e2e` | Playwright, the real app in Chromium on a Pixel 7 viewport (`e2e/*.spec.ts`) | local Supabase, `.env.local`, Chromium (`npx playwright install chromium`) |
+
+The e2e suite drives the wizards end to end: sign-in, the warband builder, the campaign join
+screen and dashboard, a whole match (schedule, battle sheet, both post-battle reports, battle
+records) and the between-battles screens (trading post, recruitment, advances). Dice are typed,
+never rolled, so every run records the same result.
+
+- **Fresh seed every run.** `e2e/global-setup.ts` runs `npm run db:reset` once before the first
+  spec, then waits until the auth service accepts the seed GM's password again. Set
+  `E2E_SKIP_RESET=1` to skip the reset when iterating on one spec against the current data.
+- **One worker, files in order.** All specs share the one seeded database, so they run serially
+  and the file names are numbered (`01-auth`, `02-builder`, ... `05-between-battles`); the match
+  spec is `serial` because its tests hand the match id along.
+- **Dev server.** `playwright.config.ts` reuses a running `npm run dev` on port 5174 or starts one.
+- **One spec / one test:** `npx playwright test e2e/04-match.spec.ts` or
+  `npx playwright test -g "trading post"`. `npm run e2e:ui` opens the Playwright UI; a failed test
+  leaves a trace under `test-results/` (`npx playwright show-trace <trace.zip>`).
+
+CI (`.github/workflows/ci.yml`) runs lint, unit tests and the build first, then a second job that
+starts a local Supabase stack with the CLI (`supabase start`, which applies the migrations and
+`seed.sql`), writes `.env.local` from `supabase status`, installs Chromium and runs the same e2e
+suite. The Playwright report is uploaded as an artifact when it fails.
 
 ## Folder layout
 

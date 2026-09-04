@@ -42,7 +42,8 @@ const nonNegativeInt = z.number().int().min(0);
 export const warriorStatusSchema = z.enum(["active", "dead", "retired", "captured", "left"]);
 export const itemHolderSchema = z.enum(["stash", "hero", "group"]);
 export const matchStateSchema = z.enum(["scheduled", "in_progress", "awaiting_reports", "completed", "cancelled"]);
-export const matchOriginSchema = z.enum(["gm", "challenge"]);
+/** 'import' (migration 9): a historical match written by the Battle Records importer. */
+export const matchOriginSchema = z.enum(["gm", "challenge", "import"]);
 export const advanceSubjectSchema = z.enum(["hero", "group"]);
 export const auditActionSchema = z.enum(["insert", "update", "delete"]);
 

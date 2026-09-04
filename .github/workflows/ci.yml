@@ -18,3 +18,50 @@ jobs:
       - run: npm run lint
       - run: npm test -- --run
       - run: npm run build
+
+  e2e:
+    name: e2e (Playwright, local Supabase)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+
+      # Only what the app talks to: Postgres, Kong, GoTrue, PostgREST, Realtime. Studio is already
+      # off in config.toml; the rest is skipped to save pull time. Migrations and seed.sql are
+      # applied by `supabase start`.
+      - name: Start Supabase
+        run: supabase start -x studio,imgproxy,mailpit,logflare,vector,edge-runtime,storage-api,postgres-meta,supavisor
+
+      - name: Write .env.local from the local stack
+        run: |
+          eval "$(supabase status -o env | grep -E '^(API_URL|ANON_KEY)=')"
+          printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\n' "$API_URL" "$ANON_KEY" > .env.local
+          echo "VITE_SUPABASE_URL=$API_URL"
+
+      - run: npx playwright install --with-deps chromium
+
+      # The DB was seeded by `supabase start` a moment ago; e2e/global-setup.ts would reset it again.
+      - name: Run the e2e suite
+        run: npx playwright test
+        env:
+          E2E_SKIP_RESET: '1'
+          # DOCKER_HOST is only needed on Tom's Mac; the npm db:* scripts set it and CI ignores it.
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

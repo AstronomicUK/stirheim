@@ -71,6 +71,8 @@ Invite code for the seed campaign: `test-2026`.
 
 5. Run `npm test`. The RLS integration tests (`src/api/__tests__/*.integration.test.ts`) only
    run when `SUPABASE_LOCAL=1` is set, because they need the local stack.
+6. Run `npm run e2e`. The Playwright suite resets the database to the seed first (see "Testing"
+   in the README), so a migration that breaks `seed.sql` shows up here as well as in step 3.
 
 ## Access model
 
@@ -103,6 +105,7 @@ never inserts roster rows directly.
 | `submit_battle_report(match_id, warband_id, report)`, `withdraw_battle_report` | 7 | File a post-battle report and apply its roster patches; GM removes one. |
 | `resolve_pending_advance(advance_id, resolution, changes)` | 8 | Apply an advance's roster changes (reason `advancement`) and close the `pending_advances` row; refuses one already resolved. |
 | `record_trade(warband_id, match_id, changes, wyrdstone_sold, heroes_searched)` | 8 | Apply a trading-post batch (reason `trading`); with a match, enforce and record the once-per-phase limits in `trade_phase_state`. `match_id` null = no limits. |
+| `import_battle_records(campaign_id, matches)` | 9 (enum), 10 | GM only. Writes historical battles from a JSON array as completed `matches` (`created_via 'import'`), accepted participants and one summary report per participant (reason `import`). Every participant must be an active member; rosters are never changed. Returns the number of matches created. |
 
 Every write to warbands, warriors, items, campaigns, memberships, matches and reports is
 recorded in `audit_log` with the acting user and the row before and after. The app can label a

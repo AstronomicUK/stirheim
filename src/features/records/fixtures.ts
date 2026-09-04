@@ -51,6 +51,7 @@ export function record(partial: Partial<BattleRecord> = {}): BattleRecord {
   return {
     match_id: `m${n}`,
     state: 'completed',
+    created_via: 'gm',
     scenario_title: 'Skirmish',
     scheduled_for: '2026-09-04T18:00:00.000Z',
     started_at: '2026-09-04T19:00:00.000Z',

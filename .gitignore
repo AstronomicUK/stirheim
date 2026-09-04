@@ -33,3 +33,7 @@ supabase/.branches
 scripts/scrape/node_modules
 scripts/scrape/scrape
 scripts/scrape/package*.json
+
+# Playwright
+playwright-report/
+test-results/

@@ -89,6 +89,36 @@ Recorded 2026-09-03 from Tom's answers.
   and divides the city (core rulebook, Sisters of Sigmar background). Domains
   stirheim.com/.app/.net showed no DNS records on 2026-09-03; register before launch.
 
+## Phase 3 decisions (2026-09-04)
+
+- **Schema lives in three SQL migrations** under `supabase/migrations/`, applied by the CLI in
+  filename order; `supabase/seed.sql` is local-only dev data (two accounts, two warbands, one
+  campaign with invite code `test-2026`). Details and conventions: `docs/SUPABASE.md`.
+- **Hired swords share the `heroes` table** (`is_hired_sword`, `hired_sword_rules_id`,
+  `equipment_locked`) rather than a table of their own; the domain mapper splits them back out
+  into `RosterWarband.hiredSwords`. Status `left` is a hired sword leaving; for a hero it maps
+  to `retired`.
+- **Custom scenarios only in the database.** The ~100 built-in scenarios ship with the client;
+  a match references either a rules id or a custom scenario row.
+- **Joining a campaign is a SQL function**, not an edge function: `join_campaign` runs as
+  definer, validates the code, ownership, archive state and `maxRosters`, and re-opens an old
+  membership if the same warband rejoins. There is deliberately no insert policy on
+  `campaign_members`.
+- **Match reports are immutable by policy** (no UPDATE policy). The GM can delete one so the
+  player resubmits; that deletion is audited.
+- **Audit is trigger-based** on warbands, warriors, items, campaigns, memberships, matches,
+  reports and pending advances, recording actor, before and after. The app labels
+  transactions via `set_config('stirheim.audit_reason', 'manual_edit', true)`.
+- **Campaign settings jsonb uses the TypeScript names** (`houseRules.halfPriceArmour`), not
+  snake_case, so the same object flows from the form to the resolvers. Defaults: 500 gc,
+  no roster cap, house rules off/on/on, players roll.
+- **Docker Desktop quirks on Tom's Mac** (socket path, Resource Saver stopping the VM during
+  the first image pull) are documented in `docs/SUPABASE.md`; the `db:*` npm scripts set
+  `DOCKER_HOST` so `supabase` finds the engine.
+- **Local email confirmations are off** (`supabase/config.toml`) so seed accounts sign in
+  immediately; the hosted project should keep them on. Password-reset mails land in the local
+  Mailpit at http://127.0.0.1:54324.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

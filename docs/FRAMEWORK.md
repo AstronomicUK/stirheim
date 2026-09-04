@@ -58,7 +58,7 @@ apps/web (Vite React app)
 supabase/
   migrations/     SQL schema, RLS policies, functions, triggers
   functions/      edge functions: submit_battle_report, apply_advancement, purchase_item,
-                  sell_wyrdstone, join_campaign, schedule_match, import_rr_csv
+                  sell_wyrdstone, schedule_match, import_rr_csv (join_campaign is a SQL function)
   seed/           dev seed (a test campaign with two warbands)
 docs/             this framework, planning, the R&R walkthrough, ADRs as decisions change
 reference/        rules Markdown and the simulator snapshot (read-only)
@@ -85,43 +85,55 @@ Principles:
 
 ## 4. Data model (Postgres)
 
-Ids are UUIDs. `rules_id` columns are stable string keys into the shipped rules data.
+Built in Phase 3 as `supabase/migrations/20260904000001_schema.sql` (tables), `...02_rls.sql`
+(policies and the join function) and `...03_audit.sql` (audit log). Ids are UUIDs. Columns
+ending `_rules_id` are stable string keys into the shipped rules data. jsonb columns use the
+same camelCase shapes as `src/rules/types/roster.ts`, so a row maps onto the resolver model
+with no translation (`src/domain/roster.ts`).
 
-- `profiles` (user_id, display_name, created_at)
+- `profiles` (user_id, display_name) — created by trigger on sign-up from the
+  `display_name` the sign-up form puts in user metadata
 - `warbands` (id, owner_id, name, type_rules_id, gold, wyrdstone, veteran_pool, notes,
-  created_at, updated_at, archived)
-- `heroes` (id, warband_id, name, unit_type_rules_id, stats jsonb {m,ws,bs,s,t,w,i,a,ld},
-  xp, level_ups, skill_tables text[], skills text[], spells text[], injuries jsonb[],
-  notes, is_hired_sword, hired_sword_rules_id, sort_order)
-- `henchman_groups` (id, warband_id, name, unit_type_rules_id, size, stats jsonb, xp,
-  level_ups, notes, sort_order)
+  archived) — owner cannot be changed (trigger)
+- `heroes` (id, warband_id, name, is_hired_sword, unit_type_rules_id | hired_sword_rules_id,
+  stats jsonb Stats, xp, level_ups, skill_tables text[], skills text[], spells text[],
+  injuries jsonb AppliedInjury[], flags jsonb WarriorFlags, equipment_locked, is_large,
+  status enum(active, dead, retired, captured, left), notes, sort_order)
+- `henchman_groups` (id, warband_id, name, unit_type_rules_id, size, stats, xp, level_ups,
+  stat_increases jsonb, is_large, notes, sort_order)
 - `items` (id, warband_id, holder_type enum(stash, hero, group), holder_id, item_rules_id,
-  quantity, custom_name, notes) — one row per stack; free-text treasure allowed via
-  `custom_name` with null `item_rules_id`
-- `campaigns` (id, gm_id, name, invite_code unique, settings jsonb {starting_gold,
-  max_rosters, house_rules: {armour_erosion:false, optional_crits:true,
-  half_price_armour:true}, dice_policy}, rules_markdown, created_at, archived)
-- `campaign_members` (campaign_id, warband_id, user_id, joined_at, left_at)
-- `scenarios` (id, owner_id nullable, rules_id nullable for built-ins, name, setting, summary,
-  rules_markdown, is_official)
-- `matches` (id, campaign_id, scenario_id, state enum(scheduled, in_progress,
-  awaiting_reports, completed, cancelled), created_by, created_via enum(gm, challenge),
-  scheduled_for, started_at, completed_at)
-- `match_participants` (match_id, warband_id, accepted_at) — acceptance used for challenges
-- `battle_sessions` (match_id, warband_id, live_state jsonb) — the in-progress sheet: XP log,
-  OOA, loot, notes; overwritten as the player taps
-- `match_reports` (id, match_id, warband_id, won bool, xp_log jsonb, ooa jsonb,
-  injuries jsonb, loot jsonb, exploration jsonb, veteran_pool_roll, notes, submitted_at) —
-  immutable once submitted
+  custom_name, quantity, notes) — one row per stack; holder checked by trigger; deleting a
+  warrior returns its items to the stash
+- `campaigns` (id, gm_id, name, invite_code unique (generated `xxxx-xxxx`), settings jsonb
+  CampaignSettings {startingGold, maxRosters, houseRules {strengthArmourPiercing,
+  optionalCriticalTables, halfPriceArmour}, dicePolicy}, rules_markdown, archived)
+- `campaign_members` (campaign_id, warband_id, user_id, joined_at, left_at) — user_id set by
+  trigger to the warband owner; a warband is active in at most one campaign
+- `scenarios` (id, owner_id, campaign_id nullable, name, setting, summary, rules_markdown) —
+  custom scenarios only; built-ins ship with the client and are referenced by rules id
+- `matches` (id, campaign_id, scenario_rules_id | custom_scenario_id, state enum(scheduled,
+  in_progress, awaiting_reports, completed, cancelled), created_by, created_via enum(gm,
+  challenge), scheduled_for, started_at, completed_at, notes)
+- `match_participants` (match_id, warband_id, invited_at, accepted_at) — acceptance used for
+  challenges
+- `battle_sessions` (match_id, warband_id, live_state jsonb) — the in-progress sheet
+- `match_reports` (id, match_id, warband_id, submitted_by, won, xp_log, ooa, injuries, loot,
+  exploration jsonb, veteran_pool_roll, notes, submitted_at) — no update policy, so immutable
+  once submitted; the GM may delete one so the player can resubmit
 - `pending_advances` (id, warband_id, subject_type enum(hero, group), subject_id,
   threshold_xp, created_at, resolved_at, resolution jsonb)
-- `trade_phase_state` (warband_id, match_id, wyrdstone_sold bool, heroes_searched uuid[])
-- `audit_log` (id, actor_id, warband_id, campaign_id, action, before jsonb, after jsonb, at)
+- `trade_phase_state` (warband_id, match_id, wyrdstone_sold, heroes_searched uuid[])
+- `audit_log` (id, at, actor_id, table_name, row_id, warband_id, campaign_id, action, reason,
+  before jsonb, after jsonb) — filled by triggers on every table above except sessions and
+  trade state; `reason` comes from `set_config('stirheim.audit_reason', ..., true)`
 
 Row Level Security in one sentence each: users read and write their own warbands; campaign
 members read every warband and match in their campaigns; the GM can additionally update
 warbands and settings in their campaigns; reports are insert-once by the owning member;
-scenarios are readable by all, writable by owner.
+scenarios are readable by all, writable by owner. Joining uses the SQL function
+`join_campaign(invite_code, warband_id)` (and `campaign_preview(invite_code)` for the
+confirmation screen) so nobody needs to read a campaign before belonging to it. Realtime is
+enabled on matches, participants, sessions and reports. See `docs/SUPABASE.md`.
 
 ## 5. Rules data to extract (from `reference/rules`)
 

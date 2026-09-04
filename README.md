@@ -5,7 +5,7 @@ modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the ru
 combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-03): **Phase 2 (rules resolvers) complete.** Live at
+Status (2026-09-04): **Phase 3 (database, security, auth screens) complete.** Live at
 https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 
@@ -17,10 +17,17 @@ npm run dev        # Vite dev server
 npm test           # Vitest, rules and resolver tests
 npm run lint       # oxlint
 npm run build      # tsc -b && vite build -> dist/
+
+npm run db:start   # local Supabase stack (Docker Desktop + Supabase CLI), see docs/SUPABASE.md
+npm run db:reset   # re-apply migrations and the dev seed
+npm run db:types   # regenerate src/api/database.types.ts from the local schema
+npm run test:integration   # RLS tests against the local stack (needs keys, see docs/SUPABASE.md)
 ```
 
-Phases 0 to 2 need only Node. From Phase 3 the local Supabase stack needs Docker Desktop
-(Apple silicon build) and the Supabase CLI.
+Rules and resolvers need only Node. The database work needs Docker Desktop (Apple silicon
+build) and the Supabase CLI; copy `.env.example` to `.env.local` and paste the anon key from
+`npm run db:status`. Seed sign-ins: gm@stirheim.test / player@stirheim.test, password
+`stirheim-dev`.
 
 ## Folder layout
 
@@ -33,17 +40,19 @@ src/
     resolve/      Phase 2: rating, thresholds, injuries, advances, exploration, income, trading
     types/        rules-level TypeScript types (from the simulator)
     domain/       opponent-scenario helpers (from the simulator)
-  domain/         persisted entity types + zod schemas (mirror the DB schema)
-  api/            Supabase client, typed queries and mutations
-  features/       one folder per screen group
+  domain/         zod schemas for every table row + row <-> RosterWarband mappers
+  api/            Supabase client, auth wrappers, generated database.types.ts, RLS tests
+  features/       one folder per screen group (account, home so far)
   ui/             shared components
-  app/            routes, layout, auth gate, theme
+  app/            router, app shell, session store, auth gate
 supabase/
-  migrations/     SQL schema, RLS, functions (Phase 3)
+  migrations/     SQL schema, RLS policies and functions, audit log
+  seed.sql        local dev data (never pushed)
   functions/      edge functions (Phase 7+)
 docs/
   FRAMEWORK.md                  stack, architecture, data model, phases
   PLANNING.md                   scoping questions and decisions
+  SUPABASE.md                   local stack, schema changes, access model, hosting steps
   relic-and-ruin-walkthrough.md hands-on notes on the reference product
 reference/
   rules/                        verbatim mordheimer.net rules as Markdown (start at 00-index.md)

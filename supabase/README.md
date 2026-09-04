@@ -1,17 +1,13 @@
 # Supabase
 
-Phase 3 onward. Schema, row-level security and SQL functions live in `migrations/` as plain
-SQL so they can be written and reviewed before any database runs. Edge functions live in
-`functions/`.
+Schema, row-level security, SQL functions and the audit log live in `migrations/` as plain SQL.
+`seed.sql` is local-only development data. Edge functions (Phase 7+) go in `functions/`.
 
-Local development uses the Supabase CLI with Docker Desktop (Apple silicon build):
+Everything about running the local stack, making schema changes, the access model and moving
+to a hosted project is in `../docs/SUPABASE.md`. Short version:
 
 ```bash
-brew install supabase/tap/supabase
-supabase init      # once, creates config.toml
-supabase start     # local Postgres, Auth, Realtime, Studio at http://localhost:54323
-supabase db reset  # apply migrations from scratch
+npm run db:start    # Docker Desktop must be running
+npm run db:reset    # apply migrations from scratch, then seed.sql
+npm run db:types    # regenerate src/api/database.types.ts
 ```
-
-When the group starts testing, create a free hosted project, then `supabase link` and
-`supabase db push` the same migrations. See `docs/FRAMEWORK.md` sections 2 and 4.

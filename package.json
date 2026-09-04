@@ -8,7 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "db:start": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase start",
+    "db:stop": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase stop",
+    "db:reset": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase db reset",
+    "db:status": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase status",
+    "db:types": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase gen types typescript --local --schema public > src/api/database.types.ts",
+    "test:integration": "SUPABASE_LOCAL=1 vitest run src/api/__tests__"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",

@@ -528,6 +528,21 @@ Deferred from the proposal: a per-user light/dark toggle (Direction B as a theme
 sharing UI, recruits joining an existing group do not get a dagger (they must match the group's
 kit anyway).
 
+## Phase 14 candidates (raised 2026-09-05, not yet scoped)
+
+- **Warband special rules audit**: `docs/WARBAND-RULES-GAPS.md` (written by another agent on
+  2026-09-05) lists every warband rule stored only as text that the app does not enforce or apply
+  (cross-cutting mechanisms first, then per warband, then data errors found on the way). Tom wants
+  the next phase to work through it.
+- **Rout check prompt in the battle sheet**: when a warband's own out-of-action total reaches 25%
+  of its starting models, show a "Rout check" header on the sheet with a button to roll it in the
+  app (Leadership test on the leader / nearest hero per the rules) or mark it as taken at the table.
+  A failed check prompts "End the battle?". There is no turn tracking by design, so the app can
+  only remind, never force, the per-turn check; the header stays until the battle ends or the
+  warband routs.
+- **Sign-in screens with the logo**: `public/brand/stirheim-logo.png` (transparent, from Canva) and
+  the tight crop `stirheim-logo-tight.png`; layout to be chosen from the mockup alternatives.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

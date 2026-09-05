@@ -14,7 +14,7 @@ const SECTIONS = [
   { id: 'between-battles', title: 'Between battles' },
   { id: 'records', title: 'Battle records and CSV export' },
   { id: 'moving-over', title: 'Moving from another tracker' },
-  { id: 'house-rules', title: "House rules of Tom's group" },
+  { id: 'house-rules', title: "Default house rules" },
 ] as const
 
 export function HelpPage() {
@@ -206,7 +206,7 @@ export function HelpPage() {
         <P>Check the roster against the old sheet once, especially skills and experience, before the first new battle. After that the ledger keeps score.</P>
       </Topic>
 
-      <Topic id="house-rules" title="House rules of Tom's group">
+      <Topic id="house-rules" title="Default house rules">
         <P>These are the defaults every new campaign starts with; a GM can change them in Settings.</P>
         <ul className="flex flex-col gap-1.5 pl-5 text-sm leading-relaxed text-ink marker:text-ink-dim">
           <li className="list-disc">Strength does not erode armour saves: a high-Strength hit never reduces the save.</li>

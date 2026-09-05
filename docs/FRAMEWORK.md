@@ -196,9 +196,10 @@ values against the Markdown, in the same style the simulator used for its 72 tem
 
 ## 7. Post-v1 roadmap
 
-1. **Attack calculator in battle**: pick attacker and defender from the two sheets; show
-   to-hit, to-wound, armour save and injury odds from the engine; optional dice roll at each
-   step with the result logged to the XP tally. All inputs already exist in the data model.
+1. **Attack calculator in battle** (built in Phase 10, 2026-09-05, as the "Attack" tab of the
+   battle sheet): pick attacker and defender from the two sheets; show to-hit, to-wound, armour
+   save and injury odds from the engine; optional dice roll at each step with an out of action
+   result logged to the attacker's Enemies out tally. See PLANNING.md "Phase 10 decisions".
 2. Full scenario library, magic and prayer tracking, full tabletop state tracking, public
    sign-up hardening (rate limits, abuse reporting), campaign map support if the group wants it.
 

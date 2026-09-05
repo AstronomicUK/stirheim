@@ -276,6 +276,48 @@ Recorded 2026-09-03 from Tom's answers.
   sticky submit stayed tappable on phones.
 
 
+## Phase 10 decisions (2026-09-05)
+
+- **The attack calculator lives on the battle sheet**, as a fourth tab ("Attack") next to My
+  warband, Enemy and Notes, not on its own route: it needs the same rosters, the same live sheet
+  and the same house rules the sheet already has, and a player should reach it in one tap mid-turn.
+  Spectators (GM not fielding a warband) do not get it; they have nothing to attack with.
+- **The simulator engine is used unchanged** (`src/rules/engine`). Phase 10 only adds the adapter
+  from a roster warrior to the engine's `Character` / `DefenderProfile`
+  (`src/features/match/fight/combatants.ts`, `odds.ts`): items resolve through `Item.weaponId`,
+  armour through a fixed id list falling back to `Item.armourSave` (6 light, 5 heavy, 4 gromril),
+  shields/bucklers/helmets by id, Enchanted Skins as a 6+ ward save. "Gromril weapon" / "Ithilmar
+  weapon" items take their base weapon from the item note (default sword, said so on screen). Traits
+  come from the template's `raceTraits`, the unit's `traitIds`, injury flags (Frenzy, Bitter Enmity ->
+  Hatred, Large) and special-rule *headings* that name a modelled trait (Frenzy, Hatred, Large, No
+  Pain, Hard to Kill, Hard Head, Immune to Poison, Undead Construct). Hired swords do not inherit
+  race traits. Custom items and unmodelled weapons are listed under the odds as "Not modelled";
+  miscellaneous gear is left out silently.
+- **One model at a time.** A henchman group is offered as "one of N": the same stats and per-model
+  kit for every member, so the group is a single entry. Groups already fully out of action, and
+  heroes out of action, stay in the list but are marked.
+- **Hands are chosen by the player, with sensible defaults**: primary = biggest Strength bonus,
+  then anything but a dagger; off-hand = the first one-handed weapon that may be used in the other
+  hand (two-handers, pairs, spears and morning stars excluded). Every carried melee weapon and every
+  missile weapon is a primary option; the shooting phase and the hand-to-hand phase are never mixed.
+- **Situation toggles are filtered** to what can change the numbers for this attacker and weapon:
+  melee shows Charging always, First turn only for Heavy weapons, Fighting 2+ / Inside buildings /
+  Hated enemy only when the attacker has the skill or trait; shooting shows Moved, Long range, Cover,
+  Large target. The campaign's house rules set the erosion flag and the optional crit tables.
+- **"Roll it through" is a pure state machine** (`rollThrough.ts`) fed by the engine's
+  `AttackInput`, so the thresholds it asks for are exactly the ones the odds were computed from. It
+  applies the order of play (hit, reroll, parry with reroll / Master of Blades, dodge, wound, one
+  critical per phase from the campaign's table, armour save incl. Bladestorm's per-wound saves,
+  Step Aside, Ward, injury with modifiers and remaps, helmet / No Pain / Undead Construct), tracks
+  the target's Wounds across attacks, and stops early on an out of action. The defender's optional
+  parry has a "No parry" button. Dice are typed or rolled with the existing DieField.
+- **Logging goes one way.** An out of action result offers "Log +1 enemy out for <attacker>", which
+  is the sheet's `addEnemyOut`; nothing is written to the opponent's sheet (RLS: each player owns
+  their own row), so the screen says the other player marks their casualty. Henchman attackers get
+  no log button (no experience for kills).
+- **No schema change.** Phase 10 is front-end only; no migration, no new tables, nothing in the
+  audit log.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

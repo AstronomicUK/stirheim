@@ -5,7 +5,7 @@ modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the ru
 combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-04): **Phase 9 (Relic & Ruin importer, onboarding, help, installable app, code splitting, Playwright e2e) complete.** Live at
+Status (2026-09-05): **Phase 10 (in-battle attack calculator) complete; version 1 plus its first upgrade is done.** Live at
 https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 
@@ -40,8 +40,8 @@ Three layers, from fastest to slowest:
 | `npm run e2e` | Playwright, the real app in Chromium on a Pixel 7 viewport (`e2e/*.spec.ts`) | local Supabase, `.env.local`, Chromium (`npx playwright install chromium`) |
 
 The e2e suite drives the wizards end to end: sign-in, the warband builder, the campaign join
-screen and dashboard, a whole match (schedule, battle sheet, both post-battle reports, battle
-records) and the between-battles screens (trading post, recruitment, advances). Dice are typed,
+screen and dashboard, a whole match (schedule, battle sheet with a kill rolled through the attack
+calculator, both post-battle reports, battle records) and the between-battles screens (trading post, recruitment, advances). Dice are typed,
 never rolled, so every run records the same result.
 
 - **Fresh seed every run.** `e2e/global-setup.ts` runs `npm run db:reset` once before the first

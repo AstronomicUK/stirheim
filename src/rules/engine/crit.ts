@@ -109,3 +109,8 @@ export function critDistribution(table: CritTableKey, rollModifier: number): Arr
   }
   return entries;
 }
+
+/** The result a specific D6 roll (plus modifier) lands on when picking from `table` — for walking a real roll through the chart. */
+export function critResultForRoll(table: CritTableKey, roll: number, rollModifier: number): CritResult {
+  return pickBand(CRIT_TABLES[table], roll + rollModifier);
+}

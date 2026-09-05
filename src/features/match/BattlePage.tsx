@@ -5,6 +5,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
+import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleSessions, useEndMatch, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
@@ -12,6 +13,7 @@ import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { RosterWarband } from '../../rules/types/roster'
 import { Button, Notice, SegmentedControl, Sheet, Spinner } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
+import { FightTab } from './fight/FightTab'
 import { MyWarbandTab } from './battle/MyWarbandTab'
 import { NotesTab } from './battle/NotesTab'
 import { SaveBar } from './battle/SaveBar'
@@ -19,11 +21,12 @@ import { routStatus, setRouted, setTurn, sheetTotals } from './battle/sheet'
 import { TopStrip } from './battle/TopStrip'
 import { useBattleSheet } from './battle/useBattleSheet'
 
-type Tab = 'mine' | 'enemy' | 'notes'
+type Tab = 'mine' | 'enemy' | 'fight' | 'notes'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'mine', label: 'My warband' },
   { value: 'enemy', label: 'Enemy' },
+  { value: 'fight', label: 'Attack' },
   { value: 'notes', label: 'Notes' },
 ]
 
@@ -196,6 +199,7 @@ function Battle({ match, sessions, userId }: { match: MatchSummary; sessions: Ba
       setTab={setTab}
       onBattleOver={canEnd ? () => setEndOpen(true) : undefined}
       others={others}
+      houseRules={campaign.data?.settings.houseRules ?? defaultCampaignHouseRules()}
     >
       {endSheet}
     </PlayerBattle>
@@ -214,10 +218,11 @@ interface PlayerBattleProps {
   setTab: (tab: Tab) => void
   onBattleOver: (() => void) | undefined
   others: MatchSummary['participants']
+  houseRules: CampaignHouseRules
   children: ReactNode
 }
 
-function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, children }: PlayerBattleProps) {
+function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, children }: PlayerBattleProps) {
   const template = useMemo(() => findWarbandTemplate(roster.warbandTemplateId), [roster.warbandTemplateId])
   const totals = useMemo(() => sheetTotals(handle.sheet, roster), [handle.sheet, roster])
   const rout = routStatus(handle.sheet, totals.startingModels)
@@ -242,6 +247,9 @@ function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle
       {tab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} /> : null}
       {tab === 'enemy' ? (
         <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
+      ) : null}
+      {tab === 'fight' ? (
+        <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} />
       ) : null}
       {tab === 'notes' ? <NotesTab sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} /> : null}
 

@@ -1,4 +1,5 @@
-// The full match flow: the GM books a battle, starts it, keeps a battle sheet, ends it and files
+// The full match flow: the GM books a battle, starts it, keeps a battle sheet (kill logged from the
+// attack calculator), ends it and files
 // the post-battle report; Ana files hers; the match completes and lands in the battle records.
 // Dice are typed, never rolled, so the outcome is the same every run.
 
@@ -15,6 +16,11 @@ const CAPTAIN = 'Captain Ulrich Brandt'
 /** The sticky wizard bar: waits for the step to be complete and moves on. */
 async function next(page: Page) {
   await page.getByRole('button', { name: 'Next' }).click()
+}
+
+/** Calculator dice: the field is replaced by the next step as soon as a valid roll lands, so only fill it. */
+async function rollDie(page: Page, label: string, value: number) {
+  await page.getByLabel(label, { exact: true }).fill(String(value))
 }
 
 async function expectStep(page: Page, n: number, title: string) {
@@ -56,9 +62,24 @@ test.describe('match', () => {
     await page.getByRole('link', { name: 'Open battle sheet' }).click()
     await expect(page).toHaveURL(new RegExp(`/matches/${matchId}/battle$`))
 
-    // The sheet opens on "My warband": tally one kill for the captain and one Watchman down.
     await expect(page.getByRole('heading', { name: CAPTAIN })).toBeVisible()
-    await page.getByRole('button', { name: `More enemies out by ${CAPTAIN}` }).click()
+
+    // Attack calculator: the captain's sword and dagger against the Skaven assassin, dice typed.
+    await page.getByRole('radio', { name: 'Attack' }).click()
+    await expect(page.getByText('2 attacks this phase')).toBeVisible()
+    await expect(page.getByText('At least one hit').locator('xpath=following-sibling::span')).toHaveText('75%')
+    await page.getByRole('button', { name: 'Start rolling' }).click()
+    await rollDie(page, 'Sword: to hit', 4)
+    await page.getByRole('button', { name: 'No parry' }).click()
+    await rollDie(page, 'To wound', 4)
+    await rollDie(page, 'Injury roll', 5)
+    await expect(page.getByRole('status').filter({ hasText: 'Result: Out of action' })).toBeVisible()
+    await page.getByRole('button', { name: `Log +1 enemy out for ${CAPTAIN}` }).click()
+    await expect(page.getByRole('button', { name: `Logged: +1 enemy out for ${CAPTAIN}` })).toBeDisabled()
+
+    // Back on "My warband" the kill sits on the captain's counter; one Watchman goes down by hand.
+    await page.getByRole('radio', { name: 'My warband' }).click()
+    await expect(page.getByRole('group', { name: `enemies out by ${CAPTAIN}` })).toContainText('1')
     await page.getByRole('button', { name: 'More Watchmen out of action' }).click()
     await expect(page.getByRole('group', { name: 'Watchmen out of action' })).toContainText('1')
     await expect(page.getByText('1 out of action')).toBeVisible()

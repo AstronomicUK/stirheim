@@ -91,6 +91,14 @@ export function HelpPage() {
           sync to every phone at the table.
         </P>
         <P>
+          <B>Attack calculator.</B> The <em>Attack</em> tab of the battle sheet picks one of your warriors and one enemy model and shows the exact odds for
+          this phase: the roll needed to hit, to wound and their armour save for each weapon, what a wound does on the injury chart, and the chance of a knock
+          down, a stun or an out of action across every attack, with parries, criticals and the campaign&apos;s house rules already counted. Choose the weapon in
+          each hand and tick the situation (charging, moved and shot, cover, long range). <em>Roll it through</em> then walks real dice step by step, telling
+          you what each roll needs and what it did, and an out of action result can be logged straight to that warrior&apos;s <em>Enemies out</em> tally.
+          Kit the engine cannot model (custom items, most miscellaneous gear) is listed under the odds so you can apply it at the table.
+        </P>
+        <P>
           <B>Battle over.</B> When the game ends, tap <em>Battle over</em>. The match moves to awaiting reports and each player files their own post-battle
           report. Forgot to tap it? Filing a report closes the battle too.
         </P>

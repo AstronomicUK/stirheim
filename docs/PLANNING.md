@@ -528,20 +528,44 @@ Deferred from the proposal: a per-user light/dark toggle (Direction B as a theme
 sharing UI, recruits joining an existing group do not get a dagger (they must match the group's
 kit anyway).
 
-## Phase 14 candidates (raised 2026-09-05, not yet scoped)
+## Phase 14 scope (proposed 2026-09-05, awaiting Tom's approval)
 
-- **Warband special rules audit**: `docs/WARBAND-RULES-GAPS.md` (written by another agent on
-  2026-09-05) lists every warband rule stored only as text that the app does not enforce or apply
-  (cross-cutting mechanisms first, then per warband, then data errors found on the way). Tom wants
-  the next phase to work through it.
-- **Rout check prompt in the battle sheet**: when a warband's own out-of-action total reaches 25%
-  of its starting models, show a "Rout check" header on the sheet with a button to roll it in the
-  app (Leadership test on the leader / nearest hero per the rules) or mark it as taken at the table.
-  A failed check prompts "End the battle?". There is no turn tracking by design, so the app can
-  only remind, never force, the per-turn check; the header stays until the battle ends or the
-  warband routs.
-- **Sign-in screens with the logo**: `public/brand/stirheim-logo.png` (transparent, from Canva) and
-  the tight crop `stirheim-logo-tight.png`; layout to be chosen from the mockup alternatives.
+Agreed so far: sign-in / sign-up / password screens in the "Banner" layout with the transparent logo
+(`public/brand/stirheim-logo-tight.png`); promises copy "Build a legal warband from any published list
+and keep it up to date between games", "Run the battle with optional full calculations and tracking of
+wounds, kills and OOA models", "File the report and let the wizard take you through a seamless
+post-battle sequence"; rail wordmark vs logo still to be chosen; the rout check prompt; and the warband
+rules gaps from `docs/WARBAND-RULES-GAPS.md`.
+
+The audit is far larger than one phase, so the proposal is to build the *mechanisms* that cover the
+most warbands first (each as data flags on units/warbands read by the resolvers), and park the
+bespoke one-warband flows:
+
+Tier 1 (proposed for Phase 14):
+- A4 units that never gain experience (`gainsExperience: false` on ~50 unit templates; the wizard
+  skips them, the veteran rule ignores them) and A5 half-rate advances (ogres).
+- A6 promotion restrictions (never promoted / table restrictions / special results) as unit flags,
+  and A16 skills a unit starts with.
+- A1 exploration modifiers (+shards, +dice, roll-two-keep-one, reroll one, +gc per kill) and A2 income
+  modifiers (size band shifts, count-as-two, count-as-one) as warband/unit hooks that *suggest* the
+  figure (Tom's "suggested not forced" rule) with the reason shown.
+- A3 rating modifiers and the section C data fixes (Reikland Marksmen +1 BS, Marienburg 600 gc,
+  large ogres rated 20, racial maxima rows for Druchii / Necrarch / Wolfman / Snotlings / Gnoblars /
+  Wights, race traits not applied to Informers and Hobgoblins, Merchant Trade Wagon, shared hero
+  slots).
+- A7 racial maxima per unit where the audit found the wrong row.
+- A9 hired sword restrictions declared on the warband (with the agreed "ask your GM to override"
+  request instead of a hard block) and A10 equipment bans per unit/warband in the trading post and
+  builder (shown as blocked lines with the override-with-reason pattern).
+- A11 prose roster limits as structured relations ("no more than" / "only with" / "instead of").
+- A13 henchman upkeep and A14 injury-roll exceptions per unit (no roll, dies on 1-3, 1-4, only on 1,
+  banished, reroll once).
+- Rout check prompt on the battle sheet (25% of starting models out of action → header + roll in app
+  or mark taken → failed check offers "End the battle"; no turn tracking by design).
+
+Tier 2 (parked, listed so nothing is lost): A12 leader succession flows, A15 capture flows, A17
+recruit-time purchases and mutations, A18 between-battle special actions and rare-roll modifiers
+beyond a per-warband rarity bonus, per-warband bespoke tables (Wheelo, Eye of the Gods, Nurgle's Rot).
 
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 

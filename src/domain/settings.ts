@@ -19,6 +19,7 @@ export const campaignHouseRulesSchema = z.object({
   strengthArmourPiercing: z.boolean().default(false),
   optionalCriticalTables: z.boolean().default(true),
   halfPriceArmour: z.boolean().default(true),
+  rabbitsFootBattleOnly: z.boolean().default(true),
 }) satisfies z.ZodType<CampaignHouseRules, unknown>;
 
 export const campaignSettingsSchema = z.object({

@@ -73,7 +73,8 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.reportApproval === b.reportApproval &&
     a.houseRules.strengthArmourPiercing === b.houseRules.strengthArmourPiercing &&
     a.houseRules.optionalCriticalTables === b.houseRules.optionalCriticalTables &&
-    a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour
+    a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour &&
+    a.houseRules.rabbitsFootBattleOnly === b.houseRules.rabbitsFootBattleOnly
   )
 }
 
@@ -107,6 +108,11 @@ export const HOUSE_RULE_SWITCHES: HouseRuleSwitch[] = [
     key: 'halfPriceArmour',
     label: 'Half-price armour',
     description: 'Armour costs half its listed price, rounded down. Shields, bucklers and helmets stay at full price.',
+  },
+  {
+    key: 'rabbitsFootBattleOnly',
+    label: "Rabbit's Foot: battle only",
+    description: 'The re-roll may only be used during the battle. Off means the rulebook rule: an unused foot re-rolls one exploration die.',
   },
 ]
 

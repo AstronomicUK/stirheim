@@ -11,6 +11,7 @@ describe("campaign settings", () => {
         strengthArmourPiercing: false,
         optionalCriticalTables: true,
         halfPriceArmour: true,
+      rabbitsFootBattleOnly: true,
       },
       dicePolicy: "players_roll",
       combatMode: "app",
@@ -28,6 +29,7 @@ describe("campaign settings", () => {
         strengthArmourPiercing: false,
         optionalCriticalTables: true,
         halfPriceArmour: true,
+      rabbitsFootBattleOnly: true,
       },
       dicePolicy: "players_roll",
       combatMode: "app",
@@ -41,7 +43,7 @@ describe("campaign settings", () => {
     expect(
       campaignSettingsSchema.parse({
         maxRosters: 6,
-        houseRules: { halfPriceArmour: false },
+        houseRules: { halfPriceArmour: false, rabbitsFootBattleOnly: true },
       }),
     ).toEqual({
       startingGold: 500,
@@ -50,6 +52,7 @@ describe("campaign settings", () => {
         strengthArmourPiercing: false,
         optionalCriticalTables: true,
         halfPriceArmour: false,
+      rabbitsFootBattleOnly: true,
       },
       dicePolicy: "players_roll",
       combatMode: "app",
@@ -63,6 +66,7 @@ describe("campaign settings", () => {
       strengthArmourPiercing: false,
       optionalCriticalTables: true,
       halfPriceArmour: true,
+    rabbitsFootBattleOnly: true,
     });
   });
 

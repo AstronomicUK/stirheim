@@ -82,9 +82,10 @@ export function diceTotal(spec: DiceSpec, faces: readonly (number | null)[]): nu
  * Heroes who may still roll for a rare item this phase: active heroes (hired swords never search)
  * who are not in `heroesSearched`, in roster order.
  */
-export function eligibleSearchers(roster: RosterWarband, heroesSearched: readonly string[]): RosterHero[] {
+export function eligibleSearchers(roster: RosterWarband, heroesSearched: readonly string[], heroesOutOfAction: readonly string[] = []): RosterHero[] {
   const used = new Set(heroesSearched)
-  return roster.heroes.filter((h) => h.status === 'active' && !used.has(h.id) && !unitRules(h.unitTemplateId).noRareSearch)
+  const down = new Set(heroesOutOfAction)
+  return roster.heroes.filter((h) => h.status === 'active' && !used.has(h.id) && !down.has(h.id) && !unitRules(h.unitTemplateId).noRareSearch)
 }
 
 // ---- Wyrdstone ----

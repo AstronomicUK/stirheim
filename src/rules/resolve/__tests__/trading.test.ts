@@ -27,7 +27,7 @@ function item(id: string): Item {
 }
 
 const halfOn = defaultCampaignHouseRules();
-const halfOff = { ...defaultCampaignHouseRules(), halfPriceArmour: false };
+const halfOff = { ...defaultCampaignHouseRules(), halfPriceArmour: false, rabbitsFootBattleOnly: true };
 
 function code(fn: () => unknown): string | undefined {
   try {

@@ -9,6 +9,7 @@
 
 import type { NamedRule, SourceRef } from "../../types/common";
 import type { HiredSwordSummary } from "../../types/campaignContent";
+import { DRAMATIS_PERSONAE } from "./dramatisPersonae";
 
 export const HIRED_SWORDS_SOURCE: SourceRef = {
   publication: "mordheimer.net — Campaigns: Hired Swords (https://mordheimer.net/docs/campaigns/hired-swords)",
@@ -3561,6 +3562,14 @@ export const HIRED_SWORDS: HiredSwordSummary[] = [
 /** The "clarification of grades" block, verbatim (source lines 1207-1215). */
 export const HIRED_SWORD_GRADE_NOTES: string = "- **Core:** Published in the original Mordheim Rulebook.\n- **Grade 1a:** GW/Fanatic Rules deemed \"official\" in the 2005 Rules Review.\n- **Grade 1b:** Unofficial, but released through GW/Fanatic. Professional quality.\n- **Grade 1c:** Experimental, not released through GW/Fanatic. Approved by people who previously submitted grade 1a/1b material and vouch for it's quality.\n- **Grade 2a:** Reliable, created and tested by fans and gaming groups. Will likely blend well with grade 1 warbands.\n\nFurther grades can be found at broheim.net. Individual Hired Sword rule write-ups live on nested per-grade sub-pages (e.g. Grade 1A Hired Swords) not captured in this pass — only the index table above was in scope.";
 
+/**
+ * A hired sword or a Dramatis Persona by id: both are administered as hired swords on the roster.
+ * A persona whose fee is not a plain sum of gold reads as hireCost { base: null }.
+ */
 export function findHiredSword(id: string): HiredSwordSummary | undefined {
-  return HIRED_SWORDS.find((h) => h.id === id);
+  const sword = HIRED_SWORDS.find((h) => h.id === id);
+  if (sword) return sword;
+  const persona = DRAMATIS_PERSONAE.find((d) => d.id === id);
+  if (!persona) return undefined;
+  return { ...persona, hireCost: persona.hireCost ?? { base: null, text: persona.detail?.hireFee ?? "n/a" } };
 }

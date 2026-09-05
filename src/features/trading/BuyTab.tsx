@@ -15,7 +15,7 @@ export function BuyTab({ trade }: { trade: TradeContext }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Item | null>(null)
   const groups = useMemo(() => groupCatalogue(SHOP_ITEMS, query), [query])
-  const searchesLeft = eligibleSearchers(trade.roster, trade.phase.heroesSearched).length
+  const searchesLeft = eligibleSearchers(trade.roster, trade.phase.heroesSearched, trade.phase.heroesOutOfAction).length
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,7 +75,8 @@ interface BuySheetProps {
 function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const { roster, houseRules, phase, canTrade, pending, run, error, clearError } = trade
   const tracked = phase.matchId !== null
-  const searchers = useMemo(() => eligibleSearchers(roster, phase.heroesSearched), [roster, phase.heroesSearched])
+  const searchers = useMemo(() => eligibleSearchers(roster, phase.heroesSearched, phase.heroesOutOfAction), [roster, phase.heroesSearched, phase.heroesOutOfAction])
+  const downCount = phase.heroesOutOfAction.filter((id) => roster.heroes.some((h) => h.id === id && h.status === 'active')).length
   const destinations = useMemo(() => locationOptions(roster), [roster])
   const priceSpec = useMemo(() => (item.price.dice ? parseDice(item.price.dice) : null), [item.price.dice])
   const rareSpec = useMemo(() => parseDice(RARE_ROLL), [])
@@ -166,11 +167,11 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
             <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband)` : ''}</h3>
             {needsSearcher ? (
               searchers.length === 0 ? (
-                <Notice tone="warn">Every hero has already searched this sequence. No more rare-item rolls until the next battle.</Notice>
+                <Notice tone="warn">Every hero able to search has done so this sequence{downCount > 0 ? ` (${downCount} taken out of action may not)` : ''}. No more rare-item rolls until the next battle.</Notice>
               ) : (
                 <SelectField
                   label="Hero searching"
-                  hint={`${searchers.length} ${searchers.length === 1 ? 'search' : 'searches'} left. One roll per hero per sequence.`}
+                  hint={`${searchers.length} ${searchers.length === 1 ? 'search' : 'searches'} left. One roll per hero per sequence.${downCount > 0 ? ` ${downCount} ${downCount === 1 ? 'hero' : 'heroes'} taken out of action cannot search.` : ''}`}
                   value={searcherId}
                   disabled={searchRecorded}
                   onChange={(e) => setSearcherId(e.target.value)}

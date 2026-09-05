@@ -176,7 +176,7 @@ function PrintSheet({ detail }: { detail: WarbandDetail }) {
                     ))}
                     <td className={statCell}>{g.xp}</td>
                     <td className={cell}>{equipmentSummary(byHolder.get(g.id) ?? [])}</td>
-                    <td className={cell}>{[g.model_names.filter((n) => n.trim()).join(', '), g.notes].filter(Boolean).join(' · ') || '—'}</td>
+                    <td className={cell}>{[(g.model_names ?? []).filter((n) => n.trim()).join(', '), g.notes].filter(Boolean).join(' · ') || '—'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -28,7 +28,7 @@ function item(id: string): Item {
 }
 
 const halfOn = defaultCampaignHouseRules()
-const halfOff = { ...defaultCampaignHouseRules(), halfPriceArmour: false }
+const halfOff = { ...defaultCampaignHouseRules(), halfPriceArmour: false, rabbitsFootBattleOnly: true }
 
 describe('priceLine', () => {
   it('shows a plain price for common items', () => {

@@ -20,6 +20,8 @@ export interface PhaseInfo {
   matchId: string | null
   wyrdstoneSold: boolean
   heroesSearched: string[]
+  /** Heroes the filed report lists as out of action: they may not search (rulebook 03:1087). */
+  heroesOutOfAction: string[]
 }
 
 export interface TradeContext {
@@ -38,8 +40,8 @@ export interface TradeContext {
   clearError: () => void
 }
 
-export function phaseInfo(matchId: string | null, state: TradePhaseStateRow | null | undefined): PhaseInfo {
-  return { matchId, wyrdstoneSold: state?.wyrdstone_sold ?? false, heroesSearched: state?.heroes_searched ?? [] }
+export function phaseInfo(matchId: string | null, state: TradePhaseStateRow | null | undefined, heroesOutOfAction: string[] = []): PhaseInfo {
+  return { matchId, wyrdstoneSold: state?.wyrdstone_sold ?? false, heroesSearched: state?.heroes_searched ?? [], heroesOutOfAction }
 }
 
 export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, phase: PhaseInfo, canTrade: boolean): TradeContext {

@@ -15,7 +15,7 @@
 import type { WarbandTemplate } from "../types";
 import type { RosterWarband } from "../types/roster";
 import { warbandRules } from "../data/campaignRules";
-import { HIRED_SWORDS } from "../data/campaign/hiredSwords";
+import { findHiredSword } from "../data/campaign/hiredSwords";
 import { RATING_POINTS_PER_LARGE_CREATURE, RATING_POINTS_PER_WARRIOR } from "../data/campaign/trading";
 
 export interface RatingLine {
@@ -94,7 +94,7 @@ export function warbandRating(warband: RosterWarband, template?: WarbandTemplate
 
   for (const hs of warband.hiredSwords) {
     if (hs.status !== "active") continue;
-    const entry = HIRED_SWORDS.find((h) => h.id === hs.hiredSwordId);
+    const entry = findHiredSword(hs.hiredSwordId);
     const rating = parseHiredSwordRating(entry?.detail?.rating);
     if (!rating.parsed) {
       notes.push(

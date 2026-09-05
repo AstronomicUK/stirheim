@@ -29,5 +29,8 @@ export function describeHouseRules(rules: CampaignHouseRules): string[] {
     rules.halfPriceArmour
       ? "Armour costs half its listed price, rounding down; shields, bucklers and helmets stay full price (house rule)."
       : "Armour costs its listed price.",
+    rules.rabbitsFootBattleOnly
+      ? "A Rabbit's Foot re-rolls one die during the battle only; no exploration re-roll (house rule)."
+      : "A Rabbit's Foot unused in the battle re-rolls one exploration die (rulebook).",
   ];
 }

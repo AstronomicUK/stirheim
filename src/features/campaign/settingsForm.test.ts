@@ -13,7 +13,7 @@ describe('settings form mapping', () => {
     const settings = {
       startingGold: 600,
       maxRosters: 8,
-      houseRules: { strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false },
+      houseRules: { strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, rabbitsFootBattleOnly: true },
       dicePolicy: 'app_rolls' as const,
       combatMode: 'players' as const,
       lockCombatMode: true,

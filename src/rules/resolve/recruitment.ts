@@ -33,7 +33,7 @@ import type {
   RosterItem,
   RosterWarband,
 } from "../types/roster";
-import { HIRED_SWORDS } from "../data/campaign/hiredSwords";
+import { findHiredSword } from "../data/campaign/hiredSwords";
 import { VETERAN_XP_COST_GC } from "../data/campaign/trading";
 import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
 import { RulesError } from "./errors";
@@ -400,7 +400,7 @@ export function hireHiredSword(
   id: string,
   opts: HireHiredSwordOptions = {},
 ): Resolution<RosterWarband> {
-  const entry = HIRED_SWORDS.find((h) => h.id === hiredSwordId);
+  const entry = findHiredSword(hiredSwordId);
   if (!entry) throw new RulesError("recruitment.unknownHiredSword", `No hired sword with id "${hiredSwordId}"`);
   if (warband.hiredSwords.some((s) => s.id === id)) {
     throw new RulesError("recruitment.duplicateId", `A hired sword with id "${id}" already exists`);
@@ -471,7 +471,7 @@ export function payUpkeep(
   if (hs.status !== "active") {
     throw new RulesError("recruitment.notActive", `${hs.name} has already ${hs.status === "dead" ? "died" : "left"}; no upkeep is due`);
   }
-  const entry = HIRED_SWORDS.find((h) => h.id === hs.hiredSwordId);
+  const entry = findHiredSword(hs.hiredSwordId);
   const upkeep = opts.amountOverride ?? entry?.upkeep?.base ?? null;
 
   if (upkeep === null || upkeep <= 0) {

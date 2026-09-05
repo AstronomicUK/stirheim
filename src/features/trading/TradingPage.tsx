@@ -16,15 +16,18 @@ import { eligibleSearchers, phaseSummary } from './helpers'
 import { SellTab } from './SellTab'
 import { SellWyrdstoneTab } from './SellWyrdstoneTab'
 import { StashTab } from './StashTab'
+import { CharactersTab } from './CharactersTab'
+import { useMatchReports, type ReportView } from '../../api/reports'
 import { phaseInfo, useTrade, type PhaseInfo } from './useTrade'
 
-type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash'
+type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash' | 'characters'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'wyrdstone', label: 'Sell wyrdstone' },
   { value: 'buy', label: 'Buy' },
   { value: 'sell', label: 'Sell' },
   { value: 'stash', label: 'Stash' },
+  { value: 'characters', label: 'Characters' },
 ]
 
 export function TradingPage() {
@@ -34,6 +37,7 @@ export function TradingPage() {
   const report = useLatestReport(id)
   const matchId = report.data?.match_id ?? null
   const state = useTradePhaseState(id, matchId)
+  const reports = useMatchReports(matchId ?? undefined)
 
   const header = (
     <PageHeader
@@ -47,7 +51,7 @@ export function TradingPage() {
     />
   )
 
-  if (warband.isPending || campaign.isPending || report.isPending || (matchId !== null && state.isPending)) {
+  if (warband.isPending || campaign.isPending || report.isPending || (matchId !== null && (state.isPending || reports.isPending))) {
     return (
       <>
         {header}
@@ -72,7 +76,7 @@ export function TradingPage() {
   return (
     <>
       {header}
-      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={phaseInfo(matchId, state.data)} />
+      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id))} />
     </>
   )
 }
@@ -84,7 +88,7 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
   const trade = useTrade(detail, houseRules, phase, isOwner)
   const [tab, setTab] = useState<Tab>(detail.roster.wyrdstone > 0 && !phase.wyrdstoneSold ? 'wyrdstone' : 'buy')
 
-  const searchesLeft = eligibleSearchers(detail.roster, phase.heroesSearched).length
+  const searchesLeft = eligibleSearchers(detail.roster, phase.heroesSearched, phase.heroesOutOfAction).length
   const searchesUsed = phase.heroesSearched.length
 
   return (
@@ -130,11 +134,19 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
       {tab === 'buy' ? <BuyTab trade={trade} /> : null}
       {tab === 'sell' ? <SellTab trade={trade} /> : null}
       {tab === 'stash' ? <StashTab trade={trade} /> : null}
+      {tab === 'characters' ? <CharactersTab trade={trade} /> : null}
     </>
   )
 }
 
+/** Heroes this warband's filed report for the match lists as out of action. */
+function heroesOutInReport(reports: ReportView[] | undefined, warbandId: string | undefined): string[] {
+  const mine = reports?.find((r) => r.warband_id === warbandId)
+  if (!mine) return []
+  return mine.ooa.filter((line) => line.subjectType === 'hero' || line.subjectType === 'hiredSword').map((line) => line.subjectId)
+}
+
 /** Buy, sell and move show the error inside their sheet; the wyrdstone tab has no sheet. */
 function sheetOwnsError(tab: Tab): boolean {
-  return tab !== 'wyrdstone'
+  return tab !== 'wyrdstone' && tab !== 'characters'
 }

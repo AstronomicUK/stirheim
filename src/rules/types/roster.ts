@@ -144,10 +144,12 @@ export interface CampaignHouseRules {
   optionalCriticalTables: boolean;
   /** Armour costs half its listed price, rounded down. Shields and helmets are excluded. */
   halfPriceArmour: boolean;
+  /** A Rabbit's Foot re-rolls one die in the battle only; its exploration re-roll is off (house rule). */
+  rabbitsFootBattleOnly: boolean;
 }
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
-  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true };
+  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, rabbitsFootBattleOnly: true };
 }
 
 /** Any change a resolver makes, so the UI can narrate it and the server can audit it. */

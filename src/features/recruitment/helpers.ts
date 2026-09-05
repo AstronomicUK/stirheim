@@ -1,7 +1,7 @@
 // Pure helpers for the recruitment screen: unit listings with counts and limits, hired-sword
 // eligibility, upkeep wording, default names and error messages. No React, no Supabase.
 
-import { HIRED_SWORDS } from '../../rules/data/campaign/hiredSwords'
+import { findHiredSword, HIRED_SWORDS } from '../../rules/data/campaign/hiredSwords'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
 import { heroCapacity } from '../../rules/data/warbandTemplates'
 import { isRulesError } from '../../rules/resolve/errors'
@@ -248,7 +248,7 @@ export function hiredSwordOptions(roster: RosterWarband, template: WarbandTempla
 }
 
 export function findHiredSwordEntry(hiredSwordId: string): HiredSwordSummary | undefined {
-  return HIRED_SWORDS.find((h) => h.id === hiredSwordId)
+  return findHiredSword(hiredSwordId)
 }
 
 export function gradeLabel(grade: string): string {

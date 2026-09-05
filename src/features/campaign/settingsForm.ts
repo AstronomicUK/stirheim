@@ -14,6 +14,7 @@ export interface SettingsForm {
   dicePolicy: DicePolicy
   combatMode: CombatMode
   lockCombatMode: boolean
+  reportApproval: boolean
 }
 
 export type SettingsFormErrors = Partial<Record<'startingGold' | 'maxRosters', string>>
@@ -28,6 +29,7 @@ export function formFromSettings(settings: CampaignSettings): SettingsForm {
     dicePolicy: settings.dicePolicy,
     combatMode: settings.combatMode,
     lockCombatMode: settings.lockCombatMode,
+    reportApproval: settings.reportApproval,
   }
 }
 
@@ -48,6 +50,7 @@ export function settingsFromForm(form: SettingsForm): SettingsFormResult {
     dicePolicy: form.dicePolicy,
     combatMode: form.combatMode,
     lockCombatMode: form.lockCombatMode,
+    reportApproval: form.reportApproval,
   })
   if (parsed.success) return { ok: true, settings: parsed.data }
 
@@ -67,6 +70,7 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.dicePolicy === b.dicePolicy &&
     a.combatMode === b.combatMode &&
     a.lockCombatMode === b.lockCombatMode &&
+    a.reportApproval === b.reportApproval &&
     a.houseRules.strengthArmourPiercing === b.houseRules.strengthArmourPiercing &&
     a.houseRules.optionalCriticalTables === b.houseRules.optionalCriticalTables &&
     a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour

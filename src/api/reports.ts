@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Json } from './database.types'
-import { battleReportSchema, type BattleReport, type MatchOrigin, type MatchState } from '../domain'
+import { battleReportSchema, type BattleReport, type MatchOrigin, type MatchState, type ReportStatus } from '../domain'
 import { findScenario } from '../rules/data/campaign/scenarios'
 import { campaignKeys } from './campaigns'
 import { matchKeys } from './matches'
@@ -16,11 +16,56 @@ export const reportKeys = {
   forMatch: (matchId: string | undefined) => ['reports', 'match', matchId] as const,
 }
 
-export async function submitBattleReport(matchId: string, warbandId: string, report: BattleReport): Promise<MatchState> {
+/** File a report; refile a returned one; or, as the GM with a note, amend a filed one. */
+export async function submitBattleReport(matchId: string, warbandId: string, report: BattleReport, amendNote?: string): Promise<MatchState> {
   const parsed = battleReportSchema.parse(report)
-  const { data, error } = await supabase.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: warbandId, p_report: parsed as unknown as Json })
+  const args = { p_match_id: matchId, p_warband_id: warbandId, p_report: parsed as unknown as Json, ...(amendNote ? { p_amend_note: amendNote } : {}) }
+  const { data, error } = await supabase.rpc('submit_battle_report', args)
   if (error) throw new Error(error.message)
   return data
+}
+
+export async function approveBattleReport(reportId: string): Promise<MatchState> {
+  const { data, error } = await supabase.rpc('approve_battle_report', { p_report_id: reportId })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function returnBattleReport(reportId: string, note: string): Promise<MatchState> {
+  const { data, error } = await supabase.rpc('return_battle_report', { p_report_id: reportId, p_note: note })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/** A superseded version of a report, as kept when it was amended or replaced. */
+export interface ReportRevision {
+  id: string
+  revision: number
+  replaced_at: string
+  replaced_by_display_name: string
+  note: string
+  report: ReportView
+}
+
+export async function fetchReportRevisions(reportId: string): Promise<ReportRevision[]> {
+  const { data, error } = await supabase
+    .from('report_revisions')
+    .select('id, revision, replaced_at, note, report, profiles!report_revisions_replaced_by_profile_fkey(display_name)')
+    .eq('report_id', reportId)
+    .order('revision')
+  if (error) throw new Error(error.message)
+  return data.map((r) => {
+    const raw = r.report as unknown as Partial<ReportRow>
+    const profiles = r.profiles as unknown as { display_name: string } | null
+    return {
+      id: r.id,
+      revision: r.revision,
+      replaced_at: r.replaced_at,
+      replaced_by_display_name: profiles?.display_name ?? 'GM',
+      note: r.note,
+      report: toReportView({ ...raw, id: raw.id ?? r.id, warbands: null, profiles: null } as ReportRow),
+    }
+  })
 }
 
 export async function withdrawBattleReport(matchId: string, warbandId: string): Promise<MatchState> {
@@ -46,6 +91,12 @@ export interface ReportView {
   exploration: BattleReport['exploration']
   veteran_pool_roll: number | null
   notes: string
+  status: ReportStatus
+  review_note: string | null
+  revision: number
+  amended_at: string | null
+  amendment_note: string | null
+  adjustments: BattleReport['adjustments']
 }
 
 /** One completed (or cancelled) match with whatever reports were filed. */
@@ -67,6 +118,7 @@ const REPORT_SELECT = '*, warbands(name), profiles!match_reports_submitted_by_pr
 type ReportRow = {
   id: string; match_id: string; warband_id: string; submitted_by: string; submitted_at: string; won: boolean; result: string; routed: boolean
   xp_log: unknown; ooa: unknown; injuries: unknown; exploration: unknown; veteran_pool_roll: number | null; notes: string
+  status?: string | null; review_note?: string | null; revision?: number | null; amended_at?: string | null; amendment_note?: string | null; adjustments?: unknown
   warbands: { name: string } | null; profiles: { display_name: string } | null
 }
 
@@ -89,6 +141,12 @@ function toReportView(r: ReportRow): ReportView {
     exploration: explorationParsed.success ? explorationParsed.data : null,
     veteran_pool_roll: r.veteran_pool_roll,
     notes: r.notes,
+    status: r.status === 'pending' || r.status === 'returned' ? r.status : 'applied',
+    review_note: r.review_note ?? null,
+    revision: r.revision ?? 1,
+    amended_at: r.amended_at ?? null,
+    amendment_note: r.amendment_note ?? null,
+    adjustments: battleReportSchema.shape.adjustments.catch([]).parse(r.adjustments ?? []),
   }
 }
 
@@ -157,7 +215,21 @@ function useInvalidateAfterReport() {
 
 export function useSubmitBattleReport(matchId: string, warbandId: string) {
   const invalidate = useInvalidateAfterReport()
-  return useMutation({ mutationFn: (report: BattleReport) => submitBattleReport(matchId, warbandId, report), onSuccess: invalidate })
+  return useMutation({ mutationFn: ({ report, amendNote }: { report: BattleReport; amendNote?: string }) => submitBattleReport(matchId, warbandId, report, amendNote), onSuccess: invalidate })
+}
+
+export function useApproveBattleReport() {
+  const invalidate = useInvalidateAfterReport()
+  return useMutation({ mutationFn: approveBattleReport, onSuccess: invalidate })
+}
+
+export function useReturnBattleReport() {
+  const invalidate = useInvalidateAfterReport()
+  return useMutation({ mutationFn: ({ reportId, note }: { reportId: string; note: string }) => returnBattleReport(reportId, note), onSuccess: invalidate })
+}
+
+export function useReportRevisions(reportId: string | undefined, enabled = true) {
+  return useQuery({ queryKey: [...reportKeys.all, 'revisions', reportId] as const, queryFn: () => fetchReportRevisions(reportId!), enabled: Boolean(reportId) && enabled })
 }
 
 export function useWithdrawBattleReport() {

@@ -4,7 +4,7 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
 import { useBattleSessions, useMatch, useMatchRoster, type MatchParticipantView, type MatchSummary } from '../../api/matches'
 import { advanceKeys } from '../../api/advances'
@@ -37,6 +37,8 @@ function BackToMatch({ matchId }: { matchId: string | undefined }) {
 
 export function PostBattlePage() {
   const { id, warbandId } = useParams<{ id: string; warbandId: string }>()
+  const [search] = useSearchParams()
+  const amending = search.get('amend') === '1'
   const user = useSession((s) => s.user)
   const match = useMatch(id, user?.id)
   const sessions = useBattleSessions(id)
@@ -81,28 +83,31 @@ export function PostBattlePage() {
       </>
     )
   }
-  if (summary.reported_warband_ids.includes(participant.warband_id)) {
+  const filed = summary.reported_warband_ids.includes(participant.warband_id) || summary.pending_report_warband_ids.includes(participant.warband_id)
+  if (filed && !amending) {
     return (
       <>
         <Notice tone="info" title="Already filed">
-          A report for {participant.warband_name} is already in. Ask the GM to withdraw it if something needs correcting.
+          A report for {participant.warband_name} is already in. The GM can amend it or withdraw it from the match page if something needs correcting.
         </Notice>
         <BackToMatch matchId={summary.id} />
       </>
     )
   }
-  return <Guarded match={summary} participant={participant} userId={user?.id} liveState={sessions.data.find((s) => s.warband_id === participant.warband_id)?.live_state} />
+  return <Guarded match={summary} participant={participant} userId={user?.id} amending={amending && filed} liveState={sessions.data.find((s) => s.warband_id === participant.warband_id)?.live_state} />
 }
 
 interface GuardedProps {
   match: MatchSummary
   participant: MatchParticipantView
   userId: string | undefined
+  /** The GM is replacing a filed report. */
+  amending: boolean
   liveState: BattleLiveState | undefined
 }
 
 /** Owner or GM only: the roster query must succeed and the viewer must be allowed to edit the warband. */
-function Guarded({ match, participant, userId, liveState }: GuardedProps) {
+function Guarded({ match, participant, userId, liveState, amending }: GuardedProps) {
   const campaign = useCampaign(match.campaign_id)
   const roster = useMatchRoster(match.id, participant.warband_id)
   const isGm = campaign.data?.campaign.gm_id === userId
@@ -135,7 +140,7 @@ function Guarded({ match, participant, userId, liveState }: GuardedProps) {
       </>
     )
   }
-  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState} />
+  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState}  amending={amending} />
 }
 
 interface WizardProps {
@@ -143,9 +148,10 @@ interface WizardProps {
   participant: MatchParticipantView
   rosterData: NonNullable<ReturnType<typeof useMatchRoster>['data']>
   liveState: BattleLiveState | undefined
+  amending: boolean
 }
 
-function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
+function Wizard({ match, participant, rosterData, liveState, amending }: WizardProps) {
   const navigate = useNavigate()
   const store = useMemo(() => reportStore(match.id, participant.warband_id), [match.id, participant.warband_id])
   const draft = useReportStore(store, (s) => s.draft)
@@ -176,6 +182,7 @@ function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
 
   const submit = useSubmitBattleReport(match.id, participant.warband_id)
   const qc = useQueryClient()
+  const [amendNote, setAmendNote] = useState('')
   const [fileError, setFileError] = useState<string | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
 
@@ -200,7 +207,8 @@ function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
     setFileError(null)
     try {
       const report = buildReport(draft as ReportDraft, ctx)
-      await submit.mutateAsync(report)
+      if (amending && amendNote.trim() === '') throw new Error('Say why the report is being amended; the note goes in the change log.')
+      await submit.mutateAsync({ report, amendNote: amending ? amendNote.trim() : undefined })
       closing.current = true
       // The report is in. Now the advances rolled in the wizard, one at a time; anything that fails
       // stays pending on the Bestow advancements screen.
@@ -219,12 +227,12 @@ function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
     navigate(`/matches/${match.id}`, { replace: true })
   }
 
-  const stepProps = { draft, derived, ctx, update, match, mine: participant, opponents }
+  const stepProps = { draft, derived, ctx, update, match, mine: participant, opponents, amend: amending ? { note: amendNote, onNote: setAmendNote } : undefined }
 
   return (
     <>
       <header className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">Post-battle report</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">{amending ? 'Amending the filed report' : 'Post-battle report'}</p>
         <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{participant.warband_name}</h1>
         {savedAt ? <p className="text-xs text-ink-dim">Draft saved on this phone. Nothing is applied until you file.</p> : null}
       </header>

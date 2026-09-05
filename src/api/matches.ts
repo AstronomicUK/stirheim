@@ -52,8 +52,12 @@ export interface MatchSummary {
   created_at: string
   updated_at: string
   participants: MatchParticipantView[]
-  /** Participants that have submitted a report (Phase 7). */
+  /** Participants whose report is applied (Phase 7; Phase 11 adds the pending and returned lists). */
   reported_warband_ids: string[]
+  /** Reports filed and waiting for the GM (campaign setting "reports need GM approval"). */
+  pending_report_warband_ids: string[]
+  /** Reports the GM sent back; the player files again. */
+  returned_report_warband_ids: string[]
 }
 
 type MatchQueryRow = MatchRow & {
@@ -68,14 +72,14 @@ type MatchQueryRow = MatchRow & {
       henchman_groups: Pick<HenchmanGroupRow, 'id' | 'size' | 'xp' | 'is_large'>[]
     }) | null
   }[]
-  match_reports: { warband_id: string }[]
+  match_reports: { warband_id: string; status: string }[]
 }
 
 export const MATCH_SELECT =
   '*, profiles!matches_created_by_profile_fkey(display_name), scenarios(name), ' +
   'match_participants(warband_id, accepted_at, warbands(id, name, type_rules_id, owner_id, profiles!warbands_owner_profile_fkey(display_name), ' +
   'heroes(id, status, is_hired_sword, xp, is_large, hired_sword_rules_id), henchman_groups(id, size, xp, is_large))), ' +
-  'match_reports(warband_id)'
+  'match_reports(warband_id, status)'
 
 function ratingOf(w: NonNullable<MatchQueryRow['match_participants'][number]['warbands']>): number {
   const template = findWarbandTemplate(w.type_rules_id)
@@ -128,7 +132,9 @@ function toSummary(row: MatchQueryRow, userId: string | undefined): MatchSummary
           mine: w.owner_id === userId,
         }
       }),
-    reported_warband_ids: row.match_reports.map((r) => r.warband_id),
+    reported_warband_ids: row.match_reports.filter((r) => r.status !== 'pending' && r.status !== 'returned').map((r) => r.warband_id),
+    pending_report_warband_ids: row.match_reports.filter((r) => r.status === 'pending').map((r) => r.warband_id),
+    returned_report_warband_ids: row.match_reports.filter((r) => r.status === 'returned').map((r) => r.warband_id),
   }
 }
 

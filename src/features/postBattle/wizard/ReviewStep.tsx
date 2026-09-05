@@ -1,6 +1,6 @@
 import type { BattleReport } from '../../../domain'
 import { findItem } from '../../../rules/data/items'
-import { Notice } from '../../../ui'
+import { Notice, TextArea } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { STEP_IDS, STEP_TITLES } from '../model'
 import { Intro, Row, type StepProps } from './bits'
@@ -11,7 +11,7 @@ function itemLabel(item: { item_rules_id: string | null; custom_name: string | n
   return item.quantity > 1 ? `${name} ×${item.quantity}` : name
 }
 
-export function ReviewStep({ derived, ctx, mine }: StepProps) {
+export function ReviewStep({ derived, ctx, mine, amend }: StepProps) {
   const report = derived.report
   const advanceLines = derived.advances.items.map((i) => i.summary)
   if (!report) {
@@ -30,7 +30,17 @@ export function ReviewStep({ derived, ctx, mine }: StepProps) {
       </StepBody>
     )
   }
-  return <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} />
+  return (
+    <>
+      <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} />
+      {amend ? (
+        <Card className="flex flex-col gap-2 px-4 py-3">
+          <TextArea label="Why the report is being amended" value={amend.note} onChange={(e) => amend.onNote(e.target.value)} rows={3} placeholder="e.g. the Captain's injury was rolled on the wrong table" />
+          <p className="text-xs text-ink-dim">Filing undoes the previous report's roster changes, applies these, and keeps the old version in the change log with this note.</p>
+        </Card>
+      ) : null}
+    </>
+  )
 }
 
 function removedItemLabels(report: BattleReport, ctx: StepProps['ctx']): string[] {

@@ -42,6 +42,12 @@ export function report(partial: Partial<ReportView> = {}): ReportView {
     exploration: null,
     veteran_pool_roll: null,
     notes: '',
+    status: 'applied',
+    review_note: null,
+    revision: 1,
+    amended_at: null,
+    amendment_note: null,
+    adjustments: [],
     ...partial,
   }
 }

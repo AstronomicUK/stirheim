@@ -57,9 +57,15 @@ export function advanceKey(subjectId: string, thresholdXp: number): string {
   return `${subjectId}:${thresholdXp}`
 }
 
+/** The player rolls a different number of dice than the app suggests (skills, equipment, map bonuses, missed rules). */
+export interface DiceOverride {
+  count: number
+  reason: string
+}
+
 export interface ExplorationDraft {
-  /** Dice granted by skills or equipment, entered by the player. */
-  extraDice: number
+  /** Null = roll what the app suggests. */
+  diceOverride: DiceOverride | null
   /** One entry per die allowed; null until entered. */
   rolls: (number | null)[]
   /** The location's own D6, when it has a table. */
@@ -111,7 +117,7 @@ export interface ReportDraft {
 }
 
 export function emptyExploration(): ExplorationDraft {
-  return { extraDice: 0, rolls: [], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null, notes: '' }
+  return { diceOverride: null, rolls: [], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null, notes: '' }
 }
 
 export function emptyDraft(): ReportDraft {
@@ -296,8 +302,10 @@ function withExploration(draft: ReportDraft, patch: Partial<ExplorationDraft>): 
   return { ...draft, exploration: { ...draft.exploration, ...patch } }
 }
 
-export function setExplorationExtraDice(draft: ReportDraft, extraDice: number): ReportDraft {
-  return withExploration(draft, { extraDice: Math.max(0, Math.trunc(extraDice)) })
+/** Roll a different number of exploration dice than suggested (1..12); null goes back to the suggestion. The reason is required to file. */
+export function setExplorationDiceOverride(draft: ReportDraft, override: DiceOverride | null): ReportDraft {
+  if (override === null) return withExploration(draft, { diceOverride: null })
+  return withExploration(draft, { diceOverride: { count: Math.max(1, Math.min(12, Math.trunc(override.count))), reason: override.reason } })
 }
 
 /**

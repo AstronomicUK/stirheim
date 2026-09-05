@@ -362,6 +362,46 @@ Confirmed as-is: hired swords roll D6 injuries and earn xp as heroes; veteran po
 warband; anyone may schedule; GM edits any warband; email + password sign-in; installable but
 online-only.
 
+## Phase 11 decisions (2026-09-05)
+
+- **Combat mode is a column on `matches`** (`combat_mode`, enum app | players), set by
+  `start_match(p_match_id, p_combat_mode default null)` from the campaign default
+  (`settings.combatMode`); `settings.lockCombatMode` makes a different choice GM-only. The battle
+  sheet hides the Attack tab in players mode.
+- **Kit lines are tappable everywhere** (`ItemLines` in `src/features/roster/view/bits.tsx`): range,
+  Strength or armour save on the line, the weapon's rules, price and rarity on tap.
+- **Kite shield and pavise are engine rules** (`Armour.kiteShield`, `Armour.pavise`,
+  `CombatContext.paviseFront`), not "counts as a shield". **Gromril / ithilmar variants exist for
+  every ordinary hand weapon** (`isMaterialVariantBase` in `data/weapons/materialVariants.ts`; shop
+  entries generated in `data/items/materialVariants.ts`, 4x / 3x price, Rare 11 / 9). The generic
+  items are `superseded`: hidden from the shop (`SHOP_ITEMS`) and expanded in the builder into the
+  variants of the hand weapons on the same equipment list. A pavise is excluded from half-price
+  armour.
+- **Carry-over between fights**: `TurnOptions` on the engine (wounds already taken, attack cap,
+  parry override); `woundsLost` per tally on the live sheet for multi-Wound models; the calculator
+  remembers, per phone, what earlier fights did to a target this turn (parry used, Wounds lost,
+  worst result) because the opponent's sheet is read-only. Initiative and strikes-first/last are
+  shown, never sequenced.
+- **Advances in the wizard** are a two-phase affair: the report files as before and creates the
+  pending rows; then `applyWizardAdvances` resolves each advance rolled in the wizard through
+  `resolve_pending_advance` against the freshly loaded roster, or stores the dice in
+  `pending_advances.rolled` for "Pick later". A failure leaves the advance pending, where Bestow
+  Advancements (the renamed screen) picks it up. An untouched advance never blocks filing.
+- **Reports can wait, be returned and be amended** (migration 13/14). `match_reports.status`
+  (pending | applied | returned), `undo` (what apply changed: before-values, treasury deltas, stash
+  rows, removed items, advances created), `revision` / `amended_*` and the `report_revisions` table
+  (every superseded version verbatim with the note). `submit_battle_report` files, refiles a returned
+  report, or amends when the GM passes a note: revision logged, effects reverted, new effects
+  applied. Revert refuses while an advance from the report has been rolled or resolved. Withdraw now
+  reverts too. Campaign setting `reportApproval` holds player reports until `approve_battle_report`;
+  `return_battle_report` sends one back with a note. The report functions run as **security
+  definer** with their own permission checks, because players must not update the bookkeeping
+  columns directly.
+- **Suggested, not forced, exploration dice**: the wizard shows the rulebook's count and lets the
+  player roll another number (1-12) with a required reason; the report carries it in
+  `adjustments` (label, suggested, used, reason), shown on the report card as "Adjusted". Bonus
+  experience already goes through `xpExtras` with a reason per line.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

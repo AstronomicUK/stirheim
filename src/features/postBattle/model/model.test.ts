@@ -12,6 +12,7 @@ import {
   seedFromBattleSheet,
   setExplorationRolls,
   setExplorationSubRoll,
+  setExplorationDiceOverride,
   setGroupInjuryRoll,
   setGroupOut,
   setHeroInjuryCount,
@@ -505,5 +506,33 @@ describe('advances in the wizard', () => {
     expect(after.hiredSwords[0]).toMatchObject({ xp: 2, status: 'left' })
     expect(after.henchmenGroups[0]).toMatchObject({ size: 2, xp: 2 })
     expect(after.heroes.find((h) => h.id === 'champion')).toEqual(roster.heroes.find((h) => h.id === 'champion'))
+  })
+})
+
+describe('suggested exploration dice', () => {
+  it('rolls the suggested count unless the player overrides it with a reason, which is logged as an adjustment', () => {
+    const base = setResult(emptyDraft(), 'won')
+    const suggested = deriveReport(base, ctx()).exploration
+    expect(suggested.suggested?.count).toBe(4)
+    expect(suggested.allowed?.count).toBe(4)
+    expect(suggested.adjustment).toBeNull()
+
+    const noReason = deriveReport(setExplorationDiceOverride(base, { count: 5, reason: '' }), ctx()).exploration
+    expect(noReason.allowed?.count).toBe(5)
+    expect(noReason.rolls).toHaveLength(5)
+    expect(noReason.problems[0]).toMatch(/why the number of exploration dice/)
+
+    let draft = setExplorationDiceOverride(base, { count: 5, reason: 'Holds the Merchant Quarter' })
+    draft = setExplorationRolls(draft, [1, 2, 3, 4, 5])
+    const d = deriveReport(draft, ctx())
+    expect(d.exploration.adjustment).toEqual({ label: 'Exploration dice', suggested: '4 (4 surviving heroes, +1 for winning = 5 dice)'.replace('4 (4 surviving heroes, +1 for winning = 5 dice)', d.exploration.adjustment!.suggested), used: '5', reason: 'Holds the Merchant Quarter' })
+    expect(d.exploration.adjustment?.suggested).toMatch(/^4 \(/)
+    expect(d.report?.adjustments).toHaveLength(1)
+    expect(d.report?.exploration?.diceAllowed).toBe(5)
+    expect(d.report?.exploration?.diceReason).toMatch(/changed to 5: Holds the Merchant Quarter/)
+
+    // Setting the count back to the suggestion clears the override.
+    expect(setExplorationDiceOverride(draft, null).exploration.diceOverride).toBeNull()
+    expect(setExplorationDiceOverride(draft, { count: 40, reason: 'x' }).exploration.diceOverride?.count).toBe(12)
   })
 })

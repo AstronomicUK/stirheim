@@ -16,6 +16,8 @@ export interface StepProps {
   match: MatchSummary
   mine: MatchParticipantView
   opponents: MatchParticipantView[]
+  /** Set when the GM is amending a filed report: the note is required and shown in the change log. */
+  amend?: { note: string; onNote: (note: string) => void }
 }
 
 export interface SwitchRowProps {

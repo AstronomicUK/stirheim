@@ -425,6 +425,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
       notes: battleNotes(draft),
+      adjustments: exploration.adjustment ? [exploration.adjustment] : [],
       applied,
     }
   }

@@ -5,7 +5,7 @@ import { Button, DieField, Markdown, Notice, NumberField, SegmentedControl, Step
 import { Card, Section, Tag } from '../../roster/view/bits'
 import {
   foundItemFromName,
-  setExplorationExtraDice,
+  setExplorationDiceOverride,
   setExplorationExtraShards,
   setExplorationGold,
   setExplorationItems,
@@ -49,14 +49,40 @@ export function ExplorationStep({ draft, derived, update }: StepProps) {
   return (
     <StepBody title="Exploration">
       <Intro>
-        {allowed.count} {allowed.count === 1 ? 'die' : 'dice'}: {allowed.reason}. Surviving {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.
-        {won ? '' : ' No winner’s die.'}
-        {allowed.capped ? ' Roll them all and keep the six you like.' : ''}
+        Suggested: {ex.suggested?.count ?? allowed.count} {(ex.suggested?.count ?? allowed.count) === 1 ? 'die' : 'dice'} ({ex.suggested?.reason ?? allowed.reason}). Surviving{' '}
+        {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.{won ? '' : ' No winner’s die.'}
+        {ex.suggested?.capped ? ' The rulebook caps the roll at six.' : ''} Roll a different number if a skill, item, map bonus or house rule says so; the change is logged.
       </Intro>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-ink-dim">Extra dice from skills or equipment</span>
-        <Stepper value={draft.exploration.extraDice} onChange={(n) => update((d) => setExplorationExtraDice(d, n))} label="extra exploration dice" />
-      </div>
+      <Card className="flex flex-col gap-3 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm text-ink">Dice to roll</span>
+            {draft.exploration.diceOverride ? (
+              <button type="button" onClick={() => update((d) => setExplorationDiceOverride(d, null))} className="self-start text-xs text-brass underline-offset-4 hover:underline">
+                Back to the suggested {ex.suggested?.count ?? 0}
+              </button>
+            ) : (
+              <span className="text-xs text-ink-dim">As suggested</span>
+            )}
+          </div>
+          <Stepper
+            value={allowed.count}
+            min={1}
+            max={12}
+            onChange={(n) => update((d) => setExplorationDiceOverride(d, n === (ex.suggested?.count ?? n) ? null : { count: n, reason: d.exploration.diceOverride?.reason ?? '' }))}
+            label="exploration dice to roll"
+          />
+        </div>
+        {draft.exploration.diceOverride && draft.exploration.diceOverride.count !== (ex.suggested?.count ?? 0) ? (
+          <TextField
+            label="Why a different number"
+            value={draft.exploration.diceOverride.reason}
+            autoComplete="off"
+            placeholder="e.g. Streetwise skill, controls the Merchant Quarter"
+            onChange={(e) => update((d) => setExplorationDiceOverride(d, { count: d.exploration.diceOverride?.count ?? allowed.count, reason: e.target.value }))}
+          />
+        ) : null}
+      </Card>
 
       <Section title="Dice">
         <Card className="flex flex-col gap-3 px-4 py-3">

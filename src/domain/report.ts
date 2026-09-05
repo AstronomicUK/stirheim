@@ -118,6 +118,16 @@ export const reportAppliedSchema = z.object({
 });
 export type ReportApplied = z.infer<typeof reportAppliedSchema>;
 
+/** A place where the player overrode what the app suggested, on the record. */
+export const reportAdjustmentSchema = z.object({
+  /** What was adjusted, e.g. "exploration dice". */
+  label: z.string(),
+  suggested: z.string(),
+  used: z.string(),
+  reason: z.string(),
+});
+export type ReportAdjustment = z.infer<typeof reportAdjustmentSchema>;
+
 export const battleReportSchema = z.object({
   version: z.literal(REPORT_VERSION).default(REPORT_VERSION),
   won: z.boolean(),
@@ -130,6 +140,7 @@ export const battleReportSchema = z.object({
   exploration: explorationRecordSchema.nullable(),
   veteran_pool_roll: z.number().int().min(2).max(12).nullable(),
   notes: z.string().default(""),
+  adjustments: z.array(reportAdjustmentSchema).default([]),
   applied: reportAppliedSchema,
 });
 export type BattleReport = z.infer<typeof battleReportSchema>;

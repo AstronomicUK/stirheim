@@ -99,13 +99,32 @@ export function HelpPage() {
           Kit the engine cannot model (custom items, most miscellaneous gear) is listed under the odds so you can apply it at the table.
         </P>
         <P>
+          <B>App calculates or players calculate.</B> Whoever starts the game picks how combat is scored: with the attack calculator, or tally sheets only, the
+          Relic &amp; Ruin way. The campaign settings set the default and can lock it so only the GM changes it.
+        </P>
+        <P>
           <B>Battle over.</B> When the game ends, tap <em>Battle over</em>. The match moves to awaiting reports and each player files their own post-battle
           report. Forgot to tap it? Filing a report closes the battle too.
         </P>
       </Topic>
 
       <Topic id="post-battle" title="Post-battle report">
-        <P>The report is a seven-step wizard, pre-filled from your battle sheet. You can leave part-way and come back; it remembers where you were.</P>
+        <P>The report is an eight-step wizard, pre-filled from your battle sheet. You can leave part-way and come back; it remembers where you were.</P>
+        <P>
+          <B>Suggested, not forced.</B> The wizard tells you how many exploration dice the rulebook gives you, but you roll as many as your skills, kit, map
+          bonuses or house rules say, with a reason. Every such change is logged on the report and shows as <em>Adjusted</em> in the records. Bonus experience for
+          scenario objectives works the same way: add a line with a reason.
+        </P>
+        <P>
+          <B>Advances.</B> Any advance earned in the battle can be rolled right there in the wizard. If the roll is a new skill or spell and you want time to think,
+          tap <em>Pick the skill later</em>: the roll is kept and the choice waits under <em>Bestow advancements</em> on the roster page, highlighted until it is
+          made. Leave the whole advance for later if you prefer; nothing is forced.
+        </P>
+        <P>
+          <B>Approval and amendments.</B> If the campaign setting <em>Reports need GM approval</em> is on, a player's report waits, applying nothing, until the GM
+          approves it or returns it with a note to file again. The GM can also <em>amend</em> a filed report: the old version's roster changes are undone, the new
+          ones applied, and the previous version kept in a change log with the GM's note. The record shows <em>Amended by GM</em>.
+        </P>
         <Steps
           items={[
             'Outcome: won, lost or drawn, and whether you routed.',

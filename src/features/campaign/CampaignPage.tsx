@@ -129,6 +129,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
             <Stat label="Roster cap" value={settings.maxRosters === null ? 'None' : String(settings.maxRosters)} />
             <Stat label="Dice" value={dicePolicyLabel(settings.dicePolicy)} />
             <Stat label="Combat" value={`${combatModeLabel(settings.combatMode)}${settings.lockCombatMode ? ' (locked)' : ''}`} />
+            <Stat label="Reports" value={settings.reportApproval ? 'GM approves' : 'Apply at once'} />
           </dl>
           <ul className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm leading-relaxed text-ink-dim">
             {houseRuleLines.map((line) => (

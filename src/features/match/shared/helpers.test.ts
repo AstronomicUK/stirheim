@@ -57,6 +57,8 @@ function match(partial: Partial<MatchSummary>): MatchSummary {
     updated_at: '2026-09-04T09:00:00.000Z',
     participants: [WATCH, ESHIN],
     reported_warband_ids: [],
+    pending_report_warband_ids: [],
+    returned_report_warband_ids: [],
     ...partial,
   }
 }

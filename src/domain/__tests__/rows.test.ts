@@ -166,6 +166,7 @@ describe("row schemas parse realistic seed rows", () => {
         dicePolicy: "players_roll",
         combatMode: "app",
         lockCombatMode: false,
+        reportApproval: false,
       },
       rules_markdown: "Seed campaign. House rules: no armour erosion, optional criticals, half-price armour.",
       archived: false,
@@ -273,7 +274,19 @@ describe("row schemas parse realistic seed rows", () => {
       submitted_at: T0,
     };
     // Migration 7 columns fill in from defaults when absent (older rows / partial selects).
-    expect(matchReportRowSchema.parse(report)).toEqual({ ...report, result: "lost", routed: false, applied: {} });
+    expect(matchReportRowSchema.parse(report)).toEqual({
+      ...report,
+      result: "lost",
+      routed: false,
+      applied: {},
+      status: "applied",
+      review_note: null,
+      revision: 1,
+      amended_at: null,
+      amended_by: null,
+      amendment_note: null,
+      adjustments: [],
+    });
     expect(matchReportRowSchema.safeParse({ ...report, veteran_pool_roll: 1 }).success).toBe(false);
 
     const advance = {
@@ -518,6 +531,7 @@ describe("insert schemas", () => {
       dicePolicy: "players_roll",
         combatMode: "app",
         lockCombatMode: false,
+        reportApproval: false,
     });
     expect(campaignInsertSchema.parse({ gm_id: GM_ID, name: "Ruins of the Stir" }).settings).toBeUndefined();
   });

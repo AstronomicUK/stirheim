@@ -5,7 +5,7 @@ modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the ru
 combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-05): **Phase 10 (in-battle attack calculator) complete; version 1 plus its first upgrade is done.** Live at
+Status (2026-09-05): **Phase 11 in progress: combat mode, gromril variants and shield rules, calculator carry-over, advances in the wizard, GM approval and amendment of reports, suggested dice.** Live at
 https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 

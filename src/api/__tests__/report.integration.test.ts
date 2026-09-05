@@ -24,6 +24,8 @@ describe.skipIf(!enabled)('post-battle reports', () => {
   let gm: SupabaseClient
   let admin: SupabaseClient
   let matchId: string
+  /** Claws of Eshin's veteran pool before any report in this file (other suites may have set it). */
+  let poolBefore: number | null = null
 
   beforeAll(async () => {
     player = client()
@@ -36,6 +38,8 @@ describe.skipIf(!enabled)('post-battle reports', () => {
     matchId = m.data as string
     await gm.rpc('start_match', { p_match_id: matchId })
     await gm.rpc('end_match', { p_match_id: matchId })
+    const w = await admin.from('warbands').select('veteran_pool').eq('id', CLAWS_OF_ESHIN).single()
+    poolBefore = w.data?.veteran_pool ?? null
   })
 
   afterAll(async () => {
@@ -101,6 +105,97 @@ describe.skipIf(!enabled)('post-battle reports', () => {
     expect(stored.data?.result).toBe('won')
     expect(stored.data?.veteran_pool_roll).toBe(7)
     expect((stored.data?.profiles as unknown as { display_name: string } | null)?.display_name).toBe('Ana')
+  })
+
+  it('withdrawing undoes the roster changes the report made', async () => {
+    // Claws of Eshin's report from the previous test is applied: xp 24, size 3, wyrdstone 5, gold 30, a locket in the stash.
+    const before = await gm.from('warbands').select('wyrdstone, gold, veteran_pool').eq('id', CLAWS_OF_ESHIN).single()
+    expect(before.data).toEqual({ wyrdstone: 5, gold: 30, veteran_pool: 7 })
+    const withdrawn = await gm.rpc('withdraw_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN })
+    expect(withdrawn.error).toBeNull()
+    const hero = await gm.from('heroes').select('xp, level_ups').eq('id', SKRITCH).single()
+    expect(hero.data).toEqual({ xp: 20, level_ups: 8 })
+    const group = await gm.from('henchman_groups').select('size, xp').eq('id', VERMINKIN).single()
+    expect(group.data).toEqual({ size: 4, xp: 0 })
+    const wb = await gm.from('warbands').select('wyrdstone, gold, veteran_pool').eq('id', CLAWS_OF_ESHIN).single()
+    expect(wb.data).toEqual({ wyrdstone: 2, gold: 20, veteran_pool: poolBefore })
+    const pending = await gm.from('pending_advances').select('id').eq('warband_id', CLAWS_OF_ESHIN)
+    expect(pending.data).toEqual([])
+    const stash = await gm.from('items').select('id').eq('warband_id', CLAWS_OF_ESHIN).eq('custom_name', 'Tarnished locket')
+    expect(stash.data).toEqual([])
+    // Refile so the later tests have their report back.
+    const again = await player.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN, p_report: report })
+    expect(again.error).toBeNull()
+  })
+
+  it('with approval on, a player report waits; the GM can return it with a note or approve it', async () => {
+    const settingsRow = await admin.from('campaigns').select('settings').eq('id', CAMPAIGN).single()
+    const settings = settingsRow.data!.settings as Record<string, unknown>
+    await admin.from('campaigns').update({ settings: { ...settings, reportApproval: true } }).eq('id', CAMPAIGN)
+    try {
+      // Start from no report for Claws of Eshin.
+      await gm.rpc('withdraw_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN })
+      const filed = await player.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN, p_report: report })
+      expect(filed.error).toBeNull()
+      const row = await player.from('match_reports').select('id, status, undo').eq('match_id', matchId).eq('warband_id', CLAWS_OF_ESHIN).single()
+      expect(row.data?.status).toBe('pending')
+      expect(row.data?.undo).toBeNull()
+      // Nothing applied yet.
+      const hero = await player.from('heroes').select('xp').eq('id', SKRITCH).single()
+      expect(hero.data?.xp).toBe(20)
+
+      const playerApprove = await player.rpc('approve_battle_report', { p_report_id: row.data!.id })
+      expect(playerApprove.error?.message).toMatch(/only the GM/)
+
+      const returned = await gm.rpc('return_battle_report', { p_report_id: row.data!.id, p_note: 'Roll the Verminkin injuries again' })
+      expect(returned.error).toBeNull()
+      const afterReturn = await player.from('match_reports').select('status, review_note').eq('id', row.data!.id).single()
+      expect(afterReturn.data).toEqual({ status: 'returned', review_note: 'Roll the Verminkin injuries again' })
+
+      // Filing again replaces the returned report and keeps it in the log.
+      const refiled = await player.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN, p_report: { ...report, notes: 'Second attempt' } })
+      expect(refiled.error).toBeNull()
+      const afterRefile = await player.from('match_reports').select('id, status, revision, notes').eq('match_id', matchId).eq('warband_id', CLAWS_OF_ESHIN).single()
+      expect(afterRefile.data).toMatchObject({ id: row.data!.id, status: 'pending', revision: 2, notes: 'Second attempt' })
+      const revisions = await player.from('report_revisions').select('revision, note').eq('report_id', row.data!.id)
+      expect(revisions.data).toEqual([{ revision: 1, note: 'Roll the Verminkin injuries again' }])
+
+      const approved = await gm.rpc('approve_battle_report', { p_report_id: row.data!.id })
+      expect(approved.error).toBeNull()
+      const applied = await player.from('match_reports').select('status').eq('id', row.data!.id).single()
+      expect(applied.data?.status).toBe('applied')
+      const heroAfter = await player.from('heroes').select('xp').eq('id', SKRITCH).single()
+      expect(heroAfter.data?.xp).toBe(24)
+    } finally {
+      await admin.from('campaigns').update({ settings }).eq('id', CAMPAIGN)
+    }
+  })
+
+  it('the GM amends a filed report with a note: the old version is logged, its effects undone and the new ones applied', async () => {
+    const asPlayer = await player.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN, p_report: report, p_amend_note: 'oops' })
+    expect(asPlayer.error?.message).toMatch(/only the GM can amend/)
+
+    const amendedReport = {
+      ...report,
+      notes: 'Amended: the assassin only earned 3 xp',
+      xp_log: [{ ...report.xp_log[0], amount: 3, xpAfter: 23, advancesEarned: 0 }, report.xp_log[1]],
+      applied: { ...report.applied, heroes: [{ id: SKRITCH, patch: { xp: 23, level_ups: 8 } }], pending_advances: [] },
+    }
+    const amended = await gm.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN, p_report: amendedReport, p_amend_note: 'Miscounted the kills' })
+    expect(amended.error).toBeNull()
+    const row = await gm.from('match_reports').select('status, revision, amendment_note, amended_by, notes').eq('match_id', matchId).eq('warband_id', CLAWS_OF_ESHIN).single()
+    expect(row.data).toMatchObject({ status: 'applied', revision: 3, amendment_note: 'Miscounted the kills', amended_by: GM.id, notes: 'Amended: the assassin only earned 3 xp' })
+    const hero = await gm.from('heroes').select('xp').eq('id', SKRITCH).single()
+    expect(hero.data?.xp).toBe(23)
+    const pending = await gm.from('pending_advances').select('id').eq('warband_id', CLAWS_OF_ESHIN)
+    expect(pending.data).toEqual([])
+    const wb = await gm.from('warbands').select('wyrdstone, gold').eq('id', CLAWS_OF_ESHIN).single()
+    expect(wb.data).toEqual({ wyrdstone: 5, gold: 30 })
+    const stash = await gm.from('items').select('id').eq('warband_id', CLAWS_OF_ESHIN).eq('custom_name', 'Tarnished locket')
+    expect(stash.data).toHaveLength(1)
+    const revisions = await gm.from('report_revisions').select('revision, note').eq('match_id', matchId).eq('warband_id', CLAWS_OF_ESHIN).order('revision')
+    expect(revisions.data?.map((r) => r.revision)).toEqual([1, 2])
+    expect(revisions.data?.[1]?.note).toBe('Miscounted the kills')
   })
 
   it('the match completes when the last participant reports; the GM can withdraw and reopen', async () => {

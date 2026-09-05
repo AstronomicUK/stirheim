@@ -17,11 +17,11 @@ import {
   type BattleSessionView,
   type MatchSummary,
 } from '../../api/matches'
-import { reportKeys, useMatchReports, useWithdrawBattleReport, type ReportView } from '../../api/reports'
+import { reportKeys, useApproveBattleReport, useMatchReports, useReturnBattleReport, useWithdrawBattleReport, type ReportView } from '../../api/reports'
 import { useSession } from '../../app/session'
 import { battleTotals } from '../../domain'
 import type { CombatMode } from '../../domain/settings'
-import { Button, Notice, PageHeader, SegmentedControl, Sheet, Spinner } from '../../ui'
+import { Button, Notice, PageHeader, SegmentedControl, Sheet, Spinner, TextArea } from '../../ui'
 import { formatRelativeTime } from '../campaign/activity'
 import { COMBAT_MODE_OPTIONS, combatModeLabel } from '../campaign/settingsForm'
 import { Card, KeyValue, LinkButton, Section, Tag, TextLink } from '../campaign/bits'
@@ -67,7 +67,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   // The match row (kept live by Realtime) tells us which warbands have reported; when that set
   // changes, the reports list is stale too, so refetch it. Skipped on first render.
   const qc = useQueryClient()
-  const reportedKey = match.reported_warband_ids.join(',')
+  const reportedKey = [...match.reported_warband_ids, ...match.pending_report_warband_ids, ...match.returned_report_warband_ids].join(',')
   const lastReportedKey = useRef(reportedKey)
   useEffect(() => {
     if (lastReportedKey.current === reportedKey) return
@@ -80,6 +80,10 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   const end = useEndMatch()
   const cancel = useCancelMatch()
   const withdraw = useWithdrawBattleReport()
+  const approve = useApproveBattleReport()
+  const sendBack = useReturnBattleReport()
+  const [returning, setReturning] = useState<ReportView | null>(null)
+  const [returnNote, setReturnNote] = useState('')
 
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
   const [modeChoice, setModeChoice] = useState<CombatMode | null>(null)
@@ -90,13 +94,16 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   const [error, setError] = useState<string | null>(null)
 
   const actions = matchActions(match, userId, gmId)
-  const busy = respond.isPending || start.isPending || end.isPending || cancel.isPending || withdraw.isPending
+  const busy = respond.isPending || start.isPending || end.isPending || cancel.isPending || withdraw.isPending || approve.isPending || sendBack.isPending
   const link = scenarioLink(match)
   const pending = match.state === 'scheduled' ? pendingLabel(match.participants) : null
 
   // Warbands still to report that this user may file for: their own, or any if they run the campaign.
-  const toFile = match.state === 'awaiting_reports' ? match.participants.filter((p) => !match.reported_warband_ids.includes(p.warband_id) && (p.mine || isGm)) : []
+  // A report the GM returned is filed again; one awaiting approval is not.
+  const filed = new Set([...match.reported_warband_ids, ...match.pending_report_warband_ids])
+  const toFile = match.state === 'awaiting_reports' ? match.participants.filter((p) => !filed.has(p.warband_id) && (p.mine || isGm)) : []
   const unreported = match.participants.filter((p) => !match.reported_warband_ids.includes(p.warband_id)).length
+  const awaitingApproval = match.pending_report_warband_ids.length
 
   async function run(task: () => Promise<unknown>, fallback: string) {
     setError(null)
@@ -104,6 +111,8 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
       await task()
       setConfirm(null)
       setWithdrawing(null)
+      setReturning(null)
+      setReturnNote('')
     } catch (e) {
       setError(e instanceof Error ? e.message : fallback)
     }
@@ -193,13 +202,28 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
 
       {match.state === 'awaiting_reports' ? (
         <div className="flex flex-col gap-3">
-          {toFile.map((p) => (
-            <LinkButton key={p.warband_id} to={`/matches/${match.id}/report/${p.warband_id}`}>
-              {toFile.length > 1 || !p.mine ? `File post-battle report: ${p.warband_name}` : 'File post-battle report'}
-            </LinkButton>
-          ))}
-          <Notice tone="info" title={toFile.length > 0 ? 'Reports are next' : unreported > 0 ? `Waiting on ${unreported} ${unreported === 1 ? 'report' : 'reports'}` : 'Reports are in'}>
-            The battle is over. Each player files a post-battle report for their warband: experience, injuries, exploration and the rest. The match completes once every report is in.
+          {toFile.map((p) => {
+            const returned = match.returned_report_warband_ids.includes(p.warband_id)
+            return (
+              <LinkButton key={p.warband_id} to={`/matches/${match.id}/report/${p.warband_id}`}>
+                {returned ? `File again: ${p.warband_name}` : toFile.length > 1 || !p.mine ? `File post-battle report: ${p.warband_name}` : 'File post-battle report'}
+              </LinkButton>
+            )
+          })}
+          <Notice
+            tone="info"
+            title={
+              toFile.length > 0
+                ? 'Reports are next'
+                : awaitingApproval > 0
+                  ? `${awaitingApproval} ${awaitingApproval === 1 ? 'report awaits' : 'reports await'} the GM's approval`
+                  : unreported > 0
+                    ? `Waiting on ${unreported} ${unreported === 1 ? 'report' : 'reports'}`
+                    : 'Reports are in'
+            }
+          >
+            The battle is over. Each player files a post-battle report for their warband: experience, injuries, exploration and the rest. The match completes once every report is in
+            {awaitingApproval > 0 || match.returned_report_warband_ids.length > 0 ? ' and approved by the GM' : ''}.
           </Notice>
         </div>
       ) : null}
@@ -213,7 +237,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           <ul className="flex flex-col gap-2">
             {match.participants.map((p) => {
               const answering = actions.respondFor.includes(p.warband_id)
-              const reported = match.reported_warband_ids.includes(p.warband_id)
+              const reported = match.reported_warband_ids.includes(p.warband_id) || match.pending_report_warband_ids.includes(p.warband_id)
               return (
                 <ParticipantCard key={p.warband_id} participant={p} showAcceptance={match.state === 'scheduled'}>
                   {answering ? (
@@ -260,7 +284,15 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           ) : (
             <ul className="flex flex-col gap-2">
               {reports.data.map((r) => (
-                <ReportCard key={r.id} report={r} onWithdraw={isGm ? setWithdrawing : undefined} />
+                <ReportCard
+                  key={r.id}
+                  report={r}
+                  onWithdraw={isGm ? setWithdrawing : undefined}
+                  onApprove={isGm && r.status === 'pending' ? (rep) => void run(() => approve.mutateAsync(rep.id), 'Could not approve the report.') : undefined}
+                  onReturn={isGm && r.status === 'pending' ? setReturning : undefined}
+                  amendTo={isGm && r.status === 'applied' && match.state !== 'cancelled' ? `/matches/${match.id}/report/${r.warband_id}?amend=1` : undefined}
+                  busy={busy}
+                />
               ))}
             </ul>
           )}
@@ -342,7 +374,11 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
         open={withdrawing !== null}
         onClose={() => setWithdrawing(null)}
         title="Withdraw this report?"
-        description={withdrawing ? `${withdrawing.warband_name}'s report is struck and the match goes back to awaiting reports, so ${withdrawing.submitted_by_display_name} can file again.` : undefined}
+        description={
+          withdrawing
+            ? `${withdrawing.warband_name}'s report is struck, its roster changes are undone, and the match goes back to awaiting reports, so ${withdrawing.submitted_by_display_name} can file again.`
+            : undefined
+        }
         footer={
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setWithdrawing(null)} disabled={withdraw.isPending}>
@@ -363,9 +399,38 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           </div>
         }
       >
-        <Notice tone="warn" title="Roster changes are not undone">
-          Filing the report already moved the roster on: experience, injuries, deaths, gold and wyrdstone were applied. Withdrawing removes the record only. Put the roster right by hand before the report is filed again, or the changes will be applied twice.
+        <Notice tone="info" title="Roster changes are undone">
+          Experience, injuries, treasury and items from this report are put back as they were, and the advances it created are removed. If one of those advances has already been
+          rolled, the withdrawal is refused until it is undone by hand.
         </Notice>
+      </Sheet>
+      <Sheet
+        open={returning !== null}
+        onClose={() => setReturning(null)}
+        title="Return this report?"
+        description={returning ? `${returning.warband_name}'s report goes back to ${returning.submitted_by_display_name} to file again. Nothing has been applied to the roster.` : undefined}
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setReturning(null)} disabled={sendBack.isPending}>
+              Keep it
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              pending={sendBack.isPending}
+              disabled={returnNote.trim() === ''}
+              onClick={() => {
+                if (!returning) return
+                const reportId = returning.id
+                void run(() => sendBack.mutateAsync({ reportId, note: returnNote.trim() }), 'Could not return the report.')
+              }}
+            >
+              Return it
+            </Button>
+          </div>
+        }
+      >
+        <TextArea label="What needs correcting" value={returnNote} onChange={(e) => setReturnNote(e.target.value)} rows={3} placeholder="e.g. the Captain was out of action, roll his injury" />
       </Sheet>
     </>
   )
@@ -374,10 +439,26 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
 /** Under a participant once the battle is over: who filed the report and when, or the way to file it. */
 function ReportStatus({ reported, report, canFile, to }: { reported: boolean; report: ReportView | undefined; canFile: boolean; to: string }) {
   if (reported) {
+    const pending = report?.status === 'pending'
     return (
       <div className="flex items-center justify-between gap-3 border-t border-border pt-2 text-sm">
         <span className="min-w-0 truncate text-ink-dim">{report ? `Report filed by ${report.submitted_by_display_name} · ${formatRelativeTime(report.submitted_at)}` : 'Report filed'}</span>
-        <Tag tone="brass">Filed</Tag>
+        <Tag tone={pending ? 'warn' : 'brass'}>{pending ? 'Awaiting GM' : report && report.revision > 1 ? 'Amended' : 'Filed'}</Tag>
+      </div>
+    )
+  }
+  if (report?.status === 'returned') {
+    return (
+      <div className="flex flex-col gap-2 border-t border-border pt-2 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="min-w-0 text-ink-dim">Returned by the GM{report.review_note ? `: ${report.review_note}` : ''}</span>
+          <Tag tone="warn">Returned</Tag>
+        </div>
+        {canFile ? (
+          <LinkButton to={to} variant="secondary">
+            File again
+          </LinkButton>
+        ) : null}
       </div>
     )
   }

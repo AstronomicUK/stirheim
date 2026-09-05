@@ -403,8 +403,17 @@ export const matchReportRowSchema = z.object({
   veteran_pool_roll: z.number().int().min(2).max(12).nullable(),
   notes: z.string(),
   submitted_at: timestampSchema,
+  /** Phase 11 (migration 13): awaiting GM approval, applied to the roster, or returned with a note. */
+  status: z.enum(["pending", "applied", "returned"]).default("applied"),
+  review_note: z.string().nullable().default(null),
+  revision: z.number().int().min(1).default(1),
+  amended_at: timestampSchema.nullable().default(null),
+  amended_by: uuidSchema.nullable().default(null),
+  amendment_note: z.string().nullable().default(null),
+  adjustments: reportLogSchema.default([]),
 });
 export type MatchReportRow = z.infer<typeof matchReportRowSchema>;
+export type ReportStatus = MatchReportRow["status"];
 
 export const pendingAdvanceRowSchema = z
   .object({

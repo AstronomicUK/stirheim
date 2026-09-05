@@ -404,6 +404,10 @@ export type Database = {
       }
       match_reports: {
         Row: {
+          adjustments: Json
+          amended_at: string | null
+          amended_by: string | null
+          amendment_note: string | null
           applied: Json
           exploration: Json
           id: string
@@ -413,15 +417,23 @@ export type Database = {
           notes: string
           ooa: Json
           result: string
+          review_note: string | null
+          revision: number
           routed: boolean
+          status: string
           submitted_at: string
           submitted_by: string
+          undo: Json | null
           veteran_pool_roll: number | null
           warband_id: string
           won: boolean
           xp_log: Json
         }
         Insert: {
+          adjustments?: Json
+          amended_at?: string | null
+          amended_by?: string | null
+          amendment_note?: string | null
           applied?: Json
           exploration?: Json
           id?: string
@@ -431,15 +443,23 @@ export type Database = {
           notes?: string
           ooa?: Json
           result?: string
+          review_note?: string | null
+          revision?: number
           routed?: boolean
+          status?: string
           submitted_at?: string
           submitted_by: string
+          undo?: Json | null
           veteran_pool_roll?: number | null
           warband_id: string
           won?: boolean
           xp_log?: Json
         }
         Update: {
+          adjustments?: Json
+          amended_at?: string | null
+          amended_by?: string | null
+          amendment_note?: string | null
           applied?: Json
           exploration?: Json
           id?: string
@@ -449,9 +469,13 @@ export type Database = {
           notes?: string
           ooa?: Json
           result?: string
+          review_note?: string | null
+          revision?: number
           routed?: boolean
+          status?: string
           submitted_at?: string
           submitted_by?: string
+          undo?: Json | null
           veteran_pool_roll?: number | null
           warband_id?: string
           won?: boolean
@@ -619,6 +643,71 @@ export type Database = {
         }
         Relationships: []
       }
+      report_revisions: {
+        Row: {
+          id: string
+          match_id: string
+          note: string
+          replaced_at: string
+          replaced_by: string | null
+          report: Json
+          report_id: string
+          revision: number
+          warband_id: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          note?: string
+          replaced_at?: string
+          replaced_by?: string | null
+          report: Json
+          report_id: string
+          revision: number
+          warband_id: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          note?: string
+          replaced_at?: string
+          replaced_by?: string | null
+          report?: Json
+          report_id?: string
+          revision?: number
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_revisions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_revisions_replaced_by_profile_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "report_revisions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_revisions_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenarios: {
         Row: {
           campaign_id: string | null
@@ -760,6 +849,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_battle_report: { Args: { p_report_id: string }; Returns: undefined }
+      approve_battle_report: {
+        Args: { p_report_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
       campaign_preview: {
         Args: { p_invite_code: string }
         Returns: {
@@ -774,6 +868,10 @@ export type Database = {
       can_read_campaign: { Args: { p_campaign_id: string }; Returns: boolean }
       can_read_warband: { Args: { p_warband_id: string }; Returns: boolean }
       cancel_match: {
+        Args: { p_match_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
+      complete_match_if_reported: {
         Args: { p_match_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
       }
@@ -835,6 +933,14 @@ export type Database = {
         Args: { p_accept: boolean; p_match_id: string; p_warband_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
       }
+      return_battle_report: {
+        Args: { p_note: string; p_report_id: string }
+        Returns: Database["public"]["Enums"]["match_state"]
+      }
+      revert_battle_report: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
       save_battle_session: {
         Args: { p_live_state: Json; p_match_id: string; p_warband_id: string }
         Returns: string
@@ -858,7 +964,12 @@ export type Database = {
         Returns: Database["public"]["Enums"]["match_state"]
       }
       submit_battle_report: {
-        Args: { p_match_id: string; p_report: Json; p_warband_id: string }
+        Args: {
+          p_amend_note?: string
+          p_match_id: string
+          p_report: Json
+          p_warband_id: string
+        }
         Returns: Database["public"]["Enums"]["match_state"]
       }
       update_roster: {

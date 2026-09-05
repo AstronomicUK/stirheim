@@ -17,6 +17,7 @@ describe('settings form mapping', () => {
       dicePolicy: 'app_rolls' as const,
       combatMode: 'players' as const,
       lockCombatMode: true,
+      reportApproval: true,
     }
     const result = settingsFromForm(formFromSettings(settings))
     expect(result).toEqual({ ok: true, settings })

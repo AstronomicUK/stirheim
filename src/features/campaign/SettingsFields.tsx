@@ -71,6 +71,18 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
         {dice ? <p className="text-sm leading-relaxed text-ink-dim">{dice.description}</p> : null}
       </Section>
 
+      <Section title="Post-battle reports">
+        <div className="flex flex-col rounded-md border border-border bg-surface-low px-4">
+          <ToggleRow
+            label="Reports need GM approval"
+            description="A player's report waits, applying nothing to the roster, until the GM approves it or returns it with a note. The GM's own reports apply at once."
+            checked={form.reportApproval}
+            disabled={disabled}
+            onChange={(reportApproval) => onChange({ ...form, reportApproval })}
+          />
+        </div>
+      </Section>
+
       <Section title="Combat during battles">
         <SegmentedControl
           label="How games are scored by default"

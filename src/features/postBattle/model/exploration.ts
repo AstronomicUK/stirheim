@@ -18,7 +18,7 @@
 //   kept as custom stash items. Conditional items ("If you roll a 1 you will also find a Lucky
 //   Charm") are suggested and can be removed.
 
-import type { ExplorationRecord } from '../../../domain'
+import type { ExplorationRecord, ReportAdjustment } from '../../../domain'
 import { resolveEquipmentName } from '../../../rules/data/items/aliases'
 import { explorationDiceAllowed, locationOutcome, resolveExploration, type ExplorationDiceAllowed, type ExplorationResult, type LocationOutcome } from '../../../rules/resolve/exploration'
 import type { ExplorationLocation, ExplorationReward } from '../../../rules/types/exploration'
@@ -42,8 +42,12 @@ export interface DiceAmount {
 
 export interface ExplorationDerived {
   eligibleHeroes: RosterHero[]
-  /** Null when the warband cannot explore. */
+  /** Dice actually rolled: the suggestion, or the player's override. Null when the warband cannot explore. */
   allowed: ExplorationDiceAllowed | null
+  /** What the rulebook suggests before any override. */
+  suggested: ExplorationDiceAllowed | null
+  /** Set when the player rolls a different count; goes on the report as an adjustment. */
+  adjustment: ReportAdjustment | null
   skippedReason: string | null
   /** Sized to the dice allowed. */
   rolls: (number | null)[]
@@ -90,6 +94,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const base: ExplorationDerived = {
     eligibleHeroes: input.eligibleHeroes,
     allowed: null,
+    suggested: null,
+    adjustment: null,
     skippedReason: null,
     rolls: [],
     complete: false,
@@ -112,8 +118,16 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
 
   const eligible = new Set(input.eligibleHeroes.map((h) => h.id))
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
-  const allowed = explorationDiceAllowed(roster, { won: input.won, heroesOutOfAction, extraDice: draft.extraDice })
-  if (allowed.count <= 0) return { ...base, allowed, skippedReason: NO_HEROES }
+  const suggested = explorationDiceAllowed(roster, { won: input.won, heroesOutOfAction })
+  const override = draft.diceOverride
+  const allowed: ExplorationDiceAllowed = override
+    ? { count: override.count, capped: false, reason: `${suggested.reason}; changed to ${override.count}${override.reason.trim() ? `: ${override.reason.trim()}` : ''}` }
+    : suggested
+  const adjustment: ReportAdjustment | null =
+    override && override.count !== suggested.count
+      ? { label: 'Exploration dice', suggested: `${suggested.count} (${suggested.reason})`, used: String(override.count), reason: override.reason.trim() }
+      : null
+  if (allowed.count <= 0) return { ...base, allowed, suggested, skippedReason: NO_HEROES }
 
   const rolls: (number | null)[] = []
   for (let i = 0; i < allowed.count; i++) {
@@ -122,9 +136,10 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   }
   const complete = rolls.every((r) => r !== null)
   const problems: string[] = []
+  if (adjustment && adjustment.reason === '') problems.push('Say why the number of exploration dice was changed.')
   if (!complete) {
     problems.push(`Enter all ${allowed.count} exploration dice.`)
-    return { ...base, allowed, rolls, problems }
+    return { ...base, allowed, suggested, adjustment, rolls, problems }
   }
 
   const result = resolveExploration(rolls as number[])
@@ -178,6 +193,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   return {
     ...base,
     allowed,
+    suggested,
+    adjustment,
     rolls,
     complete,
     result,

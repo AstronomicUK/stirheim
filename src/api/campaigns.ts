@@ -7,6 +7,7 @@ import { campaignSettingsSchema, type CampaignRow, type CampaignSettings, type H
 import { toRosterWarband } from '../domain'
 import { findWarbandTemplate } from '../rules/data/warbandTemplates'
 import { warbandRating } from '../rules/resolve/rating'
+import { fetchCampaignAliases, nameIn } from './aliases'
 import { supabase } from './supabase'
 import { warbandKeys } from './warbands'
 
@@ -144,23 +145,27 @@ function toMemberView(m: MemberRow): CampaignMemberView | null {
 }
 
 export async function fetchCampaign(id: string): Promise<CampaignDetail> {
-  const [campaign, members] = await Promise.all([
+  const [campaign, members, aliases] = await Promise.all([
     supabase.from('campaigns').select('*, profiles!campaigns_gm_profile_fkey(display_name)').eq('id', id).maybeSingle(),
     supabase
       .from('campaign_members')
       .select('campaign_id, warband_id, user_id, joined_at, left_at, profiles(display_name), warbands(*, heroes(*), henchman_groups(*))')
       .eq('campaign_id', id)
       .order('joined_at'),
+    fetchCampaignAliases(id).catch(() => new Map<string, string>()),
   ])
   const firstError = campaign.error ?? members.error
   if (firstError) throw new Error(firstError.message)
   if (!campaign.data) throw new Error('This campaign does not exist, or you are not a member.')
   const { profiles, ...row } = campaign.data
-  const views = ((members.data ?? []) as unknown as MemberRow[]).map(toMemberView).filter((m): m is CampaignMemberView => m !== null)
+  const views = ((members.data ?? []) as unknown as MemberRow[])
+    .map(toMemberView)
+    .filter((m): m is CampaignMemberView => m !== null)
+    .map((m) => ({ ...m, display_name: nameIn(aliases, m.user_id, m.display_name) }))
   return {
     campaign: row as CampaignRow,
     settings: campaignSettingsSchema.parse(row.settings ?? {}),
-    gm_display_name: profiles?.display_name ?? 'GM',
+    gm_display_name: nameIn(aliases, row.gm_id, profiles?.display_name ?? 'GM'),
     members: views.filter((m) => m.left_at === null),
     former_members: views.filter((m) => m.left_at !== null),
   }
@@ -180,7 +185,8 @@ export async function fetchCampaignActivity(id: string, limit = 40): Promise<Cam
     actorIds.length ? supabase.from('profiles').select('user_id, display_name').in('user_id', actorIds) : Promise.resolve({ data: [], error: null }),
     warbandIds.length ? supabase.from('warbands').select('id, name').in('id', warbandIds) : Promise.resolve({ data: [], error: null }),
   ])
-  const names = new Map((profiles.data ?? []).map((p) => [p.user_id, p.display_name]))
+  const aliases = await fetchCampaignAliases(id).catch(() => new Map<string, string>())
+  const names = new Map((profiles.data ?? []).map((p) => [p.user_id, nameIn(aliases, p.user_id, p.display_name)]))
   const wnames = new Map((warbands.data ?? []).map((w) => [w.id, w.name]))
   return data.map((d) => ({
     id: Number(d.id),

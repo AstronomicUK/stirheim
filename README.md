@@ -4,7 +4,7 @@ Stirheim is a warband roster builder, campaign manager and post-battle helper fo
 built on the rules data and combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-05): **Phase 11 built: combat mode per game, tappable kit, kite shield / pavise / gromril rules, calculator carry-over, advances in the wizard with "Pick later", GM approval and amendment of reports with a change log, suggested dice. Phase 12 built: roster import from other trackers and warband hand-over, overrides with logged reasons wherever the app suggests a figure, and the shared combat log with revert.** Live at
+Status (2026-09-05): **Phase 13 built: the Ledger redesign (paper palette, new type, navigation rail, desktop layouts, hover cards) with campaign aliases, henchman model names, warband templates, a richer records importer and the recruits' free dagger. Phase 11 built: combat mode per game, tappable kit, kite shield / pavise / gromril rules, calculator carry-over, advances in the wizard with "Pick later", GM approval and amendment of reports with a change log, suggested dice. Phase 12 built: roster import from other trackers and warband hand-over, overrides with logged reasons wherever the app suggests a figure, and the shared combat log with revert.** Live at
 https://stirheim.netlify.app (Netlify; releases are deployed from a local build, automatic builds are off). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 
@@ -77,6 +77,8 @@ src/
                   postBattle, records)
   ui/             shared components
   app/            router, app shell, session store, auth gate
+public/
+  brand/          logo artwork (stirheim-logo.jpg, 1408x768 JPEG on white) for the header, splash and print sheet
 supabase/
   migrations/     SQL schema, RLS policies and functions, audit log
   seed.sql        local dev data (never pushed)

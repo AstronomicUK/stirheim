@@ -49,6 +49,14 @@ export function GroupEditor({ group, warbandTemplateId, errors, onChange, onRemo
         <NumberField label="Advances taken" value={group.level_ups} error={err('level_ups')} onChange={(v) => onChange({ level_ups: v ?? 0 })} />
       </div>
 
+      <TextArea
+        label="Model names"
+        hint="One per line: the names of the individual models, or a short note about each."
+        value={group.model_names.join('\n')}
+        rows={Math.min(6, Math.max(2, group.size))}
+        onChange={(e) => onChange({ model_names: e.target.value.split('\n') })}
+      />
+
       <TextArea label="Notes" value={group.notes} rows={2} onChange={(e) => onChange({ notes: e.target.value })} />
     </Card>
   )

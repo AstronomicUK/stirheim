@@ -94,7 +94,8 @@ describe("recruitHero", () => {
       xp: 20,
       levelUps: 0,
       status: "active",
-      equipment: [],
+      // The list's free dagger comes with the hire.
+      equipment: [{ itemId: "dagger", quantity: 1 }],
       skillTableIds: captain.skillTableIds,
       stats: captain.stats,
     });
@@ -138,7 +139,7 @@ describe("recruitHenchmen", () => {
     const r = recruitHenchmen(wb, REIKLAND, WARRIORS, "The Lads", 3, "lads");
     expect(r.value.warband.gold).toBe(425);
     expect(r.value.warband.henchmenGroups).toEqual([
-      expect.objectContaining({ id: "lads", name: "The Lads", unitTemplateId: WARRIORS, size: 3, xp: 0, equipment: [] }),
+      expect.objectContaining({ id: "lads", name: "The Lads", unitTemplateId: WARRIORS, size: 3, xp: 0, equipment: [{ itemId: "dagger", quantity: 3 }] }),
     ]);
     expect(r.value.poolRemaining).toBeNull();
     expect(wb).toEqual(before);

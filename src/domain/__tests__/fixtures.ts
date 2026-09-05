@@ -120,6 +120,7 @@ function group(
     stat_increases: {},
     is_large: false,
     notes: "",
+    model_names: [],
     sort_order,
     created_at: T0,
     updated_at: T0,

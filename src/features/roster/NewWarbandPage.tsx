@@ -5,6 +5,7 @@ import type { UnitTemplate, WarbandTemplate } from '../../rules/types'
 import { Button, Notice, PageHeader, SegmentedControl, Sheet, TextField } from '../../ui'
 import { useDraftStore } from './builder/draftStore'
 import { compositionSummary, filterTemplates, gradeLabel, gradesPresent, type GradeFilter } from './builder/helpers'
+import { SavedTemplates } from './SavedTemplates'
 import { warbandTypeName } from './shared/names'
 
 const GRADE_OPTIONS: { value: GradeFilter; label: string }[] = [
@@ -23,6 +24,8 @@ export function NewWarbandPage() {
   return (
     <>
       <PageHeader eyebrow="New warband" title="Choose a warband" description="Search the published lists, then name your warband and start spending." />
+
+      <SavedTemplates />
 
       <div className="flex flex-col gap-3">
         <TextField

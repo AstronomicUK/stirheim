@@ -187,6 +187,8 @@ export const henchmanGroupRowSchema = z.object({
   stat_increases: statIncreasesSchema,
   is_large: z.boolean(),
   notes: z.string(),
+  /** Optional short names for the individual models, in no particular order. */
+  model_names: z.array(z.string().max(60)).max(40).default([]),
   sort_order: z.number().int(),
   ...timestamps,
 });
@@ -200,6 +202,7 @@ export const henchmanGroupInsertSchema = henchmanGroupRowSchema.omit({ created_a
   stat_increases: true,
   is_large: true,
   notes: true,
+  model_names: true,
   sort_order: true,
 });
 export type HenchmanGroupInsert = z.input<typeof henchmanGroupInsertSchema>;

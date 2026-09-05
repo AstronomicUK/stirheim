@@ -13,6 +13,7 @@ import type { RosterWarband } from '../rules/types/roster'
 import { findWarbandTemplate } from '../rules/data/warbandTemplates'
 import { warbandRating } from '../rules/resolve/rating'
 import { campaignKeys } from './campaigns'
+import { fetchCampaignAliases, nameIn, type AliasMap } from './aliases'
 import { supabase } from './supabase'
 
 export const matchKeys = {
@@ -101,7 +102,7 @@ function ratingOf(w: NonNullable<MatchQueryRow['match_participants'][number]['wa
   return warbandRating(toRosterWarband(warband, heroes, groups, []), template).total
 }
 
-function toSummary(row: MatchQueryRow, userId: string | undefined): MatchSummary {
+function toSummary(row: MatchQueryRow, userId: string | undefined, aliases?: AliasMap): MatchSummary {
   return {
     id: row.id,
     campaign_id: row.campaign_id,
@@ -109,7 +110,7 @@ function toSummary(row: MatchQueryRow, userId: string | undefined): MatchSummary
     combat_mode: row.combat_mode,
     created_via: row.created_via,
     created_by: row.created_by,
-    created_by_display_name: row.profiles?.display_name ?? 'Someone',
+    created_by_display_name: nameIn(aliases, row.created_by, row.profiles?.display_name ?? 'Someone'),
     scenario_rules_id: row.scenario_rules_id,
     custom_scenario_id: row.custom_scenario_id,
     custom_scenario_name: row.scenarios?.name ?? null,
@@ -128,7 +129,7 @@ function toSummary(row: MatchQueryRow, userId: string | undefined): MatchSummary
           warband_name: w.name,
           type_name: findWarbandTemplate(w.type_rules_id)?.name ?? w.type_rules_id,
           owner_id: w.owner_id,
-          owner_display_name: w.profiles?.display_name ?? 'Player',
+          owner_display_name: nameIn(aliases, w.owner_id, w.profiles?.display_name ?? 'Player'),
           rating: ratingOf(w),
           accepted_at: p.accepted_at,
           mine: w.owner_id === userId,
@@ -141,16 +142,20 @@ function toSummary(row: MatchQueryRow, userId: string | undefined): MatchSummary
 }
 
 export async function fetchCampaignMatches(campaignId: string, userId: string | undefined): Promise<MatchSummary[]> {
-  const { data, error } = await supabase.from('matches').select(MATCH_SELECT).eq('campaign_id', campaignId).order('created_at', { ascending: false })
+  const [{ data, error }, aliases] = await Promise.all([
+    supabase.from('matches').select(MATCH_SELECT).eq('campaign_id', campaignId).order('created_at', { ascending: false }),
+    fetchCampaignAliases(campaignId).catch(() => new Map<string, string>()),
+  ])
   if (error) throw new Error(error.message)
-  return (data as unknown as MatchQueryRow[]).map((r) => toSummary(r, userId))
+  return (data as unknown as MatchQueryRow[]).map((r) => toSummary(r, userId, aliases))
 }
 
 export async function fetchMatch(id: string, userId: string | undefined): Promise<MatchSummary> {
   const { data, error } = await supabase.from('matches').select(MATCH_SELECT).eq('id', id).maybeSingle()
   if (error) throw new Error(error.message)
   if (!data) throw new Error('This match does not exist, or you are not in its campaign.')
-  return toSummary(data as unknown as MatchQueryRow, userId)
+  const aliases = await fetchCampaignAliases((data as unknown as MatchQueryRow).campaign_id).catch(() => new Map<string, string>())
+  return toSummary(data as unknown as MatchQueryRow, userId, aliases)
 }
 
 export interface BattleSessionView {

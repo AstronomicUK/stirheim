@@ -30,6 +30,7 @@ import { findEquipmentList, findUnitTemplate } from "../data/warbandTemplates";
 import { equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "./equipmentCost";
 import { advancesEarned } from "../data/campaign/experience";
 import { RulesError } from "./errors";
+import { freeDaggerLine } from "./freeDagger";
 import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
 
 // ---- Draft model ----
@@ -189,9 +190,9 @@ export function setDraftGroupSize(draft: WarbandDraft, id: string, size: number)
 export function withFreeDagger(draft: WarbandDraft, template: WarbandTemplate, subject: DraftSubject): WarbandDraft {
   const unitTemplateId = subject.kind === "hero" ? requireHero(draft, subject.id).unitTemplateId : requireGroup(draft, subject.id).unitTemplateId;
   if (readEquipment(draft, subject).length > 0) return draft;
-  const option = equipmentOptionsFor(template, unitTemplateId).find(
-    (candidate) => candidate.cost.kind === "firstFree" && (candidate.item?.id === "dagger" || /^dagger$/i.test(candidate.name)),
-  );
+  const line = freeDaggerLine(template, requireUnit(template, unitTemplateId));
+  if (!line) return draft;
+  const option = equipmentOptionsFor(template, unitTemplateId).find((candidate) => candidate.name === line.name);
   return option ? addDraftEquipment(draft, subject, option, 1) : draft;
 }
 

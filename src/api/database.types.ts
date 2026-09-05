@@ -154,6 +154,35 @@ export type Database = {
           },
         ]
       }
+      campaign_aliases: {
+        Row: {
+          alias: string
+          campaign_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alias: string
+          campaign_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alias?: string
+          campaign_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_aliases_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_members: {
         Row: {
           campaign_id: string
@@ -250,6 +279,7 @@ export type Database = {
           id: string
           is_large: boolean
           level_ups: number
+          model_names: string[]
           name: string
           notes: string
           size: number
@@ -266,6 +296,7 @@ export type Database = {
           id?: string
           is_large?: boolean
           level_ups?: number
+          model_names?: string[]
           name: string
           notes?: string
           size?: number
@@ -282,6 +313,7 @@ export type Database = {
           id?: string
           is_large?: boolean
           level_ups?: number
+          model_names?: string[]
           name?: string
           notes?: string
           size?: number
@@ -858,6 +890,44 @@ export type Database = {
           },
         ]
       }
+      warband_templates: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          payload: Json
+          type_rules_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          payload: Json
+          type_rules_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          payload?: Json
+          type_rules_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warband_templates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       warbands: {
         Row: {
           archived: boolean
@@ -969,6 +1039,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      jsonb_text_array: { Args: { p: Json }; Returns: string[] }
       leave_campaign: {
         Args: { p_campaign_id: string; p_warband_id: string }
         Returns: undefined
@@ -1024,6 +1095,10 @@ export type Database = {
           p_warband_ids: string[]
         }
         Returns: string
+      }
+      set_campaign_alias: {
+        Args: { p_alias: string; p_campaign_id: string; p_user_id: string }
+        Returns: undefined
       }
       start_match: {
         Args: {

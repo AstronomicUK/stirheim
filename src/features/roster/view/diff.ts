@@ -61,6 +61,7 @@ export interface GroupDraft {
   stat_increases: Partial<Record<StatKey, number>>
   is_large: boolean
   notes: string
+  model_names: string[]
   sort_order: number
 }
 
@@ -127,6 +128,7 @@ export function groupDraftFromRow(row: HenchmanGroupRow): GroupDraft {
     stat_increases: { ...row.stat_increases },
     is_large: row.is_large,
     notes: row.notes,
+    model_names: [...(row.model_names ?? [])],
     sort_order: row.sort_order,
   }
 }
@@ -237,6 +239,7 @@ function groupInsertData(group: GroupDraft): Record<string, unknown> {
     stat_increases: group.stat_increases,
     is_large: group.is_large,
     notes: group.notes,
+    model_names: group.model_names,
     sort_order: group.sort_order,
   }
 }
@@ -251,6 +254,7 @@ function groupUpdateData(before: HenchmanGroupRow, after: GroupDraft): Record<st
   if (!statIncreasesEqual(after.stat_increases, before.stat_increases)) data.stat_increases = after.stat_increases
   if (after.is_large !== before.is_large) data.is_large = after.is_large
   if (after.notes !== before.notes) data.notes = after.notes
+  if (after.model_names.join('\n') !== (before.model_names ?? []).join('\n')) data.model_names = after.model_names
   if (after.sort_order !== before.sort_order) data.sort_order = after.sort_order
   return data
 }

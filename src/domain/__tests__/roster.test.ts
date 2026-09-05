@@ -290,6 +290,7 @@ describe("patches from the roster model", () => {
       statIncreases: { WS: 1 },
       equipment: [{ itemId: "dagger", quantity: 3 }],
       notes: "One fell in the Stir",
+      modelNames: ["Kurt", "Otto"],
     };
     expect(groupPatchFromRoster(group)).toEqual({
       stats: group.stats,
@@ -298,6 +299,7 @@ describe("patches from the roster model", () => {
       size: 2,
       stat_increases: { WS: 1 },
       notes: "One fell in the Stir",
+      model_names: ["Kurt", "Otto"],
     });
   });
 

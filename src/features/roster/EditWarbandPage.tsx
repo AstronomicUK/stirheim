@@ -88,6 +88,7 @@ function Editor({ detail }: { detail: WarbandDetail }) {
           stat_increases: {},
           is_large: unitIsLarge(choice.unit),
           notes: '',
+          model_names: [],
           sort_order: nextSort,
         }
         return { ...d, groups: [...d.groups, group] }

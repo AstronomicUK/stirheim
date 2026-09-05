@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
+import { useSaveTemplate } from '../../api/templates'
 import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
+import { rosterToTemplatePayload } from '../../rules/resolve/warbandTemplates'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
@@ -49,6 +51,10 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
   const remove = useDeleteWarband()
   const [menuOpen, setMenuOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [templateOpen, setTemplateOpen] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const [templateSaved, setTemplateSaved] = useState(false)
+  const saveTemplate = useSaveTemplate()
   const [confirmText, setConfirmText] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -90,6 +96,18 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
   }
 
   const deleteReady = confirmText.trim() === warband.name.trim()
+
+  async function confirmSaveTemplate() {
+    if (!user || !templateName.trim()) return
+    setActionError(null)
+    try {
+      await saveTemplate.mutateAsync({ ownerId: user.id, name: templateName.trim(), typeRulesId: warband.type_rules_id, payload: rosterToTemplatePayload(roster) })
+      setTemplateOpen(false)
+      setTemplateSaved(true)
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not save the template.')
+    }
+  }
 
   return (
     <>
@@ -167,6 +185,11 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Notice>
       ) : null}
       {actionError ? <Notice tone="error">{actionError}</Notice> : null}
+      {templateSaved ? (
+        <Notice tone="success" title="Template saved">
+          Start a new warband from it under New warband › Your templates.
+        </Notice>
+      ) : null}
 
       <Section title="Heroes" aside={`${activeHeroes.length}`}>
         {activeHeroes.length === 0 ? <p className="text-sm text-ink-dim">No heroes on the roster.</p> : null}
@@ -228,6 +251,22 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
               ? 'Bring the warband back to the front of your list.'
               : 'Archived warbands drop to the bottom of your list and are left out of new matches. Nothing is lost.'}
           </p>
+          {isOwner ? (
+            <>
+              <Button
+                variant="secondary"
+                block
+                onClick={() => {
+                  setMenuOpen(false)
+                  setTemplateName(warband.name)
+                  setTemplateOpen(true)
+                }}
+              >
+                Save as template
+              </Button>
+              <p className="text-sm text-ink-dim">Keeps the warband type, warriors and kit (not experience, injuries or gold) to start future warbands from.</p>
+            </>
+          ) : null}
           <Button
             variant="danger"
             block
@@ -239,6 +278,27 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
           >
             Delete warband
           </Button>
+        </div>
+      </Sheet>
+
+      <Sheet
+        open={templateOpen}
+        onClose={() => setTemplateOpen(false)}
+        title="Save as template"
+        description="Private to your account. Sharing with a campaign can come later."
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setTemplateOpen(false)} disabled={saveTemplate.isPending}>
+              Cancel
+            </Button>
+            <Button className="flex-1" disabled={!templateName.trim()} pending={saveTemplate.isPending} onClick={() => void confirmSaveTemplate()}>
+              Save template
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-3 py-2">
+          <TextField label="Template name" value={templateName} maxLength={80} autoComplete="off" onChange={(e) => setTemplateName(e.target.value)} />
         </div>
       </Sheet>
 

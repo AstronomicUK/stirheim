@@ -9,7 +9,7 @@ import { GettingStartedChecklist, JoinCampaignNudge } from '../onboarding/Gettin
 import { homeStage } from '../onboarding/checklist'
 import { usePageTitle } from '../onboarding/usePageTitle'
 import { useDraftStore } from './builder/draftStore'
-import { splitArchived } from './builder/helpers'
+import { groupByCampaign, splitArchived } from './builder/helpers'
 import { warbandTypeName } from './shared/names'
 
 export function WarbandListPage() {
@@ -83,7 +83,21 @@ export function WarbandListPage() {
         </>
       ) : split ? (
         <>
-          <WarbandRows warbands={split.active} />
+          {groupByCampaign(split.active).map((group) => (
+            <div key={group.key} className="flex flex-col gap-2">
+              {group.title ? (
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-xs uppercase tracking-[0.25em] text-ink-dim">{group.title}</h2>
+                  {group.campaignId ? (
+                    <Link to={`/campaigns/${group.campaignId}`} className="text-xs text-link underline-offset-4 hover:underline">
+                      Open campaign
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+              <WarbandRows warbands={group.warbands} />
+            </div>
+          ))}
           {stage === 'no_campaign' ? <JoinCampaignNudge /> : null}
 
           {split.archived.length > 0 ? (

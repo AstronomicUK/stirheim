@@ -16,6 +16,9 @@ export interface ImportParticipantPayload {
   result: 'won' | 'lost' | 'draw'
   xp_gained?: number | null
   casualties?: number | null
+  shards?: number | null
+  gold?: number | null
+  veteran_pool?: number | null
   notes?: string
 }
 

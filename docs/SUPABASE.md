@@ -123,6 +123,13 @@ editor changes are distinguishable in the history.
 5. Netlify > Site configuration > Environment variables: `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_ANON_KEY` from Project Settings > API. Redeploy.
 
+### Releasing a schema change
+
+Every migration added after the first release goes live with `npx supabase db push` from the linked CLI
+(no database password needed) **before** the matching `netlify deploy`, so the live app never calls a
+function that is not there yet. Phase 13 added `20260905000018_phase13.sql`, which has not been pushed
+to the hosted project yet: push it as part of the Phase 13 release.
+
 ### How it was actually done (2026-09-05)
 
 Hosted project ref `bckbyomcukkiabkomlrs` (London). `npx supabase login` + `npx supabase link`

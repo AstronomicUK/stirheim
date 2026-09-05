@@ -59,6 +59,15 @@ export function HelpPage() {
           roster that already has history.
         </P>
         <P>
+          <B>Read.</B> Hover over (or tap) any weapon, armour, skill or spell on a roster for its rules. Each warrior's experience shows as a track
+          segmented at the advance boxes, filled to the current total; a brass pill means an advance is owed. Henchman groups can carry a name for each
+          model (manual editor › Model names), shown on the card and the printed sheet.
+        </P>
+        <P>
+          <B>Templates.</B> <em>More › Save as template</em> on a roster keeps its warband type, warriors and kit. <Go to="/warbands/new">New warband</Go>{' '}
+          lists your templates at the top; starting from one rebuilds the roster at today's list prices with the campaign's starting gold.
+        </P>
+        <P>
           <B>Print.</B> The roster page has a printer-friendly sheet: black on white, one warband per page, with room for notes.
         </P>
       </Topic>
@@ -67,6 +76,10 @@ export function HelpPage() {
         <P>
           <B>Join with a code.</B> The GM shares an eight-character code (or a link). Go to <Go to="/campaigns/join">Join with a code</Go>, type it in any
           shape, then choose which of your warbands takes the field. A warband plays in one campaign at a time.
+        </P>
+        <P>
+          <B>Your name in a campaign.</B> The campaign page has a box for the name the other players see in that campaign only; leave it blank to use
+          your account name. The GM can set anyone's from Settings › Members.
         </P>
         <P>
           <B>GM settings.</B> Whoever starts a campaign runs it. Settings hold the starting gold, an optional roster cap, whether players roll their own dice,

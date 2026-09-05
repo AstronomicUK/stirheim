@@ -28,6 +28,8 @@ export interface WarbandSummary {
   updated_at: string
   hero_count: number
   model_count: number
+  /** The campaign the warband is currently enrolled in, if any. */
+  campaign: { id: string; name: string } | null
 }
 
 /** Everything needed to show one warband: the rows, plus the resolver-side view of them. */
@@ -42,7 +44,7 @@ export interface WarbandDetail {
 export async function fetchMyWarbands(userId: string): Promise<WarbandSummary[]> {
   const { data, error } = await supabase
     .from('warbands')
-    .select('id, name, type_rules_id, owner_id, gold, wyrdstone, archived, updated_at, heroes(status), henchman_groups(size)')
+    .select('id, name, type_rules_id, owner_id, gold, wyrdstone, archived, updated_at, heroes(status), henchman_groups(size), campaign_members(campaign_id, left_at, campaigns(name))')
     .eq('owner_id', userId)
     .order('archived')
     .order('updated_at', { ascending: false })
@@ -50,6 +52,7 @@ export async function fetchMyWarbands(userId: string): Promise<WarbandSummary[]>
   return data.map((row) => {
     const heroes = row.heroes.filter((h) => h.status === 'active').length
     const henchmen = row.henchman_groups.reduce((sum, g) => sum + g.size, 0)
+    const active = row.campaign_members.find((m) => m.left_at === null)
     return {
       id: row.id,
       name: row.name,
@@ -61,6 +64,7 @@ export async function fetchMyWarbands(userId: string): Promise<WarbandSummary[]>
       updated_at: row.updated_at,
       hero_count: heroes,
       model_count: heroes + henchmen,
+      campaign: active ? { id: active.campaign_id, name: active.campaigns?.name ?? 'Campaign' } : null,
     }
   })
 }

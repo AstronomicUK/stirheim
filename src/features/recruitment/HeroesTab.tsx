@@ -24,7 +24,7 @@ export function HeroesTab({ detail, template, canEdit, onDone }: RecruitTabProps
   return (
     <>
       <p className="text-sm text-ink-dim">
-        Heroes arrive with their starting experience and no equipment; buy their weapons and armour at the trading post afterwards.
+        Heroes arrive with their starting experience and the free dagger from their list; buy the rest of their kit at the trading post afterwards.
       </p>
       <UnitList listings={listings} disabled={!canEdit} onPick={setPicked} />
       {picked ? (

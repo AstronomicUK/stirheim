@@ -10,6 +10,7 @@ import { GmChecklist } from '../onboarding/GmChecklist'
 import { usePageTitle } from '../onboarding/usePageTitle'
 import { activityLines, formatRelativeTime } from './activity'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
+import { AliasField } from './AliasField'
 import { InviteCard } from './InviteCard'
 import { usePendingAdvanceCounts } from '../../api/advances'
 import { combatModeLabel, dicePolicyLabel } from './settingsForm'
@@ -53,6 +54,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
   const [leaveError, setLeaveError] = useState<string | null>(null)
 
   const isGm = user?.id === campaign.gm_id
+  const accountName = useSession((s) => s.profile)?.display_name ?? 'your account name'
   const mine = members.filter((m) => m.user_id === user?.id)
   const houseRuleLines = useMemo(() => describeHouseRules(settings.houseRules), [settings.houseRules])
   const lines = useMemo(() => (activity.data ? activityLines(activity.data) : []), [activity.data])
@@ -104,6 +106,11 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
       {isGm && !campaign.archived ? <GmChecklist key={campaign.id} campaignId={campaign.id} memberCount={members.length} matchCount={matches.data?.length ?? 0} /> : null}
 
       <InviteCard code={campaign.invite_code} archived={campaign.archived} campaignName={campaign.name} />
+      {user && (mine.length > 0 || isGm) ? (
+        <Card className="px-4 py-3">
+          <AliasField campaignId={campaign.id} userId={user.id} accountName={accountName} label="Your name in this campaign" />
+        </Card>
+      ) : null}
 
       <Section title="Settings and house rules">
         <Card className="flex flex-col gap-3 px-4 py-3">

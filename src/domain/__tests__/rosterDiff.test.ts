@@ -342,6 +342,7 @@ describe("diffRoster", () => {
           stat_increases: {},
           is_large: false,
           notes: "",
+          model_names: [],
           sort_order: 2,
         },
       },

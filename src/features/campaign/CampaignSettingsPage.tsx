@@ -13,6 +13,7 @@ import { useSession } from '../../app/session'
 import { Button, Notice, Sheet, Spinner, TextField } from '../../ui'
 import { Card, Section, TextLink } from './bits'
 import { formatInviteCode } from './inviteCode'
+import { AliasField } from './AliasField'
 import { SettingsFields } from './SettingsFields'
 import { formFromSettings, settingsFormEqual, settingsFromForm, validateCampaignName, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
@@ -212,6 +213,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
                     {m.display_name} · {m.warband.type_name} · rating {m.warband.rating}
                   </span>
                 </div>
+                <AliasField campaignId={campaign.id} userId={m.user_id} accountName={m.display_name} label="Name in this campaign" compact />
                 <div className="flex gap-3">
                   <Link
                     to={`/warbands/${m.warband_id}/edit`}

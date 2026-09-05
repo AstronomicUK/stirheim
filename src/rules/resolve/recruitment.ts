@@ -37,6 +37,7 @@ import { HIRED_SWORDS } from "../data/campaign/hiredSwords";
 import { VETERAN_XP_COST_GC } from "../data/campaign/trading";
 import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
 import { RulesError } from "./errors";
+import { freeDaggerLine } from "./freeDagger";
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
 
 /** RulesError code when a second hired sword of the same type is hired. */
@@ -130,6 +131,7 @@ export function recruitHero(
   if (block) throw new RulesError("recruitment.notAllowed", block);
   const cost = opts.costOverride ?? unit.cost ?? 0;
   assertGold(warband, cost, `A ${unit.name}`);
+  const freeDagger = freeDaggerLine(template, unit);
 
   const hero: RosterHero = {
     id,
@@ -143,7 +145,7 @@ export function recruitHero(
     spellIds: [],
     injuries: [],
     flags: {},
-    equipment: [],
+    equipment: freeDagger ? [{ itemId: freeDagger.itemId, ...(freeDagger.itemId ? {} : { customName: freeDagger.name }), quantity: 1 }] : [],
     status: "active",
   };
 
@@ -153,7 +155,7 @@ export function recruitHero(
       {
         kind: "hero.recruited",
         subjectId: id,
-        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience; treasury now ${warband.gold - cost} gc`,
+        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${freeDagger ? " and the free dagger" : ""}; treasury now ${warband.gold - cost} gc`,
         data: { unitTemplateId: unit.id, cost, startingExperience: unit.startingExperience },
       },
     ],
@@ -263,6 +265,7 @@ export function recruitHenchmen(
       message: `New members of ${existing.name} must be armed and equipped the same way as the rest of the group`,
     });
   } else {
+    const groupDagger = freeDaggerLine(template, unit);
     const group: RosterHenchmanGroup = {
       id,
       name: groupName,
@@ -272,7 +275,7 @@ export function recruitHenchmen(
       xp: unit.startingExperience,
       levelUps: 0,
       statIncreases: {},
-      equipment: [],
+      equipment: groupDagger ? [{ itemId: groupDagger.itemId, ...(groupDagger.itemId ? {} : { customName: groupDagger.name }), quantity: size }] : [],
     };
     henchmenGroups = [...warband.henchmenGroups, group];
     events.push({

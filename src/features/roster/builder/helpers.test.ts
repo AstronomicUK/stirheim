@@ -11,6 +11,7 @@ import {
 } from '../../../rules/resolve/builder'
 import type { RosterProblem } from '../../../rules/resolve/roster'
 import {
+  groupByCampaign,
   compositionSummary,
   draftUnitCount,
   filterTemplates,
@@ -219,5 +220,20 @@ describe('problems', () => {
     expect(groups.map((g) => g.title)).toEqual(['Treasury', 'Roster', 'Prices'])
     expect(groups[1].problems.map((p) => p.message)).toEqual(['r1', 'r2'])
     expect(groupProblems([])).toEqual([])
+  })
+})
+
+describe('groupByCampaign', () => {
+  const w = (id: string, campaign: { id: string; name: string } | null) => ({ id, campaign }) as unknown as Parameters<typeof groupByCampaign>[0][number]
+  it('groups under campaigns alphabetically with loose warbands last', () => {
+    const groups = groupByCampaign([w('a', { id: 'c2', name: 'Zeal' }), w('b', null), w('c', { id: 'c1', name: 'Ashes' }), w('d', { id: 'c2', name: 'Zeal' })])
+    expect(groups.map((g) => [g.title, g.warbands.map((x) => x.id)])).toEqual([
+      ['Ashes', ['c']],
+      ['Zeal', ['a', 'd']],
+      ['No campaign', ['b']],
+    ])
+  })
+  it('shows no heading when nothing is in a campaign', () => {
+    expect(groupByCampaign([w('a', null)]).map((g) => g.title)).toEqual([null])
   })
 })

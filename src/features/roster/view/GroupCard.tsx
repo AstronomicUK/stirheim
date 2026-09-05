@@ -60,6 +60,12 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
           <ItemLines items={kit.items} detailed={expanded} />
           {!kit.exact ? <p className="text-xs text-ink-dim">Group totals shown: the kit does not divide evenly between {group.size} models.</p> : null}
         </div>
+        {group.model_names.filter((n) => n.trim()).length > 0 ? (
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] uppercase tracking-wider text-ink-dim">Models</p>
+            <p className="text-sm text-ink">{group.model_names.filter((n) => n.trim()).join(', ')}</p>
+          </div>
+        ) : null}
         {group.notes ? <p className="whitespace-pre-line text-sm text-ink-dim">{group.notes}</p> : null}
         {expanded ? (
           <div className="flex flex-col gap-2 border-t border-border pt-3">

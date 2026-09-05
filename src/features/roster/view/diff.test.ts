@@ -107,6 +107,7 @@ describe('diffDraft', () => {
       stat_increases: {},
       is_large: false,
       notes: '',
+      model_names: [],
       sort_order: 5,
     })
     const [change] = diffDraft(rows, draft)

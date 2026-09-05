@@ -18,6 +18,8 @@ export interface DraftState {
   lastError: string | null
   /** Replace whatever is there with a fresh draft for `template`. */
   start(template: WarbandTemplate, name: string): void
+  /** Replace whatever is there with a draft built elsewhere (from a saved template). */
+  load(draft: WarbandDraft): void
   /** Apply a pure builder function to the current draft. No-op when there is no draft. */
   update(edit: (draft: WarbandDraft) => WarbandDraft): void
   clear(): void
@@ -32,6 +34,7 @@ export const useDraftStore = create<DraftState>()(
       lastError: null,
       start: (template, name) =>
         set({ draft: newWarbandDraft(template, name), updatedAt: new Date().toISOString(), lastError: null }),
+      load: (draft) => set({ draft, updatedAt: new Date().toISOString(), lastError: null }),
       update: (edit) => {
         const current = get().draft
         if (!current) return

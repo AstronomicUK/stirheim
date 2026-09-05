@@ -220,6 +220,7 @@ values against the Markdown, in the same style the simulator used for its 72 tem
 | 10 | Attack calculator (first upgrade) | 9 |
 | 11 | Combat mode, kit details, shield and gromril rules, calculator carry-over, advances in the wizard, report approval and amendment, suggested dice (see PLANNING.md "Phase 11") | 10 |
 | 12 | Shared combat log with undo; the existing tracker roster import; roadmap items as agreed | 11 |
+| 13 | The Ledger redesign (paper palette, IM Fell English + Source Sans 3, rail + tabs, desktop two-column layouts, stat block, XP track, action tiles, hover cards) plus test-round features: campaign aliases, henchman model names, warband templates, warbands grouped by campaign, importer shards/gold/veteran pool, recruits' free dagger | 12 |
 
 Phases 1 to 2 are pure TypeScript and can run in parallel with 3. Phases 4 onward each end
 with something the group can try on their phones.

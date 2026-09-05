@@ -31,6 +31,9 @@ describe('detectMapping', () => {
       result: 'result',
       xp: 'xp_gained',
       casualties: 'own_out_of_action',
+      shards: 'shards_found',
+      gold: 'gold_found',
+      veteranPool: 'veteran_pool',
       notes: 'notes',
     })
   })
@@ -163,8 +166,8 @@ describe('buildMatches (one row per report)', () => {
     expect(m1!.scenarioName).toBe('Skirmish')
     expect(m1!.notes).toBe('')
     expect(m1!.participants).toEqual([
-      { warbandName: 'Reikland Watch', player: 'Tom', result: 'won', xpGained: 6, casualties: 1, notes: 'Held the bridge, barely', line: 2 },
-      { warbandName: 'Claws of Eshin', player: 'Ana', result: 'lost', xpGained: 4, casualties: 2, notes: '', line: 3 },
+      { warbandName: 'Reikland Watch', player: 'Tom', result: 'won', xpGained: 6, casualties: 1, shards: null, gold: null, veteranPool: null, notes: 'Held the bridge, barely', line: 2 },
+      { warbandName: 'Claws of Eshin', player: 'Ana', result: 'lost', xpGained: 4, casualties: 2, shards: null, gold: null, veteranPool: null, notes: '', line: 3 },
     ])
     expect(m2!.participants.map((p) => [p.warbandName, p.result, p.xpGained, p.casualties])).toEqual([
       ['Claws of Eshin', 'draw', 5, 0],
@@ -298,8 +301,8 @@ describe('buildPayload', () => {
         played_at: '2026-08-31T09:28:00.000Z',
         notes: '',
         participants: [
-          { warband_id: 'w1', won: true, result: 'won', xp_gained: 6, casualties: 1, notes: 'Held the bridge, barely' },
-          { warband_id: 'w2', won: false, result: 'lost', xp_gained: 4, casualties: 2, notes: '' },
+          { warband_id: 'w1', won: true, result: 'won', xp_gained: 6, casualties: 1, shards: null, gold: null, veteran_pool: null, notes: 'Held the bridge, barely' },
+          { warband_id: 'w2', won: false, result: 'lost', xp_gained: 4, casualties: 2, shards: null, gold: null, veteran_pool: null, notes: '' },
         ],
       },
       {
@@ -308,8 +311,8 @@ describe('buildPayload', () => {
         played_at: '2026-09-02T20:00:00.000Z',
         notes: '',
         participants: [
-          { warband_id: 'w2', won: false, result: 'draw', xp_gained: 5, casualties: 0, notes: '' },
-          { warband_id: 'w1', won: false, result: 'draw', xp_gained: 3, casualties: null, notes: '' },
+          { warband_id: 'w2', won: false, result: 'draw', xp_gained: 5, casualties: 0, shards: null, gold: null, veteran_pool: null, notes: '' },
+          { warband_id: 'w1', won: false, result: 'draw', xp_gained: 3, casualties: null, shards: null, gold: null, veteran_pool: null, notes: '' },
         ],
       },
     ])

@@ -7,6 +7,7 @@ import { battleReportSchema, type BattleReport, type MatchOrigin, type MatchStat
 import { findScenario } from '../rules/data/campaign/scenarios'
 import { campaignKeys } from './campaigns'
 import { matchKeys } from './matches'
+import { fetchCampaignAliases, nameIn, type AliasMap } from './aliases'
 import { supabase } from './supabase'
 import { warbandKeys } from './warbands'
 
@@ -122,7 +123,7 @@ type ReportRow = {
   warbands: { name: string } | null; profiles: { display_name: string } | null
 }
 
-function toReportView(r: ReportRow): ReportView {
+function toReportView(r: ReportRow, aliases?: AliasMap): ReportView {
   const explorationParsed = battleReportSchema.shape.exploration.safeParse(r.exploration && Object.keys(r.exploration as object).length ? r.exploration : null)
   return {
     id: r.id,
@@ -130,7 +131,7 @@ function toReportView(r: ReportRow): ReportView {
     warband_id: r.warband_id,
     warband_name: r.warbands?.name ?? 'Warband',
     submitted_by: r.submitted_by,
-    submitted_by_display_name: r.profiles?.display_name ?? 'Player',
+    submitted_by_display_name: nameIn(aliases, r.submitted_by, r.profiles?.display_name ?? 'Player'),
     submitted_at: r.submitted_at,
     won: r.won,
     result: (r.result as ReportView['result']) ?? (r.won ? 'won' : 'lost'),
@@ -151,19 +152,24 @@ function toReportView(r: ReportRow): ReportView {
 }
 
 export async function fetchMatchReports(matchId: string): Promise<ReportView[]> {
-  const { data, error } = await supabase.from('match_reports').select(REPORT_SELECT).eq('match_id', matchId).order('submitted_at')
+  const [{ data, error }, match] = await Promise.all([
+    supabase.from('match_reports').select(REPORT_SELECT).eq('match_id', matchId).order('submitted_at'),
+    supabase.from('matches').select('campaign_id').eq('id', matchId).maybeSingle(),
+  ])
   if (error) throw new Error(error.message)
-  return (data as unknown as ReportRow[]).map(toReportView)
+  const aliases = match.data ? await fetchCampaignAliases(match.data.campaign_id).catch(() => new Map<string, string>()) : undefined
+  return (data as unknown as ReportRow[]).map((r) => toReportView(r, aliases))
 }
 
 export async function fetchBattleRecords(campaignId: string): Promise<BattleRecord[]> {
   const { data, error } = await supabase
     .from('matches')
-    .select('id, state, created_via, scenario_rules_id, scheduled_for, started_at, completed_at, scenarios(name), match_participants(warband_id, warbands(name, profiles!warbands_owner_profile_fkey(display_name)))')
+    .select('id, state, created_via, scenario_rules_id, scheduled_for, started_at, completed_at, scenarios(name), match_participants(warband_id, warbands(name, owner_id, profiles!warbands_owner_profile_fkey(display_name)))')
     .eq('campaign_id', campaignId)
     .in('state', ['completed', 'cancelled', 'awaiting_reports'])
     .order('completed_at', { ascending: false, nullsFirst: true })
   if (error) throw new Error(error.message)
+  const aliases = await fetchCampaignAliases(campaignId).catch(() => new Map<string, string>())
   const matchIds = data.map((m) => m.id)
   const reports = matchIds.length
     ? await supabase.from('match_reports').select(REPORT_SELECT).in('match_id', matchIds).order('submitted_at')
@@ -172,7 +178,7 @@ export async function fetchBattleRecords(campaignId: string): Promise<BattleReco
   const byMatch = new Map<string, ReportView[]>()
   for (const r of (reports.data ?? []) as unknown as ReportRow[]) {
     const list = byMatch.get(r.match_id) ?? []
-    list.push(toReportView(r))
+    list.push(toReportView(r, aliases))
     byMatch.set(r.match_id, list)
   }
   return data.map((m) => ({
@@ -186,7 +192,7 @@ export async function fetchBattleRecords(campaignId: string): Promise<BattleReco
     participants: m.match_participants.map((p) => ({
       warband_id: p.warband_id,
       warband_name: p.warbands?.name ?? 'Warband',
-      owner_display_name: (p.warbands?.profiles as unknown as { display_name: string } | null)?.display_name ?? 'Player',
+      owner_display_name: nameIn(aliases, p.warbands?.owner_id, (p.warbands?.profiles as unknown as { display_name: string } | null)?.display_name ?? 'Player'),
     })),
     reports: byMatch.get(m.id) ?? [],
   }))

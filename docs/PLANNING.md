@@ -484,6 +484,50 @@ importer wyrdstone/gold/veteran-pool columns (then a fresh campaign and re-impor
 recruits. Decisions awaited: direction, type pairing, rail vs top bar, XP track vs box grid, who
 sets aliases, template sharing, deploy the fixes now or with Phase 13, scrub docs/fixture names.
 
+## Phase 13 scope (agreed 2026-09-05, built the same day)
+
+Tom's answers to the redesign proposal: Direction A "Ledger" (light paper, ink, oxblood primary,
+brass state), type pairing 1 (IM Fell English headings, Source Sans 3 text, tabular figures, no
+monospace anywhere), navigation rail on the left from 1024px and 64px icon tabs on phones,
+experience as a segmented track at the advance boxes, aliases set by the player with GM override,
+templates private first but with a `campaign_id` column reserved for sharing, Phases 13 and 14
+merged into one release, and the previous tracker referred to generically everywhere (docs,
+fixture names, identifiers).
+
+Built:
+- Tokens/fonts in `src/index.css` + `index.html`; `.font-headline` pinned to weight 400; body
+  `font-variant-numeric: tabular-nums`. Button ladder in `src/ui/buttonStyles.ts`.
+- `src/app/SideRail.tsx` + `BottomNav.tsx` share `navTabs.ts`; `AppShell` is a grid from `lg`.
+  `src/ui/Layout.tsx` `TwoColumn`, `src/ui/useMediaQuery.ts` `useIsDesktop`. Warband, campaign,
+  builder and battle pages use them (battle: my warband left, other tabs right).
+- `StatLine` nine-cell grid with `raised` keys; `XpBar` segmented via `xpTrack()` in
+  `roster/view/lookups.ts`; `ActionTile`; `HoverCard` on kit lines, skills and spells (ItemLine
+  no longer toggles; `detailed` still prints everything open).
+- Migration 18 (`20260905000018_phase13.sql`): `henchman_groups.model_names text[]` (+
+  `jsonb_text_array()` and `update_roster` re-created to read it), `campaign_aliases` +
+  `set_campaign_alias(p_campaign_id, p_user_id, p_alias)` (member sets own, GM sets anyone, blank
+  deletes), `warband_templates` (owner-only RLS, `campaign_id` reserved), `import_battle_records`
+  re-created to write `exploration` (minimal complete record) and `veteran_pool_roll` from the
+  `shards` / `gold` / `veteran_pool` participant keys.
+- Aliases applied in the API layer (`src/api/aliases.ts`: `fetchCampaignAliases`, `nameIn`), in
+  campaign detail/activity, matches, reports and records; `AliasField` on the campaign page (self)
+  and settings (GM per member).
+- Templates: `rules/resolve/warbandTemplates.ts` (`rosterToTemplatePayload`, `draftFromTemplate`
+  rebuilds a builder draft at today's prices), `api/templates.ts`, "Save as template" in the
+  warband More sheet, "Your templates" on the new-warband screen (`SavedTemplates.tsx`),
+  `draftStore.load()`.
+- Warband list grouped by campaign (`groupByCampaign` in builder/helpers.ts; the list query joins
+  `campaign_members(... campaigns(name))`).
+- Importer fields `shards`, `gold`, `veteranPool` with synonyms for the old tracker's headers.
+- `rules/resolve/freeDagger.ts` shared by the builder (`withFreeDagger`) and `recruitHero` /
+  `recruitHenchmen` (new group only).
+- Model names: `RosterHenchmanGroup.modelNames`, row schema, both diffs, `GroupEditor` textarea
+  (one per line), shown on the group card and the print sheet.
+
+Deferred from the proposal: a per-user light/dark toggle (Direction B as a theme), template
+sharing UI, recruits joining an existing group do not get a dagger (they must match the group's
+kit anyway).
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

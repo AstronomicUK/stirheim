@@ -252,3 +252,29 @@ export function groupProblems(problems: RosterProblem[]): ProblemGroup[] {
     .map((key) => ({ key, title: GROUP_TITLES[key], problems: problems.filter((p) => problemGroupKey(p.code) === key) }))
     .filter((group) => group.problems.length > 0)
 }
+
+export interface WarbandGroup {
+  key: string
+  /** Campaign name, "No campaign", or null when everything is in one place and no heading is needed. */
+  title: string | null
+  campaignId: string | null
+  warbands: WarbandSummary[]
+}
+
+/** Active warbands under their campaign, campaigns alphabetically, "No campaign" last. */
+export function groupByCampaign(warbands: WarbandSummary[]): WarbandGroup[] {
+  const byCampaign = new Map<string, WarbandGroup>()
+  const loose: WarbandSummary[] = []
+  for (const w of warbands) {
+    if (!w.campaign) {
+      loose.push(w)
+      continue
+    }
+    const existing = byCampaign.get(w.campaign.id)
+    if (existing) existing.warbands.push(w)
+    else byCampaign.set(w.campaign.id, { key: w.campaign.id, title: w.campaign.name, campaignId: w.campaign.id, warbands: [w] })
+  }
+  const groups = [...byCampaign.values()].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
+  if (loose.length > 0) groups.push({ key: 'none', title: groups.length > 0 ? 'No campaign' : null, campaignId: null, warbands: loose })
+  return groups
+}

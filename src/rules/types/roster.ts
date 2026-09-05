@@ -97,6 +97,8 @@ export interface RosterHenchmanGroup {
   equipment: RosterItem[];
   isLarge?: boolean;
   notes?: string;
+  /** Names of the individual models, when the player has written them down. */
+  modelNames?: string[];
 }
 
 export interface RosterHiredSword {
@@ -127,6 +129,8 @@ export interface RosterWarband {
   hiredSwords: RosterHiredSword[];
   stash: RosterItem[];
   notes?: string;
+  /** Names of the individual models, when the player has written them down. */
+  modelNames?: string[];
 }
 
 /**

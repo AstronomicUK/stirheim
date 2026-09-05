@@ -120,6 +120,7 @@ export function toRosterHenchmanGroup(group: HenchmanGroupRow, equipment: Roster
   };
   const notes = optionalText(group.notes);
   if (notes !== undefined) result.notes = notes;
+  if (group.model_names && group.model_names.length > 0) result.modelNames = [...group.model_names];
   return result;
 }
 
@@ -187,7 +188,7 @@ export type HiredSwordPatch = Pick<HeroRow, "stats" | "xp" | "level_ups" | "skil
 
 export type HenchmanGroupPatch = Pick<
   HenchmanGroupRow,
-  "stats" | "xp" | "level_ups" | "size" | "stat_increases" | "notes"
+  "stats" | "xp" | "level_ups" | "size" | "stat_increases" | "notes" | "model_names"
 >;
 
 export function heroPatchFromRoster(hero: RosterHero): HeroPatch {
@@ -225,5 +226,6 @@ export function groupPatchFromRoster(group: RosterHenchmanGroup): HenchmanGroupP
     size: group.size,
     stat_increases: group.statIncreases,
     notes: group.notes ?? "",
+    model_names: group.modelNames ?? [],
   };
 }

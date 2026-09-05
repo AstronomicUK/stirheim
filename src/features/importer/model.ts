@@ -13,7 +13,7 @@ import { SCENARIOS } from '../../rules/data/campaign/scenarios'
 
 // ---- Target fields and synonyms ----
 
-export const TARGET_FIELDS = ['matchId', 'date', 'scenario', 'warband', 'player', 'result', 'winner', 'xp', 'casualties', 'notes', 'opponent'] as const
+export const TARGET_FIELDS = ['matchId', 'date', 'scenario', 'warband', 'player', 'result', 'winner', 'xp', 'casualties', 'shards', 'gold', 'veteranPool', 'notes', 'opponent'] as const
 export type TargetField = (typeof TARGET_FIELDS)[number]
 
 export interface TargetFieldInfo {
@@ -32,6 +32,9 @@ export const TARGET_FIELD_INFO: TargetFieldInfo[] = [
   { field: 'player', label: 'Player', hint: 'Shown in the preview only; the warband decides who owns the record.', required: false },
   { field: 'xp', label: 'Experience gained', hint: 'Whole-warband total for the battle.', required: false },
   { field: 'casualties', label: 'Casualties', hint: 'Own models taken out of action or dead.', required: false },
+  { field: 'shards', label: 'Wyrdstone found', hint: 'Shards gained in the battle and the exploration after it.', required: false },
+  { field: 'gold', label: 'Gold found', hint: 'Gold crowns gained from exploration or the scenario.', required: false },
+  { field: 'veteranPool', label: 'Veteran pool', hint: 'The 2D6 roll for veteran experience available to recruits (2 to 12).', required: false },
   { field: 'notes', label: 'Notes', hint: 'Copied into the report (one row per warband) or the match (one row per battle).', required: false },
   { field: 'winner', label: 'Winner', hint: 'Warband name of the winner; blank or "draw" means a draw. Replaces the result column.', required: false },
   { field: 'opponent', label: 'Second warband', hint: 'Map this only when each row is a whole battle with the opponent in its own column.', required: false },
@@ -50,12 +53,15 @@ export const SYNONYMS: Record<TargetField, string[]> = {
   // as "Name: 2 (Survived +1, Win +1); Name: 1 (...)" and hero_deaths / henchmen_deaths as "group 2: 1".
   xp: ['xp', 'experience', 'xpgained', 'experiencegained', 'exp', 'xpearned', 'totalxp', 'heroexpgained', 'expgained'],
   casualties: ['dead', 'casualties', 'ooa', 'outofaction', 'deaths', 'killed', 'casualtiesdead', 'owncasualties', 'ownoutofaction', 'herodeaths'],
+  shards: ['shards', 'shardsfound', 'wyrdstone', 'wyrdstonegained', 'wyrdstonefound', 'wyrdstoneshards'],
+  gold: ['gold', 'goldfound', 'goldgained', 'gc', 'goldcrowns', 'treasure'],
+  veteranPool: ['veteranpool', 'veteranexperiencepool', 'veteranexperience', 'veterans', 'veteranxp'],
   notes: ['notes', 'note', 'comment', 'comments', 'description', 'summary'],
   opponent: ['opponent', 'opponentwarband', 'opponents', 'versus', 'vs', 'enemy', 'enemywarband', 'warband2', 'secondwarband', 'against'],
 }
 
 /** Order in which targets claim a header when only a substring matches (more specific first). */
-const CONTAINS_ORDER: TargetField[] = ['matchId', 'opponent', 'winner', 'scenario', 'date', 'warband', 'player', 'result', 'xp', 'casualties', 'notes']
+const CONTAINS_ORDER: TargetField[] = ['matchId', 'opponent', 'winner', 'scenario', 'date', 'warband', 'player', 'result', 'veteranPool', 'shards', 'gold', 'xp', 'casualties', 'notes']
 
 /** Lower-case letters and digits only: "Warband Name" and "warband_name" both become "warbandname". */
 export function normaliseHeader(header: string): string {
@@ -244,6 +250,9 @@ export interface ImportParticipant {
   result: ResultValue
   xpGained: number | null
   casualties: number | null
+  shards: number | null
+  gold: number | null
+  veteranPool: number | null
   notes: string
   /** 1-based line in the file (the header is line 1). */
   line: number
@@ -344,11 +353,21 @@ export function buildMatches(rows: Record<string, string>[], mapping: ColumnMapp
     const deadText = cell(row, mapping.casualties)
     const casualties = deadText ? parseCount(deadText) : null
     if (deadText && casualties === null) problems.push({ line, level: 'warning', message: `Casualties "${deadText}" is not a number; left blank.` })
+    const shardsText = cell(row, mapping.shards)
+    const shards = shardsText ? parseCount(shardsText) : null
+    if (shardsText && shards === null) problems.push({ line, level: 'warning', message: `Wyrdstone "${shardsText}" is not a number; left blank.` })
+    const goldText = cell(row, mapping.gold)
+    const gold = goldText ? parseCount(goldText) : null
+    if (goldText && gold === null) problems.push({ line, level: 'warning', message: `Gold "${goldText}" is not a number; left blank.` })
+    const poolText = cell(row, mapping.veteranPool)
+    const poolValue = poolText ? parseCount(poolText) : null
+    const veteranPool = poolValue !== null && poolValue >= 2 && poolValue <= 12 ? poolValue : null
+    if (poolText && veteranPool === null) problems.push({ line, level: 'warning', message: `Veteran pool "${poolText}" is not a 2D6 result; left blank.` })
 
     const scenarioName = cell(row, mapping.scenario) || null
     const notes = cell(row, mapping.notes)
     const player = cell(row, mapping.player) || null
-    const participant: ImportParticipant = { warbandName, player, result, xpGained, casualties, notes: shape === 'per_report' ? notes : '', line }
+    const participant: ImportParticipant = { warbandName, player, result, xpGained, casualties, shards, gold, veteranPool, notes: shape === 'per_report' ? notes : '', line }
     usedRows += 1
 
     if (shape === 'per_match') {
@@ -356,7 +375,7 @@ export function buildMatches(rows: Record<string, string>[], mapping: ColumnMapp
       const opponentName = cell(row, mapping.opponent)
       if (opponentName) {
         const opponentResult = mapping.winner ? resultFromWinner(cell(row, mapping.winner), opponentName) : INVERSE[result]
-        match.participants.push({ warbandName: opponentName, player: null, result: opponentResult, xpGained: null, casualties: null, notes: '', line })
+        match.participants.push({ warbandName: opponentName, player: null, result: opponentResult, xpGained: null, casualties: null, shards: null, gold: null, veteranPool: null, notes: '', line })
       } else {
         problems.push({ line, level: 'warning', message: 'No second warband; imported as a one-warband battle.' })
       }
@@ -473,7 +492,7 @@ export function buildPayload(matches: ImportMatch[], warbandIds: Record<string, 
     participants: m.participants.map((p) => {
       const warband_id = warbandIds[p.warbandName]
       if (!warband_id) throw new Error(`"${p.warbandName}" is not matched to a warband in this campaign.`)
-      return { warband_id, won: p.result === 'won', result: p.result, xp_gained: p.xpGained, casualties: p.casualties, notes: p.notes }
+      return { warband_id, won: p.result === 'won', result: p.result, xp_gained: p.xpGained, casualties: p.casualties, shards: p.shards, gold: p.gold, veteran_pool: p.veteranPool, notes: p.notes }
     }),
   }))
 }

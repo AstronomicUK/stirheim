@@ -180,6 +180,7 @@ function groupInsertData(group: RosterHenchmanGroup, sortOrder: number): Record<
     stat_increases: group.statIncreases,
     is_large: group.isLarge ?? false,
     notes: group.notes ?? "",
+    model_names: group.modelNames ?? [],
     sort_order: sortOrder,
   };
 }
@@ -189,7 +190,12 @@ function groupUpdateData(row: HenchmanGroupRow, group: RosterHenchmanGroup): Rec
   const data = changedColumns(row, patch);
   // Increases that are absent on one side and 0 on the other are the same thing.
   if ("stat_increases" in data && statIncreasesEqual(row.stat_increases, group.statIncreases)) delete data.stat_increases;
+  if ("model_names" in data && sameNames(row.model_names ?? [], group.modelNames ?? [])) delete data.model_names;
   return data;
+}
+
+function sameNames(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
 const STAT_KEYS: readonly StatKey[] = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"];

@@ -689,6 +689,11 @@ Small gaps carried over:
 - Free dagger for recruits joining an existing henchman group (matching the group's kit).
 - Skill prerequisites and "X only" restrictions carried on skills, enforced in learnSkill with the
   usual override-with-reason.
+- Hero advance at a racial maximum (Tom, 2026-09-05): a sub-rolled result (6, 8 or 9 on the hero
+  table) whose characteristic is already at its maximum should offer the other characteristic of the
+  pair first ("take the other option"); only when both are maxed does the player re-roll or take a
+  skill. Today the wizard jumps straight to a skill. The choice results and the henchman re-roll
+  already follow the book.
 
 New house rule: **Bans.** Campaign settings gain a section where the GM removes items and spells (and
 optionally hired swords, Dramatis Personae and warband skills) from the campaign. Stored as id lists

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
 import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
@@ -6,7 +6,8 @@ import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
 import { validateRoster, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
-import { Button, Notice, SelectField, Sheet, Spinner, TextField } from '../../ui'
+import { ActionTile, Button, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
+import { BUTTON_BASE, BUTTON_VARIANTS } from '../../ui/buttonStyles'
 import { warbandTypeName } from './shared/names'
 import { Card, ItemLines, KeyValue, Section, Tag } from './view/bits'
 import { GroupCard } from './view/GroupCard'
@@ -96,7 +97,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">{warbandTypeName(warband.type_rules_id)}</p>
-            <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{warband.name}</h1>
+            <h1 className="font-headline text-3xl leading-tight text-ink">{warband.name}</h1>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 pt-1">
             {warband.archived ? <Tag>Archived</Tag> : null}
@@ -106,7 +107,39 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         <HandOver warbandId={warband.id} warbandName={warband.name} ownerId={warband.owner_id} viewerId={user?.id} onError={setActionError} />
       </header>
 
-      <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
+      <TwoColumn
+        railFirst
+        rail={
+          <>
+            {canEdit ? (
+              <Section title="Between battles">
+                <div className="grid grid-cols-3 gap-2 lg:grid-cols-2">
+                  <ActionTile
+                    to={`/warbands/${warband.id}/advances`}
+                    icon="advances"
+                    title="Bestow advancements"
+                    detail={advancesDue > 0 ? `${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} to roll` : 'Nothing owed'}
+                    count={advancesDue}
+                    highlight={advancesDue > 0}
+                  />
+                  <ActionTile to={`/warbands/${warband.id}/trade`} icon="trade" title="Trading post" detail={`${warband.gold} gc to spend`} />
+                  <ActionTile to={`/warbands/${warband.id}/recruit`} icon="recruit" title="Recruit" detail="Heroes, henchmen, hired swords" />
+                </div>
+              </Section>
+            ) : null}
+            <div className="hidden lg:flex lg:flex-col lg:gap-3">
+              <div className="grid grid-cols-2 gap-2">
+                <ActionTile to={`/warbands/${warband.id}/edit`} icon="edit" title="Edit roster" detail="Manual changes, logged" />
+                <ActionTile to={`/warbands/${warband.id}/print`} icon="print" title="Print sheet" detail="Roster on one page" />
+              </div>
+              <Button variant="secondary" block onClick={() => setMenuOpen(true)}>
+                More…
+              </Button>
+            </div>
+          </>
+        }
+      >
+      <Card className="grid grid-cols-3 gap-y-4 px-4 py-3 md:grid-cols-6">
         <KeyValue label="Gold" value={`${warband.gold} gc`} />
         <KeyValue label="Wyrdstone" value={warband.wyrdstone} />
         <KeyValue label="Rating" value={rating.total} />
@@ -134,18 +167,6 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Notice>
       ) : null}
       {actionError ? <Notice tone="error">{actionError}</Notice> : null}
-
-      {canEdit ? (
-        <Section title="Between battles">
-          <div className="grid grid-cols-3 gap-3">
-            <BetweenBattlesLink to={`/warbands/${warband.id}/advances`} badge={advancesDue > 0 ? `${advancesDue} due` : null} highlight={advancesDue > 0}>
-              Bestow advancements
-            </BetweenBattlesLink>
-            <BetweenBattlesLink to={`/warbands/${warband.id}/trade`}>Trading post</BetweenBattlesLink>
-            <BetweenBattlesLink to={`/warbands/${warband.id}/recruit`}>Recruit</BetweenBattlesLink>
-          </div>
-        </Section>
-      ) : null}
 
       <Section title="Heroes" aside={`${activeHeroes.length}`}>
         {activeHeroes.length === 0 ? <p className="text-sm text-ink-dim">No heroes on the roster.</p> : null}
@@ -181,18 +202,14 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Card>
       </Section>
 
-      <div className="mt-auto pt-2">
+      </TwoColumn>
+
+      <div className="mt-auto pt-2 lg:hidden">
         <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-          <Link
-            to={`/warbands/${warband.id}/edit`}
-            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-accent px-4 text-base font-medium text-ink hover:bg-accent-strong"
-          >
+          <Link to={`/warbands/${warband.id}/edit`} className={`${BUTTON_BASE} ${BUTTON_VARIANTS.primary} flex-1 no-underline`}>
             Edit
           </Link>
-          <Link
-            to={`/warbands/${warband.id}/print`}
-            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md border border-border bg-surface-high px-4 text-base font-medium text-ink hover:border-ink-dim"
-          >
+          <Link to={`/warbands/${warband.id}/print`} className={`${BUTTON_BASE} ${BUTTON_VARIANTS.secondary} flex-1 no-underline`}>
             Print
           </Link>
           <Button variant="secondary" onClick={() => setMenuOpen(true)} aria-label="More actions" className="px-3">
@@ -255,23 +272,6 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
     </>
   )
 }
-
-function BetweenBattlesLink({ to, badge, highlight = false, children }: { to: string; badge?: string | null; highlight?: boolean; children: ReactNode }) {
-  return (
-    <Link
-      to={to}
-      className={`relative inline-flex min-h-11 items-center justify-center rounded-md border px-3 text-center text-sm font-medium text-ink hover:border-ink-dim ${
-        highlight ? 'border-brass bg-brass/10' : 'border-border bg-surface-high'
-      }`}
-    >
-      {children}
-      {badge ? (
-        <span className="absolute -top-2 -right-1 rounded-full border border-brass/60 bg-surface px-1.5 text-[10px] leading-4 text-brass">{badge}</span>
-      ) : null}
-    </Link>
-  )
-}
-
 
 /** Owner or GM: give the warband to another account (imported rosters start with the importer). */
 function HandOver({ warbandId, warbandName, ownerId, viewerId, onError }: { warbandId: string; warbandName: string; ownerId: string; viewerId: string | undefined; onError: (e: string | null) => void }) {

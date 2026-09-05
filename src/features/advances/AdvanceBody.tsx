@@ -76,7 +76,7 @@ export function StepRail({ current }: { current: AdvanceStep }) {
     <ol className="flex items-center gap-2 text-xs" aria-label="Progress">
       {ADVANCE_STEPS.map((s, i) => (
         <li key={s} className="flex items-center gap-2">
-          <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border font-mono ${i <= index ? 'border-brass text-brass' : 'border-border text-ink-dim'}`}>{i + 1}</span>
+          <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${i <= index ? 'border-brass text-brass' : 'border-border text-ink-dim'}`}>{i + 1}</span>
           <span className={i === index ? 'text-ink' : 'text-ink-dim'} aria-current={i === index ? 'step' : undefined}>
             {STEP_LABELS[s]}
           </span>
@@ -342,7 +342,7 @@ function StatGrid({ options, selected, onSelect }: { options: StatOption[]; sele
             }`}
           >
             <span className="text-sm text-ink">{o.name}</span>
-            <span className="font-mono text-xs tabular-nums text-ink-dim">
+            <span className="text-xs tabular-nums text-ink-dim">
               {o.stat} {o.current}
               {o.eligible ? ` → ${o.current + 1}` : ''} · max {o.max}
             </span>
@@ -471,9 +471,9 @@ function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect }: SpellP
               >
                 <span className="flex items-center justify-between gap-3">
                   <span className="text-sm text-ink">
-                    <span className="font-mono text-ink-dim">{s.roll.min === s.roll.max ? s.roll.min : `${s.roll.min}-${s.roll.max}`}</span> {s.name}
+                    <span className="text-ink-dim">{s.roll.min === s.roll.max ? s.roll.min : `${s.roll.min}-${s.roll.max}`}</span> {s.name}
                   </span>
-                  <span className="shrink-0 font-mono text-xs text-ink-dim">{s.difficulty === null ? 'Auto' : `Difficulty ${s.difficulty}`}</span>
+                  <span className="shrink-0 text-xs text-ink-dim">{s.difficulty === null ? 'Auto' : `Difficulty ${s.difficulty}`}</span>
                 </span>
                 <span className={`whitespace-pre-line text-xs leading-relaxed text-ink-dim ${on ? '' : 'line-clamp-3'}`}>{s.text}</span>
               </button>

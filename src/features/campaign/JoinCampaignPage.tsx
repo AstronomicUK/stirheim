@@ -62,7 +62,7 @@ export function JoinCampaignPage() {
         autoCorrect="off"
         spellCheck={false}
         placeholder="abcd-efgh"
-        className="font-mono tracking-widest"
+        className="tracking-widest"
         hint={complete ? undefined : 'Dashes, spaces and capitals do not matter.'}
         onChange={(e) => {
           setCode(e.target.value)
@@ -172,7 +172,7 @@ function WarbandPicker({
                 <span className="truncate text-sm text-ink-dim">{findWarbandTemplate(w.type_rules_id)?.name ?? w.type_rules_id}</span>
                 {inCampaign ? <span className="truncate text-sm text-ink-dim">In {inCampaign}</span> : null}
               </span>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-ink-dim">
+              <span className="shrink-0 text-sm tabular-nums text-ink-dim">
                 {w.gold} gc · {w.model_count} {w.model_count === 1 ? 'model' : 'models'}
               </span>
             </button>

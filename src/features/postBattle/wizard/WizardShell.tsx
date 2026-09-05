@@ -101,7 +101,7 @@ export function WizardBar({ step, problems, onBack, onNext, onFile, filing = fal
 export function StepBody({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-headline text-2xl font-semibold leading-tight text-ink">{title}</h2>
+      <h2 className="font-headline text-2xl leading-tight text-ink">{title}</h2>
       {children}
     </section>
   )

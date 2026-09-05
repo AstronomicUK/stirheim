@@ -217,7 +217,7 @@ function BackLink() {
 function Topic({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} tabIndex={-1} className="scroll-mt-4 font-headline text-2xl font-semibold leading-tight text-ink outline-none">
+      <h2 id={id} tabIndex={-1} className="scroll-mt-4 font-headline text-2xl leading-tight text-ink outline-none">
         {title}
       </h2>
       {children}
@@ -243,7 +243,7 @@ function Go({ to, children }: { to: string; children: ReactNode }) {
 
 function Steps({ items }: { items: string[] }) {
   return (
-    <ol className="flex flex-col gap-2 pl-6 text-sm leading-relaxed text-ink marker:font-mono marker:text-brass">
+    <ol className="flex flex-col gap-2 pl-6 text-sm leading-relaxed text-ink marker:marker:text-brass">
       {items.map((item) => (
         <li key={item} className="list-decimal">
           {item}

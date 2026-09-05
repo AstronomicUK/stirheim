@@ -72,7 +72,7 @@ export function RosterImportPage() {
             <Card className="flex flex-col gap-3 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-headline text-xl font-semibold text-ink">{parsed.name}</p>
+                  <p className="font-headline text-xl text-ink">{parsed.name}</p>
                   <p className="text-sm text-ink-dim">
                     {parsed.gold} gc · {parsed.wyrdstone} wyrdstone{parsed.veteranPool !== null ? ` · veteran pool ${parsed.veteranPool}` : ''}
                   </p>

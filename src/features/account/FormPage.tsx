@@ -20,7 +20,7 @@ export function FormPage({ title, description, onSubmit, children, action, foote
       <div className="flex flex-col gap-6 pt-6">
         <Wordmark size="lg" to="/sign-in" />
         <div className="flex flex-col gap-2">
-          <h1 className="font-headline text-3xl font-semibold text-ink">{title}</h1>
+          <h1 className="font-headline text-3xl text-ink">{title}</h1>
           {description ? <p className="leading-relaxed text-ink-dim">{description}</p> : null}
         </div>
       </div>

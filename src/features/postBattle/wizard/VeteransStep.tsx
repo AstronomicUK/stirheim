@@ -26,7 +26,7 @@ export function VeteransStep({ draft, derived, update }: StepProps) {
           <p className="text-sm text-ink-dim">
             {derived.veteranPool !== null ? (
               <>
-                Pool: <span className="font-mono tabular-nums text-ink">{derived.veteranPool}</span> experience worth of veterans available.
+                Pool: <span className="tabular-nums text-ink">{derived.veteranPool}</span> experience worth of veterans available.
               </>
             ) : (
               'Leave both blank to skip; the previous pool stays on the roster.'

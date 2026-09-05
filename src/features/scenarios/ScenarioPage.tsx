@@ -59,7 +59,7 @@ function Meta({ items }: { items: { label: string; value: string }[] }) {
 function RuleSection({ name, text }: { name: string; text: string }) {
   return (
     <section className="flex flex-col gap-2 border-t border-border pt-4">
-      <h2 className="font-headline text-xl font-semibold leading-tight text-ink">{name}</h2>
+      <h2 className="font-headline text-xl leading-tight text-ink">{name}</h2>
       <Markdown source={text} className="[&_img]:my-2 [&_img]:max-w-full [&_img]:rounded-md" />
     </section>
   )

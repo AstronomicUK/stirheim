@@ -35,7 +35,7 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
       <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} className="flex w-full flex-col gap-3 px-4 pt-3 pb-3 text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="font-headline text-lg font-semibold leading-tight text-ink">{group.name}</h3>
+            <h3 className="font-headline text-lg leading-tight text-ink">{group.name}</h3>
             <p className="text-sm text-ink-dim">
               {typeName}
               {group.is_large ? ' · Large' : ''}
@@ -50,7 +50,7 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
             ))}
           </div>
         </div>
-        <StatLine stats={group.stats} />
+        <StatLine stats={group.stats} raised={group.stat_increases} />
         <XpBar xp={group.xp} levelUps={group.level_ups} role="henchman" />
       </button>
 

@@ -55,7 +55,7 @@ export function NewWarbandPage() {
                   <span className="text-sm text-ink-dim">
                     {template.race} · {template.originalSetting}
                   </span>
-                  <span className="font-mono text-xs tabular-nums text-ink-dim">{compositionSummary(template)}</span>
+                  <span className="text-xs tabular-nums text-ink-dim">{compositionSummary(template)}</span>
                 </span>
                 <span className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-ink-dim">
                   {gradeLabel(template.grade)}
@@ -133,7 +133,7 @@ function TemplateSheet({ template, onClose }: { template: WarbandTemplate; onClo
       }
     >
       <div className="flex flex-col gap-5 pb-2">
-        <p className="font-mono text-sm tabular-nums text-ink-dim">{compositionSummary(template)}</p>
+        <p className="text-sm tabular-nums text-ink-dim">{compositionSummary(template)}</p>
 
         <TextField
           label="Warband name"
@@ -180,7 +180,7 @@ function UnitList({ title, units }: { title: string; units: UnitTemplate[] }) {
               <span className="text-sm text-ink">{unit.name}</span>
               <span className="text-xs text-ink-dim">Limit {unit.rosterLimit}</span>
             </span>
-            <span className="shrink-0 font-mono text-sm tabular-nums text-ink-dim">{unit.cost === null ? 'no hire cost' : `${unit.cost} gc`}</span>
+            <span className="shrink-0 text-sm tabular-nums text-ink-dim">{unit.cost === null ? 'no hire cost' : `${unit.cost} gc`}</span>
           </li>
         ))}
       </ul>

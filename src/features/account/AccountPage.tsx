@@ -113,7 +113,7 @@ export function AccountPage() {
         </Link>
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <span className="text-xs uppercase tracking-wider text-ink-dim">Version</span>
-          <span className="font-mono text-sm text-ink-dim">{APP_VERSION}</span>
+          <span className="text-sm text-ink-dim">{APP_VERSION}</span>
         </div>
       </section>
 

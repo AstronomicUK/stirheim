@@ -123,7 +123,7 @@ function WarbandRows({ warbands }: { warbands: WarbandSummary[] }) {
               </span>
               <span className="truncate text-sm text-ink-dim">{warbandTypeName(w.type_rules_id)}</span>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5 font-mono text-sm tabular-nums">
+            <div className="flex shrink-0 flex-col items-end gap-0.5 text-sm tabular-nums">
               <span className="text-ink">{w.gold} gc</span>
               <span className="text-ink-dim">
                 {w.wyrdstone} shards · {w.model_count} {w.model_count === 1 ? 'model' : 'models'}

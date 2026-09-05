@@ -195,7 +195,7 @@ function RecordsView({ campaignId, campaignName, records }: { campaignId: string
           </Button>
         }
       >
-        <pre ref={manualRef} className="whitespace-pre-wrap py-2 font-mono text-xs leading-relaxed text-ink">
+        <pre ref={manualRef} className="whitespace-pre-wrap py-2 text-xs leading-relaxed text-ink">
           {toRecordsText(records)}
         </pre>
       </Sheet>

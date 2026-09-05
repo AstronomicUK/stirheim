@@ -37,7 +37,7 @@ export function GroupCard({ group, draft, template }: GroupCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col">
           <span className="text-xs uppercase tracking-wider text-ink-dim">{unit?.name ?? group.unitTemplateId}</span>
-          <span className="font-mono text-sm tabular-nums text-ink-dim">
+          <span className="text-sm tabular-nums text-ink-dim">
             {group.size} x {formatAmount(perModelHire)} hire · total <span className="text-ink">{formatAmount(cost.total)}</span>
           </span>
         </div>

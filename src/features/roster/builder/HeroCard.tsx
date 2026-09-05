@@ -29,7 +29,7 @@ export function HeroCard({ hero, template, isLeader }: HeroCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col">
           <span className="text-xs uppercase tracking-wider text-ink-dim">{unit?.name ?? hero.unitTemplateId}{isLeader ? ' · Leader' : ''}</span>
-          <span className="font-mono text-sm tabular-nums text-ink-dim">
+          <span className="text-sm tabular-nums text-ink-dim">
             hire {formatAmount(cost.hire)} · total <span className="text-ink">{formatAmount(cost.total)}</span>
           </span>
         </div>

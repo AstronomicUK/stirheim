@@ -57,7 +57,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone }: HiredSword
                         <p className="text-xs text-ink-dim">{entry?.name ?? hs.hiredSwordId}</p>
                       </div>
                       <span className="shrink-0 text-right text-xs text-ink-dim">
-                        Upkeep <span className="font-mono text-sm text-ink">{upkeepText(entry)}</span>
+                        Upkeep <span className="text-sm text-ink">{upkeepText(entry)}</span>
                       </span>
                     </div>
                     <StatLine stats={hs.stats} compact className="text-xs" />
@@ -100,7 +100,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone }: HiredSword
                 >
                   <span className="flex w-full items-baseline justify-between gap-3">
                     <span className="text-base text-ink">{entry.name}</span>
-                    <span className="shrink-0 font-mono text-sm tabular-nums text-ink-dim">{entry.hireCost.text}</span>
+                    <span className="shrink-0 text-sm tabular-nums text-ink-dim">{entry.hireCost.text}</span>
                   </span>
                   <span className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-ink-dim">
                     <span>

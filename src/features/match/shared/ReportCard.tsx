@@ -93,7 +93,7 @@ export function ReportCard({ report, onWithdraw, onApprove, onReturn, amendTo, b
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
                       {line.advancesEarned > 0 ? <Tag tone="brass">{line.advancesEarned === 1 ? 'Advance' : `${line.advancesEarned} advances`}</Tag> : null}
-                      <span className="font-mono text-sm tabular-nums text-ink">
+                      <span className="text-sm tabular-nums text-ink">
                         +{line.amount}
                         <span className="text-ink-dim"> → {line.xpAfter}</span>
                       </span>
@@ -112,7 +112,7 @@ export function ReportCard({ report, onWithdraw, onApprove, onReturn, amendTo, b
                 {report.ooa.map((line, i) => (
                   <li key={`${line.subjectId}-${i}`} className="flex items-center justify-between gap-3 text-sm">
                     <span className="truncate text-ink">{line.subjectName}</span>
-                    <span className="shrink-0 font-mono tabular-nums text-ink-dim">{line.subjectType === 'group' ? `${line.count} out of action` : 'out of action'}</span>
+                    <span className="shrink-0 tabular-nums text-ink-dim">{line.subjectType === 'group' ? `${line.count} out of action` : 'out of action'}</span>
                   </li>
                 ))}
               </ul>
@@ -138,7 +138,7 @@ export function ReportCard({ report, onWithdraw, onApprove, onReturn, amendTo, b
           {report.veteran_pool_roll !== null ? (
             <Block title="Veteran pool">
               <p className="text-sm text-ink">
-                Rolled <span className="font-mono tabular-nums">{report.veteran_pool_roll}</span> on 2D6 for new henchmen's starting experience.
+                Rolled <span className="tabular-nums">{report.veteran_pool_roll}</span> on 2D6 for new henchmen's starting experience.
               </p>
             </Block>
           ) : null}

@@ -46,7 +46,7 @@ export function BuyTab({ trade }: { trade: TradeContext }) {
                 >
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-sm text-ink">{item.name}</span>
-                    <span className="font-mono text-xs tabular-nums text-ink-dim">{priceLine(item, trade.houseRules)}</span>
+                    <span className="text-xs tabular-nums text-ink-dim">{priceLine(item, trade.houseRules)}</span>
                   </span>
                   <AvailabilityTag item={item} />
                 </button>
@@ -196,7 +196,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
                 />
               ))}
               {searchTotal !== null ? (
-                <span className="pb-2 font-mono text-base tabular-nums text-ink">
+                <span className="pb-2 text-base tabular-nums text-ink">
                   = {searchTotal} <span className="text-ink-dim">vs {item.availability.rarity}</span>
                 </span>
               ) : null}
@@ -242,7 +242,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
               {item.price.base === null ? (
                 <NumberField label="Agreed price (gc each)" value={manualPrice} allowEmpty hint={item.price.text} onChange={setManualPrice} />
               ) : quote ? (
-                <p className="font-mono text-sm tabular-nums text-ink">{quote.text}</p>
+                <p className="text-sm tabular-nums text-ink">{quote.text}</p>
               ) : (
                 <p className="text-sm text-ink-dim">Roll the price dice to see the cost.</p>
               )}
@@ -285,7 +285,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
             <div className="flex items-baseline justify-between gap-3 px-1">
               <span className="text-sm text-ink-dim">Treasury {roster.gold} gc</span>
               {total !== null ? (
-                <span className={`font-mono text-base tabular-nums ${affordable ? 'text-ink' : 'text-accent-strong'}`}>
+                <span className={`text-base tabular-nums ${affordable ? 'text-ink' : 'text-accent-strong'}`}>
                   {affordable ? `${roster.gold - total} gc after` : `${total - roster.gold} gc short`}
                 </span>
               ) : null}

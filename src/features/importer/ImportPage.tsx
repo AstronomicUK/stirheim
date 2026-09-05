@@ -184,7 +184,7 @@ function ImportWizard({ detail }: { detail: CampaignDetail }) {
             {fileName ? `Chosen: ${fileName}` : 'Choose a CSV file'}
             <input type="file" accept=".csv,text/csv,text/plain" className="sr-only" onChange={(e) => void onFile(e)} />
           </label>
-          <TextArea label="Or paste the CSV" rows={8} value={text} onChange={(e) => load(e.target.value, null)} placeholder="match_id,date,scenario,warband,result,…" className="font-mono text-sm" />
+          <TextArea label="Or paste the CSV" rows={8} value={text} onChange={(e) => load(e.target.value, null)} placeholder="match_id,date,scenario,warband,result,…" className="text-sm" />
           {text.trim() ? (
             <Card className="px-4 py-3">
               <p className="text-sm text-ink">

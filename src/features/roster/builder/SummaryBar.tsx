@@ -16,8 +16,8 @@ export function SummaryBar({ costs, startingGold, models, maxModels, heroes, her
   const overModels = maxModels !== null && models > maxModels
   const overHeroes = heroCapacity !== null && heroes > heroCapacity
   return (
-    <div className="sticky top-0 z-10 -mx-5 border-b border-border bg-surface/95 px-5 py-2 backdrop-blur">
-      <dl className="grid grid-cols-4 gap-2 font-mono text-sm tabular-nums">
+    <div className="sticky top-0 z-10 -mx-5 border-b border-border bg-surface/95 px-5 py-2 backdrop-blur lg:-mx-10 lg:-mt-8 lg:px-10 lg:pt-6">
+      <dl className="grid grid-cols-4 gap-2 text-sm tabular-nums">
         <Cell label="Gold left" warn={overspent} value={`${costs.remaining}`} suffix={`/ ${startingGold}`} />
         <Cell label="Models" warn={overModels} value={`${models}`} suffix={maxModels !== null ? `/ ${maxModels}` : undefined} />
         <Cell label="Heroes" warn={overHeroes} value={`${heroes}`} suffix={heroCapacity !== null ? `/ ${heroCapacity}` : undefined} />

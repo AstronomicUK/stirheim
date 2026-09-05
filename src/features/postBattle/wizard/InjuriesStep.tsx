@@ -218,8 +218,8 @@ function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll
         <ol className="flex flex-col gap-1.5 border-l border-border pl-3 text-sm">
           {steps.map((s, i) => (
             <li key={i} className={s.rerolled ? 'text-ink-dim line-through' : 'text-ink'}>
-              <span className="font-mono tabular-nums">{s.d66}</span>
-              {s.subRoll !== null ? <span className="font-mono tabular-nums text-ink-dim"> / {s.subRoll}</span> : null} · {s.name}
+              <span className="tabular-nums">{s.d66}</span>
+              {s.subRoll !== null ? <span className="tabular-nums text-ink-dim"> / {s.subRoll}</span> : null} · {s.name}
               {s.rerolled ? <span className="text-xs"> (re-rolled)</span> : null}
               {s.effect ? <p className="text-xs text-ink-dim">{s.effect}</p> : null}
             </li>

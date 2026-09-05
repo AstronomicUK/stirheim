@@ -1,33 +1,31 @@
 import { NavLink } from 'react-router'
+import { Icon } from '../ui/icons'
+import { NAV_TABS } from './navTabs'
 
-const tabs = [
-  { to: '/', label: 'Warbands', end: true },
-  { to: '/campaigns', label: 'Campaigns', end: false },
-  { to: '/scenarios', label: 'Scenarios', end: false },
-  { to: '/account', label: 'Account', end: false },
-]
-
-/** Phone-style bottom tab bar, shown only when signed in. Hidden in print (data-print-hide). */
+/** Phone tab bar: icon over label, 64 px tall. Hidden from `lg`, where the SideRail takes over, and in print. */
 export function BottomNav() {
   return (
     <nav
       data-print-hide
       aria-label="Main"
-      className="sticky bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80"
+      className="sticky bottom-0 z-20 border-t border-border bg-surface-low/95 backdrop-blur supports-[backdrop-filter]:bg-surface-low/85 lg:hidden"
     >
       <ul className="mx-auto grid w-full max-w-md grid-cols-4 pb-[env(safe-area-inset-bottom)]">
-        {tabs.map((t) => (
+        {NAV_TABS.map((t) => (
           <li key={t.to}>
             <NavLink
               to={t.to}
               end={t.end}
               className={({ isActive }) =>
-                `flex min-h-12 items-center justify-center text-xs font-medium tracking-wide ${
-                  isActive ? 'text-brass' : 'text-ink-dim hover:text-ink'
-                }`
+                `flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold no-underline ${isActive ? 'text-brass' : 'text-ink-dim hover:text-ink'}`
               }
             >
-              {t.label}
+              {({ isActive }) => (
+                <>
+                  <Icon name={t.icon} size={24} className={isActive ? 'fill-brass/15' : ''} />
+                  {t.label}
+                </>
+              )}
             </NavLink>
           </li>
         ))}

@@ -54,7 +54,7 @@ export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment
                       <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 flex-col">
                         <span className={`truncate text-sm ${quantity > 0 ? 'text-ink' : 'text-ink-dim'}`}>{option.name}</span>
-                        <span className="font-mono text-xs tabular-nums text-ink-dim">
+                        <span className="text-xs tabular-nums text-ink-dim">
                           {option.cost.text}
                           {unpriced ? ' · enter the price once taken' : ''}
                         </span>

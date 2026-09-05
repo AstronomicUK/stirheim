@@ -7,10 +7,10 @@ export function NotConfigured() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-5 py-12">
       <header>
         <p className="text-xs uppercase tracking-[0.3em] text-ink-dim">Campaign Ledger</p>
-        <h1 className="font-headline text-4xl font-bold text-ink">Stirheim</h1>
+        <h1 className="font-headline text-4xl text-ink">Stirheim</h1>
       </header>
       <section className="flex flex-col gap-3">
-        <h2 className="font-headline text-2xl font-semibold text-ink">Not connected to a database yet</h2>
+        <h2 className="font-headline text-2xl text-ink">Not connected to a database yet</h2>
         <p className="leading-relaxed text-ink-dim">
           The ledger needs a Supabase project to keep warbands and campaigns in. This build was made without one, so
           there is nothing to sign in to.

@@ -4,6 +4,7 @@ import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { StatLine } from '../shared/StatLine'
 import { unitTypeName } from '../shared/names'
+import { HoverCard } from '../../../ui/HoverCard'
 import { Card, ItemLines, RuleList, Tag, XpBar } from './bits'
 import { findSpellOption, flagTags, hiredSwordName, skillName, skillTableName, skillText, spellName, statusLabel, warriorSpecialRules } from './lookups'
 
@@ -34,7 +35,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="font-headline text-lg font-semibold leading-tight text-ink">{hero.name}</h3>
+            <h3 className="font-headline text-lg leading-tight text-ink">{hero.name}</h3>
             <p className="text-sm text-ink-dim">
               {typeName}
               {hero.is_large ? ' · Large' : ''}
@@ -62,7 +63,16 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
             {expanded ? (
               <RuleList rules={hero.skills.map((id) => ({ name: skillName(id), text: skillText(id) ?? 'No rule text on file.' }))} />
             ) : (
-              <p className="text-sm text-ink">{hero.skills.map(skillName).join(', ')}</p>
+              <p className="flex flex-wrap gap-x-1.5 text-sm text-ink">
+                {hero.skills.map((id, i) => (
+                  <span key={id}>
+                    <HoverCard label={skillName(id)} title={skillName(id)}>
+                      <span className="whitespace-pre-line">{skillText(id) ?? 'No rule text on file.'}</span>
+                    </HoverCard>
+                    {i < hero.skills.length - 1 ? ',' : ''}
+                  </span>
+                ))}
+              </p>
             )}
           </div>
         ) : null}
@@ -78,7 +88,19 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
                 })}
               />
             ) : (
-              <p className="text-sm text-ink">{hero.spells.map(spellName).join(', ')}</p>
+              <p className="flex flex-wrap gap-x-1.5 text-sm text-ink">
+                {hero.spells.map((id, i) => {
+                  const spell = findSpellOption(id)
+                  return (
+                    <span key={id}>
+                      <HoverCard label={spellName(id)} title={spell ? `${spell.name} (${spell.lore})` : spellName(id)}>
+                        <span className="whitespace-pre-line">{spell?.text ?? 'No rule text on file.'}</span>
+                      </HoverCard>
+                      {i < hero.spells.length - 1 ? ',' : ''}
+                    </span>
+                  )
+                })}
+              </p>
             )}
           </div>
         ) : null}

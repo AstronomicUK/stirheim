@@ -44,7 +44,7 @@ function EnemyWarband({ matchId, participant, session }: { matchId: string; part
       <Card className="flex flex-col gap-1 px-4 py-3">
         {session && totals ? (
           <>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-sm tabular-nums text-ink">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm tabular-nums text-ink">
               <span>Turn {session.live_state.turn}</span>
               <span>
                 {totals.ownOutOfAction}

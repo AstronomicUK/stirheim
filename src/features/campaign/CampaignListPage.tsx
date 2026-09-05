@@ -91,7 +91,7 @@ function CampaignRows({ campaigns, warbandNames }: { campaigns: CampaignSummary[
                 <span className="truncate text-sm text-ink-dim">{c.is_gm ? 'You run this' : `Run by ${c.gm_display_name}`}</span>
                 {mine.length > 0 ? <span className="truncate text-sm text-ink-dim">Playing as {mine.join(', ')}</span> : null}
               </div>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-ink-dim">
+              <span className="shrink-0 text-sm tabular-nums text-ink-dim">
                 {c.member_count} {c.member_count === 1 ? 'warband' : 'warbands'}
               </span>
             </Link>

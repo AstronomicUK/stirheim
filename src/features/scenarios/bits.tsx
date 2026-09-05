@@ -63,7 +63,7 @@ export function ScenarioRows({ rows }: { rows: ScenarioRowItem[] }) {
         <li key={row.key}>
           <Link to={row.to} className="flex min-h-11 items-start gap-3 px-4 py-3 no-underline hover:bg-surface-high">
             {row.number != null ? (
-              <span className="w-5 shrink-0 pt-0.5 text-right font-mono text-sm tabular-nums text-ink-dim">{row.number}</span>
+              <span className="w-5 shrink-0 pt-0.5 text-right text-sm tabular-nums text-ink-dim">{row.number}</span>
             ) : null}
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="flex items-center gap-2">

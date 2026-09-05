@@ -62,7 +62,7 @@ export function NumberField({ label, value, onChange, hint, error, allowEmpty = 
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         className={`w-full rounded-md border bg-surface-low text-ink focus:border-brass focus:outline-none disabled:opacity-60 ${
-          compact ? 'min-h-11 px-1 text-center font-mono text-base tabular-nums' : 'min-h-12 px-3.5 text-base'
+          compact ? 'min-h-11 px-1 text-center text-base tabular-nums' : 'min-h-12 px-3.5 text-base'
         } ${invalid ? 'border-accent-strong' : 'border-border'}`}
         value={text}
         onChange={(e) => handle(e.target.value)}

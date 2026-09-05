@@ -98,7 +98,7 @@ export function Row({ label, value, dim = false }: { label: ReactNode; value: Re
   return (
     <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
       <span className={dim ? 'text-ink-dim' : 'text-ink'}>{label}</span>
-      <span className="shrink-0 font-mono tabular-nums text-ink">{value}</span>
+      <span className="shrink-0 tabular-nums text-ink">{value}</span>
     </div>
   )
 }

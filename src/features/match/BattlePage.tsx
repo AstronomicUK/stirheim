@@ -13,7 +13,7 @@ import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { RosterWarband } from '../../rules/types/roster'
-import { Button, Notice, SegmentedControl, Sheet, Spinner } from '../../ui'
+import { Button, Notice, SegmentedControl, Sheet, Spinner, useIsDesktop } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
 import { FightTab } from './fight/FightTab'
 import { LogTab } from './battle/LogTab'
@@ -258,6 +258,10 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
   const advancesDue = pendingAdvances.data?.length ?? 0
   const totals = useMemo(() => sheetTotals(shown, roster), [shown, roster])
   const rout = routStatus(shown, totals.startingModels)
+  // Desktop: my warband always on the left, the other sections as tabs on the right.
+  const desktop = useIsDesktop()
+  const tabOptions = (match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight' && t.value !== 'log')).filter((t) => !desktop || t.value !== 'mine')
+  const sideTab: Tab = desktop && tab === 'mine' ? 'enemy' : tab
 
   return (
     <>
@@ -282,17 +286,27 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
         </Notice>
       ) : null}
 
-      <SegmentedControl options={match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight' && t.value !== 'log')} value={tab} onChange={setTab} label="Battle sheet section" />
+      <div className={desktop ? 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-8' : 'flex flex-col gap-6'}>
+        {desktop ? (
+          <div className="flex flex-col gap-3">
+            <h2 className="text-xs uppercase tracking-[0.25em] text-ink-dim">My warband</h2>
+            <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} />
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-6">
+          <SegmentedControl options={tabOptions} value={sideTab} onChange={setTab} label="Battle sheet section" />
 
-      {tab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} /> : null}
-      {tab === 'enemy' ? (
-        <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
-      ) : null}
-      {tab === 'fight' && match.combat_mode === 'app' ? (
-        <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} />
-      ) : null}
-      {tab === 'log' && match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
-      {tab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}
+          {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} /> : null}
+          {sideTab === 'enemy' ? (
+            <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
+          ) : null}
+          {sideTab === 'fight' && match.combat_mode === 'app' ? (
+            <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} />
+          ) : null}
+          {sideTab === 'log' && match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
+          {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}
+        </div>
+      </div>
 
       <SaveBar saveState={handle.saveState} saveError={handle.saveError} onRetry={handle.retry} onBattleOver={onBattleOver} />
       {children}

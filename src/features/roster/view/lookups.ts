@@ -132,6 +132,31 @@ export function xpProgress(xp: number, levelUps: number, role: CharacterRole): X
   return { xp, next, previous, advancesOwed: Math.max(0, crossed.length - levelUps), fraction }
 }
 
+export interface XpSegment {
+  from: number
+  to: number
+  /** 0..1 of this segment earned. */
+  fill: number
+}
+
+/**
+ * The advance boxes as track segments, from 0 to the first box and between each pair after it,
+ * shown up to two boxes past the current total so the track always has somewhere to go.
+ */
+export function xpTrack(xp: number, role: CharacterRole): XpSegment[] {
+  const thresholds = role === 'hero' ? HERO_XP_THRESHOLDS : HENCHMAN_XP_THRESHOLDS
+  const nextIndex = thresholds.findIndex((t) => t > xp)
+  const shownUpTo = nextIndex === -1 ? thresholds.length : Math.min(thresholds.length, Math.max(nextIndex + 2, 6))
+  const segments: XpSegment[] = []
+  let from = 0
+  for (const to of thresholds.slice(0, shownUpTo)) {
+    const fill = xp >= to ? 1 : xp <= from ? 0 : (xp - from) / (to - from)
+    segments.push({ from, to, fill })
+    from = to
+  }
+  return segments
+}
+
 /** Short labels for a warrior's persistent conditions, in a stable order. */
 export function flagTags(flags: WarriorFlags): string[] {
   const tags: string[] = []

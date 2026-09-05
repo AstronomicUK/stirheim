@@ -331,7 +331,7 @@ function CombatantLine({ c, kit, defending = false }: { c: Combatant; kit: Loado
     <Card className="flex flex-col gap-1 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span className="text-sm text-ink">{c.typeName}</span>
-        <span className="font-mono text-sm tabular-nums text-ink">{line}</span>
+        <span className="text-sm tabular-nums text-ink">{line}</span>
       </div>
       <ItemLines items={c.equipment} emptyText="No equipment" />
       <p className="text-xs text-ink-dim">{armourText(kit)}</p>
@@ -356,8 +356,8 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div className="flex flex-col items-center gap-0.5 rounded-md bg-surface-low px-2 py-2 text-center">
       <span className="text-[10px] uppercase tracking-wider text-ink-dim">{label}</span>
-      <span className="font-mono text-lg tabular-nums text-ink">{value}</span>
-      {sub ? <span className="font-mono text-xs tabular-nums text-ink-dim">{sub}</span> : null}
+      <span className="text-lg tabular-nums text-ink">{value}</span>
+      {sub ? <span className="text-xs tabular-nums text-ink-dim">{sub}</span> : null}
     </div>
   )
 }
@@ -369,7 +369,7 @@ function Bar({ label, value }: { label: string; value: number }) {
       <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-surface-low" aria-hidden>
         <div className="h-full rounded-full bg-brass" style={{ width: `${Math.max(0, Math.min(100, value * 100))}%` }} />
       </div>
-      <span className="w-12 shrink-0 text-right font-mono tabular-nums text-ink">{percent(value)}</span>
+      <span className="w-12 shrink-0 text-right tabular-nums text-ink">{percent(value)}</span>
     </div>
   )
 }

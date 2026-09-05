@@ -25,7 +25,7 @@ export function UnitList({ listings, disabled = false, onPick }: UnitListProps) 
             >
               <span className="flex w-full items-baseline justify-between gap-3">
                 <span className="text-base text-ink">{row.unit.name}</span>
-                <span className="shrink-0 font-mono text-sm tabular-nums text-ink-dim">
+                <span className="shrink-0 text-sm tabular-nums text-ink-dim">
                   {row.unit.cost === null ? 'no hire cost' : `${row.unit.cost} gc`}
                 </span>
               </span>

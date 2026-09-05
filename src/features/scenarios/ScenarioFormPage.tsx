@@ -182,7 +182,7 @@ function ScenarioForm({ existing }: { existing?: ScenarioRow }) {
               value={values.rulesMarkdown}
               onChange={(e) => set('rulesMarkdown', e.target.value)}
               placeholder={'## Terrain\n\nHow the table is set up...'}
-              className="font-mono text-sm"
+              className="text-sm"
               hint="Markdown: ## headings, - lists, **bold**. The template gives the rulebook's five sections."
               error={errors.rulesMarkdown}
             />

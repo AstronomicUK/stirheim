@@ -60,7 +60,7 @@ export function InviteCard({ code, archived = false, campaignName }: InviteCardP
     <Card className="flex flex-col gap-3 px-4 py-4">
       <div className="flex flex-col gap-1">
         <span className="text-[10px] uppercase tracking-wider text-ink-dim">Invite code</span>
-        <span ref={codeRef} className="select-all font-mono text-3xl tracking-[0.15em] text-ink tabular-nums">
+        <span ref={codeRef} className="select-all text-3xl tracking-[0.15em] text-ink tabular-nums">
           {pretty}
         </span>
       </div>

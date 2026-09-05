@@ -1,0 +1,44 @@
+import { NavLink } from 'react-router'
+import { Icon } from '../ui/icons'
+import { Wordmark } from '../ui'
+import { NAV_TABS } from './navTabs'
+import { useSession } from './session'
+
+/** Desktop navigation: a fixed-width rail with the wordmark, the four tabs and who is signed in. */
+export function SideRail() {
+  const user = useSession((s) => s.user)
+  const profile = useSession((s) => s.profile)
+  return (
+    <aside data-print-hide className="sticky top-0 hidden h-dvh flex-col gap-7 border-r border-border bg-surface-low px-4 pb-6 pt-6 lg:flex">
+      <div className="px-2">
+        <Wordmark />
+      </div>
+      <nav aria-label="Main">
+        <ul className="flex flex-col gap-1">
+          {NAV_TABS.map((t) => (
+            <li key={t.to}>
+              <NavLink
+                to={t.to}
+                end={t.end}
+                className={({ isActive }) =>
+                  `flex min-h-11 items-center gap-3 rounded-md px-3 text-[15px] font-semibold no-underline transition-colors ${
+                    isActive ? 'bg-surface text-ink shadow-[inset_3px_0_0_var(--color-brass)]' : 'text-ink-dim hover:bg-surface hover:text-ink'
+                  }`
+                }
+              >
+                <Icon name={t.icon} size={20} />
+                {t.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      {user ? (
+        <div className="mt-auto px-3 text-sm text-ink-dim">
+          <span className="block truncate font-semibold text-ink">{profile?.display_name ?? 'Signed in'}</span>
+          <span className="block truncate text-xs">{user.email}</span>
+        </div>
+      ) : null}
+    </aside>
+  )
+}

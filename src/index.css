@@ -1,28 +1,37 @@
 @import 'tailwindcss';
 
 /*
-  Stirheim is a single dark theme by design: a ledger read by phone-light at the gaming table.
-  Tokens are declared once here and exposed to Tailwind as colours (bg-surface, text-ink, ...).
+  Stirheim's "Ledger" look (chosen 2026-09-05): warm paper, iron-black ink, oxblood for the one
+  action that matters on a screen, brass for state. Tokens are declared once here and exposed to
+  Tailwind as colours (bg-surface, text-ink, ...). `surface` is the page, `surface-low` a raised
+  card, `surface-high` a pressed or hovered surface.
 */
 @theme {
-  --color-surface: #131110;
-  --color-surface-low: #1b1816;
-  --color-surface-high: #262220;
-  --color-border: #3d352f;
-  --color-ink: #ece3d2;
-  --color-ink-dim: #b3a790;
-  --color-accent: #b8402f;
-  --color-accent-strong: #d9553f;
-  --color-brass: #c9962c;
-  --color-ok: #6a9955;
-  --color-warn: #d1a13a;
+  --color-surface: #f1e9d6;
+  --color-surface-low: #f8f3e8;
+  --color-surface-high: #e6dcc4;
+  --color-border: #cdbf9f;
+  --color-ink: #241f1a;
+  --color-ink-dim: #6a5d4d;
+  --color-accent: #8f2b1f;
+  --color-accent-strong: #a8362a;
+  --color-brass: #9a6f1f;
+  --color-link: #3f5666;
+  --color-ok: #4f7a3c;
+  --color-warn: #b7791f;
 
-  --font-headline: 'Newsreader', Georgia, 'Iowan Old Style', serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-headline: 'IM Fell English', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+}
+
+/* IM Fell English has one weight; never let a bold utility synthesise a heavier one. */
+.font-headline {
+  font-weight: 400;
+  letter-spacing: 0.005em;
 }
 
 html,
@@ -36,6 +45,7 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
   font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -58,14 +68,15 @@ body {
     color: #000;
   }
   #root > div {
+    display: block;
     max-width: none;
     min-height: 0;
   }
-  #root > div > header,
   [data-print-hide] {
     display: none !important;
   }
-  #root > div > main {
+  [data-app-main] {
+    max-width: none;
     padding: 0;
     gap: 0;
   }
@@ -134,7 +145,7 @@ body {
   color: var(--color-ink-dim);
 }
 .markdown a {
-  color: var(--color-brass);
+  color: var(--color-link);
   text-decoration: underline;
 }
 .markdown hr {

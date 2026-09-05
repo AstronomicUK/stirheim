@@ -14,7 +14,7 @@ export function PageHeader({ eyebrow, title, description, aside }: PageHeaderPro
       <div className="flex items-end justify-between gap-4">
         <div>
           {eyebrow ? <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">{eyebrow}</p> : null}
-          <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{title}</h1>
+          <h1 className="font-headline text-3xl leading-tight text-ink">{title}</h1>
         </div>
         {aside ? <div className="shrink-0 pb-1">{aside}</div> : null}
       </div>

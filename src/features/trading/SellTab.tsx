@@ -44,7 +44,7 @@ export function SellTab({ trade }: { trade: TradeContext }) {
                       {itemName(line.item)}
                       {line.item.quantity > 1 ? <span className="text-ink-dim"> ×{line.item.quantity}</span> : null}
                     </span>
-                    <span className="font-mono text-xs tabular-nums text-ink-dim">
+                    <span className="text-xs tabular-nums text-ink-dim">
                       {line.base === null ? 'No listed price' : `Listed ${line.base} gc`}
                     </span>
                   </span>
@@ -103,7 +103,7 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
           </div>
         ) : null}
         {line.each !== null ? (
-          <p className="font-mono text-sm tabular-nums text-ink">
+          <p className="text-sm tabular-nums text-ink">
             {line.each} gc each (half of {line.base} gc){quantity > 1 ? ` × ${quantity} = ${computed} gc` : ''}
           </p>
         ) : (

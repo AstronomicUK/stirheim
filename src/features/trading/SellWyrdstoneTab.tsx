@@ -53,7 +53,7 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
           </div>
           <div className="flex items-baseline justify-between gap-3 border-t border-border pt-3">
             <span className="text-sm text-ink-dim">You would receive</span>
-            <span className="font-mono text-2xl tabular-nums text-ink">{income} gc</span>
+            <span className="text-2xl tabular-nums text-ink">{income} gc</span>
           </div>
           {selling < shards && phase.matchId !== null ? (
             <p className="text-xs text-ink-dim">

@@ -16,7 +16,8 @@
     "db:types": "DOCKER_HOST=unix://$HOME/.docker/run/docker.sock supabase gen types typescript --local --schema public > src/api/database.types.ts",
     "test:integration": "SUPABASE_LOCAL=1 vitest run --no-file-parallelism src/api/__tests__",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "dev:preview": "vite --port ${PORT:-5173} --strictPort"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",

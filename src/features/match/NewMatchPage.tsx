@@ -144,7 +144,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
                 <span className="truncate font-medium text-ink">{mine[0].warband.name}</span>
                 <span className="truncate text-sm text-ink-dim">Your warband · {mine[0].warband.type_name}</span>
               </div>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-ink">Rating {mine[0].warband.rating}</span>
+              <span className="shrink-0 text-sm tabular-nums text-ink">Rating {mine[0].warband.rating}</span>
             </Card>
           ) : (
             <SelectField
@@ -196,7 +196,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
                         {m.display_name} · {m.warband.type_name}
                       </span>
                     </span>
-                    <span className="shrink-0 font-mono text-sm tabular-nums text-ink">Rating {m.warband.rating}</span>
+                    <span className="shrink-0 text-sm tabular-nums text-ink">Rating {m.warband.rating}</span>
                   </label>
                 </li>
               )
@@ -329,7 +329,7 @@ function PickList({ items, selected, onPick, disabled }: { items: PickItem[]; se
               onClick={() => onPick(item.pick)}
               className={`flex min-h-11 w-full items-start gap-3 px-4 py-3 text-left ${on ? 'bg-surface-high' : 'hover:bg-surface-high'}`}
             >
-              {item.number != null ? <span className="w-5 shrink-0 pt-0.5 text-right font-mono text-sm tabular-nums text-ink-dim">{item.number}</span> : null}
+              {item.number != null ? <span className="w-5 shrink-0 pt-0.5 text-right text-sm tabular-nums text-ink-dim">{item.number}</span> : null}
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className={`truncate font-medium ${on ? 'text-brass' : 'text-ink'}`}>{item.title}</span>
                 {item.subtitle ? <span className="line-clamp-2 text-sm leading-snug text-ink-dim">{item.subtitle}</span> : null}

@@ -114,7 +114,7 @@ export function ExplorationStep({ draft, derived, update }: StepProps) {
           {ex.location ? (
             <Card className="flex flex-col gap-3 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
-                <h3 className="font-headline text-lg font-semibold text-ink">{ex.location.name}</h3>
+                <h3 className="font-headline text-lg text-ink">{ex.location.name}</h3>
                 {ex.rewardsApply ? <Tag tone="brass">Resolved</Tag> : <Tag tone="warn">To resolve</Tag>}
               </div>
               <p className="text-sm italic leading-relaxed text-ink-dim">{ex.location.flavour}</p>

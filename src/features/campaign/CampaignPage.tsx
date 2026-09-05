@@ -4,7 +4,7 @@ import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail
 import { useCampaignMatches } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
-import { Button, Markdown, Notice, Sheet, Spinner } from '../../ui'
+import { Button, Markdown, Notice, Sheet, Spinner, TwoColumn } from '../../ui'
 import { CampaignBattles } from '../match/shared/CampaignBattles'
 import { GmChecklist } from '../onboarding/GmChecklist'
 import { usePageTitle } from '../onboarding/usePageTitle'
@@ -76,7 +76,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">Campaign</p>
-            <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{campaign.name}</h1>
+            <h1 className="font-headline text-3xl leading-tight text-ink">{campaign.name}</h1>
           </div>
           {isGm ? (
             <div className="flex shrink-0 flex-col items-end pt-1">
@@ -98,29 +98,12 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         </Notice>
       ) : null}
 
+      <TwoColumn
+        rail={
+          <>
       {isGm && !campaign.archived ? <GmChecklist key={campaign.id} campaignId={campaign.id} memberCount={members.length} matchCount={matches.data?.length ?? 0} /> : null}
 
       <InviteCard code={campaign.invite_code} archived={campaign.archived} campaignName={campaign.name} />
-
-      <Section title="Warbands" aside={`${members.length} enrolled${settings.maxRosters ? ` of ${settings.maxRosters}` : ''}`}>
-        {members.length === 0 ? (
-          <Card className="px-4 py-4">
-            <p className="text-sm leading-relaxed text-ink-dim">
-              Nobody has enrolled yet. Share the invite code and the warbands appear here as players join.
-            </p>
-          </Card>
-        ) : (
-          <MemberRows members={members} userId={user?.id} gmId={campaign.gm_id} />
-        )}
-        {former_members.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            <Disclosure open={showFormer} onToggle={() => setShowFormer((v) => !v)} label="former members" count={former_members.length} />
-            {showFormer ? <MemberRows members={former_members} userId={user?.id} gmId={campaign.gm_id} former /> : null}
-          </div>
-        ) : null}
-      </Section>
-
-      <CampaignBattles campaignId={campaign.id} userId={user?.id} isGm={isGm} isMember={mine.length > 0} archived={campaign.archived} />
 
       <Section title="Settings and house rules">
         <Card className="flex flex-col gap-3 px-4 py-3">
@@ -148,6 +131,29 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
           )}
         </Card>
       </Section>
+
+          </>
+        }
+      >
+      <Section title="Warbands" aside={`${members.length} enrolled${settings.maxRosters ? ` of ${settings.maxRosters}` : ''}`}>
+        {members.length === 0 ? (
+          <Card className="px-4 py-4">
+            <p className="text-sm leading-relaxed text-ink-dim">
+              Nobody has enrolled yet. Share the invite code and the warbands appear here as players join.
+            </p>
+          </Card>
+        ) : (
+          <MemberRows members={members} userId={user?.id} gmId={campaign.gm_id} />
+        )}
+        {former_members.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            <Disclosure open={showFormer} onToggle={() => setShowFormer((v) => !v)} label="former members" count={former_members.length} />
+            {showFormer ? <MemberRows members={former_members} userId={user?.id} gmId={campaign.gm_id} former /> : null}
+          </div>
+        ) : null}
+      </Section>
+
+      <CampaignBattles campaignId={campaign.id} userId={user?.id} isGm={isGm} isMember={mine.length > 0} archived={campaign.archived} />
 
       <Section title="Recent activity">
         {activity.isPending ? (
@@ -187,6 +193,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
           </Button>
         </div>
       ) : null}
+
+      </TwoColumn>
 
       <Sheet
         open={leaveOpen}
@@ -238,7 +246,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <dt className="text-[10px] uppercase tracking-wider text-ink-dim">{label}</dt>
-      <dd className="truncate font-mono text-sm tabular-nums text-ink">{value}</dd>
+      <dd className="truncate text-sm tabular-nums text-ink">{value}</dd>
     </div>
   )
 }
@@ -263,7 +271,7 @@ function MemberRows({ members, userId, gmId, former = false }: { members: Campai
               </span>
               {former && m.left_at ? <span className="text-xs text-ink-dim">Left {formatRelativeTime(m.left_at)}</span> : null}
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5 font-mono text-sm tabular-nums">
+            <div className="flex shrink-0 flex-col items-end gap-0.5 text-sm tabular-nums">
               <span className="text-ink">Rating {m.warband.rating}</span>
               <span className="text-ink-dim">
                 {m.warband.gold} gc · {m.warband.wyrdstone} shards

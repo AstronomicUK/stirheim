@@ -41,19 +41,19 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/60" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex flex-col justify-end lg:justify-center">
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-ink/50" onClick={onClose} />
       <div
         ref={panelRef}
         tabIndex={-1}
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className="relative mx-auto flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-xl border-t border-border bg-surface-low shadow-2xl focus:outline-none"
+        className="relative mx-auto flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-xl border-t border-border bg-surface-low shadow-2xl focus:outline-none lg:max-w-lg lg:rounded-xl lg:border"
       >
         <header className="flex items-start justify-between gap-4 px-5 pb-2 pt-4">
           <div className="min-w-0">
-            <h2 id={titleId} className="font-headline text-xl font-semibold leading-tight text-ink">
+            <h2 id={titleId} className="font-headline text-xl leading-tight text-ink">
               {title}
             </h2>
             {description ? <p className="mt-1 text-sm text-ink-dim">{description}</p> : null}

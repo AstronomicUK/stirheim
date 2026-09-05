@@ -238,7 +238,7 @@ function Wizard({ match, participant, rosterData, liveState, amending }: WizardP
     <>
       <header className="flex flex-col gap-1">
         <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">{amending ? 'Amending the filed report' : 'Post-battle report'}</p>
-        <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{participant.warband_name}</h1>
+        <h1 className="font-headline text-3xl leading-tight text-ink">{participant.warband_name}</h1>
         {savedAt ? <p className="text-xs text-ink-dim">Draft saved on this phone. Nothing is applied until you file.</p> : null}
       </header>
 

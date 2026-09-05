@@ -159,7 +159,7 @@ function Editor({ detail }: { detail: WarbandDetail }) {
     <>
       <header className="flex flex-col gap-2">
         <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">Edit · {warbandTypeName(baseline.warband.type_rules_id)}</p>
-        <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{baseline.warband.name}</h1>
+        <h1 className="font-headline text-3xl leading-tight text-ink">{baseline.warband.name}</h1>
       </header>
 
       <Notice tone="info" title="Manual edits are logged">

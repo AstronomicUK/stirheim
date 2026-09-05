@@ -40,7 +40,7 @@ export function EquipmentRows({ subject, equipment, options, models = 1 }: Equip
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm text-ink">{itemName(item)}</span>
-                <span className="font-mono text-xs tabular-nums text-ink-dim">
+                <span className="text-xs tabular-nums text-ink-dim">
                   {item.costText}
                   {each !== null && models > 1 ? ` · ${formatAmount(each * models, currency)} for ${models}` : ''}
                   {each !== null && models === 1 ? ` · ${formatAmount(each, currency)}` : ''}
@@ -70,7 +70,7 @@ export function EquipmentRows({ subject, equipment, options, models = 1 }: Equip
                   </button>
                 </div>
               ) : (
-                <span className="font-mono text-sm text-ink-dim">x{item.quantity}</span>
+                <span className="text-sm text-ink-dim">x{item.quantity}</span>
               )}
             </div>
             {option && needsPrice(item) ? <PriceField item={item} subject={subject} option={option} /> : null}
@@ -110,7 +110,7 @@ export function PriceField({ item, subject, option }: PriceFieldProps) {
           const next = parsed === null || Number.isNaN(parsed) ? null : Math.max(0, parsed)
           update((d) => setDraftEquipmentCost(d, subject, option, next))
         }}
-        className="min-h-11 w-24 rounded-md border border-warn/60 bg-surface px-3 font-mono text-base tabular-nums text-ink focus:border-brass focus:outline-none"
+        className="min-h-11 w-24 rounded-md border border-warn/60 bg-surface px-3 text-base tabular-nums text-ink focus:border-brass focus:outline-none"
       />
     </div>
   )

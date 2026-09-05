@@ -11,8 +11,8 @@ export function ProblemsSection({ problems }: ProblemsSectionProps) {
   return (
     <section className="flex flex-col gap-3" aria-live="polite">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-headline text-xl font-semibold text-ink">Problems</h2>
-        <span className="font-mono text-sm tabular-nums text-ink-dim">{problems.length}</span>
+        <h2 className="font-headline text-xl text-ink">Problems</h2>
+        <span className="text-sm tabular-nums text-ink-dim">{problems.length}</span>
       </div>
       {groups.length === 0 ? (
         <p className="rounded-md border border-ok/60 bg-ok/10 px-4 py-3 text-sm text-ink-dim">Nothing outstanding. The warband is ready to create.</p>

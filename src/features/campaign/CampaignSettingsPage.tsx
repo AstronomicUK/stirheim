@@ -151,7 +151,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.25em] text-ink-dim">Settings</p>
-              <h1 className="font-headline text-3xl font-semibold leading-tight text-ink">{campaign.name}</h1>
+              <h1 className="font-headline text-3xl leading-tight text-ink">{campaign.name}</h1>
             </div>
             <div className="shrink-0 pt-1">
               <TextLink to={`/campaigns/${campaign.id}`}>Done</TextLink>
@@ -231,7 +231,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
 
       <Section title="Invite code">
         <Card className="flex flex-col gap-3 px-4 py-3">
-          <p className="font-mono text-2xl tracking-[0.15em] text-ink">{formatInviteCode(campaign.invite_code)}</p>
+          <p className="text-2xl tracking-[0.15em] text-ink">{formatInviteCode(campaign.invite_code)}</p>
           <p className="text-sm leading-relaxed text-ink-dim">Issuing a new code stops the old one working. Current members stay enrolled.</p>
           <Button variant="secondary" block onClick={() => setCodeOpen(true)}>
             New invite code
@@ -279,7 +279,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
           </div>
         }
       >
-        <p className="py-2 font-mono text-xl tracking-[0.15em] text-ink-dim">{formatInviteCode(campaign.invite_code)}</p>
+        <p className="py-2 text-xl tracking-[0.15em] text-ink-dim">{formatInviteCode(campaign.invite_code)}</p>
       </Sheet>
 
       <Sheet

@@ -25,7 +25,7 @@ export function WarriorHead({ name, typeName, isLarge, tags, stats, expanded, on
     <button type="button" onClick={onToggle} aria-expanded={expanded} className="flex w-full flex-col gap-2.5 px-4 pb-3 pt-3 text-left">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-headline text-lg font-semibold leading-tight text-ink">{name}</h3>
+          <h3 className="font-headline text-lg leading-tight text-ink">{name}</h3>
           <p className="text-sm text-ink-dim">
             {typeName}
             {isLarge ? ' · Large' : ''}

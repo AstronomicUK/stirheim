@@ -110,7 +110,7 @@ export function ParticipantCard({ participant: p, showAcceptance = false, childr
           </span>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="font-mono text-sm tabular-nums text-ink">Rating {p.rating}</span>
+          <span className="text-sm tabular-nums text-ink">Rating {p.rating}</span>
           {showAcceptance ? p.accepted_at ? <Tag>Accepted</Tag> : <Tag tone="warn">Waiting</Tag> : null}
         </div>
       </div>

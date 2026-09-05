@@ -179,7 +179,7 @@ function SubjectCard({ group, subject, detail, canResolve, onResolve }: SubjectC
         <Tag tone="brass">{count === 1 ? '1 advance due' : `${count} advances due`}</Tag>
       </div>
       <p className="text-xs text-ink-dim">
-        <span className="font-mono tabular-nums text-ink">{xp}</span> xp · earned at {thresholds} xp
+        <span className="tabular-nums text-ink">{xp}</span> xp · earned at {thresholds} xp
       </p>
       {rolled ? (
         <p className="text-sm text-ink">

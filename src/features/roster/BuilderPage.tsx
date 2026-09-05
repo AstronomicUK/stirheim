@@ -15,7 +15,7 @@ import {
 import { warbandRating } from '../../rules/resolve/rating'
 import { leaderTemplate } from '../../rules/resolve/roster'
 import type { WarbandTemplate } from '../../rules/types'
-import { Button, Notice, PageHeader, TextField } from '../../ui'
+import { Button, Notice, PageHeader, TextField, TwoColumn } from '../../ui'
 import { AddUnitSheet } from './builder/AddUnitSheet'
 import { newDraftId, useDraftStore } from './builder/draftStore'
 import { GroupCard } from './builder/GroupCard'
@@ -134,63 +134,10 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
         rating={derived.rating}
       />
 
-      <TextField
-        label="Warband name"
-        autoComplete="off"
-        maxLength={80}
-        placeholder="Give the warband a name"
-        value={draft.name}
-        onChange={(e) => update((d) => ({ ...d, name: e.target.value }))}
-      />
-
-      {template.composition?.text ? (
-        <details className="rounded-md border border-border bg-surface-low">
-          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm text-ink-dim">Choice of warriors</summary>
-          <p className="px-4 pb-4 text-sm leading-relaxed text-ink-dim">{template.composition.text}</p>
-        </details>
-      ) : null}
-
-      {lastError ? (
-        <Notice tone="error" title="That change was not applied">
-          {lastError}{' '}
-          <button type="button" onClick={dismissError} className="text-brass underline-offset-4 hover:underline">
-            Dismiss
-          </button>
-        </Notice>
-      ) : null}
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-headline text-xl font-semibold text-ink">Heroes</h2>
-          <span className="font-mono text-sm tabular-nums text-ink-dim">
-            {draft.heroes.length}
-            {capacity !== null ? ` / ${capacity}` : ''}
-          </span>
-        </div>
-        {draft.heroes.map((hero) => (
-          <HeroCard key={hero.id} hero={hero} template={template} isLeader={hero.unitTemplateId === leader?.id} />
-        ))}
-        <Button variant="secondary" block onClick={() => setAdding('hero')}>
-          Add hero
-        </Button>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-headline text-xl font-semibold text-ink">Henchman groups</h2>
-          <span className="font-mono text-sm tabular-nums text-ink-dim">
-            {draft.groups.reduce((sum, g) => sum + g.size, 0)} in {draft.groups.length} {draft.groups.length === 1 ? 'group' : 'groups'}
-          </span>
-        </div>
-        {draft.groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups yet.</p> : null}
-        {draft.groups.map((group) => (
-          <GroupCard key={group.id} group={group} draft={draft} template={template} />
-        ))}
-        <Button variant="secondary" block onClick={() => setAdding('henchman')}>
-          Add group
-        </Button>
-      </section>
-
+      <TwoColumn
+        stickyRail={false}
+        rail={
+          <div className="flex flex-col gap-6">
       <ProblemsSection problems={derived.problems} />
 
       {createError ? (
@@ -199,7 +146,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
         </Notice>
       ) : null}
 
-      <div className="sticky bottom-0 mt-auto -mx-5 flex flex-col gap-3 border-t border-border bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+      <div className="sticky bottom-0 mt-auto -mx-5 flex flex-col gap-3 border-t border-border bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:static lg:mx-0 lg:rounded-md lg:border lg:bg-surface-low lg:p-4">
         {confirmDiscard ? (
           <>
             <p className="text-sm text-ink-dim">Discard this draft? Everything you have added is lost.</p>
@@ -228,6 +175,68 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
           </>
         )}
       </div>
+
+          </div>
+        }
+      >
+      <TextField
+        label="Warband name"
+        autoComplete="off"
+        maxLength={80}
+        placeholder="Give the warband a name"
+        value={draft.name}
+        onChange={(e) => update((d) => ({ ...d, name: e.target.value }))}
+      />
+
+      {template.composition?.text ? (
+        <details className="rounded-md border border-border bg-surface-low">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm text-ink-dim">Choice of warriors</summary>
+          <p className="px-4 pb-4 text-sm leading-relaxed text-ink-dim">{template.composition.text}</p>
+        </details>
+      ) : null}
+
+      {lastError ? (
+        <Notice tone="error" title="That change was not applied">
+          {lastError}{' '}
+          <button type="button" onClick={dismissError} className="text-brass underline-offset-4 hover:underline">
+            Dismiss
+          </button>
+        </Notice>
+      ) : null}
+
+      <section className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-headline text-xl text-ink">Heroes</h2>
+          <span className="text-sm tabular-nums text-ink-dim">
+            {draft.heroes.length}
+            {capacity !== null ? ` / ${capacity}` : ''}
+          </span>
+        </div>
+        {draft.heroes.map((hero) => (
+          <HeroCard key={hero.id} hero={hero} template={template} isLeader={hero.unitTemplateId === leader?.id} />
+        ))}
+        <Button variant="secondary" block onClick={() => setAdding('hero')}>
+          Add hero
+        </Button>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-headline text-xl text-ink">Henchman groups</h2>
+          <span className="text-sm tabular-nums text-ink-dim">
+            {draft.groups.reduce((sum, g) => sum + g.size, 0)} in {draft.groups.length} {draft.groups.length === 1 ? 'group' : 'groups'}
+          </span>
+        </div>
+        {draft.groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups yet.</p> : null}
+        {draft.groups.map((group) => (
+          <GroupCard key={group.id} group={group} draft={draft} template={template} />
+        ))}
+        <Button variant="secondary" block onClick={() => setAdding('henchman')}>
+          Add group
+        </Button>
+      </section>
+
+      </TwoColumn>
 
       <AddUnitSheet
         open={adding !== null}

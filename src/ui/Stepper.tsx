@@ -20,7 +20,7 @@ export function Stepper({ value, onChange, label, min = 0, max = null, disabled 
       <button type="button" className={button} aria-label={`Fewer ${label}`} disabled={!canDecrease} onClick={() => onChange(value - 1)}>
         &minus;
       </button>
-      <span className="min-w-8 text-center font-mono text-base tabular-nums text-ink" aria-live="polite">
+      <span className="min-w-8 text-center text-base tabular-nums text-ink" aria-live="polite">
         {value}
       </span>
       <button type="button" className={button} aria-label={`More ${label}`} disabled={!canIncrease} onClick={() => onChange(value + 1)}>

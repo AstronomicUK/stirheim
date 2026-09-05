@@ -32,7 +32,7 @@ export function PrintPage() {
 }
 
 const cell = 'border border-neutral-400 px-1.5 py-1 align-top'
-const statCell = `${cell} text-center font-mono tabular-nums`
+const statCell = `${cell} text-center tabular-nums`
 const head = `${cell} bg-neutral-100 text-left text-[10px] font-semibold uppercase tracking-wide`
 
 function warriorNotes(hero: HeroRow): string {
@@ -72,7 +72,7 @@ function PrintSheet({ detail }: { detail: WarbandDetail }) {
         <header className="flex items-end justify-between gap-4 border-b-2 border-black pb-2">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-600">{warbandTypeName(warband.type_rules_id)}</p>
-            <h1 className="font-headline text-2xl font-semibold leading-tight">{warband.name}</h1>
+            <h1 className="font-headline text-2xl leading-tight">{warband.name}</h1>
           </div>
           <p className="text-[10px] text-neutral-600">Stirheim · {printedOn}</p>
         </header>
@@ -223,7 +223,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex flex-col border-b border-neutral-400 pb-0.5">
       <dt className="text-[9px] uppercase tracking-wider text-neutral-600">{label}</dt>
-      <dd className="font-mono text-sm tabular-nums">{value}</dd>
+      <dd className="text-sm tabular-nums">{value}</dd>
     </div>
   )
 }

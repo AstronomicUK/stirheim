@@ -71,12 +71,12 @@ function XpCard({ line, extras, onAdd, onRemove }: XpCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-ink">{line.subjectName}</p>
-          <p className="font-mono text-xs tabular-nums text-ink-dim">
+          <p className="text-xs tabular-nums text-ink-dim">
             {line.xpBefore} → {line.xpAfter} xp{next !== null ? ` · next advance at ${next}` : ''}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="font-mono text-lg tabular-nums text-brass">{line.amount >= 0 ? `+${line.amount}` : line.amount}</span>
+          <span className="text-lg tabular-nums text-brass">{line.amount >= 0 ? `+${line.amount}` : line.amount}</span>
           {line.advancesEarned > 0 ? <Tag tone="brass">{line.advancesEarned === 1 ? '1 advance owed' : `${line.advancesEarned} advances owed`}</Tag> : null}
         </div>
       </div>

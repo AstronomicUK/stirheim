@@ -37,7 +37,7 @@ export function KeyValue({ label, value }: { label: string; value: ReactNode }) 
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-[10px] uppercase tracking-wider text-ink-dim">{label}</span>
-      <span className="font-mono text-base tabular-nums text-ink">{value}</span>
+      <span className="text-base tabular-nums text-ink">{value}</span>
     </div>
   )
 }

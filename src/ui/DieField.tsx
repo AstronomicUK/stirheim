@@ -75,7 +75,7 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? `${id}-error` : undefined}
           placeholder={`1-${sides}`}
-          className={`min-h-11 w-14 rounded-md border bg-surface-low text-center font-mono text-base tabular-nums text-ink placeholder:text-ink-dim/50 focus:border-brass focus:outline-none disabled:opacity-60 ${
+          className={`min-h-11 w-14 rounded-md border bg-surface-low text-center text-base tabular-nums text-ink placeholder:text-ink-dim/50 focus:border-brass focus:outline-none disabled:opacity-60 ${
             invalid ? 'border-accent-strong' : 'border-border'
           }`}
           value={text}

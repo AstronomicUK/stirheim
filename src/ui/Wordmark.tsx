@@ -11,7 +11,7 @@ export function Wordmark({ size = 'sm', to = '/' }: WordmarkProps) {
   return (
     <Link to={to} className="inline-flex flex-col no-underline">
       <span className={`uppercase tracking-[0.3em] text-ink-dim ${large ? 'text-xs' : 'text-[0.6rem]'}`}>Campaign Ledger</span>
-      <span className={`font-headline font-bold leading-none text-ink ${large ? 'text-4xl' : 'text-xl'}`}>Stirheim</span>
+      <span className={`font-headline leading-none text-ink ${large ? 'text-4xl' : 'text-xl'}`}>Stirheim</span>
     </Link>
   )
 }

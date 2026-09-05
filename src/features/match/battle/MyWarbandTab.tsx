@@ -165,7 +165,7 @@ function MyGroupCard({ group, template, sheet, edit, readOnly }: MyGroupCardProp
             <span className="text-[10px] uppercase tracking-wider text-ink-dim">Out of action</span>
             <Stepper value={out} onChange={(next) => edit((s) => setGroupOut(s, group.id, next, group.size))} label={`${group.name} out of action`} max={group.size} disabled={readOnly} />
           </div>
-          <span className="font-mono text-sm tabular-nums text-ink-dim">
+          <span className="text-sm tabular-nums text-ink-dim">
             {out} / {group.size}
           </span>
         </div>

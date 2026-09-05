@@ -99,7 +99,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
                 <li key={line.subjectId} className="flex flex-col gap-0.5 px-4 py-2.5">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-ink">{line.subjectName}</span>
-                    <span className="font-mono text-sm tabular-nums text-ink">
+                    <span className="text-sm tabular-nums text-ink">
                       {line.xpBefore} → {line.xpAfter}
                       {line.advancesEarned > 0 ? <span className="text-brass"> · {line.advancesEarned === 1 ? 'advance owed' : `${line.advancesEarned} advances owed`}</span> : null}
                     </span>

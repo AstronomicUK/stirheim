@@ -58,7 +58,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
     <li className="flex gap-3">
       <span
         aria-hidden
-        className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-brass/60 font-mono text-xs text-brass"
+        className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-brass/60 text-xs text-brass"
       >
         {n}
       </span>

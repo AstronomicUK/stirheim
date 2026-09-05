@@ -7,12 +7,13 @@
 
 import type { BattleLiveState } from '../../../domain'
 import type { RosterWarband } from '../../../rules/types/roster'
+import type { AdvanceDraft } from '../../advances/model'
 
-export const REPORT_DRAFT_VERSION = 1
+export const REPORT_DRAFT_VERSION = 2
 
 export type ReportResult = 'won' | 'lost' | 'draw'
 
-export const STEP_IDS = ['outcome', 'casualties', 'injuries', 'experience', 'exploration', 'veterans', 'review'] as const
+export const STEP_IDS = ['outcome', 'casualties', 'injuries', 'experience', 'advances', 'exploration', 'veterans', 'review'] as const
 export type StepId = (typeof STEP_IDS)[number]
 
 export const STEP_TITLES: Record<StepId, string> = {
@@ -20,6 +21,7 @@ export const STEP_TITLES: Record<StepId, string> = {
   casualties: 'Casualties',
   injuries: 'Injuries',
   experience: 'Experience',
+  advances: 'Advances',
   exploration: 'Exploration',
   veterans: 'Veterans & notes',
   review: 'Review',
@@ -42,6 +44,17 @@ export interface FoundItem {
 export interface XpExtra {
   amount: number
   reason: string
+}
+
+/**
+ * What to do with an advance earned this battle: roll and choose in the wizard, roll now and pick
+ * the skill or spell later (Bestow advancements screen), or leave the whole advance for later.
+ */
+export type AdvanceMode = 'now' | 'pickLater' | 'later'
+
+/** Key of an advance earned this battle: the warrior and the threshold crossed. */
+export function advanceKey(subjectId: string, thresholdXp: number): string {
+  return `${subjectId}:${thresholdXp}`
 }
 
 export interface ExplorationDraft {
@@ -83,6 +96,10 @@ export interface ReportDraft {
   groupInjuries: Record<string, (number | null)[]>
   /** Subject id -> extra experience lines (scenario objectives and the like). */
   xpExtras: Record<string, XpExtra[]>
+  /** advanceKey -> the dice and choices for an advance earned this battle. */
+  advances: Record<string, AdvanceDraft>
+  /** advanceKey -> how the player wants to handle it (default 'now'). */
+  advanceModes: Record<string, AdvanceMode>
   exploration: ExplorationDraft
   /** Wyrdstone picked up during the battle itself (scenario objectives). */
   battleWyrdstone: number
@@ -111,6 +128,8 @@ export function emptyDraft(): ReportDraft {
     swordInjuries: {},
     groupInjuries: {},
     xpExtras: {},
+    advances: {},
+    advanceModes: {},
     exploration: emptyExploration(),
     battleWyrdstone: 0,
     battleGold: 0,
@@ -252,6 +271,25 @@ export function removeXpExtra(draft: ReportDraft, subjectId: string, index: numb
   if (list.length === 0) delete xpExtras[subjectId]
   else xpExtras[subjectId] = list
   return { ...draft, xpExtras }
+}
+
+/** Start a draft for one earned advance; a no-op when one exists (the wizard seeds on first view). */
+export function seedAdvance(draft: ReportDraft, key: string, advance: AdvanceDraft): ReportDraft {
+  if (draft.advances[key]) return draft
+  return { ...draft, advances: { ...draft.advances, [key]: advance } }
+}
+
+export function updateAdvance(draft: ReportDraft, key: string, edit: (advance: AdvanceDraft) => AdvanceDraft): ReportDraft {
+  const current = draft.advances[key]
+  if (!current) return draft
+  const next = edit(current)
+  if (next === current) return draft
+  return { ...draft, advances: { ...draft.advances, [key]: next } }
+}
+
+export function setAdvanceMode(draft: ReportDraft, key: string, mode: AdvanceMode): ReportDraft {
+  if ((draft.advanceModes[key] ?? 'now') === mode) return draft
+  return { ...draft, advanceModes: { ...draft.advanceModes, [key]: mode } }
 }
 
 function withExploration(draft: ReportDraft, patch: Partial<ExplorationDraft>): ReportDraft {

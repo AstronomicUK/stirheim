@@ -64,7 +64,36 @@ export async function resolvePendingAdvance({ advanceId, resolution, changes }: 
   return data
 }
 
+/** "Pick later": keep the dice on the pending row so the choice can be made from the Bestow Advancements screen. */
+export async function recordAdvanceRoll(advanceId: string, rolled: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.from('pending_advances').update({ rolled: rolled as Json }).eq('id', advanceId).is('resolved_at', null)
+  if (error) throw new Error(error.message)
+}
+
+/** Open advances per warband, for badges on lists. */
+export async function fetchPendingAdvanceCounts(warbandIds: string[]): Promise<Record<string, number>> {
+  if (warbandIds.length === 0) return {}
+  const { data, error } = await supabase.from('pending_advances').select('warband_id').in('warband_id', warbandIds).is('resolved_at', null)
+  if (error) throw new Error(error.message)
+  const counts: Record<string, number> = {}
+  for (const row of data) counts[row.warband_id] = (counts[row.warband_id] ?? 0) + 1
+  return counts
+}
+
 // ---- hooks ----
+
+export function usePendingAdvanceCounts(warbandIds: string[]) {
+  const key = [...warbandIds].sort()
+  return useQuery({ queryKey: [...advanceKeys.all, 'counts', key] as const, queryFn: () => fetchPendingAdvanceCounts(key), enabled: key.length > 0 })
+}
+
+export function useRecordAdvanceRoll(warbandId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ advanceId, rolled }: { advanceId: string; rolled: Record<string, unknown> }) => recordAdvanceRoll(advanceId, rolled),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: warbandKeys.one(warbandId) }), qc.invalidateQueries({ queryKey: advanceKeys.all })]),
+  })
+}
 
 export function usePendingAdvances(warbandId: string | undefined) {
   return useQuery({ queryKey: advanceKeys.pending(warbandId), queryFn: () => fetchPendingAdvances(warbandId!), enabled: Boolean(warbandId) })

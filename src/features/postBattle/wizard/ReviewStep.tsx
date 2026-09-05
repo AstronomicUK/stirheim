@@ -13,6 +13,7 @@ function itemLabel(item: { item_rules_id: string | null; custom_name: string | n
 
 export function ReviewStep({ derived, ctx, mine }: StepProps) {
   const report = derived.report
+  const advanceLines = derived.advances.items.map((i) => i.summary)
   if (!report) {
     const missing = STEP_IDS.filter((id) => derived.problems[id].length > 0)
     return (
@@ -29,7 +30,7 @@ export function ReviewStep({ derived, ctx, mine }: StepProps) {
       </StepBody>
     )
   }
-  return <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} />
+  return <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} />
 }
 
 function removedItemLabels(report: BattleReport, ctx: StepProps['ctx']): string[] {
@@ -41,7 +42,7 @@ function removedItemLabels(report: BattleReport, ctx: StepProps['ctx']): string[
   })
 }
 
-export function ReportSummary({ report, warbandName, removedItems }: { report: BattleReport; warbandName: string; removedItems: string[] }) {
+export function ReportSummary({ report, warbandName, removedItems, advanceLines = [] }: { report: BattleReport; warbandName: string; removedItems: string[]; advanceLines?: string[] }) {
   const { applied } = report
   return (
     <StepBody title="Review">
@@ -100,6 +101,22 @@ export function ReportSummary({ report, warbandName, removedItems }: { report: B
           </Card>
         ) : null}
         <p className="text-xs text-ink-dim">Advances are rolled afterwards from the warband page, with your opponent watching.</p>
+      </Section>
+
+      <Section title="Advances" aside={advanceLines.length > 0 ? `${advanceLines.length}` : undefined}>
+        {advanceLines.length === 0 ? <p className="text-sm text-ink-dim">No advances earned this battle.</p> : null}
+        {advanceLines.length > 0 ? (
+          <Card>
+            <ul className="divide-y divide-border">
+              {advanceLines.map((line) => (
+                <li key={line} className="px-4 py-2.5 text-sm text-ink">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
+        <p className="text-xs text-ink-dim">Rolled advances are applied right after the report is filed; anything left for later waits under Bestow advancements.</p>
       </Section>
 
       <Section title="Exploration">

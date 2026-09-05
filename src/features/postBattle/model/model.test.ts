@@ -22,8 +22,14 @@ import {
   setVeteranDie,
   addXpExtra,
   setEnemiesOut,
+  seedAdvance,
+  setAdvanceMode,
+  updateAdvance,
+  advanceKey,
   type ReportDraft,
 } from './state'
+import { rosterAfterReport } from './derive'
+import { emptyDraft as emptyAdvanceDraft, setDice } from '../../advances/model'
 
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 8 }
 
@@ -410,7 +416,7 @@ describe('the finished report', () => {
   it('refuses to build while a step is incomplete, naming it', () => {
     const draft = completeDraft()
     const d = deriveReport(draft, ctx())
-    expect(d.firstIncompleteStep).toBe(4)
+    expect(d.firstIncompleteStep).toBe(5)
     expect(() => buildReport(draft, ctx())).toThrow(/exploration dice/)
   })
 
@@ -444,5 +450,60 @@ describe('the finished report', () => {
     expect(report.veteran_pool_roll).toBeNull()
     expect(report.applied.warband.veteran_pool).toBeNull()
     expect(battleReportSchema.safeParse(report).success).toBe(true)
+  })
+})
+
+describe('advances in the wizard', () => {
+  function wonDraft(): ReportDraft {
+    return setEnemiesOut(setResult(emptyDraft(), 'won'), 'captain', 2)
+  }
+
+  it('lists every advance earned; untouched ones are left for later and do not block filing', () => {
+    const d = derive(wonDraft())
+    expect(d.advances.items.map((i) => i.key)).toEqual(expect.arrayContaining([advanceKey('captain', 24), advanceKey('champion', 8), advanceKey('ogre', 2), advanceKey('watch', 2)]))
+    expect(d.advances.items.every((i) => i.complete)).toBe(true)
+    expect(d.problems.advances).toEqual([])
+    expect(d.report).not.toBeNull()
+    expect(d.advances.items.find((i) => i.key === advanceKey('captain', 24))?.summary).toMatch(/left for Bestow advancements/)
+    // The roster the advances are planned against already carries the report's experience.
+    expect(d.advances.rosterAfter.heroes.find((h) => h.id === 'captain')?.xp).toBe(24)
+  })
+
+  it('a rolled advance blocks filing until its choice is made, picked later, or the advance is left for later', () => {
+    const key = advanceKey('captain', 24)
+    let draft = seedAdvance(wonDraft(), key, emptyAdvanceDraft('dddddddd-0000-4000-8000-000000000009'))
+    // 1 + 1 = 2: New skill on the hero table, so a skill has to be chosen.
+    draft = updateAdvance(draft, key, (a) => setDice(a, 1, 1))
+    let d = derive(draft)
+    const item = d.advances.items.find((i) => i.key === key)!
+    expect(item.plan?.total).toBe(2)
+    expect(item.complete).toBe(false)
+    expect(d.problems.advances).toHaveLength(1)
+    expect(d.report).toBeNull()
+
+    d = derive(setAdvanceMode(draft, key, 'pickLater'))
+    expect(d.advances.items.find((i) => i.key === key)).toMatchObject({ complete: true })
+    expect(d.advances.items.find((i) => i.key === key)?.summary).toMatch(/skill to pick later/)
+    expect(d.report).not.toBeNull()
+
+    d = derive(setAdvanceMode(draft, key, 'later'))
+    expect(d.advances.items.find((i) => i.key === key)?.summary).toMatch(/to roll later/)
+    expect(d.report).not.toBeNull()
+  })
+
+  it('rosterAfterReport applies the patches without touching anything else', () => {
+    const roster = makeRoster()
+    const after = rosterAfterReport(roster, {
+      heroes: [{ id: 'captain', patch: { xp: 24, status: 'captured' } }, { id: 'ogre', patch: { xp: 2, status: 'left' } }],
+      groups: [{ id: 'watch', patch: { size: 2, xp: 2 } }],
+      warband: { wyrdstone_delta: 0, gold_delta: 0, veteran_pool: null },
+      pending_advances: [],
+      remove_item_ids: [],
+      stash_items: [],
+    })
+    expect(after.heroes.find((h) => h.id === 'captain')).toMatchObject({ xp: 24, status: 'captured', levelUps: 0 })
+    expect(after.hiredSwords[0]).toMatchObject({ xp: 2, status: 'left' })
+    expect(after.henchmenGroups[0]).toMatchObject({ size: 2, xp: 2 })
+    expect(after.heroes.find((h) => h.id === 'champion')).toEqual(roster.heroes.find((h) => h.id === 'champion'))
   })
 })

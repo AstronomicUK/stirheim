@@ -137,8 +137,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       {canEdit ? (
         <Section title="Between battles">
           <div className="grid grid-cols-3 gap-3">
-            <BetweenBattlesLink to={`/warbands/${warband.id}/advances`} badge={advancesDue > 0 ? `${advancesDue} due` : null}>
-              Advances
+            <BetweenBattlesLink to={`/warbands/${warband.id}/advances`} badge={advancesDue > 0 ? `${advancesDue} due` : null} highlight={advancesDue > 0}>
+              Bestow advancements
             </BetweenBattlesLink>
             <BetweenBattlesLink to={`/warbands/${warband.id}/trade`}>Trading post</BetweenBattlesLink>
             <BetweenBattlesLink to={`/warbands/${warband.id}/recruit`}>Recruit</BetweenBattlesLink>
@@ -255,11 +255,13 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
   )
 }
 
-function BetweenBattlesLink({ to, badge, children }: { to: string; badge?: string | null; children: ReactNode }) {
+function BetweenBattlesLink({ to, badge, highlight = false, children }: { to: string; badge?: string | null; highlight?: boolean; children: ReactNode }) {
   return (
     <Link
       to={to}
-      className="relative inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface-high px-3 text-center text-sm font-medium text-ink hover:border-ink-dim"
+      className={`relative inline-flex min-h-11 items-center justify-center rounded-md border px-3 text-center text-sm font-medium text-ink hover:border-ink-dim ${
+        highlight ? 'border-brass bg-brass/10' : 'border-border bg-surface-high'
+      }`}
     >
       {children}
       {badge ? (

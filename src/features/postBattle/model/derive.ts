@@ -24,8 +24,10 @@ import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband }
 import { deriveExploration, type ExplorationDerived } from './exploration'
 import { resolveGroupInjuries, resolveHeroInjuryFlow, resolveHiredSwordInjury, type GroupInjuryResolution, type HeroInjuryResolution, type HiredSwordInjuryResolution, type InjuryOutcome } from './injuries'
 import { participantsOf, type Participants } from './participants'
-import { isDie, STEP_IDS, type ReportDraft, type StepId } from './state'
+import { advanceKey, isDie, STEP_IDS, type AdvanceMode, type ReportDraft, type StepId } from './state'
 import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
+import { defaultPromotedName, effectiveStep, emptyDraft as emptyAdvanceDraft, findSubject, planGroup, planHero, subjectName, type AdvanceDraft, type AdvanceStep, type AdvanceSubject, type GroupPlan, type HeroPlan } from '../../advances/model'
+import { skillTableName } from '../../roster/view/lookups'
 
 export interface ReportContext {
   roster: RosterWarband
@@ -66,8 +68,38 @@ export interface XpDerived {
   underdogApplied: number
 }
 
+/** Placeholder id for a promotion draft the step has not seeded yet; never reaches the server. */
+export const UNSEEDED_HERO_ID = '00000000-0000-4000-8000-000000000000'
+
+/** One advance earned this battle, as the Advances step sees it. */
+export interface WizardAdvance {
+  key: string
+  request: ReportApplied['pending_advances'][number]
+  /** Null when the warrior died or left in this very report. */
+  subject: AdvanceSubject | null
+  name: string
+  draft: AdvanceDraft
+  /** False until the step has stored a draft (with a real new-hero id) for it. */
+  seeded: boolean
+  mode: AdvanceMode
+  plan: HeroPlan | GroupPlan | null
+  step: AdvanceStep
+  /** Nothing more is needed from the player for this advance. */
+  complete: boolean
+  /** One line for the review: what was rolled and chosen, or what was deferred. */
+  summary: string
+}
+
+export interface AdvancesDerived {
+  items: WizardAdvance[]
+  /** The roster after the report and every advance resolved in the wizard. */
+  rosterAfter: RosterWarband
+  problems: string[]
+}
+
 export interface DerivedReport {
   participants: Participants
+  advances: AdvancesDerived
   /** Heroes (not hired swords) who fought and were not out of action. */
   survivingHeroes: RosterHero[]
   injuries: InjuriesDerived
@@ -158,7 +190,7 @@ export function veteranPoolOf(draft: ReportDraft): number | null {
 }
 
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived): Record<StepId, string[]> {
-  const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], exploration: [], veterans: [], review: [] }
+  const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
   if (!injuries.complete) {
     const n = injuries.summary.pending
@@ -275,6 +307,93 @@ function battleNotes(draft: ReportDraft): string {
   return parts.join('\n')
 }
 
+/** The roster as it will stand once the report's patches are applied (advances not yet rolled). */
+export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied): RosterWarband {
+  const heroPatches = new Map(applied.heroes.map((h) => [h.id, h.patch]))
+  const groupPatches = new Map(applied.groups.map((g) => [g.id, g.patch]))
+  return {
+    ...roster,
+    heroes: roster.heroes.map((h) => {
+      const p = heroPatches.get(h.id)
+      if (!p) return h
+      return {
+        ...h,
+        stats: p.stats ?? h.stats,
+        xp: p.xp ?? h.xp,
+        levelUps: p.level_ups ?? h.levelUps,
+        injuries: p.injuries ?? h.injuries,
+        flags: p.flags ?? h.flags,
+        status: p.status === undefined ? h.status : p.status === 'left' ? 'retired' : p.status,
+      }
+    }),
+    hiredSwords: roster.hiredSwords.map((s) => {
+      const p = heroPatches.get(s.id)
+      if (!p) return s
+      return {
+        ...s,
+        stats: p.stats ?? s.stats,
+        xp: p.xp ?? s.xp,
+        levelUps: p.level_ups ?? s.levelUps,
+        injuries: p.injuries ?? s.injuries,
+        flags: p.flags ?? s.flags,
+        status: p.status === undefined ? s.status : p.status === 'dead' ? 'dead' : p.status === 'active' ? 'active' : 'left',
+      }
+    }),
+    henchmenGroups: roster.henchmenGroups.map((g) => {
+      const p = groupPatches.get(g.id)
+      if (!p) return g
+      return { ...g, size: p.size ?? g.size, xp: p.xp ?? g.xp, levelUps: p.level_ups ?? g.levelUps }
+    }),
+  }
+}
+
+/**
+ * The advances earned this battle, planned one after another against the post-report roster so a
+ * second advance for the same warrior sees the first. Drafts the step has not seeded yet are
+ * planned from an empty draft.
+ */
+export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: ReportApplied): AdvancesDerived {
+  let roster = rosterAfterReport(ctx.roster, applied)
+  const items: WizardAdvance[] = []
+  const problems: string[] = []
+  for (const request of applied.pending_advances) {
+    const key = advanceKey(request.subject_id, request.threshold_xp)
+    const subject = findSubject(roster, request.subject_type, request.subject_id)
+    const stored = draft.advances[key]
+    const mode = draft.advanceModes[key] ?? 'now'
+    if (!subject || (subject.kind !== 'group' && subject.kind !== 'hiredSword' && subject.hero.status !== 'active') || (subject.kind === 'hiredSword' && subject.sword.status !== 'active')) {
+      const name = subject ? subjectName(subject) : 'A warrior no longer on the roster'
+      items.push({ key, request, subject, name, draft: stored ?? emptyAdvanceDraft(UNSEEDED_HERO_ID), seeded: Boolean(stored), mode: 'later', plan: null, step: 'roll', complete: true, summary: `${name}: advance at ${request.threshold_xp} xp left pending (out of the fight).` })
+      continue
+    }
+    const name = subjectName(subject)
+    const advDraft = stored ?? emptyAdvanceDraft(UNSEEDED_HERO_ID, subject.kind === 'group' ? defaultPromotedName(subject.group, roster) : '')
+    const actx = { roster, template: ctx.template, thresholdXp: request.threshold_xp }
+    const plan = subject.kind === 'group' ? planGroup(advDraft, subject.group, actx, skillTableName) : planHero(advDraft, subject, actx)
+    const step = effectiveStep(advDraft, plan)
+    let complete: boolean
+    let summary: string
+    if (mode === 'later') {
+      complete = true
+      summary = `${name}: advance at ${request.threshold_xp} xp to roll later.`
+    } else if (mode === 'pickLater') {
+      complete = subject.kind !== 'group' && plan.need === 'skill' && plan.roll !== null
+      summary = complete ? `${name}: rolled ${plan.total}, ${plan.roll?.text.toLowerCase() ?? 'new skill'}; skill to pick later.` : `${name}: roll the advance first.`
+    } else if (plan.total === null) {
+      // Untouched: left pending, exactly as before the wizard could roll advances.
+      complete = true
+      summary = `${name}: advance at ${request.threshold_xp} xp not rolled here; left for Bestow advancements.`
+    } else {
+      complete = plan.result !== null
+      summary = plan.result ? `${name}: ${plan.result.resolution.text}` : `${name}: rolled ${plan.total}, choice still to make.`
+      if (plan.result) roster = plan.result.next
+    }
+    if (!complete) problems.push(`${name}: finish the choice for the advance, pick the skill later, or leave the whole advance for later.`)
+    items.push({ key, request, subject, name, draft: advDraft, seeded: Boolean(stored), mode, plan, step, complete, summary })
+  }
+  return { items, rosterAfter: roster, problems }
+}
+
 export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedReport {
   const participants = participantsOf(ctx.roster, ctx.template)
   const out = heroOoaIds(draft)
@@ -282,7 +401,10 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const injuries = deriveInjuries(draft, participants, ctx.matchId)
   const xp = deriveXp(draft, participants, injuries, ctx)
   const exploration = deriveExploration(draft.exploration, ctx.roster, { won: draft.result === 'won', eligibleHeroes: survivingHeroes })
+  const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration)
+  const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration)
+  problems.advances.push(...advances.problems)
   const firstIncomplete = STEP_IDS.findIndex((id) => problems[id].length > 0)
   const firstIncompleteStep = firstIncomplete === -1 ? null : firstIncomplete
 
@@ -303,11 +425,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
       notes: battleNotes(draft),
-      applied: buildApplied(draft, ctx, participants, injuries, xp, exploration),
+      applied,
     }
   }
 
-  return { participants, survivingHeroes, injuries, xp, exploration, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
+  return { participants, advances, survivingHeroes, injuries, xp, exploration, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
 }
 
 /** The finished report, or an error naming what is still missing. */

@@ -560,6 +560,7 @@ export type Database = {
           id: string
           resolution: Json | null
           resolved_at: string | null
+          rolled: Json | null
           subject_id: string
           subject_type: Database["public"]["Enums"]["advance_subject"]
           threshold_xp: number
@@ -570,6 +571,7 @@ export type Database = {
           id?: string
           resolution?: Json | null
           resolved_at?: string | null
+          rolled?: Json | null
           subject_id: string
           subject_type: Database["public"]["Enums"]["advance_subject"]
           threshold_xp: number
@@ -580,6 +582,7 @@ export type Database = {
           id?: string
           resolution?: Json | null
           resolved_at?: string | null
+          rolled?: Json | null
           subject_id?: string
           subject_type?: Database["public"]["Enums"]["advance_subject"]
           threshold_xp?: number

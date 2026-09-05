@@ -4,6 +4,7 @@
 
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { usePendingAdvances } from '../../api/advances'
 import { useCampaign } from '../../api/campaigns'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleSessions, useEndMatch, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
@@ -224,6 +225,8 @@ interface PlayerBattleProps {
 
 function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, children }: PlayerBattleProps) {
   const template = useMemo(() => findWarbandTemplate(roster.warbandTemplateId), [roster.warbandTemplateId])
+  const pendingAdvances = usePendingAdvances(roster.id)
+  const advancesDue = pendingAdvances.data?.length ?? 0
   const totals = useMemo(() => sheetTotals(handle.sheet, roster), [handle.sheet, roster])
   const rout = routStatus(handle.sheet, totals.startingModels)
 
@@ -241,6 +244,14 @@ function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle
       />
 
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
+      {advancesDue > 0 && !readOnly ? (
+        <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still to bestow`}>
+          Skills and characteristic gains should be chosen before a warrior fights again.{' '}
+          <Link to={`/warbands/${roster.id}/advances`} className="text-brass underline-offset-4 hover:underline">
+            Bestow advancements
+          </Link>
+        </Notice>
+      ) : null}
 
       <SegmentedControl options={match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight')} value={tab} onChange={setTab} label="Battle sheet section" />
 

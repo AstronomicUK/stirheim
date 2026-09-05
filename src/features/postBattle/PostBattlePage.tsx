@@ -2,11 +2,15 @@
 // Seven steps: outcome, casualties, injuries, experience, exploration, veterans & notes, review.
 // The draft lives in localStorage until the report is filed, so the table can finish later.
 
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
 import { useBattleSessions, useMatch, useMatchRoster, type MatchParticipantView, type MatchSummary } from '../../api/matches'
+import { advanceKeys } from '../../api/advances'
 import { useSubmitBattleReport } from '../../api/reports'
+import { warbandKeys } from '../../api/warbands'
+import { applyWizardAdvances } from './applyAdvances'
 import { useSession } from '../../app/session'
 import type { BattleLiveState } from '../../domain'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -15,6 +19,7 @@ import { buildReport, deriveReport, seedFromBattleSheet, setStep, STEP_IDS, type
 import { forgetReportStore, reportStore, useReportStore } from './store'
 import { CasualtiesStep } from './wizard/CasualtiesStep'
 import { ExperienceStep } from './wizard/ExperienceStep'
+import { AdvancesStep } from './wizard/AdvancesStep'
 import { ExplorationStep } from './wizard/ExplorationStep'
 import { InjuriesStep } from './wizard/InjuriesStep'
 import { OutcomeStep } from './wizard/OutcomeStep'
@@ -170,6 +175,7 @@ function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])
 
   const submit = useSubmitBattleReport(match.id, participant.warband_id)
+  const qc = useQueryClient()
   const [fileError, setFileError] = useState<string | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
 
@@ -196,8 +202,12 @@ function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
       const report = buildReport(draft as ReportDraft, ctx)
       await submit.mutateAsync(report)
       closing.current = true
+      // The report is in. Now the advances rolled in the wizard, one at a time; anything that fails
+      // stays pending on the Bestow advancements screen.
+      const outcome = await applyWizardAdvances(participant.warband_id, derived?.advances.items ?? [], ctx.template)
+      await Promise.all([qc.invalidateQueries({ queryKey: advanceKeys.all }), qc.invalidateQueries({ queryKey: warbandKeys.all })])
       forgetReportStore(match.id, participant.warband_id)
-      navigate(`/matches/${match.id}`, { replace: true })
+      navigate(`/matches/${match.id}`, { replace: true, state: outcome.failed.length > 0 ? { advancesFailed: outcome.failed } : undefined })
     } catch (e) {
       setFileError(e instanceof Error ? e.message : 'The report could not be filed.')
     }
@@ -225,6 +235,7 @@ function Wizard({ match, participant, rosterData, liveState }: WizardProps) {
       {stepId === 'casualties' ? <CasualtiesStep {...stepProps} /> : null}
       {stepId === 'injuries' ? <InjuriesStep {...stepProps} /> : null}
       {stepId === 'experience' ? <ExperienceStep {...stepProps} /> : null}
+      {stepId === 'advances' ? <AdvancesStep {...stepProps} /> : null}
       {stepId === 'exploration' ? <ExplorationStep {...stepProps} /> : null}
       {stepId === 'veterans' ? <VeteransStep {...stepProps} /> : null}
       {stepId === 'review' ? <ReviewStep {...stepProps} /> : null}

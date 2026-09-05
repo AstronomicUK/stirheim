@@ -325,6 +325,48 @@ export function setStep(draft: AdvanceDraft, step: AdvanceStep): AdvanceDraft {
   return draft.step === step ? draft : { ...draft, step }
 }
 
+/** What "Pick later" stores on the pending row: the dice as rolled, so the choice can be made later. */
+export interface AdvanceRolled {
+  version: 1
+  dice: [number, number]
+  subRoll?: number
+  rerolled?: number[]
+  mode?: 'skill' | 'spell'
+  /** "Rolled 11: New skill" for lists. */
+  text: string
+}
+
+export function rolledFromDraft(draft: AdvanceDraft, rollText: string): AdvanceRolled | null {
+  const total = diceTotal(draft)
+  if (total === null) return null
+  const out: AdvanceRolled = { version: 1, dice: [draft.dice[0] ?? 0, draft.dice[1] ?? 0], text: `Rolled ${total}: ${rollText}` }
+  if (draft.subRoll !== null) out.subRoll = draft.subRoll
+  if (draft.rerolled.length > 0) out.rerolled = [...draft.rerolled]
+  if (draft.mode === 'spell') out.mode = 'spell'
+  return out
+}
+
+/** A draft that starts at the choice, from a row whose dice were rolled earlier; null when the stored shape is unusable. */
+export function draftFromRolled(rolled: Record<string, unknown> | null | undefined, newHeroId: string, newHeroName = ''): AdvanceDraft | null {
+  if (!rolled || !Array.isArray(rolled.dice) || rolled.dice.length !== 2) return null
+  const [a, b] = rolled.dice
+  if (typeof a !== 'number' || typeof b !== 'number') return null
+  const draft = emptyDraft(newHeroId, newHeroName)
+  return {
+    ...draft,
+    dice: [a, b],
+    subRoll: typeof rolled.subRoll === 'number' ? rolled.subRoll : null,
+    rerolled: Array.isArray(rolled.rerolled) ? rolled.rerolled.filter((n): n is number => typeof n === 'number') : [],
+    mode: rolled.mode === 'spell' ? 'spell' : 'skill',
+    step: 'choose',
+  }
+}
+
+/** Human summary of a stored roll ("Rolled 11: New skill"), or null. */
+export function readRolled(value: Record<string, unknown> | null | undefined): string | null {
+  return value && typeof value.text === 'string' ? value.text : null
+}
+
 /** Put the current total on record and clear the dice for another roll. */
 export function reroll(draft: AdvanceDraft): AdvanceDraft {
   const total = diceTotal(draft)

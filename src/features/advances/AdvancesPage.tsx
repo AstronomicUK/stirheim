@@ -12,7 +12,7 @@ import { Button, Notice, PageHeader, Spinner } from '../../ui'
 import { unitTypeName } from '../roster/shared/names'
 import { Card, Section, Tag } from '../roster/view/bits'
 import { hiredSwordName } from '../roster/view/lookups'
-import { findSubject, groupAdvancesBySubject, readResolution, subjectName, type AdvanceGroup, type AdvanceSubject } from './model'
+import { findSubject, groupAdvancesBySubject, readResolution, readRolled, subjectName, type AdvanceGroup, type AdvanceSubject } from './model'
 import { ResolveSheet } from './ResolveSheet'
 
 export function AdvancesPage() {
@@ -30,7 +30,7 @@ export function AdvancesPage() {
   if (warband.isPending || pending.isPending) {
     return (
       <>
-        <PageHeader eyebrow="Between battles" title="Advances" aside={back} />
+        <PageHeader eyebrow="Between battles" title="Bestow advancements" aside={back} />
         <div className="flex flex-1 items-center justify-center py-20">
           <Spinner label="Loading advances" />
         </div>
@@ -40,7 +40,7 @@ export function AdvancesPage() {
   if (warband.isError || pending.isError) {
     return (
       <>
-        <PageHeader eyebrow="Between battles" title="Advances" aside={back} />
+        <PageHeader eyebrow="Between battles" title="Bestow advancements" aside={back} />
         <Notice tone="error" title="Could not load the advances">
           {warband.error?.message ?? pending.error?.message}
         </Notice>
@@ -84,7 +84,7 @@ function AdvancesView({ detail, pending, history, historyPending, historyError, 
     <>
       <PageHeader
         eyebrow="Between battles"
-        title="Advances"
+        title="Bestow advancements"
         description={warband.name}
         aside={back}
       />
@@ -168,6 +168,7 @@ function SubjectCard({ group, subject, detail, canResolve, onResolve }: SubjectC
         ? `${hiredSwordName(subject.sword.hiredSwordId)} · hired sword`
         : unitTypeName(detail.warband.type_rules_id, subject.hero.unitTemplateId)
   const xp = subject.kind === 'group' ? subject.group.xp : subject.kind === 'hiredSword' ? subject.sword.xp : subject.hero.xp
+  const rolled = readRolled(group.advances[0].rolled)
   return (
     <Card className="flex flex-col gap-3 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
@@ -180,9 +181,14 @@ function SubjectCard({ group, subject, detail, canResolve, onResolve }: SubjectC
       <p className="text-xs text-ink-dim">
         <span className="font-mono tabular-nums text-ink">{xp}</span> xp · earned at {thresholds} xp
       </p>
+      {rolled ? (
+        <p className="text-sm text-ink">
+          {rolled}. <span className="text-ink-dim">Skill still to pick.</span>
+        </p>
+      ) : null}
       {canResolve ? (
         <Button variant="secondary" block onClick={onResolve}>
-          {count === 1 ? 'Resolve' : 'Resolve the first'}
+          {rolled ? 'Choose the skill' : count === 1 ? 'Resolve' : 'Resolve the first'}
         </Button>
       ) : null}
     </Card>

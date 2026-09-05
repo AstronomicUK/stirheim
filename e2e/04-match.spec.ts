@@ -24,7 +24,7 @@ async function rollDie(page: Page, label: string, value: number) {
 }
 
 async function expectStep(page: Page, n: number, title: string) {
-  await expect(page.getByText(`Step ${n} of 7 · ${title}`)).toBeVisible()
+  await expect(page.getByText(`Step ${n} of 8 · ${title}`)).toBeVisible()
 }
 
 test.describe('match', () => {
@@ -123,8 +123,13 @@ test.describe('match', () => {
     await expect(page.getByText('20 → 23 xp', { exact: false })).toBeVisible()
     await next(page)
 
-    // 5. Exploration: four surviving heroes + the winner's die = five dice, all different.
-    await expectStep(page, 5, 'Exploration')
+    // 5. Advances: nobody crossed a threshold (the captain's next box is 24).
+    await expectStep(page, 5, 'Advances')
+    await expect(page.getByText('Nobody crossed an experience threshold this battle', { exact: false })).toBeVisible()
+    await next(page)
+
+    // 6. Exploration: four surviving heroes + the winner's die = five dice, all different.
+    await expectStep(page, 6, 'Exploration')
     await expect(page.getByText('4 surviving heroes, +1 for winning = 5 dice')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
     for (let i = 1; i <= 5; i++) await typeDie(page, `Die ${i}`, i)
@@ -132,13 +137,13 @@ test.describe('match', () => {
     await expect(page.getByText('Wyrdstone shards').locator('xpath=following-sibling::span')).toHaveText('3')
     await next(page)
 
-    // 6. Veterans & notes: leave the pool blank.
-    await expectStep(page, 6, 'Veterans & notes')
+    // 7. Veterans & notes: leave the pool blank.
+    await expectStep(page, 7, 'Veterans & notes')
     await page.getByLabel('Notes for the record').fill('Filed by the e2e suite.')
     await next(page)
 
-    // 7. Review and file.
-    await expectStep(page, 7, 'Review')
+    // 8. Review and file.
+    await expectStep(page, 8, 'Review')
     await expect(page.getByText('Filed by the e2e suite.')).toBeVisible()
     await page.getByRole('button', { name: 'File report' }).click()
 
@@ -171,17 +176,20 @@ test.describe('match', () => {
     await expectStep(page, 4, 'Experience')
     await next(page)
 
+    await expectStep(page, 5, 'Advances')
+    await next(page)
+
     // Three heroes, no winner's die.
-    await expectStep(page, 5, 'Exploration')
+    await expectStep(page, 6, 'Exploration')
     await expect(page.getByText('3 surviving heroes = 3 dice')).toBeVisible()
     for (let i = 1; i <= 3; i++) await typeDie(page, `Die ${i}`, i)
     await expect(page.getByText('Dice total').locator('xpath=following-sibling::span')).toHaveText('6')
     await next(page)
 
-    await expectStep(page, 6, 'Veterans & notes')
+    await expectStep(page, 7, 'Veterans & notes')
     await next(page)
 
-    await expectStep(page, 7, 'Review')
+    await expectStep(page, 8, 'Review')
     await page.getByRole('button', { name: 'File report' }).click()
 
     await expect(page).toHaveURL(new RegExp(`/matches/${matchId}$`))

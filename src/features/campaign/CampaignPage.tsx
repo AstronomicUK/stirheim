@@ -11,6 +11,7 @@ import { usePageTitle } from '../onboarding/usePageTitle'
 import { activityLines, formatRelativeTime } from './activity'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
 import { InviteCard } from './InviteCard'
+import { usePendingAdvanceCounts } from '../../api/advances'
 import { combatModeLabel, dicePolicyLabel } from './settingsForm'
 
 export function CampaignPage() {
@@ -242,6 +243,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function MemberRows({ members, userId, gmId, former = false }: { members: CampaignMemberView[]; userId: string | undefined; gmId: string; former?: boolean }) {
+  const counts = usePendingAdvanceCounts(former ? [] : members.map((m) => m.warband_id))
   return (
     <ul className={`flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low ${former ? 'opacity-70' : ''}`}>
       {members.map((m) => (
@@ -252,6 +254,7 @@ function MemberRows({ members, userId, gmId, former = false }: { members: Campai
                 <span className="truncate font-medium text-ink">{m.warband.name}</span>
                 {m.user_id === userId ? <Tag tone="brass">You</Tag> : null}
                 {m.warband.archived ? <Tag>Archived</Tag> : null}
+                {(counts.data?.[m.warband_id] ?? 0) > 0 ? <Tag tone="warn">{counts.data![m.warband_id]} {counts.data![m.warband_id] === 1 ? 'advance' : 'advances'} due</Tag> : null}
               </span>
               <span className="truncate text-sm text-ink-dim">
                 {m.display_name}

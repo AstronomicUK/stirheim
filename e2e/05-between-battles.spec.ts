@@ -49,7 +49,7 @@ test.describe('between battles', () => {
   test('the advances page opens and resolves nothing that is not due', async ({ page }) => {
     await signIn(page, GM.email)
     await page.goto(`/warbands/${REIKLAND_WATCH.id}/advances`)
-    await expect(page.getByRole('heading', { name: 'Advances' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Bestow advancements' })).toBeVisible()
     await expect(page.getByText(REIKLAND_WATCH.name)).toBeVisible()
 
     // The seed's heroes do not cross a threshold in the e2e match (captain 20 -> 23; next box is 24),

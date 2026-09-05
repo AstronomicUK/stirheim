@@ -416,6 +416,8 @@ export const pendingAdvanceRowSchema = z
     created_at: timestampSchema,
     resolved_at: timestampSchema.nullable(),
     resolution: advanceResolutionSchema.nullable(),
+    /** Dice already rolled when the skill or spell pick was deferred ("Pick later"); null otherwise. */
+    rolled: advanceResolutionSchema.nullable().default(null),
   })
   .refine((a) => (a.resolved_at == null) === (a.resolution == null), {
     message: "resolved_at and resolution are set together",

@@ -8,6 +8,9 @@ import {
   defaultPromotedName,
   effectiveStep,
   emptyDraft,
+  draftFromRolled,
+  readRolled,
+  rolledFromDraft,
   findSubject,
   groupAdvancesBySubject,
   hiredSwordSkillTables,
@@ -33,7 +36,7 @@ const ctx: AdvanceContext = { roster, template }
 const NEW_ID = 'dddddddd-0000-4000-8000-000000000001'
 
 function advance(id: string, subject_type: 'hero' | 'group', subject_id: string, threshold_xp: number, created_at: string): PendingAdvanceRow {
-  return { id, warband_id: REIKLAND_ID, subject_type, subject_id, threshold_xp, created_at, resolved_at: null, resolution: null }
+  return { id, warband_id: REIKLAND_ID, subject_type, subject_id, threshold_xp, created_at, resolved_at: null, resolution: null, rolled: null }
 }
 
 function heroSubject(hero: RosterHero) {
@@ -277,6 +280,20 @@ describe('planGroup', () => {
     const draft = toggleSkillTable(toggleSkillTable(toggleSkillTable(emptyDraft(NEW_ID), 'combat'), 'speed'), 'academic')
     expect(draft.skillTableIds).toEqual(['speed', 'academic'])
     expect(toggleSkillTable(draft, 'speed').skillTableIds).toEqual(['academic'])
+  })
+})
+
+describe('pick later', () => {
+  it('stores the dice of a rolled advance and restarts a draft at the choice', () => {
+    const rolled = rolledFromDraft({ ...emptyDraft(NEW_ID), dice: [5, 6], rerolled: [3], mode: 'spell' }, 'New skill')
+    expect(rolled).toEqual({ version: 1, dice: [5, 6], rerolled: [3], mode: 'spell', text: 'Rolled 11: New skill' })
+    expect(rolledFromDraft(emptyDraft(NEW_ID), 'x')).toBeNull()
+    const back = draftFromRolled(rolled as unknown as Record<string, unknown>, NEW_ID, 'Lad 1')
+    expect(back).toMatchObject({ dice: [5, 6], rerolled: [3], mode: 'spell', step: 'choose', newHeroId: NEW_ID, newHeroName: 'Lad 1' })
+    expect(draftFromRolled(null, NEW_ID)).toBeNull()
+    expect(draftFromRolled({ dice: ['a', 2] }, NEW_ID)).toBeNull()
+    expect(readRolled(rolled as unknown as Record<string, unknown>)).toBe('Rolled 11: New skill')
+    expect(readRolled(null)).toBeNull()
   })
 })
 

@@ -285,6 +285,7 @@ describe("row schemas parse realistic seed rows", () => {
       created_at: T0,
       resolved_at: null,
       resolution: null,
+      rolled: null,
     };
     expect(pendingAdvanceRowSchema.parse(advance)).toEqual(advance);
     expect(

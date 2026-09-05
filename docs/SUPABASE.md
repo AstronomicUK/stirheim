@@ -127,8 +127,8 @@ editor changes are distinguishable in the history.
 
 Every migration added after the first release goes live with `npx supabase db push` from the linked CLI
 (no database password needed) **before** the matching `netlify deploy`, so the live app never calls a
-function that is not there yet. Phase 13 added `20260905000018_phase13.sql`, which has not been pushed
-to the hosted project yet: push it as part of the Phase 13 release.
+function that is not there yet. Migrations 18 (Phase 13) and 19 (Phase 15) were pushed to the hosted project on 2026-09-05, ahead of
+the combined Phase 13-15 deploy; the live Phase 12 build ignores the new tables and columns until then.
 
 ### How it was actually done (2026-09-05)
 

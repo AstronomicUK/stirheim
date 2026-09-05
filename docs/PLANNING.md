@@ -673,6 +673,33 @@ Tom's additions (2026-09-05):
   (the scrape truncates it), automatic "map spent" marking after a Vague/Accurate map is used (note it
   on the item).
 
+## Phase 16 scope (collecting, 2026-09-05)
+
+Not started. Tom asked for the small gaps left by Phases 14-15 to go here, plus a campaign "bans"
+house rule; a weapons and armour audit he is running may add more.
+
+Small gaps carried over:
+- Lucky Charm: the attack calculator offers the 4+ discard on the first hit of the battle.
+- Nurgle's Rot and the Blessing of Nurgle purchase (Carnival of Chaos): buy at recruitment, the
+  pre-battle Toughness test, permanent -1 T, death at zero, a 6 spreading it. Only when not banned.
+- Guiding Dream outcome table: recover the six results from the source (the scrape truncates the
+  rule) and wire them into the pre-battle prompt.
+- Mark a Vague / Accurate Mordheim Map as spent when its re-rolls are used (needs an item-notes patch
+  in `apply_battle_report`, so a migration).
+- Free dagger for recruits joining an existing henchman group (matching the group's kit).
+- Skill prerequisites and "X only" restrictions carried on skills, enforced in learnSkill with the
+  usual override-with-reason.
+
+New house rule: **Bans.** Campaign settings gain a section where the GM removes items and spells (and
+optionally hired swords, Dramatis Personae and warband skills) from the campaign. Stored as id lists
+in `settings.houseRules.bans`; the trading post, builder equipment lists, spell pickers, the Characters
+tab and the hire sheet hide banned entries (or show them struck through with "banned in this
+campaign"); the roster validator flags a banned item already on a roster. Nurgle's Rot is the first
+expected entry and is commonly banned. Shipped with a short default list to pick from and a free-text
+search over the catalogue.
+
+Pending input: results of Tom's weapons and armour audit.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

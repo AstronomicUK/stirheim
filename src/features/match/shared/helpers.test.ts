@@ -43,6 +43,7 @@ function match(partial: Partial<MatchSummary>): MatchSummary {
     campaign_id: 'c1',
     state: 'scheduled',
     created_via: 'challenge',
+    combat_mode: 'app',
     created_by: ANA,
     created_by_display_name: 'Ana',
     scenario_rules_id: null,

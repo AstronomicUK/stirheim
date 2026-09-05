@@ -15,6 +15,8 @@ describe('settings form mapping', () => {
       maxRosters: 8,
       houseRules: { strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false },
       dicePolicy: 'app_rolls' as const,
+      combatMode: 'players' as const,
+      lockCombatMode: true,
     }
     const result = settingsFromForm(formFromSettings(settings))
     expect(result).toEqual({ ok: true, settings })

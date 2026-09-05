@@ -318,6 +318,45 @@ Recorded 2026-09-03 from Tom's answers.
 - **No schema change.** Phase 10 is front-end only; no migration, no new tables, nothing in the
   audit log.
 
+## Phase 11 scope (agreed 2026-09-05)
+
+Tom's answers to the decision review, in the order they will be built:
+
+1. **Combat mode per game: "App calculates" or "Players calculate".** Chosen when a match starts
+   (players-calculate is the Relic & Ruin way: tally sheets only, no calculator). A campaign
+   setting gives the default and a lock so players cannot change it; the GM can.
+2. **Tap a weapon to see its profile** (range, Strength, special rules) anywhere kit is listed.
+3. **Kite shield and pavise get their real rules**, not "counts as a shield". **Gromril and
+   ithilmar become named variants of every eligible hand-to-hand weapon** in the shop and the
+   engine, so a Gromril Axe keeps Cutting Edge; the generic "Gromril weapon" item is retired.
+4. **The calculator carries state between fights**: lost Wounds persist across turns (tracked on
+   the sheet for multi-Wound models), the target's parry is once per turn across all attackers,
+   several wounds in one turn take the highest injury roll, and an attacker may split attacks
+   between targets. Fights resolve one at a time in the order the players choose; the app shows
+   Initiative and strikes-first/last rules but does not sequence the combat.
+5. **Advances are rolled inside the post-battle wizard**, with "Pick later" on skill and spell
+   choices. Outstanding picks show as a highlighted "Bestow advancements" entry on the warband
+   page and the campaign dashboard; the battle sheet warns when a warrior fights with a pick due.
+6. **GM may amend a filed report**: roster effects reversed and reapplied in one transaction, the
+   report tagged "Amended by GM", a change log of before/after. **Campaign setting "reports need GM
+   approval"**: a filed report waits, applying nothing, until the GM approves or returns it.
+7. **Shared combat log** (this phase if it fits, else Phase 12): one event stream per match that
+   any participant appends to, pushed to every phone; sheets derive from it; any event can be
+   reverted (kept, marked reverted by whom). Replaces "tell the other player to mark it".
+8. **Relic & Ruin import of the eight rosters and the battle-records CSV** from Tom's account,
+   read through his signed-in Chrome with his explicit permission, each roster checked on screen
+   before saving. Also pins the CSV column mapping.
+
+Deferred / roadmap (recorded, not built): server-side re-run of the post-battle rules (only
+worth it when strangers share a campaign; the report contract already carries rolls + patches);
+hired-sword restriction hard blocks with a "ask your GM to override" request; multi-attacker
+odds in one figure (not needed given fights resolve one at a time); full Mordheim map-campaign
+support (territories, movement between locations, map-driven scenario selection).
+
+Confirmed as-is: hired swords roll D6 injuries and earn xp as heroes; veteran pool stored on the
+warband; anyone may schedule; GM edits any warband; email + password sign-in; installable but
+online-only.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

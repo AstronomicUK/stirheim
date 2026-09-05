@@ -484,6 +484,7 @@ export type Database = {
       matches: {
         Row: {
           campaign_id: string
+          combat_mode: Database["public"]["Enums"]["combat_mode"]
           completed_at: string | null
           created_at: string
           created_by: string
@@ -499,6 +500,7 @@ export type Database = {
         }
         Insert: {
           campaign_id: string
+          combat_mode?: Database["public"]["Enums"]["combat_mode"]
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -514,6 +516,7 @@ export type Database = {
         }
         Update: {
           campaign_id?: string
+          combat_mode?: Database["public"]["Enums"]["combat_mode"]
           completed_at?: string | null
           created_at?: string
           created_by?: string
@@ -845,7 +848,10 @@ export type Database = {
         Returns: string
       }
       start_match: {
-        Args: { p_match_id: string }
+        Args: {
+          p_combat_mode?: Database["public"]["Enums"]["combat_mode"]
+          p_match_id: string
+        }
         Returns: Database["public"]["Enums"]["match_state"]
       }
       submit_battle_report: {
@@ -863,6 +869,7 @@ export type Database = {
     }
     Enums: {
       advance_subject: "hero" | "group"
+      combat_mode: "app" | "players"
       item_holder: "stash" | "hero" | "group"
       match_origin: "gm" | "challenge" | "import"
       match_state:
@@ -1000,6 +1007,7 @@ export const Constants = {
   public: {
     Enums: {
       advance_subject: ["hero", "group"],
+      combat_mode: ["app", "players"],
       item_holder: ["stash", "hero", "group"],
       match_origin: ["gm", "challenge", "import"],
       match_state: [

@@ -11,7 +11,7 @@ import { usePageTitle } from '../onboarding/usePageTitle'
 import { activityLines, formatRelativeTime } from './activity'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
 import { InviteCard } from './InviteCard'
-import { dicePolicyLabel } from './settingsForm'
+import { combatModeLabel, dicePolicyLabel } from './settingsForm'
 
 export function CampaignPage() {
   const { id } = useParams<{ id: string }>()
@@ -123,10 +123,11 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
 
       <Section title="Settings and house rules">
         <Card className="flex flex-col gap-3 px-4 py-3">
-          <dl className="grid grid-cols-3 gap-3">
+          <dl className="grid grid-cols-2 gap-3">
             <Stat label="Starting gold" value={`${settings.startingGold} gc`} />
             <Stat label="Roster cap" value={settings.maxRosters === null ? 'None' : String(settings.maxRosters)} />
             <Stat label="Dice" value={dicePolicyLabel(settings.dicePolicy)} />
+            <Stat label="Combat" value={`${combatModeLabel(settings.combatMode)}${settings.lockCombatMode ? ' (locked)' : ''}`} />
           </dl>
           <ul className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm leading-relaxed text-ink-dim">
             {houseRuleLines.map((line) => (

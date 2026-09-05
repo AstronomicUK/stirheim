@@ -2,7 +2,7 @@
 // fields hold (a blank required number is NaN, courtesy of NumberField); settingsFromForm() turns
 // that into a validated CampaignSettings or per-field messages.
 
-import { campaignSettingsSchema, type CampaignSettings, type DicePolicy, defaultCampaignSettings } from '../../domain/settings'
+import { campaignSettingsSchema, type CampaignSettings, type CombatMode, type DicePolicy, defaultCampaignSettings } from '../../domain/settings'
 import type { CampaignHouseRules } from '../../rules/types/roster'
 
 export interface SettingsForm {
@@ -12,6 +12,8 @@ export interface SettingsForm {
   maxRosters: number | null
   houseRules: CampaignHouseRules
   dicePolicy: DicePolicy
+  combatMode: CombatMode
+  lockCombatMode: boolean
 }
 
 export type SettingsFormErrors = Partial<Record<'startingGold' | 'maxRosters', string>>
@@ -24,6 +26,8 @@ export function formFromSettings(settings: CampaignSettings): SettingsForm {
     maxRosters: settings.maxRosters,
     houseRules: { ...settings.houseRules },
     dicePolicy: settings.dicePolicy,
+    combatMode: settings.combatMode,
+    lockCombatMode: settings.lockCombatMode,
   }
 }
 
@@ -42,6 +46,8 @@ export function settingsFromForm(form: SettingsForm): SettingsFormResult {
     maxRosters: form.maxRosters,
     houseRules: form.houseRules,
     dicePolicy: form.dicePolicy,
+    combatMode: form.combatMode,
+    lockCombatMode: form.lockCombatMode,
   })
   if (parsed.success) return { ok: true, settings: parsed.data }
 
@@ -59,6 +65,8 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     Object.is(a.startingGold, b.startingGold) &&
     Object.is(a.maxRosters, b.maxRosters) &&
     a.dicePolicy === b.dicePolicy &&
+    a.combatMode === b.combatMode &&
+    a.lockCombatMode === b.lockCombatMode &&
     a.houseRules.strengthArmourPiercing === b.houseRules.strengthArmourPiercing &&
     a.houseRules.optionalCriticalTables === b.houseRules.optionalCriticalTables &&
     a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour
@@ -119,4 +127,27 @@ export const DICE_POLICY_OPTIONS: DicePolicyOption[] = [
 
 export function dicePolicyLabel(policy: DicePolicy): string {
   return DICE_POLICY_OPTIONS.find((o) => o.value === policy)?.label ?? policy
+}
+
+export interface CombatModeOption {
+  value: CombatMode
+  label: string
+  description: string
+}
+
+export const COMBAT_MODE_OPTIONS: CombatModeOption[] = [
+  {
+    value: 'app',
+    label: 'App calculates',
+    description: 'The battle sheet offers the attack calculator: odds for any fight, dice walked through step by step, kills logged to the tally.',
+  },
+  {
+    value: 'players',
+    label: 'Players calculate',
+    description: 'Tally sheets only, as in Relic & Ruin: enemies out, own casualties, loot and notes. Everyone works the combat out at the table.',
+  },
+]
+
+export function combatModeLabel(mode: CombatMode): string {
+  return COMBAT_MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode
 }

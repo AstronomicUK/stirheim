@@ -20,8 +20,10 @@ import {
 import { reportKeys, useMatchReports, useWithdrawBattleReport, type ReportView } from '../../api/reports'
 import { useSession } from '../../app/session'
 import { battleTotals } from '../../domain'
-import { Button, Notice, PageHeader, Sheet, Spinner } from '../../ui'
+import type { CombatMode } from '../../domain/settings'
+import { Button, Notice, PageHeader, SegmentedControl, Sheet, Spinner } from '../../ui'
 import { formatRelativeTime } from '../campaign/activity'
+import { COMBAT_MODE_OPTIONS, combatModeLabel } from '../campaign/settingsForm'
 import { Card, KeyValue, LinkButton, Section, Tag, TextLink } from '../campaign/bits'
 import { MatchStateTag, ParticipantCard } from './shared/bits'
 import { formatMatchTime, matchActions, pendingLabel, scenarioLink, scenarioTitle, versusLabel } from './shared/helpers'
@@ -80,6 +82,10 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   const withdraw = useWithdrawBattleReport()
 
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
+  const [modeChoice, setModeChoice] = useState<CombatMode | null>(null)
+  const settings = campaign.data?.settings
+  const combatMode: CombatMode = modeChoice ?? settings?.combatMode ?? 'app'
+  const modeLocked = Boolean(settings?.lockCombatMode) && !isGm
   const [withdrawing, setWithdrawing] = useState<ReportView | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -119,6 +125,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
         <div className="flex flex-wrap items-center gap-2">
           <MatchStateTag state={match.state} />
           {pending ? <Tag tone="warn">{pending}</Tag> : null}
+          {match.state === 'in_progress' || match.state === 'awaiting_reports' ? <Tag tone="neutral">{combatModeLabel(match.combat_mode)}</Tag> : null}
           <span className="text-sm text-ink-dim">
             {match.created_via === 'gm' ? 'Scheduled by' : match.created_via === 'import' ? 'Imported by' : 'Challenge from'} {match.created_by_display_name}
           </span>
@@ -138,7 +145,27 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
         <div className="flex flex-col gap-3">
           {actions.showStart ? (
             <>
-              <Button block disabled={!actions.canStart} pending={start.isPending} onClick={() => void run(() => start.mutateAsync(match.id), 'Could not start the battle.')}>
+              <Card className="flex flex-col gap-2 px-4 py-3">
+                <p className="text-sm font-medium text-ink-dim">Combat this game</p>
+                <SegmentedControl
+                  label="Combat this game"
+                  options={COMBAT_MODE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                  value={combatMode}
+                  onChange={(v) => {
+                    if (!modeLocked) setModeChoice(v)
+                  }}
+                />
+                <p className="text-sm leading-relaxed text-ink-dim">
+                  {modeLocked ? 'The GM has fixed this for the campaign. ' : ''}
+                  {COMBAT_MODE_OPTIONS.find((o) => o.value === combatMode)?.description}
+                </p>
+              </Card>
+              <Button
+                block
+                disabled={!actions.canStart}
+                pending={start.isPending}
+                onClick={() => void run(() => start.mutateAsync({ matchId: match.id, combatMode }), 'Could not start the battle.')}
+              >
                 Start battle
               </Button>
               {actions.startBlocked ? <p className="text-center text-sm text-ink-dim">{actions.startBlocked}</p> : null}

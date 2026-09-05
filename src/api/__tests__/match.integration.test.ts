@@ -118,6 +118,41 @@ describe.skipIf(!enabled)('match lifecycle', () => {
     expect(gmCancel.data).toBe('cancelled')
   })
 
+  it('start_match takes the combat mode from the campaign default, and the lock stops players changing it', async () => {
+    const before = await admin.from('campaigns').select('settings').eq('id', CAMPAIGN).single()
+    const settings = before.data!.settings as Record<string, unknown>
+    try {
+      // Default mode, no lock: a player may pick either.
+      const a = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN] })
+      matches.push(a.data as string)
+      const startA = await player.rpc('start_match', { p_match_id: a.data, p_combat_mode: 'players' })
+      expect(startA.error).toBeNull()
+      const rowA = await player.from('matches').select('combat_mode').eq('id', a.data).single()
+      expect(rowA.data?.combat_mode).toBe('players')
+
+      // Campaign default "players", locked: a player starting with no choice gets the default,
+      // asking for "app" is refused, and the GM may still override.
+      await admin.from('campaigns').update({ settings: { ...settings, combatMode: 'players', lockCombatMode: true } }).eq('id', CAMPAIGN)
+      const b = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN] })
+      matches.push(b.data as string)
+      const refused = await player.rpc('start_match', { p_match_id: b.data, p_combat_mode: 'app' })
+      expect(refused.error?.message).toMatch(/fixed how combat is scored/)
+      const startB = await player.rpc('start_match', { p_match_id: b.data })
+      expect(startB.error).toBeNull()
+      const rowB = await player.from('matches').select('combat_mode').eq('id', b.data).single()
+      expect(rowB.data?.combat_mode).toBe('players')
+
+      const c = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN] })
+      matches.push(c.data as string)
+      const startC = await gm.rpc('start_match', { p_match_id: c.data, p_combat_mode: 'app' })
+      expect(startC.error).toBeNull()
+      const rowC = await gm.from('matches').select('combat_mode').eq('id', c.data).single()
+      expect(rowC.data?.combat_mode).toBe('app')
+    } finally {
+      await admin.from('campaigns').update({ settings }).eq('id', CAMPAIGN)
+    }
+  })
+
   it('rejects bad schedules: one warband, duplicates, non-members, a challenge without your warband', async () => {
     const one = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH] })
     expect(one.error?.message).toMatch(/at least two/)

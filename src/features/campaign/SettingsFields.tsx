@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Markdown, NumberField, SegmentedControl, TextArea } from '../../ui'
 import { Section, ToggleRow } from './bits'
-import { DICE_POLICY_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
+import { COMBAT_MODE_OPTIONS, DICE_POLICY_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
 export interface SettingsFieldsProps {
   form: SettingsForm
@@ -18,6 +18,7 @@ export interface SettingsFieldsProps {
 export function SettingsFields({ form, onChange, errors, rules, onRulesChange, disabled = false }: SettingsFieldsProps) {
   const [preview, setPreview] = useState(false)
   const dice = DICE_POLICY_OPTIONS.find((o) => o.value === form.dicePolicy)
+  const combat = COMBAT_MODE_OPTIONS.find((o) => o.value === form.combatMode)
 
   return (
     <>
@@ -68,6 +69,27 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
           }}
         />
         {dice ? <p className="text-sm leading-relaxed text-ink-dim">{dice.description}</p> : null}
+      </Section>
+
+      <Section title="Combat during battles">
+        <SegmentedControl
+          label="How games are scored by default"
+          options={COMBAT_MODE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          value={form.combatMode}
+          onChange={(combatMode) => {
+            if (!disabled) onChange({ ...form, combatMode })
+          }}
+        />
+        {combat ? <p className="text-sm leading-relaxed text-ink-dim">{combat.description}</p> : null}
+        <div className="flex flex-col rounded-md border border-border bg-surface-low px-4">
+          <ToggleRow
+            label="Lock it for every game"
+            description="Players start every game this way and cannot change it. The GM can still choose per game."
+            checked={form.lockCombatMode}
+            disabled={disabled}
+            onChange={(lockCombatMode) => onChange({ ...form, lockCombatMode })}
+          />
+        </div>
       </Section>
 
       <Section

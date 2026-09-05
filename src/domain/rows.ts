@@ -8,6 +8,7 @@
 // the database still fills in what was left out.
 
 import { z } from "zod";
+import { combatModeSchema } from "./settings";
 import {
   advanceResolutionSchema,
   appliedInjuriesSchema,
@@ -346,6 +347,7 @@ export type ScenarioInsert = z.input<typeof scenarioInsertSchema>;
 
 export const matchRowSchema = z
   .object({
+    combat_mode: combatModeSchema,
     id: uuidSchema,
     campaign_id: uuidSchema,
     scenario_rules_id: z.string().min(1).nullable(),

@@ -10,6 +10,11 @@ export const DICE_POLICIES = ["players_roll", "app_rolls"] as const;
 export const dicePolicySchema = z.enum(DICE_POLICIES);
 export type DicePolicy = z.infer<typeof dicePolicySchema>;
 
+/** How a game is scored: the app's calculator and shared log, or plain tally sheets (the Relic & Ruin way). */
+export const COMBAT_MODES = ["app", "players"] as const;
+export const combatModeSchema = z.enum(COMBAT_MODES);
+export type CombatMode = z.infer<typeof combatModeSchema>;
+
 export const campaignHouseRulesSchema = z.object({
   strengthArmourPiercing: z.boolean().default(false),
   optionalCriticalTables: z.boolean().default(true),
@@ -24,6 +29,10 @@ export const campaignSettingsSchema = z.object({
   houseRules: campaignHouseRulesSchema.default(defaultCampaignHouseRules),
   /** Who rolls the dice for post-battle sequences: the players at the table, or the app. */
   dicePolicy: dicePolicySchema.default("players_roll"),
+  /** Default combat mode for new games in this campaign. */
+  combatMode: combatModeSchema.default("app"),
+  /** When true, only the GM may start a game with a different combat mode. */
+  lockCombatMode: z.boolean().default(false),
 });
 
 /** A complete settings object, as stored and as read. */
@@ -37,5 +46,7 @@ export function defaultCampaignSettings(): CampaignSettings {
     maxRosters: null,
     houseRules: defaultCampaignHouseRules(),
     dicePolicy: "players_roll",
+    combatMode: "app",
+    lockCombatMode: false,
   };
 }

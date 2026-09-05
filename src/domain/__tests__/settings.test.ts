@@ -13,6 +13,8 @@ describe("campaign settings", () => {
         halfPriceArmour: true,
       },
       dicePolicy: "players_roll",
+      combatMode: "app",
+      lockCombatMode: false,
     });
   });
 
@@ -27,6 +29,8 @@ describe("campaign settings", () => {
         halfPriceArmour: true,
       },
       dicePolicy: "players_roll",
+      combatMode: "app",
+      lockCombatMode: false,
     };
     expect(campaignSettingsSchema.parse(fromSql)).toEqual(defaultCampaignSettings());
   });
@@ -46,8 +50,12 @@ describe("campaign settings", () => {
         halfPriceArmour: false,
       },
       dicePolicy: "players_roll",
+      combatMode: "app",
+      lockCombatMode: false,
     });
     expect(campaignSettingsSchema.parse({ dicePolicy: "app_rolls" }).dicePolicy).toBe("app_rolls");
+    expect(campaignSettingsSchema.parse({ combatMode: "players", lockCombatMode: true })).toMatchObject({ combatMode: "players", lockCombatMode: true });
+    expect(campaignSettingsSchema.safeParse({ combatMode: "dice" }).success).toBe(false);
     expect(campaignHouseRulesSchema.parse({})).toEqual({
       strengthArmourPiercing: false,
       optionalCriticalTables: true,

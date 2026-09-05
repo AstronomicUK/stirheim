@@ -164,6 +164,8 @@ describe("row schemas parse realistic seed rows", () => {
           halfPriceArmour: true,
         },
         dicePolicy: "players_roll",
+        combatMode: "app",
+        lockCombatMode: false,
       },
       rules_markdown: "Seed campaign. House rules: no armour erosion, optional criticals, half-price armour.",
       archived: false,
@@ -221,6 +223,7 @@ describe("row schemas parse realistic seed rows", () => {
       state: "scheduled",
       created_by: GM_ID,
       created_via: "gm",
+      combat_mode: "app",
       scheduled_for: "2026-09-12T19:30:00+01:00",
       started_at: null,
       completed_at: null,
@@ -512,6 +515,8 @@ describe("insert schemas", () => {
         halfPriceArmour: true,
       },
       dicePolicy: "players_roll",
+        combatMode: "app",
+        lockCombatMode: false,
     });
     expect(campaignInsertSchema.parse({ gm_id: GM_ID, name: "Ruins of the Stir" }).settings).toBeUndefined();
   });

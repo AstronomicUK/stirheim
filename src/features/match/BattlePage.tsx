@@ -242,13 +242,13 @@ function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle
 
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
 
-      <SegmentedControl options={TABS} value={tab} onChange={setTab} label="Battle sheet section" />
+      <SegmentedControl options={match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight')} value={tab} onChange={setTab} label="Battle sheet section" />
 
       {tab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} /> : null}
       {tab === 'enemy' ? (
         <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
       ) : null}
-      {tab === 'fight' ? (
+      {tab === 'fight' && match.combat_mode === 'app' ? (
         <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} />
       ) : null}
       {tab === 'notes' ? <NotesTab sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} /> : null}

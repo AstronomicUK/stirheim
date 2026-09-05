@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import type { Json } from './database.types'
 import type { HenchmanGroupRow, HeroRow, ItemRow, MatchOrigin, MatchRow, MatchState, WarbandRow } from '../domain'
 import { parseBattleLiveState, toRosterWarband, type BattleLiveState } from '../domain'
+import type { CombatMode } from '../domain/settings'
 import type { RosterWarband } from '../rules/types/roster'
 import { findWarbandTemplate } from '../rules/data/warbandTemplates'
 import { warbandRating } from '../rules/resolve/rating'
@@ -37,6 +38,7 @@ export interface MatchSummary {
   id: string
   campaign_id: string
   state: MatchState
+  combat_mode: CombatMode
   created_via: MatchOrigin
   created_by: string
   created_by_display_name: string
@@ -98,6 +100,7 @@ function toSummary(row: MatchQueryRow, userId: string | undefined): MatchSummary
     id: row.id,
     campaign_id: row.campaign_id,
     state: row.state,
+    combat_mode: row.combat_mode,
     created_via: row.created_via,
     created_by: row.created_by,
     created_by_display_name: row.profiles?.display_name ?? 'Someone',
@@ -202,8 +205,8 @@ export async function respondToChallenge(matchId: string, warbandId: string, acc
   return data
 }
 
-export async function startMatch(matchId: string): Promise<MatchState> {
-  const { data, error } = await supabase.rpc('start_match', { p_match_id: matchId })
+export async function startMatch({ matchId, combatMode }: { matchId: string; combatMode?: CombatMode }): Promise<MatchState> {
+  const { data, error } = await supabase.rpc('start_match', combatMode ? { p_match_id: matchId, p_combat_mode: combatMode } : { p_match_id: matchId })
   if (error) throw new Error(error.message)
   return data
 }

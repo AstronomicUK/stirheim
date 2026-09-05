@@ -343,7 +343,12 @@ Tom's answers to the decision review, in the order they will be built:
 7. **Shared combat log** (this phase if it fits, else Phase 12): one event stream per match that
    any participant appends to, pushed to every phone; sheets derive from it; any event can be
    reverted (kept, marked reverted by whom). Replaces "tell the other player to mark it".
-8. **Relic & Ruin import of the eight rosters and the battle-records CSV** from Tom's account,
+8. **Suggested, not forced, dice and awards in the post-battle wizard** (added 2026-09-05): the
+   wizard shows "suggested" counts (exploration dice, veteran pool, and so on) and lets the player
+   roll more or fewer, and add bonus experience per warrior, each with a reason. Every override is
+   recorded on the report and shown in the battle record as an adjustment log. Reason: missed rules,
+   odd interactions, and map-campaign bonuses the ledger does not model yet.
+9. **Relic & Ruin import of the eight rosters and the battle-records CSV** from Tom's account,
    read through his signed-in Chrome with his explicit permission, each roster checked on screen
    before saving. Also pins the CSV column mapping.
 

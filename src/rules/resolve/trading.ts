@@ -26,7 +26,7 @@ export interface ItemPriceQuote {
  * shields and helmets), rounding down" (docs/PLANNING.md, House rules). Bucklers are small
  * shields so they are excluded too. Matched on id and name so future catalogue entries behave.
  */
-const HALF_PRICE_EXCLUSIONS = ["shield", "buckler", "helmet", "helm"];
+const HALF_PRICE_EXCLUSIONS = ["shield", "buckler", "helmet", "helm", "pavise"];
 
 export function isHalfPriceEligible(item: Item): boolean {
   if (item.category !== "armour") return false;

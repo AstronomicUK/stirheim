@@ -206,7 +206,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     hitThreshold = meleeToHitThreshold(effectiveWS, defender.WS);
   } else {
     let modifierSum = 0;
-    if (context.cover && !hasActiveEffect(defenderSkills, context, weapon.type, "ignoresModifier", "cover")) modifierSum -= 1;
+    // A pavise makes its bearer count as in cover against missiles (02: Pavise), the same -1 as real cover.
+    if ((context.cover || defender.armour.pavise) && !hasActiveEffect(defenderSkills, context, weapon.type, "ignoresModifier", "cover")) modifierSum -= 1;
     if (context.longRange && !attackerSkills.some((s) => s.effect.type === "rangeExtension" && isActive(s, context))) modifierSum -= 1;
     // Moving and shooting is always -1 (01:673); Nimble only lets Move-or-Fire weapons shoot at all (see computeAttackCount).
     if (context.movedThisTurn) modifierSum -= 1;
@@ -229,7 +230,9 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   if (weapon.ignoresArmourSave) {
     armourThreshold = IMPOSSIBLE;
   } else {
-    const base = armourSaveThreshold(defender.armour, attackStrength, houseRules.strengthArmourPiercing);
+    // A pavise counts as a shield in close combat only when the bearer was charged to the front; never against shooting.
+    const paviseCounts = weapon.type === "melee" && (context.paviseFront ?? true);
+    const base = armourSaveThreshold(defender.armour, attackStrength, houseRules.strengthArmourPiercing, paviseCounts);
     const modifier = weapon.saveModifier ?? 0;
     if (base === IMPOSSIBLE) {
       armourThreshold = modifier < 0 ? saveThresholdOrImpossible(7 + modifier) : IMPOSSIBLE;

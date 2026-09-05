@@ -8,8 +8,9 @@ import { BLACKPOWDER_ITEMS } from "./blackpowder";
 import { ARMOUR_ITEMS } from "./armour";
 import { MISC_ITEMS } from "./misc";
 import { ANIMAL_ITEMS } from "./animals";
+import { MATERIAL_VARIANT_ITEMS } from "./materialVariants";
 
-export { MELEE_ITEMS, MISSILE_ITEMS, BLACKPOWDER_ITEMS, ARMOUR_ITEMS, MISC_ITEMS, ANIMAL_ITEMS };
+export { MELEE_ITEMS, MISSILE_ITEMS, BLACKPOWDER_ITEMS, ARMOUR_ITEMS, MISC_ITEMS, ANIMAL_ITEMS, MATERIAL_VARIANT_ITEMS };
 
 export const ITEMS: Item[] = [
   ...MELEE_ITEMS,
@@ -18,7 +19,11 @@ export const ITEMS: Item[] = [
   ...ARMOUR_ITEMS,
   ...MISC_ITEMS,
   ...ANIMAL_ITEMS,
+  ...MATERIAL_VARIANT_ITEMS,
 ];
+
+/** The catalogue as offered for purchase: superseded entries (generic gromril / ithilmar weapon) left out. */
+export const SHOP_ITEMS: Item[] = ITEMS.filter((item) => !item.superseded);
 
 const BY_ID = new Map(ITEMS.map((item) => [item.id, item]));
 

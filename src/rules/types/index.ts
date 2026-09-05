@@ -22,6 +22,10 @@ export interface Armour {
   shield: boolean;
   /** Distinct from a shield (mordheimer.net): a buckler grants no save bonus but does grant a Parry attempt, the same as a Parry-tagged weapon. */
   buckler: boolean;
+  /** Kite Shield (mordheimer.net): a 5+ save on its own on foot, or +2 to worn armour; never better than 1+ (so 2+ in D6 terms). Mounted (6+ / +1) is not modelled. */
+  kiteShield?: boolean;
+  /** Pavise: counts as a shield in close combat only when the bearer was charged to the front (CombatContext.paviseFront), and as cover against missiles. */
+  pavise?: boolean;
 }
 
 export interface RangedProfile {
@@ -282,6 +286,8 @@ export interface CombatContext {
   firstTurnOfCombat: boolean;
   /** Fighting inside buildings or ruins (Pit Fighter skill: +1 WS, +1 A). */
   insideBuildings: boolean;
+  /** The defender's pavise faces the attacker (charged to the front), so it counts as a shield in close combat. Default true. */
+  paviseFront?: boolean;
 }
 
 export function defaultCombatContext(): CombatContext {

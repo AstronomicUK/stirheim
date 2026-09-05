@@ -31,4 +31,6 @@ export interface Item {
   source: SourceRef;
   /** For armour: the save it grants, if the text states one, e.g. 6 for "6+". */
   armourSave?: number;
+  /** Kept so old rosters still render, but no longer offered in the shop or builder (e.g. the generic "Gromril Weapon", replaced by per-weapon variants). */
+  superseded?: boolean;
 }

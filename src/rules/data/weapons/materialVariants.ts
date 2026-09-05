@@ -7,33 +7,29 @@
 //   - Ithilmar: +1 Initiative in hand-to-hand combat (informational only — Initiative isn't wired
 //     into the probability engine, same as the character sheet's own I stat), costs 3x.
 //
-// Generated here as proper named variants (e.g. "Gromril Sword") of the CORE rulebook's basic
-// hand weapons only — the ordinary trading-post options a Dwarf or Elf-aligned warband would
-// realistically requisition the upgrade for — not the setting's bespoke/magical named weapons
-// (Cathayan Longsword, Starsword, Iron Fist, etc.), which are their own distinct items.
+// Generated here as proper named variants (e.g. "Gromril Sword", "Ithilmar Axe") of every
+// ordinary hand-to-hand weapon (isMaterialVariantBase), so a Gromril Axe keeps Cutting Edge and a
+// Gromril Sword keeps Parry. The equipment catalogue (data/items/materialVariants.ts) generates the
+// matching shop entries. Phase 11 decision: the generic "Gromril weapon" item is superseded.
 
 import type { Weapon } from "../../types";
 import { MELEE_WEAPONS } from "./melee";
 
-const BASE_WEAPON_IDS = [
-  "dagger",
-  "sword",
-  "axe",
-  "mace",
-  "club",
-  "hammer",
-  "spear",
-  "halberd",
-  "flail",
-  "double_handed_sword",
-  "morning_star",
-];
-
-function findBase(id: string): Weapon {
-  const weapon = MELEE_WEAPONS.find((w) => w.id === id);
-  if (!weapon) throw new Error(`materialVariants: base weapon id "${id}" not found in MELEE_WEAPONS`);
-  return weapon;
+/**
+ * Which hand-to-hand weapons can be had in gromril or ithilmar: anything that strikes with the
+ * wielder's own Strength and is an ordinary forged weapon. Excluded: paired specials sold as a set
+ * (Fighting Claws, Weeping Blades...), poisoned or magical blades, weapons that ignore armour
+ * altogether, fists, and anything with a fixed Strength of its own.
+ */
+export function isMaterialVariantBase(weapon: Weapon): boolean {
+  if (weapon.type !== "melee" || weapon.strength !== "user") return false;
+  if (weapon.paired || weapon.autoWoundOnNaturalSixToHit || weapon.poisoned || weapon.ignoresArmourSave) return false;
+  if (weapon.special.includes("magical") || weapon.special.includes("permanentPoison")) return false;
+  if (["unarmed", "zombie_claws", "wight_blade", "brass_knuckles", "iron_fist", "spiked_gauntlet", "katar"].includes(weapon.id)) return false;
+  return true;
 }
+
+const BASES = MELEE_WEAPONS.filter(isMaterialVariantBase);
 
 function gromrilVariant(base: Weapon): Weapon {
   return {
@@ -55,6 +51,5 @@ function ithilmarVariant(base: Weapon): Weapon {
   };
 }
 
-const BASES = BASE_WEAPON_IDS.map(findBase);
 
 export const MATERIAL_VARIANT_WEAPONS: Weapon[] = [...BASES.map(gromrilVariant), ...BASES.map(ithilmarVariant)];

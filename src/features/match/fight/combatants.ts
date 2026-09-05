@@ -166,7 +166,6 @@ export interface Loadout {
 const LIGHT_ARMOUR = ['light_armour', 'toughened_leathers']
 const HEAVY_ARMOUR = ['heavy_armour', 'ithilmar_armour']
 const GROMRIL_ARMOUR = ['gromril_armour', 'chaos_armour', 'lamellar_armour', 'masterwork_heavy_armour']
-const SHIELDS = ['shield', 'kite_shield', 'pavise']
 const HELMETS = ['helmet', 'cooking_pot_helmet']
 const ARMOUR_RANK: Record<Armour['type'], number> = { none: 0, light: 1, heavy: 2, gromril: 3 }
 
@@ -215,9 +214,17 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
 }
 
 function applyArmourItem(id: string, save: number | undefined, name: string, out: Loadout): void {
-  if (SHIELDS.includes(id)) {
+  if (id === 'shield') {
     out.armour.shield = true
-    if (id !== 'shield') out.assumptions.push(`${name} counted as an ordinary shield (+1 to the save).`)
+    return
+  }
+  if (id === 'kite_shield') {
+    out.armour.kiteShield = true
+    out.assumptions.push('Kite shield: 5+ alone or +2 to armour on foot; the mounted 6+ is not modelled.')
+    return
+  }
+  if (id === 'pavise') {
+    out.armour.pavise = true
     return
   }
   if (id === 'buckler') {

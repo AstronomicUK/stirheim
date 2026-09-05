@@ -137,6 +137,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   }
   if (setup.defender.stats.W > 1) notes.push(`${setup.defender.name} has ${setup.defender.stats.W} Wounds: injury is only rolled once every Wound is lost.`)
   if (setup.defenderKit.wardSaveThreshold !== null) notes.push(`Ward save ${setup.defenderKit.wardSaveThreshold}+ against every wound.`)
+  if (setup.defenderKit.armour.pavise) notes.push(setup.primary.type === 'ranged' ? 'Pavise: the target counts as in cover (-1 to hit).' : 'Pavise: counts as a shield only while it faces the attacker.')
   const unknownSkills = [...setup.attacker.skillIds, ...setup.defender.skillIds].filter((id) => {
     const skill = findSkill(id)
     return skill !== undefined && !skill.modeled
@@ -172,9 +173,11 @@ export interface ContextToggle {
   field: keyof CombatContext & string
   label: string
   hint?: string
+  /** Ticked unless the player unticks it (the engine's default for this field is true). */
+  defaultOn?: boolean
 }
 
-export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon): ContextToggle[] {
+export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout): ContextToggle[] {
   const toggles: ContextToggle[] = []
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
@@ -183,6 +186,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (skills.some((s) => s.conditionField === 'fightingMultiple')) toggles.push({ field: 'fightingMultiple', label: 'Fighting two or more enemies' })
     if (skills.some((s) => s.conditionField === 'insideBuildings') || attacker.traitIds.includes('pit_fighter')) toggles.push({ field: 'insideBuildings', label: 'Inside a building or ruin' })
     if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: 'Hatred: reroll misses in the first turn against a hated enemy.' })
+    if (defenderKit?.armour.pavise) toggles.push({ field: 'paviseFront', label: 'Their pavise faces you', hint: 'A pavise counts as a shield only against a charge to the front.', defaultOn: true })
   } else {
     toggles.push({ field: 'movedThisTurn', label: 'Moved this turn' })
     toggles.push({ field: 'longRange', label: 'Long range' })

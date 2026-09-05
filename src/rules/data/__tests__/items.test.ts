@@ -15,6 +15,8 @@ import {
 import { MELEE_WEAPONS } from "../weapons/melee";
 import { RANGED_AND_CREATURE_WEAPONS } from "../weapons/ranged-and-creatures";
 import { MATERIAL_VARIANT_WEAPONS } from "../weapons/materialVariants";
+import { MATERIAL_VARIANT_ITEMS } from "../items/materialVariants";
+import { SHOP_ITEMS } from "../items";
 import type { ItemCategory } from "../../types/items";
 
 const CATEGORIES: ItemCategory[] = ["melee", "missile", "blackpowder", "armour", "misc", "animal"];
@@ -57,7 +59,8 @@ describe("item catalogue", () => {
     expect(ARMOUR_ITEMS.length).toBe(18);
     expect(MISC_ITEMS.length).toBe(110);
     expect(ANIMAL_ITEMS.length).toBe(14);
-    expect(ITEMS.length).toBe(246);
+    expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(80);
+    expect(ITEMS.length).toBe(246 + MATERIAL_VARIANT_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);
     }
@@ -104,6 +107,24 @@ describe("item catalogue", () => {
     expect(findItem("fist")!.price).toEqual({ base: null, text: "Not listed" });
     // Material upgrades priced relative to the base weapon.
     expect(findItem("gromril_weapon")!.price).toEqual({ base: null, text: "4 x Price" });
+    expect(findItem("gromril_weapon")!.superseded).toBe(true);
+    expect(SHOP_ITEMS.some((i) => i.id === "gromril_weapon")).toBe(false);
+  });
+
+  it("offers gromril and ithilmar variants of every ordinary hand weapon, priced and linked to the engine", () => {
+    const axe = findItem("gromril_axe")!;
+    expect(axe).toMatchObject({ name: "Gromril Axe", category: "melee", weaponId: "gromril_axe", availability: { kind: "rare", rarity: 11 } });
+    expect(axe.price.base).toBe(5 * 4);
+    expect(axe.specialRules.map((r) => r.name)).toEqual(["Cutting Edge", "Gromril"]);
+    const sword = findItem("ithilmar_sword")!;
+    expect(sword.price.base).toBe(10 * 3);
+    expect(sword.availability.rarity).toBe(9);
+    // Paired specials, fists and fixed-Strength weapons are not forged in gromril.
+    expect(findItem("gromril_fighting_claws")).toBeUndefined();
+    expect(findItem("gromril_fist")).toBeUndefined();
+    for (const item of MATERIAL_VARIANT_ITEMS) {
+      expect(MATERIAL_VARIANT_WEAPONS.some((w) => w.id === item.weaponId), `${item.id}: no engine weapon ${item.weaponId}`).toBe(true);
+    }
     // Two "Pike" entries kept distinct.
     expect(findItem("pike_tileans")!.weaponId).toBe("pike_tileans");
     expect(findItem("pike_merchant_caravans")!.weaponId).toBe("pike_merchant_caravans");

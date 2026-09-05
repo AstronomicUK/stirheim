@@ -24,6 +24,7 @@
 import type { Stats, UnitTemplate, WarbandTemplate } from "../types";
 import type { Item } from "../types/items";
 import type { RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband } from "../types/roster";
+import { findItem } from "../data/items";
 import { resolveEquipmentName } from "../data/items/aliases";
 import { findEquipmentList, findUnitTemplate } from "../data/warbandTemplates";
 import { equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "./equipmentCost";
@@ -204,11 +205,36 @@ export function equipmentOptionsFor(template: WarbandTemplate, unitTemplateId: s
       item: resolveEquipmentName(entry.name),
       section: kind,
     }));
+  const melee = section(list.meleeWeapons, "melee");
   return [
-    ...section(list.meleeWeapons, "melee"),
+    ...melee.flatMap((option) => (option.item?.superseded ? materialVariantOptions(option, melee) : [option])),
     ...section(list.missileWeapons, "missile"),
     ...section(list.armour, "armour"),
   ];
+}
+
+/**
+ * "Gromril weapon ... 4 x price" on a list means: any hand weapon on this list, forged in gromril.
+ * Offer one option per such weapon (Gromril Axe, Gromril Sword...), priced from the list's own
+ * figure for the base weapon. A list entry whose base has no fixed price stays unpriced.
+ */
+function materialVariantOptions(generic: EquipmentOption, melee: EquipmentOption[]): EquipmentOption[] {
+  const prefix = generic.item?.id === "ithilmar_weapon" ? "ithilmar" : "gromril";
+  const factor = generic.cost.multiplier ?? (prefix === "ithilmar" ? 3 : 4);
+  const out: EquipmentOption[] = [];
+  for (const base of melee) {
+    if (!base.item || base.item.superseded) continue;
+    const variant = findItem(`${prefix}_${base.item.id}`);
+    if (!variant) continue;
+    const amount = base.cost.kind === "fixed" || base.cost.kind === "firstFree" ? base.cost.amount : null;
+    out.push({
+      name: variant.name,
+      cost: amount === null ? { ...generic.cost, kind: "unknown" } : { kind: "fixed", amount: amount * factor, currency: base.cost.currency, text: `${amount * factor} gc (${factor} x ${base.cost.text})` },
+      item: variant,
+      section: "melee",
+    });
+  }
+  return out.length > 0 ? out : [generic];
 }
 
 /** The per-copy price the builder can read off a list cost; null for multiplier/unknown kinds. */

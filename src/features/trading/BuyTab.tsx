@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ITEMS } from '../../rules/data/items'
+import { SHOP_ITEMS } from '../../rules/data/items'
 import { RARE_ROLL } from '../../rules/data/campaign/trading'
 import { parseDice } from '../../rules/resolve/dice'
 import { buyItem, itemPrice, rareSearch } from '../../rules/resolve/trading'
@@ -12,7 +12,7 @@ import type { TradeContext } from './useTrade'
 export function BuyTab({ trade }: { trade: TradeContext }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Item | null>(null)
-  const groups = useMemo(() => groupCatalogue(ITEMS, query), [query])
+  const groups = useMemo(() => groupCatalogue(SHOP_ITEMS, query), [query])
   const searchesLeft = eligibleSearchers(trade.roster, trade.phase.heroesSearched).length
 
   return (

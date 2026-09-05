@@ -76,9 +76,9 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
-  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary) : []
+  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined) : []
   const active: Partial<CombatContext> = {}
-  for (const t of toggleList) if (toggles[t.field]) (active as Record<string, boolean>)[t.field] = true
+  for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)
 
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
@@ -163,7 +163,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <legend className="mb-1 text-sm font-medium text-ink-dim">Situation</legend>
               {toggleList.map((t) => (
                 <label key={t.field} className="flex min-h-11 items-start gap-3 py-1 text-sm text-ink">
-                  <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={Boolean(toggles[t.field])} onChange={(e) => setToggles((s) => ({ ...s, [t.field]: e.target.checked }))} />
+                  <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => setToggles((s) => ({ ...s, [t.field]: e.target.checked }))} />
                   <span>
                     {t.label}
                     {t.hint ? <span className="block text-xs text-ink-dim">{t.hint}</span> : null}
@@ -205,6 +205,8 @@ function armourText(kit: Loadout): string {
   const parts: string[] = []
   if (kit.armour.type !== 'none') parts.push(`${kit.armour.type} armour`)
   if (kit.armour.shield) parts.push('shield')
+  if (kit.armour.kiteShield) parts.push('kite shield')
+  if (kit.armour.pavise) parts.push('pavise')
   if (kit.armour.buckler) parts.push('buckler')
   if (kit.helmet) parts.push('helmet')
   return parts.length > 0 ? parts.join(', ') : 'no armour'

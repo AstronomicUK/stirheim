@@ -65,10 +65,19 @@ describe('loadoutOf', () => {
     expect(loadoutOf([item('ithilmar_armour')]).armour.type).toBe('heavy')
   })
 
-  it('a kite shield counts as a shield, with the assumption spelled out', () => {
-    const kit = loadoutOf([item('kite_shield')])
-    expect(kit.armour.shield).toBe(true)
-    expect(kit.assumptions[0]).toMatch(/Kite Shield counted as an ordinary shield/)
+  it('kite shields and pavises are their own rules, not plain shields', () => {
+    const kite = loadoutOf([item('kite_shield')])
+    expect(kite.armour.shield).toBe(false)
+    expect(kite.armour.kiteShield).toBe(true)
+    expect(kite.assumptions[0]).toMatch(/mounted 6\+ is not modelled/)
+    const pavise = loadoutOf([item('pavise')])
+    expect(pavise.armour.pavise).toBe(true)
+    expect(pavise.armour.shield).toBe(false)
+  })
+
+  it('resolves the new per-weapon gromril and ithilmar items straight to their engine variants', () => {
+    expect(loadoutOf([item('gromril_axe')]).melee[0]).toMatchObject({ id: 'gromril_axe', saveModifier: 2 })
+    expect(loadoutOf([item('ithilmar_sword')]).melee[0]).toMatchObject({ id: 'ithilmar_sword', parry: true })
   })
 
   it('enchanted skins are a 6+ ward save', () => {

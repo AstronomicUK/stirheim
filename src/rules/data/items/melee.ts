@@ -476,6 +476,7 @@ export const MELEE_ITEMS: Item[] = [
       { name: "Gromril", text: "A gromril weapon has an extra -1 save modifier, and costs four times the price of a normal weapon of its kind. You may choose which type of hand-to-hand weapon is offered to you as explained in the Trading section." },
     ],
     source: { publication: "Mordheim Rulebook (core)", file: "02-weapons-armour-equipment.md:347-353" },
+    superseded: true,
   },
   {
     id: "halberd",
@@ -569,6 +570,7 @@ export const MELEE_ITEMS: Item[] = [
       { name: "Ithilmar", text: "An ithilmar weapon gives its user +1 Initiative in hand-to-hand combat, and costs three times the price of a normal weapon of its kind. You may choose which hand-to-hand weapon is offered to you as explained in the Trading section." },
     ],
     source: { publication: "Mordheim Rulebook (core)", file: "02-weapons-armour-equipment.md:411-417" },
+    superseded: true,
   },
   {
     id: "katar",

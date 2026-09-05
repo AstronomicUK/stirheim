@@ -20,7 +20,7 @@ export function strengthSaveErosion(strength: number): number {
  * Base save threshold from armour + shield, before any Strength erosion.
  * IMPOSSIBLE = no save at all (no armour, no shield).
  */
-function baseArmourThreshold(armour: Armour): Threshold {
+function baseArmourThreshold(armour: Armour, paviseCounts: boolean): Threshold {
   let base: Threshold;
   switch (armour.type) {
     case "light":
@@ -37,9 +37,12 @@ function baseArmourThreshold(armour: Armour): Threshold {
       base = IMPOSSIBLE;
       break;
   }
-  if (armour.shield) {
-    // Shield: +1 to whatever save is worn, or a save of 6+ on its own if no armour worn.
-    base = base === IMPOSSIBLE ? 6 : base - 1;
+  // Shield: +1 to whatever save is worn, or a save of 6+ on its own if no armour worn. A pavise is
+  // a shield in close combat only when the bearer was charged to the front. Kite shield: +2, or 5+
+  // alone; a second shield adds nothing (one shield arm).
+  const shieldBonus = armour.kiteShield ? 2 : armour.shield || (armour.pavise && paviseCounts) ? 1 : 0;
+  if (shieldBonus > 0) {
+    base = base === IMPOSSIBLE ? 7 - shieldBonus : Math.max(2, base - shieldBonus);
   }
   return base;
 }
@@ -48,8 +51,8 @@ function baseArmourThreshold(armour: Armour): Threshold {
  * Final armour save threshold for a defender against a given attacker Strength.
  * Returns IMPOSSIBLE if the defender has no save available at all.
  */
-export function armourSaveThreshold(armour: Armour, attackerStrength: number, applyStrengthErosion = false): Threshold {
-  let threshold = baseArmourThreshold(armour);
+export function armourSaveThreshold(armour: Armour, attackerStrength: number, applyStrengthErosion = false, paviseCounts = true): Threshold {
+  let threshold = baseArmourThreshold(armour, paviseCounts);
   if (applyStrengthErosion && threshold !== IMPOSSIBLE) {
     threshold = threshold + strengthSaveErosion(attackerStrength);
   }

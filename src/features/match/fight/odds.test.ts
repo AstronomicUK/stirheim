@@ -98,6 +98,23 @@ describe('computeOdds shooting', () => {
   })
 })
 
+describe('kite shield and pavise', () => {
+  it('a kite shield is a 5+ alone and +2 on armour; a pavise is a shield only to the front, and cover against arrows', () => {
+    const kite = combatant('Knight', [{ itemId: 'kite_shield', quantity: 1 }])
+    expect(computeOdds(setup(captain, kite, 'sword', null)).weapons[0].input.armourThreshold).toBe(5)
+    const armoured = combatant('Knight', [{ itemId: 'kite_shield', quantity: 1 }, { itemId: 'heavy_armour', quantity: 1 }])
+    expect(computeOdds(setup(captain, armoured, 'sword', null)).weapons[0].input.armourThreshold).toBe(3)
+
+    const pavise = combatant('Crossbowman', [{ itemId: 'pavise', quantity: 1 }])
+    const houseRules = defaultCampaignHouseRules()
+    expect(computeOdds(setup(captain, pavise, 'sword', null)).weapons[0].input.armourThreshold).toBe(6)
+    expect(computeOdds(setup(captain, pavise, 'sword', null, { context: combatContextFor(houseRules, { paviseFront: false }) })).weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+    const shot = computeOdds(setup(marksman, pavise, 'bow', null))
+    expect(shot.weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+    expect(shot.weapons[0].input.hitThreshold).toBe(5)
+  })
+})
+
 describe('toDefender', () => {
   it('counts parry items and the buckler reroll', () => {
     const swordAndBuckler = combatant('Duellist', [{ itemId: 'sword', quantity: 1 }, { itemId: 'buckler', quantity: 1 }])
@@ -130,5 +147,7 @@ describe('display helpers', () => {
     expect(melee).toEqual(['charging', 'firstTurnOfCombat', 'fightingMultiple', 'vsHatedEnemy'])
     const ranged = relevantToggles(brawler, 'ranged', kit.ranged[0]).map((t) => t.field)
     expect(ranged).toEqual(['movedThisTurn', 'longRange', 'cover', 'largeTarget'])
+    const pavise = loadoutOf([{ itemId: 'pavise', quantity: 1 }])
+    expect(relevantToggles(brawler, 'melee', kit.melee[0], pavise).map((t) => t.field)).toContain('paviseFront')
   })
 })

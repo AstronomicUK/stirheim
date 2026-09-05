@@ -81,6 +81,8 @@ export interface RecordTradeInput {
   wyrdstoneSold: boolean
   /** Heroes who made a rare-item search this visit; refused if any already searched this phase. */
   heroesSearched: string[]
+  /** Audit reason when the visit carries an override note; defaults to 'trading' in SQL. */
+  reason?: string
 }
 
 /** Returns the number of roster changes applied. */
@@ -91,6 +93,7 @@ export async function recordTrade(warbandId: string, input: RecordTradeInput): P
     p_changes: input.changes as unknown as Json,
     p_wyrdstone_sold: input.wyrdstoneSold,
     p_heroes_searched: input.heroesSearched,
+    ...(input.reason ? { p_reason: input.reason } : {}),
   })
   if (error) throw new Error(error.message)
   return data

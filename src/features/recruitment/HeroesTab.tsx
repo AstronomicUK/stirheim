@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
+import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
 import { recruitHero } from '../../rules/resolve/recruitment'
 import type { WarbandTemplate } from '../../rules/types'
-import { Button, Notice, Sheet, TextField } from '../../ui'
+import { Button, Notice, Sheet, TextField, OverrideField } from '../../ui'
 import { StatLine } from '../roster/shared/StatLine'
 import { KeyValue } from '../roster/view/bits'
 import { defaultHeroName, listUnits, singular, type UnitListing } from './helpers'
@@ -56,12 +57,16 @@ function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProp
   const unit = listing.unit
   const [name, setName] = useState(() => defaultHeroName(unit, roster))
   const { commit, error, pending } = useCommit(detail)
-  const cost = unit.cost ?? 0
+  const [override, setOverride] = useState<Override | null>(null)
+  const listed = unit.cost ?? 0
+  const cost = overrideReady(override) ? override.amount : listed
+  const overrideBlocks = override !== null && !overrideReady(override)
   const trimmed = name.trim()
 
   async function confirm() {
     const id = crypto.randomUUID()
-    const result = await commit(() => recruitHero(roster, template, unit.id, trimmed, id), (w) => w)
+    const note = overrideReady(override) ? overrideNote('Hire cost', `${listed} gc`, `${override.amount} gc`, override.reason) : null
+    const result = await commit(() => recruitHero(roster, template, unit.id, trimmed, id, overrideReady(override) ? { costOverride: override.amount } : {}), (w) => w, reasonWith('recruitment', note))
     if (result) onDone(outcomeFrom(`${trimmed} joins the warband`, result.events, { suggestTrading: true }))
   }
 
@@ -72,7 +77,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProp
       title={`Hire a ${singular(unit.name)}`}
       description={`${listing.countText} on the roster · limit ${unit.rosterLimit}`}
       footer={
-        <Button block pending={pending} disabled={trimmed.length === 0} onClick={() => void confirm()}>
+        <Button block pending={pending} disabled={trimmed.length === 0 || overrideBlocks} onClick={() => void confirm()}>
           Hire for {cost} gc
         </Button>
       }
@@ -84,6 +89,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProp
           <KeyValue label="Treasury after" value={`${roster.gold - cost} gc`} />
           <KeyValue label="Starting xp" value={unit.startingExperience} />
         </div>
+        <OverrideField what="the hire cost" suggested={listed} value={override} onChange={setOverride} />
         <StatLine stats={unit.stats} />
         {unit.specialRules.length > 0 ? (
           <dl className="flex flex-col gap-2 text-xs leading-relaxed">

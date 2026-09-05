@@ -40,14 +40,16 @@ export const TARGET_FIELD_INFO: TargetFieldInfo[] = [
 /** Header synonyms, compared after normaliseHeader (lower-case, letters and digits only). */
 export const SYNONYMS: Record<TargetField, string[]> = {
   matchId: ['match', 'matchid', 'battleid', 'battle', 'id', 'game', 'gameid', 'matchref'],
-  date: ['date', 'recorded', 'recordedat', 'played', 'playedat', 'playedon', 'submitted', 'submittedat', 'datetime', 'when', 'timestamp', 'completed', 'completedat'],
+  date: ['date', 'recorded', 'recordedat', 'played', 'playedat', 'playedon', 'submitted', 'submittedat', 'datetime', 'when', 'timestamp', 'completed', 'completedat', 'matchcreatedat', 'createdat', 'created'],
   scenario: ['scenario', 'scenarioname', 'mission'],
   warband: ['warband', 'warbandname', 'roster', 'rostername', 'name'],
   player: ['player', 'playername', 'owner', 'user', 'username'],
   result: ['result', 'outcome', 'victory', 'won', 'win', 'winlose'],
   winner: ['winner', 'victor', 'winningwarband'],
-  xp: ['xp', 'experience', 'xpgained', 'experiencegained', 'exp', 'xpearned', 'totalxp'],
-  casualties: ['dead', 'casualties', 'ooa', 'outofaction', 'deaths', 'killed', 'casualtiesdead', 'owncasualties', 'ownoutofaction'],
+  // Relic & Ruin's export (reference/relic-and-ruin/battle-records-2026-09-05.csv) has hero_exp_gained
+  // as "Name: 2 (Survived +1, Win +1); Name: 1 (...)" and hero_deaths / henchmen_deaths as "group 2: 1".
+  xp: ['xp', 'experience', 'xpgained', 'experiencegained', 'exp', 'xpearned', 'totalxp', 'heroexpgained', 'expgained'],
+  casualties: ['dead', 'casualties', 'ooa', 'outofaction', 'deaths', 'killed', 'casualtiesdead', 'owncasualties', 'ownoutofaction', 'herodeaths'],
   notes: ['notes', 'note', 'comment', 'comments', 'description', 'summary'],
   opponent: ['opponent', 'opponentwarband', 'opponents', 'versus', 'vs', 'enemy', 'enemywarband', 'warband2', 'secondwarband', 'against'],
 }
@@ -134,8 +136,15 @@ export function parseResult(text: string): ResultValue | null {
   return RESULT_WORDS[key] ?? null
 }
 
-/** The first integer in the cell ("+6 XP" → 6, "2 dead" → 2); null when there is none. */
+/**
+ * The count in a cell: "+6 XP" → 6, "2 dead" → 2. A per-warrior breakdown ("Skritch: 2 (Survived
+ * +1, Win +1); Verminkin: 1 (Survived +1)", Relic & Ruin's export) adds up the number after each
+ * name. Null when there is no number at all.
+ */
 export function parseCount(text: string): number | null {
+  const parts = text.split(';').map((p) => p.trim()).filter(Boolean)
+  const perName = parts.map((p) => /^[^:]+:\s*([-+]?\d+)/.exec(p)?.[1]).filter((v): v is string => v !== undefined)
+  if (parts.length > 0 && perName.length === parts.length) return perName.reduce((n, v) => n + Number.parseInt(v, 10), 0)
   const m = /[-+]?\d+/.exec(text)
   return m ? Number.parseInt(m[0], 10) : null
 }

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
+import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
 import { recruitHenchmen, type RecruitHenchmenResult } from '../../rules/resolve/recruitment'
 import type { RosterWarband } from '../../rules/types/roster'
-import { Button, Notice, SegmentedControl, SelectField, Sheet, Stepper, TextField } from '../../ui'
+import { Button, Notice, SegmentedControl, SelectField, Sheet, Stepper, TextField, OverrideField } from '../../ui'
 import { StatLine } from '../roster/shared/StatLine'
 import { KeyValue } from '../roster/view/bits'
 import { defaultGroupName, groupsOfType, listUnits, maxRecruitable, veteranQuote, type UnitListing } from './helpers'
@@ -78,7 +79,10 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
   const maxSize = useMemo(() => maxRecruitable(roster, template, unit), [roster, template, unit])
   const target = mode === 'join' ? groups.find((g) => g.id === groupId) : undefined
   const quote = veteranQuote(target, size, roster.veteranPool)
-  const hireCost = (unit.cost ?? 0) * size
+  const listedHire = (unit.cost ?? 0) * size
+  const [costOverride, setCostOverride] = useState<Override | null>(null)
+  const hireCost = overrideReady(costOverride) ? costOverride.amount : listedHire
+  const costBlocks = costOverride !== null && !overrideReady(costOverride)
   const total = hireCost + quote.gold
   const nameMissing = mode === 'new' && groupName.trim().length === 0
 
@@ -89,8 +93,10 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
         recruitHenchmen(roster, template, unit.id, groupName.trim(), size, id, {
           intoGroupId: mode === 'join' ? groupId : undefined,
           poolUsed: 0,
+          ...(overrideReady(costOverride) ? { costOverride: costOverride.amount } : {}),
         }),
       withPool,
+      reasonWith('recruitment', overrideReady(costOverride) ? overrideNote('Hire cost', `${listedHire} gc`, `${costOverride.amount} gc`, costOverride.reason) : null),
     )
     if (!result) return
     const title =
@@ -107,7 +113,7 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
       title={`Hire ${unit.name}`}
       description={`${listing.countText} on the roster · limit ${unit.rosterLimit}`}
       footer={
-        <Button block pending={pending} disabled={nameMissing || (mode === 'join' && !target)} onClick={() => void confirm()}>
+        <Button block pending={pending} disabled={nameMissing || costBlocks || (mode === 'join' && !target)} onClick={() => void confirm()}>
           Hire {size} for {total} gc
         </Button>
       }
@@ -150,6 +156,9 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
 
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire cost" value={`${hireCost} gc`} />
+          <span className="col-span-full">
+            <OverrideField what="the hire cost" suggested={listedHire} value={costOverride} onChange={setCostOverride} />
+          </span>
           <KeyValue label="Veterans" value={quote.gold > 0 ? `+${quote.gold} gc` : '—'} />
           <KeyValue label="Treasury after" value={`${roster.gold - total} gc`} />
         </div>

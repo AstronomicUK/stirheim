@@ -916,6 +916,7 @@ export type Database = {
           p_changes?: Json
           p_heroes_searched?: string[]
           p_match_id?: string
+          p_reason?: string
           p_warband_id: string
           p_wyrdstone_sold?: boolean
         }

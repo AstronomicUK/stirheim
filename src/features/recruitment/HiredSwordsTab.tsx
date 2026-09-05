@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
+import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
 import { dismissWarrior, hireHiredSword, hiredSwordEquipment, payUpkeep } from '../../rules/resolve/recruitment'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
-import { Button, Markdown, Notice, NumberField, Sheet, TextField } from '../../ui'
+import { Button, Markdown, Notice, NumberField, Sheet, TextField, OverrideField } from '../../ui'
 import { StatLine } from '../roster/shared/StatLine'
 import { Card, ItemLines, KeyValue, RuleList, Section, Tag } from '../roster/view/bits'
 import {
@@ -155,10 +156,15 @@ function UpkeepSheet({ detail, hiredSword: hs, onClose, onDone }: SwordSheetProp
   const due = upkeepDue(entry, overrideInvalid ? null : override)
   const willLeave = due > 0 && roster.gold < due
 
+  const [overrideReason, setOverrideReason] = useState('')
+  const reasonMissing = override !== null && !overrideInvalid && overrideReason.trim() === ''
+
   async function confirm() {
+    const note = override !== null && !overrideInvalid ? overrideNote('Upkeep', upkeepText(entry), `${override} gc`, overrideReason) : null
     const result = await commit(
       () => payUpkeep(roster, hs.id, overrideInvalid || override === null ? {} : { amountOverride: override }),
       (v) => v.warband,
+      reasonWith('recruitment', note),
     )
     if (!result) return
     onDone(
@@ -175,7 +181,7 @@ function UpkeepSheet({ detail, hiredSword: hs, onClose, onDone }: SwordSheetProp
       title="Pay upkeep"
       description={`${hs.name} · ${entry?.name ?? hs.hiredSwordId}`}
       footer={
-        <Button block variant={willLeave ? 'danger' : 'primary'} pending={pending} disabled={overrideInvalid} onClick={() => void confirm()}>
+        <Button block variant={willLeave ? 'danger' : 'primary'} pending={pending} disabled={overrideInvalid || reasonMissing} onClick={() => void confirm()}>
           {willLeave ? 'Cannot pay: let him go' : due > 0 ? `Pay ${due} gc` : 'Record no upkeep due'}
         </Button>
       }
@@ -193,6 +199,7 @@ function UpkeepSheet({ detail, hiredSword: hs, onClose, onDone }: SwordSheetProp
           hint="Leave blank for the listed fee. Use this for conditional fees, e.g. a Troll Slayer in a warband with Elves pays 20 gc."
           error={overrideInvalid ? 'Enter a whole number of gold crowns' : undefined}
         />
+        {override !== null ? <TextField label="Why a different amount" value={overrideReason} autoComplete="off" onChange={(e) => setOverrideReason(e.target.value)} error={reasonMissing ? 'Say why; it goes in the log' : undefined} /> : null}
         <Notice tone={willLeave ? 'warn' : 'info'}>{upkeepSummary(hs, entry, roster.gold, overrideInvalid ? null : override)}</Notice>
         {error ? <Notice tone="error">{error}</Notice> : null}
       </div>
@@ -242,13 +249,21 @@ function HireSheet({ detail, option, onClose, onDone }: HireSheetProps) {
   const { entry, eligibility } = option
   const [name, setName] = useState('')
   const { commit, error, pending } = useCommit(detail)
-  const cost = entry.hireCost.base ?? 0
+  const listedFee = entry.hireCost.base ?? 0
+  const [feeOverride, setFeeOverride] = useState<Override | null>(null)
+  const cost = overrideReady(feeOverride) ? feeOverride.amount : listedFee
+  const feeBlocks = feeOverride !== null && !overrideReady(feeOverride)
   const restricted = eligibility.kind === 'restricted'
 
   async function confirm() {
     const id = crypto.randomUUID()
     const trimmed = name.trim()
-    const result = await commit(() => hireHiredSword(roster, entry.id, id, trimmed ? { name: trimmed } : {}), (w) => w)
+    const note = overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : null
+    const result = await commit(
+      () => hireHiredSword(roster, entry.id, id, { ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : {}) }),
+      (w) => w,
+      reasonWith('recruitment', note),
+    )
     if (result) onDone(outcomeFrom(`${trimmed || entry.name} hired`, result.events))
   }
 
@@ -259,7 +274,7 @@ function HireSheet({ detail, option, onClose, onDone }: HireSheetProps) {
       title={entry.name}
       description={`${entry.hireCost.text} to hire · upkeep ${upkeepText(entry)} · ${entry.source}`}
       footer={
-        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} onClick={() => void confirm()}>
+        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks} onClick={() => void confirm()}>
           {restricted ? `Hire anyway for ${cost} gc` : `Hire for ${cost} gc`}
         </Button>
       }
@@ -269,6 +284,9 @@ function HireSheet({ detail, option, onClose, onDone }: HireSheetProps) {
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire fee" value={`${cost} gc`} />
+          <span className="col-span-2">
+            <OverrideField what="the hire fee" suggested={listedFee} value={feeOverride} onChange={setFeeOverride} />
+          </span>
           <KeyValue label="Upkeep" value={upkeepText(entry)} />
           <KeyValue label="Treasury after" value={`${roster.gold - cost} gc`} />
         </div>

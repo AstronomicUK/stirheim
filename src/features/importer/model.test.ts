@@ -319,3 +319,26 @@ describe('buildPayload', () => {
     expect(() => buildPayload(built.matches, { 'Reikland Watch': 'w1', 'Claws of Eshin': null }, {})).toThrow(/Claws of Eshin/)
   })
 })
+
+describe('the real Relic & Ruin export (captured 2026-09-05)', () => {
+  it('maps its headers and builds eight two-warband battles', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { csvToRecords } = await import('../../domain/csv')
+    const text = readFileSync(new URL('./fixtures/relic-battle-records.csv', import.meta.url), 'utf8')
+    const parsedCsv = csvToRecords(text)
+    const records = parsedCsv.rows
+    const mapping = detectMapping(parsedCsv.headers)
+    expect(mapping).toMatchObject({ matchId: 'match_id', date: 'match_created_at', scenario: 'scenario', warband: 'warband_name', result: 'won', xp: 'hero_exp_gained', notes: 'notes' })
+    const built = buildMatches(records, mapping, new Date('2026-09-05T12:00:00Z'))
+    expect(built.matches).toHaveLength(8)
+    expect(built.matches.every((m) => m.participants.length === 2)).toBe(true)
+    const hidden = built.matches.find((m) => m.participants.some((p) => p.warbandName === 'The Call of the Grave') && m.scenarioName === 'Hidden Treasure')!
+    const grave = hidden.participants.find((p) => p.warbandName === 'The Call of the Grave')!
+    expect(grave.result).toBe('won')
+    // "Kel'thuzad: 2 (...); Nephanis: 2 (...); King Morlak Velmorn: 1 (...); Sir Jedran Falseborn: 1 (...)" adds up.
+    expect(grave.xpGained).toBe(6)
+    const evards = hidden.participants.find((p) => p.warbandName === 'Evards Quest')!
+    expect(evards.result).toBe('lost')
+    expect(built.problems.filter((p) => p.level === 'skipped')).toEqual([])
+  })
+})

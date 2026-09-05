@@ -112,8 +112,10 @@ export function HelpPage() {
         <P>The report is an eight-step wizard, pre-filled from your battle sheet. You can leave part-way and come back; it remembers where you were.</P>
         <P>
           <B>Suggested, not forced.</B> The wizard tells you how many exploration dice the rulebook gives you, but you roll as many as your skills, kit, map
-          bonuses or house rules say, with a reason. Every such change is logged on the report and shows as <em>Adjusted</em> in the records. Bonus experience for
-          scenario objectives works the same way: add a line with a reason.
+          bonuses or house rules say, with a reason. The same goes for injuries: tick <em>No injury roll needed</em> when a skill or item spares a warrior, or roll a
+          different number of dice for a henchman group. Every such change is logged on the report and shows as <em>Adjusted</em> in the records. Bonus experience for
+          scenario objectives works the same way: add a line with a reason. At the trading post and when hiring, <em>Override the cost</em> lets you pay a different
+          price with a reason, which the campaign's activity feed records.
         </P>
         <P>
           <B>Advances.</B> Any advance earned in the battle can be rolled right there in the wizard. If the roll is a new skill or spell and you want time to think,
@@ -167,6 +169,13 @@ export function HelpPage() {
       </Topic>
 
       <Topic id="from-relic-and-ruin" title="From Relic & Ruin">
+        <P>
+          <B>Rosters.</B> Open the roster's printer-friendly page on Relic &amp; Ruin (or, as GM, another player's warband from the campaign's View details
+          panel), select all the text, copy it, and paste it into <Go to="/warbands/import">Import a roster</Go>. The app reads the treasury, every hero,
+          henchman group and hired sword with their experience, characteristics, kit, skills, spells and injuries, and shows anything it could not match for
+          you to fix before it creates the warband. The importer owns it; <em>Hand over to another player</em> on the roster page passes it on once its player
+          has signed up.
+        </P>
         <P>Moving a running campaign over is a two-part job. Nothing is copied automatically from Relic & Ruin's rosters, so each player does their own.</P>
         <Steps
           items={[

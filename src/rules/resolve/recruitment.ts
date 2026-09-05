@@ -108,12 +108,18 @@ export function canRecruit(
 }
 
 /** Hire a new hero of the given unit type: template stats, starting experience, no equipment. */
+export interface RecruitHeroOptions {
+  /** Pay this instead of the listed hire cost (the UI records why). */
+  costOverride?: number;
+}
+
 export function recruitHero(
   warband: RosterWarband,
   template: WarbandTemplate,
   unitTemplateId: string,
   name: string,
   id: string,
+  opts: RecruitHeroOptions = {},
 ): Resolution<RosterWarband> {
   const unit = requireUnit(template, unitTemplateId);
   if (unit.role !== "hero") throw new RulesError("recruitment.notAHero", `${unit.name} are henchmen; use recruitHenchmen`);
@@ -122,7 +128,7 @@ export function recruitHero(
   }
   const block = recruitmentBlock(warband, template, unit, 1);
   if (block) throw new RulesError("recruitment.notAllowed", block);
-  const cost = unit.cost ?? 0;
+  const cost = opts.costOverride ?? unit.cost ?? 0;
   assertGold(warband, cost, `A ${unit.name}`);
 
   const hero: RosterHero = {
@@ -159,6 +165,8 @@ export interface RecruitHenchmenOptions {
   intoGroupId?: string;
   /** Veteran experience already hired from this post-battle pool. Defaults to 0. */
   poolUsed?: number;
+  /** Pay this for the recruits instead of the listed hire cost (veteran experience is still charged on top). */
+  costOverride?: number;
 }
 
 export interface RecruitHenchmenResult {
@@ -227,7 +235,7 @@ export function recruitHenchmen(
   }
   const poolRemaining = pool === null ? null : pool - poolUsed - veteranXp;
 
-  const hireCost = (unit.cost ?? 0) * size;
+  const hireCost = opts.costOverride ?? (unit.cost ?? 0) * size;
   const totalCost = hireCost + veteranCost;
   assertGold(warband, totalCost, `${size} ${unit.name}${veteranCost ? " with veteran experience" : ""}`);
 
@@ -366,6 +374,8 @@ function copyItems(items: RosterItem[]): RosterItem[] {
 export interface HireHiredSwordOptions {
   /** Display name; defaults to the entry name ("Dwarf Troll Slayer"). */
   name?: string;
+  /** Pay this instead of the listed hire fee (conditional fees; the UI records why). */
+  feeOverride?: number;
 }
 
 /** One custom item per line of the entry's Weapons/Armour (or Equipment) text. */
@@ -393,7 +403,7 @@ export function hireHiredSword(
   if (warband.hiredSwords.some((s) => s.hiredSwordId === hiredSwordId && s.status === "active")) {
     throw new RulesError(DUPLICATE_HIRED_SWORD, `The warband already has a ${entry.name}; you can only have one of each type of Hired Sword`);
   }
-  const cost = entry.hireCost.base;
+  const cost = opts.feeOverride ?? entry.hireCost.base;
   if (cost === null) {
     throw new RulesError(
       "recruitment.hiredSwordNotForGold",

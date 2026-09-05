@@ -422,6 +422,34 @@ Explained to Tom (2026-09-05): untouched advances leave the report unblocked (de
 not forced); report functions are security definer with their own permission checks (the
 bookkeeping columns are GM-only for direct updates).
 
+## Phase 12 decisions (2026-09-05)
+
+- **Roster import reads page text, not an API.** Relic & Ruin keeps its bearer token in the
+  browser and the walkthrough forbade reading it, so `/warbands/import` parses the text of the
+  printer-friendly roster page (own warbands) or the campaign's "View details" panel (others),
+  which is what a GM can copy by hand too. `src/features/importer/rosterText.ts` (parser) and
+  `rosterImport.ts` (name matching, payloads) are tested against all ten rosters of Tom's campaign
+  and the real battle-records CSV (`src/features/importer/fixtures/`, copy in
+  `reference/relic-and-ruin/`). Matching: warband and unit types by normalised name (plurals,
+  underscores, "The"), untyped henchman groups by stat line within one advance of a template,
+  items via the builder's alias table (unknown ones become custom items), skills / spells /
+  injuries / hired swords by name. Relic & Ruin lists Frenzy, Hardened and Horrible Scars as
+  injuries: they become flags. Advances already taken are counted from experience so none are owed
+  on import. The importer owns the warband; **`transfer_warband`** (owner or a campaign GM; the
+  owner-change trigger admits it only there) hands it over once the player has signed up.
+- **The battle-records importer knows the real export**: `match_id`, `match_created_at`,
+  `scenario`, `warband_name`, `won`, `hero_exp_gained` ("Name: 2 (Survived +1, Win +1); …" is
+  summed per warrior), `hero_deaths`, `notes`. Other players' hero names come out as slugs
+  ("cool-meadow") in that export; the summary lines keep them.
+- **Overrides carry a reason into the record.** `src/domain/override.ts` + `ui/OverrideField`:
+  a tick box, the figure to use, a required reason. Roster writes put the note in the audit reason
+  (`record_trade` gained `p_reason`; `useCommit` takes a reason), so the activity feed reads
+  "trading · Sword price overridden: 10 gc → 5 gc (GM ruling)". In the wizard the note becomes a
+  report `adjustment` (shown as "Adjusted"): exploration dice (Phase 11), a waived injury roll
+  ("No injury roll needed", counts as recovered), a different number of henchman injury dice.
+  Prices at the trading post, hero and henchman hire costs, hired-sword fees and upkeep all take
+  an override; experience already does through `xpExtras`.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

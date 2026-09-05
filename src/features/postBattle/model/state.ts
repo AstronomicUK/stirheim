@@ -100,6 +100,10 @@ export interface ReportDraft {
   swordInjuries: Record<string, number | null>
   /** Group id -> one D6 per model out of action. */
   groupInjuries: Record<string, (number | null)[]>
+  /** Hero or hired sword id -> reason no injury roll is made (counts as a full recovery); logged as an adjustment. */
+  injurySkips: Record<string, string>
+  /** Group id -> a different number of injury dice than models out of action, with the reason. */
+  groupInjuryDice: Record<string, DiceOverride>
   /** Subject id -> extra experience lines (scenario objectives and the like). */
   xpExtras: Record<string, XpExtra[]>
   /** advanceKey -> the dice and choices for an advance earned this battle. */
@@ -133,6 +137,8 @@ export function emptyDraft(): ReportDraft {
     heroInjuries: {},
     swordInjuries: {},
     groupInjuries: {},
+    injurySkips: {},
+    groupInjuryDice: {},
     xpExtras: {},
     advances: {},
     advanceModes: {},
@@ -250,12 +256,28 @@ export function resetHeroInjury(draft: ReportDraft, heroId: string): ReportDraft
   return { ...draft, heroInjuries }
 }
 
+/** No injury roll for this warrior (a skill, an item, a house rule): treated as a full recovery and logged. Null clears it. */
+export function setInjurySkip(draft: ReportDraft, warriorId: string, reason: string | null): ReportDraft {
+  const injurySkips = { ...draft.injurySkips }
+  if (reason === null) delete injurySkips[warriorId]
+  else injurySkips[warriorId] = reason
+  return { ...draft, injurySkips }
+}
+
+/** Roll a different number of dice for a group than models out of action; null goes back to the suggestion. */
+export function setGroupInjuryDice(draft: ReportDraft, groupId: string, override: DiceOverride | null): ReportDraft {
+  const groupInjuryDice = { ...draft.groupInjuryDice }
+  if (override === null) delete groupInjuryDice[groupId]
+  else groupInjuryDice[groupId] = { count: Math.max(0, Math.min(20, Math.trunc(override.count))), reason: override.reason }
+  return { ...draft, groupInjuryDice }
+}
+
 export function setSwordInjury(draft: ReportDraft, swordId: string, d6: number | null): ReportDraft {
   return { ...draft, swordInjuries: { ...draft.swordInjuries, [swordId]: d6 } }
 }
 
 export function setGroupInjuryRoll(draft: ReportDraft, groupId: string, index: number, d6: number | null): ReportDraft {
-  const count = draft.groupsOut[groupId] ?? 0
+  const count = draft.groupInjuryDice[groupId]?.count ?? draft.groupsOut[groupId] ?? 0
   if (index < 0 || index >= count) return draft
   const rolls = [...(draft.groupInjuries[groupId] ?? [])]
   while (rolls.length < count) rolls.push(null)

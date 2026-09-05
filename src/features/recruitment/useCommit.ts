@@ -22,13 +22,13 @@ export function useCommit(detail: WarbandDetail) {
    * Run `resolve`, pick the warband out of its value, persist the diff. Returns the resolution on
    * success and null (with `error` set) otherwise.
    */
-  async function commit<T>(resolve: () => Resolution<T>, warbandOf: (value: T) => RosterWarband): Promise<Committed<T> | null> {
+  async function commit<T>(resolve: () => Resolution<T>, warbandOf: (value: T) => RosterWarband, reason = 'recruitment'): Promise<Committed<T> | null> {
     setError(null)
     try {
       const { value, events } = resolve()
       const rows = { warband: detail.warband, heroes: detail.heroes, groups: detail.groups, items: detail.items }
       const changes = diffRoster(rows, warbandOf(value))
-      await update.mutateAsync({ reason: 'recruitment', changes })
+      await update.mutateAsync({ reason, changes })
       return { value, events }
     } catch (e) {
       setError(errorMessage(e, 'Could not update the roster.'))

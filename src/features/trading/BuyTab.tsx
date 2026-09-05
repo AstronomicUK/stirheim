@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { SHOP_ITEMS } from '../../rules/data/items'
 import { RARE_ROLL } from '../../rules/data/campaign/trading'
 import { parseDice } from '../../rules/resolve/dice'
+import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
 import { buyItem, itemPrice, rareSearch } from '../../rules/resolve/trading'
 import type { Item } from '../../rules/types/items'
-import { Button, DieField, NumberField, Notice, SelectField, Sheet, Stepper, TextField } from '../../ui'
+import { Button, DieField, NumberField, Notice, SelectField, Sheet, Stepper, TextField, OverrideField } from '../../ui'
 import { Tag } from '../roster/view/bits'
 import { availabilityLabel, diceTotal, eligibleSearchers, groupCatalogue, locationOptions, parseLocationKey, priceLine } from './helpers'
 import type { TradeContext } from './useTrade'
@@ -80,8 +81,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
 
   const [faces, setFaces] = useState<(number | null)[]>(() => (priceSpec ? Array.from({ length: priceSpec.count }, () => null) : []))
   const [manualPrice, setManualPrice] = useState<number | null>(null)
-  const [override, setOverride] = useState<number | null>(null)
-  const [editingPrice, setEditingPrice] = useState(false)
+  const [priceOverride, setPriceOverride] = useState<Override | null>(null)
   const [searcherId, setSearcherId] = useState(searchers[0]?.id ?? '')
   const [searchFaces, setSearchFaces] = useState<(number | null)[]>([null, null])
   const [destinationKey, setDestinationKey] = useState('stash')
@@ -101,7 +101,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const rolledTotal = priceSpec ? diceTotal(priceSpec, faces) : undefined
   const quote = item.price.base === null ? null : priceSpec ? (rolledTotal === null ? null : itemPrice(item, houseRules, rolledTotal)) : itemPrice(item, houseRules)
   const computed = quote?.total ?? null
-  const unitPrice = editingPrice ? override : (computed ?? manualPrice)
+  const unitPrice = priceOverride !== null ? (overrideReady(priceOverride) ? priceOverride.amount : null) : (computed ?? manualPrice)
   const priceReady = unitPrice !== null && Number.isInteger(unitPrice) && unitPrice >= 0
   const total = priceReady ? unitPrice * quantity : null
   const affordable = total !== null && total <= roster.gold
@@ -124,6 +124,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
     if (unitPrice === null) return
     const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity).value, {
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
+      reason: overrideReady(priceOverride) && computed !== null ? reasonWith('trading', overrideNote(`${item.name} price`, `${computed} gc`, `${priceOverride.amount} gc`, priceOverride.reason)) : undefined,
     })
     if (ok) onClose()
   }
@@ -245,28 +246,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
               ) : (
                 <p className="text-sm text-ink-dim">Roll the price dice to see the cost.</p>
               )}
-              {computed !== null ? (
-                editingPrice ? (
-                  <NumberField
-                    label="Price paid (gc each)"
-                    value={override}
-                    allowEmpty
-                    hint={`Listed ${computed} gc. Use this when the group agrees a different figure.`}
-                    onChange={setOverride}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className="self-start text-xs text-brass underline-offset-4 hover:underline"
-                    onClick={() => {
-                      setOverride(computed)
-                      setEditingPrice(true)
-                    }}
-                  >
-                    Adjust the price
-                  </button>
-                )
-              ) : null}
+              {computed !== null ? <OverrideField what="the cost" suggested={computed} value={priceOverride} onChange={setPriceOverride} /> : null}
             </section>
 
             <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">

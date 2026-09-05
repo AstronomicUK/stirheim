@@ -11,6 +11,8 @@ import type { CampaignHouseRules, RosterWarband } from '../../rules/types/roster
 export interface TradeOptions {
   wyrdstoneSold?: boolean
   heroesSearched?: string[]
+  /** Audit reason carrying an override note ('trading · Price overridden: …'). */
+  reason?: string
 }
 
 export interface PhaseInfo {
@@ -57,6 +59,7 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
         changes,
         wyrdstoneSold: opts.wyrdstoneSold ?? false,
         heroesSearched: opts.heroesSearched ?? [],
+        reason: opts.reason,
       })
       return true
     } catch (e) {

@@ -13,6 +13,8 @@ import {
   setExplorationRolls,
   setExplorationSubRoll,
   setExplorationDiceOverride,
+  setInjurySkip,
+  setGroupInjuryDice,
   setGroupInjuryRoll,
   setGroupOut,
   setHeroInjuryCount,
@@ -534,5 +536,37 @@ describe('suggested exploration dice', () => {
     // Setting the count back to the suggestion clears the override.
     expect(setExplorationDiceOverride(draft, null).exploration.diceOverride).toBeNull()
     expect(setExplorationDiceOverride(draft, { count: 40, reason: 'x' }).exploration.diceOverride?.count).toBe(12)
+  })
+})
+
+describe('injury overrides', () => {
+  it('waiving a hero roll counts as a recovery, needs a reason, and is logged as an adjustment', () => {
+    let draft = setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true)
+    let d = deriveReport(draft, ctx())
+    expect(d.injuries.complete).toBe(false)
+    draft = setInjurySkip(draft, 'captain', '')
+    d = deriveReport(draft, ctx())
+    expect(d.injuries.heroes[0].resolution.outcome).toBe('recovered')
+    expect(d.problems.injuries).toContain('Say why a warrior is not rolling for injury.')
+    draft = setInjurySkip(draft, 'captain', 'Lucky charm took the blow')
+    d = derive(draft)
+    expect(d.problems.injuries).toEqual([])
+    expect(d.report?.adjustments).toEqual([{ label: 'Captain: injury roll'.replace('Captain', 'captain'), suggested: 'roll', used: 'no roll (recovered)', reason: 'Lucky charm took the blow' }])
+    expect(d.report?.injuries[0]).toMatchObject({ subjectId: 'captain', outcome: 'recovered', rolls: [] })
+    expect(setInjurySkip(draft, 'captain', null).injurySkips).toEqual({})
+  })
+
+  it('a group may roll a different number of dice than models out of action, with a reason', () => {
+    let draft = setGroupOut(setResult(emptyDraft(), 'won'), 'watch', 2, 3)
+    draft = setGroupInjuryDice(draft, 'watch', { count: 1, reason: '' })
+    let d = deriveReport(draft, ctx())
+    expect(d.injuries.groups[0].dice).toBe(1)
+    expect(d.problems.injuries).toContain('Say why a group rolls a different number of injury dice.')
+    draft = setGroupInjuryDice(draft, 'watch', { count: 1, reason: 'One stood back up' })
+    draft = setGroupInjuryRoll(draft, 'watch', 0, 5)
+    d = derive(draft)
+    expect(d.injuries.groups[0].resolution.complete).toBe(true)
+    expect(d.report?.adjustments).toEqual([{ label: 'watch: injury dice', suggested: '2', used: '1', reason: 'One stood back up' }])
+    expect(d.report?.ooa[0]).toMatchObject({ subjectId: 'watch', count: 2 })
   })
 })

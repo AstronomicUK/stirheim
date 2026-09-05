@@ -16,7 +16,7 @@
 // - Wyrdstone and gold picked up during the battle itself (scenario objectives, loot) are added
 //   to the treasury alongside the exploration finds; they appear in the notes for the record.
 
-import type { BattleReport, HenchmanInjuryLine, HeroInjuryLine, ItemRow, OoaLine, ReportApplied, XpLine } from '../../../domain'
+import type { BattleReport, HenchmanInjuryLine, HeroInjuryLine, ItemRow, OoaLine, ReportAdjustment, ReportApplied, XpLine } from '../../../domain'
 import { REPORT_VERSION } from '../../../domain'
 import { HENCHMAN_XP_THRESHOLDS, HERO_XP_THRESHOLDS } from '../../../rules/data/campaign/experience'
 import type { WarbandTemplate } from '../../../rules/types'
@@ -55,7 +55,8 @@ export interface InjurySummary {
 export interface InjuriesDerived {
   heroes: { hero: RosterHero; resolution: HeroInjuryResolution }[]
   hiredSwords: { sword: RosterHiredSword; resolution: HiredSwordInjuryResolution }[]
-  groups: { group: RosterHenchmanGroup; outOfAction: number; resolution: GroupInjuryResolution }[]
+  /** `dice` is the number rolled: models out of action unless the player overrode it. */
+  groups: { group: RosterHenchmanGroup; outOfAction: number; dice: number; resolution: GroupInjuryResolution }[]
   summary: InjurySummary
   complete: boolean
 }
@@ -116,19 +117,45 @@ function heroOoaIds(draft: ReportDraft): Set<string> {
   return new Set(draft.heroesOut)
 }
 
+/** A warrior whose injury roll was waived: a full recovery with no dice, the reason on the line. */
+function skippedHero(hero: RosterHero, reason: string): HeroInjuryResolution {
+  return {
+    hero,
+    steps: [],
+    pending: { kind: 'done' },
+    outcome: 'recovered',
+    line: { subjectType: 'hero', subjectId: hero.id, subjectName: hero.name, rolls: [], injuryCode: null, injuryName: 'No roll', effect: `No injury roll: ${reason}`, outcome: 'recovered' },
+  }
+}
+
+function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjuryResolution {
+  return {
+    sword,
+    outcome: 'recovered',
+    line: { subjectType: 'hiredSword', subjectId: sword.id, subjectName: sword.name, rolls: [], injuryCode: null, injuryName: 'No roll', effect: `No injury roll: ${reason}`, outcome: 'recovered' },
+  }
+}
+
 export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string): InjuriesDerived {
   const out = heroOoaIds(draft)
   const heroes = participants.heroes
     .filter((h) => out.has(h.id))
-    .map((hero) => ({ hero, resolution: resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId) }))
+    .map((hero) => {
+      const skip = draft.injurySkips[hero.id]
+      return { hero, resolution: skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId) }
+    })
   const hiredSwords = participants.hiredSwords
     .filter((s) => out.has(s.id))
-    .map((sword) => ({ sword, resolution: resolveHiredSwordInjury(sword, draft.swordInjuries[sword.id] ?? null) }))
+    .map((sword) => {
+      const skip = draft.injurySkips[sword.id]
+      return { sword, resolution: skip !== undefined ? skippedSword(sword, skip) : resolveHiredSwordInjury(sword, draft.swordInjuries[sword.id] ?? null) }
+    })
   const groups = participants.groups
     .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0)
     .map((group) => {
       const outOfAction = Math.min(group.size, draft.groupsOut[group.id] ?? 0)
-      return { group, outOfAction, resolution: resolveGroupInjuries(group, outOfAction, draft.groupInjuries[group.id] ?? []) }
+      const dice = draft.groupInjuryDice[group.id]?.count ?? outOfAction
+      return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
     })
 
   const summary: InjurySummary = { dead: 0, captured: 0, retired: 0, injured: 0, recovered: 0, henchmenDead: 0, pending: 0 }
@@ -189,12 +216,32 @@ export function veteranPoolOf(draft: ReportDraft): number | null {
   return isDie(a, 6) && isDie(b, 6) ? a + b : null
 }
 
+/** Every place the player overrode what the wizard suggested, for the report. */
+export function reportAdjustments(draft: ReportDraft, participants: Participants, injuries: InjuriesDerived, exploration: ExplorationDerived): ReportAdjustment[] {
+  const out: ReportAdjustment[] = []
+  const nameOf = (id: string) => participants.heroes.find((h) => h.id === id)?.name ?? participants.hiredSwords.find((s) => s.id === id)?.name ?? id
+  for (const [id, reason] of Object.entries(draft.injurySkips)) {
+    if (!draft.heroesOut.includes(id)) continue
+    out.push({ label: `${nameOf(id)}: injury roll`, suggested: 'roll', used: 'no roll (recovered)', reason: reason.trim() })
+  }
+  for (const g of injuries.groups) {
+    const o = draft.groupInjuryDice[g.group.id]
+    if (o && o.count !== g.outOfAction) out.push({ label: `${g.group.name}: injury dice`, suggested: String(g.outOfAction), used: String(o.count), reason: o.reason.trim() })
+  }
+  if (exploration.adjustment) out.push(exploration.adjustment)
+  return out
+}
+
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
   if (!injuries.complete) {
     const n = injuries.summary.pending
     problems.injuries.push(`${n} ${n === 1 ? 'warrior still needs' : 'warriors still need'} their injury dice.`)
+  }
+  if (Object.entries(draft.injurySkips).some(([id, reason]) => draft.heroesOut.includes(id) && reason.trim() === '')) problems.injuries.push('Say why a warrior is not rolling for injury.')
+  if (injuries.groups.some((g) => draft.groupInjuryDice[g.group.id] && draft.groupInjuryDice[g.group.id].count !== g.outOfAction && draft.groupInjuryDice[g.group.id].reason.trim() === '')) {
+    problems.injuries.push('Say why a group rolls a different number of injury dice.')
   }
   problems.exploration.push(...exploration.problems)
   const [a, b] = draft.veteranPool
@@ -425,7 +472,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
       notes: battleNotes(draft),
-      adjustments: exploration.adjustment ? [exploration.adjustment] : [],
+      adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }
   }

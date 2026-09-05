@@ -698,7 +698,48 @@ campaign"); the roster validator flags a banned item already on a roster. Nurgle
 expected entry and is commonly banned. Shipped with a short default list to pick from and a free-text
 search over the catalogue.
 
-Pending input: results of Tom's weapons and armour audit.
+From the weapons and armour audit (`docs/WEAPONS-ARMOUR-RULES-GAPS.md`, 2026-09-05), proposed for
+Phase 16, mechanisms first:
+
+Tier 1 (fixes and broad mechanisms):
+- Section C data errors: Swivel Gun engine weapon (link the three ammunition profiles); -2 save on the
+  Ostlander double-barrelled rifle and pistol; Cooking Pot Helmet as a 5+ unmodifiable stun save,
+  Master Chef only, not stacking with Thick Skull; Dark Elf Blade as a +20 gc upgrade keeping the base
+  weapon's rules, +1 on the critical chart; Sons of Hashut obsidian keeping the base weapon's rules;
+  Lance only when mounted on a warhorse; Ogre Club -1 save only two-handed; Toughened Leathers never
+  with a shield and unsellable; Mechanical Suit as Chaos armour; equipment-ban matching by weapon data
+  (thrown flag, heavy-armour class) rather than id substrings; Tarot "disaster" makes the hero miss the
+  next game; the 34 unresolved equipment-list names get catalogue and engine entries (Katana aliased
+  to Dragon Sword).
+- A1 who may buy or carry: miscellaneous equipment Heroes only (Rain Coat, Winter Furs excepted); the
+  two hand weapons + dagger and two missile weapons cap (brace = one); arrows need a bow; one-per-
+  warband / once-per-campaign items; creation-only items; race restrictions on Obsidian, Bugman's Ale,
+  Garlic, Blessed Water, Tears of Shallaya, Halfling Cookbook; fused Chaos Armour and Mechanical Suit.
+  Shown in the shop and on the roster as warnings with the override-with-reason pattern.
+- A2 conditional prices and rarities per warband or unit (Blowpipe, Black Lotus, Dark Venom, Holy
+  Relic, Blessed Water, Mad Cap Mushrooms, Healing Herbs, Amulet of the Moon, Lizardmen light armour,
+  Gunnery School black powder, Chaos Armour by kills and experience, Rhinox by Strength, Familiar paid
+  on failure, Wolfcloak and Bearcloak Strength roll, Opulent Coach and Trade Wagon rare-roll bonuses).
+- A6 items that grant traits or saves the calculator already knows: Frenzy, Hatred, Immune to Poison,
+  Sea Dragon Cloak and Wolfcloak saves, Amulet of the Moon, Elven and Forest Cloaks, Lucky Charm (from
+  the carried-over list), Peg Leg, Hook Hand as a dagger, Enchanted Skins against magic, Holy Relic /
+  Jolly Roger / Banners / War Horns for Leadership, Bugman's Ale and Elven Wine against fear.
+- A4 pre-battle item toggles on the attack calculator (coated or drunk this battle): Dark Venom, Black
+  Lotus, Spider Spittle, Manticore Spoor, Reptile Venom, Poisoned Weapon, Hunting Arrows, Asp Arrows,
+  Superior Blackpowder, Mandrake Root, Crimson Shade, Mad Cap Mushrooms, Hardtack, with A3 consumables
+  used up when marked.
+- A10 multi-shot choice (single shot for repeaters, the Sling's double shot at half range) and A12
+  the weapon tags the engine never reads (Cathayan Longsword +1 WS, Chain Sticks first-turn attacks,
+  Starblade 4+ parry, Sigmarite Warhammer holy bonus, Ladle saves, Whipcrack when charged, Quarter
+  Staff unarmed attack, Misericordia versus knocked down, Ball and Chain -1 to be hit).
+- A13 selling rules (Toughened Leathers unsellable).
+- The bans house rule above hides banned items and spells everywhere.
+
+Tier 2 (parked): A7 mounts and mounted combat, A8 animals bought as equipment fighting as warriors, A9
+black powder cadence, misfires, blast and scatter, pistols in hand-to-hand, A11 strike order and
+Initiative modifiers, A5 post-battle item consequences (Crimson Shade addiction, Mandrake Root,
+Cathayan Silk, Lamp of the Djinn, Monkey's Paw, Treasure Map, captures), A14 spell and prayer items
+(needs the spell flow), remaining consumables.
 
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 

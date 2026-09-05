@@ -181,6 +181,20 @@ export function setDraftGroupSize(draft: WarbandDraft, id: string, size: number)
   return { ...draft, groups: draft.groups.map((g) => (g.id === id ? { ...g, size } : g)) };
 }
 
+/**
+ * Give a just-added unit the dagger its equipment list offers free ("Dagger ... 1st free"). Does
+ * nothing when the list has no such line or the unit already carries something, so calling it
+ * twice, or on a unit the player has already kitted out, changes nothing.
+ */
+export function withFreeDagger(draft: WarbandDraft, template: WarbandTemplate, subject: DraftSubject): WarbandDraft {
+  const unitTemplateId = subject.kind === "hero" ? requireHero(draft, subject.id).unitTemplateId : requireGroup(draft, subject.id).unitTemplateId;
+  if (readEquipment(draft, subject).length > 0) return draft;
+  const option = equipmentOptionsFor(template, unitTemplateId).find(
+    (candidate) => candidate.cost.kind === "firstFree" && (candidate.item?.id === "dagger" || /^dagger$/i.test(candidate.name)),
+  );
+  return option ? addDraftEquipment(draft, subject, option, 1) : draft;
+}
+
 export function removeDraftGroup(draft: WarbandDraft, id: string): WarbandDraft {
   requireGroup(draft, id);
   return { ...draft, groups: draft.groups.filter((g) => g.id !== id) };

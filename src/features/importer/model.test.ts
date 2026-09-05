@@ -35,7 +35,7 @@ describe('detectMapping', () => {
     })
   })
 
-  it('is case- and punctuation-insensitive and takes likely Relic & Ruin names', () => {
+  it('is case- and punctuation-insensitive and takes likely the old tracker names', () => {
     const mapping = detectMapping(['Battle ID', 'Recorded', 'Scenario', 'Warband Name', 'Owner', 'Outcome', 'Experience', 'Dead', 'Comments'])
     expect(mapping).toEqual({
       matchId: 'Battle ID',
@@ -320,7 +320,7 @@ describe('buildPayload', () => {
   })
 })
 
-describe('the real Relic & Ruin export (captured 2026-09-05)', () => {
+describe('the real the old tracker export (captured 2026-09-05)', () => {
   it('maps its headers and builds eight two-warband battles', async () => {
     const { readFileSync } = await import('node:fs')
     const { csvToRecords } = await import('../../domain/csv')

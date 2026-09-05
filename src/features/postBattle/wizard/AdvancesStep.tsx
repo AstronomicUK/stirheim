@@ -1,4 +1,4 @@
-// Advances earned this battle, rolled right here (Relic & Ruin makes you come back for them).
+// Advances earned this battle, rolled right here rather than in a separate visit afterwards.
 // Each card runs the same roll / choose flow as the Bestow Advancements screen. A skill or spell
 // choice can be left for later ("Pick later"), or the whole advance can wait.
 

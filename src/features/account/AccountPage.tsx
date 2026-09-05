@@ -105,7 +105,7 @@ export function AccountPage() {
         <Link to="/help" className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 no-underline hover:bg-surface-high">
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-ink">Help</span>
-            <span className="text-sm text-ink-dim">The field manual: warbands, campaigns, battles and moving over from Relic & Ruin.</span>
+            <span className="text-sm text-ink-dim">The field manual: warbands, campaigns, battles and moving over from another tracker.</span>
           </span>
           <span aria-hidden className="shrink-0 text-ink-dim">
             ›

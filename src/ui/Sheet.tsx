@@ -66,7 +66,7 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
             Close
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 pb-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">{children}</div>
         {footer ? (
           <div className="border-t border-border bg-surface-low px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">{footer}</div>
         ) : null}

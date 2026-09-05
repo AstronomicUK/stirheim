@@ -13,7 +13,7 @@ const SECTIONS = [
   { id: 'post-battle', title: 'Post-battle report' },
   { id: 'between-battles', title: 'Between battles' },
   { id: 'records', title: 'Battle records and CSV export' },
-  { id: 'from-relic-and-ruin', title: 'From Relic & Ruin' },
+  { id: 'moving-over', title: 'Moving from another tracker' },
   { id: 'house-rules', title: "House rules of Tom's group" },
 ] as const
 
@@ -105,7 +105,7 @@ export function HelpPage() {
         </P>
         <P>
           <B>App calculates or players calculate.</B> Whoever starts the game picks how combat is scored: with the attack calculator, or tally sheets only, the
-          Relic &amp; Ruin way. The campaign settings set the default and can lock it so only the GM changes it.
+          tally-sheet way. The campaign settings set the default and can lock it so only the GM changes it.
         </P>
         <P>
           <B>Battle over.</B> When the game ends, tap <em>Battle over</em>. The match moves to awaiting reports and each player files their own post-battle
@@ -173,21 +173,21 @@ export function HelpPage() {
         </P>
       </Topic>
 
-      <Topic id="from-relic-and-ruin" title="From Relic & Ruin">
+      <Topic id="moving-over" title="Moving from another tracker">
         <P>
-          <B>Rosters.</B> Open the roster's printer-friendly page on Relic &amp; Ruin (or, as GM, another player's warband from the campaign's View details
+          <B>Rosters.</B> Open the roster's printer-friendly page in the old tracker (or, as GM, another player's warband from its campaign details
           panel), select all the text, copy it, and paste it into <Go to="/warbands/import">Import a roster</Go>. The app reads the treasury, every hero,
           henchman group and hired sword with their experience, characteristics, kit, skills, spells and injuries, and shows anything it could not match for
           you to fix before it creates the warband. The importer owns it; <em>Hand over to another player</em> on the roster page passes it on once its player
           has signed up.
         </P>
-        <P>Moving a running campaign over is a two-part job. Nothing is copied automatically from Relic & Ruin's rosters, so each player does their own.</P>
+        <P>Moving a running campaign over is a two-part job. Nothing is copied automatically from the old tracker, so each player does their own roster.</P>
         <Steps
           items={[
             'Rebuild the roster with the builder as if it were new: same warband type, same warriors and groups, roughly the same kit. Do not worry about gold at this stage.',
             'Open the manual editor on the roster and set what the builder could not: each warrior’s experience, injuries and stat changes, the treasury, wyrdstone, and any items bought since. Save; the edit is logged as manual so everyone knows where the history starts.',
             'Join the group’s campaign with the rebuilt warband using the invite code.',
-            'The GM exports Battle Records from Relic & Ruin as CSV and imports them from the campaign page (Import battle records). Past matches then appear in the records with the right winners and dates.',
+            'The GM exports the battle records from the old tracker as CSV and imports them from the campaign page (Import battle records). Past matches then appear in the records with the right winners and dates.',
           ]}
         />
         <P>Check the roster against the old sheet once, especially skills and experience, before the first new battle. After that the ledger keeps score.</P>

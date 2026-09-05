@@ -28,7 +28,7 @@ describe('homeStage', () => {
 
   it('shows the getting-started checklist to someone with no warbands', () => {
     expect(homeStage({ warbands: 0, campaigns: 0 })).toBe('new_user')
-    expect(homeStage({ warbands: 0, campaigns: 1 })).toBe('new_user')
+    expect(homeStage({ warbands: 0, campaigns: 1 })).toBe('settled')
   })
 
   it('nudges a player with warbands but no campaign', () => {

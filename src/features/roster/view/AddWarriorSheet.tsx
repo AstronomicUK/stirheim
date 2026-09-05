@@ -55,7 +55,7 @@ export function AddWarriorSheet({ open, onClose, template, onAdd }: AddWarriorSh
               <ul className="divide-y divide-border">{template.heroTemplates.map((u) => unitButton(u, 'hero'))}</ul>
             </section>
             <section>
-              <h3 className="text-xs uppercase tracking-[0.25em] text-ink-dim">Henchmen</h3>
+              <h3 className="text-xs uppercase tracking-[0.25em] text-ink-dim">Henchman groups</h3>
               <ul className="divide-y divide-border">{template.henchmanTemplates.map((u) => unitButton(u, 'group'))}</ul>
             </section>
           </>

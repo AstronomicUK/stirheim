@@ -139,16 +139,17 @@ export interface CombatModeOption {
   description: string
 }
 
+// Same order as DICE_POLICY_OPTIONS (players first, app second) so the two choices read alike.
 export const COMBAT_MODE_OPTIONS: CombatModeOption[] = [
+  {
+    value: 'players',
+    label: 'Players calculate',
+    description: 'Tally sheets only: enemies out, own casualties, loot and notes. Everyone works the combat out at the table.',
+  },
   {
     value: 'app',
     label: 'App calculates',
     description: 'The battle sheet offers the attack calculator: odds for any fight, dice walked through step by step, kills logged to the tally.',
-  },
-  {
-    value: 'players',
-    label: 'Players calculate',
-    description: 'Tally sheets only, as in Relic & Ruin: enemies out, own casualties, loot and notes. Everyone works the combat out at the table.',
   },
 ]
 

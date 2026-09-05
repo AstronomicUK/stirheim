@@ -1,4 +1,4 @@
-// Import battle records from another tracker (Relic & Ruin's "Export CSV" on its Battle Records
+// Import battle records from another tracker (the old tracker's "Export CSV" on its Battle Records
 // page). GM only. Four steps: load the file, map its columns to our fields, match the warband and
 // scenario names to this campaign, preview and import. Everything up to the last button is pure
 // (model.ts); the import itself is one RPC (src/api/importer.ts) and writes matches and reports
@@ -176,8 +176,8 @@ function ImportWizard({ detail }: { detail: CampaignDetail }) {
 
       {step === 1 ? (
         <>
-          <Notice tone="info" title="From Relic & Ruin">
-            Open the campaign's Battle Records page there and tap <strong>Export CSV</strong>. Pick that file below, or open it and paste its contents. Nothing is saved until
+          <Notice tone="info" title="From another tracker">
+            Open the campaign's battle records page there and export them as CSV. Pick that file below, or open it and paste its contents. Nothing is saved until
             the last step.
           </Notice>
           <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-md border border-border bg-surface-high px-4 text-base font-medium text-ink hover:border-ink-dim">

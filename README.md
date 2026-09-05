@@ -1,12 +1,11 @@
 # Stirheim - Campaign Ledger
 
 Stirheim is a warband roster builder, campaign manager and post-battle helper for Mordheim,
-modelled on the workflows of Relic & Ruin (relicandruin.net) and built on the rules data and
-combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
+built on the rules data and combat engine from the sibling `mordheim-simulator` project. Named after the River Stir that
 flows through Mordheim.
 
-Status (2026-09-05): **Phase 11 built: combat mode per game, tappable kit, kite shield / pavise / gromril rules, calculator carry-over, advances in the wizard with "Pick later", GM approval and amendment of reports with a change log, suggested dice. Phase 12 built: Relic & Ruin roster import and warband hand-over, overrides with logged reasons wherever the app suggests a figure, and the shared combat log with revert.** Live at
-https://stirheim.netlify.app (Netlify, auto-deploys from `main`). See `docs/FRAMEWORK.md` for the full plan and
+Status (2026-09-05): **Phase 11 built: combat mode per game, tappable kit, kite shield / pavise / gromril rules, calculator carry-over, advances in the wizard with "Pick later", GM approval and amendment of reports with a change log, suggested dice. Phase 12 built: roster import from other trackers and warband hand-over, overrides with logged reasons wherever the app suggests a figure, and the shared combat log with revert.** Live at
+https://stirheim.netlify.app (Netlify; releases are deployed from a local build, automatic builds are off). See `docs/FRAMEWORK.md` for the full plan and
 `docs/PLANNING.md` for every scoping decision.
 
 ## Development
@@ -96,5 +95,5 @@ reference/
 
 - Rules text is from mordheimer.net, a fan compilation of Games Workshop material. Fine for a
   private group tool; not for commercial redistribution.
-- Relic & Ruin was studied for its workflows and data model only. No text, artwork or CSS from
-  that site is used here.
+- Other campaign trackers were looked at for their workflows only. No text, artwork or CSS from
+  any of them is used here.

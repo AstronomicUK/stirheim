@@ -1,4 +1,4 @@
-// From a parsed Relic & Ruin roster to a Stirheim warband: match the warband type, each unit
+// From a parsed the old tracker roster to a Stirheim warband: match the warband type, each unit
 // type, item, skill, spell, injury and hired sword by name, report what did not match so the GM
 // can fix it on screen, and build the create_warband payload plus the follow-up roster changes
 // (skills, spells, injuries, flags, hired swords, treasury) that create_warband does not take.
@@ -109,7 +109,7 @@ export function matchSkillOrSpell(name: string): { kind: 'skill' | 'spell'; id: 
   return null
 }
 
-/** Relic & Ruin lists some injury-chart outcomes as flags rather than injuries. */
+/** the old tracker lists some injury-chart outcomes as flags rather than injuries. */
 const FLAG_INJURIES: Record<string, keyof WarriorFlags> = { frenzy: 'frenzy', hardened: 'immuneToFear', 'horrible scars': 'causesFear' }
 
 export function matchInjury(name: string): { injury: AppliedInjury | null; flag: keyof WarriorFlags | null } {

@@ -162,7 +162,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Section>
       ) : null}
 
-      <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
+      <Section title="Henchman groups" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((g) => (
           <GroupCard key={g.id} group={g} equipment={byHolder.get(g.id) ?? []} template={template} />

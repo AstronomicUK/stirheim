@@ -1,4 +1,4 @@
-// RFC 4180 CSV reader for files we did not write (the Relic & Ruin Battle Records export, or
+// RFC 4180 CSV reader for files we did not write (the the old tracker Battle Records export, or
 // anything else a GM pastes in). Tolerant on purpose: LF or CRLF line ends, a trailing newline,
 // a UTF-8 byte-order mark, quoted fields with doubled quotes and embedded line breaks, and ragged
 // rows (short rows are padded, long rows keep their extra cells). The writer for our own export

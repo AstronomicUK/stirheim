@@ -2,7 +2,7 @@
 // from header names, correctable by the GM), how rows become matches, and how names in the file
 // are matched to the campaign's warbands and the scenario library. No React, no network.
 //
-// We have no sample of the Relic & Ruin export yet, so this handles two shapes:
+// We have no sample of the the old tracker export yet, so this handles two shapes:
 //   * one row per warband report, grouped into matches by a match id column or, failing that,
 //     by date + scenario (a warband appearing twice in a group starts a new match);
 //   * one row per match, when a second-warband ("opponent") column is mapped: each row is a
@@ -46,7 +46,7 @@ export const SYNONYMS: Record<TargetField, string[]> = {
   player: ['player', 'playername', 'owner', 'user', 'username'],
   result: ['result', 'outcome', 'victory', 'won', 'win', 'winlose'],
   winner: ['winner', 'victor', 'winningwarband'],
-  // Relic & Ruin's export (reference/relic-and-ruin/battle-records-2026-09-05.csv) has hero_exp_gained
+  // the old tracker's export (reference/relic-and-ruin/battle-records-2026-09-05.csv) has hero_exp_gained
   // as "Name: 2 (Survived +1, Win +1); Name: 1 (...)" and hero_deaths / henchmen_deaths as "group 2: 1".
   xp: ['xp', 'experience', 'xpgained', 'experiencegained', 'exp', 'xpearned', 'totalxp', 'heroexpgained', 'expgained'],
   casualties: ['dead', 'casualties', 'ooa', 'outofaction', 'deaths', 'killed', 'casualtiesdead', 'owncasualties', 'ownoutofaction', 'herodeaths'],
@@ -138,7 +138,7 @@ export function parseResult(text: string): ResultValue | null {
 
 /**
  * The count in a cell: "+6 XP" → 6, "2 dead" → 2. A per-warrior breakdown ("Skritch: 2 (Survived
- * +1, Win +1); Verminkin: 1 (Survived +1)", Relic & Ruin's export) adds up the number after each
+ * +1, Win +1); Verminkin: 1 (Survived +1)", the old tracker's export) adds up the number after each
  * name. Null when there is no number at all.
  */
 export function parseCount(text: string): number | null {

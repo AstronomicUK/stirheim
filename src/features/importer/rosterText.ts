@@ -1,4 +1,4 @@
-// Reads a Relic & Ruin roster from the text of its pages: the printer-friendly roster page
+// Reads a the old tracker roster from the text of its pages: the printer-friendly roster page
 // (`/warbands/{id}/print`, "Exp 22", "1 warriors", items joined with " · ") or the campaign's
 // "View details" panel for another player's warband ("EXP" then the number on its own line,
 // "1 WARRIORS", one item per line). Pure text parsing, no rules knowledge: ./rosterImport.ts maps

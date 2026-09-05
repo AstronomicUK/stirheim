@@ -1,4 +1,4 @@
-// Bringing a roster over from Relic & Ruin: paste the printer-friendly page's text, check the
+// Bringing a roster over from the old tracker: paste the printer-friendly page's text, check the
 // review, create the warband. Uses the smallest captured roster from Tom's campaign.
 
 import { readFileSync } from 'node:fs'
@@ -7,7 +7,7 @@ import { GM, UUID_RE, signIn } from './fixtures'
 
 const ROSTER = readFileSync(new URL('../src/features/importer/fixtures/relic-argent.txt', import.meta.url), 'utf8')
 
-test('imports a Relic & Ruin roster from pasted text', async ({ page }) => {
+test('imports a the old tracker roster from pasted text', async ({ page }) => {
   await signIn(page, GM.email)
   await page.goto('/warbands/import')
   await expect(page.getByRole('heading', { name: 'Import a roster' })).toBeVisible()

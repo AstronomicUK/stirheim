@@ -5,6 +5,7 @@ import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTempl
 import {
   addDraftGroup,
   addDraftHero,
+  withFreeDagger,
   draftCosts,
   draftToCreatePayload,
   draftToRosterWarband,
@@ -176,7 +177,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-headline text-xl font-semibold text-ink">Henchmen</h2>
+          <h2 className="font-headline text-xl font-semibold text-ink">Henchman groups</h2>
           <span className="font-mono text-sm tabular-nums text-ink-dim">
             {draft.groups.reduce((sum, g) => sum + g.size, 0)} in {draft.groups.length} {draft.groups.length === 1 ? 'group' : 'groups'}
           </span>
@@ -235,7 +236,11 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
         template={template}
         draft={draft}
         onPick={(unit) => {
-          update((d) => (unit.role === 'hero' ? addDraftHero(d, template, unit.id, newDraftId()) : addDraftGroup(d, template, unit.id, newDraftId(), 1)))
+          update((d) => {
+            const id = newDraftId()
+            const added = unit.role === 'hero' ? addDraftHero(d, template, unit.id, id) : addDraftGroup(d, template, unit.id, id, 1)
+            return withFreeDagger(added, template, { kind: unit.role === 'hero' ? 'hero' : 'group', id })
+          })
           setAdding(null)
         }}
       />

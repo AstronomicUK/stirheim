@@ -13,13 +13,14 @@ export interface HomeCounts {
 }
 
 /**
- * A brand-new user gets the getting-started checklist; someone with warbands but no campaign gets a
- * nudge to join one; everyone else sees the plain list. Campaigns still loading count as "settled" so
+ * A brand-new user (no warband, no campaign) gets the getting-started checklist; someone with
+ * warbands but no campaign gets a nudge to join one; everyone else sees the plain list. Campaigns still loading count as "settled" so
  * the list never flashes a nudge that then disappears.
  */
 export function homeStage({ warbands, campaigns }: HomeCounts): HomeStage {
   if (warbands === null) return 'loading'
-  if (warbands === 0) return 'new_user'
+  // Someone who already runs or joined a campaign has got started; show them the (empty) list.
+  if (warbands === 0) return campaigns !== null && campaigns > 0 ? 'settled' : 'new_user'
   if (campaigns === 0) return 'no_campaign'
   return 'settled'
 }
@@ -48,7 +49,7 @@ export function gmChecklistSteps({ campaignId, memberCount, matchCount }: GmChec
     { id: 'house_rules', label: 'Check the house rules and starting gold', to: `${base}/settings` },
     { id: 'members', label: 'Players join with their warbands', to: null, done: memberCount > 0 },
     { id: 'first_match', label: 'Schedule the first battle', to: `${base}/matches/new`, done: matchCount > 0 },
-    { id: 'import', label: 'Bringing history from Relic & Ruin? Import the battle records', to: `${base}/import` },
+    { id: 'import', label: 'Bringing history from another tracker? Import the battle records', to: `${base}/import` },
   ]
 }
 

@@ -1,7 +1,7 @@
 // The campaign's battle records: every finished (or awaiting-reports, or cancelled) match as a
 // card with one line per warband, per-warband standings at the top, filters by warband and
 // result, and the table exported as CSV or copied as text. Mirrors the Battle Records table in
-// the Relic & Ruin walkthrough.
+// the the old tracker walkthrough.
 
 import { useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'

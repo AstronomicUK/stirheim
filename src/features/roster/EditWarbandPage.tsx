@@ -215,7 +215,7 @@ function Editor({ detail }: { detail: WarbandDetail }) {
         </Section>
       ) : null}
 
-      <Section title="Henchmen" aside={`${draft.groups.length} groups`}>
+      <Section title="Henchman groups" aside={`${draft.groups.length} groups`}>
         {draft.groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {draft.groups.map((g) => (
           <GroupEditor

@@ -1,4 +1,4 @@
-// Bring a roster over from Relic & Ruin: paste the text of its printer-friendly page (or of the
+// Bring a roster over from the old tracker: paste the text of its printer-friendly page (or of the
 // campaign's "View details" panel for another player's warband), check what the parser made of
 // it, fix anything it could not match, and create the warband. The importer owns it until it is
 // handed to its player from the roster page.
@@ -54,9 +54,9 @@ export function RosterImportPage() {
   return (
     <>
       <PageHeader
-        eyebrow="From Relic & Ruin"
+        eyebrow="From another tracker"
         title="Import a roster"
-        description="Paste the text of the roster's printer-friendly page, or of the campaign's View details panel for another player's warband. Nothing is saved until you press Create."
+        description="Paste the text of the roster's printer-friendly page from the old tracker, or of its campaign details panel for another player's warband. Nothing is saved until you press Create."
         aside={
           <Link to="/" className="text-sm text-brass underline-offset-4 hover:underline">
             Your warbands

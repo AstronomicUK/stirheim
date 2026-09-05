@@ -137,7 +137,7 @@ function PrintSheet({ detail }: { detail: WarbandDetail }) {
         </section>
 
         <section className="flex flex-col gap-1.5">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Henchmen</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide">Henchman groups</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>

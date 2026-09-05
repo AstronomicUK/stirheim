@@ -10,7 +10,7 @@ export const DICE_POLICIES = ["players_roll", "app_rolls"] as const;
 export const dicePolicySchema = z.enum(DICE_POLICIES);
 export type DicePolicy = z.infer<typeof dicePolicySchema>;
 
-/** How a game is scored: the app's calculator and shared log, or plain tally sheets (the Relic & Ruin way). */
+/** How a game is scored: the app's calculator and shared log, or plain tally sheets. */
 export const COMBAT_MODES = ["app", "players"] as const;
 export const combatModeSchema = z.enum(COMBAT_MODES);
 export type CombatMode = z.infer<typeof combatModeSchema>;

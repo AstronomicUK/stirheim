@@ -27,10 +27,10 @@ export function GettingStartedChecklist() {
               <InlineLink to="/campaigns/new">Start one as GM</InlineLink>
             </div>
           </Step>
-          <Step n={3} title="Coming from Relic & Ruin?">
-            Rebuild each roster with the builder, then set experience, injuries, gold and kit in the manual editor. The GM imports the battle records afterwards.
+          <Step n={3} title="Moving from another tracker?">
+            Paste each roster into the importer, or rebuild it with the builder and set experience, injuries, gold and kit in the manual editor. The GM imports the battle records afterwards.
             <div className="pt-1">
-              <InlineLink to="/help#from-relic-and-ruin">How to move a campaign over</InlineLink>
+              <InlineLink to="/help#moving-over">How to move a campaign over</InlineLink>
             </div>
           </Step>
         </ol>

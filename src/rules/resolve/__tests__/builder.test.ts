@@ -11,6 +11,7 @@ import {
   newWarbandDraft,
   removeDraftEquipment,
   removeDraftGroup,
+  withFreeDagger,
   removeDraftHero,
   renameDraftGroup,
   renameDraftHero,
@@ -421,5 +422,27 @@ describe("startingLevelUps", () => {
     expect(captain.levelUps).toBe(8); // thresholds 2,4,6,8,11,14,17,20
     const payload = draftToCreatePayload(draft, template);
     expect(payload.heroes[0]!.level_ups).toBe(8);
+  });
+});
+
+describe("withFreeDagger", () => {
+  it("hands a new hero and a new group the free dagger from their list, once", () => {
+    let d = newWarbandDraft(REIKLAND, "Daggers", "captain");
+    d = addDraftHero(d, REIKLAND, CHAMPIONS, "champ1");
+    d = addDraftGroup(d, REIKLAND, WARRIORS, "lads", 3);
+    d = withFreeDagger(d, REIKLAND, hero("champ1"));
+    d = withFreeDagger(d, REIKLAND, { kind: "group", id: "lads" });
+    expect(d.heroes.find((h) => h.id === "champ1")?.equipment).toEqual([expect.objectContaining({ itemId: "dagger", quantity: 1 })]);
+    expect(d.groups[0].equipment).toEqual([expect.objectContaining({ itemId: "dagger", quantity: 1 })]);
+    // The free dagger costs nothing; a second call adds nothing.
+    const again = withFreeDagger(d, REIKLAND, hero("champ1"));
+    expect(again).toBe(d);
+    expect(draftCosts(d, REIKLAND).equipment).toBe(0);
+  });
+
+  it("leaves a unit alone when it already carries something", () => {
+    let d = newWarbandDraft(REIKLAND, "Daggers", "captain");
+    d = addDraftEquipment(d, hero("captain"), SWORD);
+    expect(withFreeDagger(d, REIKLAND, hero("captain"))).toBe(d);
   });
 });

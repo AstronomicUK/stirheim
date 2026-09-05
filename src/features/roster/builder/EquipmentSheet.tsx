@@ -5,7 +5,7 @@ import {
   type DraftSubject,
   type EquipmentOption,
 } from '../../../rules/resolve/builder'
-import { Sheet, Stepper } from '../../../ui'
+import { Button, Sheet, Stepper } from '../../../ui'
 import { useDraftStore } from './draftStore'
 import { PriceField } from './EquipmentRows'
 import { groupEquipmentOptions, optionForItem, quantityOf } from './helpers'
@@ -26,7 +26,17 @@ export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment
   const groups = groupEquipmentOptions(options)
 
   return (
-    <Sheet open={open} onClose={onClose} title="Add equipment" description={subjectLabel}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Add equipment"
+      description={subjectLabel}
+      footer={
+        <Button block onClick={onClose}>
+          Done
+        </Button>
+      }
+    >
       {groups.length === 0 ? (
         <p className="py-4 text-sm text-ink-dim">This unit has no equipment list.</p>
       ) : (

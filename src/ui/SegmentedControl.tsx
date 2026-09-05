@@ -11,10 +11,10 @@ export interface SegmentedControlProps<T extends string> {
   label: string
 }
 
-/** A single-select row of pills. Scrolls sideways when there are more than fit a phone. */
+/** A single-select row of pills; wraps onto further rows when they do not fit. */
 export function SegmentedControl<T extends string>({ options, value, onChange, label }: SegmentedControlProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
       {options.map((option) => {
         const selected = option.value === value
         return (

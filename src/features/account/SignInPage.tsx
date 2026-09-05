@@ -32,6 +32,7 @@ export function SignInPage() {
 
   return (
     <FormPage
+      promises
       title="Sign in"
       description="Pick up your ledger where you left it."
       onSubmit={onSubmit}

@@ -1,6 +1,5 @@
-import { NavLink } from 'react-router'
+import { Link, NavLink } from 'react-router'
 import { Icon } from '../ui/icons'
-import { Wordmark } from '../ui'
 import { NAV_TABS } from './navTabs'
 import { useSession } from './session'
 
@@ -10,9 +9,10 @@ export function SideRail() {
   const profile = useSession((s) => s.profile)
   return (
     <aside data-print-hide className="sticky top-0 hidden h-dvh flex-col gap-7 border-r border-border bg-surface-low px-4 pb-6 pt-6 lg:flex">
-      <div className="px-2">
-        <Wordmark />
-      </div>
+      <Link to="/" className="block px-2 no-underline" aria-label="Stirheim, your warbands">
+        <img src="/brand/stirheim-logo-tight.png" alt="Stirheim" width={740} height={250} className="h-auto w-full drop-shadow-[0_3px_6px_rgba(36,31,26,0.2)]" />
+        <span className="mt-2 block text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-dim">Campaign ledger</span>
+      </Link>
       <nav aria-label="Main">
         <ul className="flex flex-col gap-1">
           {NAV_TABS.map((t) => (

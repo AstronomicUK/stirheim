@@ -52,15 +52,6 @@ export function TopStrip({ scenario, opponents, turn, onTurn, totals, rout, onRo
           <span className="text-base normal-case tracking-normal">{rout === 'routed' ? 'Yes' : 'No'}</span>
         </button>
       </div>
-      {rout === 'test' ? (
-        <p role="status" className="rounded-md border border-warn/60 bg-warn/10 px-3 py-2 text-sm text-ink">
-          <span className="font-medium">Rout test needed at the start of your turn.</span>{' '}
-          <span className="text-ink-dim">
-            {totals.ownOutOfAction} of {totals.startingModels} models are out of action (test from {totals.routAt}). Roll against your leader&apos;s
-            Leadership; fail or choose to withdraw and tap Routed.
-          </span>
-        </p>
-      ) : null}
       {rout === 'routed' ? (
         <p role="status" className="text-sm text-ink-dim">
           Your warband has routed. The battle is over for you; keep the sheet for the report.

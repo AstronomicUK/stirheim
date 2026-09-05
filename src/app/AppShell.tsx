@@ -17,9 +17,13 @@ export function AppShell() {
     <div className={`min-h-dvh w-full ${signedIn ? 'lg:grid lg:grid-cols-[232px_minmax(0,1fr)]' : ''}`}>
       {signedIn ? <SideRail /> : null}
       <div className="flex min-h-dvh min-w-0 flex-col">
-        <header className={`flex items-center justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))] ${signedIn ? 'lg:hidden' : ''}`}>
-          <Wordmark />
-        </header>
+        {signedIn ? (
+          <header className="flex items-center justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))] lg:hidden">
+            <Wordmark />
+          </header>
+        ) : (
+          <div className="pt-[env(safe-area-inset-top)]" />
+        )}
         <main
           data-app-main
           className={`mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pt-4 md:max-w-2xl ${

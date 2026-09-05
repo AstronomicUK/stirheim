@@ -21,6 +21,7 @@ import { MyWarbandTab } from './battle/MyWarbandTab'
 import { NotesTab } from './battle/NotesTab'
 import { SaveBar } from './battle/SaveBar'
 import { routStatus, setRouted, setTurn, sheetTotals } from './battle/sheet'
+import { RoutCheck } from './battle/RoutCheck'
 import { TopStrip } from './battle/TopStrip'
 import { useBattleSheet } from './battle/useBattleSheet'
 
@@ -277,6 +278,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
       />
 
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
+      {rout === 'test' && !readOnly ? <RoutCheck roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} /> : null}
       {advancesDue > 0 && !readOnly ? (
         <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still to bestow`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}

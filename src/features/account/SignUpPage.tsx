@@ -49,6 +49,7 @@ export function SignUpPage() {
 
   return (
     <FormPage
+      promises
       title="Create an account"
       description="One account holds all your warbands. Your display name is what the other players see."
       onSubmit={onSubmit}

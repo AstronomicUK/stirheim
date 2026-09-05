@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import type { Json } from './database.types'
 import type { HenchmanGroupRow, HeroRow, ItemRow, MatchOrigin, MatchRow, MatchState, WarbandRow } from '../domain'
 import { parseBattleLiveState, toRosterWarband, type BattleLiveState } from '../domain'
+import { attackSummary, battleEventRowSchema, type AttackEventPayload, type BattleEventRow } from '../domain/battleEvent'
 import type { CombatMode } from '../domain/settings'
 import type { RosterWarband } from '../rules/types/roster'
 import { findWarbandTemplate } from '../rules/data/warbandTemplates'
@@ -19,6 +20,7 @@ export const matchKeys = {
   forCampaign: (campaignId: string | undefined) => ['matches', 'campaign', campaignId] as const,
   one: (id: string | undefined) => ['matches', 'one', id] as const,
   sessions: (id: string | undefined) => ['matches', 'sessions', id] as const,
+  events: (id: string | undefined) => ['matches', 'events', id] as const,
   roster: (matchId: string | undefined, warbandId: string | undefined) => ['matches', 'roster', matchId, warbandId] as const,
 }
 
@@ -249,6 +251,59 @@ export function useBattleSessions(matchId: string | undefined) {
   return useQuery({ queryKey: matchKeys.sessions(matchId), queryFn: () => fetchBattleSessions(matchId!), enabled: Boolean(matchId) })
 }
 
+// ---- the shared combat log (battle_events) ----
+
+export async function fetchBattleEvents(matchId: string): Promise<BattleEventRow[]> {
+  const { data, error } = await supabase.from('battle_events').select('*').eq('match_id', matchId).order('at')
+  if (error) throw new Error(error.message)
+  return battleEventRowSchema.array().parse(data)
+}
+
+export interface LogBattleEventInput {
+  matchId: string
+  actorWarbandId: string | null
+  payload: AttackEventPayload
+}
+
+/** A participant logs one attack result; RLS checks the match is in progress and the caller is at the table. */
+export async function logBattleEvent(userId: string, input: LogBattleEventInput): Promise<string> {
+  const { data, error } = await supabase
+    .from('battle_events')
+    .insert({ match_id: input.matchId, actor_id: userId, actor_warband_id: input.actorWarbandId, kind: 'attack', payload: input.payload as unknown as Json, summary: attackSummary(input.payload) })
+    .select('id')
+    .single()
+  if (error) throw new Error(error.message)
+  return data.id
+}
+
+export async function revertBattleEvent(eventId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc('revert_battle_event', { p_event_id: eventId, p_note: note })
+  if (error) throw new Error(error.message)
+}
+
+export function useBattleEvents(matchId: string | undefined) {
+  return useQuery({ queryKey: matchKeys.events(matchId), queryFn: () => fetchBattleEvents(matchId!), enabled: Boolean(matchId) })
+}
+
+export function useLogBattleEvent(userId: string | undefined) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: LogBattleEventInput) => {
+      if (!userId) throw new Error('Not signed in.')
+      return logBattleEvent(userId, input)
+    },
+    onSuccess: (_id, input) => qc.invalidateQueries({ queryKey: matchKeys.events(input.matchId) }),
+  })
+}
+
+export function useRevertBattleEvent(matchId: string | undefined) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ eventId, note }: { eventId: string; note: string }) => revertBattleEvent(eventId, note),
+    onSuccess: () => qc.invalidateQueries({ queryKey: matchKeys.events(matchId) }),
+  })
+}
+
 export function useMatchRoster(matchId: string | undefined, warbandId: string | undefined) {
   return useQuery({ queryKey: matchKeys.roster(matchId, warbandId), queryFn: () => fetchMatchRoster(warbandId!), enabled: Boolean(matchId && warbandId) })
 }
@@ -266,6 +321,9 @@ export function useMatchRealtime(matchId: string | undefined) {
       .channel(`match:${matchId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'battle_sessions', filter: `match_id=eq.${matchId}` }, () => {
         void qc.invalidateQueries({ queryKey: matchKeys.sessions(matchId) })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'battle_events', filter: `match_id=eq.${matchId}` }, () => {
+        void qc.invalidateQueries({ queryKey: matchKeys.events(matchId) })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, () => {
         void qc.invalidateQueries({ queryKey: matchKeys.one(matchId) })

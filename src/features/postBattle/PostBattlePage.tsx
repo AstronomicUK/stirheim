@@ -6,7 +6,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
-import { useBattleSessions, useMatch, useMatchRoster, type MatchParticipantView, type MatchSummary } from '../../api/matches'
+import { useBattleEvents, useBattleSessions, useMatch, useMatchRoster, type MatchParticipantView, type MatchSummary } from '../../api/matches'
+import { applyBattleEvents, emptyBattleLiveState } from '../../domain'
 import { advanceKeys } from '../../api/advances'
 import { useSubmitBattleReport } from '../../api/reports'
 import { warbandKeys } from '../../api/warbands'
@@ -42,6 +43,7 @@ export function PostBattlePage() {
   const user = useSession((s) => s.user)
   const match = useMatch(id, user?.id)
   const sessions = useBattleSessions(id)
+  const events = useBattleEvents(id)
 
   if (match.isPending || sessions.isPending) {
     return (
@@ -94,7 +96,10 @@ export function PostBattlePage() {
       </>
     )
   }
-  return <Guarded match={summary} participant={participant} userId={user?.id} amending={amending && filed} liveState={sessions.data.find((s) => s.warband_id === participant.warband_id)?.live_state} />
+  const rawLive = sessions.data.find((s) => s.warband_id === participant.warband_id)?.live_state
+  const logged = (events.data ?? []).filter((e) => e.reverted_at === null)
+  const liveState = rawLive || logged.length > 0 ? applyBattleEvents(rawLive ?? emptyBattleLiveState(), logged, participant.warband_id) : undefined
+  return <Guarded match={summary} participant={participant} userId={user?.id} amending={amending && filed} liveState={liveState} />
 }
 
 interface GuardedProps {

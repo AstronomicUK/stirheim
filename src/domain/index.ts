@@ -8,5 +8,6 @@ export * from "./roster";
 export * from "./rosterChange";
 export * from "./rosterDiff";
 export * from "./battle";
+export * from "./battleEvent";
 export * from "./report";
 export * from "./csv";

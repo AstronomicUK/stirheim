@@ -449,6 +449,16 @@ bookkeeping columns are GM-only for direct updates).
   ("No injury roll needed", counts as recovered), a different number of henchman injury dice.
   Prices at the trading post, hero and henchman hire costs, hired-sword fees and upkeep all take
   an override; experience already does through `xpExtras`.
+- **The shared combat log is an overlay, not a second writer.** `battle_events` (one row per
+  attack result, appended by a participant while the battle is in progress, Realtime-published)
+  is laid over each player's own `battle_sessions` sheet on every phone (`applyBattleEvents` in
+  `src/domain/battleEvent.ts`): the attacker's warband gains the kill, the target's warband the
+  Wounds lost and the out-of-action. Nothing writes to the other player's row, so there is no
+  race with the debounced autosave, and the post-battle wizard seeds from the overlaid sheet.
+  `revert_battle_event` (participant or GM) marks an entry reverted with a note; it stays in the
+  Log tab struck through. Manual taps still work on the player's own part; the stepper cannot go
+  below what the log contributed ("1 from the log"), so a logged kill is undone from the log, not
+  by tapping.
 
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 

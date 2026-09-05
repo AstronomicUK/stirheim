@@ -51,6 +51,70 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_events: {
+        Row: {
+          actor_id: string
+          actor_warband_id: string | null
+          at: string
+          id: string
+          kind: string
+          match_id: string
+          payload: Json
+          revert_note: string | null
+          reverted_at: string | null
+          reverted_by: string | null
+          summary: string
+        }
+        Insert: {
+          actor_id: string
+          actor_warband_id?: string | null
+          at?: string
+          id?: string
+          kind: string
+          match_id: string
+          payload: Json
+          revert_note?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          summary?: string
+        }
+        Update: {
+          actor_id?: string
+          actor_warband_id?: string | null
+          at?: string
+          id?: string
+          kind?: string
+          match_id?: string
+          payload?: Json
+          revert_note?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_events_actor_profile_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "battle_events_actor_warband_id_fkey"
+            columns: ["actor_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_sessions: {
         Row: {
           created_at: string
@@ -937,6 +1001,10 @@ export type Database = {
       return_battle_report: {
         Args: { p_note: string; p_report_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
+      }
+      revert_battle_event: {
+        Args: { p_event_id: string; p_note?: string }
+        Returns: undefined
       }
       revert_battle_report: {
         Args: { p_report_id: string }

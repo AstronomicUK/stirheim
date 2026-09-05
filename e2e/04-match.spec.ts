@@ -74,10 +74,12 @@ test.describe('match', () => {
     await rollDie(page, 'To wound', 4)
     await rollDie(page, 'Injury roll', 5)
     await expect(page.getByRole('status').filter({ hasText: 'Result: Out of action' })).toBeVisible()
-    await page.getByRole('button', { name: `Log +1 enemy out for ${CAPTAIN}` }).click()
-    await expect(page.getByRole('button', { name: `Logged: +1 enemy out for ${CAPTAIN}` })).toBeDisabled()
+    await page.getByRole('button', { name: 'Log to both sheets' }).click()
+    await expect(page.getByRole('button', { name: 'Logged to both sheets' })).toBeDisabled()
 
-    // Back on "My warband" the kill sits on the captain's counter; one Watchman goes down by hand.
+    // The shared log lists it, and back on "My warband" the kill sits on the captain's counter; one Watchman goes down by hand.
+    await page.getByRole('radio', { name: 'Log' }).click()
+    await expect(page.getByText(`${CAPTAIN} took Skritch Nightblade out of action`, { exact: false })).toBeVisible()
     await page.getByRole('radio', { name: 'My warband' }).click()
     await expect(page.getByRole('group', { name: `enemies out by ${CAPTAIN}` })).toContainText('1')
     await page.getByRole('button', { name: 'More Watchmen out of action' }).click()

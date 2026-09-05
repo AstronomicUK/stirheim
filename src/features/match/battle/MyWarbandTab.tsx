@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BattleLiveState } from '../../../domain'
+import { eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterWarband } from '../../../rules/types/roster'
 import { Button, Stepper } from '../../../ui'
@@ -15,9 +15,11 @@ export interface MyWarbandTabProps {
   sheet: BattleLiveState
   edit: (fn: (sheet: BattleLiveState) => BattleLiveState) => void
   readOnly: boolean
+  /** The shared combat log, to say which tallies came from it. */
+  events?: BattleEventRow[]
 }
 
-export function MyWarbandTab({ roster, template, sheet, edit, readOnly }: MyWarbandTabProps) {
+export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events = [] }: MyWarbandTabProps) {
   const warriors = splitWarriors(roster)
   const groups = fightingGroups(roster)
 
@@ -26,7 +28,7 @@ export function MyWarbandTab({ roster, template, sheet, edit, readOnly }: MyWarb
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <MyWarriorCard key={entry.warrior.id} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} />
+          <MyWarriorCard key={entry.warrior.id} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} />
         ))}
       </Section>
 
@@ -66,9 +68,10 @@ interface MyWarriorCardProps {
   sheet: BattleLiveState
   edit: MyWarbandTabProps['edit']
   readOnly: boolean
+  fromLog: { kills: number; woundsLost: number; outOfAction: number }
 }
 
-function MyWarriorCard({ entry, template, sheet, edit, readOnly }: MyWarriorCardProps) {
+function MyWarriorCard({ entry, template, sheet, edit, readOnly, fromLog }: MyWarriorCardProps) {
   const [expanded, setExpanded] = useState(false)
   const { warrior } = entry
   const out = isHeroOut(sheet, warrior.id)
@@ -101,8 +104,8 @@ function MyWarriorCard({ entry, template, sheet, edit, readOnly }: MyWarriorCard
         ) : null}
         <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-ink-dim">Enemies out</span>
-            <Stepper value={enemiesOut} onChange={(next) => edit((s) => addEnemyOut(s, warrior.id, next - enemiesOut))} label={`enemies out by ${warrior.name}`} disabled={readOnly} />
+            <span className="text-[10px] uppercase tracking-wider text-ink-dim">Enemies out{fromLog.kills > 0 ? ` · ${fromLog.kills} from the log` : ''}</span>
+            <Stepper value={enemiesOut} min={fromLog.kills} onChange={(next) => edit((s) => addEnemyOut(s, warrior.id, next - enemiesOut))} label={`enemies out by ${warrior.name}`} disabled={readOnly} />
           </div>
           <Button variant={out ? 'secondary' : 'danger'} disabled={readOnly} onClick={() => edit((s) => toggleHeroOut(s, warrior.id))} aria-pressed={out}>
             {out ? 'Back in' : 'Out of action'}

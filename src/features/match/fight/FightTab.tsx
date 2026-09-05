@@ -4,13 +4,12 @@
 
 import { useMemo, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
-import type { BattleLiveState } from '../../../domain'
+import type { AttackEventPayload, BattleLiveState } from '../../../domain'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
 import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
-import { addEnemyOut } from '../battle/sheet'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutOf, offHandCandidates, type Combatant, type Loadout } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type RollState } from './rollThrough'
@@ -23,9 +22,11 @@ export interface FightTabProps {
   others: MatchParticipantView[]
   sessions: BattleSessionView[]
   houseRules: CampaignHouseRules
+  /** The player's sheet with the shared log laid over it (read only here). */
   sheet: BattleLiveState
-  edit: (fn: (sheet: BattleLiveState) => BattleLiveState) => void
   readOnly: boolean
+  /** Append a result to the shared combat log; both sheets pick it up. */
+  onLogEvent: (payload: AttackEventPayload) => Promise<void>
 }
 
 interface WeaponChoice {
@@ -45,7 +46,7 @@ interface TargetMemory {
   worst: { turn: number; label: string } | null
 }
 
-export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, edit, readOnly }: FightTabProps) {
+export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
 
   const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet), [roster, template, sheet])
@@ -274,7 +275,24 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             defender={defender}
             defenderKit={defenderKit!}
             readOnly={readOnly}
-            onLogKill={() => edit((s) => addEnemyOut(s, attacker.id, 1))}
+            onLog={(state) =>
+              onLogEvent({
+                attacker_warband_id: attacker.warbandId,
+                attacker_id: attacker.id,
+                attacker_kind: attacker.kind === 'henchman' ? 'group' : 'hero',
+                attacker_name: attacker.name,
+                target_warband_id: defender.warbandId,
+                target_id: defender.id,
+                target_kind: defender.kind === 'henchman' ? 'group' : 'hero',
+                target_name: defender.name,
+                target_size: defender.groupSize ?? 1,
+                wounds_lost: Math.max(0, state.woundsLost - odds.woundsAlreadyLost),
+                out_of_action: state.worst === 'outOfAction',
+                kill: state.worst === 'outOfAction' && attacker.kind !== 'henchman',
+                outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
+                turn: sheet.turn,
+              })
+            }
             onFinished={rememberFight}
           />
         </>
@@ -428,14 +446,16 @@ interface RollSectionProps {
   defender: Combatant
   defenderKit: Loadout
   readOnly: boolean
-  onLogKill: () => void
+  /** Write the finished fight to the shared combat log. */
+  onLog: (state: RollState) => Promise<void>
   /** Called once when the last roll lands, so the tab can carry Wounds and the parry into the next fight. */
   onFinished: (state: RollState) => void
 }
 
-function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKill, onFinished }: RollSectionProps) {
+function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
-  const [logged, setLogged] = useState(false)
+  const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
+  const [logError, setLogError] = useState<string | null>(null)
 
   function start() {
     const plans: AttackPlan[] = odds.weapons.flatMap((w) =>
@@ -445,8 +465,22 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKil
         parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit) },
       })),
     )
-    setLogged(false)
+    setLogged('no')
+    setLogError(null)
     setState(startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost))
+  }
+
+  async function log() {
+    if (!state) return
+    setLogged('saving')
+    setLogError(null)
+    try {
+      await onLog(state)
+      setLogged('yes')
+    } catch (e) {
+      setLogged('failed')
+      setLogError(e instanceof Error ? e.message : 'Could not write to the log.')
+    }
   }
 
   function advance(step: (s: RollState) => RollState) {
@@ -516,22 +550,16 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKil
                         : `${defender.name} is unharmed.`}
                 </span>
               </p>
-              {state.worst === 'outOfAction' && attacker.kind !== 'henchman' && !readOnly ? (
-                <Button
-                  variant="primary"
-                  block
-                  disabled={logged}
-                  onClick={() => {
-                    onLogKill()
-                    setLogged(true)
-                  }}
-                >
-                  {logged ? `Logged: +1 enemy out for ${attacker.name}` : `Log +1 enemy out for ${attacker.name}`}
+              {state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst) && !readOnly ? (
+                <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
+                  {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
-              {state.worst === 'outOfAction' && attacker.kind === 'henchman' ? <p className="text-xs text-ink-dim">Henchmen earn no experience for kills, so there is nothing to log.</p> : null}
-              {state.worst === 'outOfAction' && attacker.kind !== 'henchman' ? <p className="text-xs text-ink-dim">The other player marks their own casualty on their sheet.</p> : null}
-              {state.worst === 'wounded' ? <p className="text-xs text-ink-dim">Remembered here for the next fight; the other player marks the Wound on their sheet.</p> : null}
+              {logError ? <Notice tone="error">{logError}</Notice> : null}
+              {state.worst === 'outOfAction' && attacker.kind === 'henchman' ? <p className="text-xs text-ink-dim">Henchmen earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
+              {state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst) ? (
+                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? 'kill and the casualty' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
+              ) : null}
             </div>
           ) : null}
 

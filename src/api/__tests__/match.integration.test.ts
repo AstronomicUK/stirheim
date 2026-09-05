@@ -118,6 +118,36 @@ describe.skipIf(!enabled)('match lifecycle', () => {
     expect(gmCancel.data).toBe('cancelled')
   })
 
+  it('the shared combat log: participants append while the battle runs; anyone at the table may revert once', async () => {
+    const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN] })
+    matches.push(m.data as string)
+    const payload = {
+      attacker_warband_id: CLAWS_OF_ESHIN, attacker_id: 'bbbbbbbb-0000-4000-8000-000000000011', attacker_kind: 'hero', attacker_name: 'Skritch',
+      target_warband_id: REIKLAND_WATCH, target_id: 'bbbbbbbb-0000-4000-8000-000000000001', target_kind: 'hero', target_name: 'Captain',
+      target_size: 1, wounds_lost: 1, out_of_action: true, kill: true, outcome: 'Out of action', turn: 1,
+    }
+    // Not in progress yet: refused.
+    const early = await player.from('battle_events').insert({ match_id: m.data, actor_id: PLAYER.id, actor_warband_id: CLAWS_OF_ESHIN, kind: 'attack', payload, summary: 'x' })
+    expect(early.error).not.toBeNull()
+
+    await gm.rpc('start_match', { p_match_id: m.data })
+    const forged = await player.from('battle_events').insert({ match_id: m.data, actor_id: GM.id, actor_warband_id: CLAWS_OF_ESHIN, kind: 'attack', payload, summary: 'x' })
+    expect(forged.error).not.toBeNull()
+    const ok = await player.from('battle_events').insert({ match_id: m.data, actor_id: PLAYER.id, actor_warband_id: CLAWS_OF_ESHIN, kind: 'attack', payload, summary: 'Turn 1: Skritch took Captain out of action.' }).select('id').single()
+    expect(ok.error).toBeNull()
+
+    // Both sides read it.
+    const seen = await gm.from('battle_events').select('id, summary, reverted_at').eq('match_id', m.data)
+    expect(seen.data).toEqual([{ id: ok.data!.id, summary: 'Turn 1: Skritch took Captain out of action.', reverted_at: null }])
+
+    const reverted = await gm.rpc('revert_battle_event', { p_event_id: ok.data!.id, p_note: 'wrong target' })
+    expect(reverted.error).toBeNull()
+    const after = await player.from('battle_events').select('reverted_by, revert_note').eq('id', ok.data!.id).single()
+    expect(after.data).toEqual({ reverted_by: GM.id, revert_note: 'wrong target' })
+    const again = await player.rpc('revert_battle_event', { p_event_id: ok.data!.id })
+    expect(again.error?.message).toMatch(/already reverted/)
+  })
+
   it('start_match takes the combat mode from the campaign default, and the lock stops players changing it', async () => {
     const before = await admin.from('campaigns').select('settings').eq('id', CAMPAIGN).single()
     const settings = before.data!.settings as Record<string, unknown>

@@ -7,7 +7,8 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
 import { useCampaign } from '../../api/campaigns'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
-import { useBattleSessions, useEndMatch, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
+import { useBattleEvents, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
+import { applyBattleEvents, emptyBattleLiveState, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -15,6 +16,7 @@ import type { RosterWarband } from '../../rules/types/roster'
 import { Button, Notice, SegmentedControl, Sheet, Spinner } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
 import { FightTab } from './fight/FightTab'
+import { LogTab } from './battle/LogTab'
 import { MyWarbandTab } from './battle/MyWarbandTab'
 import { NotesTab } from './battle/NotesTab'
 import { SaveBar } from './battle/SaveBar'
@@ -22,20 +24,37 @@ import { routStatus, setRouted, setTurn, sheetTotals } from './battle/sheet'
 import { TopStrip } from './battle/TopStrip'
 import { useBattleSheet } from './battle/useBattleSheet'
 
-type Tab = 'mine' | 'enemy' | 'fight' | 'notes'
+type Tab = 'mine' | 'enemy' | 'fight' | 'log' | 'notes'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'mine', label: 'My warband' },
   { value: 'enemy', label: 'Enemy' },
   { value: 'fight', label: 'Attack' },
+  { value: 'log', label: 'Log' },
   { value: 'notes', label: 'Notes' },
 ]
+
+/**
+ * Every sheet at the table with the shared log laid over it. A warband that has not saved a sheet
+ * of its own but appears in the log gets one made of the log alone, so its casualties still show.
+ */
+function overlaySessions(sessions: BattleSessionView[], events: BattleEventRow[], participants: MatchSummary['participants']): BattleSessionView[] {
+  const live = events.filter((e) => e.reverted_at === null)
+  const out = sessions.map((s) => ({ ...s, live_state: applyBattleEvents(s.live_state, live, s.warband_id) }))
+  for (const p of participants) {
+    if (out.some((s) => s.warband_id === p.warband_id)) continue
+    const involved = live.some((e) => e.payload.attacker_warband_id === p.warband_id || e.payload.target_warband_id === p.warband_id)
+    if (involved) out.push({ warband_id: p.warband_id, live_state: applyBattleEvents(emptyBattleLiveState(), live, p.warband_id), updated_at: live[live.length - 1]?.at ?? '' })
+  }
+  return out
+}
 
 export function BattlePage() {
   const { id } = useParams<{ id: string }>()
   const user = useSession((s) => s.user)
   const match = useMatch(id, user?.id)
   const sessions = useBattleSessions(id)
+  const events = useBattleEvents(id)
   useMatchRealtime(id)
 
   if (match.isPending || sessions.isPending) {
@@ -74,7 +93,7 @@ export function BattlePage() {
       </>
     )
   }
-  return <Battle match={summary} sessions={sessions.data} userId={user?.id} />
+  return <Battle match={summary} sessions={sessions.data} events={events.data ?? []} userId={user?.id} />
 }
 
 function scenarioName(match: MatchSummary): string {
@@ -82,7 +101,7 @@ function scenarioName(match: MatchSummary): string {
   return match.custom_scenario_name ?? 'Scenario to be decided'
 }
 
-function Battle({ match, sessions, userId }: { match: MatchSummary; sessions: BattleSessionView[]; userId: string | undefined }) {
+function Battle({ match, sessions, events, userId }: { match: MatchSummary; sessions: BattleSessionView[]; events: BattleEventRow[]; userId: string | undefined }) {
   const navigate = useNavigate()
   const campaign = useCampaign(match.campaign_id)
   const isGm = campaign.data?.campaign.gm_id === userId
@@ -94,6 +113,8 @@ function Battle({ match, sessions, userId }: { match: MatchSummary; sessions: Ba
   const myRoster = useMatchRoster(match.id, mine?.warband_id)
   const remote = mine ? sessions.find((s) => s.warband_id === mine.warband_id) : undefined
   const handle = useBattleSheet(match.id, mine?.warband_id ?? null, remote, editable)
+  const shownSessions = useMemo(() => overlaySessions(sessions, events, match.participants), [sessions, events, match.participants])
+  const logEvent = useLogBattleEvent(userId)
 
   const [tab, setTab] = useState<Tab>('mine')
   const [endOpen, setEndOpen] = useState(false)
@@ -156,7 +177,8 @@ function Battle({ match, sessions, userId }: { match: MatchSummary; sessions: Ba
           </p>
         </header>
         {!inProgress ? <AwaitingReportsNotice matchId={match.id} /> : null}
-        <EnemyView matchId={match.id} participants={match.participants} sessions={sessions} />
+        <EnemyView matchId={match.id} participants={match.participants} sessions={shownSessions} />
+        {match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} /> : null}
         {canEnd ? (
           <>
             <SaveBar saveState="readonly" saveError={null} onRetry={() => {}} onBattleOver={() => setEndOpen(true)} />
@@ -190,7 +212,9 @@ function Battle({ match, sessions, userId }: { match: MatchSummary; sessions: Ba
   return (
     <PlayerBattle
       match={match}
-      sessions={sessions}
+      sessions={shownSessions}
+      events={events}
+      onLogEvent={(payload) => logEvent.mutateAsync({ matchId: match.id, actorWarbandId: mine.warband_id, payload }).then(() => undefined)}
       roster={myRoster.data.roster}
       scenario={scenario}
       opponentsLine={opponentsLine}
@@ -209,7 +233,10 @@ function Battle({ match, sessions, userId }: { match: MatchSummary; sessions: Ba
 
 interface PlayerBattleProps {
   match: MatchSummary
+  /** Sheets with the log already laid over them. */
   sessions: BattleSessionView[]
+  events: BattleEventRow[]
+  onLogEvent: (payload: AttackEventPayload) => Promise<void>
   roster: RosterWarband
   scenario: string
   opponentsLine: string
@@ -223,19 +250,21 @@ interface PlayerBattleProps {
   children: ReactNode
 }
 
-function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, children }: PlayerBattleProps) {
+function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, children }: PlayerBattleProps) {
   const template = useMemo(() => findWarbandTemplate(roster.warbandTemplateId), [roster.warbandTemplateId])
+  // What the player sees: their own taps plus every kill and casualty the shared log recorded for them.
+  const shown = useMemo(() => applyBattleEvents(handle.sheet, events, roster.id), [handle.sheet, events, roster.id])
   const pendingAdvances = usePendingAdvances(roster.id)
   const advancesDue = pendingAdvances.data?.length ?? 0
-  const totals = useMemo(() => sheetTotals(handle.sheet, roster), [handle.sheet, roster])
-  const rout = routStatus(handle.sheet, totals.startingModels)
+  const totals = useMemo(() => sheetTotals(shown, roster), [shown, roster])
+  const rout = routStatus(shown, totals.startingModels)
 
   return (
     <>
       <TopStrip
         scenario={scenario}
         opponents={`${roster.name} ${opponentsLine}`}
-        turn={handle.sheet.turn}
+        turn={shown.turn}
         onTurn={(turn) => handle.edit((s) => setTurn(s, turn))}
         totals={totals}
         rout={rout}
@@ -253,16 +282,17 @@ function PlayerBattle({ match, sessions, roster, scenario, opponentsLine, handle
         </Notice>
       ) : null}
 
-      <SegmentedControl options={match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight')} value={tab} onChange={setTab} label="Battle sheet section" />
+      <SegmentedControl options={match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight' && t.value !== 'log')} value={tab} onChange={setTab} label="Battle sheet section" />
 
-      {tab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} /> : null}
+      {tab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} /> : null}
       {tab === 'enemy' ? (
         <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
       ) : null}
       {tab === 'fight' && match.combat_mode === 'app' ? (
-        <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} />
+        <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} />
       ) : null}
-      {tab === 'notes' ? <NotesTab sheet={handle.sheet} edit={handle.edit} readOnly={readOnly} /> : null}
+      {tab === 'log' && match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
+      {tab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}
 
       <SaveBar saveState={handle.saveState} saveError={handle.saveError} onRetry={handle.retry} onBattleOver={onBattleOver} />
       {children}

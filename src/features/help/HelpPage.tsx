@@ -99,6 +99,11 @@ export function HelpPage() {
           Kit the engine cannot model (custom items, most miscellaneous gear) is listed under the odds so you can apply it at the table.
         </P>
         <P>
+          <B>Shared combat log.</B> When a fight in the calculator ends, <em>Log to both sheets</em> records it once for the whole table: the kill lands on the
+          attacker&apos;s sheet and the Wound or casualty on the target&apos;s, on every phone at once. The <em>Log</em> tab lists every entry; anyone at the table
+          can revert a mistake, and the entry stays there struck through with the reason.
+        </P>
+        <P>
           <B>App calculates or players calculate.</B> Whoever starts the game picks how combat is scored: with the attack calculator, or tally sheets only, the
           Relic &amp; Ruin way. The campaign settings set the default and can lock it so only the GM changes it.
         </P>

@@ -8,7 +8,7 @@ every later implementation session.
 
 - Run a full Mordheim campaign for Tom's group on phones, end to end: build warbands, arrange
   and record battles, resolve the post-battle sequence, trade, level up, and see campaign
-  history. Version 1 is functionally equivalent to Relic & Ruin's current feature set.
+  history. Version 1 is functionally equivalent to the existing tracker's current feature set.
 - Be openable to other groups afterwards without rework: real accounts, campaigns joined by
   invite code, no group-specific hardcoding, house rules as per-campaign settings.
 - Reuse the rules data and the exact-probability combat engine already built in
@@ -60,7 +60,7 @@ supabase/
   functions/      edge functions: submit_battle_report, apply_advancement, purchase_item,
                   sell_wyrdstone, schedule_match, import_rr_csv (join_campaign is a SQL function)
   seed/           dev seed (a test campaign with two warbands)
-docs/             this framework, planning, the R&R walkthrough, ADRs as decisions change
+docs/             this framework, planning, the the existing tracker walkthrough, ADRs as decisions change
 reference/        rules Markdown and the simulator snapshot (read-only)
 ```
 
@@ -76,7 +76,7 @@ Principles:
    derived gold or XP directly.
 3. **Everything is scoped to a campaign membership.** A warband exists on its own (roster
    list) and can be enrolled in a campaign; gold, wyrdstone, XP, injuries and history live on
-   the warband, the campaign scopes matches and settings. Same model as R&R, which proved
+   the warband, the campaign scopes matches and settings. Same model as the existing tracker, which proved
    simple for players.
 4. **Manual edit is an escape hatch, logged.** Owner or GM can open the raw editor; every
    change is written to an audit table with actor and diff.
@@ -192,7 +192,7 @@ values against the Markdown, in the same style the simulator used for its 72 tem
     experienced henchmen.
 11. **Scenarios**: library of core scenarios, custom scenario form (name, setting, summary,
     Markdown rules).
-12. **Importer**: Relic & Ruin Battle Records CSV to matches and reports; guided roster entry.
+12. **Importer**: the existing tracker Battle Records CSV to matches and reports; guided roster entry.
 
 ## 7. Post-v1 roadmap
 
@@ -216,10 +216,10 @@ values against the Markdown, in the same style the simulator used for its 72 tem
 | 6 | Matches: schedule, challenge, battle helper, live session persistence | 5 |
 | 7 | Post-battle wizard and submit edge function; battle records; CSV export | 6 |
 | 8 | Advancements, trading post, stash, recruitment, hired swords | 7 |
-| 9 | Importer from Relic & Ruin; group onboarding; polish and Playwright coverage | 8 |
+| 9 | Importer from the existing tracker; group onboarding; polish and Playwright coverage | 8 |
 | 10 | Attack calculator (first upgrade) | 9 |
 | 11 | Combat mode, kit details, shield and gromril rules, calculator carry-over, advances in the wizard, report approval and amendment, suggested dice (see PLANNING.md "Phase 11") | 10 |
-| 12 | Shared combat log with undo; Relic & Ruin roster import; roadmap items as agreed | 11 |
+| 12 | Shared combat log with undo; the existing tracker roster import; roadmap items as agreed | 11 |
 
 Phases 1 to 2 are pure TypeScript and can run in parallel with 3. Phases 4 onward each end
 with something the group can try on their phones.

@@ -226,7 +226,7 @@ function resolveWarrior(parsed: ParsedWarrior, template: WarbandTemplate | undef
   return { parsed, unitId, guessed: match.guessed && !override, items, skillIds, spellIds, unknownSkills, injuries, flags, unknownInjuries }
 }
 
-export function resolveRelicRoster(parsed: ParsedRoster, overrides: RosterOverrides = {}): ResolvedRoster {
+export function resolveTrackerRoster(parsed: ParsedRoster, overrides: RosterOverrides = {}): ResolvedRoster {
   const issues: string[] = []
   const template = overrides.templateId ? findWarbandTemplate(overrides.templateId) : matchWarbandTemplate(parsed)
   if (!template) issues.push(`Warband type "${parsed.typeName}" not recognised. Pick one.`)
@@ -267,7 +267,7 @@ function warriorNotes(w: ResolvedWarrior): string {
 }
 
 /** The create_warband payload: heroes, henchmen and their kit, the stash. Skills, injuries and hired swords follow in `followUpChanges`. */
-export function toCreatePayload(resolved: ResolvedRoster, importedFrom = 'Relic & Ruin'): CreateWarbandPayload {
+export function toCreatePayload(resolved: ResolvedRoster, importedFrom = 'another tracker'): CreateWarbandPayload {
   if (!resolved.template) throw new Error('Pick the warband type first.')
   const template = resolved.template
   return {

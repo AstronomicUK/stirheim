@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { followUpChanges, matchInjury, matchSkillOrSpell, normaliseName, resolveRelicRoster, toCreatePayload, toPayloadItems, matchItems } from './rosterImport'
-import { parseRelicRoster } from './rosterText'
+import { followUpChanges, matchInjury, matchSkillOrSpell, normaliseName, resolveTrackerRoster, toCreatePayload, toPayloadItems, matchItems } from './rosterImport'
+import { parseTrackerRoster } from './rosterText'
 
-const fixture = (name: string) => readFileSync(new URL(`./fixtures/relic-${name}.txt`, import.meta.url), 'utf8')
+const fixture = (name: string) => readFileSync(new URL(`./fixtures/roster-${name}.txt`, import.meta.url), 'utf8')
 const ALL = ['thorgrim', 'azgul', 'argent', 'grave', 'evards', 'cult', 'ashen', 'ivory', 'beastmen', 'witch']
 
-describe('parseRelicRoster', () => {
+describe('parseTrackerRoster', () => {
   it('reads the printer-friendly page: treasury, heroes with kit, injuries and skills, henchmen, stash', () => {
-    const r = parseRelicRoster(fixture('thorgrim'))
+    const r = parseTrackerRoster(fixture('thorgrim'))
     expect(r.name).toBe("Thorgrim's Seekers")
     expect(r.typeName).toBe('DWARF TREASURE HUNTERS')
     expect(r).toMatchObject({ gold: 5, wyrdstone: 0, veteranPool: 8 })
@@ -29,7 +29,7 @@ describe('parseRelicRoster', () => {
   })
 
   it('reads the campaign details panel: EXP on its own line, one item per line, untyped henchman groups, hired swords', () => {
-    const r = parseRelicRoster(fixture('evards'))
+    const r = parseTrackerRoster(fixture('evards'))
     expect(r).toMatchObject({ name: 'Evards Quest', typeName: 'BRETONNIAN_CHAPEL_GUARD', gold: 1, wyrdstone: 0, veteranPool: null })
     expect(r.heroes).toHaveLength(5)
     expect(r.heroes[0]).toMatchObject({ typeName: 'QUESTING_KNIGHT', xp: 24 })
@@ -44,21 +44,21 @@ describe('parseRelicRoster', () => {
   })
 
   it('handles spells with difficulties, mutations, a hired sword on the printer page and an empty kit', () => {
-    const grave = parseRelicRoster(fixture('grave'))
+    const grave = parseTrackerRoster(fixture('grave'))
     expect(grave.heroes[0].skills).toEqual(['Lifestealer', 'Spell Of Awakening'])
     expect(grave.hiredSwords[0]).toMatchObject({ name: 'Bone Goliath', typeName: 'BONE GOLIATH', stats: { S: 5, T: 5, W: 3, A: 3 } })
     expect(grave.henchmen[0]).toMatchObject({ name: 'Group 1 — Zombie', typeName: 'ZOMBIE', size: 3 })
     expect(grave.henchmen[0].equipment).toEqual([])
-    const cult = parseRelicRoster(fixture('cult'))
+    const cult = parseTrackerRoster(fixture('cult'))
     expect(cult.heroes[1].mutations).toEqual(['Great Claw'])
     expect(cult.wyrdstone).toBe(1)
-    const witch = parseRelicRoster(fixture('witch'))
+    const witch = parseTrackerRoster(fixture('witch'))
     expect(witch.heroes[1].injuries).toEqual(['Leg Wound'])
   })
 
   it('parses every captured roster without leftovers', () => {
     for (const name of ALL) {
-      const r = parseRelicRoster(fixture(name))
+      const r = parseTrackerRoster(fixture(name))
       expect(r.heroes.length, name).toBeGreaterThan(0)
       expect(r.unplaced, name).toEqual([])
       for (const h of [...r.heroes, ...r.henchmen, ...r.hiredSwords]) expect(h.stats, `${name}: ${h.name}`).not.toBeNull()
@@ -66,9 +66,9 @@ describe('parseRelicRoster', () => {
   })
 })
 
-describe('resolveRelicRoster', () => {
+describe('resolveTrackerRoster', () => {
   it('matches warband and unit types by name, with plurals and underscores', () => {
-    const r = resolveRelicRoster(parseRelicRoster(fixture('thorgrim')))
+    const r = resolveTrackerRoster(parseTrackerRoster(fixture('thorgrim')))
     expect(r.template?.id).toBe('dwarf_treasure_hunters')
     expect(r.heroes.map((h) => h.unitId)).toEqual(['dwarf_treasure_hunters_noble', 'dwarf_treasure_hunters_engineer', 'dwarf_treasure_hunters_troll_slayers', 'dwarf_treasure_hunters_troll_slayers'])
     expect(r.henchmen.map((g) => g.unitId)).toEqual(['dwarf_treasure_hunters_beardlings', 'dwarf_treasure_hunters_beardlings'])
@@ -81,7 +81,7 @@ describe('resolveRelicRoster', () => {
   })
 
   it('picks the Restless Dead variant when a Bone Goliath is hired, and knows the hired sword', () => {
-    const r = resolveRelicRoster(parseRelicRoster(fixture('grave')))
+    const r = resolveTrackerRoster(parseTrackerRoster(fixture('grave')))
     expect(r.template?.id).toBe('the_restless_dead_variant')
     expect(r.hiredSwords[0].hiredSwordId).toBe('bone_goliath')
     expect(r.heroes.map((h) => h.unitId)).toEqual(['restless_dead_variant_liche', 'restless_dead_variant_necromancer', 'restless_dead_variant_grave_guards', 'restless_dead_variant_grave_guards', 'restless_dead_variant_grave_guards'])
@@ -90,7 +90,7 @@ describe('resolveRelicRoster', () => {
   })
 
   it('guesses untyped henchman groups from the stat line and says so', () => {
-    const r = resolveRelicRoster(parseRelicRoster(fixture('evards')))
+    const r = resolveTrackerRoster(parseTrackerRoster(fixture('evards')))
     expect(r.template?.id).toBe('bretonnian_chapel_guard')
     expect(r.heroes.map((h) => h.unitId)).toEqual(['bretonnian_questing_knight', 'bretonnian_damsel', 'bretonnian_knight_errant', 'bretonnian_knight_errant', 'bretonnian_knight_errant'])
     expect(r.hiredSwords[0].hiredSwordId).toBe('halfling_scout')
@@ -113,15 +113,15 @@ describe('resolveRelicRoster', () => {
       witch: 'witch_hunters',
     }
     for (const name of ALL) {
-      const r = resolveRelicRoster(parseRelicRoster(fixture(name)))
+      const r = resolveTrackerRoster(parseTrackerRoster(fixture(name)))
       expect(r.template?.id, name).toBe(expected[name])
       for (const h of r.heroes) expect(h.unitId, `${name}: ${h.parsed.name} (${h.parsed.typeName})`).not.toBeNull()
     }
   })
 
   it('overrides win', () => {
-    const parsed = parseRelicRoster(fixture('evards'))
-    const r = resolveRelicRoster(parsed, { groupUnits: { 0: 'bretonnian_bowmen' } })
+    const parsed = parseTrackerRoster(fixture('evards'))
+    const r = resolveTrackerRoster(parsed, { groupUnits: { 0: 'bretonnian_bowmen' } })
     expect(r.henchmen[0].unitId).toBe('bretonnian_bowmen')
     expect(r.henchmen[0].guessed).toBe(false)
   })
@@ -129,7 +129,7 @@ describe('resolveRelicRoster', () => {
 
 describe('payloads', () => {
   it('builds the create payload and the follow-up changes', () => {
-    const r = resolveRelicRoster(parseRelicRoster(fixture('grave')))
+    const r = resolveTrackerRoster(parseTrackerRoster(fixture('grave')))
     const payload = toCreatePayload(r)
     expect(payload).toMatchObject({ name: 'The Call of the Grave', type_rules_id: 'the_restless_dead_variant', gold: 5 })
     expect(payload.heroes).toHaveLength(5)

@@ -1,6 +1,6 @@
-# Relic & Ruin (relicandruin.net) — reference notes for a campaign tracker
+# The existing tracker — reference notes for a campaign tracker
 
-Purpose: observe how Relic & Ruin structures a Mordheim campaign manager so we can build
+Purpose: observe how the existing tracker structures a Mordheim campaign manager so we can build
 something similar on top of this repo's rules data and combat engine. These are behavioural
 notes from using the tool, not copied text or assets.
 
@@ -73,7 +73,7 @@ Use clearly-named throwaway data only (e.g. campaign "ZZ TEST — delete me", wa
 - Sidebar: Rosters, Campaigns, Active Battles, Tactical Command, Scenario Library; footer:
   Tutorials, Feedback, Account. Header shows the *currently selected campaign* name.
 
-### API surface seen (api.relicandruin.net, bearer token in localStorage `auth.token`)
+### API surface seen (the tracker's API host, bearer token in localStorage `auth.token`)
 - `GET /warbands`, `GET /warbands/{id}`
 - `GET /campaigns`, `GET /warbands/{wid}/campaigns/{cid}` (per-warband campaign state: gold,
   wyrdstone, battle history — campaign-scoped, separate from the roster itself)
@@ -503,24 +503,24 @@ the warrior's profile"), Henchmen groups, Print button.
 
 ## Mapping to this repo
 
-What Relic & Ruin has, vs. what `mordheim-simulator` already contains, vs. what we'd need to add.
+What the existing tracker has, vs. what `mordheim-simulator` already contains, vs. what we'd need to add.
 
-| R&R concept | Already in repo | To build / extract |
+| the existing tracker concept | Already in repo | To build / extract |
 |---|---|---|
 | Warband types (69) with unit types, min/max, cost, stats, skill tables, equipment lists, racial rules | `WarbandTemplate` / `UnitTemplate` / `EquipmentList` — 72 templates, 246 hero + 228 henchman types (`src/data/warbandTemplates/*`) | Add per-template `maxSize`, hero cap, starting-XP per unit type if missing; starting gold |
 | Equipment catalogue (~250 items incl. Gromril/Ithilmar variants, restriction text, dice prices) | 120-item `Weapon` DB + material variants (`src/data/weapons/*`); full text in `rules/02-*.md` | Extract armour, misc equipment, animals, hired-sword-only items into a unified `Item` type with `price` (fixed / dice expression), `rarity`, `restrictionText`, `category` |
 | Skills catalogue by discipline with rule text | `src/data/skills.ts` (386 lines) + verbatim text in `rules/03-*.md` §Skills | Check coverage of warband-specific skill tables (e.g. Troll Slayer) |
 | Serious injuries D66 + henchmen D6 with stat effects | Verbatim table in `rules/03-*.md` §Serious Injuries | Extract to data: `{roll, name, effectText, apply(warrior)}` |
 | Experience thresholds (hero/henchman), advance tables, "lad's got talent" | Verbatim in `rules/03-*.md` §Experience | Extract thresholds + both advance tables; implement promotion side-effects |
-| Exploration: shard yield table + doubles…six-of-a-kind chart with nested sub-rolls | Verbatim in `rules/03-*.md` §Income/§Exploration chart (~400 lines) | Extract to nested data; UI = R&R's "location card + sub-roll + Mark Resolved" |
+| Exploration: shard yield table + doubles…six-of-a-kind chart with nested sub-rolls | Verbatim in `rules/03-*.md` §Income/§Exploration chart (~400 lines) | Extract to nested data; UI = the existing tracker's "location card + sub-roll + Mark Resolved" |
 | Income chart (shards × warband size) | `rules/03-*.md` §Income | Extract table; "effective size" rule |
 | Trading: rarity roll (2D6 ≥ rarity), one search per hero per post-battle, price entry | `rules/03-*.md` §Trading | Small state: `heroSearchedThisPhase[]`, `wyrdstoneSoldThisPhase` |
 | Hired Swords (72) with hire/upkeep, stats, restrictions, skill tables | `rules/03-*.md` §Hired Swords (list) | Extract to `HiredSwordTemplate` |
 | Scenarios (~100) with blurb + full rules markdown, settings | `rules/03-*.md` §Scenarios (index only — narrative write-ups not scraped) | Scrape/collect full scenario texts if we want the library; otherwise ship the core rulebook scenarios only |
 | Warband rating = 5/model + XP (hired swords/large creatures per rules) | Not in repo | Trivial function |
-| Combat odds calculator | **Yes — the whole existing simulator** | Embed as a "tactical" tab inside a battle (R&R has nothing like it — a differentiator) |
+| Combat odds calculator | **Yes — the whole existing simulator** | Embed as a "tactical" tab inside a battle (the existing tracker has nothing like it — a differentiator) |
 
-### Data model (proposed, mirroring what R&R exposes)
+### Data model (proposed, mirroring what the existing tracker exposes)
 
 - `Warband { id, name, typeId, gold, wyrdstone, veteranPool, stash: Item[], heroes: Hero[], henchmenGroups: HenchmanGroup[], hiredSwords: HiredSword[], notes }`
 - `Hero { id, name, unitTypeId, stats, xp, levelUps, skills[], spells[], injuries[], equipment: Item[], skillTables[], notes }`
@@ -532,7 +532,7 @@ What Relic & Ruin has, vs. what `mordheim-simulator` already contains, vs. what 
 
 ### Architecture decision for our build
 
-- R&R is server-backed (Go API + Postgres presumably) with accounts, invite codes, and two
+- the existing tracker is server-backed (Go API + Postgres presumably) with accounts, invite codes, and two
   players filing reports for one match. Multi-player sync is core to its campaign features.
 - Recommended for us: keep the existing **local-first, client-only** app for the single-player
   slice (roster builder, post-battle wizard, advancements, trading, printing) reusing all the
@@ -555,7 +555,7 @@ What Relic & Ruin has, vs. what `mordheim-simulator` already contains, vs. what 
    history is really the roster's state, campaign just scopes matches).
 7. Restriction text shown rather than filtering the catalogue (simpler, and house rules vary).
 
-### Gaps / things R&R does not do (opportunities)
+### Gaps / things the existing tracker does not do (opportunities)
 - No wound/turn/rout tracking in the battle helper (landing copy oversells it).
 - No automatic scenario XP (winning leader etc.) — player adds "deeds" manually.
 - No hero rarity-roll bookkeeping visible after "Item Not Found" (didn't verify hero exclusion).

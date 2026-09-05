@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { GM, UUID_RE, signIn } from './fixtures'
 
-const ROSTER = readFileSync(new URL('../src/features/importer/fixtures/relic-argent.txt', import.meta.url), 'utf8')
+const ROSTER = readFileSync(new URL('../src/features/importer/fixtures/roster-argent.txt', import.meta.url), 'utf8')
 
 test('imports a the old tracker roster from pasted text', async ({ page }) => {
   await signIn(page, GM.email)

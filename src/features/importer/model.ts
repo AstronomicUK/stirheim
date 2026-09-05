@@ -46,7 +46,7 @@ export const SYNONYMS: Record<TargetField, string[]> = {
   player: ['player', 'playername', 'owner', 'user', 'username'],
   result: ['result', 'outcome', 'victory', 'won', 'win', 'winlose'],
   winner: ['winner', 'victor', 'winningwarband'],
-  // the old tracker's export (reference/relic-and-ruin/battle-records-2026-09-05.csv) has hero_exp_gained
+  // the old tracker's export (reference/existing-tracker/battle-records-2026-09-05.csv) has hero_exp_gained
   // as "Name: 2 (Survived +1, Win +1); Name: 1 (...)" and hero_deaths / henchmen_deaths as "group 2: 1".
   xp: ['xp', 'experience', 'xpgained', 'experiencegained', 'exp', 'xpearned', 'totalxp', 'heroexpgained', 'expgained'],
   casualties: ['dead', 'casualties', 'ooa', 'outofaction', 'deaths', 'killed', 'casualtiesdead', 'owncasualties', 'ownoutofaction', 'herodeaths'],

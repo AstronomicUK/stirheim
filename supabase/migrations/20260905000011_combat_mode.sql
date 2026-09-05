@@ -1,5 +1,5 @@
 -- Phase 11: how a game is scored. "app" = the battle sheet offers the attack calculator and, later,
--- the shared combat log; "players" = tally sheets only, the Relic & Ruin way. Chosen when the match
+-- the shared combat log; "players" = tally sheets only, the the existing tracker way. Chosen when the match
 -- starts; the campaign settings carry the default and an optional lock (players may not change it).
 
 create type public.combat_mode as enum ('app', 'players');

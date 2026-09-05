@@ -85,7 +85,7 @@ docs/
   FRAMEWORK.md                  stack, architecture, data model, phases
   PLANNING.md                   scoping questions and decisions
   SUPABASE.md                   local stack, schema changes, access model, hosting steps
-  relic-and-ruin-walkthrough.md hands-on notes on the reference product
+  existing-tracker-walkthrough.md hands-on notes on the tracker the group used before
 reference/
   rules/                        verbatim mordheimer.net rules as Markdown (start at 00-index.md)
   simulator-src/                read-only snapshot of mordheim-simulator/src taken 2026-09-03

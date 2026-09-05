@@ -1,5 +1,5 @@
 // The field manual: one page of short, plain-English sections with anchors, so a link like
-// /help#from-relic-and-ruin lands on the right heading. Written for the group, not for developers.
+// /help#moving-over lands on the right heading. Written for the group, not for developers.
 
 import { useEffect, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'

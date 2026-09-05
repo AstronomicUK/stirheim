@@ -106,7 +106,7 @@ function startsWarrior(lines: string[], i: number): boolean {
   return /^Exp \d+$/i.test(after) || /^EXP$/i.test(after) || /^COST$/i.test(after) || /^\d+ WARRIORS$/i.test(after)
 }
 
-export function parseRelicRoster(text: string): ParsedRoster {
+export function parseTrackerRoster(text: string): ParsedRoster {
   const lines = text
     .split('\n')
     .map((l) => l.replace(/\s+$/, '').trim())

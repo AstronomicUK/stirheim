@@ -14,8 +14,8 @@ import { Button, Notice, PageHeader, SelectField, TextArea } from '../../ui'
 import { StatLine } from '../roster/shared/StatLine'
 import { Card, Section, Tag } from '../roster/view/bits'
 import { usePageTitle } from '../onboarding/usePageTitle'
-import { followUpChanges, resolveRelicRoster, toCreatePayload, type ResolvedRoster, type RosterOverrides } from './rosterImport'
-import { parseRelicRoster } from './rosterText'
+import { followUpChanges, resolveTrackerRoster, toCreatePayload, type ResolvedRoster, type RosterOverrides } from './rosterImport'
+import { parseTrackerRoster } from './rosterText'
 
 export function RosterImportPage() {
   usePageTitle('Import a roster')
@@ -26,8 +26,8 @@ export function RosterImportPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const parsed = useMemo(() => (text.trim() ? parseRelicRoster(text) : null), [text])
-  const resolved: ResolvedRoster | null = useMemo(() => (parsed ? resolveRelicRoster(parsed, overrides) : null), [parsed, overrides])
+  const parsed = useMemo(() => (text.trim() ? parseTrackerRoster(text) : null), [text])
+  const resolved: ResolvedRoster | null = useMemo(() => (parsed ? resolveTrackerRoster(parsed, overrides) : null), [parsed, overrides])
 
   const blocking = resolved ? !resolved.template || resolved.heroes.some((h) => !h.unitId) || resolved.henchmen.some((g) => !g.unitId) || resolved.hiredSwords.some((s) => !s.hiredSwordId) : true
 

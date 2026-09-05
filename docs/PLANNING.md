@@ -30,15 +30,15 @@ Answers get recorded in the Decisions section below as they arrive.
 ### D. Features and order
 12. Minimum useful first release: roster builder + post-battle wizard + trading + advancements
     (single-player) seems the natural core. Agree?
-13. Battle helper depth: R&R's XP / out-of-action tally only, or real wound, turn and rout
+13. Battle helper depth: the existing tracker's XP / out-of-action tally only, or real wound, turn and rout
     tracking?
 14. Embed the combat-odds simulator as a tab inside a battle?
 15. Printing / PDF roster sheets: needed?
-16. Importing the existing campaign from Relic & Ruin: manual re-entry acceptable, or worth
+16. Importing the existing campaign from the existing tracker: manual re-entry acceptable, or worth
     building a CSV import from its Battle Records export?
 
 ### E. Look and feel
-17. Reuse the simulator's visual style, or start a new dark "grimdark ledger" style like R&R?
+17. Reuse the simulator's visual style, or start a new dark "grimdark ledger" style like the existing tracker?
 18. Mobile-first (phones at the table) or desktop-first?
 
 ## Decisions
@@ -54,10 +54,10 @@ Recorded 2026-09-03 from Tom's answers.
   Bone Golem / Bone Goliath, which is already in the simulator's data
   (`reference/simulator-src/data/warbandTemplates/variants.ts` and
   `reference/rules/warbands/restless-dead-variant.md`).
-- **First release (Q12):** The full suite, equivalent to a version 1 of Relic & Ruin: roster
+- **First release (Q12):** The full suite, equivalent to a version 1 of the existing tracker: roster
   builder, post-battle wizard and advancements, trading post and stash, live battle helper,
   campaign membership with scheduling, match reports and records, GM console.
-- **Battle helper (Q13–14):** v1 matches Relic & Ruin (XP tally, out-of-action, loot, notes,
+- **Battle helper (Q13–14):** v1 matches the existing tracker (XP tally, out-of-action, loot, notes,
   opponent stats). **First planned upgrade after v1:** an attack calculator inside the battle —
   pick one of your warriors and one enemy model, see the to-hit and to-wound targets (and
   armour save), with an optional dice roll button at each stage. This reuses the simulator's
@@ -67,7 +67,7 @@ Recorded 2026-09-03 from Tom's answers.
   Full ~100 library is a later addition.
 - **Devices (Q18):** mobile-first for everything, including roster building and GM tools.
   Design for one-handed phone use; desktop is the secondary layout.
-- **Existing data (Q16):** import the current Relic & Ruin campaign. Build an importer for its
+- **Existing data (Q16):** import the current the existing tracker campaign. Build an importer for its
   Battle Records CSV export plus a guided re-entry (or paste) of the 8 rosters.
 - **Sign-in:** email and password (Supabase Auth), with password reset by email.
 - **Dice policy:** players roll physical dice and enter results; the app applies the rules. An
@@ -83,7 +83,7 @@ Recorded 2026-09-03 from Tom's answers.
   schema in `supabase/migrations`; create the free hosted project when the group starts
   testing and push the same migrations. Netlify account exists; Supabase account to be created
   then. Free tier is expected to be enough for the group phase; watch the inactivity pause.
-- **R&R test data:** Tom will delete the ZZ TEST campaign and rosters himself.
+- **the existing tracker test data:** Tom will delete the ZZ TEST campaign and rosters himself.
 - **App name (confirmed 2026-09-03):** **Stirheim**, full title **"Stirheim - Campaign Ledger"**
   where a descriptive title is appropriate. After the River Stir, which flows through Mordheim
   and divides the city (core rulebook, Sisters of Sigmar background). Domains
@@ -240,7 +240,7 @@ Recorded 2026-09-03 from Tom's answers.
 ## Phase 9 decisions (2026-09-04)
 
 - **Importer (Q16) is tolerant CSV plus column mapping**, not a parser for one known file: we
-  still have no sample of Relic & Ruin's Battle Records export, so `/campaigns/:id/import` (GM
+  still have no sample of the existing tracker's Battle Records export, so `/campaigns/:id/import` (GM
   only) reads any RFC 4180 CSV (`src/domain/csv.ts`), guesses which column is the date, warband,
   result, match id, scenario, player, XP, casualties, notes, winner or second warband from header
   synonyms (`src/features/importer/model.ts` `SYNONYMS`), and lets the GM correct the guess before a
@@ -261,7 +261,7 @@ Recorded 2026-09-03 from Tom's answers.
   the match notes. There is no undo beyond `withdraw_battle_report`; imported matches cannot be
   deleted from the app (`cancel_match` refuses a completed match).
 - **Onboarding** is a checklist, not a tour: the empty home screen lists the three first steps
-  (build a warband, join or start a campaign, "from Relic & Ruin"), the GM dashboard carries a
+  (build a warband, join or start a campaign, "from the existing tracker"), the GM dashboard carries a
   dismissible checklist (localStorage `stirheim.gmChecklist.<campaignId>`), invites offer copy
   link + Web Share, and `/help` is a single plain-English field manual with anchors.
 - **Installable**: `public/manifest.webmanifest` + SVG icons, no service worker (the app needs
@@ -323,7 +323,7 @@ Recorded 2026-09-03 from Tom's answers.
 Tom's answers to the decision review, in the order they will be built:
 
 1. **Combat mode per game: "App calculates" or "Players calculate".** Chosen when a match starts
-   (players-calculate is the Relic & Ruin way: tally sheets only, no calculator). A campaign
+   (players-calculate is the the existing tracker way: tally sheets only, no calculator). A campaign
    setting gives the default and a lock so players cannot change it; the GM can.
 2. **Tap a weapon to see its profile** (range, Strength, special rules) anywhere kit is listed.
 3. **Kite shield and pavise get their real rules**, not "counts as a shield". **Gromril and
@@ -348,7 +348,7 @@ Tom's answers to the decision review, in the order they will be built:
    roll more or fewer, and add bonus experience per warrior, each with a reason. Every override is
    recorded on the report and shown in the battle record as an adjustment log. Reason: missed rules,
    odd interactions, and map-campaign bonuses the ledger does not model yet.
-9. **Relic & Ruin import of the eight rosters and the battle-records CSV** from Tom's account,
+9. **the existing tracker import of the eight rosters and the battle-records CSV** from Tom's account,
    read through his signed-in Chrome with his explicit permission, each roster checked on screen
    before saving. Also pins the CSV column mapping.
 
@@ -404,7 +404,7 @@ online-only.
 
 ## Phase 12 scope (agreed 2026-09-05)
 
-1. **Relic & Ruin import of the eight rosters and the battle-records CSV** from Tom's account,
+1. **the existing tracker import of the eight rosters and the battle-records CSV** from Tom's account,
    read through his signed-in Chrome (read-only; his go given with "go ahead with Phase 12"), each
    roster checked on screen before saving; pins the CSV column mapping.
 2. **"Suggested, not forced" across every decision the app makes for the player**, wizards
@@ -424,16 +424,16 @@ bookkeeping columns are GM-only for direct updates).
 
 ## Phase 12 decisions (2026-09-05)
 
-- **Roster import reads page text, not an API.** Relic & Ruin keeps its bearer token in the
+- **Roster import reads page text, not an API.** the existing tracker keeps its bearer token in the
   browser and the walkthrough forbade reading it, so `/warbands/import` parses the text of the
   printer-friendly roster page (own warbands) or the campaign's "View details" panel (others),
   which is what a GM can copy by hand too. `src/features/importer/rosterText.ts` (parser) and
   `rosterImport.ts` (name matching, payloads) are tested against all ten rosters of Tom's campaign
   and the real battle-records CSV (`src/features/importer/fixtures/`, copy in
-  `reference/relic-and-ruin/`). Matching: warband and unit types by normalised name (plurals,
+  `reference/existing-tracker/`). Matching: warband and unit types by normalised name (plurals,
   underscores, "The"), untyped henchman groups by stat line within one advance of a template,
   items via the builder's alias table (unknown ones become custom items), skills / spells /
-  injuries / hired swords by name. Relic & Ruin lists Frenzy, Hardened and Horrible Scars as
+  injuries / hired swords by name. the existing tracker lists Frenzy, Hardened and Horrible Scars as
   injuries: they become flags. Advances already taken are counted from experience so none are owed
   on import. The importer owns the warband; **`transfer_warband`** (owner or a campaign GM; the
   owner-change trigger admits it only there) hands it over once the player has signed up.
@@ -509,7 +509,7 @@ populated by a follow-up scrape:
 
 Assumptions taken without asking (flag if wrong):
 - Players may edit only their own warbands through the rules-driven flows; a labelled manual
-  editor exists for corrections (as in R&R), and the GM's edits are logged.
+  editor exists for corrections (as in the existing tracker), and the GM's edits are logged.
 - A challenge needs acceptance from every challenged warband; a GM-scheduled match does not.
 - Each participant files their own battle report; the match completes when all are in. The
   two sides' "did you win" answers may disagree, and the GM console shows both.

@@ -236,6 +236,7 @@ describe("patches from the roster model", () => {
       status: "active",
     };
     expect(heroPatchFromRoster(hero)).toEqual({
+      unit_type_rules_id: hero.unitTemplateId,
       stats: hero.stats,
       xp: 22,
       level_ups: 1,

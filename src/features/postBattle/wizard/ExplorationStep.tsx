@@ -17,11 +17,12 @@ import {
   type FoundItem,
 } from '../model'
 import { Intro, Row, type StepProps } from './bits'
+import { ExplorationAidsCard } from './ExplorationAids'
 import { StepBody } from './WizardShell'
 
 type TestChoice = 'passed' | 'failed' | 'pending'
 
-export function ExplorationStep({ draft, derived, update }: StepProps) {
+export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
   const ex = derived.exploration
   const [newItem, setNewItem] = useState('')
 
@@ -98,6 +99,8 @@ export function ExplorationStep({ draft, derived, update }: StepProps) {
           </div>
         </Card>
       </Section>
+
+      <ExplorationAidsCard draft={draft} ctx={ctx} update={update} rolls={ex.rolls} />
 
       {ex.result ? (
         <Section title="What you found">

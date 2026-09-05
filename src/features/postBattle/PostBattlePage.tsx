@@ -27,6 +27,8 @@ import { OutcomeStep } from './wizard/OutcomeStep'
 import { ReviewStep } from './wizard/ReviewStep'
 import { VeteransStep } from './wizard/VeteransStep'
 import { StepIndicator, WizardBar } from './wizard/WizardShell'
+import type { CampaignHouseRules } from '../../rules/types/roster'
+import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
 
 function BackToMatch({ matchId }: { matchId: string | undefined }) {
   return (
@@ -147,7 +149,7 @@ function Guarded({ match, participant, userId, liveState, amending }: GuardedPro
       </>
     )
   }
-  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState}  amending={amending} />
+  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState} amending={amending} houseRules={applyHouseRuleDefaults(campaign.data?.settings.houseRules)} />
 }
 
 interface WizardProps {
@@ -156,9 +158,10 @@ interface WizardProps {
   rosterData: NonNullable<ReturnType<typeof useMatchRoster>['data']>
   liveState: BattleLiveState | undefined
   amending: boolean
+  houseRules: CampaignHouseRules
 }
 
-function Wizard({ match, participant, rosterData, liveState, amending }: WizardProps) {
+function Wizard({ match, participant, rosterData, liveState, amending, houseRules }: WizardProps) {
   const navigate = useNavigate()
   const store = useMemo(() => reportStore(match.id, participant.warband_id), [match.id, participant.warband_id])
   const draft = useReportStore(store, (s) => s.draft)
@@ -181,8 +184,10 @@ function Wizard({ match, participant, rosterData, liveState, amending }: WizardP
       matchId: match.id,
       myRating: participant.rating,
       opponentRating: opponents.reduce<number | null>((best, o) => (best === null || o.rating > best ? o.rating : best), null),
+      houseRules,
+      preBattle: liveState?.preBattle ?? {},
     }),
-    [rosterData, match.id, participant.rating, opponents],
+    [rosterData, match.id, participant.rating, opponents, houseRules, liveState],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

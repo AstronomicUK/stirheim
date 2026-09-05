@@ -109,7 +109,38 @@ export interface HiredSwordRules {
   note: string;
 }
 
+export interface PreBattleRule {
+  key: string;
+  label: string;
+  /** The rule, quoted or paraphrased. */
+  text: string;
+  /** Who rolls: a unit template id, "leader", or nothing for a warband-wide roll. */
+  unitId?: string | "leader";
+  /** Ld/T: a characteristic test (2D6 under or equal); D6/2D6: read the outcome table or just record the roll. */
+  test: "Ld" | "T" | "D6" | "2D6";
+  /** Result -> what it means, for D6/2D6 tables. */
+  outcomes?: Record<string, string>;
+}
+
+export interface SuccessionRule {
+  note: string;
+  /** Unit types the rule names as successors, first choice first. Absent = any hero. */
+  candidateUnitIds?: string[];
+  /** Named candidates are preferred but any hero may still be offered. */
+  anyHero?: boolean;
+  /** Break ties by Leadership rather than experience. */
+  by?: "leadership" | "experience";
+  /** The warband disbands when none of the named candidates remain. */
+  disbandsWithout?: boolean;
+  /** Skills the new leader gains on taking over. */
+  grantsSkillIds?: string[];
+}
+
 export interface WarbandCampaignRules {
+  /** Rolls the list calls for before each battle. */
+  preBattle?: PreBattleRule[];
+  /** What happens when the leader is dead. */
+  succession?: SuccessionRule;
   exploration?: ExplorationRules;
   income?: IncomeRules;
   /** Multiply the rating (Snotlings 0.5). */
@@ -228,6 +259,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   marauders_warhounds_of_chaos: ANIMAL,
   marauders_spawn_of_chaos: { ...NO_XP, large: true, promotion: { never: true, note: "A Spawn has no mind left to promote." } },
   merchant_knights_vanguard: { neverLeads: true },
+  merchant_trade_wagon: { gainsExperience: false, promotion: { never: true, note: "A wagon is not promoted." }, incomeCountsAs: 0, neverLeads: true, relation: { outsideMaxModels: true }, equipmentBans: ["allEquipment"] },
   merchant_magician: { neverLeads: true },
   merchant_blackguards: { neverLeads: true, promotion: { never: true, note: "Unreliable Hirelings: Blackguards never become heroes; roll again." } },
   night_goblins_fanatics: { ...NO_XP, promotion: { never: true, note: "Fanatics are never promoted." } },
@@ -301,12 +333,42 @@ const DWARF_NO_ELVES: HiredSwordRules = { denyKeywords: ["elf"], note: "Dwarfs w
 export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   mercenaries_marienburg: { startingGold: 600, rareRollBonus: 1, notes: ["Marienburgers start with 600 gc and add +1 to rare-item rolls."] },
   tileans_trantios: { startingGold: 600, notes: ["Trantios: an extra 100 gc when the warband is founded."] },
+  bretonnian_knights: {
+    preBattle: [
+      {
+        key: "blessing",
+        label: "Blessing of the Lady",
+        unitId: "leader",
+        test: "Ld",
+        text: "Before the game the leader makes a Leadership test. Passed, the Lady's blessing curses the enemy's black powder: each shot needs a D6 roll of 4+ to fire.",
+      },
+    ],
+  },
+  dreamwalkers_cult_of_morr: {
+    preBattle: [{ key: "guiding_dream", label: "Guiding Dream", unitId: "dreamwalkers_dreamer", test: "D6", text: "At the beginning of each battle the Dreamer rolls a D6 on the Guiding Dream table to learn what vision Morr sends (see the warband rule for the table)." }],
+    succession: { note: "The Priest of Morr leads until a genuine Dreamer joins.", candidateUnitIds: ["dreamwalkers_priest_of_morr"], anyHero: true },
+  },
+  dwarf_rangers: {
+    exploration: { extraShards: 1, note: "Incomparable Miners: +1 shard of wyrdstone whenever the warband finds any." },
+    hiredSwords: DWARF_NO_ELVES,
+    preBattle: [{ key: "runes", label: "Inscribe Runes", unitId: "dwarf_rangers_runesmith", test: "2D6", text: "The Runesmith may inscribe a known rune on one warrior's item: roll 2D6 against the rune's Difficulty (6 to 9). Equal or over succeeds for this game; a 2 destroys the item; any other failure gives no bonus." }],
+  },
+  black_orcs: { succession: { note: "Da Boss is Dead: a Black Orc must take over as Boss.", candidateUnitIds: ["black_orcs_black_orc"] } },
+  necrarchs_the_soul_stealers: { succession: { note: "Death of the Leader: the Thrall takes the mantle and rolls for one spell; no new Necrarch can be hired. Both gone, the warband disbands.", candidateUnitIds: ["necrarchs_thrall"], disbandsWithout: true } },
+  protectorate_of_sigmar: { heroCapacity: 5, notes: ["The Huntsman replaces a Templar: five heroes at most."], succession: { note: "Death of a Leader: the Acolyte with the most experience becomes Warrior Priest (a prayer comes with his next advance).", candidateUnitIds: ["acolytes"], by: "experience" } },
+  skaven_of_clan_moulder: { succession: { note: "Heir to Power: an Apprentice succeeds the Packmaster; with none left the warband disbands.", candidateUnitIds: ["apprentices"], disbandsWithout: true } },
+  ogre_hunting_party: { succession: { note: "Ideas Above Their Station: the Gnoblar with the highest Leadership takes over until a new Ogre Hunter is bought.", candidateUnitIds: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter"], by: "leadership" } },
+  pirates: { succession: { note: "A Ship's Mate takes the wheel.", candidateUnitIds: ["pirates_ships_mate"], anyHero: true } },
+  merchant_caravans: { succession: { note: "The new leader gains the Merchant rule.", anyHero: true } },
+  survivors_of_strigos: { succession: { note: "A dead Strigoi cannot be replaced: the survivors carry on without a Vampire, or the warband is retired.", candidateUnitIds: [], disbandsWithout: true } },
+  battle_monks_of_cathay: { hiredSwords: { allow: "none", note: "Battle Monks hire nobody." }, equipmentBans: ["armour", "helmets", "poison"], notes: ["Monks never wear armour or use poison."], succession: { note: "Decree: a new Emissary must be hired before anything else is bought; the Officer leads meanwhile.", candidateUnitIds: ["battle_monks_officer"], anyHero: true } },
+  lizardmen: { succession: { note: "The warband plays one game without a leader before a replacement Skink Priest joins; the Skink Great Crest stands in.", candidateUnitIds: ["lizardmen_skink_great_crest"], anyHero: true } },
+  court_of_the_profane_pleasures: { succession: { note: "Any hero may lead the Court.", anyHero: true } },
   sisters_of_sigmar: { exploration: { rollTwoKeepOneWith: "sisters_of_sigmar_augur", note: "Blessed Sight: the Augur rolls two exploration dice and keeps one." } },
   witch_hunters: {},
   beastmen_raiders: { hiredSwords: { allow: "none", note: "Beastmen Raiders never hire swords." } },
   carnival_of_chaos: { hiredSwords: { allow: "none", note: "The Carnival hires nobody." } },
   dwarf_treasure_hunters: { exploration: { extraShards: 1, note: "Incomparable Miners: +1 shard of wyrdstone whenever the warband finds any." }, hiredSwords: DWARF_NO_ELVES },
-  dwarf_rangers: { exploration: { extraShards: 1, note: "Incomparable Miners: +1 shard of wyrdstone whenever the warband finds any." }, hiredSwords: DWARF_NO_ELVES },
   ostlander_mercenaries: { hiredSwords: { allow: ["ogre_bodyguard"], note: "Ostlanders only hire Ogres." } },
   amazons_lustria: { hiredSwords: { allow: "none", note: "Amazons hire only Amazon hired swords, none of which are in the data." } },
   amazons_mordheim: { hiredSwords: { allow: "none", note: "Amazons hire only Amazon hired swords, none of which are in the data." } },
@@ -318,7 +380,6 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   tomb_guardians: { exploration: { extraDice: 1, note: "Home Ground: +1 exploration die." } },
   tileans_miragleans: { hiredSwords: { denyKeywords: ["skaven", "skryre"], note: "Miragleans hire no Skaven." } },
   tileans_remasens: { hiredSwords: { denyKeywords: ["dark elf"], note: "Remasens hire no Dark Elves." } },
-  battle_monks_of_cathay: { hiredSwords: { allow: "none", note: "Battle Monks hire nobody." }, equipmentBans: ["armour", "helmets", "poison"], notes: ["Monks never wear armour or use poison."] },
   the_cursed_cavalcade: { hiredSwords: { allow: "none", note: "The Cavalcade hires nobody but the Crow Master, who is not in the data." } },
   maneaters: { rareRollBonus: -1, hiredSwords: { allow: ["ogre_bodyguard", "halfling_scout", "halfling_thief"], note: "Maneaters hire only Ogres and Halflings until a Dog of War opens more." } },
   grave_robbers: { exploration: { goldPerEnemyOut: 1, note: "Grave Goods: +1 gc for every enemy put out of action." } },
@@ -334,7 +395,6 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   druchii: { exploration: { extraShards: 1, note: "Fey Acuity: +1 shard of wyrdstone whenever the warband finds any." }, equipmentBans: ["blackPowder"] },
   outlaws_of_stirwood_forest: { heroCapacity: 5, notes: ["The Cleric shares a slot with a Champion or a Petty Thief: five heroes at most."] },
   outlaws_of_stirwood_forest_redux: { heroCapacity: 5 },
-  protectorate_of_sigmar: { heroCapacity: 5, notes: ["The Huntsman replaces a Templar: five heroes at most."] },
   the_restless_dead: {},
   the_restless_dead_variant: {},
 };

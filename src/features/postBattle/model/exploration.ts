@@ -176,6 +176,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (draft.notes.trim() !== '') notes.push(draft.notes.trim())
 
   const bonuses = explorationBonuses(roster, result.shards, input.enemiesOut ?? 0)
+  for (const use of draft.aids ?? []) notes.push(`Die ${use.dieIndex + 1}: ${use.from} re-rolled to ${use.to} with ${use.label}${use.test ? ` (Ld test ${use.test.rolls[0]}+${use.test.rolls[1]} passed)` : ''}`)
   const totalShards = result.shards + (extraShards.value ?? 0) + bonuses.shards
   notes.push(...bonuses.notes)
   const record: ExplorationRecord | null =

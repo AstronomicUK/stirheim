@@ -125,6 +125,10 @@ export function HelpPage() {
           report. Forgot to tap it? Filing a report closes the battle too.
         </P>
               <P>
+          <B>Before the battle.</B> Warbands with Tarot Cards, the Blessing of the Lady, a Dreamer or a Runesmith get a box on the battle sheet to roll
+          those tests and record the result; the tarot reading carries through to the exploration step.
+        </P>
+        <P>
           <B>Rout check.</B> Once a quarter of your starting models are out of action the battle sheet shows a Rout check box: roll the 2D6 in the
           app against a chosen Leadership (the leader while he stands, otherwise the best standing warrior), record a test passed at the table, or
           declare the rout. A failed roll marks the warband routed and offers to end the battle. The app does not track turns, so it reminds rather
@@ -183,6 +187,15 @@ export function HelpPage() {
           swords (their upkeep is paid here too). Restrictions are shown rather than hidden; the app warns and lets you decide.
         </P>
               <P>
+          <B>Searching.</B> Heroes taken out of action cannot look for rare items; the trading post greys them out. The Characters tab sends heroes
+          looking for a Dramatis Persona instead (a D6 under Initiative finds them) and hires the one you find. Mordheim Maps are graded when bought;
+          maps, a Wyrdstone Pendulum, Tarot Cards and (unless the house rule says otherwise) a Rabbit&apos;s Foot offer their re-rolls in the exploration
+          step, one die at a time, with the record kept.
+        </P>
+        <P>
+          <B>A dead leader.</B> The warband page offers the successors the list names and re-templates the hero you choose as the leader.
+        </P>
+        <P>
           <B>Warband rules the app now applies.</B> Animals, undead, daemons and constructs gain no experience; Ogres cross their advance boxes at
           double cost; units their list says are never promoted send The lad&apos;s got talent back for a re-roll; Trolls make no injury roll and
           want feeding after every battle (Hired swords tab); Hobgoblins and Snotlings die or leave on wider dice; Dwarfs and Druchii find an extra

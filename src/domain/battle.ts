@@ -34,6 +34,8 @@ export const battleLiveStateSchema = z.object({
   tallies: z.array(battleWarriorTallySchema).default([]),
   /** "Leader used Leadership for rout test", scenario notes, etc. */
   notes: z.string().default(""),
+  /** Pre-battle prompts answered on the sheet: "tarot:<heroId>" -> "passed" | "failed" | "disaster", list rules by key. */
+  preBattle: z.record(z.string(), z.string()).default({}),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });

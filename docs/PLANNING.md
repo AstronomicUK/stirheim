@@ -641,6 +641,38 @@ Tom's additions (2026-09-05):
   All of these follow "suggested not forced": the prompt proposes the roll and its effect, the
   player can decline or override with a reason, and the log keeps it.
 
+## Phase 15 built (2026-09-05)
+
+- **Searches.** `PhaseInfo.heroesOutOfAction` comes from the filed report's `ooa` lines for the phase's
+  match (`TradingPage` reads `useMatchReports`); `eligibleSearchers` and the Characters tab exclude
+  them and say so. `characterSearchers` / `resolveCharacterSearch` in `rules/resolve/dramatis.ts`;
+  the Characters tab (`features/trading/CharactersTab.tsx`) records searchers on the phase through
+  `record_trade` with no roster change, then hires a found persona with `hireHiredSword` (which now
+  resolves Dramatis Personae ids too via `findHiredSword`).
+- **House rule** `rabbitsFootBattleOnly` (default on).
+- **Exploration aids** (`rules/resolve/explorationAids.ts`): Mordheim Map graded by the D6 rolled at
+  purchase (kept in the item's notes; `buyItem` takes `notes`), Wyrdstone Pendulum (Ld test in the
+  step), Rabbit's Foot (unless the house rule), Tarot Cards (pre-battle pass recorded on the sheet),
+  and the list's roll-two-keep-one hero. `ExplorationDraft.aids` records each use; the record's
+  notes carry them. Report draft version bumped to 3 (older drafts are dropped).
+- **Before the battle** (`features/match/battle/PreBattle.tsx`): Tarot Cards for any holder, plus
+  `WARBAND_RULES.preBattle` (Blessing of the Lady, Guiding Dream, Inscribe Runes). Outcomes go to
+  `BattleLiveState.preBattle` and the sheet notes; the wizard reads them through `ReportContext.preBattle`.
+- **Leader succession** (`rules/resolve/succession.ts`, card on the warband page): candidates from
+  `WARBAND_RULES.succession` (Black Orcs, Necrarchs, Protectorate, Clan Moulder, Ogre Hunting Party,
+  Pirates, Merchants, Dreamwalkers, Strigos, Battle Monks, Lizardmen, Court) or any hero; never-leaders
+  excluded; `appointLeader` re-templates the hero. Migration 19 lets `update_roster` change
+  `heroes.unit_type_rules_id`; `HeroPatch` carries it.
+- **Trade Wagon** unit on the Merchant Caravans list (added to the template with a note; no
+  experience, outside the maximum, counts nothing for income).
+- **Template sharing**: `shareTemplate` sets `campaign_id`; the template sheet has a campaign picker
+  for the owner; shared templates show a "Shared" mark and a line for non-owners.
+- **Keep-awake**: `.github/workflows/keep-awake.yml` (cron, needs repository variables
+  `SUPABASE_URL` and `SUPABASE_ANON_KEY`).
+- Not done: Nurgle's Rot (needs the Blessing purchase from Tier 2), the Guiding Dream outcome table
+  (the scrape truncates it), automatic "map spent" marking after a Vague/Accurate map is used (note it
+  on the item).
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

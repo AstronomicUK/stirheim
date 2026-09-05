@@ -32,6 +32,12 @@ export async function saveTemplate(input: { ownerId: string; name: string; typeR
   return data.id
 }
 
+/** Share a template with one campaign (its members can start warbands from it), or make it private again with null. */
+export async function shareTemplate(id: string, campaignId: string | null): Promise<void> {
+  const { error } = await supabase.from('warband_templates').update({ campaign_id: campaignId }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function deleteTemplate(id: string): Promise<void> {
   const { error } = await supabase.from('warband_templates').delete().eq('id', id)
   if (error) throw new Error(error.message)
@@ -44,6 +50,13 @@ export function useMyTemplates(enabled = true) {
 export function useSaveTemplate() {
   return useMutation({
     mutationFn: saveTemplate,
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['warband-templates'] }),
+  })
+}
+
+export function useShareTemplate() {
+  return useMutation({
+    mutationFn: ({ id, campaignId }: { id: string; campaignId: string | null }) => shareTemplate(id, campaignId),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['warband-templates'] }),
   })
 }

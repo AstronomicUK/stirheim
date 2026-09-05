@@ -8,8 +8,9 @@
 import type { BattleLiveState } from '../../../domain'
 import type { RosterWarband } from '../../../rules/types/roster'
 import type { AdvanceDraft } from '../../advances/model'
+import type { AidUse } from '../../../rules/resolve/explorationAids'
 
-export const REPORT_DRAFT_VERSION = 2
+export const REPORT_DRAFT_VERSION = 3
 
 export type ReportResult = 'won' | 'lost' | 'draw'
 
@@ -78,6 +79,8 @@ export interface ExplorationDraft {
   extraShards: number | null
   /** Items found; null = the suggestions from the location text stand as they are. */
   items: FoundItem[] | null
+  /** Re-rolls and modifiers applied to the dice (Mordheim Map, Pendulum, Tarot...). */
+  aids: AidUse[]
   notes: string
 }
 
@@ -121,7 +124,7 @@ export interface ReportDraft {
 }
 
 export function emptyExploration(): ExplorationDraft {
-  return { diceOverride: null, rolls: [], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null, notes: '' }
+  return { diceOverride: null, rolls: [], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null, aids: [], notes: '' }
 }
 
 export function emptyDraft(): ReportDraft {
@@ -322,6 +325,14 @@ export function setAdvanceMode(draft: ReportDraft, key: string, mode: AdvanceMod
 
 function withExploration(draft: ReportDraft, patch: Partial<ExplorationDraft>): ReportDraft {
   return { ...draft, exploration: { ...draft.exploration, ...patch } }
+}
+
+/** Apply an exploration aid to one die: the die takes the new value and the use is kept for the record. */
+export function applyExplorationAid(draft: ReportDraft, use: AidUse): ReportDraft {
+  const rolls = [...draft.exploration.rolls]
+  while (rolls.length <= use.dieIndex) rolls.push(null)
+  rolls[use.dieIndex] = use.to
+  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null })
 }
 
 /** Roll a different number of exploration dice than suggested (1..12); null goes back to the suggestion. The reason is required to file. */

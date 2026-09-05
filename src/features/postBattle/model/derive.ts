@@ -30,6 +30,7 @@ import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
 import { defaultPromotedName, effectiveStep, emptyDraft as emptyAdvanceDraft, findSubject, planGroup, planHero, subjectName, type AdvanceDraft, type AdvanceStep, type AdvanceSubject, type GroupPlan, type HeroPlan } from '../../advances/model'
 import { skillTableName } from '../../roster/view/lookups'
+import type { CampaignHouseRules } from '../../../rules/types/roster'
 
 export interface ReportContext {
   roster: RosterWarband
@@ -41,6 +42,10 @@ export interface ReportContext {
   myRating: number
   /** Highest rating among the opponents, or null when there were none. */
   opponentRating: number | null
+  /** The campaign's house rules (defaults when the warband is in no campaign). */
+  houseRules?: CampaignHouseRules
+  /** Outcomes recorded on the battle sheet before the game (tarot readings, list rules). */
+  preBattle?: Record<string, string>
 }
 
 export interface InjurySummary {
@@ -115,7 +120,7 @@ export interface DerivedReport {
   report: BattleReport | null
 }
 
-function heroOoaIds(draft: ReportDraft): Set<string> {
+export function heroOoaIds(draft: ReportDraft): Set<string> {
   return new Set(draft.heroesOut)
 }
 

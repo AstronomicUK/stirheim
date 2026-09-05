@@ -2257,6 +2257,24 @@ export const WARBANDS: WarbandTemplate[] = [
           },
         ],
       },
+      {
+        id: `merchant_trade_wagon`,
+        name: `Trade Wagon`,
+        role: "henchman",
+        cost: 180,
+        rosterLimit: `1`,
+        startingExperience: 0,
+        stats: { M: 0, WS: 0, BS: 0, S: 0, T: 8, W: 4, I: 0, A: 0, Ld: 0 },
+        equipmentListId: `merchant_cathayan`,
+        skillTableIds: [],
+        specialRules: [
+          {
+            name: `Special Equipment`,
+            text: `A starting warband must always include one Trade Wagon (180 gc, two draft horses included; one warband model drives). Cart T8 W4, wheels T6 W1, draft horse M8 WS1 BS0 S3 T3 W1 I3 A0 Ld5. Storage: the warband's stored equipment and treasures ride in it (not gold); if it is destroyed they are lost. Reputation: +1 to the Merchant's rare-item rolls per five different rare items stored. Abandoned on a failed Rout test with no driver.`,
+          },
+        ],
+        notes: `Added by Stirheim (2026-09-05): the list treats the wagon as special equipment, but a starting warband must include one, so it is offered here as a unit that never gains experience and does not count against the maximum.`,
+      },
     ],
     sourceUrl: `https://mordheimer.net/docs/warbands/grade-1c-warbands/merchant-caravans`,
     composition: {

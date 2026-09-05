@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { warbandRules } from '../../rules/data/campaignRules'
+import { mordheimMapResult } from '../../rules/resolve/explorationAids'
 import { SHOP_ITEMS } from '../../rules/data/items'
 import { RARE_ROLL } from '../../rules/data/campaign/trading'
 import { parseDice } from '../../rules/resolve/dice'
@@ -89,6 +90,9 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const [destinationKey, setDestinationKey] = useState('stash')
   const [quantity, setQuantity] = useState(1)
   const [searchRecorded, setSearchRecorded] = useState(false)
+  const isMap = item.id === 'mordheim_map'
+  const [mapDie, setMapDie] = useState<number | null>(null)
+  const mapResult = isMap && mapDie !== null ? mordheimMapResult(mapDie) : null
 
   // ---- Availability ----
   const kind = item.availability.kind
@@ -109,7 +113,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const total = priceReady ? unitPrice * quantity : null
   const affordable = total !== null && total <= roster.gold
 
-  const canBuy = canTrade && available && searcherOk && priceReady && affordable && (!isRare || !searchRecorded)
+  const canBuy = canTrade && available && searcherOk && priceReady && affordable && (!isRare || !searchRecorded) && (!isMap || mapResult !== null)
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -125,7 +129,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
 
   async function buy() {
     if (unitPrice === null) return
-    const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity).value, {
+    const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, mapResult?.note).value, {
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
       reason: overrideReady(priceOverride) && computed !== null ? reasonWith('trading', overrideNote(`${item.name} price`, `${computed} gc`, `${priceOverride.amount} gc`, priceOverride.reason)) : undefined,
     })
@@ -162,6 +166,15 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
         {item.description ? <p className="text-sm leading-relaxed text-ink-dim">{item.description}</p> : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
 
+        {isMap ? (
+          <section className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">When you buy a map, roll a D6</h3>
+            <div className="flex flex-wrap items-end gap-3">
+              <DieField label="Map D6" sides={6} value={mapDie} onChange={setMapDie} rollable />
+              {mapResult ? <p className="text-sm text-ink">{mapResult.text}</p> : <p className="text-xs text-ink-dim">The result is kept on the item and the exploration step offers the re-rolls it grants.</p>}
+            </div>
+          </section>
+        ) : null}
         {isRare ? (
           <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
             <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband)` : ''}</h3>

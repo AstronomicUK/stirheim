@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useDeleteTemplate, useMyTemplates, type SavedTemplate } from '../../api/templates'
+import { useMyCampaigns } from '../../api/campaigns'
+import { useDeleteTemplate, useMyTemplates, useShareTemplate, type SavedTemplate } from '../../api/templates'
+import { useSession } from '../../app/session'
 import { draftFromTemplate } from '../../rules/resolve/warbandTemplates'
-import { Button, Notice, Sheet, TextField } from '../../ui'
+import { Button, Notice, SelectField, Sheet, TextField } from '../../ui'
 import { newDraftId, useDraftStore } from './builder/draftStore'
 import { warbandTypeName } from './shared/names'
 import { Section } from './view/bits'
@@ -25,7 +27,10 @@ export function SavedTemplates() {
                     {warbandTypeName(t.type_rules_id)} · {t.payload.heroes.length} heroes, {t.payload.henchman_groups.reduce((n, g) => n + g.size, 0)} henchmen
                   </span>
                 </span>
-                <span className="shrink-0 text-xs text-ink-dim">{new Date(t.created_at).toLocaleDateString()}</span>
+                <span className="shrink-0 text-right text-xs text-ink-dim">
+                  {new Date(t.created_at).toLocaleDateString()}
+                  {t.campaign_id ? <span className="block text-brass">Shared</span> : null}
+                </span>
               </button>
             </li>
           ))}
@@ -41,6 +46,10 @@ function StartFromTemplate({ template, onClose }: { template: SavedTemplate; onC
   const draft = useDraftStore((s) => s.draft)
   const load = useDraftStore((s) => s.load)
   const remove = useDeleteTemplate()
+  const share = useShareTemplate()
+  const user = useSession((s) => s.user)
+  const campaigns = useMyCampaigns(user?.id)
+  const mine = template.owner_id === user?.id
   const [name, setName] = useState('')
   const [confirmReplace, setConfirmReplace] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -108,17 +117,37 @@ function StartFromTemplate({ template, onClose }: { template: SavedTemplate; onC
         </ul>
         <p className="text-xs text-ink-dim">Prices come from the rules data today, so the total may differ from the original warband. Experience, injuries and gold are not copied.</p>
         {error ? <Notice tone="error">{error}</Notice> : null}
-        <Button
-          variant="ghost"
-          className="self-start px-0 text-accent"
-          pending={remove.isPending}
-          onClick={async () => {
-            await remove.mutateAsync(template.id)
-            onClose()
-          }}
-        >
-          Delete this template
-        </Button>
+        {mine ? (
+          <>
+            <SelectField
+              label="Share with a campaign"
+              hint="Members of the campaign see it under Your templates. Pick 'Only me' to make it private again."
+              value={template.campaign_id ?? ''}
+              disabled={share.isPending}
+              onChange={(e) => void share.mutateAsync({ id: template.id, campaignId: e.target.value || null })}
+            >
+              <option value="">Only me</option>
+              {(campaigns.data ?? []).filter((c) => !c.archived).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SelectField>
+            <Button
+              variant="ghost"
+              className="self-start px-0 text-accent"
+              pending={remove.isPending}
+              onClick={async () => {
+                await remove.mutateAsync(template.id)
+                onClose()
+              }}
+            >
+              Delete this template
+            </Button>
+          </>
+        ) : (
+          <p className="text-xs text-ink-dim">Shared with your campaign by another player.</p>
+        )}
       </div>
     </Sheet>
   )

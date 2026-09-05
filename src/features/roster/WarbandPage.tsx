@@ -4,13 +4,16 @@ import { usePendingAdvances } from '../../api/advances'
 import { useSaveTemplate } from '../../api/templates'
 import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
 import { rosterToTemplatePayload } from '../../rules/resolve/warbandTemplates'
+import { appointLeader, successionOptions } from '../../rules/resolve/succession'
+import { diffRoster } from '../../domain/rosterDiff'
+import type { WarbandTemplate } from '../../rules/types'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
 import { validateRoster, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
 import { ActionTile, Button, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
 import { BUTTON_BASE, BUTTON_VARIANTS } from '../../ui/buttonStyles'
-import { warbandTypeName } from './shared/names'
+import { unitTypeName, warbandTypeName } from './shared/names'
 import { Card, ItemLines, KeyValue, Section, Tag } from './view/bits'
 import { GroupCard } from './view/GroupCard'
 import { itemsByHolder } from './view/lookups'
@@ -175,6 +178,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
           </ul>
         </Notice>
       ) : null}
+      {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
       {rating.notes.length > 0 ? (
         <Notice tone="info" title="Rating notes">
           <ul className="flex list-disc flex-col gap-1 pl-4">
@@ -330,6 +334,54 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </div>
       </Sheet>
     </>
+  )
+}
+
+/** The leader is dead: offer the list's successors and re-template the chosen hero. */
+function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; template: WarbandTemplate; onError: (e: string | null) => void }) {
+  const update = useUpdateRoster(detail.warband.id)
+  const view = useMemo(() => successionOptions(detail.roster, template), [detail.roster, template])
+  const [choice, setChoice] = useState('')
+  if (!view) return null
+  const chosen = view.candidates.find((c) => c.hero.id === choice) ?? view.candidates[0]
+
+  async function appoint() {
+    if (!chosen) return
+    onError(null)
+    try {
+      const next = appointLeader(detail.roster, template, chosen.hero.id).value
+      await update.mutateAsync({ reason: 'succession', changes: diffRoster(detail, next) })
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Could not appoint the new leader.')
+    }
+  }
+
+  return (
+    <Notice tone="warn" title={`The warband has no ${view.leaderUnitName}`}>
+      <div className="flex flex-col gap-3">
+        <p>{view.note ?? 'A new leader must take over: pick the hero who steps up. They keep their profile, experience, skills and kit and are treated as the leader type from now on.'}</p>
+        {view.disbands ? (
+          <p className="text-accent">The list names no one left who may take over.</p>
+        ) : view.candidates.length === 0 ? (
+          <p>No active hero can lead; recruit one first.</p>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <span className="flex-1">
+              <SelectField label="New leader" value={chosen?.hero.id ?? ''} onChange={(e) => setChoice(e.target.value)}>
+                {view.candidates.map((c) => (
+                  <option key={c.hero.id} value={c.hero.id}>
+                    {c.hero.name} · {unitTypeName(template.id, c.hero.unitTemplateId)} · Ld {c.hero.stats.Ld} · {c.hero.xp} xp{c.reason ? ' · named by the list' : ''}
+                  </option>
+                ))}
+              </SelectField>
+            </span>
+            <Button pending={update.isPending} disabled={!chosen} onClick={() => void appoint()}>
+              Appoint {chosen ? chosen.hero.name : ''}
+            </Button>
+          </div>
+        )}
+      </div>
+    </Notice>
   )
 }
 

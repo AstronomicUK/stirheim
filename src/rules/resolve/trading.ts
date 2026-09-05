@@ -188,6 +188,7 @@ export function buyItem(
   price: number,
   destination: InventoryLocation,
   quantity = 1,
+  notes?: string,
 ): Resolution<RosterWarband> {
   assertQuantity(quantity);
   if (!Number.isInteger(price) || price < 0) {
@@ -198,7 +199,9 @@ export function buyItem(
     throw new RulesError("trading.insufficientGold", `${item.name} x${quantity} costs ${cost} gc but the warband has ${warband.gold} gc`);
   }
   const inventory = readInventory(warband, destination);
-  const next = writeInventory({ ...warband, gold: warband.gold - cost }, destination, addStack(inventory, item.id, quantity));
+  const stacked = addStack(inventory, item.id, quantity);
+  const noted = notes ? stacked.map((i) => (i.itemId === item.id && !i.customName ? { ...i, notes } : i)) : stacked;
+  const next = writeInventory({ ...warband, gold: warband.gold - cost }, destination, noted);
   const each = quantity > 1 ? ` (${price} gc each)` : "";
   const event: ResolutionEvent = {
     kind: "item.bought",

@@ -181,7 +181,7 @@ export function toRosterWarband(
 
 export type HeroPatch = Pick<
   HeroRow,
-  "stats" | "xp" | "level_ups" | "skill_tables" | "skills" | "spells" | "injuries" | "flags" | "status" | "notes"
+  "stats" | "xp" | "level_ups" | "skill_tables" | "skills" | "spells" | "injuries" | "flags" | "status" | "notes" | "unit_type_rules_id"
 >;
 
 export type HiredSwordPatch = Pick<HeroRow, "stats" | "xp" | "level_ups" | "skills" | "injuries" | "flags" | "status">;
@@ -193,6 +193,7 @@ export type HenchmanGroupPatch = Pick<
 
 export function heroPatchFromRoster(hero: RosterHero): HeroPatch {
   return {
+    unit_type_rules_id: hero.unitTemplateId,
     stats: hero.stats,
     xp: hero.xp,
     level_ups: hero.levelUps,

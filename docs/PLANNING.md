@@ -460,6 +460,30 @@ bookkeeping columns are GM-only for direct updates).
   below what the log contributed ("1 from the log"), so a logged kill is undone from the log, not
   by tapping.
 
+## Test round 1 (2026-09-05)
+
+Tom tested the first live build and sent a change list. The interface, not the rules, was the main
+complaint: a phone column on desktop, secondary buttons dark-on-dark, browser-default monospace
+for every figure, a tiny text-only tab bar, bland action buttons. He wants the redesign thought
+through (desktop vs mobile especially) and approved before it is built, and no Netlify deploy
+without his approval while credits are short.
+
+Fixed straight away (commit 6f2e29d, not yet deployed): Getting Started only for accounts with no
+warband and no campaign; dice/combat settings in the same order and wording; bottom sheets capped
+at 85dvh with a Done button on the equipment sheet; grade chips wrap; free dagger on adding a unit
+in the builder; "Henchman groups" labels; the other tracker's name removed from product copy,
+README and comments (still in these docs and in the fixture file names, pending his decision).
+
+Proposal sent as a page with mockups: two directions (A "Ledger", light paper/ink/oxblood/brass;
+B "Lantern", dark with a real contrast ladder and brass primary), type pairing IM Fell English +
+Source Sans 3 (alt Alegreya pair), desktop rail + two columns from 1024px, action tiles, nine-cell
+stat block, segmented experience track at the advance boxes, tooltip cards for skills/kit.
+Phase 13 = visual rebuild + layout + tooltips + warbands grouped by campaign + XP track.
+Phase 14 = per-campaign aliases, per-model names in henchman groups, warband templates, records
+importer wyrdstone/gold/veteran-pool columns (then a fresh campaign and re-import), free dagger for
+recruits. Decisions awaited: direction, type pairing, rail vs top bar, XP track vs box grid, who
+sets aliases, template sharing, deploy the fixes now or with Phase 13, scrub docs/fixture names.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

@@ -6,6 +6,7 @@ import { StatLine } from '../shared/StatLine'
 import { unitTypeName } from '../shared/names'
 import { STAT_ORDER } from '../shared/stats'
 import { Card, ItemLines, RuleList, Tag, XpBar } from './bits'
+import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { warriorSpecialRules } from './lookups'
 
 export interface GroupCardProps {
@@ -51,7 +52,7 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
           </div>
         </div>
         <StatLine stats={group.stats} raised={group.stat_increases} />
-        <XpBar xp={group.xp} levelUps={group.level_ups} role="henchman" />
+        <XpBar xp={group.xp} levelUps={group.level_ups} role="henchman" rate={unitRules(group.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={!unitGainsExperience(group.unit_type_rules_id)} />
       </button>
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">

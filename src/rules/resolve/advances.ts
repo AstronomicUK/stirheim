@@ -31,12 +31,13 @@ import {
   findRacialMaximum,
   lookupAdvance,
   nextThreshold,
-} from "../data/campaign/experience";
+ type AdvanceRate } from "../data/campaign/experience";
 import { SKILLS, findSkill } from "../data/skills";
 import { WARBAND_SKILL_TABLES, findWarbandSkill, skillTablesForWarband } from "../data/campaign/warbandSkills";
 import { findSpell } from "../data/campaign/magic";
 import { findUnitTemplate, findWarbandTemplate } from "../data/warbandTemplates/index";
 import { RulesError } from "./errors";
+import { unitRules } from "../data/campaignRules";
 import { STAT_NAMES } from "./injuries";
 
 export const STAT_KEYS: readonly StatKey[] = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"];
@@ -50,19 +51,19 @@ export const WARBAND_UNIQUE_TABLE_ID = "warband-unique";
 // ---- Experience thresholds ----
 
 /** Advance rolls earned by moving from `xpBefore` to `xpAfter`. */
-export function pendingAdvances(role: CharacterRole, xpBefore: number, xpAfter: number): number {
-  return advancesEarned(xpBefore, xpAfter, role);
+export function pendingAdvances(role: CharacterRole, xpBefore: number, xpAfter: number, rate: AdvanceRate = "normal"): number {
+  return advancesEarned(xpBefore, xpAfter, role, rate);
 }
 
 /** Experience points still needed to reach the next Advance box, or null once the roster sheet runs out. */
-export function xpToNextLevel(role: CharacterRole, xp: number): number | null {
-  const next = nextThreshold(xp, role);
+export function xpToNextLevel(role: CharacterRole, xp: number, rate: AdvanceRate = "normal"): number | null {
+  const next = nextThreshold(xp, role, rate);
   return next === null ? null : next - xp;
 }
 
 /** The absolute experience total of the next Advance box, or null once the roster sheet runs out. */
-export function nextAdvanceAt(role: CharacterRole, xp: number): number | null {
-  return nextThreshold(xp, role);
+export function nextAdvanceAt(role: CharacterRole, xp: number, rate: AdvanceRate = "normal"): number | null {
+  return nextThreshold(xp, role, rate);
 }
 
 // ---- Advance rolls ----
@@ -230,7 +231,7 @@ export function resolveRacialProfile(hero: RosterHero, warbandTemplateId: string
   let profile: string | undefined;
   let matchedBy: RacialProfileMatch["matchedBy"] = "fallback";
 
-  const unitOverride = override?.units?.[hero.unitTemplateId] ?? override?.units?.[unitName];
+  const unitOverride = unitRules(hero.unitTemplateId).racialProfile ?? override?.units?.[hero.unitTemplateId] ?? override?.units?.[unitName];
   if (unitOverride) {
     profile = unitOverride;
     matchedBy = "unitOverride";

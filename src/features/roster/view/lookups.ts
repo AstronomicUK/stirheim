@@ -2,7 +2,7 @@
 // tags. Nothing here touches React or the network, so it is unit-tested in node.
 
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
-import { nextThreshold, HENCHMAN_XP_THRESHOLDS, HERO_XP_THRESHOLDS } from '../../../rules/data/campaign/experience'
+import { nextThreshold, xpThresholds, type AdvanceRate } from '../../../rules/data/campaign/experience'
 import { SPELL_LORES } from '../../../rules/data/campaign/magic'
 import { WARBAND_SKILL_TABLES, findWarbandSkill, skillTablesForWarband } from '../../../rules/data/campaign/warbandSkills'
 import { SKILLS, findSkill } from '../../../rules/data/skills'
@@ -123,11 +123,11 @@ export interface XpProgress {
 }
 
 /** Where a warrior sits between advance boxes and whether any advances are still to be rolled. */
-export function xpProgress(xp: number, levelUps: number, role: CharacterRole): XpProgress {
-  const thresholds = role === 'hero' ? HERO_XP_THRESHOLDS : HENCHMAN_XP_THRESHOLDS
+export function xpProgress(xp: number, levelUps: number, role: CharacterRole, rate: AdvanceRate = 'normal'): XpProgress {
+  const thresholds = xpThresholds(role, rate)
   const crossed = thresholds.filter((t) => t <= xp)
   const previous = crossed.length > 0 ? crossed[crossed.length - 1] : 0
-  const next = nextThreshold(xp, role)
+  const next = nextThreshold(xp, role, rate)
   const fraction = next === null ? 1 : Math.min(1, Math.max(0, (xp - previous) / (next - previous)))
   return { xp, next, previous, advancesOwed: Math.max(0, crossed.length - levelUps), fraction }
 }
@@ -143,8 +143,8 @@ export interface XpSegment {
  * The advance boxes as track segments, from 0 to the first box and between each pair after it,
  * shown up to two boxes past the current total so the track always has somewhere to go.
  */
-export function xpTrack(xp: number, role: CharacterRole): XpSegment[] {
-  const thresholds = role === 'hero' ? HERO_XP_THRESHOLDS : HENCHMAN_XP_THRESHOLDS
+export function xpTrack(xp: number, role: CharacterRole, rate: AdvanceRate = 'normal'): XpSegment[] {
+  const thresholds = xpThresholds(role, rate)
   const nextIndex = thresholds.findIndex((t) => t > xp)
   const shownUpTo = nextIndex === -1 ? thresholds.length : Math.min(thresholds.length, Math.max(nextIndex + 2, 6))
   const segments: XpSegment[] = []

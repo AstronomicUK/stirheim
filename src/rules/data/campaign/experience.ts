@@ -26,18 +26,23 @@ export const HENCHMAN_XP_THRESHOLDS: number[] = [2, 5, 9, 14];
 /** "Henchmen never add more than +1 point to any of their initial characteristics." (03:278) */
 export const HENCHMAN_MAX_INCREASE_PER_STAT = 1;
 
-function thresholdsFor(role: CharacterRole): number[] {
-  return role === "hero" ? HERO_XP_THRESHOLDS : HENCHMAN_XP_THRESHOLDS;
+/** "half": the unit needs twice the experience for every advance (Ogres). */
+export type AdvanceRate = "normal" | "half";
+
+/** The advance boxes for a role, doubled for half-rate units. */
+export function xpThresholds(role: CharacterRole, rate: AdvanceRate = "normal"): number[] {
+  const base = role === "hero" ? HERO_XP_THRESHOLDS : HENCHMAN_XP_THRESHOLDS;
+  return rate === "half" ? base.map((t) => t * 2) : base;
 }
 
 /** Number of Advance boxes crossed going from `oldXp` to `newXp` (thresholds t with oldXp < t <= newXp). */
-export function advancesEarned(oldXp: number, newXp: number, role: CharacterRole): number {
-  return thresholdsFor(role).filter((t) => t > oldXp && t <= newXp).length;
+export function advancesEarned(oldXp: number, newXp: number, role: CharacterRole, rate: AdvanceRate = "normal"): number {
+  return xpThresholds(role, rate).filter((t) => t > oldXp && t <= newXp).length;
 }
 
 /** The next Advance box strictly above `xp`, or null once the roster sheet runs out. */
-export function nextThreshold(xp: number, role: CharacterRole): number | null {
-  return thresholdsFor(role).find((t) => t > xp) ?? null;
+export function nextThreshold(xp: number, role: CharacterRole, rate: AdvanceRate = "normal"): number | null {
+  return xpThresholds(role, rate).find((t) => t > xp) ?? null;
 }
 
 // ---- Underdogs ----
@@ -176,6 +181,9 @@ export const RACIAL_MAXIMUMS: RacialMaximum[] = [
   { profile: "Centigor", stats: { M: 9, WS: 7, BS: 6, S: 4, T: 5, W: 4, I: 6, A: 4, Ld: 9 } },
   { profile: "Minotaur", stats: { M: 6, WS: 6, BS: 5, S: 5, T: 5, W: 5, I: 6, A: 5, Ld: 9 } },
   { profile: "Other Beastmen", stats: { M: 5, WS: 7, BS: 6, S: 4, T: 5, W: 4, I: 6, A: 4, Ld: 9 } },
+  // Rows from individual warband lists (2026-09-05 audit): the generic row was wrong for these.
+  { profile: "Necrarch Vampire", stats: { M: 6, WS: 4, BS: 4, S: 6, T: 6, W: 4, I: 9, A: 3, Ld: 10 }, note: "Necrarchs list: WS4 BS4 S6 A3, otherwise as Vampire." },
+  { profile: "Wolfman (Masters of Horror)", stats: { M: 6, WS: 4, BS: 3, S: 5, T: 4, W: 3, I: 7, A: 4, Ld: 8 } },
 ];
 
 export function findRacialMaximum(profile: string): RacialMaximum | undefined {

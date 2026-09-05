@@ -17,9 +17,12 @@
 // - The underdog bonus goes to every surviving warrior and group ("its warriors"), once, using the
 //   highest-rated opponent when there were several.
 // - Scenario-specific awards are entered by the player as extra lines with a reason.
+// - Units the campaign rules mark as never gaining experience (animals, undead, daemons, constructs)
+//   get no line at all; ogres and other half-rate units cross their advance boxes at double cost.
 
 import type { XpLine } from '../../../domain'
-import { underdogBonus } from '../../../rules/data/campaign/experience'
+import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
+import { underdogBonus, type AdvanceRate } from '../../../rules/data/campaign/experience'
 import { pendingAdvances } from '../../../rules/resolve/advances'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../../rules/types/roster'
@@ -54,6 +57,7 @@ function toLine(
   subject: { id: string; name: string; xp: number },
   role: CharacterRole,
   awards: Award[],
+  rate: AdvanceRate = 'normal',
 ): XpLine | null {
   const kept = awards.filter((a) => a.amount !== 0)
   if (kept.length === 0) return null
@@ -68,7 +72,7 @@ function toLine(
     reasons: kept.map((a) => `${signed(a.amount)} ${a.reason}`),
     xpBefore,
     xpAfter,
-    advancesEarned: pendingAdvances(role, xpBefore, xpAfter),
+    advancesEarned: pendingAdvances(role, xpBefore, xpAfter, rate),
   }
 }
 
@@ -84,6 +88,8 @@ export function warriorXpLine(
   ctx: XpContext,
 ): XpLine | null {
   if (!alive) return null
+  const unitId = 'unitTemplateId' in before ? before.unitTemplateId : null
+  if (!unitGainsExperience(unitId)) return null
   const awards: Award[] = [{ amount: 1, reason: 'survived the battle' }]
   if (ctx.won && ctx.leaderId === before.id) awards.push({ amount: 1, reason: 'winning leader' })
   const enemies = ctx.enemiesOut[before.id] ?? 0
@@ -92,14 +98,15 @@ export function warriorXpLine(
   const injuryXp = after.xp - before.xp
   if (injuryXp !== 0) awards.push({ amount: injuryXp, reason: 'from the Serious Injuries chart' })
   for (const extra of ctx.extras[before.id] ?? []) awards.push({ amount: extra.amount, reason: extra.reason })
-  return toLine(subjectType, before, 'hero', awards)
+  return toLine(subjectType, before, 'hero', awards, unitRules(unitId).advanceRate ?? 'normal')
 }
 
 /** A henchman group's line: +1 for surviving as long as a model remains, plus underdog and extras. */
 export function groupXpLine(before: RosterHenchmanGroup, after: RosterHenchmanGroup, ctx: XpContext): XpLine | null {
   if (after.size <= 0) return null
+  if (!unitGainsExperience(before.unitTemplateId)) return null
   const awards: Award[] = [{ amount: 1, reason: 'survived the battle' }]
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   for (const extra of ctx.extras[before.id] ?? []) awards.push({ amount: extra.amount, reason: extra.reason })
-  return toLine('group', before, 'henchman', awards)
+  return toLine('group', before, 'henchman', awards, unitRules(before.unitTemplateId).advanceRate ?? 'normal')
 }

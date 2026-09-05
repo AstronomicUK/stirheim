@@ -78,9 +78,10 @@ export function warbandSizeBandIndex(size: number): number {
 }
 
 /** Gold crowns earned by selling `shards` wyrdstone with a warband of `warbandSize` warriors (0 for no shards). */
-export function wyrdstoneIncome(shards: number, warbandSize: number): number {
+export function wyrdstoneIncome(shards: number, warbandSize: number, bandShift = 0): number {
   if (shards < 1) return 0;
   const row = WYRDSTONE_INCOME.find((r) => (shards >= 8 ? r.shardsSold === "8+" : r.shardsSold === shards));
   if (!row) throw new RangeError(`No income row for ${shards} shards`);
-  return row.byWarbandSize[warbandSizeBandIndex(warbandSize)];
+  const index = Math.max(0, Math.min(WARBAND_SIZE_BANDS.length - 1, warbandSizeBandIndex(warbandSize) + bandShift));
+  return row.byWarbandSize[index];
 }

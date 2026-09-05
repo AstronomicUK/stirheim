@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
-import { dismissWarrior, hireHiredSword, hiredSwordEquipment, payUpkeep } from '../../rules/resolve/recruitment'
+import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, payHenchmanUpkeep, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
 import { Button, Markdown, Notice, NumberField, Sheet, TextField, OverrideField } from '../../ui'
@@ -31,11 +31,14 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone }: HiredSword
   const [paying, setPaying] = useState<RosterHiredSword | null>(null)
   const [dismissing, setDismissing] = useState<RosterHiredSword | null>(null)
   const [hiring, setHiring] = useState<HiredSwordOption | null>(null)
+  const [feeding, setFeeding] = useState<HenchmanUpkeepLine | null>(null)
+  const groupUpkeep = useMemo(() => henchmanUpkeepDue(detail.roster), [detail.roster])
 
   function finish(outcome: Outcome) {
     setPaying(null)
     setDismissing(null)
     setHiring(null)
+    setFeeding(null)
     onDone(outcome)
   }
 
@@ -79,6 +82,33 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone }: HiredSword
         )}
       </Section>
 
+      {groupUpkeep.length > 0 ? (
+        <Section title="Henchmen with upkeep" aside={`${groupUpkeep.length}`}>
+          <ul className="flex flex-col gap-3">
+            {groupUpkeep.map((line) => (
+              <li key={line.groupId}>
+                <Card className="flex flex-col gap-3 px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-base text-ink">{line.name}</p>
+                      <p className="text-xs text-ink-dim">{line.note}</p>
+                    </div>
+                    <span className="shrink-0 text-right text-xs text-ink-dim">
+                      Upkeep <span className="text-sm text-ink">{line.gold} gc</span>
+                    </span>
+                  </div>
+                  {canEdit ? (
+                    <Button variant="secondary" onClick={() => setFeeding(line)}>
+                      Pay upkeep
+                    </Button>
+                  ) : null}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
       <Section title="Hire" aside={`${options.length} in the rules`}>
         <p className="text-sm text-ink-dim">
           Hired swords do not count against the warband&apos;s size or hero limit, keep their own equipment and want their upkeep after every
@@ -117,6 +147,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone }: HiredSword
       </Section>
 
       {paying ? <UpkeepSheet key={paying.id} detail={detail} hiredSword={paying} onClose={() => setPaying(null)} onDone={finish} /> : null}
+      {feeding ? <GroupUpkeepSheet key={feeding.groupId} detail={detail} line={feeding} onClose={() => setFeeding(null)} onDone={finish} /> : null}
       {dismissing ? (
         <DismissHiredSwordSheet key={dismissing.id} detail={detail} hiredSword={dismissing} onClose={() => setDismissing(null)} onDone={finish} />
       ) : null}
@@ -363,3 +394,39 @@ function HiredSwordDetail({ entry }: { entry: HiredSwordSummary }) {
     </div>
   )
 }
+
+function GroupUpkeepSheet({ detail, line, onClose, onDone }: { detail: WarbandDetail; line: HenchmanUpkeepLine; onClose: () => void; onDone: (outcome: Outcome) => void }) {
+  const { roster } = detail
+  const { commit, error, pending } = useCommit(detail)
+  const willLeave = roster.gold < line.gold
+
+  async function confirm() {
+    const result = await commit(() => payHenchmanUpkeep(roster, line.groupId), (v) => v.warband, reasonWith('recruitment', null))
+    if (!result) return
+    onDone(result.value.paid ? outcomeFrom(`${line.name} fed`, result.events) : outcomeFrom(`${line.name} have left the warband`, result.events, { tone: 'warn' }))
+  }
+
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title="Pay upkeep"
+      description={line.name}
+      footer={
+        <Button block variant={willLeave ? 'danger' : 'primary'} pending={pending} onClick={() => void confirm()}>
+          {willLeave ? 'Cannot pay: they leave' : `Pay ${line.gold} gc`}
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-4 pb-2">
+        <div className="grid grid-cols-2 gap-3">
+          <KeyValue label="Upkeep due" value={`${line.gold} gc`} />
+          <KeyValue label="Treasury" value={`${roster.gold} gc`} />
+        </div>
+        <Notice tone={willLeave ? 'warn' : 'info'}>{line.note}</Notice>
+        {error ? <Notice tone="error">{error}</Notice> : null}
+      </div>
+    </Sheet>
+  )
+}
+

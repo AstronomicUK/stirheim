@@ -2,6 +2,7 @@
 // from a roster warrior's kit to the probability engine's weapons, armour and traits. No React,
 // no network; unit-tested in node.
 
+import { unitRules } from '../../../rules/data/campaignRules'
 import { findItem } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
@@ -87,6 +88,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
     if (entry.role === 'hero') {
       const { warrior } = entry
       const unit = template ? findUnitTemplate(template, warrior.unitTemplateId) : undefined
+      const raceFor = unitRules(warrior.unitTemplateId).excludeRaceTraits ? [] : race
       out.push({
         id: warrior.id,
         kind: 'hero',
@@ -97,7 +99,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         stats: warrior.stats,
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
-        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...race, ...(unit?.traitIds ?? [])], entry.warrior.isLarge),
+        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unit?.traitIds ?? [])], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })

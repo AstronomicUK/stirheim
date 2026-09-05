@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { warbandRules } from '../../rules/data/campaignRules'
 import { SHOP_ITEMS } from '../../rules/data/items'
 import { RARE_ROLL } from '../../rules/data/campaign/trading'
 import { parseDice } from '../../rules/resolve/dice'
@@ -92,7 +93,8 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const kind = item.availability.kind
   const isRare = kind === 'rare' && item.availability.rarity !== undefined
   const searchTotal = diceTotal(rareSpec, searchFaces)
-  const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal) : null
+  const rareBonus = warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0
+  const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && tracked
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
   const available = kind === 'common' || kind === 'special' || search?.available === true
@@ -161,7 +163,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
 
         {isRare ? (
           <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6</h3>
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband)` : ''}</h3>
             {needsSearcher ? (
               searchers.length === 0 ? (
                 <Notice tone="warn">Every hero has already searched this sequence. No more rare-item rolls until the next battle.</Notice>

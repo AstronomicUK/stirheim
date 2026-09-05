@@ -2,6 +2,7 @@
 // who may still search for rare items this phase, the sell listing across every inventory, and the
 // hand-built roster edits the resolvers do not cover (custom items, manual prices).
 
+import { unitRules } from '../../rules/data/campaignRules'
 import { findItem } from '../../rules/data/items'
 import { WARBAND_SIZE_BANDS, warbandSizeBandIndex } from '../../rules/data/campaign/income'
 import { sellPrice } from '../../rules/data/campaign/trading'
@@ -83,7 +84,7 @@ export function diceTotal(spec: DiceSpec, faces: readonly (number | null)[]): nu
  */
 export function eligibleSearchers(roster: RosterWarband, heroesSearched: readonly string[]): RosterHero[] {
   const used = new Set(heroesSearched)
-  return roster.heroes.filter((h) => h.status === 'active' && !used.has(h.id))
+  return roster.heroes.filter((h) => h.status === 'active' && !used.has(h.id) && !unitRules(h.unitTemplateId).noRareSearch)
 }
 
 // ---- Wyrdstone ----

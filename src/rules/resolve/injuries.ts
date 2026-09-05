@@ -35,6 +35,7 @@ import type {
 } from "../types/roster";
 import { HENCHMAN_INJURY, lookupHeroInjury } from "../data/campaign/injuries";
 import { RulesError } from "./errors";
+import { unitRules, type InjuryException } from "../data/campaignRules";
 
 /** Injury codes that must be re-rolled while resolving Multiple Injuries. */
 export const MULTIPLE_INJURIES_REROLL_CODES: readonly string[] = ["dead", "captured", "multiple_injuries"];
@@ -310,13 +311,20 @@ function assertD6(d6: number): void {
   if (!Number.isInteger(d6) || d6 < 1 || d6 > 6) throw new RangeError(`Not a valid D6 result: ${d6}`);
 }
 
+/** The campaign rule that changes this group's injury roll (a Troll never rolls, a Hobgoblin leaves on 1-3), if any. */
+export function henchmanInjuryException(group: Pick<RosterHenchmanGroup, "unitTemplateId">): InjuryException | undefined {
+  return unitRules(group.unitTemplateId).injury;
+}
+
 /**
- * Henchman out of action: D6, 1-2 the warrior is removed from the group. Returns null when the
+ * Henchman out of action: D6, 1-2 the warrior is removed from the group (or as the unit's own rule says). Returns null when the
  * group is now empty (the caller removes it from the roster).
  */
 export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number): Resolution<RosterHenchmanGroup | null> {
   assertD6(d6);
-  if (!HENCHMAN_INJURY.deadOn.includes(d6)) {
+  const exception = henchmanInjuryException(group);
+  const deadOn = exception?.deadOn ?? HENCHMAN_INJURY.deadOn;
+  if (!deadOn.includes(d6)) {
     return {
       value: group,
       events: [{ kind: "recovered", subjectId: group.id, message: `${group.name}: rolled ${d6}, the warrior recovers and fights in the next battle.`, data: { d6 } }],
@@ -324,7 +332,7 @@ export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number): Res
   }
   const size = group.size - 1;
   const events: ResolutionEvent[] = [
-    { kind: "henchmanLost", subjectId: group.id, message: `${group.name}: rolled ${d6}, one warrior is dead or has quit (${group.size} -> ${size}).`, data: { d6, before: group.size, after: size } },
+    { kind: "henchmanLost", subjectId: group.id, message: `${group.name}: rolled ${d6}, one warrior is ${exception ? exception.label : "dead or has quit"} (${group.size} -> ${size}).`, data: { d6, before: group.size, after: size } },
   ];
   if (size <= 0) {
     events.push({ kind: "groupDisbanded", subjectId: group.id, message: `${group.name} has no members left and is removed from the roster.` });

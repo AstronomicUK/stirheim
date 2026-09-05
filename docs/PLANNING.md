@@ -567,6 +567,40 @@ Tier 2 (parked, listed so nothing is lost): A12 leader succession flows, A15 cap
 recruit-time purchases and mutations, A18 between-battle special actions and rare-roll modifiers
 beyond a per-warband rarity bonus, per-warband bespoke tables (Wheelo, Eye of the Gods, Nurgle's Rot).
 
+## Phase 14 built (2026-09-05)
+
+- Sign-in, sign-up and password screens in the Card layout with the transparent logo
+  (`src/features/account/FormPage.tsx`, promises on the doorway screens only); the logo in the desktop
+  rail; "House rules of Tom's group" renamed "Default house rules".
+- Rout check (`src/features/match/battle/RoutCheck.tsx`, helpers in `routCheckRules.ts`): header at a
+  quarter of the starting models out, roll 2D6 vs a chosen Leadership (leader suggested; never-leaders
+  not suggested), "Passed at the table", "We rout"; a failed roll routs and offers to end the battle.
+- Campaign rules overlay `src/rules/data/campaignRules/index.ts` (`UNIT_RULES`, `WARBAND_RULES`,
+  accessors `unitRules`, `warbandRules`, `unitGainsExperience`, `equipmentBansFor`) read by:
+  - experience (`xpThresholds(role, rate)`, `advancesEarned`/`nextThreshold`/`pendingAdvances` take an
+    `AdvanceRate`; `xp.ts` skips no-experience units; `XpBar` shows "Gains no experience" / half rate),
+  - promotion (`planGroup`: never-promoted units re-roll with the rule quoted; table restrictions filter
+    the skill-table picker),
+  - injuries (`henchmanInjuryException`, `applyHenchmanInjury` reads `deadOn`; no-roll units default to
+    0 dice in the wizard; the card says why),
+  - exploration (`explorationDiceAllowed` adds rule dice, skips Lazy heroes, Scavengers without heroes;
+    `explorationBonuses` adds shards and gold to the record with notes),
+  - income (`incomeSize` with per-unit counts, group counts, size factor, band shift;
+    `wyrdstoneIncome(shards, size, bandShift)`; sale tab explains the count),
+  - rating (`ratingFactor`), builder (`unitIsLarge` reads `large`, `unitStartingStats` applies
+    `statBonus`, `startingGold` from the warband), recruitment (stat bonus, starting skills, henchman
+    upkeep `henchmanUpkeepDue`/`payHenchmanUpkeep` with a section on the Hired swords tab),
+  - racial maxima (`racialProfile` per unit; rows added for the Necrarch Vampire and the Wolfman),
+  - hired swords (`warbandRestriction` in recruitment helpers → the existing "restricted / hire anyway"
+    flow), rare searches (`noRareSearch` heroes excluded; `rareRollBonus` added to the roll),
+  - roster validation (relations noMoreThan / onlyWith / exclusiveWith / outsideMaxModels, equipment
+    bans as `roster.equipmentBan` problems, `heroCapacity` override), fight calculator
+    (`excludeRaceTraits`).
+- Deviation from the earlier idea of a GM override *request* for hired swords: the app keeps the
+  "suggested not forced" pattern instead (the player may hire anyway with the reason logged), so no
+  request table was added.
+- Not in Tier 1 (still text): everything under Tier 2 in the Phase 14 scope above.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

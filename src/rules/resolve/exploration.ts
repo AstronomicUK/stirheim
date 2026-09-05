@@ -20,6 +20,7 @@ import { findLocation } from "../data/campaign/exploration";
 import { EXPLORATION_MAX_DICE, shardsFound } from "../data/campaign/income";
 import { multiplesIn } from "./dice";
 import { RulesError } from "./errors";
+import { unitRules, warbandRules } from "../data/campaignRules";
 
 const KIND_BY_COUNT: Record<number, MultipleKind> = {
   2: "doubles",
@@ -48,16 +49,44 @@ export interface ExplorationDiceAllowed {
 /** How many exploration dice the warband rolls: one per surviving active hero, +1 if won, + extras, max six. */
 export function explorationDiceAllowed(warband: RosterWarband, opts: ExplorationDiceOptions): ExplorationDiceAllowed {
   const outOfAction = new Set(opts.heroesOutOfAction);
-  const survivors = warband.heroes.filter((h) => h.status === "active" && !outOfAction.has(h.id));
+  const rules = warbandRules(warband.warbandTemplateId).exploration;
+  const alive = warband.heroes.filter((h) => h.status === "active" && !outOfAction.has(h.id));
+  const survivors = alive.filter((h) => !unitRules(h.unitTemplateId).noExplorationDie);
+  const lazy = alive.length - survivors.length;
   const extra = Math.max(0, Math.floor(opts.extraDice ?? 0));
-  const raw = survivors.length + (opts.won ? 1 : 0) + extra;
+  const ruleDice = rules?.extraDice && (survivors.length > 0 || rules.extraDiceWithoutHeroes) ? rules.extraDice : 0;
+  const raw = survivors.length + (opts.won ? 1 : 0) + extra + ruleDice;
   const count = Math.min(raw, EXPLORATION_MAX_DICE);
   const parts = [`${survivors.length} surviving ${survivors.length === 1 ? "hero" : "heroes"}`];
+  if (lazy > 0) parts.push(`${lazy} ${lazy === 1 ? "gives" : "give"} no die`);
   if (opts.won) parts.push("+1 for winning");
   if (extra > 0) parts.push(`+${extra} from skills/equipment`);
+  if (ruleDice > 0) parts.push(`+${ruleDice} (${rules?.note ?? "warband rule"})`);
   const capped = raw > EXPLORATION_MAX_DICE;
   const reason = `${parts.join(", ")} = ${raw} dice${capped ? `, capped at ${EXPLORATION_MAX_DICE}` : ""}`;
   return { count, capped, reason };
+}
+
+export interface ExplorationBonuses {
+  shards: number;
+  gold: number;
+  notes: string[];
+}
+
+/** What the warband's own rules add to an exploration that found something: extra shards (Incomparable Miners), gold per enemy out (Grave Goods). */
+export function explorationBonuses(warband: RosterWarband, shardsFound: number, enemiesOut = 0): ExplorationBonuses {
+  const rules = warbandRules(warband.warbandTemplateId).exploration;
+  const out: ExplorationBonuses = { shards: 0, gold: 0, notes: [] };
+  if (!rules) return out;
+  if (rules.extraShards && shardsFound > 0) {
+    out.shards = rules.extraShards;
+    out.notes.push(`+${rules.extraShards} shard${rules.extraShards === 1 ? "" : "s"}: ${rules.note}`);
+  }
+  if (rules.goldPerEnemyOut && enemiesOut > 0) {
+    out.gold = rules.goldPerEnemyOut * enemiesOut;
+    out.notes.push(`+${out.gold} gc: ${rules.note}`);
+  }
+  return out;
 }
 
 export interface ExplorationMultiple {

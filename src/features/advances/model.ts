@@ -50,6 +50,7 @@ import type { Stats, WarbandTemplate } from '../../rules/types'
 import type { StatKey } from '../../rules/types/common'
 import type { Spell, SpellLore } from '../../rules/types/magic'
 import type { ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../rules/types/roster'
+import { unitRules } from '../../rules/data/campaignRules'
 
 // ---------------------------------------------------------------------------------------------
 // Pending advances by warrior
@@ -735,7 +736,12 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
     need: null,
     rerollReason: null,
     statOptions: [],
-    tableOptions: allowedSkillTablesFor(warbandTemplateId).map((id) => ({ id, name: tableName(id) })),
+    tableOptions: allowedSkillTablesFor(warbandTemplateId)
+      .filter((id) => {
+        const rule = unitRules(group.unitTemplateId).promotion
+        return !rule || !('tables' in rule) || (rule.tables as string[]).includes(id)
+      })
+      .map((id) => ({ id, name: tableName(id) })),
     heroCapacity: capacity,
     dissolvesGroup: group.size <= 1,
     result: null,
@@ -801,6 +807,10 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
       return { ...plan, statOptions: options, need: 'stat' }
     }
     case 'ladsGotTalent': {
+      const promotionRule = unitRules(group.unitTemplateId).promotion
+      if (promotionRule && 'never' in promotionRule) {
+        return { ...plan, need: 'reroll', rerollReason: promotionRule.note }
+      }
       const active = ctx.roster.heroes.filter((h) => h.status === 'active').length
       if (capacity !== null && active >= capacity) {
         return { ...plan, need: 'reroll', rerollReason: `The warband already has its maximum of ${capacity} heroes; roll again.` }

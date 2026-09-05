@@ -31,6 +31,7 @@ import { equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "./equ
 import { advancesEarned } from "../data/campaign/experience";
 import { RulesError } from "./errors";
 import { freeDaggerLine } from "./freeDagger";
+import { unitRules, warbandRules } from "../data/campaignRules";
 import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
 
 // ---- Draft model ----
@@ -126,7 +127,7 @@ export function newWarbandDraft(template: WarbandTemplate, name: string, leaderI
   const draft: WarbandDraft = {
     name,
     warbandTemplateId: template.id,
-    startingGold: template.composition?.startingGold ?? DEFAULT_STARTING_GOLD,
+    startingGold: warbandRules(template.id).startingGold ?? template.composition?.startingGold ?? DEFAULT_STARTING_GOLD,
     heroes: [],
     groups: [],
     notes: "",
@@ -441,6 +442,14 @@ export function draftCosts(draft: WarbandDraft, template: WarbandTemplate): Draf
 
 const ZERO_STATS: Stats = { M: 0, WS: 0, BS: 0, S: 0, T: 0, W: 0, I: 0, A: 0, Ld: 0 };
 
+/** A unit's profile as it joins the roster: the template line plus any hire-time bonus ("Marksmen have +1 BS"). */
+export function unitStartingStats(unit: UnitTemplate | undefined): Stats {
+  const stats: Stats = { ...(unit?.stats ?? ZERO_STATS) };
+  const bonus = unit ? unitRules(unit.id).statBonus : undefined;
+  if (bonus) for (const [k, v] of Object.entries(bonus) as [keyof Stats, number][]) stats[k] += v;
+  return stats;
+}
+
 /** True when any of the unit's special rules is named "Large", "Large Target", "Large Monster" … */
 /**
  * Starting experience is "already spent": a Captain who begins at 20 xp has crossed eight
@@ -452,6 +461,8 @@ export function startingLevelUps(unit: UnitTemplate | undefined, role: "hero" | 
 }
 
 export function unitIsLarge(unit: UnitTemplate | undefined): boolean {
+  const ruled = unit ? unitRules(unit.id).large : undefined;
+  if (ruled !== undefined) return ruled;
   return unit?.specialRules.some((rule) => /large/i.test(rule.name)) ?? false;
 }
 
@@ -475,7 +486,7 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       id: hero.id,
       name: hero.name,
       unitTemplateId: hero.unitTemplateId,
-      stats: { ...(unit?.stats ?? ZERO_STATS) },
+      stats: unitStartingStats(unit),
       xp: unit?.startingExperience ?? 0,
       levelUps: startingLevelUps(unit, "hero"),
       skillTableIds: [...(unit?.skillTableIds ?? [])],
@@ -496,7 +507,7 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       name: group.name,
       unitTemplateId: group.unitTemplateId,
       size: group.size,
-      stats: { ...(unit?.stats ?? ZERO_STATS) },
+      stats: unitStartingStats(unit),
       xp: unit?.startingExperience ?? 0,
       levelUps: startingLevelUps(unit, "henchman"),
       statIncreases: {},
@@ -635,7 +646,7 @@ export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTempl
       return {
         name: hero.name,
         unit_type_rules_id: hero.unitTemplateId,
-        stats: { ...(unit?.stats ?? ZERO_STATS) },
+        stats: unitStartingStats(unit),
         xp: unit?.startingExperience ?? 0,
         level_ups: startingLevelUps(unit, "hero"),
         skill_tables: [...(unit?.skillTableIds ?? [])],
@@ -650,7 +661,7 @@ export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTempl
         name: group.name,
         unit_type_rules_id: group.unitTemplateId,
         size: group.size,
-        stats: { ...(unit?.stats ?? ZERO_STATS) },
+        stats: unitStartingStats(unit),
         xp: unit?.startingExperience ?? 0,
         level_ups: startingLevelUps(unit, "henchman"),
         is_large: unitIsLarge(unit),

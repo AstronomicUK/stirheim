@@ -18,13 +18,15 @@
 
 import type { BattleReport, HenchmanInjuryLine, HeroInjuryLine, ItemRow, OoaLine, ReportAdjustment, ReportApplied, XpLine } from '../../../domain'
 import { REPORT_VERSION } from '../../../domain'
-import { HENCHMAN_XP_THRESHOLDS, HERO_XP_THRESHOLDS } from '../../../rules/data/campaign/experience'
+import { xpThresholds, type AdvanceRate } from '../../../rules/data/campaign/experience'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { deriveExploration, type ExplorationDerived } from './exploration'
 import { resolveGroupInjuries, resolveHeroInjuryFlow, resolveHiredSwordInjury, type GroupInjuryResolution, type HeroInjuryResolution, type HiredSwordInjuryResolution, type InjuryOutcome } from './injuries'
 import { participantsOf, type Participants } from './participants'
 import { advanceKey, isDie, STEP_IDS, type AdvanceMode, type ReportDraft, type StepId } from './state'
+import { unitRules } from '../../../rules/data/campaignRules'
+import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
 import { defaultPromotedName, effectiveStep, emptyDraft as emptyAdvanceDraft, findSubject, planGroup, planHero, subjectName, type AdvanceDraft, type AdvanceStep, type AdvanceSubject, type GroupPlan, type HeroPlan } from '../../advances/model'
 import { skillTableName } from '../../roster/view/lookups'
@@ -154,7 +156,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0)
     .map((group) => {
       const outOfAction = Math.min(group.size, draft.groupsOut[group.id] ?? 0)
-      const dice = draft.groupInjuryDice[group.id]?.count ?? outOfAction
+      const dice = draft.groupInjuryDice[group.id]?.count ?? (henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : outOfAction)
       return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
     })
 
@@ -206,9 +208,8 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
 }
 
 /** Threshold boxes crossed between two totals, as pending advance requests. */
-export function thresholdsCrossed(role: 'hero' | 'henchman', xpBefore: number, xpAfter: number): number[] {
-  const table = role === 'hero' ? HERO_XP_THRESHOLDS : HENCHMAN_XP_THRESHOLDS
-  return table.filter((t) => t > xpBefore && t <= xpAfter)
+export function thresholdsCrossed(role: 'hero' | 'henchman', xpBefore: number, xpAfter: number, rate: AdvanceRate = 'normal'): number[] {
+  return xpThresholds(role, rate).filter((t) => t > xpBefore && t <= xpAfter)
 }
 
 export function veteranPoolOf(draft: ReportDraft): number | null {
@@ -275,7 +276,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     }
     if (line) {
       patch.xp = line.xpAfter
-      for (const t of thresholdsCrossed('hero', line.xpBefore, line.xpAfter)) pending.push({ subject_type: 'hero', subject_id: hero.id, threshold_xp: t })
+      for (const t of thresholdsCrossed('hero', line.xpBefore, line.xpAfter, unitRules(hero.unitTemplateId).advanceRate ?? 'normal')) pending.push({ subject_type: 'hero', subject_id: hero.id, threshold_xp: t })
     }
     if (Object.keys(patch).length > 0) heroes.push({ id: hero.id, patch })
   }
@@ -314,7 +315,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     if (res && res.group.size !== group.size) patch.size = res.group.size
     if (line) {
       patch.xp = line.xpAfter
-      for (const t of thresholdsCrossed('henchman', line.xpBefore, line.xpAfter)) pending.push({ subject_type: 'group', subject_id: group.id, threshold_xp: t })
+      for (const t of thresholdsCrossed('henchman', line.xpBefore, line.xpAfter, unitRules(group.unitTemplateId).advanceRate ?? 'normal')) pending.push({ subject_type: 'group', subject_id: group.id, threshold_xp: t })
     }
     if (Object.keys(patch).length > 0) groups.push({ id: group.id, patch })
   }
@@ -447,7 +448,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const injuries = deriveInjuries(draft, participants, ctx.matchId)
   const xp = deriveXp(draft, participants, injuries, ctx)
-  const exploration = deriveExploration(draft.exploration, ctx.roster, { won: draft.result === 'won', eligibleHeroes: survivingHeroes })
+  const exploration = deriveExploration(draft.exploration, ctx.roster, {
+    won: draft.result === 'won',
+    eligibleHeroes: survivingHeroes,
+    enemiesOut: Object.values(draft.enemiesOut).reduce((n, v) => n + (v ?? 0), 0),
+  })
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration)
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration)

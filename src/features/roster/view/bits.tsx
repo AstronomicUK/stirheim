@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { findItem } from '../../../rules/data/items'
 import type { Item } from '../../../rules/types/items'
 import { HoverCard } from '../../../ui/HoverCard'
+import type { AdvanceRate } from '../../../rules/data/campaign/experience'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { itemName, itemProfile } from '../shared/names'
@@ -44,15 +45,16 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
  * for heroes; 2, 5, 9, 14 for henchmen), filled to the current total, the next box named. A
  * warrior who has just reached a box shows that box full rather than an empty bar.
  */
-export function XpBar({ xp, levelUps, role }: { xp: number; levelUps: number; role: CharacterRole }) {
-  const p = xpProgress(xp, levelUps, role)
-  const track = xpTrack(xp, role)
+export function XpBar({ xp, levelUps, role, rate = 'normal', noExperience = false }: { xp: number; levelUps: number; role: CharacterRole; rate?: AdvanceRate; noExperience?: boolean }) {
+  const p = xpProgress(xp, levelUps, role, rate)
+  const track = xpTrack(xp, role, rate)
+  if (noExperience) return <p className="text-xs text-ink-dim">Gains no experience.</p>
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-3 text-xs text-ink-dim">
         <span>
           <span className="font-semibold text-ink">{xp} xp</span>
-          {p.next !== null ? <span> · next advance at {p.next}</span> : <span> · no further advances</span>}
+          {p.next !== null ? <span> · next advance at {p.next}{rate === 'half' ? ' (half rate)' : ''}</span> : <span> · no further advances</span>}
         </span>
         {p.advancesOwed > 0 ? <Tag tone="brass">{p.advancesOwed === 1 ? 'Advance owed' : `${p.advancesOwed} advances owed`}</Tag> : null}
       </div>

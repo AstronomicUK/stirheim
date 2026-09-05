@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { effectiveWarbandSize, sellWyrdstone, wyrdstoneQuote } from '../../rules/resolve/income'
+import { WARBAND_SIZE_BANDS, warbandSizeBandIndex } from '../../rules/data/campaign/income'
+import { incomeSize, sellWyrdstone, wyrdstoneQuote } from '../../rules/resolve/income'
 import { Button, Notice, Stepper } from '../../ui'
 import { Card, KeyValue } from '../roster/view/bits'
-import { sizeBandLabel } from './helpers'
 import type { TradeContext } from './useTrade'
 
 export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
@@ -17,7 +17,9 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
   }
 
   const selling = Math.min(Math.max(count, 0), shards)
-  const size = effectiveWarbandSize(roster)
+  const sizing = incomeSize(roster)
+  const size = sizing.size
+  const bandIndex = Math.max(0, Math.min(WARBAND_SIZE_BANDS.length - 1, warbandSizeBandIndex(size) + sizing.bandShift))
   const income = wyrdstoneQuote(roster, selling)
   const activeHiredSwords = roster.hiredSwords.filter((s) => s.status === 'active').length
   const soldAlready = phase.wyrdstoneSold
@@ -32,7 +34,7 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
         <KeyValue label="Shards held" value={shards} />
         <KeyValue label="Warband size" value={size} />
-        <KeyValue label="Income band" value={sizeBandLabel(size)} />
+        <KeyValue label="Income band" value={WARBAND_SIZE_BANDS[bandIndex]} />
       </Card>
       <p className="text-sm leading-relaxed text-ink-dim">
         Income depends on how many shards you sell at once and how many warriors the warband must feed: active heroes and every henchman.
@@ -51,6 +53,11 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
             <span className="text-sm text-ink">Shards to sell</span>
             <Stepper label="shards to sell" value={selling} min={1} max={shards} onChange={setCount} disabled={!canTrade} />
           </div>
+      {sizing.notes.length > 0 ? (
+        <p className="text-xs text-ink-dim">
+          Counted as {size} ({sizing.headCount} warriors): {sizing.notes.join('; ')}.
+        </p>
+      ) : null}
           <div className="flex items-baseline justify-between gap-3 border-t border-border pt-3">
             <span className="text-sm text-ink-dim">You would receive</span>
             <span className="text-2xl tabular-nums text-ink">{income} gc</span>

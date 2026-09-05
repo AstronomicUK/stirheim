@@ -124,7 +124,13 @@ export function HelpPage() {
           <B>Battle over.</B> When the game ends, tap <em>Battle over</em>. The match moves to awaiting reports and each player files their own post-battle
           report. Forgot to tap it? Filing a report closes the battle too.
         </P>
-      </Topic>
+              <P>
+          <B>Rout check.</B> Once a quarter of your starting models are out of action the battle sheet shows a Rout check box: roll the 2D6 in the
+          app against a chosen Leadership (the leader while he stands, otherwise the best standing warrior), record a test passed at the table, or
+          declare the rout. A failed roll marks the warband routed and offers to end the battle. The app does not track turns, so it reminds rather
+          than forces.
+        </P>
+</Topic>
 
       <Topic id="post-battle" title="Post-battle report">
         <P>The report is an eight-step wizard, pre-filled from your battle sheet. You can leave part-way and come back; it remembers where you were.</P>
@@ -176,7 +182,15 @@ export function HelpPage() {
           <B>Recruitment.</B> Hire new heroes and henchmen against the warband's limits, add warriors to an existing group, dismiss warriors, and hire hired
           swords (their upkeep is paid here too). Restrictions are shown rather than hidden; the app warns and lets you decide.
         </P>
-      </Topic>
+              <P>
+          <B>Warband rules the app now applies.</B> Animals, undead, daemons and constructs gain no experience; Ogres cross their advance boxes at
+          double cost; units their list says are never promoted send The lad&apos;s got talent back for a re-roll; Trolls make no injury roll and
+          want feeding after every battle (Hired swords tab); Hobgoblins and Snotlings die or leave on wider dice; Dwarfs and Druchii find an extra
+          shard; Grave Robbers earn gold per enemy out of action; Ogres eat for two and Snotling mobs count as one when selling wyrdstone;
+          Marienburgers start with 600 gc and add +1 to rare rolls. Where a list forbids a hired sword or a piece of kit, the hire button says so and
+          the roster page lists the offending item; you can still act against it, with a reason, and the log keeps it.
+        </P>
+</Topic>
 
       <Topic id="records" title="Battle records and CSV export">
         <P>

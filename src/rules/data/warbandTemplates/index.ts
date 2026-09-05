@@ -11,6 +11,7 @@ import { WARBANDS as GRADE_1C } from "./grade-1c";
 import { WARBANDS as GRADE_2A_1 } from "./grade-2a-part1";
 import { WARBANDS as GRADE_2A_2 } from "./grade-2a-part2";
 import { WARBANDS as VARIANTS } from "./variants";
+import { warbandRules } from "../campaignRules";
 
 export const WARBAND_TEMPLATES: WarbandTemplate[] = [
   ...CORE_AND_1A,
@@ -50,6 +51,8 @@ export function rosterLimitUpperBound(rosterLimit: string): number | null {
  * line is unlimited ("1+", "any" …), since the total is then unbounded.
  */
 export function heroCapacity(template: WarbandTemplate): number | null {
+  const ruled = warbandRules(template.id).heroCapacity;
+  if (ruled !== undefined) return ruled;
   let total = 0;
   for (const hero of template.heroTemplates) {
     const upper = rosterLimitUpperBound(hero.rosterLimit);

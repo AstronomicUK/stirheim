@@ -14,6 +14,7 @@
 
 import type { WarbandTemplate } from "../types";
 import type { RosterWarband } from "../types/roster";
+import { warbandRules } from "../data/campaignRules";
 import { HIRED_SWORDS } from "../data/campaign/hiredSwords";
 import { RATING_POINTS_PER_LARGE_CREATURE, RATING_POINTS_PER_WARRIOR } from "../data/campaign/trading";
 
@@ -109,7 +110,10 @@ export function warbandRating(warband: RosterWarband, template?: WarbandTemplate
     });
   }
 
-  const total = breakdown.reduce((sum, line) => sum + line.points, 0);
+  const raw = breakdown.reduce((sum, line) => sum + line.points, 0);
+  const factor = warbandRules(warband.warbandTemplateId).ratingFactor ?? 1;
+  const total = factor === 1 ? raw : Math.round(raw * factor);
+  if (factor !== 1) notes.push(`Rating counts at ${factor}x for this warband (${raw} -> ${total}).`);
   return { total, breakdown, notes };
 }
 

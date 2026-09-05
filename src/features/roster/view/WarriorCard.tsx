@@ -4,6 +4,7 @@ import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { StatLine } from '../shared/StatLine'
 import { unitTypeName } from '../shared/names'
+import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { HoverCard } from '../../../ui/HoverCard'
 import { Card, ItemLines, RuleList, Tag, XpBar } from './bits'
 import { findSpellOption, flagTags, hiredSwordName, skillName, skillTableName, skillText, spellName, statusLabel, warriorSpecialRules } from './lookups'
@@ -51,7 +52,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
           </div>
         </div>
         <StatLine stats={hero.stats} />
-        <XpBar xp={hero.xp} levelUps={hero.level_ups} role="hero" />
+        <XpBar xp={hero.xp} levelUps={hero.level_ups} role="hero" rate={unitRules(hero.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={!unitGainsExperience(hero.unit_type_rules_id)} />
       </button>
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">

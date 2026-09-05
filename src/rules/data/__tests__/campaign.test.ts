@@ -77,8 +77,8 @@ describe("experience", () => {
     expect(nextThreshold(14, "henchman")).toBeNull();
   });
 
-  it("racial maximums has 29 rows and Human is 4/6/6/4/4/3/6/4/9", () => {
-    expect(RACIAL_MAXIMUMS).toHaveLength(29);
+  it("racial maximums has 31 rows and Human is 4/6/6/4/4/3/6/4/9", () => {
+    expect(RACIAL_MAXIMUMS).toHaveLength(31);
     const human = RACIAL_MAXIMUMS.find((r) => r.profile === "Human");
     expect(human?.stats).toEqual({ M: 4, WS: 6, BS: 6, S: 4, T: 4, W: 3, I: 6, A: 4, Ld: 9 });
     expect(RACIAL_MAXIMUMS.find((r) => r.profile === "Saurus")?.note).toContain("4+1");

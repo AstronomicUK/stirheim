@@ -6,16 +6,21 @@ import { Card, Section, Tag } from '../../roster/view/bits'
 import { addXpExtra, removeXpExtra, setUnderdog, type XpExtra } from '../model'
 import { Intro, SwitchRow, type StepProps } from './bits'
 import { StepBody } from './WizardShell'
+import { unitGainsExperience } from '../../../rules/data/campaignRules'
 
 export function ExperienceStep({ draft, derived, update }: StepProps) {
   const { lines, underdogAvailable } = derived.xp
   const byId = new Map(lines.map((l) => [l.subjectId, l]))
   const { participants } = derived
   const noXp = (id: string) => !byId.has(id)
+  const byRule = [
+    ...participants.heroes.filter((h) => noXp(h.id) && !unitGainsExperience(h.unitTemplateId)).map((h) => h.name),
+    ...participants.groups.filter((g) => noXp(g.id) && !unitGainsExperience(g.unitTemplateId)).map((g) => g.name),
+  ]
   const earnedNothing = [
-    ...participants.heroes.filter((h) => noXp(h.id)).map((h) => h.name),
+    ...participants.heroes.filter((h) => noXp(h.id) && unitGainsExperience(h.unitTemplateId)).map((h) => h.name),
     ...participants.hiredSwords.filter((s) => noXp(s.id)).map((s) => s.name),
-    ...participants.groups.filter((g) => noXp(g.id)).map((g) => g.name),
+    ...participants.groups.filter((g) => noXp(g.id) && unitGainsExperience(g.unitTemplateId)).map((g) => g.name),
   ]
   const owed = lines.reduce((n, l) => n + l.advancesEarned, 0)
 
@@ -39,6 +44,7 @@ export function ExperienceStep({ draft, derived, update }: StepProps) {
       {earnedNothing.length > 0 ? (
         <p className="text-xs text-ink-dim">No experience for {earnedNothing.join(', ')}: dead, retired or wiped out.</p>
       ) : null}
+      {byRule.length > 0 ? <p className="text-xs text-ink-dim">{byRule.join(', ')} never gain experience (animals, undead, daemons or constructs by their list).</p> : null}
     </StepBody>
   )
 }

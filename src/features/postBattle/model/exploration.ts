@@ -20,7 +20,8 @@
 
 import type { ExplorationRecord, ReportAdjustment } from '../../../domain'
 import { resolveEquipmentName } from '../../../rules/data/items/aliases'
-import { explorationDiceAllowed, locationOutcome, resolveExploration, type ExplorationDiceAllowed, type ExplorationResult, type LocationOutcome } from '../../../rules/resolve/exploration'
+import { warbandRules } from '../../../rules/data/campaignRules'
+import { explorationDiceAllowed, locationOutcome, resolveExploration, type ExplorationDiceAllowed, type ExplorationResult, type LocationOutcome, explorationBonuses } from '../../../rules/resolve/exploration'
 import type { ExplorationLocation, ExplorationReward } from '../../../rules/types/exploration'
 import type { RosterHero, RosterWarband } from '../../../rules/types/roster'
 import { isDie, type ExplorationDraft, type FoundItem } from './state'
@@ -29,6 +30,8 @@ export interface ExplorationInput {
   won: boolean
   /** Fighting heroes who were not taken out of action. */
   eligibleHeroes: RosterHero[]
+  /** Enemies this warband put out of action (Grave Goods and the like). */
+  enemiesOut?: number
 }
 
 export interface DiceAmount {
@@ -114,7 +117,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     problems: [],
     record: null,
   }
-  if (input.eligibleHeroes.length === 0) return { ...base, skippedReason: NO_HEROES }
+  const rules = warbandRules(roster.warbandTemplateId).exploration
+  if (input.eligibleHeroes.length === 0 && !rules?.extraDiceWithoutHeroes) return { ...base, skippedReason: NO_HEROES }
 
   const eligible = new Set(input.eligibleHeroes.map((h) => h.id))
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
@@ -171,7 +175,9 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   notes.push(...textNotes)
   if (draft.notes.trim() !== '') notes.push(draft.notes.trim())
 
-  const totalShards = result.shards + (extraShards.value ?? 0)
+  const bonuses = explorationBonuses(roster, result.shards, input.enemiesOut ?? 0)
+  const totalShards = result.shards + (extraShards.value ?? 0) + bonuses.shards
+  notes.push(...bonuses.notes)
   const record: ExplorationRecord | null =
     problems.length === 0
       ? {
@@ -184,7 +190,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
           locationName: location?.name ?? null,
           locationText: location ? location.rules : null,
           subRoll: location?.subRoll ? (draft.subRoll ?? null) : null,
-          goldFound: gold.value ?? 0,
+          goldFound: (gold.value ?? 0) + bonuses.gold,
           itemsFound: items.filter((i) => i.quantity >= 1 && (i.item_rules_id || i.custom_name)),
           notes: notes.filter((n) => n !== ''),
         }

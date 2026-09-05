@@ -391,7 +391,8 @@ describe("draftToCreatePayload", () => {
       name: "The Eyes",
       unit_type_rules_id: MARKSMEN,
       size: 2,
-      stats: { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 },
+      // Reikland Marksmen have +1 BS (warband rule, applied at hire).
+      stats: { M: 4, WS: 3, BS: 4, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 },
       xp: 0,
       level_ups: 0,
       is_large: false,

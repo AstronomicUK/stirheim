@@ -18,6 +18,7 @@
 
 import type { UnitTemplate, WarbandTemplate } from "../types";
 import type { RosterItem, RosterWarband } from "../types/roster";
+import { equipmentBansFor, unitRules } from "../data/campaignRules";
 import { findItem } from "../data/items";
 import { heroCapacity } from "../data/warbandTemplates";
 
@@ -163,8 +164,9 @@ export function validateRoster(
     }
   }
 
-  // Warband size.
-  const models = warbandModelCount(warband);
+  // Warband size (units the list keeps outside the maximum are not counted).
+  const outside = warband.henchmenGroups.filter((g) => unitRules(g.unitTemplateId).relation?.outsideMaxModels).reduce((n, g) => n + g.size, 0);
+  const models = warbandModelCount(warband) - outside;
   const maxModels = template.composition?.maxModels ?? null;
   if (maxModels !== null && models > maxModels) {
     problems.push({
@@ -238,7 +240,88 @@ export function validateRoster(
     }
   }
 
+  // Relations between unit types ("never more Goblins than two per Orc", "only with a Beastmaster").
+  for (const unit of units) {
+    const relation = unitRules(unit.id).relation;
+    if (!relation) continue;
+    const count = unitCount(warband, unit);
+    if (count === 0) continue;
+    const countOf = (ids: string[]) => ids.reduce((n, id) => n + (unitById.has(id) ? unitCount(warband, unitById.get(id)!) : 0), 0);
+    if (relation.noMoreThan) {
+      const cap = countOf(relation.noMoreThan.unitIds) * (relation.noMoreThan.ratio ?? 1);
+      if (count > cap) {
+        problems.push({ code: "roster.relation", message: `${count} ${pluralName(unit)} but the list allows no more than ${relation.noMoreThan.label} (${cap})` });
+      }
+    }
+    if (relation.onlyWith && countOf(relation.onlyWith.unitIds) === 0) {
+      problems.push({ code: "roster.relation", message: `${pluralName(unit)} may only be taken with ${relation.onlyWith.label}` });
+    }
+    if (relation.exclusiveWith && countOf(relation.exclusiveWith.unitIds) > 0) {
+      problems.push({ code: "roster.relation", message: `${pluralName(unit)} may not be taken alongside ${relation.exclusiveWith.label}` });
+    }
+  }
+
+  // Equipment the list forbids (shown as problems; the trading post sells anything, the table decides).
+  for (const hero of warband.heroes) {
+    if (hero.status !== "active") continue;
+    for (const item of hero.equipment) {
+      const why = equipmentBanReason(warband.warbandTemplateId, hero.unitTemplateId, item);
+      if (why) problems.push({ code: "roster.equipmentBan", message: `${hero.name}: ${why}`, subjectId: hero.id });
+    }
+  }
+  for (const group of warband.henchmenGroups) {
+    if (group.size <= 0) continue;
+    for (const item of group.equipment) {
+      const why = equipmentBanReason(warband.warbandTemplateId, group.unitTemplateId, item);
+      if (why) problems.push({ code: "roster.equipmentBan", message: `${group.name}: ${why}`, subjectId: group.id });
+    }
+  }
+
   return { ok: problems.length === 0, problems };
+}
+
+const POISON_RE = /poison|venom|lotus|blowpipe/i;
+const THROWN_RE = /throw|dart/i;
+
+/** Why this warrior may not carry this item under the list's rules, or null when it may. */
+export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: string, item: RosterItem): string | null {
+  const bans = equipmentBansFor(warbandTemplateId, unitTemplateId);
+  if (bans.length === 0 || item.itemId === null) return null;
+  const catalogue = findItem(item.itemId);
+  if (!catalogue) return null;
+  const name = catalogue.name;
+  const isHelmet = /helmet|helm\b/i.test(catalogue.id);
+  for (const ban of bans) {
+    switch (ban) {
+      case "allEquipment":
+        return `${name} cannot be carried (the list gives this warrior no equipment)`;
+      case "armour":
+        if (catalogue.category === "armour" && !isHelmet) return `${name} is armour, which this warrior may not wear`;
+        break;
+      case "heavyArmour":
+        if (/heavy_armour|gromril_armour|ithilmar_armour|chaos_armour/.test(catalogue.id)) return `${name} is heavy armour, which this warrior may not wear`;
+        break;
+      case "helmets":
+        if (isHelmet) return `${name}: this warrior may not wear a helmet`;
+        break;
+      case "missile":
+        if (catalogue.category === "missile" || catalogue.category === "blackpowder") return `${name} is a missile weapon, which this warrior may not use`;
+        break;
+      case "missileExceptThrown":
+        if ((catalogue.category === "missile" || catalogue.category === "blackpowder") && !THROWN_RE.test(catalogue.id)) return `${name}: this warrior uses no missile weapons but thrown ones`;
+        break;
+      case "blackPowder":
+        if (catalogue.category === "blackpowder") return `${name} is a black powder weapon, which this warband does not use`;
+        break;
+      case "poison":
+        if (POISON_RE.test(catalogue.id)) return `${name}: this warband does not use poison`;
+        break;
+      case "onlyBlackPowderMissiles":
+        if (catalogue.category === "missile" && !THROWN_RE.test(catalogue.id)) return `${name}: this warband's ranged weapons are black powder only`;
+        break;
+    }
+  }
+  return null;
 }
 
 function pluralName(unit: UnitTemplate): string {

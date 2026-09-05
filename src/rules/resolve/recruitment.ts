@@ -38,6 +38,8 @@ import { VETERAN_XP_COST_GC } from "../data/campaign/trading";
 import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
 import { RulesError } from "./errors";
 import { freeDaggerLine } from "./freeDagger";
+import { unitRules } from "../data/campaignRules";
+import { unitStartingStats } from "./builder";
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
 
 /** RulesError code when a second hired sword of the same type is hired. */
@@ -137,11 +139,11 @@ export function recruitHero(
     id,
     name,
     unitTemplateId: unit.id,
-    stats: { ...unit.stats },
+    stats: unitStartingStats(unit),
     xp: unit.startingExperience,
     levelUps: 0,
     skillTableIds: [...unit.skillTableIds],
-    skillIds: [],
+    skillIds: [...(unitRules(unit.id).startingSkillIds ?? [])],
     spellIds: [],
     injuries: [],
     flags: {},
@@ -271,7 +273,7 @@ export function recruitHenchmen(
       name: groupName,
       unitTemplateId: unit.id,
       size,
-      stats: { ...unit.stats },
+      stats: unitStartingStats(unit),
       xp: unit.startingExperience,
       levelUps: 0,
       statIncreases: {},
@@ -518,3 +520,45 @@ export function payUpkeep(
     ],
   };
 }
+
+// ---- Henchman upkeep (Trolls and the like) ----
+
+export interface HenchmanUpkeepLine {
+  groupId: string;
+  name: string;
+  gold: number;
+  note: string;
+}
+
+/** Groups whose list charges upkeep after every battle. */
+export function henchmanUpkeepDue(warband: RosterWarband): HenchmanUpkeepLine[] {
+  const out: HenchmanUpkeepLine[] = [];
+  for (const g of warband.henchmenGroups) {
+    if (g.size <= 0) continue;
+    const rule = unitRules(g.unitTemplateId).upkeep;
+    if (rule) out.push({ groupId: g.id, name: g.name, gold: rule.gold * g.size, note: rule.note });
+  }
+  return out;
+}
+
+/** Pay a henchman group's upkeep, or let the group go when the treasury cannot cover it. */
+export function payHenchmanUpkeep(warband: RosterWarband, groupId: string, opts: PayUpkeepOptions = {}): Resolution<PayUpkeepResult> {
+  const group = warband.henchmenGroups.find((g) => g.id === groupId);
+  if (!group) throw new RulesError("recruitment.unknownGroup", `No henchman group with id "${groupId}"`);
+  const rule = unitRules(group.unitTemplateId).upkeep;
+  const due = opts.amountOverride ?? (rule ? rule.gold * group.size : 0);
+  if (due <= 0) {
+    return { value: { warband, paid: true }, events: [{ kind: "henchmen.upkeep", subjectId: group.id, message: `${group.name}: no upkeep due`, data: { upkeep: 0 } }] };
+  }
+  if (warband.gold >= due) {
+    return {
+      value: { warband: { ...warband, gold: warband.gold - due }, paid: true },
+      events: [{ kind: "henchmen.upkeep", subjectId: group.id, message: `Paid ${group.name} ${due} gc upkeep (${rule?.note ?? "upkeep"}); treasury now ${warband.gold - due} gc`, data: { upkeep: due } }],
+    };
+  }
+  return {
+    value: { warband: { ...warband, henchmenGroups: warband.henchmenGroups.map((g) => (g.id === groupId ? { ...g, size: 0 } : g)) }, paid: false },
+    events: [{ kind: "henchmen.left", subjectId: group.id, message: `${group.name} could not be paid ${due} gc upkeep and leave the warband`, data: { upkeep: due } }],
+  };
+}
+

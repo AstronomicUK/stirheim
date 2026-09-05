@@ -19,6 +19,7 @@ import {
 import { D66Entry, Intro, type StepProps } from './bits'
 import { warriorTypeLabel } from './names'
 import { StepBody } from './WizardShell'
+import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 
 const OUTCOME_TAG: Record<InjuryOutcome, { label: string; tone: 'neutral' | 'warn' | 'danger' | 'brass' }> = {
   recovered: { label: 'Recovered', tone: 'brass' },
@@ -91,7 +92,13 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                   <div className="min-w-0">
                     <p className="text-sm text-ink">{group.name}</p>
                     <p className="text-xs text-ink-dim">
-                      {outOfAction} of {group.size} out of action · dead on {HENCHMAN_INJURY.deadOn.join('-')}
+                      {outOfAction} of {group.size} out of action ·{' '}
+                      {(() => {
+                        const ex = henchmanInjuryException(group)
+                        if (!ex) return `dead on ${HENCHMAN_INJURY.deadOn.join('-')}`
+                        if (ex.deadOn.length === 0) return `no injury roll (${ex.note})`
+                        return `${ex.label} on ${ex.deadOn[0]}-${ex.deadOn[ex.deadOn.length - 1]} (${ex.note})`
+                      })()}
                     </p>
                   </div>
                   {resolution.complete ? (

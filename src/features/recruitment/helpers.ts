@@ -10,6 +10,7 @@ import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from
 import type { CharacterRole, UnitTemplate, WarbandTemplate } from '../../rules/types'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHenchmanGroup, RosterHiredSword, RosterWarband } from '../../rules/types/roster'
+import { warbandRules } from '../../rules/data/campaignRules'
 
 // ---------------------------------------------------------------------------------------------
 // Unit listings
@@ -203,6 +204,21 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/** The warband list's own hiring rule (Beastmen hire nobody, Dwarfs hire no Elves...), when it refuses this entry. */
+export function warbandRestriction(entry: HiredSwordSummary, template: WarbandTemplate | undefined): Eligibility | null {
+  if (!template) return null
+  const rules = warbandRules(template.id).hiredSwords
+  if (!rules) return null
+  if (rules.allow === 'none') return { kind: 'restricted', reason: rules.note }
+  if (Array.isArray(rules.allow) && !rules.allow.includes(entry.id)) return { kind: 'restricted', reason: rules.note }
+  if (rules.deny?.includes(entry.id)) return { kind: 'restricted', reason: rules.note }
+  if (rules.denyKeywords) {
+    const hay = `${entry.name} ${entry.id.replace(/_/g, ' ')}`.toLowerCase()
+    if (rules.denyKeywords.some((k) => new RegExp(`\\b${k}`, 'i').test(hay))) return { kind: 'restricted', reason: rules.note }
+  }
+  return null
+}
+
 /** Why this hired sword can or cannot be hired by the warband right now. */
 export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWarband, template: WarbandTemplate | undefined): Eligibility {
   if (roster.hiredSwords.some((s) => s.hiredSwordId === entry.id && s.status === 'active')) {
@@ -214,6 +230,8 @@ export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWa
   if (!entry.detail?.profiles[0]) {
     return { kind: 'blocked', reason: 'The rules data has no stat profile for this entry.' }
   }
+  const own = warbandRestriction(entry, template)
+  if (own) return own
   return readRestriction(entry.detail.mayBeHired, template, entry.name)
 }
 

@@ -7,17 +7,17 @@ describe("battle live state", () => {
     expect(parseBattleLiveState({ turn: "three" })).toEqual(emptyBattleLiveState());
     expect(parseBattleLiveState({ turn: 3, tallies: [{ id: "h1", kind: "hero", enemiesOutOfAction: 2 }] })).toMatchObject({
       turn: 3,
-      tallies: [{ id: "h1", kind: "hero", enemiesOutOfAction: 2, outOfAction: 0, note: "" }],
+      tallies: [{ id: "h1", kind: "hero", enemiesOutOfAction: 2, outOfAction: 0, woundsLost: 0, note: "" }],
     });
   });
 
   it("withTally replaces, inserts and drops zeroed tallies; totals add up", () => {
     let state = emptyBattleLiveState();
-    state = withTally(state, { id: "h1", kind: "hero", enemiesOutOfAction: 1, outOfAction: 0, note: "" });
-    state = withTally(state, { id: "g1", kind: "group", enemiesOutOfAction: 0, outOfAction: 2, note: "" });
+    state = withTally(state, { id: "h1", kind: "hero", enemiesOutOfAction: 1, outOfAction: 0, woundsLost: 0, note: "" });
+    state = withTally(state, { id: "g1", kind: "group", enemiesOutOfAction: 0, outOfAction: 2, woundsLost: 0, note: "" });
     expect(state.tallies).toHaveLength(2);
     expect(battleTotals(state)).toEqual({ enemiesOutOfAction: 1, ownOutOfAction: 2 });
-    state = withTally(state, { id: "h1", kind: "hero", enemiesOutOfAction: 0, outOfAction: 0, note: "" });
+    state = withTally(state, { id: "h1", kind: "hero", enemiesOutOfAction: 0, outOfAction: 0, woundsLost: 0, note: "" });
     expect(tallyFor(state, "h1")).toBeUndefined();
     expect(state.editedAt).toBeTypeOf("string");
   });

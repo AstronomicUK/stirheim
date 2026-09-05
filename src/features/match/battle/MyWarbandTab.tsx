@@ -7,7 +7,7 @@ import { Card, Section, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
 import { ExperienceReminders } from './ExperienceReminders'
 import { groupRules, groupTypeName, warriorRules, warriorTags, warriorTypeName, type CardTag } from './names'
-import { addEnemyOut, fightingGroups, groupOut, isHeroOut, perModelKit, setGroupOut, splitWarriors, toggleHeroOut, type SheetWarrior } from './sheet'
+import { addEnemyOut, fightingGroups, groupOut, isHeroOut, perModelKit, setGroupOut, setWoundsLost, splitWarriors, toggleHeroOut, woundsLost, type SheetWarrior } from './sheet'
 
 export interface MyWarbandTabProps {
   roster: RosterWarband
@@ -88,6 +88,17 @@ function MyWarriorCard({ entry, template, sheet, edit, readOnly }: MyWarriorCard
         onToggle={() => setExpanded((v) => !v)}
       />
       <WarriorBody equipment={warrior.equipment} skillIds={warrior.skillIds} rules={warriorRules(entry, template)} expanded={expanded}>
+        {warrior.stats.W > 1 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-ink-dim">Wounds lost</span>
+              <span className="text-xs text-ink-dim">
+                {warrior.stats.W - woundsLost(sheet, warrior.id)} of {warrior.stats.W} left
+              </span>
+            </div>
+            <Stepper value={woundsLost(sheet, warrior.id)} onChange={(next) => edit((s) => setWoundsLost(s, warrior.id, 'hero', next, warrior.stats.W))} label={`wounds lost by ${warrior.name}`} max={warrior.stats.W} disabled={readOnly} />
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] uppercase tracking-wider text-ink-dim">Enemies out</span>
@@ -135,6 +146,17 @@ function MyGroupCard({ group, template, sheet, edit, readOnly }: MyGroupCardProp
         rules={groupRules(group, template)}
         expanded={expanded}
       >
+        {group.size === 1 && group.stats.W > 1 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-ink-dim">Wounds lost</span>
+              <span className="text-xs text-ink-dim">
+                {group.stats.W - woundsLost(sheet, group.id)} of {group.stats.W} left
+              </span>
+            </div>
+            <Stepper value={woundsLost(sheet, group.id)} onChange={(next) => edit((s) => setWoundsLost(s, group.id, 'group', next, group.stats.W))} label={`wounds lost by ${group.name}`} max={group.stats.W} disabled={readOnly} />
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] uppercase tracking-wider text-ink-dim">Out of action</span>

@@ -8,7 +8,7 @@ import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText,
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
 function combatant(name: string, equipment: RosterItem[], extra: Partial<Combatant> = {}): Combatant {
-  return { id: name, kind: 'hero', name, typeName: name, warbandId: 'w', warbandName: 'W', stats: base, equipment, skillIds: [], traitIds: [], out: false, ...extra }
+  return { id: name, kind: 'hero', name, typeName: name, warbandId: 'w', warbandName: 'W', stats: base, equipment, skillIds: [], traitIds: [], out: false, woundsLost: 0, ...extra }
 }
 
 const captain = combatant('Captain', [{ itemId: 'sword', quantity: 1 }, { itemId: 'dagger', quantity: 1 }, { itemId: 'light_armour', quantity: 1 }])
@@ -112,6 +112,45 @@ describe('kite shield and pavise', () => {
     const shot = computeOdds(setup(marksman, pavise, 'bow', null))
     expect(shot.weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
     expect(shot.weapons[0].input.hitThreshold).toBe(5)
+  })
+})
+
+describe('carry-over between fights', () => {
+  const ogre = combatant('Ogre', [], { stats: { ...base, T: 4, W: 3 } })
+
+  it('wounds already lost lift the odds; at the last Wound the target is as good as W1', () => {
+    const fresh = computeOdds(setup(captain, ogre, 'sword', 'dagger'))
+    const nearlyDone = computeOdds(setup(captain, ogre, 'sword', 'dagger', { woundsAlreadyLost: 2 }))
+    expect(nearlyDone.woundsAlreadyLost).toBe(2)
+    expect(nearlyDone.chain.outOfAction).toBeGreaterThan(fresh.chain.outOfAction)
+    const single = computeOdds(setup(captain, combatant('Brute', [], { stats: { ...base, T: 4, W: 1 } }), 'sword', 'dagger'))
+    expect(nearlyDone.chain.outOfAction).toBeCloseTo(single.chain.outOfAction, 10)
+    expect(nearlyDone.notes.some((n) => /1 of 3 Wounds left/.test(n))).toBe(true)
+  })
+
+  it("a used parry removes the defender's attempt from the numbers", () => {
+    const withParry = computeOdds(setup(captain, skaven, 'sword', 'dagger'))
+    const spent = computeOdds(setup(captain, skaven, 'sword', 'dagger', { parryUsed: true }))
+    expect(withParry.parryAttempts).toBe(1)
+    expect(spent.parryAttempts).toBe(0)
+    expect(spent.chain.anyWound).toBeGreaterThan(withParry.chain.anyWound)
+  })
+
+  it('an attack limit keeps only the first attacks, primary weapon first', () => {
+    const all = computeOdds(setup(captain, skaven, 'sword', 'dagger'))
+    const one = computeOdds(setup(captain, skaven, 'sword', 'dagger', { attackLimit: 1 }))
+    expect(all.fullAttacks).toBe(2)
+    expect(one.attacks).toBe(1)
+    expect(one.weapons.map((w) => w.attacks)).toEqual([1, 0])
+    expect(one.chain.attacks).toBe(1)
+    expect(one.chain.anyHit).toBeCloseTo(0.5, 10)
+  })
+
+  it('names Initiative and strike-order weapon rules', () => {
+    const spearman = combatant('Spearman', [{ itemId: 'spear', quantity: 1 }])
+    const notes = computeOdds(setup(spearman, skaven, 'spear', null)).notes
+    expect(notes.some((n) => /Initiative: Spearman 3, Skritch 3/.test(n))).toBe(true)
+    expect(notes.some((n) => /Spear strikes first in the first turn/.test(n))).toBe(true)
   })
 })
 

@@ -42,6 +42,8 @@ export interface TurnResult {
   outOfActionGivenCriticalHit: number;
   /** Probability at least one Ricochet result occurred (informational only — the secondary hit itself is not simulated). */
   ricochetProbability: number;
+  /** Attacks resolved this phase. */
+  attacks: number;
 }
 
 /** DP state: probability mass at [parriesUsed][critConsumed][woundsTaken][worst]. woundsTaken is capped at maxWounds (beyond that every wound rolls). */
@@ -131,10 +133,12 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
  * order. `maxParries` — see buildAttackInput.ts's computeMaxParries. `defenderWounds` is the
  * target's Wounds characteristic (default 1).
  */
-export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries: number = 0, defenderWounds: number = 1): TurnResult {
+export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries: number = 0, defenderWounds: number = 1, woundsAlreadyTaken: number = 0): TurnResult {
   const maxWounds = Math.max(1, Math.round(defenderWounds));
   let state = emptyState(maxParries, maxWounds);
-  state[0][0][0][0] = 1;
+  // Lost Wounds carry over between turns: a target already down to its last Wound (or at zero and
+  // still standing after a knock down) rolls for injury on the next wound through.
+  state[0][0][Math.min(maxWounds, Math.max(0, Math.round(woundsAlreadyTaken)))][0] = 1;
   let ricochetProbability = 0;
 
   for (const attack of attacks) {
@@ -174,5 +178,6 @@ export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries: number
     criticalHitProbability: critMass,
     outOfActionGivenCriticalHit: critMass > 0 ? critAndOOA / critMass : 0,
     ricochetProbability,
+    attacks: attacks.length,
   };
 }

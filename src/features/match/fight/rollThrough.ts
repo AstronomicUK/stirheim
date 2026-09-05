@@ -105,12 +105,12 @@ function passesSave(roll: number, threshold: Threshold): boolean {
   return roll >= 2 && roll >= threshold
 }
 
-export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: number): RollState {
+export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: number, woundsAlreadyLost = 0): RollState {
   const state: RollState = {
     plans,
     index: 0,
     defenderW: Math.max(1, defenderW),
-    woundsLost: 0,
+    woundsLost: Math.max(0, Math.min(Math.max(1, defenderW), Math.trunc(woundsAlreadyLost))),
     parriesLeft: maxParries,
     critUsed: false,
     pending: null,

@@ -124,10 +124,10 @@ describe('seedFromBattleSheet', () => {
       wyrdstoneFound: 2,
       loot: ['a silver ring'],
       tallies: [
-        { id: 'captain', kind: 'hero' as const, enemiesOutOfAction: 2, outOfAction: 0, note: '' },
-        { id: 'champion', kind: 'hero' as const, enemiesOutOfAction: 0, outOfAction: 1, note: '' },
-        { id: 'watch', kind: 'group' as const, enemiesOutOfAction: 0, outOfAction: 5, note: '' },
-        { id: 'stranger', kind: 'hero' as const, enemiesOutOfAction: 1, outOfAction: 1, note: '' },
+        { id: 'captain', kind: 'hero' as const, enemiesOutOfAction: 2, outOfAction: 0, woundsLost: 0, note: '' },
+        { id: 'champion', kind: 'hero' as const, enemiesOutOfAction: 0, outOfAction: 1, woundsLost: 0, note: '' },
+        { id: 'watch', kind: 'group' as const, enemiesOutOfAction: 0, outOfAction: 5, woundsLost: 0, note: '' },
+        { id: 'stranger', kind: 'hero' as const, enemiesOutOfAction: 1, outOfAction: 1, woundsLost: 0, note: '' },
       ],
     }
     const draft = seedFromBattleSheet(makeRoster(), live)

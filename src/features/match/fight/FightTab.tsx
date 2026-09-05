@@ -8,12 +8,12 @@ import type { BattleLiveState } from '../../../domain'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner } from '../../../ui'
+import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { addEnemyOut } from '../battle/sheet'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutOf, offHandCandidates, type Combatant, type Loadout } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
-import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type RollState } from './rollThrough'
+import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type RollState } from './rollThrough'
 import { useEnemyRosters } from './useEnemyRosters'
 
 export interface FightTabProps {
@@ -33,6 +33,16 @@ interface WeaponChoice {
   primary: number
   /** Index into the melee list, or -1 for none. */
   offHand: number
+}
+
+/** What earlier fights this battle established about a target, on this phone (the other player's sheet is read-only). */
+interface TargetMemory {
+  /** Wounds lost, beyond what their sheet says. */
+  woundsLost: number
+  /** Turn in which their parry was used. */
+  parryUsedTurn: number | null
+  /** Worst thing that happened to them this turn, and when. */
+  worst: { turn: number; label: string } | null
 }
 
 export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, edit, readOnly }: FightTabProps) {
@@ -76,16 +86,56 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
+
+  // Carry-over between fights: the target's remaining Wounds (their sheet, or what we saw happen here),
+  // whether their one parry this turn is spent, and how many of the attacker's attacks go at them.
+  const [memory, setMemory] = useState<Record<string, TargetMemory>>({})
+  const [woundsOverride, setWoundsOverride] = useState<{ id: string; value: number } | null>(null)
+  const [parryOverride, setParryOverride] = useState<{ id: string; turn: number; used: boolean } | null>(null)
+  const [attackLimitChoice, setAttackLimitChoice] = useState<{ key: string; value: number } | null>(null)
+  const targetMemory = defender ? memory[defender.id] : undefined
+  const woundsAlreadyLost = defender
+    ? woundsOverride?.id === defender.id
+      ? woundsOverride.value
+      : Math.min(defender.stats.W, Math.max(defender.woundsLost, targetMemory?.woundsLost ?? 0))
+    : 0
+  const parryUsed = defender
+    ? parryOverride?.id === defender.id && parryOverride.turn === sheet.turn
+      ? parryOverride.used
+      : targetMemory?.parryUsedTurn === sheet.turn
+    : false
   const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined) : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)
 
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
+  const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}` : ''
+  const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules })
+      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, attackLimit })
       : null
+
+  function rememberFight(state: RollState) {
+    if (!defender) return
+    const turn = sheet.turn
+    const harmful: Outcome[] = ['wounded', 'knockedDown', 'stunned', 'outOfAction']
+    setMemory((m) => {
+      const prev = m[defender.id]
+      const worstLabel = state.worst && harmful.includes(state.worst) ? OUTCOME_LABEL[state.worst] : null
+      return {
+        ...m,
+        [defender.id]: {
+          woundsLost: Math.max(prev?.woundsLost ?? 0, state.woundsLost),
+          parryUsedTurn: state.parriesLeft < (odds?.parryAttempts ?? 0) ? turn : (prev?.parryUsedTurn ?? null),
+          worst: worstLabel ? { turn, label: worstLabel } : prev?.worst?.turn === turn ? prev.worst : null,
+        },
+      }
+    })
+    setWoundsOverride(null)
+    setParryOverride(null)
+  }
 
   if (mine.length === 0) return <Notice tone="info" title="Nobody to attack with">None of your warriors are fit to fight this game.</Notice>
 
@@ -128,6 +178,36 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           </SelectField>
         ) : null}
         {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending /> : null}
+        {defender && (defender.stats.W > 1 || odds?.parryAttempts || parryUsed || targetMemory?.worst?.turn === sheet.turn) ? (
+          <Card className="flex flex-col gap-3 px-4 py-3">
+            {defender.stats.W > 1 ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-ink-dim">Wounds already lost</span>
+                  <span className="text-xs text-ink-dim">
+                    {defender.stats.W - woundsAlreadyLost} of {defender.stats.W} left
+                    {defender.woundsLost > 0 ? ' · from their sheet' : targetMemory && targetMemory.woundsLost > 0 ? ' · from earlier fights here' : ''}
+                  </span>
+                </div>
+                <Stepper value={woundsAlreadyLost} onChange={(v) => setWoundsOverride({ id: defender.id, value: v })} label={`wounds already lost by ${defender.name}`} max={defender.stats.W} />
+              </div>
+            ) : null}
+            {odds?.parryAttempts || parryUsed ? (
+              <label className="flex min-h-11 items-center gap-3 text-sm text-ink">
+                <input type="checkbox" className="h-5 w-5 shrink-0 accent-brass" checked={parryUsed} onChange={(e) => setParryOverride({ id: defender.id, turn: sheet.turn, used: e.target.checked })} />
+                <span>
+                  Parry already used this turn
+                  <span className="block text-xs text-ink-dim">One parry per turn, whoever attacks. Resets when the turn counter moves.</span>
+                </span>
+              </label>
+            ) : null}
+            {targetMemory?.worst && targetMemory.worst.turn === sheet.turn ? (
+              <p className="text-xs text-ink-dim">
+                Earlier this turn: {targetMemory.worst.label.toLowerCase()}. If this fight ends worse, the worse result stands.
+              </p>
+            ) : null}
+          </Card>
+        ) : null}
       </Section>
 
       {attacker && current && primary ? (
@@ -158,6 +238,15 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               ))}
             </SelectField>
           ) : null}
+          {odds && odds.fullAttacks > 1 ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-ink-dim">Attacks at this target</span>
+                <span className="text-xs text-ink-dim">Fighting more than one enemy? Split the {odds.fullAttacks} attacks as you like.</span>
+              </div>
+              <Stepper value={odds.attacks} onChange={(v) => setAttackLimitChoice({ key: attackKey, value: v })} label={`attacks at ${defender?.name ?? 'the target'}`} min={1} max={odds.fullAttacks} />
+            </div>
+          ) : null}
           {toggleList.length > 0 ? (
             <fieldset className="flex min-w-0 flex-col gap-1">
               <legend className="mb-1 text-sm font-medium text-ink-dim">Situation</legend>
@@ -179,13 +268,14 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         <>
           <OddsSection odds={odds} attacker={attacker} defender={defender} />
           <RollSection
-            key={`${attacker.id}:${defender.id}:${current?.primary}:${current?.offHand}:${JSON.stringify(context)}`}
+            key={`${attackKey}:${JSON.stringify(context)}`}
             odds={odds}
             attacker={attacker}
             defender={defender}
             defenderKit={defenderKit!}
             readOnly={readOnly}
             onLogKill={() => edit((s) => addEnemyOut(s, attacker.id, 1))}
+            onFinished={rememberFight}
           />
         </>
       ) : null}
@@ -339,9 +429,11 @@ interface RollSectionProps {
   defenderKit: Loadout
   readOnly: boolean
   onLogKill: () => void
+  /** Called once when the last roll lands, so the tab can carry Wounds and the parry into the next fight. */
+  onFinished: (state: RollState) => void
 }
 
-function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKill }: RollSectionProps) {
+function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKill, onFinished }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const [logged, setLogged] = useState(false)
 
@@ -354,7 +446,16 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKil
       })),
     )
     setLogged(false)
-    setState(startPhase(plans, defender.stats.W, odds.parryAttempts))
+    setState(startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost))
+  }
+
+  function advance(step: (s: RollState) => RollState) {
+    setState((s) => {
+      if (!s) return s
+      const next = step(s)
+      if (next.done && !s.done) queueMicrotask(() => onFinished(next))
+      return next
+    })
   }
 
   const canRoll = odds.attacks > 0
@@ -381,9 +482,9 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKil
                 <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'neutral'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
               </div>
               <div className="flex flex-wrap items-end gap-2">
-                <DieField key={state.log.length} label={state.pending.label} sides={6} value={null} onChange={(v) => v !== null && setState((s) => (s ? applyRoll(s, v) : s))} rollable hideLabel />
+                <DieField key={state.log.length} label={state.pending.label} sides={6} value={null} onChange={(v) => v !== null && advance((s) => applyRoll(s, v))} rollable hideLabel />
                 {state.pending.optional ? (
-                  <Button variant="ghost" onClick={() => setState((s) => (s ? declineRoll(s) : s))}>
+                  <Button variant="ghost" onClick={() => advance(declineRoll)}>
                     No parry
                   </Button>
                 ) : null}
@@ -411,7 +512,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKil
                     : state.worst === 'stunned' || state.worst === 'knockedDown'
                       ? `${defender.name} is ${OUTCOME_LABEL[state.worst].toLowerCase()}.`
                       : state.worst === 'wounded'
-                        ? `${defender.name} lost ${state.woundsLost === 1 ? 'a Wound' : `${state.woundsLost} Wounds`} but is still standing.`
+                        ? `${defender.name} is down to ${Math.max(0, defender.stats.W - state.woundsLost)} of ${defender.stats.W} Wounds but still standing.`
                         : `${defender.name} is unharmed.`}
                 </span>
               </p>
@@ -430,6 +531,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLogKil
               ) : null}
               {state.worst === 'outOfAction' && attacker.kind === 'henchman' ? <p className="text-xs text-ink-dim">Henchmen earn no experience for kills, so there is nothing to log.</p> : null}
               {state.worst === 'outOfAction' && attacker.kind !== 'henchman' ? <p className="text-xs text-ink-dim">The other player marks their own casualty on their sheet.</p> : null}
+              {state.worst === 'wounded' ? <p className="text-xs text-ink-dim">Remembered here for the next fight; the other player marks the Wound on their sheet.</p> : null}
             </div>
           ) : null}
 

@@ -6,8 +6,7 @@
 
 import type { Character, CombatContext, DefenderProfile, HouseRules, Skill, Weapon, WeaponKind } from "../types";
 import { defaultHouseRules } from "../types";
-import { resolveCharacterTurn } from "./combat";
-import { totalAttackCount } from "./buildAttackInput";
+import { resolveCharacterTurn, type TurnOptions } from "./combat";
 
 export interface PhaseChain {
   /** Attacks rolled this phase (all weapons of the phase). */
@@ -40,12 +39,13 @@ export function phaseChain(
   context: CombatContext,
   customSkills: Skill[] = [],
   houseRules: HouseRules = defaultHouseRules(),
-  phase: WeaponKind
+  phase: WeaponKind,
+  options: TurnOptions = {}
 ): PhaseChain {
-  const turn = resolveCharacterTurn(attacker, weapons, defender, context, customSkills, houseRules, phase);
+  const turn = resolveCharacterTurn(attacker, weapons, defender, context, customSkills, houseRules, phase, options);
   const d = turn.distribution;
   return {
-    attacks: totalAttackCount(attacker, weapons, context, customSkills, phase),
+    attacks: turn.attacks,
     anyHit: turn.anyHitProbability,
     anyWound: turn.anyWoundProbability,
     knockedDownOrWorse: 1 - d.none,

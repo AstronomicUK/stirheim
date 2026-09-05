@@ -79,7 +79,18 @@ export function perModelKit(items: RosterItem[], size: number): { items: RosterI
 // ---------------------------------------------------------------------------------------------
 
 function baseTally(state: BattleLiveState, id: string, kind: BattleWarriorTally['kind']): BattleWarriorTally {
-  return tallyFor(state, id) ?? { id, kind, enemiesOutOfAction: 0, outOfAction: 0, note: '' }
+  return tallyFor(state, id) ?? { id, kind, enemiesOutOfAction: 0, outOfAction: 0, woundsLost: 0, note: '' }
+}
+
+export function woundsLost(state: BattleLiveState, id: string): number {
+  return tallyFor(state, id)?.woundsLost ?? 0
+}
+
+/** Wounds a multi-Wound model has lost so far, clamped to 0..W. Carries over between turns. */
+export function setWoundsLost(state: BattleLiveState, id: string, kind: BattleWarriorTally['kind'], count: number, wounds: number): BattleLiveState {
+  const tally = baseTally(state, id, kind)
+  const clamped = Math.max(0, Math.min(Math.max(0, wounds), Math.trunc(count)))
+  return withTally(state, { ...tally, woundsLost: clamped })
 }
 
 function touch(state: BattleLiveState, patch: Partial<BattleLiveState>): BattleLiveState {

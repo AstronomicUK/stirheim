@@ -15,6 +15,8 @@ export const battleWarriorTallySchema = z.object({
   enemiesOutOfAction: z.number().int().min(0).default(0),
   /** For a hero: 1 when they are out of action. For a group: models currently out of action. */
   outOfAction: z.number().int().min(0).default(0),
+  /** Wounds lost so far this battle (multi-Wound heroes, hired swords and one-model groups); they carry over between turns. */
+  woundsLost: z.number().int().min(0).default(0),
   /** Free text: "stunned turn 3", "holding the shard", ... */
   note: z.string().default(""),
 });
@@ -54,7 +56,7 @@ export function tallyFor(state: BattleLiveState, id: string): BattleWarriorTally
 /** Replace or insert one tally, returning a new state. Zeroed tallies with no note are dropped. */
 export function withTally(state: BattleLiveState, tally: BattleWarriorTally): BattleLiveState {
   const rest = state.tallies.filter((t) => t.id !== tally.id);
-  const keep = tally.enemiesOutOfAction > 0 || tally.outOfAction > 0 || tally.note.trim() !== "";
+  const keep = tally.enemiesOutOfAction > 0 || tally.outOfAction > 0 || tally.woundsLost > 0 || tally.note.trim() !== "";
   return { ...state, tallies: keep ? [...rest, tally] : rest, editedAt: new Date().toISOString() };
 }
 

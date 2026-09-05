@@ -8,6 +8,16 @@ import { buildAttackInput, computeAttackCount, computeMaxParries, weaponsForPhas
 import { resolveSingleAttack } from "./resolveAttack";
 import { resolveTurn, type TurnResult } from "./turnAggregate";
 
+/** What carries into this phase from earlier fights and turns (docs/PLANNING.md, Phase 11). */
+export interface TurnOptions {
+  /** Only this many of the attacker's attacks go at this target (splitting attacks between enemies); primary weapon first. */
+  maxAttacks?: number;
+  /** Wounds the target has already lost in earlier turns or fights this turn. */
+  woundsAlreadyTaken?: number;
+  /** The target's parry is once per turn across every attacker; 0 when an earlier fight used it. Undefined = computeMaxParries. */
+  maxParries?: number;
+}
+
 /**
  * Resolves one phase for `attacker` fighting with `weapons`, in the order given. The shooting
  * phase and the hand-to-hand phase are separate things in Mordheim (each with its own one-crit
@@ -23,17 +33,19 @@ export function resolveCharacterTurn(
   context: CombatContext,
   customSkills: Skill[] = [],
   houseRules: HouseRules = defaultHouseRules(),
-  phase?: WeaponKind
+  phase?: WeaponKind,
+  options: TurnOptions = {}
 ): TurnResult {
   const inPhase = weaponsForPhase(weapons, phase ?? weapons[0]?.type ?? "melee");
-  const attacks = inPhase.flatMap((weapon, index) => {
+  let attacks = inPhase.flatMap((weapon, index) => {
     const isPrimary = index === 0;
     const count = computeAttackCount(attacker, weapon, isPrimary, context, customSkills);
     const input = buildAttackInput({ attacker, weapon, defender, context, customSkills, houseRules });
     const resolved = resolveSingleAttack(input);
     return Array.from({ length: count }, () => resolved);
   });
+  if (options.maxAttacks !== undefined) attacks = attacks.slice(0, Math.max(0, options.maxAttacks));
 
-  const maxParries = computeMaxParries(defender, customSkills);
-  return resolveTurn(attacks, maxParries, defender.W);
+  const maxParries = options.maxParries ?? computeMaxParries(defender, customSkills);
+  return resolveTurn(attacks, maxParries, defender.W, options.woundsAlreadyTaken ?? 0);
 }

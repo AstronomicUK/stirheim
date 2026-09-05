@@ -213,6 +213,13 @@ describe('targets with several Wounds and several attacks', () => {
     expect(s.worst).toBe('stunned')
   })
 
+  it('wounds already lost carry in: a W2 target down to one Wound rolls injury on the first wound through', () => {
+    const s = rolls(startPhase([plan('Sword', { armourThreshold: IMPOSSIBLE })], 2, 0, 1), 4, 4)
+    expect(s.pending?.kind).toBe('injury')
+    const fresh = rolls(startPhase([plan('Sword', { armourThreshold: IMPOSSIBLE })], 2, 0, 0), 4, 4)
+    expect(fresh.outcomes).toEqual(['wounded'])
+  })
+
   it('Undead Construct may ignore each injury roll on a 4+', () => {
     let s = rolls(startPhase([plan('Sword', { armourThreshold: IMPOSSIBLE, injuryIgnoreThreshold: 4 })], 1, 0), 4, 4)
     expect(s.pending).toMatchObject({ kind: 'injuryIgnore', who: 'defender' })

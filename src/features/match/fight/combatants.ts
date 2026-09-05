@@ -11,7 +11,7 @@ import type { Armour, NamedRule, Stats, WarbandTemplate, Weapon } from '../../..
 import type { RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { unitTypeName } from '../../roster/shared/names'
 import { hiredSwordName } from '../../roster/view/lookups'
-import { fightingGroups, groupOut, isHeroOut, perModelKit, splitWarriors } from '../battle/sheet'
+import { fightingGroups, groupOut, isHeroOut, perModelKit, splitWarriors, woundsLost } from '../battle/sheet'
 
 export type CombatantKind = 'hero' | 'hiredSword' | 'henchman'
 
@@ -31,6 +31,8 @@ export interface Combatant {
   traitIds: string[]
   /** Already out of action according to the live sheet. */
   out: boolean
+  /** Wounds lost so far according to the live sheet (multi-Wound models). */
+  woundsLost: number
   /** Group size, for the label; undefined for single warriors. */
   groupSize?: number
 }
@@ -97,6 +99,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         skillIds: warrior.skillIds,
         traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...race, ...(unit?.traitIds ?? [])], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
+        woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })
     } else {
       const { warrior } = entry
@@ -114,6 +117,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         // Hired swords are not members of the warband, so its racial rules do not apply to them.
         traitIds: warriorTraits(warrior, detail?.specialRules ?? [], [], undefined),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
+        woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })
     }
   }
@@ -134,6 +138,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       skillIds: [],
       traitIds: unique(traits),
       out: sheet ? groupOut(sheet, group.id) >= group.size : false,
+      woundsLost: sheet && group.size === 1 ? woundsLost(sheet, group.id) : 0,
       groupSize: group.size,
     })
   }

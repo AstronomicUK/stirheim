@@ -1,7 +1,7 @@
 // From two combatants and a situation to the numbers on the screen: the engine's exact
 // probabilities for one phase of attacks, plus the flat thresholds a player rolls against.
 
-import { buildAttackInput, computeAttackCount, computeMaxParries, effectiveOffensiveStats, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
+import { buildAttackInput, computeAttackCount, computeMaxParries, effectiveOffensiveStats, totalAttackCount, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
 import { phaseChain, type PhaseChain } from '../../../rules/engine/chain'
 import { IMPOSSIBLE, probabilityAtLeast, type Threshold } from '../../../rules/engine/dice'
 import { resolveSingleAttack, type AttackInput, type Severity4Distribution } from '../../../rules/engine/resolveAttack'
@@ -23,6 +23,12 @@ export interface FightSetup {
   offHand: Weapon | null
   context: CombatContext
   houseRules: CampaignHouseRules
+  /** Wounds the target has already lost (sheet plus fights earlier this turn). */
+  woundsAlreadyLost?: number
+  /** The target's one parry this turn has already been used by an earlier attacker. */
+  parryUsed?: boolean
+  /** Only this many attacks go at this target (splitting between enemies). */
+  attackLimit?: number
 }
 
 export function toCharacter(c: Combatant, kit: Loadout): Character {
@@ -81,7 +87,12 @@ export interface WeaponOdds {
 
 export interface FightOdds {
   phase: WeaponKind
+  /** Attacks going at this target (after any split). */
   attacks: number
+  /** Attacks the attacker has in total this phase, before splitting. */
+  fullAttacks: number
+  /** Wounds the target had already lost when these odds were computed. */
+  woundsAlreadyLost: number
   weapons: WeaponOdds[]
   chain: PhaseChain
   /** Parry attempts the defender gets this phase against these attacks (0 when not applicable). */
@@ -97,8 +108,11 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const weapons = setup.offHand && phase === 'melee' ? [setup.primary, setup.offHand] : [setup.primary]
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing }
 
+  let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
   const perWeapon: WeaponOdds[] = weaponsForPhase(weapons, phase).map((weapon, index) => {
-    const attacks = computeAttackCount(attacker, weapon, index === 0, setup.context)
+    const full = computeAttackCount(attacker, weapon, index === 0, setup.context)
+    const attacks = Math.min(full, Math.max(0, remaining))
+    remaining -= attacks
     const input = buildAttackInput({ attacker, weapon, defender, context: setup.context, houseRules })
     const single = resolveSingleAttack(input)
     const { ws, strength } = effectiveOffensiveStats(attacker, weapon, setup.context)
@@ -118,10 +132,15 @@ export function computeOdds(setup: FightSetup): FightOdds {
     }
   })
 
-  const chain = phaseChain(attacker, weapons, defender, setup.context, [], houseRules, phase)
-  const parryAttempts = phase === 'melee' && perWeapon.some((w) => w.input.parryEligible) ? computeMaxParries(defender) : 0
+  const parryAttempts = phase === 'melee' && !setup.parryUsed && perWeapon.some((w) => w.input.parryEligible) ? computeMaxParries(defender) : 0
+  const woundsAlreadyLost = Math.max(0, Math.min(defender.W, setup.woundsAlreadyLost ?? 0))
+  const chain = phaseChain(attacker, weapons, defender, setup.context, [], houseRules, phase, {
+    maxAttacks: setup.attackLimit,
+    woundsAlreadyTaken: woundsAlreadyLost,
+    maxParries: setup.parryUsed ? 0 : undefined,
+  })
 
-  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), weapons: perWeapon, chain, parryAttempts, notes: oddsNotes(setup, perWeapon) }
+  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, setup.context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes(setup, perWeapon) }
 }
 
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
@@ -135,7 +154,18 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   for (const w of weapons) {
     if (w.input.woundThreshold === IMPOSSIBLE) notes.push(`${w.weapon.name}: Strength ${w.strength} cannot wound Toughness ${setup.defender.stats.T}.`)
   }
-  if (setup.defender.stats.W > 1) notes.push(`${setup.defender.name} has ${setup.defender.stats.W} Wounds: injury is only rolled once every Wound is lost.`)
+  if (setup.defender.stats.W > 1) {
+    const left = setup.defender.stats.W - Math.max(0, Math.min(setup.defender.stats.W, setup.woundsAlreadyLost ?? 0))
+    notes.push(left <= 0 ? `${setup.defender.name} is already at zero Wounds: every wound through rolls for injury.` : `${setup.defender.name} has ${left} of ${setup.defender.stats.W} Wounds left: injury is only rolled once the last is lost.`)
+  }
+  if (setup.parryUsed) notes.push(`${setup.defender.name} has already parried this turn.`)
+  notes.push(`Initiative: ${setup.attacker.name} ${setup.attacker.stats.I}, ${setup.defender.name} ${setup.defender.stats.I}. Chargers strike first; otherwise the higher Initiative does.`)
+  const order = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
+  for (const w of order) {
+    if (w.special.includes('strikesFirstFirstTurn')) notes.push(`${w.name} strikes first in the first turn of a combat, even against a charge.`)
+    if (w.special.includes('strikesLast')) notes.push(`${w.name} always strikes last.`)
+    if (w.special.includes('strikesFirstWhenCharged')) notes.push(`${w.name} strikes first when its wielder is charged.`)
+  }
   if (setup.defenderKit.wardSaveThreshold !== null) notes.push(`Ward save ${setup.defenderKit.wardSaveThreshold}+ against every wound.`)
   if (setup.defenderKit.armour.pavise) notes.push(setup.primary.type === 'ranged' ? 'Pavise: the target counts as in cover (-1 to hit).' : 'Pavise: counts as a shield only while it faces the attacker.')
   const unknownSkills = [...setup.attacker.skillIds, ...setup.defender.skillIds].filter((id) => {

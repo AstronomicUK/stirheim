@@ -68,6 +68,32 @@ describe("hand-checkable table lookups (brief §9)", () => {
   });
 });
 
+describe("wounds already taken (Phase 11 carry-over)", () => {
+  it("a W2 target that has already lost one Wound is resolved like a W1 target", () => {
+    const input: AttackInput = {
+      hitThreshold: 4,
+      woundThreshold: 4,
+      armourThreshold: IMPOSSIBLE,
+      injuryRollModifier: 0,
+      concussion: false,
+      trueGrit: false,
+      hardToKill: false,
+      critTriggerFaces: [],
+      critTable: "standard",
+      critTableRollModifier: 0,
+      parryEligible: false,
+      parrySuccessProbGivenAttempt: 0,
+    };
+    const attack = resolveSingleAttack(input);
+    const w1 = resolveTurn([attack], 0, 1);
+    const w2Fresh = resolveTurn([attack], 0, 2);
+    const w2Hurt = resolveTurn([attack], 0, 2, 1);
+    expect(w2Fresh.outOfActionProbability).toBe(0);
+    expect(w2Hurt.outOfActionProbability).toBeCloseTo(w1.outOfActionProbability, 12);
+    expect(w2Hurt.attacks).toBe(1);
+  });
+});
+
 describe("injury chart (brief §4.4)", () => {
   it("standard chart splits 1-2/3-4/5-6 evenly with no modifier", () => {
     const dist = injuryDistribution({ injuryRollModifier: 0, concussion: false, trueGrit: false, hardToKill: false });

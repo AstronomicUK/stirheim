@@ -3,6 +3,8 @@ import { emptyBattleLiveState } from '../../../domain'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import {
   addEnemyOut,
+  setWoundsLost,
+  woundsLost,
   addLoot,
   applyEdit,
   completeSave,
@@ -101,7 +103,7 @@ describe('tally edits', () => {
     let s = emptyBattleLiveState()
     s = addEnemyOut(s, 'captain', 1)
     s = addEnemyOut(s, 'captain', 1)
-    expect(s.tallies).toEqual([{ id: 'captain', kind: 'hero', enemiesOutOfAction: 2, outOfAction: 0, note: '' }])
+    expect(s.tallies).toEqual([{ id: 'captain', kind: 'hero', enemiesOutOfAction: 2, outOfAction: 0, woundsLost: 0, note: '' }])
     s = addEnemyOut(s, 'captain', -5)
     expect(s.tallies).toEqual([])
     expect(s.editedAt).toBeTypeOf('string')
@@ -195,5 +197,16 @@ describe('sync with the server row', () => {
     const stillDirty = completeSave(sync, sent, '2026-09-04T10:10:00+00:00')
     expect(stillDirty.dirty).toBe(true)
     expect(stillDirty.sheet.turn).toBe(2)
+  })
+})
+
+describe('wounds lost', () => {
+  it("is clamped to the model's Wounds, carries in the tally and clears when zero again", () => {
+    let s = setWoundsLost(emptyBattleLiveState(), 'ogre', 'hero', 5, 3)
+    expect(woundsLost(s, 'ogre')).toBe(3)
+    expect(s.tallies).toHaveLength(1)
+    s = setWoundsLost(s, 'ogre', 'hero', 0, 3)
+    expect(woundsLost(s, 'ogre')).toBe(0)
+    expect(s.tallies).toHaveLength(0)
   })
 })

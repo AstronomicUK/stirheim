@@ -45,7 +45,9 @@ export function PostBattlePage() {
   const sessions = useBattleSessions(id)
   const events = useBattleEvents(id)
 
-  if (match.isPending || sessions.isPending) {
+  // The wizard seeds itself once from the sheet with the shared log laid over it, so the log must be
+  // in hand before rendering (on a slow connection it used to arrive a beat late and be missed).
+  if (match.isPending || sessions.isPending || events.isPending) {
     return (
       <div className="flex flex-1 items-center justify-center py-20">
         <Spinner label="Loading the match" />

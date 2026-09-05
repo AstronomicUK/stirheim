@@ -972,6 +972,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["match_state"]
       }
+      transfer_warband: {
+        Args: { p_new_owner: string; p_warband_id: string }
+        Returns: undefined
+      }
       update_roster: {
         Args: { p_changes: Json; p_reason: string; p_warband_id: string }
         Returns: number

@@ -1,12 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
-import { useDeleteWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
+import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
 import { validateRoster, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
-import { Button, Notice, Sheet, Spinner, TextField } from '../../ui'
+import { Button, Notice, SelectField, Sheet, Spinner, TextField } from '../../ui'
 import { warbandTypeName } from './shared/names'
 import { Card, ItemLines, KeyValue, Section, Tag } from './view/bits'
 import { GroupCard } from './view/GroupCard'
@@ -103,6 +103,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
             {!isOwner ? <Tag tone="brass">GM view</Tag> : null}
           </div>
         </div>
+        <HandOver warbandId={warband.id} warbandName={warband.name} ownerId={warband.owner_id} viewerId={user?.id} onError={setActionError} />
       </header>
 
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
@@ -268,5 +269,67 @@ function BetweenBattlesLink({ to, badge, highlight = false, children }: { to: st
         <span className="absolute -top-2 -right-1 rounded-full border border-brass/60 bg-surface px-1.5 text-[10px] leading-4 text-brass">{badge}</span>
       ) : null}
     </Link>
+  )
+}
+
+
+/** Owner or GM: give the warband to another account (imported rosters start with the importer). */
+function HandOver({ warbandId, warbandName, ownerId, viewerId, onError }: { warbandId: string; warbandName: string; ownerId: string; viewerId: string | undefined; onError: (e: string | null) => void }) {
+  const [open, setOpen] = useState(false)
+  const [target, setTarget] = useState('')
+  const profiles = useProfiles(open)
+  const transfer = useTransferWarband()
+  const owner = profiles.data?.find((p) => p.user_id === ownerId)
+
+  async function confirm() {
+    if (!target) return
+    onError(null)
+    try {
+      await transfer.mutateAsync({ warbandId, newOwnerId: target })
+      setOpen(false)
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Could not hand the warband over.')
+    }
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="self-start text-xs text-brass underline-offset-4 hover:underline">
+        Hand over to another player
+      </button>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Hand this warband over"
+        description={`${warbandName} moves to another player's account. They take over its roster, reports and advances; you keep nothing but the history.${owner && owner.user_id !== viewerId ? ` Current owner: ${owner.display_name}.` : ''}`}
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)} disabled={transfer.isPending}>
+              Keep it
+            </Button>
+            <Button className="flex-1" disabled={!target || target === ownerId} pending={transfer.isPending} onClick={() => void confirm()}>
+              Hand over
+            </Button>
+          </div>
+        }
+      >
+        {profiles.isPending ? (
+          <Spinner label="Loading players" />
+        ) : profiles.isError ? (
+          <Notice tone="error">{profiles.error.message}</Notice>
+        ) : (
+          <SelectField label="New owner" value={target} onChange={(e) => setTarget(e.target.value)} hint="Only players who have signed up appear here.">
+            <option value="">Pick a player…</option>
+            {profiles.data
+              .filter((p) => p.user_id !== ownerId)
+              .map((p) => (
+                <option key={p.user_id} value={p.user_id}>
+                  {p.display_name}
+                </option>
+              ))}
+          </SelectField>
+        )}
+      </Sheet>
+    </>
   )
 }

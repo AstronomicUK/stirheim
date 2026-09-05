@@ -1,0 +1,114 @@
+Witch hunters
+WITCH_HUNTERS
+GOLD
+43 gc
+WYRD STONES
+1
+STASH
+0 items
+HEROES
+Wilhelm
+WITCH_HUNTER_CAPTAIN
+EXP
+23
+M	WS	BS	S	T	W	I	A	LD
+4	4	4	3	3	1	4	1	8
+EQUIPMENT
+Crossbow
+Paddy
+WARRIOR_PRIEST
+EXP
+15
+M	WS	BS	S	T	W	I	A	LD
+2	3	3	3	3	1	3	1	8
+EQUIPMENT
+Club, Mace or Hammer
+Shield
+SKILLS & SPELLS
+Scribe
+Soulfire
+INJURIES
+None
+Leg Wound
+Wormwood
+WITCH_HUNTER
+EXP
+11
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Crossbow
+SKILLS & SPELLS
+Quick Shot
+Warren
+WITCH_HUNTER
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Crossbow
+Willow
+WITCH_HUNTER
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Crossbow
+Florance
+FLAGELLANT
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	4	4	2	3	1	10
+EQUIPMENT
+Flail
+HENCHMEN
+Fiona & Faith
+2 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	4	3	4	4	1	3	1	10
+EQUIPMENT
+Flail
+Finley
+1 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	4	4	1	4	1	10
+EQUIPMENT
+Flail
+Group 4 — Warhound
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+6	4	0	4	3	1	4	1	5
+Group 6 — Warhound
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+6	4	0	4	3	1	4	1	5
+Group 7 — Warhound
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+6	4	0	4	3	1	4	1	5
+HIRED SWORDS
+Halfling
+HALFLING SCOUT
+COST
+15 GC
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+4	2	4	2	2	1	4	1	8
+EQUIPMENT
+Bow
+Dagger
+Cooking pot (counts as a Helmet)

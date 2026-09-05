@@ -1,0 +1,59 @@
+The Argent Hammer
+PROTECTORATE OF SIGMAR
+Gold 265 gc
+Wyrd Stones 0
+Heroes
+Siegmund the Hammer
+WARRIOR PRIEST
+Exp 20
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	4	3	4	3	1	4	1	8
+SPECIAL RULES
+Leader
+Prayers of Sigmar
+EQUIPMENT
+Dagger
+SKILLS & SPELLS
+The Hammer Of Sigmar(Difficulty 7)
+Artur
+ACOLYTE
+Exp 2
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	3	2	3	3	1	3	1	7
+EQUIPMENT
+Dagger
+Saleh
+ACOLYTE
+Exp 2
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	3	2	3	3	1	3	1	7
+EQUIPMENT
+Dagger
+Lutz
+HUNTSMAN
+Exp 8
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	3	4	3	3	1	3	1	7
+SPECIAL RULES
+Beastmaster
+Replaces Templar
+EQUIPMENT
+Dagger · Long Bow
+Friedrik
+TEMPLAR
+Exp 12
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	4	3	3	3	1	3	1	7
+SPECIAL RULES
+Zealous
+EQUIPMENT
+Dagger
+Henchmen
+No henchmen recruited.
+Hired Swords
+No hired swords recruited.

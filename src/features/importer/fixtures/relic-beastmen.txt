@@ -1,0 +1,109 @@
+Beastmen
+BEASTMEN_RAIDERS
+GOLD
+4 gc
+WYRD STONES
+1
+STASH
+0 items
+HEROES
+Percor
+BEASTMEN_CHIEFTAIN
+EXP
+23
+M	WS	BS	S	T	W	I	A	LD
+5	4	3	4	4	1	4	1	7
+EQUIPMENT
+Axe
+Shamor
+BEASTMEN_SHAMAN
+EXP
+15
+M	WS	BS	S	T	W	I	A	LD
+5	4	3	3	4	1	3	1	6
+EQUIPMENT
+Axe
+SKILLS & SPELLS
+Shaggy Hide
+Vision Of Torment
+Bhast
+BESTIGOR
+EXP
+11
+M	WS	BS	S	T	W	I	A	LD
+5	4	3	4	4	1	3	1	7
+EQUIPMENT
+Axe
+Sword
+SKILLS & SPELLS
+Resilient
+Bholst
+BESTIGOR
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+5	4	3	4	4	1	3	1	7
+EQUIPMENT
+Axe
+Sword
+HENCHMEN
+Ghore & Guzzle
+2 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+5	4	3	3	4	1	3	2	6
+EQUIPMENT
+Club, Mace or Hammer
+Shield
+Gargle
+1 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+5	5	3	3	4	1	3	1	6
+EQUIPMENT
+Axe
+Shield
+Gosht
+1 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+5	5	3	3	4	1	3	1	6
+EQUIPMENT
+Axe
+Shield
+Ghorros
+1 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+5	5	3	3	4	1	3	1	6
+EQUIPMENT
+Axe
+Sword
+Group 6 — Warhounds Of Chaos
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+7	4	0	4	3	1	3	1	5
+Ungrol
+1 WARRIORS
+EXP
+1
+M	WS	BS	S	T	W	I	A	LD
+5	3	3	3	3	1	3	1	6
+EQUIPMENT
+Spear
+Uragh
+1 WARRIORS
+EXP
+1
+M	WS	BS	S	T	W	I	A	LD
+5	3	3	3	3	1	3	1	6
+EQUIPMENT
+Spear
+HIRED SWORDS
+No hired swords have been recruited yet.

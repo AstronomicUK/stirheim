@@ -33,9 +33,14 @@ export function WarbandListPage() {
         eyebrow="Ledger"
         title="Your warbands"
         aside={
-          <Link to="/warbands/new" className="inline-flex min-h-11 items-center px-2 text-sm text-brass underline-offset-4 hover:underline">
-            New warband
-          </Link>
+          <span className="flex items-center gap-1">
+            <Link to="/warbands/import" className="inline-flex min-h-11 items-center px-2 text-sm text-brass underline-offset-4 hover:underline">
+              Import
+            </Link>
+            <Link to="/warbands/new" className="inline-flex min-h-11 items-center px-2 text-sm text-brass underline-offset-4 hover:underline">
+              New warband
+            </Link>
+          </span>
         }
       />
 

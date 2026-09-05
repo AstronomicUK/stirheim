@@ -1,0 +1,92 @@
+Azgul's Traitors
+SONS OF HASHUT
+Gold 0 gc
+Wyrd Stones 0
+Heroes
+Azgor the Betrayer
+APPRENTICE SORCERER
+Exp 20
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+3	4	3	3	4	1	3	1	9
+SPECIAL RULES
+Leader
+Rituals of Chaos
+EQUIPMENT
+Dagger · Club, Mace or Hammer · Shield
+SKILLS & SPELLS
+Spectre Of Hashut(Difficulty 9)
+Taurukh the Mighty
+BULL CENTAUR
+Exp 12
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+7	4	3	4	4	1	3	2	9
+SPECIAL RULES
+Large Target
+EQUIPMENT
+Dagger · Club, Mace or Hammer
+Kruz
+CHAOS DWARF CHAMPION
+Exp 8
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+3	5	3	3	4	1	2	1	9
+EQUIPMENT
+Dagger · Club, Mace or Hammer
+Xthul
+CHAOS DWARF CHAMPION
+Exp 8
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+3	5	3	3	4	1	2	1	9
+EQUIPMENT
+Dagger · Club, Mace or Hammer
+Henchmen
+Group 1 — Blunderbuss Chaos Dwarf
+BLUNDERBUSS CHAOS DWARF
+Exp 0
+1 warriors
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+3	4	3	3	4	1	2	1	9
+EQUIPMENT
+Dagger · Club, Mace or Hammer · Chaos Dwarf Blunderbuss · Chaos Dwarf Blunderbuss · Chaos Dwarf Blunderbuss
+Group 2 — Hobgoblin
+HOBGOBLIN
+Exp 0
+1 warriors
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	2	3	3	3	1	3	1	6
+EQUIPMENT
+Dagger
+Group 3 — Hobgoblin
+HOBGOBLIN
+Exp 0
+1 warriors
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	2	3	3	3	1	3	1	6
+EQUIPMENT
+Dagger
+Group 4 — Hobgoblin
+HOBGOBLIN
+Exp 0
+1 warriors
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	2	3	3	3	1	3	1	6
+EQUIPMENT
+Dagger
+Group 5 — Hobgoblin
+HOBGOBLIN
+Exp 0
+1 warriors
+CHARACTERISTICS
+M	WS	BS	S	T	W	I	A	LD
+4	2	3	3	3	1	3	1	6
+EQUIPMENT
+Dagger
+Hired Swords
+No hired swords recruited.

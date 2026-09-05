@@ -402,6 +402,26 @@ online-only.
   `adjustments` (label, suggested, used, reason), shown on the report card as "Adjusted". Bonus
   experience already goes through `xpExtras` with a reason per line.
 
+## Phase 12 scope (agreed 2026-09-05)
+
+1. **Relic & Ruin import of the eight rosters and the battle-records CSV** from Tom's account,
+   read through his signed-in Chrome (read-only; his go given with "go ahead with Phase 12"), each
+   roster checked on screen before saving; pins the CSV column mapping.
+2. **"Suggested, not forced" across every decision the app makes for the player**, wizards
+   included: casualties and injury dice, experience awards, veteran pool, henchman survival,
+   upkeep and income, rare-item searches, advance rolls. The app shows its suggestion, the player
+   may change it with a reason, and the change is logged (report `adjustments`, or the audit
+   reason for roster writes) and shown in the record.
+3. **Cost override on purchases**: a tick box on every buy / hire (trading post, recruitment,
+   builder) to enter a different price, with the reason logged and shown ("cost overridden").
+4. **Shared combat log with undo** (carried over from Phase 11): one event stream per match that
+   any participant appends to; both sheets derive from it; any event can be reverted, kept and
+   marked. Replaces per-player-only tallies for combat results.
+
+Explained to Tom (2026-09-05): untouched advances leave the report unblocked (design choice,
+not forced); report functions are security definer with their own permission checks (the
+bookkeeping columns are GM-only for direct updates).
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

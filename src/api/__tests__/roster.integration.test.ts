@@ -136,6 +136,28 @@ describe.skipIf(!enabled)('roster functions', () => {
     expect(after.data?.gold).toBe(40)
   })
 
+  it('transfer_warband hands a warband to another account; only the owner or a campaign GM may', async () => {
+    const made = await player.rpc('create_warband', { payload: { ...payload, name: 'Handed Over' } })
+    expect(made.error).toBeNull()
+    const id = made.data as string
+    created.push(id)
+
+    // Reikland's GM is not the GM of a campaign this new warband is in, so they cannot take it.
+    const grab = await gm.rpc('transfer_warband', { p_warband_id: id, p_new_owner: GM.id })
+    expect(grab.error?.message).toMatch(/only the owner/)
+
+    const nobody = await player.rpc('transfer_warband', { p_warband_id: id, p_new_owner: '00000000-0000-4000-8000-000000000000' })
+    expect(nobody.error?.message).toMatch(/no account/)
+
+    const handed = await player.rpc('transfer_warband', { p_warband_id: id, p_new_owner: GM.id })
+    expect(handed.error).toBeNull()
+    const row = await gm.from('warbands').select('owner_id').eq('id', id).single()
+    expect(row.data?.owner_id).toBe(GM.id)
+    // The previous owner no longer sees it as theirs.
+    const mine = await player.from('warbands').select('id').eq('id', id).eq('owner_id', PLAYER.id)
+    expect(mine.data).toEqual([])
+  })
+
   it('update_roster on a warband you cannot edit reports not found; the GM of its campaign may edit it', async () => {
     const id = created[0]!
     const asGm = await gm.rpc('update_roster', { p_warband_id: id, p_reason: 'manual_edit', p_changes: [{ table: 'warbands', op: 'update', data: { gold: 5 } }] })

@@ -21,6 +21,7 @@ const CampaignListPage = lazyPage(() => import('../features/campaign/CampaignLis
 const CampaignPage = lazyPage(() => import('../features/campaign/CampaignPage'), 'CampaignPage')
 const CampaignSettingsPage = lazyPage(() => import('../features/campaign/CampaignSettingsPage'), 'CampaignSettingsPage')
 const ImportPage = lazyPage(() => import('../features/importer/ImportPage'), 'ImportPage')
+const RosterImportPage = lazyPage(() => import('../features/importer/RosterImportPage'), 'RosterImportPage')
 const JoinCampaignPage = lazyPage(() => import('../features/campaign/JoinCampaignPage'), 'JoinCampaignPage')
 const NewCampaignPage = lazyPage(() => import('../features/campaign/NewCampaignPage'), 'NewCampaignPage')
 const BattlePage = lazyPage(() => import('../features/match/BattlePage'), 'BattlePage')
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       },
       { path: 'warbands', element: <Navigate to="/" replace /> },
       { path: 'warbands/new', element: <RequireAuth><NewWarbandPage /></RequireAuth> },
+      { path: 'warbands/import', element: <RequireAuth><RosterImportPage /></RequireAuth> },
       { path: 'warbands/new/:templateId', element: <RequireAuth><BuilderPage /></RequireAuth> },
       { path: 'warbands/:id', element: <RequireAuth><WarbandPage /></RequireAuth> },
       { path: 'warbands/:id/edit', element: <RequireAuth><EditWarbandPage /></RequireAuth> },

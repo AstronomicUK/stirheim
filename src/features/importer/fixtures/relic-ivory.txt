@@ -1,0 +1,104 @@
+The Ivory Conclave
+SORCEROUS_SOCIETY
+GOLD
+22 gc
+WYRD STONES
+1
+STASH
+1 items
+HEROES
+Aldren Voss
+MAGUS
+EXP
+23
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	4	1	8
+EQUIPMENT
+Wizard's Staff
+Dagger
+Lucky Charm
+Rabbit's Foot
+Light Armour
+Familiar
+SKILLS & SPELLS
+Frostbolts
+Geyser
+Edric Falk
+MAGE
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+4	2	2	3	3	1	3	1	7
+EQUIPMENT
+Dagger
+Wizard's Staff
+SKILLS & SPELLS
+Crows Feast
+Lucan Reiss
+MAGE
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+4	2	2	3	3	1	3	1	7
+EQUIPMENT
+Wizard's Staff
+Dagger
+SKILLS & SPELLS
+Blindness Of The Depths
+Gerhardt Kranz
+COMPANION
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+4	4	4	3	3	1	3	1	8
+EQUIPMENT
+Shield
+Helmet
+Sword
+Dagger
+Light Armour
+Crossbow
+Matthias Eber
+COMPANION
+EXP
+10
+M	WS	BS	S	T	W	I	A	LD
+4	4	4	3	3	1	3	1	8
+EQUIPMENT
+Sword
+Helmet
+Dagger
+Light Armour
+Crossbow
+HENCHMEN
+Otto and Rudolf and Konrad
+3 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	2	2	3	3	1	3	2	7
+EQUIPMENT
+Dagger
+Sword
+Stefan and Kurt
+2 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	2	2	3	3	1	3	1	8
+EQUIPMENT
+Dagger
+Sword
+HIRED SWORDS
+Kislev Ranger
+KISLEV RANGER
+COST
+30 GC
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+4	3	4	3	3	1	4	1	7
+EQUIPMENT
+Bow
+Sword
+Hunter's cloak

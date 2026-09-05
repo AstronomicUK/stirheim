@@ -1,0 +1,129 @@
+Evards Quest
+BRETONNIAN_CHAPEL_GUARD
+GOLD
+1 gc
+WYRD STONES
+0
+STASH
+0 items
+HEROES
+Evard d'Lyonne
+QUESTING_KNIGHT
+EXP
+24
+M	WS	BS	S	T	W	I	A	LD
+4	5	3	4	3	1	4	1	8
+EQUIPMENT
+Sword
+Club, Mace or Hammer
+Heavy Armour
+Lucky Charm
+Gillette l'best
+DAMSEL
+EXP
+14
+M	WS	BS	S	T	W	I	A	LD
+4	2	3	3	3	1	4	1	8
+EQUIPMENT
+Mordheim Map
+SKILLS & SPELLS
+Guiding Vision
+Ambroisin de Champ
+KNIGHT_ERRANT
+EXP
+13
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	8
+EQUIPMENT
+Sword
+Heavy Armour
+Club, Mace or Hammer
+Gerard l'beau
+KNIGHT_ERRANT
+EXP
+11
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Heavy Armour
+Flail
+Rabbit's Foot
+SKILLS & SPELLS
+Bulging Muscles
+Hue Le Petit
+KNIGHT_ERRANT
+EXP
+11
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Club, Mace or Hammer
+Sword
+Heavy Armour
+SKILLS & SPELLS
+Untiring
+HENCHMEN
+Pierre
+1 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	4	1	7
+EQUIPMENT
+Long Bow
+Club, Mace or Hammer
+Albelard
+1 WARRIORS
+EXP
+2
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	8
+EQUIPMENT
+Sword
+Long Bow
+Jean
+1 WARRIORS
+EXP
+1
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Axe
+Long Bow
+Jaque
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Club, Mace or Hammer
+Jhil
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Club, Mace or Hammer
+Drummond
+1 WARRIORS
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+4	3	3	3	3	1	3	1	7
+EQUIPMENT
+Long Bow
+HIRED SWORDS
+Halfling
+HALFLING SCOUT
+COST
+15 GC
+EXP
+0
+M	WS	BS	S	T	W	I	A	LD
+4	2	4	2	2	1	4	1	8
+EQUIPMENT
+Bow
+Dagger
+Cooking pot (counts as a Helmet)

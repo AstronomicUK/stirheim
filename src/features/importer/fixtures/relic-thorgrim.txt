@@ -1,0 +1,178 @@
+Thorgrim's Seekers
+
+DWARF TREASURE HUNTERS
+
+Gold 5 gc
+Wyrd Stones 0
+Veteran Pool 8
+Printed 5 September 2026
+Special Rules
+
+Hard to Kill
+
+Dwarfs are tough.
+
+Heroes
+Thorgrim Grimmson
+
+DWARF NOBLE
+
+Exp 22
+
+CHARACTERISTICS
+
+M WS BS S T W I A LD
+3 5 4 3 4 1 2 1 9
+
+SPECIAL RULES
+
+Leader
+
+Any models in the warband within 6" of the Dwarf Noble may use his Leadership instead of their own.
+
+EQUIPMENT
+
+Gromril Armour · Shield · Dagger · Helmet · Pistol · Club, Mace or Hammer · Pistol
+
+Borri Burloksson
+
+DWARF ENGINEER
+
+Exp 13
+
+CHARACTERISTICS
+
+M WS BS S T W I A LD
+3 4 3 3 5 1 2 1 9
+
+SPECIAL RULES
+
+Expert Weaponsmith
+
+A Dwarf Engineer is a master of mechanical devices.
+
+EQUIPMENT
+
+Dagger · Crossbow · Helmet · Gromril Armour · Club, Mace or Hammer · Shield · Club, Mace or Hammer
+
+INJURIES
+
+None
+
+Horrible Scars
+
+The warrior causes fear from now on.
+
+Bill
+
+DWARF TROLL SLAYER
+
+Exp 10
+
+CHARACTERISTICS
+
+M WS BS S T W I A LD
+3 4 3 3 4 1 2 1 9
+
+SPECIAL RULES
+
+Deathwish
+
+Troll Slayers seek an honourable death in combat.
+
+Slayer Skills
+
+Troll Slayers may choose a skill from the Troll Slayer Skill table.
+
+EQUIPMENT
+
+Dwarf Axe · Dwarf Axe · Dagger
+
+INJURIES
+
+None
+
+Hardened
+
+The warrior survives and becomes inured to the horrors of Mordheim. From now on he is immune to fear.
+
+Frenzy
+
+Ben
+
+DWARF TROLL SLAYER
+
+Exp 13
+
+CHARACTERISTICS
+
+M WS BS S T W I A LD
+3 4 3 3 4 1 2 1 9
+
+SPECIAL RULES
+
+Deathwish
+
+Troll Slayers seek an honourable death in combat.
+
+Slayer Skills
+
+Troll Slayers may choose a skill.
+
+EQUIPMENT
+
+Dagger · Dwarf Axe · Dwarf Axe
+
+SKILLS & SPELLS
+
+Master Of Blades
+
+This Dwarf's martial skills surpass those of a normal warrior.
+
+Henchmen
+Khamm
+
+BEARDLINGS
+
+Exp 1
+1 warriors
+
+CHARACTERISTICS
+
+M WS BS S T W I A LD
+3 3 2 3 4 1 2 1 8
+
+EQUIPMENT
+
+Club, Mace or Hammer · Club, Mace or Hammer · Dagger
+
+Mikk
+
+BEARDLINGS
+
+Exp 0
+1 warriors
+
+CHARACTERISTICS
+
+M WS BS S T W I A LD
+3 3 2 3 4 1 2 1 8
+
+EQUIPMENT
+
+Club, Mace or Hammer · Club, Mace or Hammer · Dagger
+
+Hired Swords
+
+No hired swords recruited.
+
+Stash
+
+Gromril Armour(150 gc)
+
+Gromril is the rarest and strongest metal known of in the Old World.
+
+Gromril Armour(150 gc)
+
+Gromril is the rarest and strongest metal known of in the Old World.
+

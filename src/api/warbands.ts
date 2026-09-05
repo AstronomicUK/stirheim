@@ -149,3 +149,34 @@ export function useDeleteWarband() {
     onSuccess: () => qc.invalidateQueries({ queryKey: warbandKeys.all }),
   })
 }
+
+// ---- handing a warband to another player (Phase 12) ----
+
+export interface ProfileOption {
+  user_id: string
+  display_name: string
+}
+
+/** Every account's display name: the group is small, so the hand-over picker lists them all. */
+export async function fetchProfiles(): Promise<ProfileOption[]> {
+  const { data, error } = await supabase.from('profiles').select('user_id, display_name').order('display_name')
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function transferWarband(warbandId: string, newOwnerId: string): Promise<void> {
+  const { error } = await supabase.rpc('transfer_warband', { p_warband_id: warbandId, p_new_owner: newOwnerId })
+  if (error) throw new Error(error.message)
+}
+
+export function useProfiles(enabled = true) {
+  return useQuery({ queryKey: ['profiles'] as const, queryFn: fetchProfiles, enabled })
+}
+
+export function useTransferWarband() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ warbandId, newOwnerId }: { warbandId: string; newOwnerId: string }) => transferWarband(warbandId, newOwnerId),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: warbandKeys.all }), qc.invalidateQueries({ queryKey: ['campaigns'] })]),
+  })
+}

@@ -9,8 +9,7 @@ import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
 import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner } from '../../../ui'
-import { equipmentSummary } from '../../roster/shared/names'
-import { Card, Section, Tag } from '../../roster/view/bits'
+import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { addEnemyOut } from '../battle/sheet'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutOf, offHandCandidates, type Combatant, type Loadout } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
@@ -220,9 +219,8 @@ function CombatantLine({ c, kit, defending = false }: { c: Combatant; kit: Loado
         <span className="text-sm text-ink">{c.typeName}</span>
         <span className="font-mono text-sm tabular-nums text-ink">{line}</span>
       </div>
-      <p className="text-xs text-ink-dim">
-        {equipmentSummary(c.equipment)} · {armourText(kit)}
-      </p>
+      <ItemLines items={c.equipment} emptyText="No equipment" />
+      <p className="text-xs text-ink-dim">{armourText(kit)}</p>
       {c.traitIds.length > 0 || c.skillIds.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {c.traitIds.map((t) => (

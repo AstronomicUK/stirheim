@@ -5,7 +5,6 @@ import type { ReactNode } from 'react'
 import type { NamedRule, Stats } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { StatLine } from '../../roster/shared/StatLine'
-import { equipmentSummary } from '../../roster/shared/names'
 import { ItemLines, RuleList, Tag } from '../../roster/view/bits'
 import { skillName, skillText } from '../../roster/view/lookups'
 import type { CardTag } from './names'
@@ -63,7 +62,7 @@ export function WarriorBody({ equipment, kitLabel, kitNote, skillIds = [], rules
     <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
       <div className="flex flex-col gap-1">
         {kitLabel ? <p className="text-[10px] uppercase tracking-wider text-ink-dim">{kitLabel}</p> : null}
-        {expanded ? <ItemLines items={equipment} detailed /> : <p className="text-sm text-ink">{equipmentSummary(equipment)}</p>}
+        <ItemLines items={equipment} detailed={expanded} />
         {kitNote ? <p className="text-xs text-ink-dim">{kitNote}</p> : null}
       </div>
       {skillIds.length > 0 ? (

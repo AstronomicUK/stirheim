@@ -1,11 +1,11 @@
 // Small presentational pieces shared by the roster cards: tags, the XP bar, section headings and
 // equipment lines with optional catalogue descriptions.
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { findItem } from '../../../rules/data/items'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
-import { itemName } from '../shared/names'
+import { itemName, itemProfile } from '../shared/names'
 import { xpProgress } from './lookups'
 
 type TagTone = 'neutral' | 'warn' | 'danger' | 'brass'
@@ -58,46 +58,86 @@ export function XpBar({ xp, levelUps, role }: { xp: number; levelUps: number; ro
 
 export interface ItemLinesProps {
   items: RosterItem[]
-  /** Show the catalogue description, range/strength and special rules under each line. */
+  /** Open every line's catalogue details from the start (the player can still tap a line to close it). */
   detailed?: boolean
   emptyText?: string
+  /** Read-only text lines (printing): no tap targets. */
+  plain?: boolean
 }
 
-export function ItemLines({ items, detailed = false, emptyText = 'No equipment' }: ItemLinesProps) {
+/**
+ * The kit as a list. Every line is tappable: a weapon opens to its range, Strength and special
+ * rules, armour to its save, anything else to its catalogue text. Range and Strength also sit on
+ * the line itself so a bow's reach is one glance away.
+ */
+export function ItemLines({ items, detailed = false, emptyText = 'No equipment', plain = false }: ItemLinesProps) {
   if (items.length === 0) return <p className="text-sm text-ink-dim">{emptyText}</p>
   return (
-    <ul className="flex flex-col gap-1.5 text-sm">
-      {items.map((item, i) => {
-        const catalogue = item.itemId ? findItem(item.itemId) : undefined
-        return (
-          <li key={`${item.itemId ?? item.customName}-${i}`} className="flex flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-ink">
-                {itemName(item)}
-                {item.quantity > 1 ? <span className="text-ink-dim"> ×{item.quantity}</span> : null}
-              </span>
-              {catalogue?.range || catalogue?.strength ? (
-                <span className="shrink-0 font-mono text-xs text-ink-dim">
-                  {[catalogue.range, catalogue.strength ? `S ${catalogue.strength}` : null].filter(Boolean).join(' · ')}
-                </span>
-              ) : null}
-            </div>
-            {item.notes ? <p className="text-xs text-ink-dim">{item.notes}</p> : null}
-            {detailed && catalogue ? (
-              <div className="flex flex-col gap-1 border-l border-border pl-3 text-xs leading-relaxed text-ink-dim">
-                {catalogue.armourSave ? <p>Armour save {catalogue.armourSave}+</p> : null}
-                {catalogue.specialRules.map((rule) => (
-                  <p key={rule.name}>
-                    <span className="text-ink">{rule.name}.</span> {rule.text}
-                  </p>
-                ))}
-                {catalogue.specialRules.length === 0 && catalogue.description ? <p>{catalogue.description}</p> : null}
-              </div>
-            ) : null}
-          </li>
-        )
-      })}
+    <ul className="flex flex-col gap-1 text-sm">
+      {items.map((item, i) => (
+        <ItemLine key={`${item.itemId ?? item.customName}-${i}-${detailed ? 'd' : 'c'}`} item={item} open={detailed} plain={plain} />
+      ))}
     </ul>
+  )
+}
+
+function ItemLine({ item, open, plain }: { item: RosterItem; open: boolean; plain: boolean }) {
+  const [expanded, setExpanded] = useState(open)
+  const catalogue = item.itemId ? findItem(item.itemId) : undefined
+  const profile = itemProfile(item)
+  const canOpen = !plain && (Boolean(catalogue) || Boolean(item.notes))
+  const head = (
+    <>
+      <span className="text-ink">
+        {itemName(item)}
+        {item.quantity > 1 ? <span className="text-ink-dim"> ×{item.quantity}</span> : null}
+      </span>
+      {profile ? <span className="shrink-0 font-mono text-xs text-ink-dim">{profile}</span> : null}
+    </>
+  )
+  return (
+    <li className="flex flex-col gap-1">
+      {canOpen ? (
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)} className="flex min-h-9 w-full items-baseline justify-between gap-3 rounded text-left hover:bg-surface-high/60">
+          {head}
+        </button>
+      ) : (
+        <div className="flex items-baseline justify-between gap-3 py-1">{head}</div>
+      )}
+      {expanded && (catalogue || item.notes) ? (
+        <div className="flex flex-col gap-1 border-l border-border pl-3 text-xs leading-relaxed text-ink-dim">
+          {item.notes ? <p className="text-ink">{item.notes}</p> : null}
+          {catalogue?.range ? (
+            <p>
+              <span className="text-ink">Range.</span> {catalogue.range}
+              {catalogue.strength ? (
+                <>
+                  {' · '}
+                  <span className="text-ink">Strength.</span> {catalogue.strength}
+                </>
+              ) : null}
+            </p>
+          ) : catalogue?.strength ? (
+            <p>
+              <span className="text-ink">Strength.</span> {catalogue.strength}
+            </p>
+          ) : null}
+          {catalogue?.armourSave ? <p>Armour save {catalogue.armourSave}+</p> : null}
+          {catalogue?.specialRules.map((rule) => (
+            <p key={rule.name}>
+              <span className="text-ink">{rule.name}.</span> {rule.text}
+            </p>
+          ))}
+          {catalogue && catalogue.specialRules.length === 0 && catalogue.description ? <p>{catalogue.description}</p> : null}
+          {catalogue ? (
+            <p>
+              {catalogue.price.text}
+              {catalogue.availability.text ? ` · ${catalogue.availability.text}` : ''}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
   )
 }
 

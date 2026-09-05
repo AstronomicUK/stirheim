@@ -23,3 +23,11 @@ export function equipmentSummary(items: RosterItem[]): string {
   if (items.length === 0) return 'No equipment'
   return items.map((i) => (i.quantity > 1 ? `${itemName(i)} ×${i.quantity}` : itemName(i))).join(', ')
 }
+
+/** Range, Strength and armour save as printed on a kit line: `12" · S 3`, `6+ save`. Null when the catalogue has none. */
+export function itemProfile(item: Pick<RosterItem, 'itemId'>): string | null {
+  const catalogue = item.itemId ? findItem(item.itemId) : undefined
+  if (!catalogue) return null
+  const bits = [catalogue.range, catalogue.strength ? `S ${catalogue.strength}` : null, catalogue.armourSave ? `${catalogue.armourSave}+ save` : null].filter(Boolean)
+  return bits.length > 0 ? bits.join(' · ') : null
+}

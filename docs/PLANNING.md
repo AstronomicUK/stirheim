@@ -601,6 +601,46 @@ beyond a per-warband rarity bonus, per-warband bespoke tables (Wheelo, Eye of th
   request table was added.
 - Not in Tier 1 (still text): everything under Tier 2 in the Phase 14 scope above.
 
+## Phase 15 scope (agreed 2026-09-05)
+
+Tom accepted the recommendation and added two checks of his own. Phase 15 is built before the single
+release of Phases 13-15.
+
+Small:
+- Weekly keep-awake ping for the free Supabase tier.
+- Roll-two-keep-one exploration dice (Augur, Mountain Guide, Chronicler).
+- Merchant Caravans' Trade Wagon as a unit.
+- Template sharing with a campaign (column exists; add the switch and the list).
+- After release: fresh campaign and re-import of the records CSV.
+
+Medium:
+- Leader succession prompts (the list's named replacement; Black Orcs, Necrarchs, Protectorate, Clan
+  Moulder, Ogre Hunting Party, Pirates, Merchants, Mazzalupo, Dreamwalkers, Strigos, Battle Monks,
+  Lizardmen, Order of the Mare, Court of Pleasures; units that never lead).
+- Pre-battle prompts on the battle sheet (Blessing of the Lady, Nurgle's Rot, Guiding Dream,
+  Runesmith inscriptions, Tarot Cards).
+
+Tom's additions (2026-09-05):
+- **Out of action cannot search.** Rulebook 03:1087: "Warriors taken out of action during the last
+  battle may not look for rare items." The trading post currently offers every active hero once per
+  phase; it must read the filed report's `ooa` lines for the match (`trade_phase_state.match_id`) and
+  exclude those heroes, and say why.
+- **Dramatis Personae search** as the alternative to a rare search: pick the character, choose the
+  searching heroes (not out of action, each forgoes a rare search), roll a D6 per searcher against
+  Initiative (under = found), one hire per character; data already in
+  `src/rules/data/campaign/dramatisPersonae.ts` (rules text at 03:1230).
+- **Item prompts** where the catalogue text carries a campaign-phase effect:
+  - Mordheim Map: D6 table on purchase (Fake / Vague / Catacomb / ... ) with the exploration effect
+    recorded on the item; the wizard suggests the extra dice it grants.
+  - Tarot Cards: pre-battle Leadership test (fail by 3+ = bad); on a pass, ±1 to one exploration die.
+  - Wyrdstone Pendulum: post-battle Leadership test if the hero was not out of action; pass = re-roll
+    one exploration die (not re-rollable again).
+  - Rabbit's Foot: one exploration-die re-roll if the wearer can search and did not use it in battle.
+  - Lucky Charm and Healing Herbs are tabletop effects: the fight calculator can offer the charm's
+    4+ discard on the first hit; herbs stay text.
+  All of these follow "suggested not forced": the prompt proposes the roll and its effect, the
+  player can decline or override with a reason, and the log keeps it.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

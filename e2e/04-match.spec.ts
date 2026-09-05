@@ -168,11 +168,15 @@ test.describe('match', () => {
     await page.getByRole('radiogroup', { name: 'Battle result' }).getByRole('radio', { name: 'Lost' }).click()
     await next(page)
 
+    // The shared log put Skritch out of action on Ana's side without her tapping anything.
     await expectStep(page, 2, 'Casualties')
     await next(page)
 
+    // Injuries: Skritch must roll, or be spared with a reason (suggested, not forced).
     await expectStep(page, 3, 'Injuries')
-    await expect(page.getByText('No casualties. Everyone walks back to camp.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+    await page.getByRole('checkbox', { name: /No injury roll needed/ }).check()
+    await page.getByLabel('Why').fill('Filed by the e2e suite: spared by house rule')
     await next(page)
 
     await expectStep(page, 4, 'Experience')
@@ -181,11 +185,11 @@ test.describe('match', () => {
     await expectStep(page, 5, 'Advances')
     await next(page)
 
-    // Three heroes, no winner's die.
+    // Two heroes still standing, no winner's die.
     await expectStep(page, 6, 'Exploration')
-    await expect(page.getByText('3 surviving heroes = 3 dice')).toBeVisible()
-    for (let i = 1; i <= 3; i++) await typeDie(page, `Die ${i}`, i)
-    await expect(page.getByText('Dice total').locator('xpath=following-sibling::span')).toHaveText('6')
+    await expect(page.getByText('2 surviving heroes = 2 dice')).toBeVisible()
+    for (let i = 1; i <= 2; i++) await typeDie(page, `Die ${i}`, i)
+    await expect(page.getByText('Dice total').locator('xpath=following-sibling::span')).toHaveText('3')
     await next(page)
 
     await expectStep(page, 7, 'Veterans & notes')
@@ -211,6 +215,6 @@ test.describe('match', () => {
     await expect(battles.locator('li').filter({ hasText: REIKLAND_WATCH.name }).locator('span', { hasText: /^Won$/ })).toBeVisible()
     await expect(battles.locator('li').filter({ hasText: CLAWS_OF_ESHIN.name }).locator('span', { hasText: /^Lost$/ })).toBeVisible()
     await expect(page.getByText('3 shards')).toBeVisible()
-    await expect(page.getByText('2 shards')).toBeVisible()
+    await expect(page.getByText('1 shard', { exact: false })).toBeVisible()
   })
 })

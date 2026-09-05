@@ -63,6 +63,10 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const [defenderId, setDefenderId] = useState<string | null>(null)
   const attacker = mine.find((c) => c.id === attackerId) ?? mine.find((c) => !c.out) ?? mine[0]
   const defender = targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
+  // Pin the defaults once chosen (state adjusted during render, the React way), so a logged kill that marks
+  // the target out of action does not swap the fight under the player.
+  if (attackerId === null && attacker) setAttackerId(attacker.id)
+  if (defenderId === null && defender) setDefenderId(defender.id)
 
   const attackerKit = useMemo(() => (attacker ? loadoutOf(attacker.equipment) : null), [attacker])
   const defenderKit = useMemo(() => (defender ? loadoutOf(defender.equipment) : null), [defender])

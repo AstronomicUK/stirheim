@@ -122,6 +122,22 @@ editor changes are distinguishable in the history.
 4. Authentication > Providers > Email: keep "Confirm email" on for the hosted project.
 5. Netlify > Site configuration > Environment variables: `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_ANON_KEY` from Project Settings > API. Redeploy.
+
+### How it was actually done (2026-09-05)
+
+Hosted project ref `bckbyomcukkiabkomlrs` (London). `npx supabase login` + `npx supabase link`
+needed no database password (the CLI connects with the access token), then `npx supabase db push`
+applied all 17 migrations; `npx supabase migration list` shows local and remote in step.
+Netlify's automatic builds are **stopped** to save credits: deploys are made from this Mac with
+
+```bash
+npm run build          # reads .env.production.local (ignored): the hosted URL and anon key
+npx netlify deploy --prod --dir=dist --no-build --message "…"
+```
+
+which uses no build minutes. Turn builds back on in Netlify (Site configuration > Build &
+deploy > Stop builds) when credits allow. The anon key is public; the service role key and the
+database password never leave Tom's account.
 6. Free-tier projects pause after a week without traffic. A weekly scheduled ping (Netlify
    scheduled function or a cron hitting the REST endpoint) keeps it awake; see
    `docs/PLANNING.md`.

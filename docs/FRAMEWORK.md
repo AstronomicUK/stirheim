@@ -218,6 +218,8 @@ values against the Markdown, in the same style the simulator used for its 72 tem
 | 8 | Advancements, trading post, stash, recruitment, hired swords | 7 |
 | 9 | Importer from Relic & Ruin; group onboarding; polish and Playwright coverage | 8 |
 | 10 | Attack calculator (first upgrade) | 9 |
+| 11 | Combat mode, kit details, shield and gromril rules, calculator carry-over, advances in the wizard, report approval and amendment, suggested dice (see PLANNING.md "Phase 11") | 10 |
+| 12 | Shared combat log with undo; Relic & Ruin roster import; roadmap items as agreed | 11 |
 
 Phases 1 to 2 are pure TypeScript and can run in parallel with 3. Phases 4 onward each end
 with something the group can try on their phones.

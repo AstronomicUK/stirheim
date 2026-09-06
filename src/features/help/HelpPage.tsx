@@ -87,8 +87,10 @@ export function HelpPage() {
           roster (logged as a GM edit) and archive the campaign.
         </P>
         <P>
-          <B>House rules.</B> Three switches cover the group's usual variations; the current set is listed on the campaign page. Half-price armour is
-          applied automatically in the trading post; the other two are for the table to remember. Anything else goes in the campaign rules text.
+          <B>House rules.</B> Four switches cover the group's usual variations; the current set is listed on the campaign page. Half-price armour is
+          applied automatically in the trading post and the Rabbit&apos;s Foot switch in the exploration step; the other two are for the table to remember.
+          <em>Bans</em> remove items, spells, hired swords, Dramatis Personae or skills from the campaign: banned entries disappear from the trading post,
+          spell tables, the hire sheet and skill pickers, and a roster that already holds one shows a warning. Anything else goes in the campaign rules text.
         </P>
       </Topic>
 
@@ -107,9 +109,12 @@ export function HelpPage() {
           <B>Attack calculator.</B> The <em>Attack</em> tab of the battle sheet picks one of your warriors and one enemy model and shows the exact odds for
           this phase: the roll needed to hit, to wound and their armour save for each weapon, what a wound does on the injury chart, and the chance of a knock
           down, a stun or an out of action across every attack, with parries, criticals and the campaign&apos;s house rules already counted. Choose the weapon in
-          each hand and tick the situation (charging, moved and shot, cover, long range). <em>Roll it through</em> then walks real dice step by step, telling
-          you what each roll needs and what it did, and an out of action result can be logged straight to that warrior&apos;s <em>Enemies out</em> tally.
-          Kit the engine cannot model (custom items, most miscellaneous gear) is listed under the odds so you can apply it at the table.
+          each hand and tick the situation (charging, mounted, moved and shot, cover, long range, a repeater&apos;s single shot). Cloaks, amulets, a Peg Leg,
+          a Lucky Charm and the weapons&apos; own quirks (a Starblade&apos;s 4+ parry, a Sigmarite Warhammer against the Undead, an Ogre Club swung two-handed) are
+          in the numbers. Poisons, drugs and special ammunition a warrior carries appear under <em>Taken or applied this battle</em>: tick them and the odds
+          change, and the report uses them up. <em>Roll it through</em> then walks real dice step by step, telling you what each roll needs and what it did,
+          and an out of action result can be logged straight to that warrior&apos;s <em>Enemies out</em> tally. Kit the engine cannot model is listed under
+          the odds so you can apply it at the table.
         </P>
         <P>
           <B>Shared combat log.</B> When a fight in the calculator ends, <em>Log to both sheets</em> records it once for the whole table: the kill lands on the
@@ -180,7 +185,10 @@ export function HelpPage() {
         </P>
         <P>
           <B>Trading post.</B> Buy common items at list price, search for rare items once per hero per trading phase, sell wyrdstone by the size band and
-          manage the stash. Half-price armour is applied here when the house rule is on.
+          manage the stash. Half-price armour is applied here when the house rule is on. Prices and rarities follow the buyer where the rules say so (a Skink
+          hero&apos;s Black Lotus, a priest&apos;s Holy Relic, the Gunnery School&apos;s handguns), and when the rules say a warrior may not have something (Heroes-only
+          kit on a henchman, a Dwarf with an obsidian blade, a third hand weapon, a shield over Toughened Leathers) the shop says so and asks for a reason
+          before selling anyway. Kit that fuses to its wearer stays put; Toughened Leathers cannot be sold back.
         </P>
         <P>
           <B>Recruitment.</B> Hire new heroes and henchmen against the warband's limits, add warriors to an existing group, dismiss warriors, and hire hired
@@ -239,6 +247,8 @@ export function HelpPage() {
           <li className="list-disc">Strength does not erode armour saves: a high-Strength hit never reduces the save.</li>
           <li className="list-disc">The optional critical hit tables are on: criticals use the per-weapon-type charts, not the single core chart.</li>
           <li className="list-disc">Armour costs half its listed price, rounded down. Shields, bucklers and helmets stay at full price.</li>
+          <li className="list-disc">A Rabbit&apos;s Foot re-rolls one die during the battle only; no exploration re-roll.</li>
+          <li className="list-disc">Nothing is banned until the GM says so; Nurgle&apos;s Rot is the usual first entry.</li>
         </ul>
         <P>Anything beyond these switches lives in the campaign rules text, which the GM writes and everyone can read from the campaign page.</P>
       </Topic>

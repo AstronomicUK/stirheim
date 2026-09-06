@@ -673,9 +673,62 @@ Tom's additions (2026-09-05):
   (the scrape truncates it), automatic "map spent" marking after a Vague/Accurate map is used (note it
   on the item).
 
-## Phase 16 scope (collecting, 2026-09-05)
+## Phase 16 built (2026-09-06)
 
-Not started. Tom asked for the small gaps left by Phases 14-15 to go here, plus a campaign "bans"
+Tier 1 of the scope below, in five commits. Where it lives:
+
+- **Item rules overlay** `src/rules/data/itemRules/` (`restrictions.ts`, `pricing.ts`, `effects.ts`,
+  `warbandGroups.ts` for the rules' race and creed words). Accessors `itemRestriction` (misc kit
+  defaults to Heroes only), `itemPricing`, `itemEffect`, `isConsumable`.
+- **Catalogue**: `data/items/warbandSpecial.ts` (30 warband-page items incl. the six Blessings of
+  Nurgle) with engine entries in `data/weapons/warbandSpecial.ts`; `EQUIPMENT_BUNDLES` for the Pit
+  Fighter styles; Katana, Staff and Shield/Buckler aliased. `data/items/classify.ts` classifies armour,
+  helmets and thrown weapons from data (the equipment bans use it).
+- **Section C fixes** in the weapon data (Ostlander -2 saves, Lance mounted charge, Ogre Club
+  two-handed, Cathayan Longsword WS, Chain Sticks, Starblade, Sigmarite Warhammer, Misericordia, Ball
+  and Chain, Ladle, Dark Elf Blade as an upgrade with `critTableRollModifier`), Cooking Pot Helmet
+  and Mechanical Suit in the loadout, Swivel Gun shot types, `altFire` on repeaters and slings.
+- **Engine** (`engine/buildAttackInput.ts`, `resolveAttack.ts`): new Weapon fields (`wsBonus`,
+  `firstTurnBonusAttacks`, `unarmedBonusAttack`, `parryThreshold`, `ignoresArmourSaveExceptShield`,
+  `saveModifierTwoHandedOnly`, `strengthBonusMountedChargeOnly`, `toWoundHighestOf2D6VsKnockedDown`,
+  `vsTraits`, `defenderToBeHitModifier`, `altFire`), CombatContext `mounted`, `twoHanded`,
+  `targetKnockedDown`, `altFire`; DefenderProfile `toBeHit`, `saveBonus`, `ownSave`, `afterSaveThreshold`
+  (Peg Leg), `missileWardSaveThreshold`, `stunSave`, `parryThreshold`. Whipcrack fires when charged.
+- **Calculator** (`features/match/fight/combatants.ts` loadout, `odds.ts`, `rollThrough.ts`,
+  `FightTab.tsx`): kit traits and saves, Hook Hand and Sword-Gnoblar attacks, Lucky Charm offered on
+  the first hit when rolling, Peg Leg step, Misericordia second die, a "Taken or applied this battle"
+  checklist per attacker (`BattleLiveState.itemsUsed`, `setItemUsed`) that coats weapons or doses the
+  warrior (`applyPreBattle`), kind traits `undead` / `possessed` / `vampire` from the roster.
+- **Report**: `applied.item_patches` (consumables one fewer, spent maps noted) with migration 20's
+  `apply_battle_report` / `revert_battle_report`; Tarot disaster and Nurgle's Rot outcomes applied
+  from `ReportContext.preBattle`; `ReportContext.itemsUsed`.
+- **Restrictions and pricing** (`resolve/itemRestrictions.ts`, `resolve/itemPricing.ts`): warnings
+  with a reason in the shop (`BuyTab`), problems on the roster (`validateRoster` code
+  `roster.itemRestriction`, bans through `ValidateRosterOptions.bans`), `sellItem` refuses
+  unsellable kit, `moveItem` refuses fused kit; the shop rewrites price and rarity per buyer, adds
+  Opulent Coach / Trade Wagon bonuses to rare rolls, asks the base weapon for upgrades (kept on the
+  item note as `base: <weapon id>`), runs Wolfcloak hunts and Familiar paid-on-failure searches.
+- **Bans** (`CampaignHouseRules.bans`, `campaignBansSchema`, `features/campaign/BansEditor.tsx`,
+  `bans.ts`): hidden in `BuyTab`, `CharactersTab`, `hiredSwordOptions`, `availableSkills`,
+  `unknownSpells`; `isBanned` / `bansCount` in `resolve/houseRules.ts`. Migration 20 updates the
+  settings column default. Pages that needed the campaign now load it (`useWarbandCampaign`).
+- **Skill restrictions** (`resolve/skillRestrictions.ts`): prerequisites, leader only, warband-wide
+  limits, exclusions and "X only" read from the tables; `AvailableSkill.blocked` shown in the picker
+  and noted in the resolution text when taken anyway.
+- **Hero advance at a maximum** (`features/advances/model.ts`): the pair's other characteristic
+  first, then a skill or a re-roll.
+- **Nurgle's Rot**: `WarriorFlags.nurglesRot`, conditions checklist on the hero editor, a D6
+  Toughness test in Before the battle (`rot:<id>` outcomes), -1 T / death applied by the report.
+- **Guiding Dream** outcomes on the Dreamwalkers pre-battle rule; **free dagger** for recruits
+  joining a group that carries them.
+- Migration `20260906000020_phase16.sql` is applied locally; pushing to the hosted project waits for
+  Tom's OK (the client parses older settings rows without it).
+- Tier 2 stays parked (mounts, animals as warriors, black powder cadence, strike order, post-battle
+  item consequences, spell items).
+
+## Phase 16 scope (collected 2026-09-05)
+
+Tom asked for the small gaps left by Phases 14-15 to go here, plus a campaign "bans"
 house rule; a weapons and armour audit he is running may add more.
 
 Small gaps carried over:

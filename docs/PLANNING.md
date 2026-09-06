@@ -1069,6 +1069,13 @@ what came up while building. Grouped so Tom can strike or reorder.
   restriction blocks; full map-campaign support (territories, movement, map-driven scenarios);
   per-user light/dark toggle; a domain name; the CSV column mapping wants a real export sample.
 
+## Release (2026-09-06, third)
+
+Tom: "Okay can you push this update". No migrations pending (24 went up with Phase 21); local build
+plus `npx netlify deploy --prod --dir=dist --no-build`, deploy 6a9d77bf5f1ecc77077bac99, commit
+ca5dbc4. Live: Phase 21 (half-price armour switches at creation and in the shop, Rewards of the
+Shadowlord) and the import questions sheet.
+
 ## Import questions (2026-09-06)
 
 Tom, on being told the Bone Goliath fix would be undone by a re-import: "Maybe just a pop-up for

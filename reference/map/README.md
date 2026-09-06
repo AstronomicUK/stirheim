@@ -14,3 +14,16 @@ version (13 MB) and French, German, Italian, Spanish and Ukrainian versions are 
 The map carries its own campaign rules: districts with a key of benefits, Foothold tokens (won a
 battle in the district), Exploration tokens (fought there without winning), adjacency, and Hard
 Fought Districts that only one warband may hold.
+
+## Structured data (added 2026-09-06)
+
+- `districts.json`: the 30 districts with names in five languages, circle coordinates (percent of
+  the image), advantage text (English, with mordheimer.net links in Markdown), `abundance`, `hard`
+  and `gate` flags, and `connections`. Extracted from the bundle of https://mordheim-map.com/, the
+  fan-made interactive version of the same map (Warhammer Fantasy Online Rules Index Project). The
+  Statue of Count Gotthard's connections were corrected against the red lines on the image.
+- `campaign-rules.md`: the map campaign rules as published on that site, condensed.
+
+Permission: both the image and the interactive site are fan works. Ask Philip Spence before
+shipping the image inside Stirheim; the rules text and adjacency are game data we restate in our own
+words.

@@ -1,0 +1,865 @@
+{
+  "source": "https://mordheim-map.com/ (Warhammer Fantasy Online Rules Index Project), districts table extracted from the site bundle on 2026-09-06; Statue of Count Gotthard connections corrected against the red lines on the original map image (the site lists a copy of Count Steinhardt's Palace's links).",
+  "coords": "x and y are percentages of the map image width and height (centre of the district circle); scale is the circle size relative to the default; top is the label offset used by the site.",
+  "districts": {
+    "artisan-quarter": {
+      "name": "Artisan Quarters",
+      "coords": {
+        "x": 21.9,
+        "y": 48.6,
+        "scale": 0.98,
+        "top": 0.99
+      },
+      "advantage": "1/2 price [Cathayan Silk Clothes](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#cathayan-silk-clothes), [Hunting Arrows](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#hunting-arrows), [Lantern](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#lantern), [Net](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#net), [Rope & Hook](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#rope-&-hook), [Superior Blackpowder](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#superior-blackpowder).",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "dwarven-district",
+        "west-gate",
+        "memorial-gardens",
+        "count-steinhardts-palace",
+        "executioners-square",
+        "the-gaol"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#cathayan-silk-clothes",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#hunting-arrows",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#lantern",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#net",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#rope-&-hook",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#superior-blackpowder"
+      ],
+      "names": {
+        "en": "Artisan Quarters",
+        "de": "Künstlerviertel",
+        "fr": "Quartier des Artisans",
+        "it": "Quartiere Artigiano",
+        "es": "Barrio de los Artesanos"
+      }
+    },
+    "count-steinhardts-palace": {
+      "name": "Count Steinhardt's Palace",
+      "coords": {
+        "x": 33.2,
+        "y": 45.6,
+        "scale": 1.2,
+        "top": 1.155
+      },
+      "advantage": "1/2 price to hire [Freelancer](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#freelancer). 1/2 price [Horse](https://www.mordheimer.net/docs/weapons-armour/animal-bestiary#riding/draft-horse), [Warhorse](https://www.mordheimer.net/docs/weapons-armour/animal-bestiary#warhorse) and [Wardog](https://www.mordheimer.net/docs/weapons-armour/animal-bestiary#wardogs).",
+      "abundance": true,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "artisan-quarter",
+        "memorial-gardens",
+        "rich-quarter",
+        "middle-bridge",
+        "executioners-square"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#freelancer",
+        "https://www.mordheimer.net/docs/weapons-armour/animal-bestiary#riding/draft-horse",
+        "https://www.mordheimer.net/docs/weapons-armour/animal-bestiary#warhorse",
+        "https://www.mordheimer.net/docs/weapons-armour/animal-bestiary#wardogs"
+      ],
+      "names": {
+        "en": "Count Steinhardt's Palace",
+        "de": "Graf Steinhardts Palast",
+        "fr": "Palais du Comte Steinhardt",
+        "it": "Palazzo del Conte Steinhardt",
+        "es": "Palacio del Conde Steinhardt"
+      }
+    },
+    "dwarven-district": {
+      "name": "Dwarven District",
+      "coords": {
+        "x": 15,
+        "y": 44.8,
+        "scale": 1.2,
+        "top": 1.225
+      },
+      "advantage": "1/2 price to hire [Dwarf Troll Slayer](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#dwarf-troll-slayer). 1/2 price [Bugman's Ale](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#bugman's-ale), [Gromril Armour](https://www.mordheimer.net/docs/weapons-armour/armour#gromril-armour) and [Gromril Weapons](https://www.mordheimer.net/docs/weapons-armour/close-combat#gromril-weapon).",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "west-gate",
+        "artisan-quarter",
+        "the-gaol"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#dwarf-troll-slayer",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#bugman's-ale",
+        "https://www.mordheimer.net/docs/weapons-armour/armour#gromril-armour",
+        "https://www.mordheimer.net/docs/weapons-armour/close-combat#gromril-weapon"
+      ],
+      "names": {
+        "en": "Dwarven District",
+        "de": "Zwergendistrikt",
+        "fr": "Le Quartier Nain",
+        "it": "Distretto dei Nani",
+        "es": "Distrito Enano"
+      }
+    },
+    "executioners-square": {
+      "name": "Executioner's Square",
+      "coords": {
+        "x": 30.2,
+        "y": 58.3,
+        "scale": 1.2,
+        "top": 1.145
+      },
+      "advantage": "Roll one extra dice in the Exploration Procedure.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "artisan-quarter",
+        "count-steinhardts-palace",
+        "middle-bridge",
+        "temple-of-morr",
+        "the-cemetery"
+      ],
+      "links": [],
+      "names": {
+        "en": "Executioner's Square",
+        "de": "Richtplatz",
+        "fr": "Place des Exécutions",
+        "it": "Piazza del Boia",
+        "es": "Plaza del Verdugo"
+      }
+    },
+    "memorial-gardens": {
+      "name": "Memorial Gardens",
+      "coords": {
+        "x": 25.3,
+        "y": 38.4,
+        "scale": 1.05,
+        "top": 1.035
+      },
+      "advantage": "Roll 3D6 for experience when recruiting for existing, non-human, Henchmen groups.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "west-gate",
+        "raven-barracks",
+        "rich-quarter",
+        "count-steinhardts-palace",
+        "artisan-quarter"
+      ],
+      "links": [],
+      "names": {
+        "en": "Memorial Gardens",
+        "de": "Gedenkgärten",
+        "fr": "Jardins du Souvenir",
+        "it": "Giardini della Memoria",
+        "es": "Jardines de la Memoria"
+      }
+    },
+    "raven-barracks": {
+      "name": "Raven Barracks",
+      "coords": {
+        "x": 27.35,
+        "y": 21,
+        "scale": 1.21,
+        "top": 1.335
+      },
+      "advantage": "1/2 price to hire [Ogre Bodyguard](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#ogre-bodyguard). You can resell your weapons and armour at their purchase price.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "west-gate",
+        "statue-of-count-gotthard",
+        "rich-quarter",
+        "memorial-gardens"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#ogre-bodyguard"
+      ],
+      "names": {
+        "en": "Raven Barracks",
+        "de": "Rabenfeste",
+        "fr": "Baraquements du Corbeau",
+        "it": "Caserma Del Corso",
+        "es": "Cuartel del Cuervo"
+      }
+    },
+    "rich-quarter": {
+      "name": "Rich Quarter",
+      "coords": {
+        "x": 33.45,
+        "y": 31.55,
+        "scale": 1.17,
+        "top": 1.205
+      },
+      "advantage": "Always find the maximum amount of gold or equipment at a location on the Exploration Chart.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "raven-barracks",
+        "statue-of-count-gotthard",
+        "middle-bridge",
+        "count-steinhardts-palace",
+        "memorial-gardens"
+      ],
+      "links": [],
+      "names": {
+        "en": "Rich Quarter",
+        "de": "Reichenviertel",
+        "fr": "Le Quartier Riche",
+        "it": "Quartiere Ricco",
+        "es": "Barrio de los Ricos"
+      }
+    },
+    "statue-of-count-gotthard": {
+      "name": "Statue of Count Gotthard",
+      "coords": {
+        "x": 40.7,
+        "y": 22.4,
+        "scale": 0.97,
+        "top": 1.01
+      },
+      "advantage": "The warband's leader gains +1 Ld.",
+      "abundance": false,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "raven-barracks",
+        "rich-quarter",
+        "middle-bridge",
+        "river-gate"
+      ],
+      "links": [],
+      "names": {
+        "en": "Statue of Count Gotthard",
+        "de": "Statue von Graf Gotthard",
+        "fr": "Statue du comte Gotthard",
+        "it": "Statua del Conte Gotthard",
+        "es": "Estatua del Conde Gotthard"
+      }
+    },
+    "temple-of-morr": {
+      "name": "Temple of Morr",
+      "coords": {
+        "x": 29.95,
+        "y": 72.55,
+        "scale": 0.78,
+        "top": 0.9
+      },
+      "advantage": "If a Hero's injury result is *11-15 Dead* on the Heroes' Serious Injures Chart, roll a D6. On a 5+, the result becomes *41-55 Full Recovery* instead.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "the-cemetery",
+        "executioners-square",
+        "south-gate"
+      ],
+      "links": [],
+      "names": {
+        "en": "Temple of Morr",
+        "de": "Tempel des Morr",
+        "fr": "Temple de Morr",
+        "it": "Tempio di Morr",
+        "es": "Templo de Morr"
+      }
+    },
+    "the-cemetery": {
+      "name": "The Cemetery",
+      "coords": {
+        "x": 25.5,
+        "y": 71.15,
+        "scale": 0.74,
+        "top": 0.79
+      },
+      "advantage": "Undead warband: Zombies cost 10 gc to hire and Ghouls cost 30 gc to hire. Other warbands: The warband is immune to Fear, and Terror is treated as Fear",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "the-gaol",
+        "executioners-square",
+        "temple-of-morr"
+      ],
+      "links": [],
+      "names": {
+        "en": "The Cemetery",
+        "de": "Der Friedhof",
+        "fr": "Cimetière de Saint Voller",
+        "it": "Il Cimitero",
+        "es": "El Cementerio"
+      }
+    },
+    "the-gaol": {
+      "name": "The Gaol",
+      "coords": {
+        "x": 18.55,
+        "y": 59.6,
+        "scale": 1.14,
+        "top": 1.11
+      },
+      "advantage": "1/2 price to hire [Gaoler](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1b#gaoler). If a Hero's injury result is *61 Captured* on the Heroes' Serious Injures Chart, the result becomes *41-55 Full Recovery* instead.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "dwarven-district",
+        "artisan-quarter",
+        "the-cemetery"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1b#gaoler"
+      ],
+      "names": {
+        "en": "The Gaol",
+        "de": "Der Kerker",
+        "fr": "Les Geôles",
+        "it": "Il Carcere",
+        "es": "La Carcel"
+      }
+    },
+    "amphitheatre": {
+      "name": "Amphitheatre",
+      "coords": {
+        "x": 51.3,
+        "y": 55.3,
+        "scale": 1.15,
+        "top": 1.17
+      },
+      "advantage": "1/2 price to hire [Pit Fighter](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#pit-fighter). 1/2 price [Net](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#net). If a Hero's injury result is *65 Sold To The Pits* on the Heroes' Serious Injures Chart, they automatically win the fight.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "the-rock",
+        "middle-bridge",
+        "merchants-quarter",
+        "market-square",
+        "the-pit",
+        "poor-quarter",
+        "south-gate"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#pit-fighter",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#net"
+      ],
+      "names": {
+        "en": "Amphitheatre",
+        "de": "Amphitheater",
+        "fr": "Amphithéâtre",
+        "it": "Anfiteatro",
+        "es": "Anfiteatro"
+      }
+    },
+    "city-hall": {
+      "name": "City Hall",
+      "coords": {
+        "x": 69.55,
+        "y": 43.3,
+        "scale": 0.945,
+        "top": 0.98
+      },
+      "advantage": "During the Exploration Procedure, you may modify one dice by +1 or -1.",
+      "abundance": false,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "market-square",
+        "the-great-library",
+        "temple-of-sigmar",
+        "east-gate",
+        "the-pit"
+      ],
+      "links": [],
+      "names": {
+        "en": "City Hall",
+        "de": "Stadhalle",
+        "fr": "Hostel de Ville",
+        "it": "Municipio",
+        "es": "Ayuntamiento"
+      }
+    },
+    "clock-tower": {
+      "name": "Clock Tower",
+      "coords": {
+        "x": 68.2,
+        "y": 69.1,
+        "scale": 1.125,
+        "top": 1.16
+      },
+      "advantage": "Always find the maximum amount of gold or equipment at a location on the Exploration Chart.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "poor-quarter",
+        "the-pit",
+        "sages-hall"
+      ],
+      "links": [],
+      "names": {
+        "en": "Clock Tower",
+        "de": "Clockenturm",
+        "fr": "Tour de l'Horloge",
+        "it": "Torre dell'Orologio",
+        "es": "Torre del Reloj"
+      }
+    },
+    "fence-alley": {
+      "name": "Fence Alley",
+      "coords": {
+        "x": 60.5,
+        "y": 32.9,
+        "scale": 0.97,
+        "top": 0.95
+      },
+      "advantage": "1/2 price [Poisons and Drugs](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#poisons-and-drugs).",
+      "abundance": false,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "merchants-quarter",
+        "quayside",
+        "market-square"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#poisons-and-drugs"
+      ],
+      "names": {
+        "en": "Fence Alley",
+        "de": "Hehlergasse",
+        "fr": "L'allée aux Clôtures",
+        "it": "Via della Cancellata",
+        "es": "Callejón del Perista"
+      }
+    },
+    "little-moot": {
+      "name": "Little Moot",
+      "coords": {
+        "x": 76.83,
+        "y": 26.42,
+        "scale": 0.96,
+        "top": 1.03
+      },
+      "advantage": "1/2 price to hire [Halfling Scout](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#halfling-scout). 1/2 price [Halfling Cookbook](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#halfling-cookbook).",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "the-great-library",
+        "temple-of-sigmar"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#halfling-scout",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#halfling-cookbook"
+      ],
+      "names": {
+        "en": "Little Moot",
+        "de": "Klein-Moot",
+        "fr": "Le Petit Moot",
+        "it": "Piccolo Convivio",
+        "es": "Pequeña Asamblea"
+      }
+    },
+    "merchants-quarter": {
+      "name": "Merchants' Quarter",
+      "coords": {
+        "x": 50.5,
+        "y": 41.18,
+        "scale": 1.18,
+        "top": 1.17
+      },
+      "advantage": "1/2 price to hire [Elf Ranger](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#elf-ranger). 1/2 price [Elf Bow](https://www.mordheimer.net/docs/weapons-armour/missile#elf-bow), [Elven Cloak](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#elven-cloak), [Ithilmar Armour](https://www.mordheimer.net/docs/weapons-armour/armour#ithilmar-armour) and [Ithilmar Weapon](https://www.mordheimer.net/docs/weapons-armour/close-combat#ithilmar-weapon).",
+      "abundance": true,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "middle-bridge",
+        "quayside",
+        "fence-alley",
+        "market-square",
+        "amphitheatre"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#elf-ranger",
+        "https://www.mordheimer.net/docs/weapons-armour/missile#elf-bow",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#elven-cloak",
+        "https://www.mordheimer.net/docs/weapons-armour/armour#ithilmar-armour",
+        "https://www.mordheimer.net/docs/weapons-armour/close-combat#ithilmar-weapon"
+      ],
+      "names": {
+        "en": "Merchants' Quarter",
+        "de": "Kaufmannsviertel",
+        "fr": "Le Quartier des Marchands",
+        "it": "Quartiere dei Mercanti",
+        "es": "Barrio de los Comerciantes"
+      }
+    },
+    "market-square": {
+      "name": "Market Square",
+      "coords": {
+        "x": 62.2,
+        "y": 44.4,
+        "scale": 1.18,
+        "top": 1.19
+      },
+      "advantage": "Add +2 on the rare items roll.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "merchants-quarter",
+        "fence-alley",
+        "city-hall",
+        "the-pit",
+        "amphitheatre"
+      ],
+      "links": [],
+      "names": {
+        "en": "Market Square",
+        "de": "Marktplatz",
+        "fr": "Place du Marché",
+        "it": "Pіаzzа del Mercato",
+        "es": "Plaza del Mercado"
+      }
+    },
+    "poor-quarter": {
+      "name": "Poor Quarter",
+      "coords": {
+        "x": 58.1,
+        "y": 71.3,
+        "scale": 1.27,
+        "top": 1.275
+      },
+      "advantage": "Roll one extra dice in the Exploration Procedure.",
+      "abundance": false,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "south-gate",
+        "amphitheatre",
+        "the-pit",
+        "clock-tower"
+      ],
+      "links": [],
+      "names": {
+        "en": "Poor Quarter",
+        "de": "Armenviertel",
+        "fr": "Le Quartier Pauvre",
+        "it": "Quartiere Povero",
+        "es": "Barrio Pobre"
+      }
+    },
+    "quayside": {
+      "name": "Quayside",
+      "coords": {
+        "x": 50.9,
+        "y": 28.9,
+        "scale": 1.1,
+        "top": 1.08
+      },
+      "advantage": "Roll 3D6 for experience when recruiting for existing human Henchmen groups.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "river-gate",
+        "the-great-library",
+        "fence-alley",
+        "merchants-quarter"
+      ],
+      "links": [],
+      "names": {
+        "en": "Quayside",
+        "de": "Der Kai",
+        "fr": "Les Quais",
+        "it": "Lungofiume",
+        "es": "Muelle"
+      }
+    },
+    "sages-hall": {
+      "name": "Sage's Hall",
+      "coords": {
+        "x": 74.58,
+        "y": 55.35,
+        "scale": 0.98,
+        "top": 1.06
+      },
+      "advantage": "1/2 price to hire [Warlock](https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#warlock). 1/2 price [Tome of Magic](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#tome-of-magic). You may choose a spell rather than randomly generating it.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "the-pit",
+        "east-gate",
+        "clock-tower"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/campaigns/hired-swords/grade-1a#warlock",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#tome-of-magic"
+      ],
+      "names": {
+        "en": "Sage's Hall",
+        "de": "Halle der Gelehrten",
+        "fr": "Manoir des Sorciers",
+        "it": "Sala del Saggio",
+        "es": "Sala de los Sabios"
+      }
+    },
+    "temple-of-sigmar": {
+      "name": "Temple of Sigmar",
+      "coords": {
+        "x": 77,
+        "y": 40.1,
+        "scale": 1.15,
+        "top": 1.17
+      },
+      "advantage": "If a Hero's injury result is 22-35 on the Heroes' Serious Injures Chart, roll a D6. On a 5+, the result becomes *41-55 Full Recovery* instead.",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "city-hall",
+        "the-great-library",
+        "little-moot",
+        "east-gate"
+      ],
+      "links": [],
+      "names": {
+        "en": "Temple of Sigmar",
+        "de": "Tempel des Sigmar",
+        "fr": "Temple de Sigmar",
+        "it": "Tempio di Sigmar",
+        "es": "Templo de Sigmar"
+      }
+    },
+    "the-great-library": {
+      "name": "The Great Library",
+      "coords": {
+        "x": 67.35,
+        "y": 24.7,
+        "scale": 1.33,
+        "top": 1.315
+      },
+      "advantage": "1/2 price [Halfling Cookbook](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#halfling-cookbook), [Holy Tome](https://www.mordheimer.net/docs/warbands/grade-1a-warbands/sisters-of-sigmar#holy-tome), [Mordheim Map](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#mordheim-map) and [Tome of Magic](https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#tome-of-magic).",
+      "abundance": false,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "quayside",
+        "river-gate",
+        "little-moot",
+        "temple-of-sigmar",
+        "city-hall"
+      ],
+      "links": [
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#halfling-cookbook",
+        "https://www.mordheimer.net/docs/warbands/grade-1a-warbands/sisters-of-sigmar#holy-tome",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#mordheim-map",
+        "https://www.mordheimer.net/docs/weapons-armour/miscellaneous-equipment#tome-of-magic"
+      ],
+      "names": {
+        "en": "The Great Library",
+        "de": "Die Große Bibliothek",
+        "fr": "La Grande Librairie",
+        "it": "La Grande Biblioteca",
+        "es": "La Gran Biblioteca"
+      }
+    },
+    "the-pit": {
+      "name": "The Pit",
+      "coords": {
+        "x": 61.9,
+        "y": 59.3,
+        "scale": 1.2,
+        "top": 1.265
+      },
+      "advantage": "During the Exploration Procedure, if a location is found, you may change the result to [The Pit](https://www.mordheimer.net/docs/campaigns/income#1-1-1-1-1-1-the-pit) instead. However, Heroes are devoured on a roll of 1 or 2. Cult of Possesed Heroes always return with the maximum amount of wyrdstone shards.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "amphitheatre",
+        "market-square",
+        "city-hall",
+        "sages-hall",
+        "clock-tower",
+        "poor-quarter"
+      ],
+      "links": [],
+      "names": {
+        "en": "The Pit",
+        "de": "Die Höllengrube",
+        "fr": "La Fosse",
+        "it": "Il Cratere",
+        "es": "El Pozo"
+      }
+    },
+    "middle-bridge": {
+      "name": "Middle Bridge",
+      "coords": {
+        "x": 41,
+        "y": 44.2,
+        "scale": 0.975,
+        "top": 0.98
+      },
+      "advantage": "The warband that controls the bridge has installed a toll here. They gain 2D6 gc at the end of any game if another warband passes through this location to reach the battle.",
+      "abundance": true,
+      "hard": true,
+      "gate": false,
+      "connections": [
+        "count-steinhardts-palace",
+        "rich-quarter",
+        "statue-of-count-gotthard",
+        "merchants-quarter",
+        "amphitheatre",
+        "the-rock",
+        "executioners-square"
+      ],
+      "links": [],
+      "names": {
+        "en": "Middle Bridge",
+        "de": "Mittelbrücke",
+        "fr": "Pont Du Milieu",
+        "it": "Ponte di Mezzo",
+        "es": "Puente Medio"
+      }
+    },
+    "the-rock": {
+      "name": "The Rock",
+      "coords": {
+        "x": 42.2,
+        "y": 63.87,
+        "scale": 1.17,
+        "top": 1.24
+      },
+      "advantage": "The Sisters of Sigmar wish to hide wydstone deep beneath Sigmar's Rock. When selling wydstone gain 20% more gold, always rounding down.",
+      "abundance": true,
+      "hard": false,
+      "gate": false,
+      "connections": [
+        "middle-bridge",
+        "amphitheatre",
+        "south-gate"
+      ],
+      "links": [],
+      "names": {
+        "en": "The Rock",
+        "de": "Der Fels",
+        "fr": "Le Roc",
+        "it": "La Roccia",
+        "es": "La Roca"
+      }
+    },
+    "river-gate": {
+      "name": "River Gate",
+      "coords": {
+        "x": 53.22,
+        "y": 16.9,
+        "scale": 1.15,
+        "top": 1.18
+      },
+      "advantage": "1/2 price to hire [Luthor Wolfenbaum](https://www.mordheimer.net/docs/campaigns/dramatis-personae/grade-1c#luthor-wolfenbaum). A hero sent to look for Luthor automatically finds him.",
+      "abundance": false,
+      "hard": false,
+      "gate": true,
+      "connections": [
+        "statue-of-count-gotthard",
+        "quayside",
+        "the-great-library"
+      ],
+      "links": [],
+      "names": {
+        "en": "River Gate",
+        "de": "Flusspforte",
+        "fr": "Porte de la Rivière",
+        "it": "Cancello Nord",
+        "es": "Puerta del Río"
+      }
+    },
+    "east-gate": {
+      "name": "East Gate",
+      "coords": {
+        "x": 80.65,
+        "y": 53.5,
+        "scale": 0.8,
+        "top": 0.88
+      },
+      "advantage": "1/2 price to hire [Luthor Wolfenbaum](https://www.mordheimer.net/docs/campaigns/dramatis-personae/grade-1c#luthor-wolfenbaum). A hero sent to look for Luthor automatically finds him.",
+      "abundance": false,
+      "hard": false,
+      "gate": true,
+      "connections": [
+        "temple-of-sigmar",
+        "city-hall",
+        "sages-hall"
+      ],
+      "links": [],
+      "names": {
+        "en": "East Gate",
+        "de": "Osttor",
+        "fr": "Porte Est",
+        "it": "Cancello Est",
+        "es": "Puerta Este"
+      }
+    },
+    "south-gate": {
+      "name": "South Gate",
+      "coords": {
+        "x": 48.3,
+        "y": 74.2,
+        "scale": 1.07,
+        "top": 1.11
+      },
+      "advantage": "1/2 price to hire [Luthor Wolfenbaum](https://www.mordheimer.net/docs/campaigns/dramatis-personae/grade-1c#luthor-wolfenbaum). A hero sent to look for Luthor automatically finds him.",
+      "abundance": false,
+      "hard": false,
+      "gate": true,
+      "connections": [
+        "temple-of-morr",
+        "the-rock",
+        "amphitheatre",
+        "poor-quarter"
+      ],
+      "links": [],
+      "names": {
+        "en": "South Gate",
+        "de": "Südtor",
+        "fr": "Porte Sud",
+        "it": "Cancello Sud",
+        "es": "Puerta Sur"
+      }
+    },
+    "west-gate": {
+      "name": "West Gate",
+      "coords": {
+        "x": 16.25,
+        "y": 32.21,
+        "scale": 1.02,
+        "top": 1.11
+      },
+      "advantage": "1/2 price to hire [Luthor Wolfenbaum](https://www.mordheimer.net/docs/campaigns/dramatis-personae/grade-1c#luthor-wolfenbaum). A hero sent to look for Luthor automatically finds him.",
+      "abundance": false,
+      "hard": false,
+      "gate": true,
+      "connections": [
+        "raven-barracks",
+        "memorial-gardens",
+        "artisan-quarter",
+        "dwarven-district"
+      ],
+      "links": [],
+      "names": {
+        "en": "West Gate",
+        "de": "Westtor",
+        "fr": "Porte Ouest",
+        "it": "Cancello Ovest",
+        "es": "Puerta Oeste"
+      }
+    }
+  }
+}

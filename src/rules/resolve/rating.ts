@@ -16,6 +16,7 @@ import type { WarbandTemplate } from "../types";
 import type { RosterWarband } from "../types/roster";
 import { warbandRules } from "../data/campaignRules";
 import { findHiredSword } from "../data/campaign/hiredSwords";
+import { animalFighters } from "./animals";
 import { RATING_POINTS_PER_LARGE_CREATURE, RATING_POINTS_PER_WARRIOR } from "../data/campaign/trading";
 
 export interface RatingLine {
@@ -90,6 +91,10 @@ export function warbandRating(warband: RosterWarband, template?: WarbandTemplate
       points: perMember * group.size,
       reason: `${group.size} x (${base} ${group.isLarge ? "(large creature)" : "(warrior)"} + ${group.xp} xp)`,
     });
+  }
+
+  for (const animal of animalFighters(warband)) {
+    breakdown.push({ subjectId: animal.id, name: `${animal.name} (${animal.holderName})`, points: animal.kind.ratingPoints, reason: `${animal.kind.ratingPoints} (animal fighting as a warrior)` });
   }
 
   for (const hs of warband.hiredSwords) {

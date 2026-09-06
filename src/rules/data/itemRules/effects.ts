@@ -223,6 +223,9 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
 
   warpstone_amulet: { note: "Warpstone Amulet: one re-roll during the battle, or one exploration die if the owner ended the game standing." },
 
+  wardogs: { note: "Wardog: fights as a warrior on the battle sheet (M6 WS4 S4 T3), counts for rout tests, rolls a henchman's injury die after the game." },
+  gnoblar_fighter: { note: "Gnoblar Fighter: fights as a warrior on the battle sheet, never counts for rout tests, rolls a henchman's injury die after the game." },
+
   // ---- Notes only ----
   swivel_gun: { note: "Swivel Gun: pick the shot type on the calculator; every shot type is a separate one-battle supply." },
 };

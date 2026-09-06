@@ -20,6 +20,7 @@ import type { UnitTemplate, WarbandTemplate } from "../types";
 import type { RosterItem, RosterWarband, CampaignBans } from "../types/roster";
 import { isBodyArmour, isHeavyArmourClass, isHelmet, isThrownWeapon } from "../data/items/classify";
 import { rosterItemWarnings } from "./itemRestrictions";
+import { animalCount } from "./animals";
 import { equipmentBansFor, unitRules } from "../data/campaignRules";
 import { findItem } from "../data/items";
 import { heroCapacity } from "../data/warbandTemplates";
@@ -64,7 +65,7 @@ function cleanNote(rest: string): string | undefined {
 
 /** Active heroes plus every henchman. Hired swords are not counted. */
 export function warbandModelCount(warband: RosterWarband): number {
-  return warbandHeroCount(warband) + warband.henchmenGroups.reduce((sum, g) => sum + g.size, 0);
+  return warbandHeroCount(warband) + warband.henchmenGroups.reduce((sum, g) => sum + g.size, 0) + animalCount(warband);
 }
 
 /** Heroes with status "active". Hired swords are not heroes for roster purposes. */

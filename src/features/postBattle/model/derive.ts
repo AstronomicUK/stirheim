@@ -27,6 +27,8 @@ import { participantsOf, type Participants } from './participants'
 import { advanceKey, isDie, STEP_IDS, type AdvanceMode, type ReportDraft, type StepId } from './state'
 import { isConsumable } from '../../../rules/data/itemRules'
 import { applyStatDelta, deriveKit, kitEffects, type KitDerived } from './kit'
+import { animalFighters, type AnimalFighter } from '../../../rules/resolve/animals'
+import { HENCHMAN_INJURY } from '../../../rules/data/campaign/injuries'
 import { mapGrade } from '../../../rules/resolve/explorationAids'
 import { unitRules } from '../../../rules/data/campaignRules'
 import { henchmanInjuryException } from '../../../rules/resolve/injuries'
@@ -71,6 +73,8 @@ export interface InjuriesDerived {
   hiredSwords: { sword: RosterHiredSword; resolution: HiredSwordInjuryResolution }[]
   /** `dice` is the number rolled: models out of action unless the player overrode it. */
   groups: { group: RosterHenchmanGroup; outOfAction: number; dice: number; resolution: GroupInjuryResolution }[]
+  /** Animals taken out of action: a D6 each, dead on 1-2 (the item is lost). */
+  animals: { animal: AnimalFighter; roll: number | null; dead: boolean | null }[]
   summary: InjurySummary
   complete: boolean
 }
@@ -152,7 +156,7 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
   }
 }
 
-export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string): InjuriesDerived {
+export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband): InjuriesDerived {
   const out = heroOoaIds(draft)
   const heroes = participants.heroes
     .filter((h) => out.has(h.id))
@@ -174,6 +178,13 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
     })
 
+  const animalIds = new Set(draft.animalsOut)
+  const animals = animalFighters(roster ?? { heroes: participants.heroes } as RosterWarband)
+    .filter((a) => animalIds.has(a.id))
+    .map((animal) => {
+      const roll = draft.animalInjuries[animal.id] ?? null
+      return { animal, roll, dead: isDie(roll, 6) ? HENCHMAN_INJURY.deadOn.includes(roll as number) : null }
+    })
   const summary: InjurySummary = { dead: 0, captured: 0, retired: 0, injured: 0, recovered: 0, henchmenDead: 0, pending: 0 }
   const count = (outcome: InjuryOutcome | null) => {
     if (outcome === null) summary.pending += 1
@@ -185,7 +196,11 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     summary.henchmenDead += g.resolution.dead
     if (!g.resolution.complete) summary.pending += 1
   }
-  return { heroes, hiredSwords, groups, summary, complete: summary.pending === 0 }
+  for (const a of animals) {
+    if (a.dead === null) summary.pending += 1
+    else if (a.dead) summary.henchmenDead += 1
+  }
+  return { heroes, hiredSwords, groups, animals, summary, complete: summary.pending === 0 }
 }
 
 function alive(outcome: InjuryOutcome | null): boolean {
@@ -354,6 +369,17 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     else heroes.push({ id: hero.id, patch })
   }
   const kitRemovals: ReportApplied['item_patches'] = []
+  // Animals killed: one fewer of the item on the hero who brought them.
+  const deadByRow = new Map<string, number>()
+  for (const a of injuries.animals) {
+    if (!a.dead) continue
+    const row = ctx.items.find((r) => r.holder_id === a.animal.holderId && r.item_rules_id === a.animal.itemId)
+    if (row) deadByRow.set(row.id, (deadByRow.get(row.id) ?? 0) + 1)
+  }
+  for (const [rowId, dead] of deadByRow) {
+    const row = ctx.items.find((r) => r.id === rowId)!
+    kitRemovals.push({ id: rowId, quantity: Math.max(0, row.quantity - dead) })
+  }
   for (const removal of effects.removeItems) {
     const row = ctx.items.find((r) => r.item_rules_id === removal.itemId && (removal.holderId === null ? r.holder_type === 'stash' : r.holder_id === removal.holderId))
     if (row && !kitRemovals.some((p) => p.id === row.id)) kitRemovals.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
@@ -551,7 +577,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: ctx.itemsUsed ?? {}, heroesOut: heroOoaIds(draft), leaderId: participants.leaderId })
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
-  const injuries = deriveInjuries(draft, participants, ctx.matchId)
+  const injuries = deriveInjuries(draft, participants, ctx.matchId, ctx.roster)
   const xp = deriveXp(draft, participants, injuries, ctx)
   const exploration = deriveExploration(draft.exploration, ctx.roster, {
     won: draft.result === 'won',

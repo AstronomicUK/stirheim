@@ -10,7 +10,7 @@ import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/type
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
 import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
-import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutOf, offHandCandidates, type Combatant, type Loadout } from './combatants'
+import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
@@ -74,8 +74,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   if (attackerId === null && attacker) setAttackerId(attacker.id)
   if (defenderId === null && defender) setDefenderId(defender.id)
 
-  const attackerKit = useMemo(() => (attacker ? loadoutOf(attacker.equipment) : null), [attacker])
-  const defenderKit = useMemo(() => (defender ? loadoutOf(defender.equipment) : null), [defender])
+  const attackerKit = useMemo(() => (attacker ? loadoutFor(attacker) : null), [attacker])
+  const defenderKit = useMemo(() => (defender ? loadoutFor(defender) : null), [defender])
 
   // Weapon choice follows the attacker: a new attacker gets sensible defaults.
   const [choice, setChoice] = useState<WeaponChoice | null>(null)
@@ -323,16 +323,17 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               onLogEvent({
                 attacker_warband_id: attacker.warbandId,
                 attacker_id: attacker.id,
-                attacker_kind: attacker.kind === 'henchman' ? 'group' : 'hero',
+                attacker_kind: attacker.kind === 'henchman' || attacker.kind === 'animal' ? 'group' : 'hero',
                 attacker_name: attacker.name,
                 target_warband_id: defender.warbandId,
                 target_id: defender.id,
                 target_kind: defender.kind === 'henchman' ? 'group' : 'hero',
+                // An animal is a single model: its tally is a hero-style out toggle under its animal id.
                 target_name: defender.name,
                 target_size: defender.groupSize ?? 1,
                 wounds_lost: Math.max(0, state.woundsLost - odds.woundsAlreadyLost),
                 out_of_action: state.worst === 'outOfAction',
-                kill: state.worst === 'outOfAction' && attacker.kind !== 'henchman',
+                kill: state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
                 nurgles_rot: state.rotPassed,
@@ -605,7 +606,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
-              {state.worst === 'outOfAction' && attacker.kind === 'henchman' ? <p className="text-xs text-ink-dim">Henchmen earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
+              {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
               {state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst) ? (
                 <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? 'kill and the casualty' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}

@@ -7,7 +7,7 @@ import { Card, Section, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
 import { ExperienceReminders } from './ExperienceReminders'
 import { groupRules, groupTypeName, warriorRules, warriorTags, warriorTypeName, type CardTag } from './names'
-import { addEnemyOut, fightingGroups, groupOut, isHeroOut, perModelKit, setGroupOut, setWoundsLost, splitWarriors, toggleHeroOut, woundsLost, type SheetWarrior } from './sheet'
+import { addEnemyOut, animalsFighting, fightingGroups, groupOut, isHeroOut, perModelKit, setGroupOut, setWoundsLost, splitWarriors, toggleHeroOut, woundsLost, type SheetWarrior } from './sheet'
 
 export interface MyWarbandTabProps {
   roster: RosterWarband
@@ -22,6 +22,7 @@ export interface MyWarbandTabProps {
 export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events = [] }: MyWarbandTabProps) {
   const warriors = splitWarriors(roster)
   const groups = fightingGroups(roster)
+  const animals = animalsFighting(roster)
 
   return (
     <>
@@ -38,6 +39,31 @@ export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events =
           <MyGroupCard key={group.id} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} />
         ))}
       </Section>
+
+      {animals.length > 0 ? (
+        <Section title="Animals" aside={`${animals.length} on the table`}>
+          <Card>
+            <ul className="divide-y divide-border">
+              {animals.map((animal) => {
+                const out = isHeroOut(sheet, animal.id)
+                return (
+                  <li key={animal.id} className={`flex items-center justify-between gap-3 px-4 py-2.5 ${out ? 'opacity-70' : ''}`}>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-ink">{animal.name}</p>
+                      <p className="truncate text-xs text-ink-dim">
+                        {animal.holderName}'s · {animal.kind.countsForRout ? 'counts for rout tests' : 'does not count for rout tests'} · dead on 1-2 after the game
+                      </p>
+                    </div>
+                    <Button variant={out ? 'secondary' : 'danger'} disabled={readOnly} onClick={() => edit((s) => toggleHeroOut(s, animal.id))} aria-pressed={out}>
+                      {out ? 'Back in' : 'Out of action'}
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </Card>
+        </Section>
+      ) : null}
 
       {warriors.notFighting.length > 0 ? (
         <Section title="Not fighting this game">

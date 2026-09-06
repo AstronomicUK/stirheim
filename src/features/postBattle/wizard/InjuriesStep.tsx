@@ -11,6 +11,7 @@ import {
   setGroupInjuryRoll,
   setHeroInjuryCount,
   setInjurySkip,
+  setAnimalInjury,
   setKitExtraRoll,
   setKitRoll,
   setHeroInjurySubRoll,
@@ -32,8 +33,8 @@ const OUTCOME_TAG: Record<InjuryOutcome, { label: string; tone: 'neutral' | 'war
 }
 
 export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
-  const { heroes, hiredSwords, groups, summary } = derived.injuries
-  const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0
+  const { heroes, hiredSwords, groups, animals, summary } = derived.injuries
+  const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0 && animals.length === 0
   const kit = derived.kit.prompts
   return (
     <StepBody title="Serious injuries">
@@ -177,7 +178,23 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
           </p>
         </Card>
       ) : null}
-          {kit.length > 0 ? (
+          {animals.length > 0 ? (
+        <Section title="Animals (D6 each)">
+          {animals.map(({ animal, roll, dead }) => (
+            <Card key={animal.id} className="flex flex-col gap-3 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-ink">{animal.name}</p>
+                  <p className="text-xs text-ink-dim">{animal.holderName}'s · 1-2 dead (the item is lost), 3-6 survives</p>
+                </div>
+                {dead !== null ? <Tag tone={dead ? 'danger' : 'brass'}>{dead ? 'Dead' : 'Survives'}</Tag> : null}
+              </div>
+              <DieField label="D6" sides={6} value={roll} onChange={(v) => update((d) => setAnimalInjury(d, animal.id, v))} rollable />
+            </Card>
+          ))}
+        </Section>
+      ) : null}
+      {kit.length > 0 ? (
         <Section title="Kit after the battle" aside={derived.kit.pending > 0 ? `${derived.kit.pending} to roll` : 'All rolled'}>
           {kit.map((p) => {
             const dice = p.prompt.dice === '2D6' ? 2 : 1

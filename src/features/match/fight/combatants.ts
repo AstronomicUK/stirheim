@@ -15,9 +15,9 @@ import type { Armour, NamedRule, Stats, WarbandTemplate, Weapon } from '../../..
 import type { RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { unitTypeName } from '../../roster/shared/names'
 import { hiredSwordName } from '../../roster/view/lookups'
-import { fightingGroups, groupOut, isHeroOut, perModelKit, splitWarriors, woundsLost } from '../battle/sheet'
+import { animalsFighting, fightingGroups, groupOut, isHeroOut, perModelKit, splitWarriors, woundsLost } from '../battle/sheet'
 
-export type CombatantKind = 'hero' | 'hiredSword' | 'henchman'
+export type CombatantKind = 'hero' | 'hiredSword' | 'henchman' | 'animal'
 
 /** One model that can be picked as attacker or target. A henchman group is one model of the group. */
 export interface Combatant {
@@ -39,6 +39,10 @@ export interface Combatant {
   woundsLost: number
   /** Group size, for the label; undefined for single warriors. */
   groupSize?: number
+  /** Animals fight with fixed engine weapons rather than roster kit. */
+  weaponIds?: string[]
+  /** The hero an animal belongs to. */
+  holderName?: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -162,13 +166,49 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       groupSize: group.size,
     })
   }
+  for (const animal of animalsFighting(roster)) {
+    out.push({
+      id: animal.id,
+      kind: 'animal',
+      name: animal.name,
+      typeName: `${animal.kind.name} (${animal.holderName}'s)`,
+      warbandId: roster.id,
+      warbandName,
+      stats: animal.kind.stats,
+      equipment: [],
+      weaponIds: animal.kind.weaponIds,
+      holderName: animal.holderName,
+      skillIds: [],
+      traitIds: [],
+      out: sheet ? isHeroOut(sheet, animal.id) : false,
+      woundsLost: 0,
+    })
+  }
   return out
 }
 
-/** "Watchmen (one of 3)" for a group, the warrior's name otherwise. */
+/** "Watchmen (one of 3)" for a group, "Wardog (Ulrich's)" for an animal, the warrior's name otherwise. */
 export function combatantLabel(c: Combatant): string {
   if (c.kind === 'henchman') return `${c.name} (one of ${c.groupSize ?? 1})`
+  if (c.kind === 'animal') return `${c.name} (${c.holderName ?? 'animal'}'s)`
   return c.name
+}
+
+/** The kit the calculator uses for a combatant: an animal's fixed weapons, or a warrior's roster kit. */
+export function loadoutFor(c: Combatant): Loadout {
+  if (c.weaponIds) return loadoutOfWeapons(c.weaponIds)
+  return loadoutOf(c.equipment)
+}
+
+/** A loadout from engine weapon ids alone (animals). */
+export function loadoutOfWeapons(ids: readonly string[]): Loadout {
+  const out = emptyLoadout()
+  for (const id of ids) {
+    const weapon = findWeapon(id)
+    if (!weapon) continue
+    ;(weapon.type === 'melee' ? out.melee : out.ranged).push(weapon)
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------------------------

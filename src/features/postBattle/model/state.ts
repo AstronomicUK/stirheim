@@ -9,6 +9,7 @@ import type { BattleLiveState } from '../../../domain'
 import type { RosterWarband } from '../../../rules/types/roster'
 import type { AdvanceDraft } from '../../advances/model'
 import type { AidUse } from '../../../rules/resolve/explorationAids'
+import { animalFighters } from '../../../rules/resolve/animals'
 
 export const REPORT_DRAFT_VERSION = 4
 
@@ -96,6 +97,10 @@ export interface ReportDraft {
   heroesOut: string[]
   /** Henchman group id -> models out of action. */
   groupsOut: Record<string, number>
+  /** Animals (Wardogs, Gnoblar Fighters) taken out of action, by animal id. */
+  animalsOut: string[]
+  /** Animal id -> its D6 injury roll (dead on 1-2). */
+  animalInjuries: Record<string, number | null>
   /** Hero or hired sword id -> enemies they put out of action. */
   enemiesOut: Record<string, number>
   heroInjuries: Record<string, HeroInjuryFlow>
@@ -140,6 +145,8 @@ export function emptyDraft(): ReportDraft {
     underdog: true,
     heroesOut: [],
     groupsOut: {},
+    animalsOut: [],
+    animalInjuries: {},
     enemiesOut: {},
     heroInjuries: {},
     swordInjuries: {},
@@ -169,8 +176,11 @@ export function seedFromBattleSheet(roster: RosterWarband, live: BattleLiveState
   if (!live) return draft
   const warriorIds = new Set([...roster.heroes.map((h) => h.id), ...roster.hiredSwords.map((s) => s.id)])
   const groups = new Map(roster.henchmenGroups.map((g) => [g.id, g]))
+  const animalIds = new Set(animalFighters(roster).map((a) => a.id))
   for (const tally of live.tallies) {
-    if (tally.kind === 'hero' && warriorIds.has(tally.id)) {
+    if (animalIds.has(tally.id)) {
+      if (tally.outOfAction > 0) draft.animalsOut.push(tally.id)
+    } else if (tally.kind === 'hero' && warriorIds.has(tally.id)) {
       if (tally.outOfAction > 0) draft.heroesOut.push(tally.id)
       if (tally.enemiesOutOfAction > 0) draft.enemiesOut[tally.id] = tally.enemiesOutOfAction
     } else if (tally.kind === 'group') {
@@ -191,6 +201,18 @@ export function seedFromBattleSheet(roster: RosterWarband, live: BattleLiveState
 
 export function setStep(draft: ReportDraft, step: number): ReportDraft {
   return { ...draft, step: Math.max(0, Math.min(STEP_IDS.length - 1, Math.trunc(step))) }
+}
+
+export function setAnimalOut(draft: ReportDraft, id: string, out: boolean): ReportDraft {
+  const already = draft.animalsOut.includes(id)
+  if (out === already) return draft
+  const injuries = { ...draft.animalInjuries }
+  delete injuries[id]
+  return { ...draft, animalsOut: out ? [...draft.animalsOut, id] : draft.animalsOut.filter((x) => x !== id), animalInjuries: injuries }
+}
+
+export function setAnimalInjury(draft: ReportDraft, id: string, roll: number | null): ReportDraft {
+  return { ...draft, animalInjuries: { ...draft.animalInjuries, [id]: roll } }
 }
 
 /** A die of a post-battle kit prompt; `null` clears it. */

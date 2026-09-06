@@ -5,6 +5,7 @@
 import type { BattleLiveState, BattleWarriorTally } from '../../../domain'
 import { battleTotals, routThreshold, tallyFor, withTally } from '../../../domain'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
+import { animalFighters, isAnimalId, parseAnimalId, ANIMAL_KINDS, type AnimalFighter } from '../../../rules/resolve/animals'
 
 // ---------------------------------------------------------------------------------------------
 // Who fights
@@ -60,10 +61,26 @@ export function fightingGroups(roster: RosterWarband): RosterHenchmanGroup[] {
   return roster.henchmenGroups.filter((g) => g.size > 0)
 }
 
-/** Models this warband put on the table: fighting heroes and hired swords plus every henchman. */
+/** Animals (Wardogs, Gnoblar Fighters) brought by fighting heroes; each is a model on the table. */
+export function animalsFighting(roster: RosterWarband): AnimalFighter[] {
+  const fighting = new Set(splitWarriors(roster).fighting.filter((e) => e.role === 'hero').map((e) => e.warrior.id))
+  return animalFighters(roster, (h) => fighting.has(h.id))
+}
+
+/** Models this warband put on the table: fighting heroes and hired swords plus every henchman, and the animals that count for rout tests. */
 export function startingModels(roster: RosterWarband): number {
   const warriors = splitWarriors(roster).fighting.length
-  return warriors + fightingGroups(roster).reduce((n, g) => n + g.size, 0)
+  return warriors + fightingGroups(roster).reduce((n, g) => n + g.size, 0) + animalsFighting(roster).filter((a) => a.kind.countsForRout).length
+}
+
+/** Out-of-action tallies of animals that never count for rout tests (Gnoblars). */
+function insignificantOut(state: BattleLiveState): number {
+  return state.tallies.reduce((n, t) => {
+    if (!isAnimalId(t.id)) return n
+    const parsed = parseAnimalId(t.id)
+    const kind = parsed ? ANIMAL_KINDS[parsed.itemId] : undefined
+    return kind && !kind.countsForRout ? n + t.outOfAction : n
+  }, 0)
 }
 
 /** Per-model equipment: divide group totals by size where it divides evenly. */
@@ -182,7 +199,7 @@ export interface SheetTotals {
 export function sheetTotals(state: BattleLiveState, roster: RosterWarband): SheetTotals {
   const totals = battleTotals(state)
   const models = startingModels(roster)
-  return { ...totals, startingModels: models, wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(models) }
+  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(models) }
 }
 
 export type RoutStatus = 'none' | 'test' | 'routed'
@@ -194,7 +211,7 @@ export type RoutStatus = 'none' | 'test' | 'routed'
 export function routStatus(state: BattleLiveState, models: number): RoutStatus {
   if (state.routed) return 'routed'
   if (models <= 0) return 'none'
-  return battleTotals(state).ownOutOfAction >= routThreshold(models) ? 'test' : 'none'
+  return battleTotals(state).ownOutOfAction - insignificantOut(state) >= routThreshold(models) ? 'test' : 'none'
 }
 
 // ---------------------------------------------------------------------------------------------

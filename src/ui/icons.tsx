@@ -1,5 +1,8 @@
 // Line icons drawn on a 24-unit grid, stroked in the current colour. Kept deliberately few: one per
 // navigation tab and one per between-battles action, so the set stays recognisable at a glance.
+//
+// The three head-counts are one system, and have to be told apart at 14px: `heroes` is a single
+// figure filled solid, `henchmen` is two figures outlined, `models` is three. Count, not costume.
 
 import type { SVGProps } from 'react'
 
@@ -65,7 +68,7 @@ const PATHS: Record<IconName, string> = {
   gold: 'M12 8c3.9 0 7-1.3 7-3s-3.1-3-7-3-7 1.3-7 3 3.1 3 7 3zM5 5v4c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 9v4c0 1.7 3.1 3 7 3s7-1.3 7-3V9M5 13v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4',
   wyrdstone: 'M12 2l5.5 6.5L12 22 6.5 8.5zM6.5 8.5h11M12 2v20M9 8.5l3 13.5M15 8.5l-3 13.5',
   rating: 'M12 14a5 5 0 100-10 5 5 0 000 10zM9.5 13.5L7 21l5-2.5 5 2.5-2.5-7.5',
-  models: 'M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM2 20c0-3.5 2.5-5.5 6-5.5s6 2 6 5.5M13 15c1-.4 2-.5 3-.5 3.5 0 6 2 6 5.5h-8',
+  models: 'M12 11.2a3.1 3.1 0 100-6.2 3.1 3.1 0 000 6.2zM6.9 20.2c0-3 2.3-4.9 5.1-4.9s5.1 1.9 5.1 4.9M5.4 10.9a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4zM2 19.6c0-2.4 1.5-3.9 3.4-3.9.5 0 1 .1 1.4.2M18.6 10.9a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4zM22 19.6c0-2.4-1.5-3.9-3.4-3.9-.5 0-1 .1-1.4.2',
   heroes: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z',
   henchmen: 'M9 9a3 3 0 100-6 3 3 0 000 6zM3 20c0-4 2.5-6 6-6s6 2 6 6M17 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM16 14.5c3 .3 5 2.3 5 5.5h-3.5',
   hired: 'M4 20l7-7M9 8l7 7M14 4l6 6-3 3-6-6zM3 21l3-1-2-2z',

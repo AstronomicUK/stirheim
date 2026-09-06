@@ -9,7 +9,7 @@ import { useCampaign } from '../../api/campaigns'
 import { useBattleBoosts } from './battle/useBattleBoosts'
 import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
-import { useBattleEvents, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
+import { useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
 import { applyBattleEvents, emptyBattleLiveState, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
@@ -21,6 +21,7 @@ import { FightTab } from './fight/FightTab'
 import { BattleNav, type BattleTab } from './battle/BattleNav'
 import { useEnemyRosters } from './fight/useEnemyRosters'
 import { CastTab } from './battle/CastTab'
+import { PromptSheet } from './battle/PromptSheet'
 import { castersOf } from './battle/casters'
 import { LogTab } from './battle/LogTab'
 import { MyWarbandTab } from './battle/MyWarbandTab'
@@ -272,6 +273,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
   const inApp = match.combat_mode === 'app'
   // Shares the Enemy tab's cache, so this costs nothing extra: it only feeds the "enemies out of N".
   const enemyRosters = useEnemyRosters(match.id, others)
+  const prompts = useBattlePrompts(match.id)
   const enemyModels = enemyRosters.warbands.length === others.length && others.length > 0 ? enemyRosters.warbands.reduce((n, w) => n + startingModels(w.roster), 0) : null
   const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
   const sideTab: Tab = desktop && tab === 'mine' ? 'enemy' : tab
@@ -327,6 +329,9 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} scenarioId={match.scenario_rules_id} custom={match.custom_scenario_name !== null} /> : null}
         </div>
       </div>
+
+      {/* A question the other player has put to this warband, wherever on the sheet they happen to be. */}
+      {!readOnly ? <PromptSheet matchId={match.id} prompts={prompts.data ?? []} myWarbandIds={[roster.id]} /> : null}
 
       <SaveBar saveState={handle.saveState} saveError={handle.saveError} onRetry={handle.retry} onBattleOver={onBattleOver} />
       {children}

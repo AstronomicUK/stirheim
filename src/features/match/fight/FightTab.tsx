@@ -2,9 +2,10 @@
 // this phase of attacks, then (optionally) walk real dice through it step by step. An out of
 // action result can be logged straight to the attacker's "Enemies out" tally.
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleLiveState } from '../../../domain'
+import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
 import { findSkill } from '../../../rules/data/skills'
@@ -17,7 +18,7 @@ import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFo
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
-import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type RollState } from './rollThrough'
+import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollState } from './rollThrough'
 import { CritWheel } from './CritWheel'
 import { critTableName } from '../../../rules/engine/crit'
 import { useEnemyRosters } from './useEnemyRosters'
@@ -325,6 +326,20 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             defenderKit={defenderKit!}
             charmAvailable={charmAvailable}
             readOnly={readOnly}
+            handOff={
+              // Only worth offering when the defender belongs to somebody else at the table.
+              defender.warbandId !== roster.id
+                ? {
+                    matchId,
+                    attackerWarbandId: roster.id,
+                    attackerName: attacker.name,
+                    targetWarbandId: defender.warbandId,
+                    targetId: defender.id,
+                    targetName: defender.name,
+                    turn: sheet.turn,
+                  }
+                : undefined
+            }
             onLog={(state) =>
               onLogEvent({
                 attacker_warband_id: attacker.warbandId,
@@ -539,10 +554,24 @@ interface RollSectionProps {
   onFinished: (state: RollState) => void
   /** The target's Lucky Charm has not been rolled for yet this battle. */
   charmAvailable: boolean
+  /** Who to ask when a step belongs to the defender; absent when the defender is this player. */
+  handOff?: HandOffTarget
 }
 
-function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable }: RollSectionProps) {
+/** Everything needed to put a defender-owned step on the other player's screen. */
+export interface HandOffTarget {
+  matchId: string
+  attackerWarbandId: string
+  attackerName: string
+  targetWarbandId: string
+  targetId: string
+  targetName: string
+  turn: number
+}
+
+function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
+  const hand = useHandOff(handOff, (roll) => advance((s) => applyRoll(s, roll), { value: roll, label: 'Their roll' }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
   const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral' } | null>(null)
   const stateRef = useRef<RollState | null>(null)
@@ -622,7 +651,24 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                   <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'danger'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
                 </span>
               </div>
-              {state.pending.kind === 'critTable' ? (
+              {hand && state.pending.who === 'defender' && !hand.waiting ? (
+                <div>
+                  <Button variant="secondary" pending={hand.asking} onClick={() => void hand.ask(state.pending!)}>
+                    Ask {defender.name}&apos;s player to roll it
+                  </Button>
+                </div>
+              ) : null}
+              {hand?.waiting ? (
+                <div className="flex flex-col gap-2 rounded-md border border-brass/50 bg-surface-low px-3 py-2.5">
+                  <p className="text-sm text-ink">Waiting for {defender.name}&apos;s player to roll…</p>
+                  <p className="text-xs leading-relaxed text-ink-dim">It will land here as soon as they do. Take it back to roll it yourself.</p>
+                  <div>
+                    <Button variant="ghost" onClick={() => void hand.withdraw()}>
+                      Take it back
+                    </Button>
+                  </div>
+                </div>
+              ) : state.pending.kind === 'critTable' ? (
                 <CritWheel
                   key={state.log.length}
                   table={state.plans[state.index].input.critTable}
@@ -724,4 +770,56 @@ function fixedParryThreshold(kit: Loadout): number | undefined {
 
 function defenderKitReroll(kit: Loadout): boolean {
   return parryRerollFromItems(kit.melee, kit.armour)
+}
+
+
+/**
+ * The attacker's side of a handed-over roll. Puts the pending step to the defending player, watches
+ * for their answer, and feeds the face they threw back into the phase. Withdrawing takes the
+ * question off their screen and leaves the step to be rolled here.
+ */
+function useHandOff(target: HandOffTarget | undefined, onRoll: (roll: number) => void, onDeclined: () => void) {
+  const prompts = useBattlePrompts(target?.matchId)
+  const ask = useAskBattlePrompt(target?.matchId)
+  const withdraw = useWithdrawBattlePrompt(target?.matchId)
+  const [askedId, setAskedId] = useState<string | null>(null)
+  // The answer is applied once: a re-render must not replay it into the phase.
+  const applied = useRef<string | null>(null)
+
+  const asked = askedId ? (prompts.data ?? []).find((p) => p.id === askedId) : undefined
+
+  useEffect(() => {
+    if (!asked || asked.state !== 'answered' || applied.current === asked.id) return
+    applied.current = asked.id
+    setAskedId(null)
+    const answer = asked.answers[0]
+    if (!answer) return
+    if ('declined' in answer) onDeclined()
+    else onRoll(answer.roll)
+  }, [asked, onRoll, onDeclined])
+
+  if (!target) return null
+  return {
+    waiting: Boolean(asked && asked.state === 'waiting'),
+    asking: ask.isPending,
+    ask: async (step: PendingRoll) => {
+      const id = await ask.mutateAsync({
+        matchId: target.matchId,
+        attackerWarbandId: target.attackerWarbandId,
+        attackerName: target.attackerName,
+        targetWarbandId: target.targetWarbandId,
+        targetId: target.targetId,
+        targetName: target.targetName,
+        turn: target.turn,
+        asks: [{ kind: step.kind, label: step.label, detail: step.detail, optional: Boolean(step.optional) }],
+      })
+      applied.current = null
+      setAskedId(id)
+    },
+    withdraw: async () => {
+      if (!askedId) return
+      await withdraw.mutateAsync(askedId)
+      setAskedId(null)
+    },
+  }
 }

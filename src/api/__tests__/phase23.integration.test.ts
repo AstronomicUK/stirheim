@@ -3,7 +3,7 @@
 // same district, by one taking the other's, or by both calling a roll-off.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 const enabled = process.env.SUPABASE_LOCAL === '1'
 const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321'
@@ -137,5 +137,139 @@ describe.skipIf(!enabled)('phase 23: agreeing the district', () => {
     expect(await district(id)).toEqual({ district_id: null, district_decided_by: null })
     const left = await gm.from('match_district_proposals').select('warband_id').eq('match_id', id)
     expect(left.data).toEqual([])
+  })
+})
+
+describe.skipIf(!enabled)('phase 23: asking the other player to roll', () => {
+  let player: SupabaseClient
+  let gm: SupabaseClient
+  let admin: SupabaseClient
+  let matchId: string
+
+  const ASKS = [
+    { kind: 'save', label: 'Armour save', detail: 'Needs 5+', optional: false },
+    { kind: 'stunSave', label: 'Helmet', detail: '4+ turns a stun into a knock-down', optional: false },
+  ]
+
+  beforeAll(async () => {
+    player = client()
+    gm = client()
+    const a = await player.auth.signInWithPassword(PLAYER)
+    const b = await gm.auth.signInWithPassword(GM)
+    if (a.error || b.error) throw a.error ?? b.error
+    admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+
+    const booked = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN], p_district_id: 'west-gate' })
+    matchId = booked.data as string
+    await gm.rpc('start_match', { p_match_id: matchId })
+  })
+
+  afterAll(async () => {
+    if (matchId) await admin.from('matches').delete().eq('id', matchId)
+  })
+
+  const ask = (asks: unknown[] = ASKS) =>
+    gm.rpc('ask_battle_prompt', {
+      p_match_id: matchId,
+      p_attacker_warband_id: REIKLAND_WATCH,
+      p_attacker_name: 'Captain Ulrich Brandt',
+      p_target_warband_id: CLAWS_OF_ESHIN,
+      p_target_id: 'bbbbbbbb-0000-4000-8000-000000000011',
+      p_target_name: 'Skritch Nightblade',
+      p_turn: 2,
+      p_asks: asks,
+    })
+
+  it('the attacker asks and the defender answers, and only they may', async () => {
+    const asked = await ask()
+    expect(asked.error).toBeNull()
+    const id = asked.data as string
+
+    // The defender sees it waiting, with what is being asked.
+    const seen = await player.from('battle_prompts').select('id, state, asks, attacker_name, target_name, turn').eq('id', id).single()
+    expect(seen.data).toMatchObject({ state: 'waiting', attacker_name: 'Captain Ulrich Brandt', target_name: 'Skritch Nightblade', turn: 2 })
+    expect(seen.data?.asks).toHaveLength(2)
+
+    // Every question has to be answered.
+    const short = await player.rpc('answer_battle_prompt', { p_prompt_id: id, p_answers: [{ roll: 5 }] })
+    expect(short.error?.message).toMatch(/answer every question/)
+
+    const answered = await player.rpc('answer_battle_prompt', { p_prompt_id: id, p_answers: [{ roll: 5 }, { declined: true }] })
+    expect(answered.error).toBeNull()
+    const done = await gm.from('battle_prompts').select('state, answers, answered_at').eq('id', id).single()
+    expect(done.data?.state).toBe('answered')
+    expect(done.data?.answers).toEqual([{ roll: 5 }, { declined: true }])
+    expect(done.data?.answered_at).not.toBeNull()
+
+    // Answered once is answered for good.
+    const again = await player.rpc('answer_battle_prompt', { p_prompt_id: id, p_answers: [{ roll: 6 }, { roll: 6 }] })
+    expect(again.error?.message).toMatch(/no longer open/)
+  })
+
+  it('asking again withdraws whatever the attacker left open', async () => {
+    const first = (await ask()).data as string
+    const second = (await ask()).data as string
+    const rows = await gm.from('battle_prompts').select('id, state').in('id', [first, second])
+    expect(rows.data?.find((r) => r.id === first)?.state).toBe('withdrawn')
+    expect(rows.data?.find((r) => r.id === second)?.state).toBe('waiting')
+
+    // A withdrawn question cannot be answered.
+    const late = await player.rpc('answer_battle_prompt', { p_prompt_id: first, p_answers: [{ roll: 5 }, { roll: 5 }] })
+    expect(late.error?.message).toMatch(/no longer open/)
+
+    // The attacker may take it back and roll it themselves.
+    const pulled = await gm.rpc('withdraw_battle_prompt', { p_prompt_id: second })
+    expect(pulled.error).toBeNull()
+    expect((await gm.from('battle_prompts').select('state').eq('id', second).single()).data?.state).toBe('withdrawn')
+  })
+
+  it('a player may not answer for a warband that is not theirs (the GM may, as they run the table)', async () => {
+    // The player attacks this time, so the warband being asked is the GM's.
+    const asked = await player.rpc('ask_battle_prompt', {
+      p_match_id: matchId,
+      p_attacker_warband_id: CLAWS_OF_ESHIN,
+      p_attacker_name: 'Skritch Nightblade',
+      p_target_warband_id: REIKLAND_WATCH,
+      p_target_id: 'bbbbbbbb-0000-4000-8000-000000000001',
+      p_target_name: 'Captain Ulrich Brandt',
+      p_turn: 3,
+      p_asks: [ASKS[0]],
+    })
+    expect(asked.error).toBeNull()
+    const id = asked.data as string
+
+    const notTheirs = await player.rpc('answer_battle_prompt', { p_prompt_id: id, p_answers: [{ roll: 5 }] })
+    expect(notTheirs.error?.message).toMatch(/only the defending player/)
+
+    const theirs = await gm.rpc('answer_battle_prompt', { p_prompt_id: id, p_answers: [{ roll: 5 }] })
+    expect(theirs.error).toBeNull()
+  })
+
+  it('refuses an empty question, a warband outside the match, and the wrong asker', async () => {
+    expect((await ask([])).error?.message).toMatch(/at least one roll/)
+
+    const notMine = await player.rpc('ask_battle_prompt', {
+      p_match_id: matchId,
+      p_attacker_warband_id: REIKLAND_WATCH,
+      p_attacker_name: 'Someone',
+      p_target_warband_id: CLAWS_OF_ESHIN,
+      p_target_id: 'x',
+      p_target_name: 'Skritch',
+      p_turn: 1,
+      p_asks: ASKS,
+    })
+    expect(notMine.error?.message).toMatch(/only the attacking player/)
+
+    const outsider = await gm.rpc('ask_battle_prompt', {
+      p_match_id: matchId,
+      p_attacker_warband_id: REIKLAND_WATCH,
+      p_attacker_name: 'Captain',
+      p_target_warband_id: '00000000-0000-4000-8000-000000000000',
+      p_target_id: 'x',
+      p_target_name: 'Nobody',
+      p_turn: 1,
+      p_asks: ASKS,
+    })
+    expect(outsider.error).not.toBeNull()
   })
 })

@@ -3,6 +3,7 @@
 // network, so it is unit-tested in node.
 
 import type { TakenOutBy, BattleEventRow, BattleLiveState, BattleWarriorTally } from '../../../domain'
+import type { BattlePrompt } from '../../../api/matches'
 import { battleTotals, routThreshold, tallyFor, withTally } from '../../../domain'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { animalFighters, isAnimalId, parseAnimalId, ANIMAL_KINDS, type AnimalFighter } from '../../../rules/resolve/animals'
@@ -321,4 +322,9 @@ export function conditionsFor(events: BattleEventRow[], warbandId: string, turn:
     else out.delete(p.target_id)
   }
   return out
+}
+
+/** Questions the other side has put to these warbands and not yet had an answer to, oldest first. */
+export function waitingFor(prompts: BattlePrompt[], myWarbandIds: string[]): BattlePrompt[] {
+  return prompts.filter((p) => p.state === 'waiting' && myWarbandIds.includes(p.target_warband_id))
 }

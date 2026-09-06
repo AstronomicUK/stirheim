@@ -24,6 +24,7 @@ export const matchKeys = {
   events: (id: string | undefined) => ['matches', 'events', id] as const,
   roster: (matchId: string | undefined, warbandId: string | undefined) => ['matches', 'roster', matchId, warbandId] as const,
   districtProposals: (matchId: string | undefined) => ['matches', 'district-proposals', matchId] as const,
+  prompts: (matchId: string | undefined) => ['matches', 'prompts', matchId] as const,
 }
 
 export interface MatchParticipantView {
@@ -292,6 +293,101 @@ export function useMoveOnDistrict(matchId: string | undefined) {
   })
 }
 
+// ---- asking the other player to roll (battle_prompts) ----
+
+/** One question put to the defender: a save, a parry, a Lucky Charm. */
+export interface PromptAsk {
+  kind: string
+  label: string
+  detail: string
+  optional: boolean
+}
+
+/** The face they rolled, or their refusal of an optional step. */
+export type PromptAnswer = { roll: number } | { declined: true }
+
+export interface BattlePrompt {
+  id: string
+  match_id: string
+  attacker_warband_id: string
+  attacker_name: string
+  target_warband_id: string
+  target_id: string
+  target_name: string
+  turn: number
+  asks: PromptAsk[]
+  answers: PromptAnswer[]
+  state: 'waiting' | 'answered' | 'withdrawn'
+  created_at: string
+  answered_at: string | null
+}
+
+export async function fetchBattlePrompts(matchId: string): Promise<BattlePrompt[]> {
+  const { data, error } = await supabase.from('battle_prompts').select('*').eq('match_id', matchId).order('created_at')
+  if (error) throw new Error(error.message)
+  return (data ?? []) as unknown as BattlePrompt[]
+}
+
+export function useBattlePrompts(matchId: string | undefined) {
+  return useQuery({ queryKey: matchKeys.prompts(matchId), queryFn: () => fetchBattlePrompts(matchId!), enabled: Boolean(matchId) })
+}
+
+export interface AskPromptInput {
+  matchId: string
+  attackerWarbandId: string
+  attackerName: string
+  targetWarbandId: string
+  targetId: string
+  targetName: string
+  turn: number
+  asks: PromptAsk[]
+}
+
+export async function askBattlePrompt(input: AskPromptInput): Promise<string> {
+  const { data, error } = await supabase.rpc('ask_battle_prompt', {
+    p_match_id: input.matchId,
+    p_attacker_warband_id: input.attackerWarbandId,
+    p_attacker_name: input.attackerName,
+    p_target_warband_id: input.targetWarbandId,
+    p_target_id: input.targetId,
+    p_target_name: input.targetName,
+    p_turn: input.turn,
+    p_asks: input.asks as unknown as Json,
+  })
+  if (error) throw new Error(error.message)
+  return data as string
+}
+
+export async function answerBattlePrompt(promptId: string, answers: PromptAnswer[]): Promise<void> {
+  const { error } = await supabase.rpc('answer_battle_prompt', { p_prompt_id: promptId, p_answers: answers as unknown as Json })
+  if (error) throw new Error(error.message)
+}
+
+export async function withdrawBattlePrompt(promptId: string): Promise<void> {
+  const { error } = await supabase.rpc('withdraw_battle_prompt', { p_prompt_id: promptId })
+  if (error) throw new Error(error.message)
+}
+
+function usePromptRefresh(matchId: string | undefined) {
+  const queryClient = useQueryClient()
+  return () => queryClient.invalidateQueries({ queryKey: matchKeys.prompts(matchId) })
+}
+
+export function useAskBattlePrompt(matchId: string | undefined) {
+  const refresh = usePromptRefresh(matchId)
+  return useMutation({ mutationFn: askBattlePrompt, onSuccess: refresh })
+}
+
+export function useAnswerBattlePrompt(matchId: string | undefined) {
+  const refresh = usePromptRefresh(matchId)
+  return useMutation({ mutationFn: ({ promptId, answers }: { promptId: string; answers: PromptAnswer[] }) => answerBattlePrompt(promptId, answers), onSuccess: refresh })
+}
+
+export function useWithdrawBattlePrompt(matchId: string | undefined) {
+  const refresh = usePromptRefresh(matchId)
+  return useMutation({ mutationFn: withdrawBattlePrompt, onSuccess: refresh })
+}
+
 export async function saveBattleSession(matchId: string, warbandId: string, state: BattleLiveState): Promise<string> {
   const { data, error } = await supabase.rpc('save_battle_session', { p_match_id: matchId, p_warband_id: warbandId, p_live_state: state as unknown as Json })
   if (error) throw new Error(error.message)
@@ -391,6 +487,9 @@ export function useMatchRealtime(matchId: string | undefined) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'match_participants', filter: `match_id=eq.${matchId}` }, () => {
         void qc.invalidateQueries({ queryKey: matchKeys.one(matchId) })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'battle_prompts', filter: `match_id=eq.${matchId}` }, () => {
+        void qc.invalidateQueries({ queryKey: matchKeys.prompts(matchId) })
       })
       .subscribe()
     return () => {

@@ -115,6 +115,76 @@ export type Database = {
           },
         ]
       }
+      battle_prompts: {
+        Row: {
+          answered_at: string | null
+          answers: Json
+          asks: Json
+          attacker_name: string
+          attacker_warband_id: string
+          created_at: string
+          id: string
+          match_id: string
+          state: string
+          target_id: string
+          target_name: string
+          target_warband_id: string
+          turn: number
+        }
+        Insert: {
+          answered_at?: string | null
+          answers?: Json
+          asks: Json
+          attacker_name: string
+          attacker_warband_id: string
+          created_at?: string
+          id?: string
+          match_id: string
+          state?: string
+          target_id: string
+          target_name: string
+          target_warband_id: string
+          turn?: number
+        }
+        Update: {
+          answered_at?: string | null
+          answers?: Json
+          asks?: Json
+          attacker_name?: string
+          attacker_warband_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          state?: string
+          target_id?: string
+          target_name?: string
+          target_warband_id?: string
+          turn?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_prompts_attacker_warband_id_fkey"
+            columns: ["attacker_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_prompts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_prompts_target_warband_id_fkey"
+            columns: ["target_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_sessions: {
         Row: {
           created_at: string
@@ -1159,10 +1229,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      answer_battle_prompt: {
+        Args: { p_answers: Json; p_prompt_id: string }
+        Returns: undefined
+      }
       apply_battle_report: { Args: { p_report_id: string }; Returns: undefined }
       approve_battle_report: {
         Args: { p_report_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
+      }
+      ask_battle_prompt: {
+        Args: {
+          p_asks: Json
+          p_attacker_name: string
+          p_attacker_warband_id: string
+          p_match_id: string
+          p_target_id: string
+          p_target_name: string
+          p_target_warband_id: string
+          p_turn: number
+        }
+        Returns: string
       }
       campaign_preview: {
         Args: { p_invite_code: string }
@@ -1229,6 +1316,10 @@ export type Database = {
         Returns: undefined
       }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
+      may_act_for_warband: {
+        Args: { p_match_id: string; p_warband_id: string }
+        Returns: boolean
+      }
       move_warband_campaign: {
         Args: { p_invite_code: string; p_warband_id: string }
         Returns: {
@@ -1371,6 +1462,10 @@ export type Database = {
       update_roster: {
         Args: { p_changes: Json; p_reason: string; p_warband_id: string }
         Returns: number
+      }
+      withdraw_battle_prompt: {
+        Args: { p_prompt_id: string }
+        Returns: undefined
       }
       withdraw_battle_report: {
         Args: { p_match_id: string; p_warband_id: string }

@@ -799,6 +799,64 @@ Initiative modifiers, A5 post-battle item consequences (Crimson Shade addiction,
 Cathayan Silk, Lamp of the Djinn, Monkey's Paw, Treasure Map, captures), A14 spell and prayer items
 (needs the spell flow), remaining consumables.
 
+## Phase 17 scope (proposed 2026-09-06, awaiting Tom's approval)
+
+Everything still outstanding after Phase 16, gathered from the two audits, the parked roadmap and
+what came up while building. Grouped so Tom can strike or reorder.
+
+**A. Release chores (before or with the deploy)**
+- Push migration 20 to the hosted project (`npx supabase db push --yes`), then the single Netlify
+  release of Phases 13-16 (local build + `netlify deploy --prod --no-build`).
+- After release: a fresh campaign and a re-import of the battle records CSV (shards and gold), hand
+  the other players' warbands over, delete the ZZ TEST data on the old tracker when Tom says.
+
+**B. Weapons and armour audit, Tier 2**
+- A5 post-battle item consequences: Crimson Shade addiction and permanent +1 I, Mandrake Root -1 T,
+  Mad Cap stupidity, Hardtack miss-a-game, Cathayan Silk Clothes ruined, Lamp of the Djinn and
+  Monkey's Paw tables, Treasure Map and Map of Cathay exploration, Warpstone Amulet re-roll.
+- A8 animals bought as kit fighting as warriors (Wardogs, Gnoblar Fighters): a combatant on the
+  battle sheet, counted in the warband maximum, henchman injury rolls.
+- A7 mounts and mounted combat: mounted saves, Barding, Lance and spear cavalry bonuses, mount
+  attacks and stat lines, Cold One and Boar saves, mount deaths, rating for Rhinox and Temple Dog.
+- A9 black powder: reload cadence and the Hunter skill, pistols in hand-to-hand, misfires (and the
+  always-Experimental weapons), double-barrelled second wound roll, Blunderbuss line, mortar scatter,
+  Pigeon Bomb flat D6, grape and chain shot effects.
+- A11 strike order and Initiative modifiers (a note today; could become an "who strikes first" line
+  on the calculator).
+- A14 spell and prayer items once a spell flow exists (Tome of Magic, Book of the Dead, Liber
+  Bubonicus, Holy Tome, Familiar re-rolls, Scroll of the Rat Familiar).
+- Remaining consumables and tabletop items as prompts (Nets recovered, Bolas, Caltrops, Flash
+  Powder, Fire Bomb).
+
+**C. Warband rules audit, Tier 2**
+- A17 recruit-time purchases and upgrades: mutations (Possessed, Court, Clan Moulder, Marauders),
+  Blessings of Nurgle offered in the hire sheet itself (today they are shop items with a warning),
+  Wolfcloak at creation for Middenheimers in the builder.
+- A18 between-battle actions instead of a rare search (Banditry, Slick Operator, Master of Poisons)
+  and rare-roll modifiers beyond the per-warband bonus.
+- A15 capture flows: Pirates' Kidnapped, Stragglers, ransom and exchange between warbands.
+- Per-warband bespoke tables: Wheelo, Eye of the Gods.
+- Nurgle's Rot caught in a fight: the calculator logs a 6 to wound from a Rot carrier and the
+  victim's owner is prompted to mark it; the spread victim on a 6 picked in the prompt rather than
+  by hand.
+
+**D. Loose ends noticed in Phase 16**
+- Rare items: the destination (and so the "who may carry it" warnings) only appears after a
+  successful search; show the destination first so the warning comes before the roll.
+- The builder does not apply campaign bans (a warband is built before it joins a campaign); the
+  roster validator catches it on joining, but the builder could take a campaign code up front.
+- Sorcerous Society spells missing from the lore data (Frostbolts, Geyser, Crows Feast, Blindness
+  of the Depths); custom items from the import ("Hunter's cloak") still unmatched.
+- Skill restrictions are read from prose: unit names the reader cannot match (Gnoblar heroes are
+  "Trappers") show a warning that the player may dismiss; a table of explicit unit ids would be firmer.
+- Engine TODOs in `data/weapons/ranged-and-creatures.ts` (Bolas entangle, Cathayan Candles
+  backfire, double-barrelled hits) overlap with B above.
+
+**E. Roadmap (unchanged)**
+- Server-side re-run of the post-battle rules; GM override request system for hired-sword and
+  restriction blocks; full map-campaign support (territories, movement, map-driven scenarios);
+  per-user light/dark toggle; a domain name; the CSV column mapping wants a real export sample.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

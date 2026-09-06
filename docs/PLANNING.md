@@ -806,6 +806,15 @@ Phases 13 to 17 went live at https://stirheim.netlify.app in one deploy (local `
 was pushed to the hosted project. Next: a fresh campaign and a re-import of the battle records CSV, and
 handing the other players' warbands over.
 
+## Release (2026-09-06, second)
+
+Tom: "Push the next update to the database and Netlify". Migrations 22 and 23 were already on the
+hosted project; `npm run build` + `npx netlify deploy --prod --dir=dist --no-build` (deploy
+6a9d6a1b240b531d2c8c5b9b) put Test round 2, Phase 20 and the two follow-up fixes live at commit
+0f5c0ef. Mobile testing follows. Tom's rulings this session: the two-missile-weapon warning stays
+(rulebook, Weapons & Armour intro); no stash at creation (rules as written); imported rosters are
+matched silently, no button.
+
 ## Phase 20 built (2026-09-06)
 
 Map campaigns, part two, plus the battle-sheet request from test round 2. Tom said "go" on the

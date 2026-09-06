@@ -13,6 +13,7 @@ import { useSession } from '../../../app/session'
 import { GATE_TOLL_GC } from '../../../rules/data/map/districts'
 import { formatRelativeTime } from '../../campaign/activity'
 import { Tag } from '../../campaign/bits'
+import { DistrictNegotiation } from '../../map/DistrictNegotiation'
 
 export function MatchDistrict({ match, isGm, userId }: { match: MatchSummary; isGm: boolean; userId: string | undefined }) {
   const events = useMapEvents(match.campaign_id)
@@ -76,6 +77,16 @@ export function MatchDistrict({ match, isGm, userId }: { match: MatchSummary; is
         ) : null}
       </div>
       {district ? <p className="text-sm text-ink-dim">{district.advantage}</p> : null}
+      {/* Stays mounted once a district is settled: it is what shows the roll-off coming down. */}
+      {open ? (
+        <DistrictNegotiation
+          match={match}
+          state={state}
+          myWarbandId={match.participants.find((p) => p.owner_id === userId)?.warband_id ?? null}
+          nameOf={nameOf}
+        />
+      ) : null}
+
       {suggestion ? (
         <p className="text-sm text-ink">
           {suggestion.title}

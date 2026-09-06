@@ -79,6 +79,8 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   const [scheduledLocal, setScheduledLocal] = useState('')
   const [notes, setNotes] = useState('')
   const [districtId, setDistrictId] = useState<string | null>(params.get('district'))
+  // Map campaigns may book a battle with the district still to be settled between the players.
+  const [decideLater, setDecideLater] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const mapEvents = useMapEvents(campaign.id, settings.mapCampaign)
   const mapState = useMemo(() => deriveMapState(mapEvents.data?.events ?? []), [mapEvents.data])
@@ -110,7 +112,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, scheduledLocal, notes, districtId }, { mode, myWarbandIds, requireDistrict: settings.mapCampaign })
+    const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, scheduledLocal, notes, districtId }, { mode, myWarbandIds, requireDistrict: settings.mapCampaign && !decideLater })
     if (!result.ok) {
       setError(result.error)
       return
@@ -238,6 +240,8 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
           }}
           currentScenarioId={scenario.kind === 'builtin' ? scenario.id : null}
           disabled={schedule.isPending}
+          decideLater={decideLater}
+          onDecideLater={setDecideLater}
         />
       ) : null}
 

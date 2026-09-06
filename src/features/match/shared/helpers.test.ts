@@ -54,6 +54,7 @@ function match(partial: Partial<MatchSummary>): MatchSummary {
     completed_at: null,
     notes: '',
     district_id: null,
+    district_decided_by: null,
     created_at: `2026-09-0${(n % 9) + 1}T09:00:00.000Z`,
     updated_at: '2026-09-04T09:00:00.000Z',
     participants: [WATCH, ESHIN],

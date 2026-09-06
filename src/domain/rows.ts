@@ -364,6 +364,8 @@ export const matchRowSchema = z
     notes: z.string(),
     /** Map campaigns: the district the battle is fought in. */
     district_id: z.string().nullable().default(null),
+    /** How that district was arrived at; null while the players are still settling it. */
+    district_decided_by: z.enum(["scheduled", "agreed", "roll_off"]).nullable().default(null),
     ...timestamps,
   })
   .refine((m) => m.scenario_rules_id == null || m.custom_scenario_id == null, {

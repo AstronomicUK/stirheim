@@ -585,6 +585,45 @@ export type Database = {
           },
         ]
       }
+      match_district_proposals: {
+        Row: {
+          district_id: string
+          match_id: string
+          stance: string
+          updated_at: string
+          warband_id: string
+        }
+        Insert: {
+          district_id: string
+          match_id: string
+          stance?: string
+          updated_at?: string
+          warband_id: string
+        }
+        Update: {
+          district_id?: string
+          match_id?: string
+          stance?: string
+          updated_at?: string
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_district_proposals_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_district_proposals_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_participants: {
         Row: {
           accepted_at: string | null
@@ -733,6 +772,7 @@ export type Database = {
           created_by: string
           created_via: Database["public"]["Enums"]["match_origin"]
           custom_scenario_id: string | null
+          district_decided_by: string | null
           district_id: string | null
           id: string
           notes: string
@@ -750,6 +790,7 @@ export type Database = {
           created_by: string
           created_via?: Database["public"]["Enums"]["match_origin"]
           custom_scenario_id?: string | null
+          district_decided_by?: string | null
           district_id?: string | null
           id?: string
           notes?: string
@@ -767,6 +808,7 @@ export type Database = {
           created_by?: string
           created_via?: Database["public"]["Enums"]["match_origin"]
           custom_scenario_id?: string | null
+          district_decided_by?: string | null
           district_id?: string | null
           id?: string
           notes?: string
@@ -1109,6 +1151,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agree_match_district: {
+        Args: {
+          p_district_id: string
+          p_match_id: string
+          p_warband_id: string
+        }
+        Returns: undefined
+      }
       apply_battle_report: { Args: { p_report_id: string }; Returns: undefined }
       approve_battle_report: {
         Args: { p_report_id: string }
@@ -1130,6 +1180,14 @@ export type Database = {
       cancel_match: {
         Args: { p_match_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
+      }
+      check_district_proposal: {
+        Args: { p_match_id: string; p_warband_id: string }
+        Returns: undefined
+      }
+      clear_match_district_proposals: {
+        Args: { p_match_id: string }
+        Returns: undefined
       }
       complete_match_if_reported: {
         Args: { p_match_id: string }
@@ -1215,6 +1273,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      propose_match_district: {
+        Args: {
+          p_district_id: string
+          p_match_id: string
+          p_warband_id: string
+        }
+        Returns: undefined
+      }
       record_trade: {
         Args: {
           p_changes?: Json
@@ -1248,6 +1314,10 @@ export type Database = {
       }
       revert_battle_report: {
         Args: { p_report_id: string }
+        Returns: undefined
+      }
+      roll_off_match_district: {
+        Args: { p_match_id: string; p_warband_id: string }
         Returns: undefined
       }
       save_battle_session: {
@@ -1292,6 +1362,10 @@ export type Database = {
       }
       transfer_warband: {
         Args: { p_new_owner: string; p_warband_id: string }
+        Returns: undefined
+      }
+      try_settle_match_district: {
+        Args: { p_match_id: string }
         Returns: undefined
       }
       update_roster: {

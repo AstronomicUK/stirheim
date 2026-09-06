@@ -46,6 +46,8 @@ export function PendingBattleCard({ warbandId, campaignId, userId }: PendingBatt
         const scenario = match.scenario_rules_id ? (findScenario(match.scenario_rules_id)?.title ?? null) : match.custom_scenario_name
         const district = match.district_id ? (findDistrict(match.district_id)?.name ?? null) : null
         const when = whenText(match.scheduled_for)
+        // A map battle booked without a district: the players have to settle it before they play.
+        const districtOpen = district === null && match.district_id === null && match.participants.length > 1
         const started = match.state === 'in_progress'
         const mine = match.participants.find((p) => p.warband_id === warbandId)
         // A challenge is scheduled but not yet accepted by this warband.
@@ -77,6 +79,7 @@ export function PendingBattleCard({ warbandId, campaignId, userId }: PendingBatt
                     {district}
                   </li>
                 ) : null}
+                {match.district_decided_by === 'roll_off' ? <li className="text-ink-dim">settled by a roll-off</li> : null}
               </ul>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -89,9 +92,10 @@ export function PendingBattleCard({ warbandId, campaignId, userId }: PendingBatt
                 {!started ? (
                   <Link
                     to={`/matches/${match.id}`}
-                    className="inline-flex min-h-11 items-center rounded-md border border-border bg-surface-low px-4 text-sm font-medium text-ink no-underline hover:bg-surface-high"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-low px-4 text-sm font-medium text-ink no-underline hover:bg-surface-high"
                   >
-                    Match details
+                    {districtOpen ? <Icon name="map" size={16} className="text-brass" /> : null}
+                    {districtOpen ? 'Settle the district' : 'Match details'}
                   </Link>
                 ) : null}
               </div>

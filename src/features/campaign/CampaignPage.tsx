@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail, type CampaignMemberView } from '../../api/campaigns'
-import { useCampaignMatches } from '../../api/matches'
+import { useCampaignMatches, type MatchSummary } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
 import { Button, Icon, Markdown, Notice, Sheet, Spinner, TwoColumn, type IconName } from '../../ui'
@@ -93,6 +93,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
           {mine.length > 0 ? ` Playing as ${mine.map((m) => m.warband.name).join(', ')}.` : ''}
         </p>
       </header>
+
+      {settings.mapCampaign ? <DistrictNotices matches={matches.data ?? []} mine={mine.map((m) => m.warband_id)} /> : null}
 
       {campaign.archived ? (
         <Notice tone="warn" title="Archived">
@@ -268,6 +270,39 @@ function Stat({ label, value }: { label: string; value: string }) {
       <dt className="text-[10px] uppercase tracking-wider text-ink-dim">{label}</dt>
       <dd className="truncate text-sm tabular-nums text-ink">{value}</dd>
     </div>
+  )
+}
+
+/**
+ * Battles of yours booked without a district. The negotiation itself lives on the match page; this
+ * is the nudge that there is one waiting, which is otherwise easy to miss.
+ */
+function DistrictNotices({ matches, mine }: { matches: MatchSummary[]; mine: string[] }) {
+  const open = matches.filter(
+    (m) => (m.state === 'scheduled' || m.state === 'in_progress') && m.district_id === null && m.participants.some((p) => mine.includes(p.warband_id)),
+  )
+  if (open.length === 0) return null
+  return (
+    <>
+      {open.map((match) => {
+        const yours = match.participants.find((p) => mine.includes(p.warband_id))
+        const others = match.participants.filter((p) => p !== yours)
+        return (
+          <Notice key={match.id} tone="warn" title={`Where is ${yours?.warband_name} fighting ${others.map((p) => p.warband_name).join(' and ')}?`}>
+            <div className="flex flex-col gap-2">
+              <p>This battle was booked without a district. Put one forward, take theirs, or call for a roll-off.</p>
+              <Link
+                to={`/matches/${match.id}`}
+                className="inline-flex min-h-11 w-fit items-center gap-2 rounded-md border border-brass bg-brass px-4 text-sm font-semibold text-surface-low no-underline hover:bg-brass/90"
+              >
+                <Icon name="map" size={16} />
+                Settle the district
+              </Link>
+            </div>
+          </Notice>
+        )
+      })}
+    </>
   )
 }
 

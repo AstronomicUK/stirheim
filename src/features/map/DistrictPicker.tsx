@@ -18,9 +18,12 @@ export interface DistrictPickerProps {
   onUseScenario: (scenarioId: string) => void
   currentScenarioId: string | null
   disabled?: boolean
+  /** The players will settle it between themselves after the match is booked. */
+  decideLater?: boolean
+  onDecideLater?: (value: boolean) => void
 }
 
-export function DistrictPicker({ state, warbandIds, nameOf, value, onChange, onUseScenario, currentScenarioId, disabled = false }: DistrictPickerProps) {
+export function DistrictPicker({ state, warbandIds, nameOf, value, onChange, onUseScenario, currentScenarioId, disabled = false, decideLater = false, onDecideLater }: DistrictPickerProps) {
   const groups = useMemo(() => {
     const all: string[] = []
     const some: string[] = []
@@ -61,7 +64,45 @@ export function DistrictPicker({ state, warbandIds, nameOf, value, onChange, onU
   return (
     <fieldset className="flex min-w-0 flex-col gap-3">
       <legend className="mb-2 text-sm font-medium text-ink-dim">District</legend>
-      <div>
+
+      {onDecideLater ? (
+        <div className="grid grid-cols-2 gap-3">
+          {(
+            [
+              { later: false, title: 'Choose it now', blurb: 'Book the battle in a district.' },
+              { later: true, title: 'Let the players decide', blurb: 'Each side proposes one; agree, or roll off.' },
+            ] as const
+          ).map((choice) => {
+            const on = decideLater === choice.later
+            return (
+              <button
+                key={choice.title}
+                type="button"
+                aria-pressed={on}
+                disabled={disabled}
+                onClick={() => {
+                  onDecideLater(choice.later)
+                  if (choice.later) onChange(null)
+                }}
+                className={`flex min-h-16 flex-col items-start gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${
+                  on ? 'border-brass bg-brass/10 shadow-[inset_0_0_0_1px_var(--color-brass)]' : 'border-border bg-surface-low hover:bg-surface-high'
+                }`}
+              >
+                <span className="text-sm font-semibold leading-tight text-ink">{choice.title}</span>
+                <span className="text-xs leading-snug text-ink-dim">{choice.blurb}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
+      {decideLater ? (
+        <p className="text-sm leading-relaxed text-ink-dim">
+          Each side puts a district forward once the battle is booked. Whoever answers may take it, name their own, or call for a roll-off; when both call one, the app picks between the two.
+        </p>
+      ) : null}
+
+      <div hidden={decideLater}>
         <RandomScenario
           options={rollable}
           disabled={disabled}
@@ -70,6 +111,7 @@ export function DistrictPicker({ state, warbandIds, nameOf, value, onChange, onU
           onPick={(option) => onChange(option.id)}
         />
       </div>
+      {decideLater ? null : (
       <SelectField label="Where the battle is fought" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} disabled={disabled} hint={warbandIds.length === 0 ? 'Pick the warbands first to see where each can reach.' : undefined}>
         <option value="">Choose a district</option>
         {warbandIds.length > 0 && groups.all.length > 0 ? (
@@ -100,8 +142,9 @@ export function DistrictPicker({ state, warbandIds, nameOf, value, onChange, onU
           </optgroup>
         ) : null}
       </SelectField>
+      )}
 
-      {district ? (
+      {district && !decideLater ? (
         <div className="flex flex-col gap-2 rounded-md border border-border bg-surface-low px-4 py-3 text-sm">
           <p className="text-ink">{district.advantage}</p>
           {district.abundance ? <p className="text-ink-dim">Abundance of Wyrdstone: the winner gains D3 extra shards.</p> : null}

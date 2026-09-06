@@ -23,6 +23,7 @@ export const matchKeys = {
   sessions: (id: string | undefined) => ['matches', 'sessions', id] as const,
   events: (id: string | undefined) => ['matches', 'events', id] as const,
   roster: (matchId: string | undefined, warbandId: string | undefined) => ['matches', 'roster', matchId, warbandId] as const,
+  districtProposals: (matchId: string | undefined) => ['matches', 'district-proposals', matchId] as const,
 }
 
 export interface MatchParticipantView {
@@ -54,6 +55,8 @@ export interface MatchSummary {
   notes: string
   /** Map campaigns: the district the battle is fought in. */
   district_id: string | null
+  /** How that district was arrived at; null while it is still open. */
+  district_decided_by: 'scheduled' | 'agreed' | 'roll_off' | null
   created_at: string
   updated_at: string
   participants: MatchParticipantView[]
@@ -121,6 +124,7 @@ function toSummary(row: MatchQueryRow, userId: string | undefined, aliases?: Ali
     completed_at: row.completed_at,
     notes: row.notes,
     district_id: row.district_id ?? null,
+    district_decided_by: row.district_decided_by ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     participants: row.match_participants
@@ -240,6 +244,52 @@ export async function cancelMatch(matchId: string): Promise<MatchState> {
   const { data, error } = await supabase.rpc('cancel_match', { p_match_id: matchId })
   if (error) throw new Error(error.message)
   return data
+}
+
+// ---- agreeing the district (map campaigns) ----
+
+export interface DistrictProposal {
+  warband_id: string
+  district_id: string
+  stance: 'proposed' | 'agreed' | 'roll_off'
+  updated_at: string
+}
+
+export async function fetchDistrictProposals(matchId: string): Promise<DistrictProposal[]> {
+  const { data, error } = await supabase.from('match_district_proposals').select('warband_id, district_id, stance, updated_at').eq('match_id', matchId)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as DistrictProposal[]
+}
+
+export function useDistrictProposals(matchId: string | undefined, enabled = true) {
+  return useQuery({ queryKey: matchKeys.districtProposals(matchId), queryFn: () => fetchDistrictProposals(matchId!), enabled: Boolean(matchId) && enabled })
+}
+
+export type DistrictMove = { kind: 'propose'; districtId: string } | { kind: 'agree'; districtId: string } | { kind: 'rollOff' }
+
+export async function moveOnDistrict(matchId: string, warbandId: string, move: DistrictMove): Promise<void> {
+  const call =
+    move.kind === 'propose'
+      ? supabase.rpc('propose_match_district', { p_match_id: matchId, p_warband_id: warbandId, p_district_id: move.districtId })
+      : move.kind === 'agree'
+        ? supabase.rpc('agree_match_district', { p_match_id: matchId, p_warband_id: warbandId, p_district_id: move.districtId })
+        : supabase.rpc('roll_off_match_district', { p_match_id: matchId, p_warband_id: warbandId })
+  const { error } = await call
+  if (error) throw new Error(error.message)
+}
+
+export function useMoveOnDistrict(matchId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ warbandId, move }: { warbandId: string; move: DistrictMove }) => moveOnDistrict(matchId!, warbandId, move),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: matchKeys.districtProposals(matchId) }),
+        queryClient.invalidateQueries({ queryKey: matchKeys.one(matchId) }),
+        queryClient.invalidateQueries({ queryKey: matchKeys.all }),
+      ])
+    },
+  })
 }
 
 export async function saveBattleSession(matchId: string, warbandId: string, state: BattleLiveState): Promise<string> {

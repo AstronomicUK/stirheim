@@ -1069,6 +1069,29 @@ what came up while building. Grouped so Tom can strike or reorder.
   restriction blocks; full map-campaign support (territories, movement, map-driven scenarios);
   per-user light/dark toggle; a domain name; the CSV column mapping wants a real export sample.
 
+## Phase 21 candidates (added 2026-09-06 by Tom)
+
+- **Half-price armour, finer grained.** The existing house rule (armour at half price, shields and
+  helmets excepted) gains two sub-switches: include shields (shield, buckler, kite shield, pavise)
+  and include helmets. Small: `CampaignHouseRules.halfPriceArmour` becomes a small object or two
+  extra booleans, `isHalfPriceEligible` reads them, settings UI and `describeHouseRules` follow.
+  Open question: whether the discount also applies in the builder at creation (today it applies
+  only in the trading post).
+- **Rewards of the Shadowlord** (Mordheim rulebook optional rule; mordheimer.net
+  /docs/optional-rules/mordheim-rulebook-optional-rules/rewards-of-the-shadowlord). As written:
+  a Magister or Mutant of a Cult of the Possessed warband may, on a New Skill advance, roll 2D6 on
+  the Rewards table instead of picking a skill. 2 Wrath (the warrior vanishes); 3-6 nothing; 7-8
+  Mutation (D6: 1 lose a characteristic point of the player's choice, 2+ choose a mutation from the
+  Possessed list, free); 9-10 Chaos Armour (4+ save, spells unaffected); 11 Daemon Weapon (+1 S in
+  close combat, +1 to hit, chosen form, none of the base weapon's special rules); 12 Possessed!
+  (+1 WS, S, A, W not counting to maxima; lose D3 skills of the player's choice; no weapons or
+  armour except Chaos Armour and Daemon weapons). No other warband list in the data refers to the
+  table. Tom wants it as a house rule (campaign switch) with a pop-up choice in the advance flow
+  (wizard and Bestow advancements) for the specified heroes, and asked for questions first: which
+  warbands beyond the Possessed, which hero types, how Wrath treats the kit, whether a "nothing"
+  result still spends the advance, and how Possessed! is enforced on equipment. Large: new items
+  (Daemon Weapon), a new advance branch with sub-rolls, a warrior flag, roster validation.
+
 ## Phase 18+ candidates (2026-09-06, awaiting Tom's ordering)
 
 Tier 1 of both audits is done (Phases 14-17). Tom added three items; here they sit against the Tier 2

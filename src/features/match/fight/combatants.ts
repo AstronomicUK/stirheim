@@ -75,6 +75,7 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
   const ids = [...base, ...traitsFromRules(rules)]
   if (warrior.flags.frenzy) ids.push('frenzy')
   if (warrior.flags.hates) ids.push('hatred')
+  if (warrior.flags.nurglesRot) ids.push('nurgles_rot')
   if (isLarge) ids.push('large_target')
   return unique(ids)
 }

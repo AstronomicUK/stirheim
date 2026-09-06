@@ -103,7 +103,8 @@ export function PostBattlePage() {
   const rawLive = sessions.data.find((s) => s.warband_id === participant.warband_id)?.live_state
   const logged = (events.data ?? []).filter((e) => e.reverted_at === null)
   const liveState = rawLive || logged.length > 0 ? applyBattleEvents(rawLive ?? emptyBattleLiveState(), logged, participant.warband_id) : undefined
-  return <Guarded match={summary} participant={participant} userId={user?.id} amending={amending && filed} liveState={liveState} />
+  const rotVictims = logged.filter((e) => e.payload.nurgles_rot && e.payload.target_warband_id === participant.warband_id).map((e) => e.payload.target_id)
+  return <Guarded match={summary} participant={participant} userId={user?.id} amending={amending && filed} liveState={liveState} rotVictims={rotVictims} />
 }
 
 interface GuardedProps {
@@ -113,10 +114,12 @@ interface GuardedProps {
   /** The GM is replacing a filed report. */
   amending: boolean
   liveState: BattleLiveState | undefined
+  /** Warriors of this warband wounded on a 6 by a Nurgle's Rot carrier (shared log). */
+  rotVictims: string[]
 }
 
 /** Owner or GM only: the roster query must succeed and the viewer must be allowed to edit the warband. */
-function Guarded({ match, participant, userId, liveState, amending }: GuardedProps) {
+function Guarded({ match, participant, userId, liveState, amending, rotVictims }: GuardedProps) {
   const campaign = useCampaign(match.campaign_id)
   const roster = useMatchRoster(match.id, participant.warband_id)
   const isGm = campaign.data?.campaign.gm_id === userId
@@ -149,19 +152,20 @@ function Guarded({ match, participant, userId, liveState, amending }: GuardedPro
       </>
     )
   }
-  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState} amending={amending} houseRules={applyHouseRuleDefaults(campaign.data?.settings.houseRules)} />
+  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState} amending={amending} houseRules={applyHouseRuleDefaults(campaign.data?.settings.houseRules)} rotVictims={rotVictims} />
 }
 
 interface WizardProps {
   match: MatchSummary
   participant: MatchParticipantView
+  rotVictims: string[]
   rosterData: NonNullable<ReturnType<typeof useMatchRoster>['data']>
   liveState: BattleLiveState | undefined
   amending: boolean
   houseRules: CampaignHouseRules
 }
 
-function Wizard({ match, participant, rosterData, liveState, amending, houseRules }: WizardProps) {
+function Wizard({ match, participant, rosterData, liveState, amending, houseRules, rotVictims }: WizardProps) {
   const navigate = useNavigate()
   const store = useMemo(() => reportStore(match.id, participant.warband_id), [match.id, participant.warband_id])
   const draft = useReportStore(store, (s) => s.draft)
@@ -187,8 +191,9 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       houseRules,
       preBattle: liveState?.preBattle ?? {},
       itemsUsed: liveState?.itemsUsed ?? {},
+      rotVictims,
     }),
-    [rosterData, match.id, participant.rating, opponents, houseRules, liveState],
+    [rosterData, match.id, participant.rating, opponents, houseRules, liveState, rotVictims],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

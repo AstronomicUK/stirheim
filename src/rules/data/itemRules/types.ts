@@ -107,7 +107,40 @@ export interface PreBattleEffect {
   noEffectOn?: string[];
 }
 
+/** What one result on a post-battle table does to the roster. Anything not listed here is a note for the table. */
+export interface PostBattleOutcome {
+  min: number;
+  max: number;
+  text: string;
+  effect?: {
+    /** Permanent characteristic change on the holder (Mandrake Root -1 T, Crimson Shade +1 I). */
+    statDelta?: Partial<Record<"M" | "WS" | "BS" | "S" | "T" | "W" | "I" | "A" | "Ld", number>>;
+    flag?: "stupidity" | "missNextGame" | "addicted";
+    /** The item is lost (Cathayan Silk Clothes ruined, the Lamp lost). */
+    removeItem?: boolean;
+    /** Gold to the treasury: a fixed sum, or dice times a figure (D6x5 = { dice: 1, perPoint: 5 }). Negative for losses. */
+    gold?: number | { dice: number; perPoint: number };
+    shards?: number;
+    xp?: number;
+  };
+}
+
+/** A roll owed after the battle because of an item. */
+export interface PostBattlePrompt {
+  key: string;
+  label: string;
+  /** "used": the item was marked as taken this battle; "leaderOutOfAction": the holder is the leader and went down. */
+  trigger: "used" | "leaderOutOfAction";
+  dice: "D6" | "2D6";
+  text: string;
+  outcomes: PostBattleOutcome[];
+  /** The player may leave it unrolled (a wish not taken). */
+  optional?: boolean;
+}
+
 export interface ItemEffect {
+  /** Rolls owed after a battle (audit A5). */
+  postBattle?: PostBattlePrompt[];
   /** Traits the wearer gains (data/traits ids, or informational ones like immune_to_fear). */
   traits?: string[];
   /** Skills the wearer counts as having (Lookout-Gnoblar: Dodge). */

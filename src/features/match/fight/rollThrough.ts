@@ -29,6 +29,8 @@ export interface AttackPlan {
   parry: { beatsOrMatches: boolean; reroll: boolean; fixedThreshold?: number }
   /** Lucky Charm: the target may discard the first hit of the battle on this roll (offered once). */
   luckyCharm?: number
+  /** The attacker carries Nurgle's Rot and the target is living: a natural 6 to wound in close combat passes it on. */
+  rot?: boolean
 }
 
 export type Outcome = 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
@@ -84,6 +86,8 @@ export interface RollState {
   critUsed: boolean
   /** The Lucky Charm has been rolled for (or the phase started without one). */
   charmUsed: boolean
+  /** Nurgle's Rot passed on this phase (a 6 to wound by a carrier). */
+  rotPassed: boolean
   pending: PendingRoll | null
   cur: Current
   log: LogLine[]
@@ -119,6 +123,7 @@ export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: n
     parriesLeft: maxParries,
     critUsed: false,
     charmUsed: !charmAvailable,
+    rotPassed: false,
     pending: null,
     cur: freshCurrent(),
     log: [],
@@ -175,7 +180,8 @@ export function declineRoll(state: RollState): RollState {
   return afterHit(log(state, 'No parry attempted.'))
 }
 
-export function applyRoll(state: RollState, roll: number): RollState {
+export function applyRoll(initial: RollState, roll: number): RollState {
+  let state = initial
   const pending = state.pending
   if (!pending || state.done) return state
   const plan = state.plans[state.index]
@@ -224,6 +230,7 @@ export function applyRoll(state: RollState, roll: number): RollState {
     case 'woundReroll': {
       const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6
       const wounded = auto || passes(roll, input.woundThreshold)
+      if (wounded && roll === 6 && plan.rot && !state.rotPassed) state = log({ ...state, rotPassed: true }, "A 6 to wound from a carrier of Nurgle's Rot: the target contracts the Rot.", 'good')
       if (!wounded && pending.kind === 'wound' && input.rerollToWound) {
         return { ...log(state, `To wound: rolled ${roll}. No wound on the first die; roll the second and keep the highest.`), pending: { kind: 'woundReroll', who: 'attacker', label: 'To wound (second die)', detail: `Needs ${thresholdText(input.woundThreshold)}` } }
       }

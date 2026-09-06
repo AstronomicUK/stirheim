@@ -97,6 +97,8 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
       else if (grade === null) out.push({ key: `map:${holder.id ?? "stash"}`, label: "Mordheim Map (ungraded)", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "No purchase D6 recorded on this map; treated as Vague (one re-roll). Note the real grade on the item." });
     } else if (item.itemId === "wyrdstone_pendulum" && holder.hero && standing) {
       out.push({ key: `pendulum:${holder.id}`, label: "Wyrdstone Pendulum", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: `${holder.name} makes a Leadership test; if passed, re-roll any one die (not again).`, requiresTest: { stat: "Ld", value: holder.hero.stats.Ld } });
+    } else if (item.itemId === "warpstone_amulet" && holder.hero && standing) {
+      out.push({ key: `warpstone:${holder.id}`, label: "Warpstone Amulet", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "If the re-roll was not used in the battle and the owner ended it standing, re-roll one exploration die." });
     } else if (item.itemId === "rabbits_foot" && holder.hero && standing && !opts.houseRules.rabbitsFootBattleOnly) {
       out.push({ key: `rabbit:${holder.id}`, label: "Rabbit's Foot", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "If the re-roll was not used in the battle, re-roll one exploration die." });
     } else if (item.itemId === "tarot_cards" && holder.hero && opts.preBattle[`tarot:${holder.id}`] === "passed") {

@@ -26,6 +26,8 @@ export const attackEventPayloadSchema = z.object({
   /** "Knocked down", "Out of action" ... */
   outcome: z.string().default(""),
   turn: z.number().int().min(0).default(0),
+  /** A Nurgle's Rot carrier wounded a living target on a natural 6: the target contracts the Rot (their report marks it). */
+  nurgles_rot: z.boolean().default(false),
 });
 export type AttackEventPayload = z.infer<typeof attackEventPayloadSchema>;
 
@@ -47,7 +49,7 @@ export type BattleEventRow = z.infer<typeof battleEventRowSchema>;
 /** One line for the log and the enemy view: "Turn 2: Captain took Skritch out of action." */
 export function attackSummary(p: AttackEventPayload): string {
   const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : `${p.outcome.toLowerCase()} ${p.target_name}`;
-  return `Turn ${p.turn}: ${p.attacker_name} ${what}.`;
+  return `Turn ${p.turn}: ${p.attacker_name} ${what}.${p.nurgles_rot ? ` ${p.target_name} contracts Nurgle's Rot.` : ""}`;
 }
 
 function withTallyChange(tallies: BattleWarriorTally[], id: string, kind: BattleWarriorTally["kind"], change: (t: BattleWarriorTally) => BattleWarriorTally): BattleWarriorTally[] {

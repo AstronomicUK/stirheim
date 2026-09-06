@@ -11,6 +11,8 @@ import {
   setGroupInjuryRoll,
   setHeroInjuryCount,
   setInjurySkip,
+  setKitExtraRoll,
+  setKitRoll,
   setHeroInjurySubRoll,
   setSwordInjury,
   type HeroInjuryResolution,
@@ -32,6 +34,7 @@ const OUTCOME_TAG: Record<InjuryOutcome, { label: string; tone: 'neutral' | 'war
 export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
   const { heroes, hiredSwords, groups, summary } = derived.injuries
   const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0
+  const kit = derived.kit.prompts
   return (
     <StepBody title="Serious injuries">
       <Intro>
@@ -173,6 +176,45 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               .join(' · ') || 'Nothing rolled yet'}
           </p>
         </Card>
+      ) : null}
+          {kit.length > 0 ? (
+        <Section title="Kit after the battle" aside={derived.kit.pending > 0 ? `${derived.kit.pending} to roll` : 'All rolled'}>
+          {kit.map((p) => {
+            const dice = p.prompt.dice === '2D6' ? 2 : 1
+            const gold = p.outcome?.effect?.gold
+            const extraDice = gold && typeof gold !== 'number' ? gold.dice : 0
+            return (
+              <Card key={p.key} className="flex flex-col gap-3 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink">{p.prompt.label}</p>
+                    <p className="text-xs text-ink-dim">
+                      {p.holderName} · {p.prompt.text}
+                      {p.prompt.optional ? ' Leave it blank if the wish is not taken.' : ''}
+                    </p>
+                  </div>
+                  {p.outcome ? <Tag tone={p.outcome.effect ? 'warn' : 'brass'}>{p.complete ? 'Rolled' : 'Roll the gold'}</Tag> : null}
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                  {Array.from({ length: dice }, (_, i) => (
+                    <DieField key={i} label={dice === 1 ? p.prompt.dice : `Die ${i + 1}`} sides={6} value={p.rolls[i] ?? null} onChange={(v) => update((d) => setKitRoll(d, p.key, i, v))} rollable />
+                  ))}
+                  {p.outcome && extraDice > 0
+                    ? Array.from({ length: extraDice }, (_, i) => (
+                        <DieField key={`x${i}`} label={`Gold D6 ${i + 1}`} sides={6} value={p.extraRolls[i] ?? null} onChange={(v) => update((d) => setKitExtraRoll(d, p.key, i, v))} rollable />
+                      ))
+                    : null}
+                </div>
+                {p.outcome ? (
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm text-ink">{p.outcome.text}</p>
+                    {p.summary ? <p className="text-xs text-ink-dim">{p.summary}</p> : null}
+                  </div>
+                ) : null}
+              </Card>
+            )
+          })}
+        </Section>
       ) : null}
     </StepBody>
   )

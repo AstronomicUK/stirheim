@@ -1,6 +1,7 @@
 // Pure display helpers for the roster screens: names for rules ids, experience progress, flag
 // tags. Nothing here touches React or the network, so it is unit-tested in node.
 
+import { findItem } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
 import { nextThreshold, xpThresholds, type AdvanceRate } from '../../../rules/data/campaign/experience'
 import { SPELL_LORES } from '../../../rules/data/campaign/magic'
@@ -174,6 +175,7 @@ export function flagTags(flags: WarriorFlags): string[] {
   if (flags.captured) tags.push('Captured')
   if (flags.hates) tags.push(`Hates ${flags.hates}`)
   if (flags.nurglesRot) tags.push("Nurgle's Rot")
+  if (flags.addictedTo && flags.addictedTo.length > 0) tags.push(`Addicted (${flags.addictedTo.map((id) => findItem(id)?.name ?? id).join(', ')})`)
   return tags
 }
 

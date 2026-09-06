@@ -335,6 +335,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 kill: state.worst === 'outOfAction' && attacker.kind !== 'henchman',
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
+                nurgles_rot: state.rotPassed,
               })
             }
             onFinished={rememberFight}
@@ -510,6 +511,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
         input: w.input,
         parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit), fixedThreshold: fixedParryThreshold(defenderKit) },
         luckyCharm: defenderKit.firstHitDiscard ?? undefined,
+        rot: w.weapon.type === 'melee' && carriesRot(attacker) && !['undead', 'possessed', 'daemon'].some((t) => defender.traitIds.includes(t)),
       })),
     )
     setLogged('no')
@@ -620,6 +622,11 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
 }
 
 /** Mirrors the engine's parry reroll rule (buckler + sword, Dwarf axes, fighting claws, iron fists). */
+/** The warrior carries Nurgle's Rot (a Tainted One's Blessing, or the Rot caught earlier). */
+function carriesRot(c: Combatant): boolean {
+  return c.equipment.some((e) => e.itemId === 'nurgles_rot') || c.traitIds.includes('nurgles_rot')
+}
+
 /** A Starblade parries on a fixed 4+ when it is the target's only parry item. */
 function fixedParryThreshold(kit: Loadout): number | undefined {
   const fixed = kit.melee.filter((w) => w.parry && w.parryThreshold !== undefined)

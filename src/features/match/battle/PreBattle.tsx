@@ -38,6 +38,11 @@ export function PreBattle({ roster, template, sheet, edit }: PreBattleProps) {
       {pending.map((p) => (
         <PromptRow key={p.key} prompt={p} onRecord={(outcome, line) => edit((s) => stamp(s, p.key, outcome, line))} />
       ))}
+      {list
+        .filter((p) => p.key.startsWith('rot:') && /spread/.test(sheet.preBattle[p.key] ?? '') && !Object.keys(sheet.preBattle).some((k) => k.startsWith('rot_spread:') && sheet.preBattle[k].endsWith(p.key)))
+        .map((p) => (
+          <SpreadRow key={`${p.key}:spread`} prompt={p} roster={roster} onPick={(victimId, victimName) => edit((s) => stamp(s, `rot_spread:${victimId}`, `caught from ${p.key}`, `Nurgle's Rot spreads: ${victimName} catches it from ${p.hero?.name ?? 'the carrier'}.`))} />
+        ))}
       {done.length > 0 ? (
         <ul className="flex flex-col gap-0.5 text-xs text-ink-dim">
           {done.map((p) => (
@@ -104,6 +109,32 @@ function PromptRow({ prompt, onRecord }: { prompt: Prompt; onRecord: (outcome: s
         </Button>
         <Button variant="ghost" onClick={() => onRecord('skipped', `${prompt.title}: not rolled`)}>
           Skip
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** After a 6 on the Rot test: which warband member catches it? Rolled off at random by the table, then picked here. */
+function SpreadRow({ prompt, roster, onPick }: { prompt: Prompt; roster: RosterWarband; onPick: (victimId: string, victimName: string) => void }) {
+  const carrierId = prompt.key.slice('rot:'.length)
+  const candidates = [...roster.heroes.filter((h) => h.status === 'active' && h.id !== carrierId && !h.flags.nurglesRot), ...roster.hiredSwords.filter((s) => s.status === 'active' && s.id !== carrierId && !s.flags.nurglesRot)]
+  const [victim, setVictim] = useState('')
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-2">
+      <p className="text-sm font-semibold text-ink">Nurgle's Rot spreads from {prompt.hero?.name ?? 'the carrier'}</p>
+      <p className="text-xs leading-relaxed text-ink-dim">Randomly allocate another member of the warband (roll off at the table) and pick them here; the report marks the Rot on their card.</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <select className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm text-ink" value={victim} aria-label="Who catches the Rot" onChange={(e) => setVictim(e.target.value)}>
+          <option value="">Choose a warrior</option>
+          {candidates.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <Button disabled={!victim} onClick={() => onPick(victim, candidates.find((c) => c.id === victim)?.name ?? victim)}>
+          Record
         </Button>
       </div>
     </div>

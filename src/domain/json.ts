@@ -56,6 +56,8 @@ export const warriorFlagsSchema = z.object({
   hates: z.string().optional(),
   /** Has contracted Nurgle's Rot (Toughness test before each battle). */
   nurglesRot: z.boolean().optional(),
+  /** Item ids the warrior is addicted to (Crimson Shade). */
+  addictedTo: z.array(z.string()).optional(),
 }) satisfies z.ZodType<WarriorFlags>;
 
 /** henchman_groups.stat_increases: increases already taken per characteristic. */

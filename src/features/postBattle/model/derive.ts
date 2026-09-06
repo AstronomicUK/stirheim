@@ -26,6 +26,7 @@ import { resolveGroupInjuries, resolveHeroInjuryFlow, resolveHiredSwordInjury, t
 import { participantsOf, type Participants } from './participants'
 import { advanceKey, isDie, STEP_IDS, type AdvanceMode, type ReportDraft, type StepId } from './state'
 import { isConsumable } from '../../../rules/data/itemRules'
+import { applyStatDelta, deriveKit, kitEffects, type KitDerived } from './kit'
 import { mapGrade } from '../../../rules/resolve/explorationAids'
 import { unitRules } from '../../../rules/data/campaignRules'
 import { henchmanInjuryException } from '../../../rules/resolve/injuries'
@@ -50,6 +51,8 @@ export interface ReportContext {
   preBattle?: Record<string, string>
   /** Consumables marked as used on the battle sheet: warrior id -> item ids. */
   itemsUsed?: Record<string, string[]>
+  /** Warriors of this warband a Nurgle's Rot carrier wounded on a 6 (from the shared combat log): they contract the Rot. */
+  rotVictims?: string[]
 }
 
 export interface InjurySummary {
@@ -111,6 +114,8 @@ export interface AdvancesDerived {
 
 export interface DerivedReport {
   participants: Participants
+  /** Kit after the battle: drugs' side effects, ruined clothes, maps and wishes. */
+  kit: KitDerived
   advances: AdvancesDerived
   /** Heroes (not hired swords) who fought and were not out of action. */
   survivingHeroes: RosterHero[]
@@ -242,9 +247,10 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
   return out
 }
 
-function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived): Record<StepId, string[]> {
+function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
+  if (kit.pending > 0) problems.injuries.push(`${kit.pending} ${kit.pending === 1 ? 'roll' : 'rolls'} for kit after the battle still to make.`)
   if (!injuries.complete) {
     const n = injuries.summary.pending
     problems.injuries.push(`${n} ${n === 1 ? 'warrior still needs' : 'warriors still need'} their injury dice.`)
@@ -290,7 +296,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
   return patches
 }
 
-function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Participants, injuries: InjuriesDerived, xp: XpDerived, exploration: ExplorationDerived): ReportApplied {
+function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Participants, injuries: InjuriesDerived, xp: XpDerived, exploration: ExplorationDerived, kit: KitDerived): ReportApplied {
   const xpBySubject = new Map(xp.lines.map((l) => [l.subjectId, l]))
   const heroes: ReportApplied['heroes'] = []
   const pending: ReportApplied['pending_advances'] = []
@@ -327,6 +333,40 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
       for (const t of thresholdsCrossed('hero', line.xpBefore, line.xpAfter)) pending.push({ subject_type: 'hero', subject_id: sword.id, threshold_xp: t })
     }
     if (Object.keys(patch).length > 0) heroes.push({ id: sword.id, patch })
+  }
+
+  // Kit after the battle: drugs' side effects, ruined clothes, wishes (features/postBattle/model/kit.ts).
+  const effects = kitEffects(kit)
+  for (const change of effects.heroPatches) {
+    const hero = ctx.roster.heroes.find((h) => h.id === change.heroId && h.status === 'active')
+    if (!hero) continue
+    const existing = heroes.find((h) => h.id === hero.id)
+    const patch: ReportApplied['heroes'][number]['patch'] = { ...(existing?.patch ?? {}) }
+    if (change.statDelta) patch.stats = applyStatDelta({ ...hero, stats: patch.stats ?? hero.stats }, change.statDelta)
+    if (change.flag) {
+      const flags = { ...(patch.flags ?? hero.flags) }
+      if (change.flag === 'stupidity') flags.stupidity = true
+      if (change.flag === 'missNextGame') flags.missNextGames = Math.max(flags.missNextGames ?? 0, 1)
+      if (change.flag === 'addicted') flags.addictedTo = [...new Set([...(flags.addictedTo ?? []), change.itemId])]
+      patch.flags = flags
+    }
+    if (existing) existing.patch = patch
+    else heroes.push({ id: hero.id, patch })
+  }
+  const kitRemovals: ReportApplied['item_patches'] = []
+  for (const removal of effects.removeItems) {
+    const row = ctx.items.find((r) => r.item_rules_id === removal.itemId && (removal.holderId === null ? r.holder_type === 'stash' : r.holder_id === removal.holderId))
+    if (row && !kitRemovals.some((p) => p.id === row.id)) kitRemovals.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
+  }
+
+  // Nurgle's Rot caught in the fight (the shared log) or passed on before the game (the sheet).
+  for (const id of new Set([...(ctx.rotVictims ?? []), ...Object.keys(ctx.preBattle ?? {}).filter((k) => k.startsWith('rot_spread:')).map((k) => k.slice('rot_spread:'.length))])) {
+    const hero = ctx.roster.heroes.find((h) => h.id === id && h.status === 'active')
+    if (!hero || hero.flags.nurglesRot) continue
+    const existing = heroes.find((h) => h.id === hero.id)
+    const flags = { ...(existing?.patch.flags ?? hero.flags), nurglesRot: true }
+    if (existing) existing.patch = { ...existing.patch, flags }
+    else heroes.push({ id: hero.id, patch: { flags } })
   }
 
   // Nurgle's Rot: a failed Toughness test before the game costs a point of Toughness; at zero the warrior dies.
@@ -387,14 +427,14 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     heroes,
     groups,
     warband: {
-      wyrdstone_delta: draft.battleWyrdstone + (record?.shards ?? 0),
-      gold_delta: draft.battleGold + (record?.goldFound ?? 0),
+      wyrdstone_delta: draft.battleWyrdstone + (record?.shards ?? 0) + effects.shardsDelta,
+      gold_delta: draft.battleGold + (record?.goldFound ?? 0) + effects.goldDelta,
       veteran_pool: veteranPoolOf(draft),
     },
     pending_advances: pending,
     remove_item_ids: [...new Set(removeItemIds)],
     stash_items: record?.itemsFound ?? [],
-    item_patches: itemPatchesFor(ctx, draft),
+    item_patches: [...itemPatchesFor(ctx, draft).filter((p) => !kitRemovals.some((k) => k.id === p.id)), ...kitRemovals],
   }
 }
 
@@ -410,10 +450,11 @@ function ooaLines(draft: ReportDraft, participants: Participants): OoaLine[] {
   return lines
 }
 
-function battleNotes(draft: ReportDraft): string {
+function battleNotes(draft: ReportDraft, kit?: KitDerived): string {
   const parts: string[] = []
   if (draft.battleWyrdstone > 0) parts.push(`${draft.battleWyrdstone} ${draft.battleWyrdstone === 1 ? 'shard' : 'shards'} of wyrdstone picked up during the battle.`)
   if (draft.battleGold > 0) parts.push(`${draft.battleGold} gc looted during the battle.`)
+  if (kit) for (const line of kitEffects(kit).lines) parts.push(line)
   if (draft.notes.trim() !== '') parts.push(draft.notes.trim())
   return parts.join('\n')
 }
@@ -507,6 +548,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
 
 export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedReport {
   const participants = participantsOf(ctx.roster, ctx.template)
+  const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: ctx.itemsUsed ?? {}, heroesOut: heroOoaIds(draft), leaderId: participants.leaderId })
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const injuries = deriveInjuries(draft, participants, ctx.matchId)
@@ -516,9 +558,9 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     eligibleHeroes: survivingHeroes,
     enemiesOut: Object.values(draft.enemiesOut).reduce((n, v) => n + (v ?? 0), 0),
   })
-  const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration)
+  const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   const advances = deriveAdvances(draft, ctx, applied)
-  const problems = stepProblems(draft, injuries, exploration)
+  const problems = stepProblems(draft, injuries, exploration, kit)
   problems.advances.push(...advances.problems)
   const firstIncomplete = STEP_IDS.findIndex((id) => problems[id].length > 0)
   const firstIncompleteStep = firstIncomplete === -1 ? null : firstIncomplete
@@ -539,13 +581,13 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: battleNotes(draft),
+      notes: battleNotes(draft, kit),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }
   }
 
-  return { participants, advances, survivingHeroes, injuries, xp, exploration, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
+  return { participants, kit, advances, survivingHeroes, injuries, xp, exploration, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
 }
 
 /** The finished report, or an error naming what is still missing. */

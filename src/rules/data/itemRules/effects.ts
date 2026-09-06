@@ -62,10 +62,124 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   superior_blackpowder: { consumable: "battle", preBattle: { label: "Loaded with Superior Blackpowder", appliesTo: "blackpowder", strengthBonus: 1 } },
 
   // ---- Drugs (used up per battle) ----
-  mandrake_root: { consumable: "battle", preBattle: { label: "Took Mandrake Root", appliesTo: "self", toughnessBonus: 1, stunnedBecomesKnockedDown: true, noEffectOn: UNDEAD_AND_POSSESSED, note: "After the battle roll 2D6: on 2-3 the model loses a point of Toughness for good." } },
-  crimson_shade: { consumable: "battle", preBattle: { label: "Took Crimson Shade", appliesTo: "self", strengthBonus: 1, noEffectOn: UNDEAD_AND_POSSESSED, note: "+D3 Initiative and +1 Movement as well. After the battle roll 2D6: 2-3 addicted, 12 permanent +1 Initiative." } },
-  mad_cap_mushrooms: { consumable: "battle", preBattle: { label: "Ate Mad Cap Mushrooms", appliesTo: "self", traits: ["frenzy"], noEffectOn: UNDEAD_AND_POSSESSED, note: "After the battle roll a D6: on a 1 the model becomes permanently stupid." } },
-  hardtack_biscuits: { consumable: "use", preBattle: { label: "Eating Hardtack this turn", appliesTo: "self", toughnessBonus: 1, note: "+1 Toughness for this turn and the enemy's; on a 1 afterwards the pirate misses the next game." } },
+  mandrake_root: {
+    consumable: "battle",
+    preBattle: { label: "Took Mandrake Root", appliesTo: "self", toughnessBonus: 1, stunnedBecomesKnockedDown: true, noEffectOn: UNDEAD_AND_POSSESSED, note: "After the battle roll 2D6: on 2-3 the model loses a point of Toughness for good." },
+    postBattle: [{ key: "side_effects", label: "Mandrake Root side effects", trigger: "used", dice: "2D6", text: "Mandrake Root is highly poisonous. At the end of the battle, roll 2D6.", outcomes: [{ min: 2, max: 3, text: "The model loses 1 point of Toughness permanently.", effect: { statDelta: { T: -1 } } }, { min: 4, max: 12, text: "No lasting harm." }] }],
+  },
+  crimson_shade: {
+    consumable: "battle",
+    preBattle: { label: "Took Crimson Shade", appliesTo: "self", strengthBonus: 1, noEffectOn: UNDEAD_AND_POSSESSED, note: "+D3 Initiative and +1 Movement as well. After the battle roll 2D6: 2-3 addicted, 12 permanent +1 Initiative." },
+    postBattle: [{ key: "side_effects", label: "Crimson Shade side effects", trigger: "used", dice: "2D6", text: "After the battle, roll 2D6.", outcomes: [{ min: 2, max: 3, text: "The model becomes addicted: buy him a new batch of Crimson Shade before every battle from now on, or he leaves the warband.", effect: { flag: "addicted" } }, { min: 4, max: 11, text: "No lasting effect." }, { min: 12, max: 12, text: "The model's Initiative is increased permanently by +1.", effect: { statDelta: { I: 1 } } }] }],
+  },
+  mad_cap_mushrooms: {
+    consumable: "battle",
+    preBattle: { label: "Ate Mad Cap Mushrooms", appliesTo: "self", traits: ["frenzy"], noEffectOn: UNDEAD_AND_POSSESSED, note: "After the battle roll a D6: on a 1 the model becomes permanently stupid." },
+    postBattle: [{ key: "side_effect", label: "Mad Cap Mushrooms side effect", trigger: "used", dice: "D6", text: "After the battle, roll a D6.", outcomes: [{ min: 1, max: 1, text: "The model becomes permanently stupid.", effect: { flag: "stupidity" } }, { min: 2, max: 6, text: "He shakes it off." }] }],
+  },
+  hardtack_biscuits: {
+    consumable: "use",
+    preBattle: { label: "Eating Hardtack this turn", appliesTo: "self", toughnessBonus: 1, note: "+1 Toughness for this turn and the enemy's; on a 1 afterwards the pirate misses the next game." },
+    postBattle: [{ key: "tainted", label: "Hardtack: were the biscuits tainted?", trigger: "used", dice: "D6", text: "Roll a D6 after the turn the biscuits were eaten.", outcomes: [{ min: 1, max: 1, text: "Tainted and filled with maggots: the pirate misses the next game as he recovers.", effect: { flag: "missNextGame" } }, { min: 2, max: 6, text: "Wholesome enough." }] }],
+  },
+  cathayan_silk_clothes: {
+    note: "Cathayan Silk Clothes: the leader's warband may re-roll its first failed Rout test.",
+    postBattle: [{ key: "ruined", label: "Cathayan Silk Clothes: ruined?", trigger: "leaderOutOfAction", dice: "D6", text: "The leader was taken out of action wearing the silk clothes: roll a D6.", outcomes: [{ min: 1, max: 3, text: "The clothes are ruined and must be discarded.", effect: { removeItem: true } }, { min: 4, max: 6, text: "The clothes survive, a little muddied." }] }],
+  },
+  treasure_map: {
+    consumable: "use",
+    preBattle: { label: "Following the Treasure Map", appliesTo: "self", note: "Roll a D6 after the game to see where the map leads." },
+    postBattle: [
+      {
+        key: "where",
+        label: "Treasure Map: where does it lead?",
+        trigger: "used",
+        dice: "D6",
+        text: "Roll a D6 after the game (gold found is the profit after the crew's shares).",
+        outcomes: [
+          { min: 1, max: 1, text: "A fake! You trounce the swine who sold it and he pays D6x5 gc to make amends.", effect: { gold: { dice: 1, perPoint: 5 }, removeItem: true } },
+          { min: 2, max: 2, text: "A minor stash: a chest with 1 shard of wyrdstone and jewels worth 2D6x10 gc.", effect: { shards: 1, gold: { dice: 2, perPoint: 10 }, removeItem: true } },
+          { min: 3, max: 3, text: "Long Drong Slayer's alestash: a barrel of Bugman's XXXX (add Bugman's Ale to the stash by hand) and the rest sold for 2D6x10 gc.", effect: { gold: { dice: 2, perPoint: 10 }, removeItem: true } },
+          { min: 4, max: 4, text: "Facio's stash: fine clothes and blackmail notebooks. Next visit, buy any one regular item as Common; the notebooks sell for 2D6x10 gc; +1 Leadership when testing whether captives join.", effect: { gold: { dice: 2, perPoint: 10 }, removeItem: true } },
+          { min: 5, max: 5, text: "A booby-trapped chest: a hero passes an Initiative test to claim a Lucky Charm as well, or misses the next game (add the charm or the missed game by hand). 3D6x10 gc either way.", effect: { gold: { dice: 3, perPoint: 10 }, removeItem: true } },
+          { min: 6, max: 6, text: "Black-Wyrd the Pirate King's burial spot (see the item text for the full haul; enter the wyrdstone and gold by hand).", effect: { removeItem: true } },
+        ],
+      },
+    ],
+  },
+  lamp_of_the_djinn: {
+    preBattle: { label: "Rubbing the Lamp after the battle", appliesTo: "self", note: "Mark it to roll the three wishes in the report." },
+    postBattle: [1, 2, 3].flatMap((n) => [
+      {
+        key: `wish${n}_light`,
+        label: `Lamp of the Djinn: wish ${n} (Light)`,
+        trigger: "used" as const,
+        dice: "D6" as const,
+        optional: true,
+        text: "Each wish is a roll on the Light table paired with a roll on the Dark table.",
+        outcomes: [
+          { min: 1, max: 1, text: "Gain D6 experience points (enter the roll as extra experience).", effect: {} },
+          { min: 2, max: 2, text: "Gain one skill from your skill list (add it by hand)." },
+          { min: 3, max: 3, text: "Gain D6x10 gc.", effect: { gold: { dice: 1, perPoint: 10 } } },
+          { min: 4, max: 4, text: "Gain a random item from the equipment list (add it by hand)." },
+          { min: 5, max: 5, text: "Choose an item from the equipment list (add it by hand)." },
+          { min: 6, max: 6, text: "Roll twice more on this chart (use the other wishes' rows)." },
+        ],
+      },
+      {
+        key: `wish${n}_dark`,
+        label: `Lamp of the Djinn: wish ${n} (Dark)`,
+        trigger: "used" as const,
+        dice: "D6" as const,
+        optional: true,
+        text: "The Dark roll that goes with the wish.",
+        outcomes: [
+          { min: 1, max: 2, text: "Nothing happens." },
+          { min: 3, max: 3, text: "Lose D6x10 gc.", effect: { gold: { dice: 1, perPoint: -10 } } },
+          { min: 4, max: 4, text: "Lose D6 weapons (remove them by hand)." },
+          { min: 5, max: 5, text: "Lose the lamp.", effect: { removeItem: true } },
+          { min: 6, max: 6, text: "Roll once on the injury chart (roll it in the injuries section by marking the hero out of action, or by hand)." },
+        ],
+      },
+    ]),
+  },
+  monkeys_paw: {
+    postBattle: [
+      ...[1, 2, 3].map((n) => ({
+        key: `wish${n}`,
+        label: `Monkey's Paw: wish ${n} (Light)`,
+        trigger: "used" as const,
+        dice: "D6" as const,
+        optional: true,
+        text: "Three wishes on the Light table; the Dark table is rolled once per use.",
+        outcomes: [
+          { min: 1, max: 1, text: "Gain D6 experience points (enter the roll as extra experience)." },
+          { min: 2, max: 2, text: "Gain one skill from your skill list (add it by hand)." },
+          { min: 3, max: 3, text: "Gain D6x10 gc.", effect: { gold: { dice: 1, perPoint: 10 } } },
+          { min: 4, max: 4, text: "Gain an extra Hero even above your maximum (recruit him by hand)." },
+          { min: 5, max: 5, text: "Gain an extra Henchman even above your maximum (recruit him by hand)." },
+          { min: 6, max: 6, text: "Roll twice more on this chart." },
+        ],
+      })),
+      {
+        key: "dark",
+        label: "Monkey's Paw: the Dark side",
+        trigger: "used",
+        dice: "D6",
+        text: "Rolled once each time the paw is used.",
+        outcomes: [
+          { min: 1, max: 1, text: "Lose D6 experience points (enter it as negative extra experience)." },
+          { min: 2, max: 2, text: "Lose one random skill (remove it by hand)." },
+          { min: 3, max: 3, text: "Lose D6x10 gc.", effect: { gold: { dice: 1, perPoint: -10 } } },
+          { min: 4, max: 4, text: "Lose a Hero (the table decides who; dismiss him by hand)." },
+          { min: 5, max: 5, text: "Lose a Henchman (dismiss one by hand)." },
+          { min: 6, max: 6, text: "Lose the paw.", effect: { removeItem: true } },
+        ],
+      },
+    ],
+    consumable: "use",
+    preBattle: { label: "Rubbing the Monkey's Paw after the battle", appliesTo: "self", note: "Mark it to roll the wishes in the report. After the third use it disappears." },
+  },
   tears_of_shallaya: { consumable: "battle", preBattle: { label: "Drank the Tears of Shallaya", appliesTo: "self", traits: ["immune_to_poison"] } },
   healing_herbs: { consumable: "use", note: "Healing Herbs: restore all wounds lost, once, outside combat." },
 
@@ -106,6 +220,8 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   hideous: { traits: ["causes_fear"], note: "Hideous: causes Fear." },
   bloated_foulness: { note: "Bloated Foulness: +1 Wound and +1 Toughness, -1 Movement, on the profile." },
   stream_of_corruption: { extraWeaponId: "stream_of_corruption", note: "Stream of Corruption: a 6\" Strength 3 shooting attack with no armour save." },
+
+  warpstone_amulet: { note: "Warpstone Amulet: one re-roll during the battle, or one exploration die if the owner ended the game standing." },
 
   // ---- Notes only ----
   swivel_gun: { note: "Swivel Gun: pick the shot type on the calculator; every shot type is a separate one-battle supply." },

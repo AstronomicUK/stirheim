@@ -10,7 +10,7 @@ import type { RosterWarband } from '../../../rules/types/roster'
 import type { AdvanceDraft } from '../../advances/model'
 import type { AidUse } from '../../../rules/resolve/explorationAids'
 
-export const REPORT_DRAFT_VERSION = 3
+export const REPORT_DRAFT_VERSION = 4
 
 export type ReportResult = 'won' | 'lost' | 'draw'
 
@@ -114,6 +114,10 @@ export interface ReportDraft {
   /** advanceKey -> how the player wants to handle it (default 'now'). */
   advanceModes: Record<string, AdvanceMode>
   exploration: ExplorationDraft
+  /** Post-battle item prompt key -> dice faces (kit after the battle: drugs, maps, wishes). */
+  kit: Record<string, (number | null)[]>
+  /** Prompt key -> the outcome's own dice (gold expressions). */
+  kitExtra: Record<string, (number | null)[]>
   /** Wyrdstone picked up during the battle itself (scenario objectives). */
   battleWyrdstone: number
   /** Gold looted during the battle itself. */
@@ -146,6 +150,8 @@ export function emptyDraft(): ReportDraft {
     advances: {},
     advanceModes: {},
     exploration: emptyExploration(),
+    kit: {},
+    kitExtra: {},
     battleWyrdstone: 0,
     battleGold: 0,
     veteranPool: [null, null],
@@ -185,6 +191,21 @@ export function seedFromBattleSheet(roster: RosterWarband, live: BattleLiveState
 
 export function setStep(draft: ReportDraft, step: number): ReportDraft {
   return { ...draft, step: Math.max(0, Math.min(STEP_IDS.length - 1, Math.trunc(step))) }
+}
+
+/** A die of a post-battle kit prompt; `null` clears it. */
+export function setKitRoll(draft: ReportDraft, key: string, index: number, value: number | null): ReportDraft {
+  const rolls = [...(draft.kit[key] ?? [])]
+  while (rolls.length <= index) rolls.push(null)
+  rolls[index] = value
+  return { ...draft, kit: { ...draft.kit, [key]: rolls }, kitExtra: { ...draft.kitExtra, [key]: [] } }
+}
+
+export function setKitExtraRoll(draft: ReportDraft, key: string, index: number, value: number | null): ReportDraft {
+  const rolls = [...(draft.kitExtra[key] ?? [])]
+  while (rolls.length <= index) rolls.push(null)
+  rolls[index] = value
+  return { ...draft, kitExtra: { ...draft.kitExtra, [key]: rolls } }
 }
 
 export function setResult(draft: ReportDraft, result: ReportResult): ReportDraft {

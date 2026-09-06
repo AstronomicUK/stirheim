@@ -7,7 +7,7 @@ import { ITEM_PRICING } from "./pricing";
 import { ITEM_RESTRICTIONS } from "./restrictions";
 import type { ItemEffect, ItemPricing, ItemRestriction, ItemRule } from "./types";
 
-export type { ItemEffect, ItemPricing, ItemRestriction, ItemRule, PreBattleEffect, PriceRule } from "./types";
+export type { ItemEffect, ItemPricing, ItemRestriction, ItemRule, PostBattleOutcome, PostBattlePrompt, PreBattleEffect, PriceRule } from "./types";
 export { ITEM_EFFECTS, ITEM_PRICING, ITEM_RESTRICTIONS };
 export { WARBAND_GROUPS, describeWarbandRefs, warbandInAny, warbandMatches } from "./warbandGroups";
 

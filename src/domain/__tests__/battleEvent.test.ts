@@ -11,6 +11,7 @@ function attack(over: Partial<AttackEventPayload> = {}, reverted = false): Battl
     attacker_id: "captain",
     attacker_kind: "hero",
     attacker_name: "Captain",
+    nurgles_rot: false,
     target_warband_id: B,
     target_id: "skritch",
     target_kind: "hero",

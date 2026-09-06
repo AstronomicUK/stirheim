@@ -60,6 +60,8 @@ export interface WarriorFlags {
   hates?: string;
   /** Has contracted Nurgle's Rot: a Toughness test before every battle, -1 T on a failure, dead at zero. */
   nurglesRot?: boolean;
+  /** Item ids the warrior is addicted to (Crimson Shade): a new batch before every battle or he leaves. */
+  addictedTo?: string[];
 }
 
 export interface RosterHero {

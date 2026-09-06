@@ -5,11 +5,13 @@ import {
   bridgeTollOwedTo,
   canReach,
   controllerOf,
+  defenderLdBonus,
   deriveMapState,
   gateToll,
   reachFor,
   standings,
   suggestedScenario,
+  type MapBattleEvent,
   type MapEvent,
 } from "../mapCampaign";
 
@@ -17,7 +19,7 @@ const A = "warband-a";
 const B = "warband-b";
 const C = "warband-c";
 
-function battle(at: string, districtId: string, results: Record<string, "won" | "lost" | "draw" | null>, matchId = at): MapEvent {
+function battle(at: string, districtId: string, results: Record<string, "won" | "lost" | "draw" | null>, matchId = at): MapBattleEvent {
   return { kind: "battle", at, matchId, districtId, participants: Object.entries(results).map(([warbandId, result]) => ({ warbandId, result })) };
 }
 
@@ -117,6 +119,29 @@ describe("tolls", () => {
     expect(bridgeTollOwedTo(state, A, "count-steinhardts-palace")).toBeNull();
     expect(bridgeTollOwedTo(state, C, "merchants-quarter")).toBeNull();
     expect(bridgeTollOwedTo(state, A, "middle-bridge")).toBeNull();
+  });
+});
+
+describe("the defender's Leadership", () => {
+  it("a controller who wins a Surprise Attack keeps +1 Ld in that district; anyone else gets nothing", () => {
+    const state = deriveMapState([
+      battle("2026-01-01", "rich-quarter", { [A]: "won", [B]: "lost" }),
+      { ...battle("2026-01-02", "rich-quarter", { [A]: "won", [B]: "lost" }), scenarioId: "surprise_attack" },
+    ]);
+    expect(defenderLdBonus(state, "rich-quarter", A)).toBe(1);
+    expect(defenderLdBonus(state, "rich-quarter", B)).toBe(0);
+    expect(defenderLdBonus(state, "the-pit", A)).toBe(0);
+    // Losing the district later does not take the earned bonus away; a non-controller's win earns none.
+    const lost = deriveMapState([
+      battle("2026-01-01", "rich-quarter", { [A]: "won", [B]: "lost" }),
+      { ...battle("2026-01-02", "rich-quarter", { [A]: "won", [B]: "lost" }), scenarioId: "surprise_attack" },
+      battle("2026-01-03", "rich-quarter", { [A]: "lost", [B]: "won" }),
+      { ...battle("2026-01-04", "rich-quarter", { [A]: "won", [B]: "lost" }), scenarioId: "surprise_attack" },
+    ]);
+    expect(defenderLdBonus(lost, "rich-quarter", A)).toBe(1);
+    expect(defenderLdBonus(lost, "rich-quarter", B)).toBe(0);
+    const plain = deriveMapState([{ ...battle("2026-01-01", "rich-quarter", { [A]: "won", [B]: "lost" }), scenarioId: "skirmish" }]);
+    expect(defenderLdBonus(plain, "rich-quarter", A)).toBe(0);
   });
 });
 

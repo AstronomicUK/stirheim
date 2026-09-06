@@ -520,6 +520,71 @@ export type Database = {
           },
         ]
       }
+      map_tolls: {
+        Row: {
+          actor_id: string
+          amount: number
+          id: string
+          kind: string
+          match_id: string
+          note: string
+          paid_at: string
+          to_warband_id: string | null
+          warband_id: string
+        }
+        Insert: {
+          actor_id: string
+          amount: number
+          id?: string
+          kind: string
+          match_id: string
+          note?: string
+          paid_at?: string
+          to_warband_id?: string | null
+          warband_id: string
+        }
+        Update: {
+          actor_id?: string
+          amount?: number
+          id?: string
+          kind?: string
+          match_id?: string
+          note?: string
+          paid_at?: string
+          to_warband_id?: string | null
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_tolls_actor_profile_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "map_tolls_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_tolls_to_warband_id_fkey"
+            columns: ["to_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_tolls_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_participants: {
         Row: {
           accepted_at: string | null
@@ -1123,6 +1188,33 @@ export type Database = {
         }
       }
       owns_warband: { Args: { p_warband_id: string }; Returns: boolean }
+      pay_map_toll: {
+        Args: {
+          p_amount: number
+          p_kind: string
+          p_match_id: string
+          p_note?: string
+          p_to_warband_id?: string
+          p_warband_id: string
+        }
+        Returns: {
+          actor_id: string
+          amount: number
+          id: string
+          kind: string
+          match_id: string
+          note: string
+          paid_at: string
+          to_warband_id: string | null
+          warband_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "map_tolls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_trade: {
         Args: {
           p_changes?: Json

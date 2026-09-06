@@ -6,6 +6,8 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
 import { useCampaign } from '../../api/campaigns'
+import { useBattleBoosts } from './battle/useBattleBoosts'
+import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleEvents, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
 import { applyBattleEvents, emptyBattleLiveState, type AttackEventPayload, type BattleEventRow } from '../../domain'
@@ -108,6 +110,7 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
   const campaign = useCampaign(match.campaign_id)
   const isGm = campaign.data?.campaign.gm_id === userId
   const mine = match.participants.find((p) => p.mine)
+  const boosts = useBattleBoosts(match, Boolean(campaign.data?.settings.mapCampaign))
   const others = match.participants.filter((p) => p.warband_id !== mine?.warband_id)
   const inProgress = match.state === 'in_progress'
   const editable = inProgress && mine !== undefined
@@ -227,6 +230,7 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
       onBattleOver={canEnd ? () => setEndOpen(true) : undefined}
       others={others}
       houseRules={campaign.data?.settings.houseRules ?? defaultCampaignHouseRules()}
+      boosts={boosts}
     >
       {endSheet}
     </PlayerBattle>
@@ -249,10 +253,17 @@ interface PlayerBattleProps {
   onBattleOver: (() => void) | undefined
   others: MatchSummary['participants']
   houseRules: CampaignHouseRules
+  /** Map campaigns: what the map adds to each warband this battle. */
+  boosts: Record<string, BattleBoosts>
   children: ReactNode
 }
 
-function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, children }: PlayerBattleProps) {
+function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
+  const myBoosts = boosts[roster.id] ?? NO_BOOSTS
+  const boostLines = [
+    ...(myBoosts.leaderLd ? [`Leader +${myBoosts.leaderLd} Ld (${myBoosts.leaderLdSources.join(', ')})`] : []),
+    ...(myBoosts.fearImmunity ? [`Immune to Fear, Terror counts as Fear (${myBoosts.fearImmunity})`] : []),
+  ]
   const template = useMemo(() => findWarbandTemplate(roster.warbandTemplateId), [roster.warbandTemplateId])
   // What the player sees: their own taps plus every kill and casualty the shared log recorded for them.
   const shown = useMemo(() => applyBattleEvents(handle.sheet, events, roster.id), [handle.sheet, events, roster.id])
@@ -280,7 +291,12 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
 
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}
-      {rout === 'test' && !readOnly ? <RoutCheck roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} /> : null}
+      {boostLines.length > 0 && !readOnly ? (
+        <Notice tone="info" title="From the map">
+          {boostLines.join('. ')}.
+        </Notice>
+      ) : null}
+      {rout === 'test' && !readOnly ? <RoutCheck roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
       {advancesDue > 0 && !readOnly ? (
         <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still to bestow`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}
@@ -305,7 +321,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
             <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
           ) : null}
           {sideTab === 'fight' && match.combat_mode === 'app' ? (
-            <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} edit={readOnly ? undefined : handle.edit} />
+            <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} edit={readOnly ? undefined : handle.edit} boosts={boosts} />
           ) : null}
           {sideTab === 'log' && match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}

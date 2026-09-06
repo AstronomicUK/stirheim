@@ -4,11 +4,14 @@
 
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { useMapEvents, useSetMatchDistrict } from '../../../api/map'
+import { useMapEvents, useMatchTolls, usePayMapToll, useSetMatchDistrict, type MapTollRow } from '../../../api/map'
 import type { MatchSummary } from '../../../api/matches'
 import { findDistrict, MAP_DISTRICTS } from '../../../rules/data/map/districts'
 import { bridgeTollOwedTo, deriveMapState, districtFlags, gateToll, suggestedScenario } from '../../../rules/resolve/mapCampaign'
-import { Button, Notice, SelectField } from '../../../ui'
+import { Button, DieField, Notice, SelectField } from '../../../ui'
+import { useSession } from '../../../app/session'
+import { GATE_TOLL_GC } from '../../../rules/data/map/districts'
+import { formatRelativeTime } from '../../campaign/activity'
 import { Tag } from '../../campaign/bits'
 
 export function MatchDistrict({ match, isGm, userId }: { match: MatchSummary; isGm: boolean; userId: string | undefined }) {
@@ -25,16 +28,18 @@ export function MatchDistrict({ match, isGm, userId }: { match: MatchSummary; is
   const move = useSetMatchDistrict(match.id, match.campaign_id)
 
   const suggestion = district ? suggestedScenario(state, district.id, ids) : null
-  const tolls = district
+  const tolls: TollDue[] = district
     ? ids.flatMap((w) => {
-        const lines: string[] = []
+        const lines: TollDue[] = []
         const gate = gateToll(state, w, district.id)
-        if (gate) lines.push(`${nameOf(w)} pays ${gate} gc at the gate.`)
+        if (gate) lines.push({ warbandId: w, kind: 'gate', amount: gate, toWarbandId: null, text: `${nameOf(w)} pays ${gate} gc at the gate (no foothold there).` })
         const bridge = bridgeTollOwedTo(state, w, district.id)
-        if (bridge) lines.push(`${nameOf(w)} crosses the Middle Bridge: 2D6 gc to ${nameOf(bridge)} after the game.`)
+        if (bridge) lines.push({ warbandId: w, kind: 'bridge', amount: null, toWarbandId: bridge, text: `${nameOf(w)} crosses the Middle Bridge: 2D6 gc to ${nameOf(bridge)}.` })
         return lines
       })
     : []
+  const paid = useMatchTolls(match.id, Boolean(district))
+  const user = useSession((s) => s.user)
 
   async function save() {
     setError(null)
@@ -78,9 +83,14 @@ export function MatchDistrict({ match, isGm, userId }: { match: MatchSummary; is
           {match.scenario_rules_id !== suggestion.scenarioId ? <span className="text-ink-dim"> (what the map rules call for)</span> : null}
         </p>
       ) : null}
-      {tolls.map((t) => (
-        <p key={t} className="text-sm text-ink-dim">
-          {t}
+      {tolls.map((t) => {
+        const settled = paid.data?.find((p) => p.warband_id === t.warbandId && p.kind === t.kind)
+        const mayPay = open && Boolean(user) && (isGm || match.participants.some((p) => p.warband_id === t.warbandId && p.owner_id === user?.id))
+        return <TollRow key={`${t.warbandId}-${t.kind}`} toll={t} settled={settled} mayPay={mayPay} matchId={match.id} nameOf={nameOf} />
+      })}
+      {(paid.data ?? []).filter((p) => !tolls.some((t) => t.warbandId === p.warband_id && t.kind === p.kind)).map((p) => (
+        <p key={p.id} className="text-sm text-ink-dim">
+          {nameOf(p.warband_id)} paid a {p.kind === 'gate' ? 'gate' : 'Middle Bridge'} toll of {p.amount} gc{p.to_warband_id ? ` to ${nameOf(p.to_warband_id)}` : ''} ({formatRelativeTime(p.paid_at)}).
         </p>
       ))}
       {editing ? (
@@ -104,6 +114,61 @@ export function MatchDistrict({ match, isGm, userId }: { match: MatchSummary; is
           </div>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+interface TollDue {
+  warbandId: string
+  kind: 'gate' | 'bridge'
+  /** Fixed for the gate; null for the bridge until the 2D6 is rolled. */
+  amount: number | null
+  toWarbandId: string | null
+  text: string
+}
+
+/** One toll owed: what and to whom, paid or a way to pay it (owner or GM, while the match is open). */
+function TollRow({ toll, settled, mayPay, matchId, nameOf }: { toll: TollDue; settled: MapTollRow | undefined; mayPay: boolean; matchId: string; nameOf: (id: string) => string }) {
+  const pay = usePayMapToll(matchId)
+  const [d1, setD1] = useState<number | null>(null)
+  const [d2, setD2] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const amount = toll.kind === 'gate' ? GATE_TOLL_GC : d1 !== null && d2 !== null ? d1 + d2 : null
+
+  async function settle() {
+    if (amount === null) return
+    setError(null)
+    try {
+      await pay.mutateAsync({ matchId, warbandId: toll.warbandId, kind: toll.kind, amount, toWarbandId: toll.toWarbandId, note: toll.kind === 'bridge' ? `2D6: ${d1}+${d2}` : 'gate toll' })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not pay the toll.')
+    }
+  }
+
+  if (settled) {
+    return (
+      <p className="text-sm text-ink-dim">
+        {toll.text} <span className="text-ok">Paid: {settled.amount} gc{settled.to_warband_id ? ` to ${nameOf(settled.to_warband_id)}` : ''}</span> ({formatRelativeTime(settled.paid_at)}).
+      </p>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-sm text-ink-dim">{toll.text}</p>
+      {mayPay ? (
+        <div className="flex flex-wrap items-end gap-2">
+          {toll.kind === 'bridge' ? (
+            <>
+              <DieField label="D6" sides={6} value={d1} onChange={setD1} rollable />
+              <DieField label="D6" sides={6} value={d2} onChange={setD2} rollable />
+            </>
+          ) : null}
+          <Button type="button" variant="secondary" pending={pay.isPending} disabled={amount === null} onClick={() => void settle()}>
+            {amount === null ? 'Pay the toll' : `Pay ${amount} gc${toll.toWarbandId ? ` to ${nameOf(toll.toWarbandId)}` : ''}`}
+          </Button>
+        </div>
+      ) : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
     </div>
   )
 }

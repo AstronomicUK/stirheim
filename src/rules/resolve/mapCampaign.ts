@@ -20,6 +20,8 @@ export interface MapBattleEvent {
   districtId: string;
   /** Every participant, with the result they reported (null until they file). */
   participants: { warbandId: string; result: MapResult | null }[];
+  /** The scenario played, when known (Surprise Attack won by the controller earns its leader +1 Ld here). */
+  scenarioId?: string | null;
 }
 
 export interface MapAdjustmentEvent {
@@ -43,6 +45,8 @@ export interface DistrictState {
 
 export interface MapState {
   districts: Map<string, DistrictState>;
+  /** District -> warbands whose leader has +1 Ld there (won a Surprise Attack as its controller). */
+  defenderLd: Map<string, Set<string>>;
 }
 
 function stateFor(state: MapState, districtId: string): DistrictState {
@@ -55,7 +59,7 @@ function stateFor(state: MapState, districtId: string): DistrictState {
 }
 
 export function emptyMapState(): MapState {
-  return { districts: new Map() };
+  return { districts: new Map(), defenderLd: new Map() };
 }
 
 /** Fold the events, oldest first, into the map state. */
@@ -69,6 +73,13 @@ export function deriveMapState(events: readonly MapEvent[]): MapState {
       for (const p of e.participants) d.explored.add(p.warbandId);
       const winners = e.participants.filter((p) => p.result === "won");
       const losers = e.participants.filter((p) => p.result === "lost");
+      // "If the defender wins, the leader gains +1 Ld for all battles that occur in that district."
+      const controller = d.footholds.size === 1 ? [...d.footholds][0] : null;
+      if (e.scenarioId === "surprise_attack" && controller && winners.some((w) => w.warbandId === controller)) {
+        const set = state.defenderLd.get(e.districtId) ?? new Set<string>();
+        set.add(controller);
+        state.defenderLd.set(e.districtId, set);
+      }
       for (const w of winners) d.footholds.add(w.warbandId);
       if (winners.length > 0) for (const l of losers) d.footholds.delete(l.warbandId);
     } else {
@@ -78,6 +89,11 @@ export function deriveMapState(events: readonly MapEvent[]): MapState {
     }
   }
   return state;
+}
+
+/** +1 Ld for the leader of a warband that held this district against a Surprise Attack, else 0. */
+export function defenderLdBonus(state: MapState, districtId: string | null | undefined, warbandId: string): number {
+  return districtId && state.defenderLd.get(districtId)?.has(warbandId) ? 1 : 0;
 }
 
 export function districtState(state: MapState, districtId: string): DistrictState {

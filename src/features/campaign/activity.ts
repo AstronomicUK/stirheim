@@ -76,6 +76,8 @@ function describeWarband(entry: CampaignActivity, before: Row | null, after: Row
       return withChanges(`${actor} rolled advances for ${name}`, changes)
     case 'archive':
       return after?.archived === true ? `${actor} archived ${name}` : `${actor} unarchived ${name}`
+    case 'toll':
+      return withChanges(`${actor} settled a map toll for ${name}`, changes)
     default:
       return withChanges(`${actor} updated ${name}`, changes)
   }
@@ -218,6 +220,8 @@ export function activityIcon(entry: CampaignActivity): IconName {
     case 'transfer_warband':
     case 'move_warband_campaign':
       return 'join'
+    case 'toll':
+      return 'gold'
   }
   switch (entry.table_name) {
     case 'warbands':

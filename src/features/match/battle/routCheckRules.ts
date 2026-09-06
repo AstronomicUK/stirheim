@@ -18,14 +18,16 @@ export interface LdOption {
 }
 
 /** Who may give their Leadership: the leader if standing, otherwise any standing hero or hired sword. */
-export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState): LdOption[] {
+export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }): LdOption[] {
   const leaderUnit = template ? leaderTemplate(template) : undefined
   const fighting = splitWarriors(roster).fighting
   const options = fighting.map(({ warrior }): LdOption => {
     const w = warrior as RosterHero | RosterHiredSword
     const leader = 'unitTemplateId' in w && leaderUnit !== undefined && w.unitTemplateId === leaderUnit.id
     const mayLead = !('unitTemplateId' in w) || !unitRules(w.unitTemplateId).neverLeads
-    return { id: w.id, label: `${w.name} (Ld ${w.stats.Ld})`, ld: w.stats.Ld, standing: !isHeroOut(sheet, w.id), leader, mayLead }
+    const ld = leader && leaderLd.bonus ? w.stats.Ld + leaderLd.bonus : w.stats.Ld
+    const label = leader && leaderLd.bonus ? `${w.name} (Ld ${w.stats.Ld} +${leaderLd.bonus} ${leaderLd.sources.join(', ')})` : `${w.name} (Ld ${w.stats.Ld})`
+    return { id: w.id, label, ld, standing: !isHeroOut(sheet, w.id), leader, mayLead }
   })
   // Leader first, then standing warriors by Leadership, then the fallen (still selectable: the rules
   // for stunned or knocked-down leaders are the table's call).

@@ -80,3 +80,20 @@ describe('loadout from the item rules', () => {
     expect(isTwoHandedUse(loadoutOf([item('ogre_club'), item('shield')]), null)).toBe(false)
   })
 })
+
+describe('battle boosts from the map', () => {
+  it('raises the leader alone and marks everyone immune to Fear', async () => {
+    const { combatantsOf, NO_BOOSTS } = await import('./combatants')
+    const { findWarbandTemplate } = await import('../../../rules/data/warbandTemplates')
+    const template = findWarbandTemplate('mercenaries_reikland')!
+    const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 8 }
+    const hero = (id: string, unitTemplateId: string) => ({ id, name: id, unitTemplateId, stats, xp: 0, levelUps: 0, skillTableIds: [], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active' as const })
+    const roster = { id: 'w', name: 'Watch', warbandTemplateId: 'mercenaries_reikland', gold: 0, wyrdstone: 0, veteranPool: null, heroes: [hero('cap', 'mercenaries_reikland_captain'), hero('champ', 'mercenaries_reikland_champions')], henchmenGroups: [], hiredSwords: [], stash: [] }
+    const plain = combatantsOf(roster, template, 'Watch', undefined, NO_BOOSTS)
+    expect(plain.find((c) => c.id === 'cap')?.stats.Ld).toBe(8)
+    const boosted = combatantsOf(roster, template, 'Watch', undefined, { leaderLd: 1, leaderLdSources: ['Statue of Count Gotthard'], fearImmunity: 'The Cemetery' })
+    expect(boosted.find((c) => c.id === 'cap')?.stats.Ld).toBe(9)
+    expect(boosted.find((c) => c.id === 'champ')?.stats.Ld).toBe(8)
+    expect(boosted.every((c) => c.traitIds.includes('immune_to_fear'))).toBe(true)
+  })
+})

@@ -811,6 +811,19 @@ handing the other players' warbands over.
 Map campaigns, part two, plus the battle-sheet request from test round 2. Tom said "go" on the
 scope listed under "Phase 20" in the conversation; built in three commits.
 
+**2/3: in battle, and the tolls.**
+- `BattleBoosts` (`features/match/fight/combatants.ts`, `useBattleBoosts`): the Statue of Count
+  Gotthard's +1 Ld on the leader, +1 Ld for a leader whose warband held the battle's district
+  against a Surprise Attack (`MapState.defenderLd`, from battles whose scenario was Surprise Attack
+  and whose controller won), and the Cemetery's Fear immunity (new trait `immune_to_fear` on every
+  warrior). Applied to the calculator's combatants on both sides, to the rout check's Leadership
+  options, and shown in a "From the map" notice on the battle sheet.
+- Tolls: migration 23 `map_tolls` + `pay_map_toll(match, warband, kind, amount, to_warband, note)`
+  (security definer: owner or GM pays; the gold leaves the payer and reaches the bridge's
+  controller in one transaction; one payment per toll per battle; audited as `toll`). The match
+  page's district block lists each toll due with a Pay button (the bridge's 2D6 entered there) and
+  what has been paid. Integration test `api/__tests__/phase20.integration.test.ts`.
+
 **1/3: advantages applied in the report and the trading post.**
 - `rules/data/map/advantages.ts`: every district's legend as structured effects (exploration dice,
   modify-one, maximum finds, wyrdstone sale bonus, half-price hires and items, rare-roll bonus,

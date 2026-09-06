@@ -2,6 +2,7 @@
 // from a roster warrior's kit to the probability engine's weapons, armour and traits. No React,
 // no network; unit-tested in node.
 
+import { leaderTemplate } from '../../../rules/resolve/roster'
 import { unitRules } from '../../../rules/data/campaignRules'
 import { findItem } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
@@ -104,8 +105,22 @@ export function kindTraits(warbandTemplateId: string, unitTemplateId: string, un
 // Combatants of one warband
 // ---------------------------------------------------------------------------------------------
 
-export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | undefined, warbandName: string, sheet: BattleLiveState | undefined): Combatant[] {
+/** What the campaign map adds to a warband for this battle (Statue of Count Gotthard, a defended district, the Cemetery). */
+export interface BattleBoosts {
+  /** Added to the leader's Leadership. */
+  leaderLd: number
+  /** Where the Leadership comes from, for labels. */
+  leaderLdSources: string[]
+  /** Every warrior is immune to Fear (Terror counts as Fear). */
+  fearImmunity: string | null
+}
+
+export const NO_BOOSTS: BattleBoosts = { leaderLd: 0, leaderLdSources: [], fearImmunity: null }
+
+export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | undefined, warbandName: string, sheet: BattleLiveState | undefined, boosts: BattleBoosts = NO_BOOSTS): Combatant[] {
   const race = template?.raceTraits ?? []
+  const leaderUnitId = template ? leaderTemplate(template)?.id : undefined
+  const boostTraits = boosts.fearImmunity ? ['immune_to_fear'] : []
   const out: Combatant[] = []
   const warriors = splitWarriors(roster)
   for (const entry of warriors.fighting) {
@@ -120,11 +135,11 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         typeName: unitTypeName(template?.id ?? roster.warbandTemplateId, warrior.unitTemplateId),
         warbandId: roster.id,
         warbandName,
-        stats: warrior.stats,
+        stats: boosts.leaderLd && leaderUnitId && warrior.unitTemplateId === leaderUnitId ? { ...warrior.stats, Ld: warrior.stats.Ld + boosts.leaderLd } : warrior.stats,
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
         skillTableIds: warrior.skillTableIds,
-        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [])], entry.warrior.isLarge),
+        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? []), ...boostTraits], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })
@@ -142,7 +157,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
         // Hired swords are not members of the warband, so its racial rules do not apply to them.
-        traitIds: warriorTraits(warrior, detail?.specialRules ?? [], [], undefined),
+        traitIds: warriorTraits(warrior, detail?.specialRules ?? [], boostTraits, undefined),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })
@@ -151,7 +166,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
   for (const group of fightingGroups(roster)) {
     const unit = template ? findUnitTemplate(template, group.unitTemplateId) : undefined
     const kit = perModelKit(group.equipment, group.size)
-    const traits = [...race, ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? [])]
+    const traits = [...race, ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? []), ...boostTraits]
     if (group.isLarge) traits.push('large_target')
     out.push({
       id: group.id,

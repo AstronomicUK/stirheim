@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 
 export const mapKeys = {
   events: (campaignId: string | undefined) => ['map', 'events', campaignId] as const,
+  tolls: (matchId: string | undefined) => ['map', 'tolls', matchId] as const,
 }
 
 export interface MapAdjustmentRow {
@@ -32,6 +33,7 @@ export interface MapEvents {
 interface MatchEventRow {
   id: string
   district_id: string | null
+  scenario_rules_id: string | null
   state: string
   created_at: string
   started_at: string | null
@@ -45,7 +47,7 @@ export async function fetchMapEvents(campaignId: string): Promise<MapEvents> {
   const [matches, adjustments] = await Promise.all([
     supabase
       .from('matches')
-      .select('id, district_id, state, created_at, started_at, completed_at, match_participants(warband_id), match_reports(warband_id, result, status)')
+      .select('id, district_id, scenario_rules_id, state, created_at, started_at, completed_at, match_participants(warband_id), match_reports(warband_id, result, status)')
       .eq('campaign_id', campaignId)
       .not('district_id', 'is', null)
       .in('state', ['in_progress', 'awaiting_reports', 'completed'])
@@ -64,6 +66,7 @@ export async function fetchMapEvents(campaignId: string): Promise<MapEvents> {
       matchId: m.id,
       districtId: m.district_id,
       participants: m.match_participants.map((p) => ({ warbandId: p.warband_id, result: reports.get(p.warband_id) ?? null })),
+      scenarioId: m.scenario_rules_id,
     })
   }
   const rows: MapAdjustmentRow[] = (adjustments.data ?? []).map((r) => {
@@ -122,6 +125,64 @@ export function useSetMatchDistrict(matchId: string, campaignId: string | undefi
       void qc.invalidateQueries({ queryKey: matchKeys.one(matchId) })
       void qc.invalidateQueries({ queryKey: matchKeys.forCampaign(campaignId) })
       void qc.invalidateQueries({ queryKey: mapKeys.events(campaignId) })
+    },
+  })
+}
+
+// ---- Tolls ----
+
+export interface MapTollRow {
+  id: string
+  match_id: string
+  warband_id: string
+  kind: 'gate' | 'bridge'
+  amount: number
+  to_warband_id: string | null
+  note: string
+  actor_id: string
+  paid_at: string
+}
+
+export async function fetchMatchTolls(matchId: string): Promise<MapTollRow[]> {
+  const { data, error } = await supabase.from('map_tolls').select('*').eq('match_id', matchId).order('paid_at')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((r) => ({ ...r, kind: r.kind as 'gate' | 'bridge' }))
+}
+
+export function useMatchTolls(matchId: string | undefined, enabled = true) {
+  return useQuery({ queryKey: mapKeys.tolls(matchId), queryFn: () => fetchMatchTolls(matchId!), enabled: Boolean(matchId) && enabled })
+}
+
+export interface PayTollInput {
+  matchId: string
+  warbandId: string
+  kind: 'gate' | 'bridge'
+  amount: number
+  toWarbandId: string | null
+  note: string
+}
+
+/** Pay a map toll from the warband's treasury (to the bridge's controller when there is one); recorded on the match. */
+export async function payMapToll(input: PayTollInput): Promise<void> {
+  const { error } = await supabase.rpc('pay_map_toll', {
+    p_match_id: input.matchId,
+    p_warband_id: input.warbandId,
+    p_kind: input.kind,
+    p_amount: input.amount,
+    p_to_warband_id: input.toWarbandId ?? undefined,
+    p_note: input.note,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export function usePayMapToll(matchId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: payMapToll,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: mapKeys.tolls(matchId) })
+      void qc.invalidateQueries({ queryKey: ['warbands'] })
+      void qc.invalidateQueries({ queryKey: ['campaigns'] })
     },
   })
 }

@@ -21,6 +21,8 @@ export interface RoutCheckProps {
   edit: (fn: (state: BattleLiveState) => BattleLiveState) => void
   /** Opens the "Battle over?" confirmation. */
   onBattleOver: (() => void) | undefined
+  /** Map campaigns: Leadership the map adds to the leader. */
+  leaderLd?: { bonus: number; sources: string[] }
 }
 
 function stamp(state: BattleLiveState, line: string): BattleLiveState {
@@ -28,10 +30,10 @@ function stamp(state: BattleLiveState, line: string): BattleLiveState {
   return setNotes(state, notes)
 }
 
-export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver }: RoutCheckProps) {
+export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver, leaderLd }: RoutCheckProps) {
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<'passed' | 'failed' | null>(null)
-  const options = leadershipOptions(roster, template, sheet)
+  const options = leadershipOptions(roster, template, sheet, leaderLd)
   const suggested = suggestedLeadership(options)
   const [chosenId, setChosenId] = useState<string | null>(null)
   const chosen = options.find((o) => o.id === chosenId) ?? suggested

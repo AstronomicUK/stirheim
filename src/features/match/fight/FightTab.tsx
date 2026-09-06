@@ -10,7 +10,7 @@ import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/type
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
 import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
-import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout } from './combatants'
+import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
@@ -27,6 +27,8 @@ export interface FightTabProps {
   /** The player's sheet with the shared log laid over it (read only here). */
   sheet: BattleLiveState
   readOnly: boolean
+  /** Map campaigns: what the map adds to each warband this battle, by warband id. */
+  boosts?: Record<string, BattleBoosts>
   /** Append a result to the shared combat log; both sheets pick it up. */
   onLogEvent: (payload: AttackEventPayload) => Promise<void>
   /** Edit the player's own sheet (marking consumables used); absent when read only. */
@@ -52,17 +54,17 @@ interface TargetMemory {
   charmUsed?: boolean
 }
 
-export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent, edit }: FightTabProps) {
+export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent, edit, boosts }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
 
-  const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet), [roster, template, sheet])
+  const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), [roster, template, sheet, boosts])
   const targets = useMemo(
     () =>
       enemies.warbands.flatMap((w) => {
         const session = sessions.find((s) => s.warband_id === w.participant.warband_id)
-        return combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state)
+        return combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id])
       }),
-    [enemies.warbands, sessions],
+    [enemies.warbands, sessions, boosts],
   )
 
   const [attackerId, setAttackerId] = useState<string | null>(null)

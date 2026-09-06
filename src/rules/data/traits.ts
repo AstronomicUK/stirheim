@@ -36,6 +36,14 @@ export const TRAITS: Trait[] = [
       "Must pass a Leadership test each turn or be unable to fight/cast/shoot that turn. Whether the model gets to act at all isn't modeled here — no Hit/Wound/Injury math effect once it's their turn to fight.",
   },
   {
+    id: "immune_to_fear",
+    name: "Immune to Fear",
+    modeled: false,
+    conditional: false,
+    source: "Mordheim Campaign Map — The Cemetery (other warbands: immune to Fear, Terror is treated as Fear)",
+    description: "Never tests for Fear; Terror is treated as Fear — no Hit/Wound/Injury math effect.",
+  },
+  {
     id: "immune_to_psychology",
     name: "Immune to Psychology",
     modeled: false,

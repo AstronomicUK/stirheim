@@ -24,6 +24,7 @@ import { RosterViewContext } from './view/context'
 import { WarbandHistory } from './view/WarbandHistory'
 import { ImportFixups } from './view/ImportFixups'
 import { ImportQuestions } from './view/ImportQuestions'
+import { GrimoireCard } from './view/GrimoireCard'
 
 
 export function WarbandPage() {
@@ -195,6 +196,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Notice>
       ) : null}
       {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
+
+      <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       {rating.notes.length > 0 ? (
         <Notice tone="info" title="Rating notes">
           <ul className="flex list-disc flex-col gap-1 pl-4">

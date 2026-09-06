@@ -2,7 +2,7 @@
 // this phase of attacks, then (optionally) walk real dice through it step by step. An out of
 // action result can be logged straight to the attacker's "Enemies out" tally.
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleLiveState } from '../../../domain'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
@@ -543,6 +543,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
   const [state, setState] = useState<RollState | null>(null)
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
   const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral' } | null>(null)
+  const stateRef = useRef<RollState | null>(null)
   const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
   const [logError, setLogError] = useState<string | null>(null)
 
@@ -559,7 +560,9 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     setLogged('no')
     setLogError(null)
     setShown(null)
-    setState(startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost, charmAvailable))
+    const started = startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost, charmAvailable)
+    stateRef.current = started
+    setState(started)
   }
 
   async function log() {
@@ -575,16 +578,17 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     }
   }
 
+  // Stepping happens outside setState: an updater must be pure, and a phase must only finish once.
   function advance(step: (s: RollState) => RollState, rolled?: { value: number; label: string }) {
-    setState((s) => {
-      if (!s) return s
-      const next = step(s)
-      const line = next.log.at(-1)
-      if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone })
-      else if (!rolled) setShown(null)
-      if (next.done && !s.done) queueMicrotask(() => onFinished(next))
-      return next
-    })
+    const current = stateRef.current
+    if (!current) return
+    const next = step(current)
+    stateRef.current = next
+    setState(next)
+    const line = next.log.at(-1)
+    if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone })
+    else if (!rolled) setShown(null)
+    if (next.done && !current.done) onFinished(next)
   }
 
   const canRoll = odds.attacks > 0
@@ -671,6 +675,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
             variant="ghost"
             block
             onClick={() => {
+              stateRef.current = null
               setState(null)
               setShown(null)
             }}

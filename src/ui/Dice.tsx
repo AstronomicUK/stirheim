@@ -103,20 +103,19 @@ const TICK_MS = 70
 /**
  * Ask for a roll. Each die is a row of six tappable faces, or the player hits Roll and watches it
  * tumble. Once every die is set the values go up in one call, so the caller sees a 2D6 as a pair.
+ *
+ * `resetKey` remounts the picker, which is how a new step of the same shape starts empty.
  */
-export function DicePicker({ count = 1, sides = 6, onComplete, label, disabled = false, rollable = true, resetKey, className = '' }: DicePickerProps) {
+export function DicePicker({ resetKey, ...rest }: DicePickerProps) {
+  return <OneRoll key={String(resetKey ?? '')} {...rest} />
+}
+
+function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, rollable = true, className = '' }: Omit<DicePickerProps, 'resetKey'>) {
   const [values, setValues] = useState<(number | null)[]>(() => Array<number | null>(count).fill(null))
   const [tumbling, setTumbling] = useState<number[] | null>(null)
   const timers = useRef<number[]>([])
-
-  // A new step reuses this component; clear what the last one left behind, during the render that
-  // brings the new step in rather than in an effect afterwards.
-  const [seenStep, setSeenStep] = useState<unknown>(resetKey)
-  if (!Object.is(seenStep, resetKey)) {
-    setSeenStep(resetKey)
-    setValues(Array<number | null>(count).fill(null))
-    setTumbling(null)
-  }
+  // Mirrors `values` so two taps landing in the same frame do not both read the pre-tap array.
+  const latest = useRef<(number | null)[]>(Array<number | null>(count).fill(null))
 
   useEffect(() => {
     const held = timers
@@ -127,13 +126,14 @@ export function DicePicker({ count = 1, sides = 6, onComplete, label, disabled =
   }, [])
 
   function settle(next: (number | null)[]) {
+    latest.current = next
     setValues(next)
     if (next.every((v) => v !== null)) onComplete(next as number[])
   }
 
   function set(index: number, value: number) {
     if (disabled) return
-    const next = [...values]
+    const next = [...latest.current]
     next[index] = value
     settle(next)
   }
@@ -177,7 +177,7 @@ export function DicePicker({ count = 1, sides = 6, onComplete, label, disabled =
                   key={face}
                   type="button"
                   disabled={disabled || tumbling !== null}
-                  aria-label={`${label}: ${face}`}
+                  aria-label={count > 1 ? `${label}: die ${die + 1}, ${face}` : `${label}: ${face}`}
                   aria-pressed={active}
                   onClick={() => set(die, face)}
                   className={`rounded-[22%] transition-transform disabled:cursor-default ${active ? 'scale-105' : 'opacity-60 hover:opacity-100'}`}

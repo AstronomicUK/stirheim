@@ -22,5 +22,5 @@ test('imports a roster pasted from another tracker', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'The Argent Hammer' })).toBeVisible()
   await expect(page.getByText('265 gc', { exact: true })).toBeVisible()
   await expect(page.getByText('The Hammer of Sigmar')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Hand over to another player' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Transfer warband to another player' })).toBeVisible()
 })

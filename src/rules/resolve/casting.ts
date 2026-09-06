@@ -245,12 +245,16 @@ export function casterProfile(input: CasterInput): CasterProfile | null {
   if (!lore) return null;
   const kind: CasterKind = (PRAYER_LORE_IDS as readonly string[]).includes(lore.id) ? "prayer" : "spell";
 
-  const known = lore.spells.filter((s) => hero.spellIds.includes(s.id) && !(input.isBanned?.(s.id) ?? false));
-  if (known.length === 0 && hero.spellIds.length > 0) {
-    // He knows spells, but from another lore: show those instead of an empty list.
-    for (const other of SPELL_LORES) {
-      const fromOther = other.spells.filter((s) => hero.spellIds.includes(s.id));
-      if (fromOther.length > 0) known.push(...fromOther);
+  // Every spell he knows, wherever it came from: a Tome of Magic or a Book of the Dead can leave a
+  // warrior holding spells from two lores, and he may cast all of them.
+  const seen = new Set<string>();
+  const known: Spell[] = [];
+  for (const source of [lore, ...SPELL_LORES.filter((l) => l.id !== lore.id)]) {
+    for (const spell of source.spells) {
+      if (seen.has(spell.id) || !hero.spellIds.includes(spell.id)) continue;
+      if (input.isBanned?.(spell.id) ?? false) continue;
+      seen.add(spell.id);
+      known.push(spell);
     }
   }
 

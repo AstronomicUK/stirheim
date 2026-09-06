@@ -3,7 +3,7 @@
 // chance to dispel. Every roll is shown as dice rather than described, and the result of each step
 // is confirmed before the next is asked for.
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { BattleLiveState } from '../../../domain'
 import { castsThisTurn, rerollsSpent, withCast } from '../../../domain'
 import {
@@ -38,7 +38,9 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
   const caster = casters.find((c) => c.heroId === casterId) ?? casters[0]
   const [state, setState] = useState<CastState | null>(null)
   const [spent, setSpent] = useState<Record<string, number>>({})
-  const [logged, setLogged] = useState(false)
+  // The attempt is written to the sheet exactly once, whatever order the renders come in.
+  const recorded = useRef<string | null>(null)
+  const stateRef = useRef<CastState | null>(null)
 
   if (casters.length === 0) {
     return (
@@ -56,18 +58,21 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
   const usedUp = [...new Set([...spentIds.game.filter((id) => caster.rerolls.find((r) => r.id === id)?.limit === 'perGame'), ...spentIds.turn])]
 
   function begin(spell: Spell) {
-    setLogged(false)
-    setState(
-      startCast(caster!, spell, {
-        modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
-        alreadyUsed: usedUp,
-      }),
-    )
+    const started = startCast(caster!, spell, {
+      modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
+      alreadyUsed: usedUp,
+    })
+    recorded.current = null
+    stateRef.current = started
+    setState(started)
+    // A spell that needs no roll is finished the moment it starts.
+    if (started.done) record(started)
   }
 
   function record(finished: CastState) {
-    if (readOnly || !edit || logged) return
-    setLogged(true)
+    const token = `${finished.profile.heroId}:${finished.spell.id}:${finished.log.length}`
+    if (readOnly || !edit || recorded.current === token) return
+    recorded.current = token
     edit((s) =>
       withCast(s, {
         heroId: finished.profile.heroId,
@@ -84,12 +89,12 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
   }
 
   function advance(step: (s: CastState) => CastState) {
-    setState((s) => {
-      if (!s) return s
-      const next = step(s)
-      if (next.done && !s.done) queueMicrotask(() => record(next))
-      return next
-    })
+    const current = stateRef.current
+    if (!current) return
+    const next = step(current)
+    stateRef.current = next
+    setState(next)
+    if (next.done && !current.done) record(next)
   }
 
   return (
@@ -105,6 +110,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
                 aria-checked={c.heroId === caster.heroId}
                 onClick={() => {
                   setCasterId(c.heroId)
+                  stateRef.current = null
                   setState(null)
                   setSpent({})
                 }}
@@ -158,7 +164,15 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
             </ul>
           </>
         ) : (
-          <CastRun state={state} advance={advance} onAgain={() => setState(null)} usedUp={usedUp} />
+          <CastRun
+            state={state}
+            advance={advance}
+            onAgain={() => {
+              stateRef.current = null
+              setState(null)
+            }}
+            usedUp={usedUp}
+          />
         )}
       </div>
     </Section>

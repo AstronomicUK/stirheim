@@ -78,6 +78,8 @@ function describeWarband(entry: CampaignActivity, before: Row | null, after: Row
       return after?.archived === true ? `${actor} archived ${name}` : `${actor} unarchived ${name}`
     case 'toll':
       return withChanges(`${actor} settled a map toll for ${name}`, changes)
+    case 'import_fixup':
+      return `${actor} brought ${name}'s imported skills, spells and injuries up to date`
     default:
       return withChanges(`${actor} updated ${name}`, changes)
   }
@@ -207,6 +209,7 @@ export function activityIcon(entry: CampaignActivity): IconName {
     case 'withdraw_report':
       return 'records'
     case 'manual_edit':
+    case 'import_fixup':
       return 'edit'
     case 'schedule':
     case 'challenge':

@@ -22,6 +22,7 @@ import { itemsByHolder } from './view/lookups'
 import { WarriorCard } from './view/WarriorCard'
 import { RosterViewContext } from './view/context'
 import { WarbandHistory } from './view/WarbandHistory'
+import { ImportFixups } from './view/ImportFixups'
 
 
 export function WarbandPage() {
@@ -178,6 +179,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         <KeyValue icon="heroes" label="Heroes" value={warbandHeroCount(roster)} />
         {warband.veteran_pool !== null ? <KeyValue icon="history" label="Veteran pool" value={warband.veteran_pool} /> : null}
       </Card>
+
+      <ImportFixups detail={detail} canEdit={canEdit} />
 
       {problems.length > 0 ? (
         <Notice tone="warn" title="Roster problems">

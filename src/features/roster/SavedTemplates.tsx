@@ -12,15 +12,18 @@ import { Section } from './view/bits'
 /** The player's saved templates on the new-warband screen: pick one, name the warband, start shopping. */
 export function SavedTemplates() {
   const templates = useMyTemplates()
-  const [picked, setPicked] = useState<SavedTemplate | null>(null)
+  // Remember which template is open by id, so the sheet shows the row as it is now (a share saved a
+  // moment ago), not the copy captured when it was tapped.
+  const [pickedId, setPickedId] = useState<string | null>(null)
   if (templates.isPending || templates.isError || !templates.data || templates.data.length === 0) return null
+  const picked: SavedTemplate | null = templates.data.find((t) => t.id === pickedId) ?? null
   return (
     <>
       <Section title="Your templates" aside={`${templates.data.length}`}>
         <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
           {templates.data.map((t) => (
             <li key={t.id}>
-              <button type="button" onClick={() => setPicked(t)} className="flex min-h-11 w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-surface-high">
+              <button type="button" onClick={() => setPickedId(t.id)} className="flex min-h-11 w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-surface-high">
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium text-ink">{t.name}</span>
                   <span className="text-sm text-ink-dim">
@@ -36,7 +39,7 @@ export function SavedTemplates() {
           ))}
         </ul>
       </Section>
-      {picked ? <StartFromTemplate key={picked.id} template={picked} onClose={() => setPicked(null)} /> : null}
+      {picked ? <StartFromTemplate key={picked.id} template={picked} onClose={() => setPickedId(null)} /> : null}
     </>
   )
 }
@@ -124,7 +127,10 @@ function StartFromTemplate({ template, onClose }: { template: SavedTemplate; onC
               hint="Members of the campaign see it under Your templates. Pick 'Only me' to make it private again."
               value={template.campaign_id ?? ''}
               disabled={share.isPending}
-              onChange={(e) => void share.mutateAsync({ id: template.id, campaignId: e.target.value || null })}
+              onChange={(e) => {
+                setError(null)
+                share.mutateAsync({ id: template.id, campaignId: e.target.value || null }).catch((err: unknown) => setError(err instanceof Error ? err.message : 'Could not change who sees the template.'))
+              }}
             >
               <option value="">Only me</option>
               {(campaigns.data ?? []).filter((c) => !c.archived).map((c) => (

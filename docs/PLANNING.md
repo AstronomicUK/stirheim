@@ -1244,6 +1244,31 @@ notice on the campaign screen. Needs a table and a migration. The defender's own
 its saves belongs with it — the shared log only carries finished attacks today, so both want the
 same widening of `battle_events`.
 
+## Phase 23 built: settling things between two players (2026-09-06)
+
+Both halves need the other player's device, which is why they went together.
+
+**The district.** A map battle may be booked with "Let the players decide" instead of a district.
+Each side proposes one; whoever answers may take it, name their own, or call a roll-off. Everyone
+on the same district settles it; everyone calling a roll-off settles it by one, picked inside the
+transaction that locks the match so it is decided once however many phones are open, then revealed
+on the watching screen as the names run past and stop. Migration 25: `matches.district_decided_by`,
+`match_district_proposals`, and propose / agree / roll_off. Notices on the campaign screen and the
+warband's fixture card.
+
+**The defender's own rolls.** A parry, a save, Step Aside, a Lucky Charm belong to the defender.
+The calculator offers to ask; the question lands on their screen; the face comes back and the phase
+carries on. The resolution stays on the attacker's device — a prompt carries questions and faces,
+never the state machine — so an unanswered prompt costs nothing: withdraw it and roll it yourself.
+Migration 26: `battle_prompts` on the realtime publication, with ask / answer / withdraw. The GM
+may act for either side, as everywhere else.
+
+Integration cover in `phase23.integration.test.ts` (12 tests): both settlement paths, the roll-off,
+changing your mind, reopening, and every refusal; asking, answering, withdrawing, and who may.
+
+**Next.** Black powder handling: reload cadence, misfires, pistols in hand-to-hand, blasts, and the
+per-weapon data gaps in WEAPONS-ARMOUR-RULES-GAPS.md §Blackpowder. Then captures, then mounts.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

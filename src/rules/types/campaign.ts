@@ -41,6 +41,12 @@ export interface InjurySubOutcome {
   band: RollBand;
   /** Verbatim outcome text. */
   text: string;
+  /**
+   * What to call the injury when this outcome comes up, where the outcome is a condition of its own
+   * and the parent is only the roll that led to it — Madness is Stupidity or Frenzy, and by itself
+   * means nothing on a roster. Absent where the parent already names what happened.
+   */
+  name?: string;
   effects: InjuryEffect[];
 }
 

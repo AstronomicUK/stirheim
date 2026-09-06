@@ -147,6 +147,22 @@ describe("applyHeroInjury", () => {
     expect(applyHeroInjury(makeHero(), 25, 6).value.hero.flags.missNextGames).toBe(1);
   });
 
+  it("records what the sub-roll turned into, not the roll that led there", () => {
+    // Madness by itself does nothing: the sheet has to say Frenzy or Stupidity.
+    const stupid = applyHeroInjury(makeHero(), 24, 2).value.hero.injuries.at(-1)!;
+    expect(stupid).toMatchObject({ injuryCode: "madness", name: "Stupidity", rolled: { d66: 24, subRoll: 2 } });
+    expect(applyHeroInjury(makeHero(), 24, 5).value.hero.injuries.at(-1)!.name).toBe("Frenzy");
+
+    // The same for an arm wound, where severe and light are different injuries.
+    expect(applyHeroInjury(makeHero(), 23, 1).value.hero.injuries.at(-1)!.name).toBe("Severe Arm Wound");
+    expect(applyHeroInjury(makeHero(), 23, 4).value.hero.injuries.at(-1)!.name).toBe("Light Arm Wound");
+
+    // Where the parent already names the condition, it stands: a smashed leg is a smashed leg.
+    expect(applyHeroInjury(makeHero(), 25, 1).value.hero.injuries.at(-1)!.name).toBe("Smashed Leg");
+    // And an injury with no sub-roll is untouched.
+    expect(applyHeroInjury(makeHero(), 22).value.hero.injuries.at(-1)!.name).toBe("Leg Wound");
+  });
+
   it("Bitter Enmity records what the hero hates from the sub-roll", () => {
     expect(applyHeroInjury(makeHero(), 56).value.needsSubRoll).toBeDefined();
     const res = applyHeroInjury(makeHero(), 56, 4);

@@ -136,6 +136,8 @@ interface ApplyState {
   effectTexts: string[];
   /** Set when a bitterEnmity flag has been seen; the sub-roll outcome text becomes `hates`. */
   bitterEnmity: boolean;
+  /** What the sub-roll turned this into, where the outcome is a condition of its own. */
+  outcomeName?: string;
 }
 
 function clampStat(stat: StatKey, current: number, delta: number): number {
@@ -250,6 +252,8 @@ function applyEffects(
           state.effectTexts.push(`Hates: ${outcome.text}`);
           state.events.push({ kind: "flagSet", subjectId: id, message: `${name} now hates: ${outcome.text}`, data: { flag: "bitterEnmity", hates: outcome.text } });
         }
+        // Madness is Stupidity or Frenzy; what goes on the sheet is what he actually got.
+        if (outcome.name) state.outcomeName = outcome.name;
         const nested = applyEffects(state, outcome.effects, injury, undefined);
         if (nested) moreRolls = nested;
         break;
@@ -290,7 +294,7 @@ export function applyHeroInjury(
 
   const record: AppliedInjury = {
     injuryCode: injury.code,
-    name: injury.name,
+    name: state.outcomeName ?? injury.name,
     rolled: subRoll === undefined ? { d66 } : { d66, subRoll },
     effect: state.effectTexts.length > 0 ? state.effectTexts.join("; ") : "Full recovery, no lasting effect",
     ...(ctx?.matchId ? { matchId: ctx.matchId } : {}),

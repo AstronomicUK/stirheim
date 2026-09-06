@@ -7,6 +7,8 @@ import type { HeroRow, ItemRow } from '../../domain'
 import type { RosterChange } from '../../domain/rosterChange'
 import type { AppliedInjury } from '../../rules/types/roster'
 import { resolveEquipmentName } from '../../rules/data/items/aliases'
+import { HERO_INJURIES } from '../../rules/data/campaign/injuries'
+import type { InjurySubOutcome } from '../../rules/types/campaign'
 import { matchInjury, matchSkillOrSpell } from './rosterImport'
 
 const TO_CHECK = /Skills\/spells to check: ([^\n]*?)\.?(?=\n|$)/
@@ -33,11 +35,28 @@ export interface HeroFixup {
   notes: string
 }
 
+/**
+ * Injuries recorded before the outcome was the thing recorded. Two shapes are fixed: an effect that
+ * is still the whole sub-table ("Roll again: …"), and a name that is the roll rather than what came
+ * of it — a warrior has Frenzy or Stupidity, never Madness, which by itself does nothing.
+ */
 function tidyInjury(injury: AppliedInjury): AppliedInjury | null {
+  const outcome = subOutcomeFor(injury)
+  if (outcome?.name && injury.name !== outcome.name) return { ...injury, name: outcome.name, effect: outcome.text }
   if (!/^Roll again:/i.test(injury.effect)) return null
   const again = matchInjury(injury.name).injury
   if (!again) return null
   return { ...injury, name: again.name, effect: again.effect }
+}
+
+/** The sub-table outcome a recorded injury landed on, from the follow-up die it kept. */
+function subOutcomeFor(injury: AppliedInjury): InjurySubOutcome | undefined {
+  const sub = injury.rolled.subRoll
+  if (sub === undefined) return undefined
+  const result = HERO_INJURIES.find((i) => i.code === injury.injuryCode)
+  const table = result?.effects.find((e) => e.kind === 'subRoll')
+  if (!table || table.kind !== 'subRoll') return undefined
+  return table.outcomes.find((o) => sub >= o.band.min && sub <= o.band.max)
 }
 
 /** What re-running the matchers would change on a hero, or null when nothing would. */

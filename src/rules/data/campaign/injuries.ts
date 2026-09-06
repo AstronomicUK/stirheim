@@ -57,11 +57,13 @@ export const HERO_INJURIES: InjuryResult[] = [
           {
             band: { min: 1, max: 1 },
             text: "Severe arm wound. The arm must be amputated. The warrior may only use a single onehanded weapon from now on.",
+            name: "Severe Arm Wound",
             effects: [{ kind: "flag", flag: "singleHandedWeaponsOnly" }],
           },
           {
             band: { min: 2, max: 6 },
             text: "Light wound. The warrior must miss the next game.",
+            name: "Light Arm Wound",
             effects: [{ kind: "missNextGames", games: 1 }],
           },
         ],
@@ -78,8 +80,8 @@ export const HERO_INJURIES: InjuryResult[] = [
         kind: "subRoll",
         die: "D6",
         outcomes: [
-          { band: { min: 1, max: 3 }, text: "The warrior suffers from stupidity.", effects: [{ kind: "flag", flag: "stupidity" }] },
-          { band: { min: 4, max: 6 }, text: "The warrior suffers from frenzy from now on.", effects: [{ kind: "flag", flag: "frenzy" }] },
+          { band: { min: 1, max: 3 }, text: "The warrior suffers from stupidity.", name: "Stupidity", effects: [{ kind: "flag", flag: "stupidity" }] },
+          { band: { min: 4, max: 6 }, text: "The warrior suffers from frenzy from now on.", name: "Frenzy", effects: [{ kind: "flag", flag: "frenzy" }] },
         ],
       },
     ],

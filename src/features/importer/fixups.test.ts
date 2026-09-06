@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AppliedInjury } from '../../rules/types/roster'
 import { describeFixup, fixupChanges, planHeroFixup, unmatchedNames } from './fixups'
 
 const hero = (over: Partial<Parameters<typeof planHeroFixup>[0]> = {}) => ({ id: 'h1', name: 'Magus', notes: '', skills: [] as string[], spells: [] as string[], injuries: [] as never[], ...over })
@@ -27,5 +28,23 @@ describe('imported roster fix-ups', () => {
     expect(plan.injuries?.[0].effect).toMatch(/not recorded/)
     expect(planHeroFixup(hero({ notes: 'All matched already.', spells: ['frostbolts'] }))).toBeNull()
     expect(planHeroFixup(hero({ notes: 'Skills/spells to check: Nonsense Only.' }))).toBeNull()
+  })
+})
+
+describe('injuries recorded before the outcome was the thing recorded', () => {
+  const hurt = (injuries: AppliedInjury[]) => ({ id: 'h1', name: 'Bill', notes: '', skills: [] as string[], spells: [] as string[], injuries })
+
+  it('renames a stored Madness to what its follow-up die actually gave', () => {
+    const plan = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24, subRoll: 5 }, effect: 'Frenzy' }]))
+    expect(plan?.injuries?.[0]).toMatchObject({ name: 'Frenzy', effect: 'The warrior suffers from frenzy from now on.' })
+
+    const stupid = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24, subRoll: 1 }, effect: 'Stupidity' }]))
+    expect(stupid?.injuries?.[0]).toMatchObject({ name: 'Stupidity' })
+  })
+
+  it('leaves alone an injury already named for its outcome, or with no follow-up die kept', () => {
+    expect(planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Frenzy', rolled: { d66: 24, subRoll: 5 }, effect: 'x' }]))).toBeNull()
+    expect(planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24 }, effect: 'x' }]))).toBeNull()
+    expect(planHeroFixup(hurt([{ injuryCode: 'leg_wound', name: 'Leg Wound', rolled: { d66: 22 }, effect: '-1 Movement' }]))).toBeNull()
   })
 })

@@ -169,14 +169,18 @@ describe('payloads', () => {
   })
 
   it('records the outcome of a roll-again injury, never the table', () => {
+    // Madness by itself does nothing: what a warrior carries is Frenzy or Stupidity.
     const frenzy = matchInjury('Frenzy').injury!
     expect(frenzy.injuryCode).toBe('madness')
-    expect(frenzy.name).toBe('Madness (Frenzy)')
+    expect(frenzy.name).toBe('Frenzy')
     expect(frenzy.effect).toMatch(/frenzy from now on/)
+    expect(matchInjury('Madness - Stupidity').injury?.name).toBe('Stupidity')
+    expect(matchInjury('Arm Wound - Severe').injury?.name).toBe('Severe Arm Wound')
+
+    // With no outcome recorded there is nothing better to call it than the roll that led there.
     const madness = matchInjury('Madness').injury!
     expect(madness.name).toBe('Madness')
     expect(madness.effect).toMatch(/not recorded/)
     expect(madness.effect).not.toMatch(/4-6/)
-    expect(matchInjury('Madness - Stupidity').injury?.name).toBe('Madness (Stupidity)')
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SCENARIO_AT_THE_TABLE } from '../shared/helpers'
-import { customScenariosFor, fromDateTimeLocal, NO_SCENARIO, pickTitle, samePick, toDateTimeLocal, validateNewMatch, type NewMatchForm } from './helpers'
+import { NO_SCENARIO, customScenariosFor, fromDateLocal, fromDateTimeLocal, pickTitle, samePick, toDateLocal, toDateTimeLocal, type NewMatchForm, validateNewMatch } from './helpers'
 
 describe('datetime-local conversion', () => {
   it('round-trips through local time', () => {
@@ -96,6 +96,27 @@ describe('validateNewMatch', () => {
   })
 
   it('refuses a date it cannot read instead of silently dropping it', () => {
-    expect(validateNewMatch({ ...base, scheduledLocal: 'soon' }, { mode: 'gm', myWarbandIds: [] })).toEqual({ ok: false, error: 'That date and time could not be read.' })
+    expect(validateNewMatch({ ...base, scheduledLocal: 'soon' }, { mode: 'gm', myWarbandIds: [] })).toEqual({ ok: false, error: 'That date could not be read.' })
+  })
+})
+
+describe('date-only conversion', () => {
+  it('reads a day back as midday local, so no timezone moves the game', () => {
+    const iso = fromDateLocal('2026-09-19')
+    expect(iso).not.toBeNull()
+    const d = new Date(iso!)
+    expect(d.getFullYear()).toBe(2026)
+    expect(d.getMonth()).toBe(8)
+    expect(d.getDate()).toBe(19)
+    expect(d.getHours()).toBe(12)
+    expect(toDateLocal(iso)).toBe('2026-09-19')
+  })
+
+  it('refuses what it cannot read, and rolls nothing over', () => {
+    expect(fromDateLocal('')).toBeNull()
+    expect(fromDateLocal('soon')).toBeNull()
+    expect(fromDateLocal('2026-13-01')).toBeNull()
+    expect(fromDateLocal('2026-02-30')).toBeNull()
+    expect(toDateLocal(null)).toBe('')
   })
 })

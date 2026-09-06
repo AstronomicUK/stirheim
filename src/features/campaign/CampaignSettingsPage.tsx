@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   useCampaign,
@@ -10,7 +10,8 @@ import {
   type CampaignMemberView,
 } from '../../api/campaigns'
 import { useSession } from '../../app/session'
-import { Button, Notice, Sheet, Spinner, TextField } from '../../ui'
+import { useTransferWarband } from '../../api/warbands'
+import { Button, Icon, Notice, SelectField, Sheet, Spinner, TextField } from '../../ui'
 import { Card, Section, TextLink } from './bits'
 import { formatInviteCode } from './inviteCode'
 import { AliasField } from './AliasField'
@@ -76,6 +77,20 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [removing, setRemoving] = useState<CampaignMemberView | null>(null)
+  const [reassigning, setReassigning] = useState<CampaignMemberView | null>(null)
+  const [newOwner, setNewOwner] = useState('')
+  const transfer = useTransferWarband()
+  const [transferError, setTransferError] = useState<string | null>(null)
+  // One row per player rather than per warband: a member is a person, and may bring more than one.
+  const people = useMemo(() => {
+    const byUser = new Map<string, { userId: string; displayName: string; warbands: CampaignMemberView[] }>()
+    for (const m of members) {
+      const entry = byUser.get(m.user_id) ?? { userId: m.user_id, displayName: m.display_name, warbands: [] }
+      entry.warbands.push(m)
+      byUser.set(m.user_id, entry)
+    }
+    return [...byUser.values()]
+  }, [members])
 
   const original = formFromSettings(settings)
   const dirty = name.trim() !== campaign.name || rules !== campaign.rules_markdown || !settingsFormEqual(form, original)
@@ -200,27 +215,62 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         </div>
       </form>
 
-      <Section title="Members" aside={`${members.length} enrolled`}>
-        {members.length === 0 ? (
+      <Section title="Members" aside={`${people.length} ${people.length === 1 ? 'player' : 'players'}`}>
+        {people.length === 0 ? (
           <p className="text-sm text-ink-dim">Nobody has enrolled yet.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
+            {people.map((person) => (
+              <li key={person.userId} className="flex flex-col gap-2 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Icon name="account" size={18} className="shrink-0 text-brass" />
+                  <span className="min-w-0 flex-1 truncate font-medium text-ink">{person.displayName}</span>
+                  <span className="shrink-0 text-xs text-ink-dim">
+                    {person.warbands.length} {person.warbands.length === 1 ? 'warband' : 'warbands'}
+                  </span>
+                </div>
+                <AliasField campaignId={campaign.id} userId={person.userId} accountName={person.displayName} label="Name in this campaign" compact />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section title="Warbands" aside={`${members.length} enrolled`}>
+        {members.length === 0 ? (
+          <p className="text-sm text-ink-dim">No warbands yet.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
             {members.map((m) => (
               <li key={m.warband_id} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate font-medium text-ink">{m.warband.name}</span>
-                  <span className="truncate text-sm text-ink-dim">
-                    {m.display_name} · {m.warband.type_name} · rating {m.warband.rating}
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-ink-dim">
+                    <span className="inline-flex items-center gap-1">
+                      <Icon name="account" size={14} className="text-brass" />
+                      {m.display_name}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Icon name="warbands" size={14} className="text-brass" />
+                      {m.warband.type_name}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Icon name="rating" size={14} className="text-brass" />
+                      {m.warband.rating}
+                    </span>
                   </span>
                 </div>
-                <AliasField campaignId={campaign.id} userId={m.user_id} accountName={m.display_name} label="Name in this campaign" compact />
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <Link
                     to={`/warbands/${m.warband_id}/edit`}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md border border-border bg-surface-high px-3 text-sm font-medium text-ink no-underline hover:border-ink-dim"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-surface-high px-3 text-sm font-medium text-ink no-underline hover:border-ink-dim"
                   >
-                    Edit warband
+                    <Icon name="edit" size={16} className="text-brass" />
+                    Edit
                   </Link>
+                  <Button variant="secondary" className="flex-1 text-sm" onClick={() => setReassigning(m)}>
+                    Reassign
+                  </Button>
                   <Button variant="danger" className="flex-1 text-sm" onClick={() => setRemoving(m)}>
                     Remove
                   </Button>
@@ -282,6 +332,56 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         }
       >
         <p className="py-2 text-xl tracking-[0.15em] text-ink-dim">{formatInviteCode(campaign.invite_code)}</p>
+      </Sheet>
+
+      <Sheet
+        open={reassigning !== null}
+        onClose={() => setReassigning(null)}
+        title="Reassign this warband"
+        description={
+          reassigning
+            ? `${reassigning.warband.name} moves to another player's account. They take over its roster, reports and advances. It stays in this campaign.`
+            : ''
+        }
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setReassigning(null)} disabled={transfer.isPending}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={!newOwner}
+              pending={transfer.isPending}
+              onClick={() => {
+                if (!reassigning || !newOwner) return
+                setTransferError(null)
+                transfer
+                  .mutateAsync({ warbandId: reassigning.warband_id, newOwnerId: newOwner })
+                  .then(() => {
+                    setReassigning(null)
+                    setNewOwner('')
+                  })
+                  .catch((e: unknown) => setTransferError(e instanceof Error ? e.message : 'Could not reassign the warband.'))
+              }}
+            >
+              Reassign
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <SelectField label="New owner" value={newOwner} onChange={(e) => setNewOwner(e.target.value)}>
+            <option value="">Choose a player…</option>
+            {people
+              .filter((p) => p.userId !== reassigning?.user_id)
+              .map((p) => (
+                <option key={p.userId} value={p.userId}>
+                  {p.displayName}
+                </option>
+              ))}
+          </SelectField>
+          {transferError ? <Notice tone="error">{transferError}</Notice> : null}
+        </div>
       </Sheet>
 
       <Sheet

@@ -14,9 +14,11 @@ export interface SettingsFieldsProps {
   rules: string
   onRulesChange: (rules: string) => void
   disabled?: boolean
+  /** The create screen asks for the campaign's type up front, so it hides this section. */
+  showMapSection?: boolean
 }
 
-export function SettingsFields({ form, onChange, errors, rules, onRulesChange, disabled = false }: SettingsFieldsProps) {
+export function SettingsFields({ form, onChange, errors, rules, onRulesChange, disabled = false, showMapSection = true }: SettingsFieldsProps) {
   const [preview, setPreview] = useState(false)
   const dice = DICE_POLICY_OPTIONS.find((o) => o.value === form.dicePolicy)
   const combat = COMBAT_MODE_OPTIONS.find((o) => o.value === form.combatMode)
@@ -86,17 +88,19 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
         </div>
       </Section>
 
-      <Section title="Campaign map">
-        <div className="flex flex-col rounded-md border border-border bg-surface-low px-4">
-          <ToggleRow
-            label="Play on the Mordheim Campaign Map"
-            description="Every battle is fought in a district. The winner gains a foothold, footholds bring the district's advantages, and the campaign page shows the map with who holds what."
-            checked={form.mapCampaign}
-            disabled={disabled}
-            onChange={(mapCampaign) => onChange({ ...form, mapCampaign })}
-          />
-        </div>
-      </Section>
+      {showMapSection ? (
+        <Section title="Campaign map">
+          <div className="flex flex-col rounded-md border border-border bg-surface-low px-4">
+            <ToggleRow
+              label="Play on the Mordheim Campaign Map"
+              description="Every battle is fought in a district. The winner gains a foothold, footholds bring the district's advantages, and the campaign page shows the map with who holds what."
+              checked={form.mapCampaign}
+              disabled={disabled}
+              onChange={(mapCampaign) => onChange({ ...form, mapCampaign })}
+            />
+          </div>
+        </Section>
+      ) : null}
 
       <Section title="Combat during battles">
         <SegmentedControl

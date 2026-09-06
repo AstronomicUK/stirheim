@@ -32,6 +32,29 @@ export function fromDateTimeLocal(value: string): string | null {
   return d.toISOString()
 }
 
+/** ISO timestamp to the `YYYY-MM-DD` value a date input wants, in local time. Empty for none/junk. */
+export function toDateLocal(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/**
+ * A `YYYY-MM-DD` value to an ISO timestamp at midday local time. Midday rather than midnight so
+ * that no timezone the group plays in can shunt the game onto the day before.
+ */
+export function fromDateLocal(value: string): string | null {
+  const m = DATE_RE.exec(value.trim())
+  if (!m) return null
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const d = new Date(year, month - 1, day, 12, 0, 0)
+  if (Number.isNaN(d.getTime()) || d.getMonth() !== month - 1 || d.getDate() !== day) return null
+  return d.toISOString()
+}
+
 // ---- Scenario picker ----
 
 export type ScenarioPick = { kind: 'none' } | { kind: 'builtin'; id: string } | { kind: 'custom'; id: string }
@@ -78,7 +101,7 @@ export interface NewMatchForm {
   /** Every warband in the game, the challenger's own included. */
   warbandIds: string[]
   scenario: ScenarioPick
-  /** datetime-local value; blank for "no date yet". */
+  /** `YYYY-MM-DD` (older matches may carry a datetime); blank for "no date yet". */
   scheduledLocal: string
   notes: string
   /** Map campaigns: the district; null when the campaign is not on the map. */
@@ -111,8 +134,9 @@ export function validateNewMatch(form: NewMatchForm, options: NewMatchOptions): 
 
   let scheduledFor: string | null = null
   if (form.scheduledLocal.trim()) {
-    scheduledFor = fromDateTimeLocal(form.scheduledLocal)
-    if (!scheduledFor) return { ok: false, error: 'That date and time could not be read.' }
+    // The form asks for a day; older matches may still carry a time, so both shapes are accepted.
+    scheduledFor = fromDateLocal(form.scheduledLocal) ?? fromDateTimeLocal(form.scheduledLocal)
+    if (!scheduledFor) return { ok: false, error: 'That date could not be read.' }
   }
 
   return {

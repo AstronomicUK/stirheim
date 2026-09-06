@@ -14,6 +14,7 @@ import { Card, Tag, TextLink } from '../campaign/bits'
 import { deriveMapState } from '../../rules/resolve/mapCampaign'
 import { DistrictPicker } from '../map/DistrictPicker'
 import { coreScenarios, filterScenarios, libraryScenarios } from '../scenarios/helpers'
+import { RandomScenario } from './schedule/RandomScenario'
 import {
   customScenariosFor,
   NEW_MATCH_COPY,
@@ -85,6 +86,14 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
 
   const customRows = useMemo(() => customScenariosFor(custom.data ?? [], campaign.id), [custom.data, campaign.id])
   const libraryHits = useMemo(() => filterScenarios(LIBRARY, search), [search])
+  // What "roll for a scenario" draws from: the core table plus anything the group has written.
+  const rollableScenarios = useMemo(
+    () => [
+      ...CORE.map((s, i) => ({ id: s.id, title: s.title, subtitle: `Core table, ${i + 1}` })),
+      ...customRows.map((r) => ({ id: `custom:${r.id}`, title: r.name, subtitle: r.summary || 'Written by your group' })),
+    ],
+    [customRows],
+  )
 
   const pickable: CampaignMemberView[] = mode === 'gm' ? members : members.filter((m) => m.user_id !== user?.id)
   const warbandIds = mode === 'gm' ? opponentIds : challengerId ? [challengerId, ...opponentIds] : opponentIds
@@ -234,7 +243,17 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
 
       <fieldset className="flex min-w-0 flex-col gap-3">
         <legend className="mb-2 text-sm font-medium text-ink-dim">Scenario</legend>
-        <SegmentedControl options={SCENARIO_SOURCE_OPTIONS} value={source} onChange={setSource} label="Where to pick the scenario from" />
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl options={SCENARIO_SOURCE_OPTIONS} value={source} onChange={setSource} label="Where to pick the scenario from" />
+        </div>
+        <RandomScenario
+          options={rollableScenarios}
+          disabled={schedule.isPending}
+          onPick={(option) => {
+            setSource(option.id.startsWith('custom:') ? 'custom' : 'core')
+            setScenario(option.id.startsWith('custom:') ? { kind: 'custom', id: option.id.slice('custom:'.length) } : { kind: 'builtin', id: option.id })
+          }}
+        />
 
         {source === 'core' ? (
           <PickList
@@ -307,13 +326,13 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
 
       <TextField
         label="When (optional)"
-        type="datetime-local"
+        type="date"
         value={scheduledLocal}
         onChange={(e) => {
           setScheduledLocal(e.target.value)
           setError(null)
         }}
-        hint="Leave blank to sort the date out later."
+        hint="The day is enough. Leave blank to sort it out later."
         disabled={schedule.isPending}
       />
 

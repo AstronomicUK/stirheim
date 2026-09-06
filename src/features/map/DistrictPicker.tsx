@@ -2,6 +2,7 @@
 // warbands can reach it, with the scenario the map rules call for and the tolls due.
 
 import { useMemo } from 'react'
+import { RandomScenario } from '../match/schedule/RandomScenario'
 import { MAP_DISTRICTS, findDistrict } from '../../rules/data/map/districts'
 import { bridgeTollOwedTo, canReach, districtFlags, gateToll, suggestedScenario, type MapState } from '../../rules/resolve/mapCampaign'
 import { Button, Notice, SelectField } from '../../ui'
@@ -54,9 +55,21 @@ export function DistrictPicker({ state, warbandIds, nameOf, value, onChange, onU
     return `${d.name}${flags.length ? ` (${flags.join(', ')})` : ''}`
   }
 
+  // What a roll may land on: somewhere both sides can reach, or anywhere if that is nobody.
+  const rollable = (groups.all.length > 0 ? groups.all : [...groups.all, ...groups.some, ...groups.none]).map((id) => ({ id, title: label(id) }))
+
   return (
     <fieldset className="flex min-w-0 flex-col gap-3">
       <legend className="mb-2 text-sm font-medium text-ink-dim">District</legend>
+      <div>
+        <RandomScenario
+          options={rollable}
+          disabled={disabled}
+          label="Roll for a district"
+          title="Rolling for a district"
+          onPick={(option) => onChange(option.id)}
+        />
+      </div>
       <SelectField label="Where the battle is fought" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} disabled={disabled} hint={warbandIds.length === 0 ? 'Pick the warbands first to see where each can reach.' : undefined}>
         <option value="">Choose a district</option>
         {warbandIds.length > 0 && groups.all.length > 0 ? (

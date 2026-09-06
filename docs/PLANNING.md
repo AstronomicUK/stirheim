@@ -799,7 +799,43 @@ Initiative modifiers, A5 post-battle item consequences (Crimson Shade addiction,
 Cathayan Silk, Lamp of the Djinn, Monkey's Paw, Treasure Map, captures), A14 spell and prayer items
 (needs the spell flow), remaining consumables.
 
-## Phase 17 scope (proposed 2026-09-06, awaiting Tom's approval)
+## Phase 17 built (2026-09-06)
+
+Tom approved the scope below minus the items left for a later phase (mounts, black powder, strike
+order, captures, spell items, bespoke tables, the roadmap). Migration 20 was pushed to the hosted
+project the same day; nothing has gone to Netlify. Where it lives:
+
+- **Kit after the battle** (`features/postBattle/model/kit.ts`, `ItemEffect.postBattle` prompts in
+  `data/itemRules/effects.ts`): Crimson Shade, Mandrake Root, Mad Cap Mushrooms, Hardtack, Cathayan
+  Silk Clothes, Treasure Map, Lamp of the Djinn and Monkey's Paw. Rolled in the injuries step
+  ("Kit after the battle"); `ReportDraft.kit` / `kitExtra`, report draft version 4; the report
+  applies stat deltas, `stupidity` / `missNextGames` / `addictedTo` flags, lost items (item patches),
+  gold and shards, and writes each outcome to the notes. Warpstone Amulet is an exploration aid.
+- **Nurgle's Rot in play**: `AttackEventPayload.nurgles_rot` (a carrier's natural 6 to wound in
+  close combat, `RollState.rotPassed`); the victim's `ReportContext.rotVictims` marks the flag; the
+  pre-battle spread picks the warband member (`rot_spread:<id>` on the sheet); infected warriors carry
+  the `nurgles_rot` trait into fights.
+- **Animals as warriors** (`rules/resolve/animals.ts`): Wardogs and Gnoblar Fighters on a fighting
+  hero are combatants (`kind: "animal"`, fixed weapons), an Animals section on the battle sheet with
+  out toggles, starting models and rout tests (Gnoblars excluded), an Animals (D6 each) injuries
+  section (`ReportDraft.animalsOut` / `animalInjuries`, dead on 1-2 = one fewer of the item), the
+  warband maximum and five rating points each.
+- **Recruit-time purchases** (`rules/resolve/recruitPurchases.ts`, `ItemRestriction.recruitOnly`):
+  nine mutations as items (Great Claw and Scorpion Tail fight in the calculator) for the Possessed,
+  Mutants, Court heroes, Marauder Mutants and Clan Moulder Rat Ogres; the hero hire sheet offers
+  mutations and Blessings with the recruit, first at list price and later ones double.
+- **Between-battle actions** (`rules/resolve/betweenBattles.ts`, "Instead of searching" on the
+  Characters tab): Master of Poisons, Banditry, Slick Operator, the Merchant's Trade; each spends
+  the hero's search and is written to the trade reason.
+- **Elemental Lores** (Water, Fire, Earth, Air) in `data/campaign/magic.ts`; the Sorcerous Society
+  rows in the wizard table point at "choose one".
+- **Loose ends**: `SUBJECT_UNITS` in `resolve/skillRestrictions.ts`; the shop's destination shown
+  before the rare search; the builder started for a campaign (`WarbandDraft.campaignId`, bans kept
+  out of the lists and flagged on the draft).
+- Left for a later phase: mounts and mounted combat, black powder handling, strike order, capture
+  flows, spell and prayer items, Wheelo and Eye of the Gods, the roadmap items.
+
+## Phase 17 scope (proposed 2026-09-06, approved the same day)
 
 Everything still outstanding after Phase 16, gathered from the two audits, the parked roadmap and
 what came up while building. Grouped so Tom can strike or reorder.

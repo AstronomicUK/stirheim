@@ -114,7 +114,9 @@ export function HelpPage() {
           in the numbers. Poisons, drugs and special ammunition a warrior carries appear under <em>Taken or applied this battle</em>: tick them and the odds
           change, and the report uses them up. <em>Roll it through</em> then walks real dice step by step, telling you what each roll needs and what it did,
           and an out of action result can be logged straight to that warrior&apos;s <em>Enemies out</em> tally. Kit the engine cannot model is listed under
-          the odds so you can apply it at the table.
+          the odds so you can apply it at the table. Wardogs and Gnoblar Fighters appear on the sheet and in the calculator as models of their own: a Wardog
+          counts for rout tests, a Gnoblar never does, and both roll a henchman&apos;s die for injury afterwards. Drugs and poisons a warrior took, a leader&apos;s
+          silk clothes, a Treasure Map or a wish from a Lamp carry their own roll after the game, under <em>Kit after the battle</em> in the injuries step.
         </P>
         <P>
           <B>Shared combat log.</B> When a fight in the calculator ends, <em>Log to both sheets</em> records it once for the whole table: the kill lands on the
@@ -185,13 +187,15 @@ export function HelpPage() {
         </P>
         <P>
           <B>Trading post.</B> Buy common items at list price, search for rare items once per hero per trading phase, sell wyrdstone by the size band and
-          manage the stash. Half-price armour is applied here when the house rule is on. Prices and rarities follow the buyer where the rules say so (a Skink
+          manage the stash. A hero whose list lets him do something instead of searching (brew Dark Venom, rob travellers, run a con, sell from the Trade
+          Wagon) finds it under <em>Instead of searching</em> on the Characters tab; it uses up his search. Half-price armour is applied here when the house rule is on. Prices and rarities follow the buyer where the rules say so (a Skink
           hero&apos;s Black Lotus, a priest&apos;s Holy Relic, the Gunnery School&apos;s handguns), and when the rules say a warrior may not have something (Heroes-only
           kit on a henchman, a Dwarf with an obsidian blade, a third hand weapon, a shield over Toughened Leathers) the shop says so and asks for a reason
           before selling anyway. Kit that fuses to its wearer stays put; Toughened Leathers cannot be sold back.
         </P>
         <P>
-          <B>Recruitment.</B> Hire new heroes and henchmen against the warband's limits, add warriors to an existing group, dismiss warriors, and hire hired
+          <B>Recruitment.</B> Mutations and Blessings of Nurgle are bought with the recruit on the hire sheet, the first at its listed price and later
+          ones double, since the rules allow them at no other time. Hire new heroes and henchmen against the warband's limits, add warriors to an existing group, dismiss warriors, and hire hired
           swords (their upkeep is paid here too). Restrictions are shown rather than hidden; the app warns and lets you decide.
         </P>
               <P>

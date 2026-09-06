@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useCreateCampaign } from '../../api/campaigns'
-import { Button, HoverCard, Icon, Notice, PageHeader, TextField } from '../../ui'
+import { Button, Notice, PageHeader, TextField } from '../../ui'
 import { TextLink } from './bits'
-import { Section } from './bits'
 import { SettingsFields } from './SettingsFields'
 import { defaultSettingsForm, settingsFromForm, validateCampaignName, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
@@ -43,50 +42,6 @@ export function NewCampaignPage() {
         aside={<TextLink to="/campaigns">Cancel</TextLink>}
       />
 
-      <Section title="Type of campaign">
-        <div className="grid grid-cols-2 gap-3">
-          {(
-            [
-              {
-                map: false,
-                icon: 'campaigns' as const,
-                title: 'Regular campaign',
-                blurb: 'Battles are scheduled between warbands and scored on their own.',
-                tip: 'The standard campaign: warbands play each other, keep their gold and wyrdstone, and the ledger tracks the results. No territory changes hands.',
-              },
-              {
-                map: true,
-                icon: 'map' as const,
-                title: 'Map campaign',
-                blurb: "Every battle is fought over a district of the city.",
-                tip: "Played on the fan-made Mordheim campaign map. Each battle happens in one of thirty districts; the winner takes a foothold there, footholds bring that district's advantages to the trading post, recruitment and the battlefield, and reaching a district depends on what you already hold.",
-              },
-            ]
-          ).map((choice) => {
-            const on = form.mapCampaign === choice.map
-            return (
-              <button
-                key={choice.title}
-                type="button"
-                aria-pressed={on}
-                disabled={create.isPending}
-                onClick={() => setForm({ ...form, mapCampaign: choice.map })}
-                className={`flex min-h-28 flex-col items-start gap-1.5 rounded-md border px-3 py-3 text-left transition-colors ${
-                  on ? 'border-brass bg-brass/10 shadow-[inset_0_0_0_1px_var(--color-brass)]' : 'border-border bg-surface-low hover:bg-surface-high'
-                }`}
-              >
-                <Icon name={choice.icon} size={22} className="text-brass" />
-                <span className="text-sm font-semibold leading-tight text-ink">{choice.title}</span>
-                <span className="text-xs leading-snug text-ink-dim">{choice.blurb}</span>
-                <HoverCard title={choice.title} label={<span className="text-xs text-brass underline decoration-dotted underline-offset-2">What is this?</span>}>
-                  {choice.tip}
-                </HoverCard>
-              </button>
-            )
-          })}
-        </div>
-      </Section>
-
       <TextField
         label="Campaign name"
         value={name}
@@ -111,7 +66,6 @@ export function NewCampaignPage() {
         rules={rules}
         onRulesChange={setRules}
         disabled={create.isPending}
-        showMapSection={false}
       />
 
       {submitError ? <Notice tone="error">{submitError}</Notice> : null}

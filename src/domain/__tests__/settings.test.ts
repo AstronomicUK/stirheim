@@ -12,6 +12,7 @@ describe("campaign settings", () => {
         optionalCriticalTables: true,
         halfPriceArmour: true,
       rabbitsFootBattleOnly: true,
+        bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
       dicePolicy: "players_roll",
       combatMode: "app",
@@ -21,7 +22,7 @@ describe("campaign settings", () => {
   });
 
   it("matches the SQL column default", () => {
-    // jsonb default from supabase/migrations/20260904000001_schema.sql
+    // jsonb default from supabase/migrations/20260906000020_phase16.sql
     const fromSql = {
       startingGold: 500,
       maxRosters: null,
@@ -30,6 +31,7 @@ describe("campaign settings", () => {
         optionalCriticalTables: true,
         halfPriceArmour: true,
       rabbitsFootBattleOnly: true,
+        bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
       dicePolicy: "players_roll",
       combatMode: "app",
@@ -53,6 +55,7 @@ describe("campaign settings", () => {
         optionalCriticalTables: true,
         halfPriceArmour: false,
       rabbitsFootBattleOnly: true,
+        bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
       dicePolicy: "players_roll",
       combatMode: "app",
@@ -67,7 +70,9 @@ describe("campaign settings", () => {
       optionalCriticalTables: true,
       halfPriceArmour: true,
     rabbitsFootBattleOnly: true,
+      bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
     });
+    expect(campaignHouseRulesSchema.parse({ bans: { items: ["nurgles_rot"] } }).bans).toEqual({ items: ["nurgles_rot"], spells: [], hiredSwords: [], characters: [], skills: [] });
   });
 
   it("rejects values that are present but wrong", () => {

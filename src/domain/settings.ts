@@ -3,8 +3,8 @@
 // supabase/migrations/20260904000001_schema.sql must stay in step with defaultCampaignSettings().
 
 import { z } from "zod";
-import type { CampaignHouseRules } from "../rules/types/roster";
-import { defaultCampaignHouseRules } from "../rules/types/roster";
+import type { CampaignBans, CampaignHouseRules } from "../rules/types/roster";
+import { defaultCampaignHouseRules, emptyCampaignBans } from "../rules/types/roster";
 
 export const DICE_POLICIES = ["players_roll", "app_rolls"] as const;
 export const dicePolicySchema = z.enum(DICE_POLICIES);
@@ -15,11 +15,21 @@ export const COMBAT_MODES = ["app", "players"] as const;
 export const combatModeSchema = z.enum(COMBAT_MODES);
 export type CombatMode = z.infer<typeof combatModeSchema>;
 
+const idList = z.array(z.string().min(1)).default([]);
+export const campaignBansSchema = z.object({
+  items: idList,
+  spells: idList,
+  hiredSwords: idList,
+  characters: idList,
+  skills: idList,
+}) satisfies z.ZodType<CampaignBans, unknown>;
+
 export const campaignHouseRulesSchema = z.object({
   strengthArmourPiercing: z.boolean().default(false),
   optionalCriticalTables: z.boolean().default(true),
   halfPriceArmour: z.boolean().default(true),
   rabbitsFootBattleOnly: z.boolean().default(true),
+  bans: campaignBansSchema.default(emptyCampaignBans),
 }) satisfies z.ZodType<CampaignHouseRules, unknown>;
 
 export const campaignSettingsSchema = z.object({

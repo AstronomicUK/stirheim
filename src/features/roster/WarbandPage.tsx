@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
 import { useSaveTemplate } from '../../api/templates'
 import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
+import { useWarbandCampaign } from '../../api/trading'
 import { rosterToTemplatePayload } from '../../rules/resolve/warbandTemplates'
 import { appointLeader, successionOptions } from '../../rules/resolve/succession'
 import { diffRoster } from '../../domain/rosterDiff'
@@ -63,7 +64,9 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
 
   const template = useMemo(() => findWarbandTemplate(warband.type_rules_id), [warband.type_rules_id])
   const rating = useMemo(() => warbandRating(roster, template), [roster, template])
-  const problems = useMemo(() => (template ? validateRoster(roster, template).problems : []), [roster, template])
+  const campaign = useWarbandCampaign(warband.id)
+  const bans = campaign.data?.settings.houseRules.bans
+  const problems = useMemo(() => (template ? validateRoster(roster, template, { bans }).problems : []), [roster, template, bans])
   const byHolder = useMemo(() => itemsByHolder(items), [items])
 
   const isOwner = user?.id === warband.owner_id

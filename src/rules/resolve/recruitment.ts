@@ -246,11 +246,15 @@ export function recruitHenchmen(
   const events: ResolutionEvent[] = [];
   let henchmenGroups: RosterHenchmanGroup[];
   if (existing) {
-    henchmenGroups = warband.henchmenGroups.map((g) => (g.id === existing.id ? { ...g, size: g.size + size } : g));
+    // Each recruit brings the list's free dagger when the group carries daggers (the group must be armed alike).
+    const groupDagger = freeDaggerLine(template, unit);
+    const daggerStack = groupDagger ? existing.equipment.find((i) => (groupDagger.itemId ? i.itemId === groupDagger.itemId : i.itemId === null && i.customName === groupDagger.name)) : undefined;
+    const equipment = daggerStack ? existing.equipment.map((i) => (i === daggerStack ? { ...i, quantity: i.quantity + size } : i)) : existing.equipment;
+    henchmenGroups = warband.henchmenGroups.map((g) => (g.id === existing.id ? { ...g, size: g.size + size, equipment } : g));
     events.push({
       kind: "henchmen.recruited",
       subjectId: existing.id,
-      message: `Added ${size} ${unit.name} to ${existing.name} for ${hireCost} gc (group now ${existing.size + size} strong)`,
+      message: `Added ${size} ${unit.name} to ${existing.name} for ${hireCost} gc (group now ${existing.size + size} strong)${daggerStack ? `, each with the free dagger` : ""}`,
       data: { unitTemplateId: unit.id, size, hireCost, groupId: existing.id },
     });
     if (veteranCost > 0) {

@@ -173,6 +173,7 @@ export function flagTags(flags: WarriorFlags): string[] {
   if (flags.causesFear) tags.push('Causes fear')
   if (flags.captured) tags.push('Captured')
   if (flags.hates) tags.push(`Hates ${flags.hates}`)
+  if (flags.nurglesRot) tags.push("Nurgle's Rot")
   return tags
 }
 

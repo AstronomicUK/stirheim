@@ -169,14 +169,25 @@ describe('planHero', () => {
     expect(plan.result!.resolution.text).toBe('Rolled 6 (then 2): +1 Strength, now S4')
   })
 
-  it('falls back to a skill when the sub-rolled stat is at its racial maximum', () => {
+  it('takes the other option when the sub-rolled stat is at its racial maximum, and a skill when both are', () => {
+    // Rolled 6 then 1-3: Strength. Strength is maxed, so the pair's other option, Attacks, is taken.
     const strong: RosterHero = { ...captain, stats: { ...captain.stats, S: 4 } }
-    const pending = planHero(setSubRoll(rolled(3, 3), 1), heroSubject(strong), ctx)
-    expect(pending.need).toBe('skill')
-    expect(pending.skillReason).toMatch(/Strength is already at its racial maximum of 4/)
-    expect(pending.statOptions[0]).toMatchObject({ stat: 'S', eligible: false })
+    const other = planHero(setSubRoll(rolled(3, 3), 1), heroSubject(strong), ctx)
+    expect(other.need).toBeNull()
+    expect(other.subStat).toBe('A')
+    expect(other.skillReason).toMatch(/Strength is already at its racial maximum of 4, so the other option, Attacks/)
+    expect(other.statOptions.map((o) => [o.stat, o.eligible])).toEqual([
+      ['S', false],
+      ['A', true],
+    ])
+    expect(other.result!.resolution).toMatchObject({ outcome: 'stat', stat: 'A', subRoll: 1 })
 
-    const plan = planHero(setSkill(setSubRoll(rolled(3, 3), 1), 'strike_to_injure'), heroSubject(strong), ctx)
+    // Both maxed: a skill instead (or a re-roll).
+    const both: RosterHero = { ...captain, stats: { ...captain.stats, S: 4, A: 4 } }
+    const pending = planHero(setSubRoll(rolled(3, 3), 1), heroSubject(both), ctx)
+    expect(pending.need).toBe('skill')
+    expect(pending.skillReason).toMatch(/Strength and Attacks are both at the racial maximum/)
+    const plan = planHero(setSkill(setSubRoll(rolled(3, 3), 1), 'strike_to_injure'), heroSubject(both), ctx)
     expect(plan.result!.resolution).toMatchObject({ outcome: 'skill', skillId: 'strike_to_injure', subRoll: 1 })
   })
 

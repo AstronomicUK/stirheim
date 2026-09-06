@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { Markdown, NumberField, SegmentedControl, TextArea } from '../../ui'
 import { Section, ToggleRow } from './bits'
+import { BansEditor } from './BansEditor'
 import { COMBAT_MODE_OPTIONS, DICE_POLICY_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
 export interface SettingsFieldsProps {
@@ -57,6 +58,7 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
             />
           ))}
         </div>
+        <BansEditor bans={form.houseRules.bans} disabled={disabled} onChange={(bans) => onChange({ ...form, houseRules: { ...form.houseRules, bans } })} />
       </Section>
 
       <Section title="Dice">

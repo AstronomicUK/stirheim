@@ -171,24 +171,31 @@ function HeroChoice({ draft, plan, hero, update }: StepProps<HeroPlan> & { hero:
   )
 
   if (plan.roll?.kind === 'statSubRoll' && plan.subStat !== null) {
-    const option = plan.statOptions[0]
+    const rolledOption = plan.statOptions[0]
+    const taken = plan.statOptions.find((o) => o.stat === plan.subStat) ?? rolledOption
     return (
-      <Block title={`+1 ${option.name}`}>
+      <Block title={taken.eligible ? `+1 ${taken.name}` : 'Characteristic at its maximum'}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-ink">
-            Rolled {draft.subRoll}: {option.name}
+            Rolled {draft.subRoll}: {rolledOption.name}
           </p>
           <button type="button" onClick={() => update((d) => setSubRoll(d, null))} className="text-xs text-brass underline-offset-4 hover:underline">
             Change
           </button>
         </div>
-        {option.eligible ? (
-          <p className="text-sm text-ink-dim">
-            {option.stat} {option.current} → {option.current + 1} (maximum {option.max}).
-          </p>
+        {taken.eligible ? (
+          <>
+            {plan.skillReason ? <Notice tone="info">{plan.skillReason}</Notice> : null}
+            <p className="text-sm text-ink-dim">
+              {taken.stat} {taken.current} → {taken.current + 1} (maximum {taken.max}).
+            </p>
+          </>
         ) : (
           <>
             <Notice tone="warn">{plan.skillReason}</Notice>
+            <Button variant="secondary" className="self-start" onClick={() => update(reroll)}>
+              Roll the 2D6 again
+            </Button>
             {skillPicker}
           </>
         )}
@@ -411,14 +418,18 @@ function SkillPicker({ tables, selected, onSelect }: { tables: AvailableSkillTab
                     type="button"
                     aria-pressed={on}
                     onClick={() => onSelect(s.id)}
-                    className={`flex w-full flex-col gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${on ? 'border-brass bg-surface-high' : 'border-border bg-surface-low hover:border-ink-dim'}`}
+                    className={`flex w-full flex-col gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${on ? 'border-brass bg-surface-high' : 'border-border bg-surface-low hover:border-ink-dim'} ${s.blocked && !on ? 'opacity-70' : ''}`}
                   >
                     <span className="flex items-center justify-between gap-3">
                       <span className="text-sm text-ink">{s.name}</span>
-                      {on ? <Tag tone="brass">Chosen</Tag> : null}
+                      {on ? <Tag tone="brass">Chosen</Tag> : s.blocked ? <Tag tone="warn">Restricted</Tag> : null}
                     </span>
                     <span className={`text-xs leading-relaxed text-ink-dim ${on ? '' : 'line-clamp-3'}`}>{s.description}</span>
-                    {s.restriction ? <span className="text-xs italic text-warn">{s.restriction}</span> : null}
+                    {s.blocked ? (
+                      <span className="text-xs text-accent-strong">{s.blocked} Picking it anyway goes on the record.</span>
+                    ) : s.restriction ? (
+                      <span className="text-xs italic text-warn">{s.restriction}</span>
+                    ) : null}
                   </button>
                 </li>
               )

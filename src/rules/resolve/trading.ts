@@ -8,6 +8,7 @@ import { rareItemAvailable, sellPrice } from "../data/campaign/trading";
 import { findItem } from "../data/items";
 import { minMax } from "./dice";
 import { RulesError } from "./errors";
+import { moveBlockReason, sellBlockReason } from "./itemRestrictions";
 
 // ---- Prices ----
 
@@ -227,6 +228,8 @@ export function sellItem(
   if (!Number.isInteger(listedBase) || listedBase < 0) {
     throw new RulesError("trading.invalidPrice", `Listed price must be a whole number of gold crowns (got ${listedBase})`);
   }
+  const unsellable = sellBlockReason(itemId);
+  if (unsellable) throw new RulesError("trading.unsellable", unsellable);
   const where = describeLocation(warband, from);
   const inventory = removeStack(readInventory(warband, from), itemId, quantity, where);
   const each = sellPrice(listedBase);
@@ -253,6 +256,8 @@ export function moveItem(
   if (sameLocation(from, to)) {
     throw new RulesError("trading.sameLocation", "Source and destination are the same inventory");
   }
+  const fused = moveBlockReason(itemId, from.kind);
+  if (fused) throw new RulesError("trading.fused", fused);
   const fromName = describeLocation(warband, from);
   const toName = describeLocation(warband, to);
   const source = removeStack(readInventory(warband, from), itemId, quantity, fromName);

@@ -99,6 +99,14 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
     upgrade: { bases: ["sword", "axe", "hammer"], apply: { strengthBonus: 1, initiativeModifier: -1 }, namePrefix: "Obsidian", note: "Sons of Hashut obsidian: a sword, axe or hammer keeping its own rules, at +1 Strength and -1 Initiative." },
   },
 
+  // ---- Blessings of Nurgle ----
+  nurgles_rot: { traits: ["immune_to_poison"], note: "Nurgle's Rot: a 6 to wound in close combat infects a living target with the Rot (mark it on their roster); immune to poison." },
+  mark_of_nurgle: { traits: ["immune_to_poison"], note: "Mark of Nurgle: immune to poison (+1 Wound on the profile)." },
+  cloud_of_flies: { toBeHit: { melee: -1 }, note: "Cloud of Flies: close combat opponents are at -1 to hit." },
+  hideous: { traits: ["causes_fear"], note: "Hideous: causes Fear." },
+  bloated_foulness: { note: "Bloated Foulness: +1 Wound and +1 Toughness, -1 Movement, on the profile." },
+  stream_of_corruption: { extraWeaponId: "stream_of_corruption", note: "Stream of Corruption: a 6\" Strength 3 shooting attack with no armour save." },
+
   // ---- Notes only ----
   swivel_gun: { note: "Swivel Gun: pick the shot type on the calculator; every shot type is a separate one-battle supply." },
 };

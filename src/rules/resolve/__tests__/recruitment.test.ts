@@ -153,6 +153,17 @@ describe("recruitHenchmen", () => {
     expect(r.value.poolRemaining).toBeNull();
   });
 
+  it("recruits joining a group that carries daggers bring their free dagger", () => {
+    const armed = { ...group("lads", WARRIORS, 2), equipment: [{ itemId: "dagger", quantity: 2 }, { itemId: "sword", quantity: 2 }] };
+    const wb = makeWarband({ henchmenGroups: [armed] });
+    const r = recruitHenchmen(wb, REIKLAND, WARRIORS, "", 2, "ignored", { intoGroupId: "lads" });
+    expect(r.value.warband.henchmenGroups[0].equipment).toEqual([{ itemId: "dagger", quantity: 4 }, { itemId: "sword", quantity: 2 }]);
+    expect(r.events.some((e) => /free dagger/.test(e.message))).toBe(true);
+    // A group armed without daggers gets none: new members match the group.
+    const bare = makeWarband({ henchmenGroups: [{ ...group("lads", WARRIORS, 2), equipment: [{ itemId: "spear", quantity: 2 }] }] });
+    expect(recruitHenchmen(bare, REIKLAND, WARRIORS, "", 1, "x", { intoGroupId: "lads" }).value.warband.henchmenGroups[0].equipment).toEqual([{ itemId: "spear", quantity: 2 }]);
+  });
+
   it("veterans: an xp-6 group with pool 7 allows one recruit at base + 12 gc, then refuses a second", () => {
     const wb = makeWarband({ veteranPool: 7, henchmenGroups: [group("vets", WARRIORS, 3, 6)] });
     const first = recruitHenchmen(wb, REIKLAND, WARRIORS, "", 1, "x", { intoGroupId: "vets" });

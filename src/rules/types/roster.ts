@@ -58,6 +58,8 @@ export interface WarriorFlags {
   captured?: boolean;
   /** Bitter Enmity: what the warrior now hates, verbatim from the sub-roll. */
   hates?: string;
+  /** Has contracted Nurgle's Rot: a Toughness test before every battle, -1 T on a failure, dead at zero. */
+  nurglesRot?: boolean;
 }
 
 export interface RosterHero {
@@ -137,6 +139,24 @@ export interface RosterWarband {
  * Per-campaign rule switches. Defaults match Tom's group (docs/PLANNING.md "House rules"):
  * armour erosion off, optional crit tables on, half-price armour on.
  */
+/** Rules content the GM has removed from the campaign, by id. Banned entries are hidden from shops and pickers and flagged on rosters. */
+export interface CampaignBans {
+  /** Item ids (data/items). Nurgle's Rot is the usual first entry. */
+  items: string[];
+  /** Spell ids across every lore (data/campaign/magic). */
+  spells: string[];
+  /** Hired sword ids (data/campaign/hiredSwords). */
+  hiredSwords: string[];
+  /** Dramatis Personae ids. */
+  characters: string[];
+  /** Skill ids (core or warband tables). */
+  skills: string[];
+}
+
+export function emptyCampaignBans(): CampaignBans {
+  return { items: [], spells: [], hiredSwords: [], characters: [], skills: [] };
+}
+
 export interface CampaignHouseRules {
   /** Strength erodes armour saves (core chart). Off by house rule. */
   strengthArmourPiercing: boolean;
@@ -146,10 +166,12 @@ export interface CampaignHouseRules {
   halfPriceArmour: boolean;
   /** A Rabbit's Foot re-rolls one die in the battle only; its exploration re-roll is off (house rule). */
   rabbitsFootBattleOnly: boolean;
+  /** Content removed from the campaign. */
+  bans: CampaignBans;
 }
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
-  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, rabbitsFootBattleOnly: true };
+  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, rabbitsFootBattleOnly: true, bans: emptyCampaignBans() };
 }
 
 /** Any change a resolver makes, so the UI can narrate it and the server can audit it. */

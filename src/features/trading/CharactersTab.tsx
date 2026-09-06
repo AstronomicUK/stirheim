@@ -5,6 +5,7 @@
 import { useMemo, useState } from 'react'
 import { DRAMATIS_PERSONAE, DRAMATIS_PERSONAE_RULES } from '../../rules/data/campaign/dramatisPersonae'
 import { findHiredSword } from '../../rules/data/campaign/hiredSwords'
+import { isBanned } from '../../rules/resolve/houseRules'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { rollDie } from '../../rules/resolve/dice'
 import { characterSearchers, resolveCharacterSearch, type SearcherRoll } from '../../rules/resolve/dramatis'
@@ -25,9 +26,10 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
   const rows = useMemo(
     () =>
       [...DRAMATIS_PERSONAE]
+        .filter((p) => !isBanned(trade.houseRules.bans, 'characters', p.id))
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((p) => ({ persona: p, eligibility: readRestriction(p.detail?.mayBeHired, template, p.name) })),
-    [template],
+    [template, trade.houseRules.bans],
   )
 
   return (

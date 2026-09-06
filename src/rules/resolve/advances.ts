@@ -23,7 +23,7 @@
 import type { CharacterRole, Skill, Stats } from "../types";
 import type { StatKey } from "../types/common";
 import type { AdvanceResult, RollBand } from "../types/campaign";
-import type { Resolution, ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband } from "../types/roster";
+import type { Resolution, ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband, CampaignBans } from "../types/roster";
 import type { WarbandSkill } from "../types/warbandSkills";
 import {
   HENCHMAN_MAX_INCREASE_PER_STAT,
@@ -37,6 +37,8 @@ import { WARBAND_SKILL_TABLES, findWarbandSkill, skillTablesForWarband } from ".
 import { findSpell } from "../data/campaign/magic";
 import { findUnitTemplate, findWarbandTemplate } from "../data/warbandTemplates/index";
 import { RulesError } from "./errors";
+import { isBanned } from "./houseRules";
+import { skillRestrictionBlock } from "./skillRestrictions";
 import { unitRules } from "../data/campaignRules";
 import { STAT_NAMES } from "./injuries";
 
@@ -427,6 +429,15 @@ export interface AvailableSkill {
   /** Plain-English description (core skills) or verbatim rule text (warband skills). */
   description: string;
   restriction?: string;
+  /** Why this hero should not take it (a prerequisite missing, "X only" for another unit); the pick is still allowed, on the record. */
+  blocked?: string;
+}
+
+export interface AvailableSkillsOptions {
+  /** The roster, for restrictions that count warriors ("no more than two"). */
+  roster?: RosterWarband;
+  /** Campaign bans: banned skills are left out. */
+  bans?: CampaignBans;
 }
 
 export interface AvailableSkillTable {
@@ -456,31 +467,37 @@ function warbandSkillEntry(s: WarbandSkill): AvailableSkill {
  * "warband-unique" resolves to that warband's own skill tables (without it, only the core
  * warband-unique entries in data/skills.ts are listed under that heading).
  */
-export function availableSkills(hero: RosterHero, warbandTemplateId?: string): AvailableSkillTable[] {
+export function availableSkills(hero: RosterHero, warbandTemplateId?: string, opts: AvailableSkillsOptions = {}): AvailableSkillTable[] {
   const known = new Set(hero.skillIds);
+  const template = warbandTemplateId ? findWarbandTemplate(warbandTemplateId) : undefined;
+  const annotate = (entry: AvailableSkill): AvailableSkill => {
+    const blocked = skillRestrictionBlock(entry.restriction, { hero, roster: opts.roster, template, skillId: entry.id });
+    return blocked ? { ...entry, blocked } : entry;
+  };
+  const allowed = (id: string) => !known.has(id) && !isBanned(opts.bans, "skills", id);
   const tables: AvailableSkillTable[] = [];
   for (const tableId of hero.skillTableIds) {
     if (CORE_SKILL_TABLE_IDS.includes(tableId)) {
       tables.push({
         tableId,
         tableName: CORE_TABLE_NAMES[tableId],
-        skills: SKILLS.filter((s) => s.category === tableId && !known.has(s.id)).map(coreSkillEntry),
+        skills: SKILLS.filter((s) => s.category === tableId && allowed(s.id)).map(coreSkillEntry).map(annotate),
       });
     } else if (tableId === WARBAND_UNIQUE_TABLE_ID) {
       if (warbandTemplateId) {
         for (const t of skillTablesForWarband(warbandTemplateId)) {
-          tables.push({ tableId: t.id, tableName: t.name, skills: t.skills.filter((s) => !known.has(s.id)).map(warbandSkillEntry) });
+          tables.push({ tableId: t.id, tableName: t.name, skills: t.skills.filter((s) => allowed(s.id)).map(warbandSkillEntry).map(annotate) });
         }
       } else {
         tables.push({
           tableId,
           tableName: "Warband Skills",
-          skills: SKILLS.filter((s) => s.category === WARBAND_UNIQUE_TABLE_ID && !known.has(s.id)).map(coreSkillEntry),
+          skills: SKILLS.filter((s) => s.category === WARBAND_UNIQUE_TABLE_ID && allowed(s.id)).map(coreSkillEntry).map(annotate),
         });
       }
     } else {
       const t = WARBAND_SKILL_TABLES.find((w) => w.id === tableId);
-      if (t) tables.push({ tableId: t.id, tableName: t.name, skills: t.skills.filter((s) => !known.has(s.id)).map(warbandSkillEntry) });
+      if (t) tables.push({ tableId: t.id, tableName: t.name, skills: t.skills.filter((s) => allowed(s.id)).map(warbandSkillEntry).map(annotate) });
     }
   }
   // Drop duplicate tables (a hero listing both "warband-unique" and an explicit table id).

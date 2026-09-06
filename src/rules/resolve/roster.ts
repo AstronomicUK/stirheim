@@ -17,7 +17,9 @@
 //     is returned as `note` for the player to check by hand.
 
 import type { UnitTemplate, WarbandTemplate } from "../types";
-import type { RosterItem, RosterWarband } from "../types/roster";
+import type { RosterItem, RosterWarband, CampaignBans } from "../types/roster";
+import { isBodyArmour, isHeavyArmourClass, isHelmet, isThrownWeapon } from "../data/items/classify";
+import { rosterItemWarnings } from "./itemRestrictions";
 import { equipmentBansFor, unitRules } from "../data/campaignRules";
 import { findItem } from "../data/items";
 import { heroCapacity } from "../data/warbandTemplates";
@@ -92,6 +94,8 @@ export interface RosterProblem {
 export interface ValidateRosterOptions {
   /** Enforce the template's minimum model count (only meaningful when the warband is first formed). */
   atCreation?: boolean;
+  /** The campaign's bans, so banned kit already on the roster is flagged. */
+  bans?: CampaignBans;
 }
 
 export interface RosterValidation {
@@ -277,11 +281,16 @@ export function validateRoster(
     }
   }
 
+  // Who may carry what (audit A1): Heroes-only kit on henchmen, race and creed limits, the weapon caps, campaign bans.
+  for (const warning of rosterItemWarnings(warband, { atCreation: opts.atCreation, bans: opts.bans })) {
+    const who = warning.subjectId === "stash" ? "Stash" : (warband.heroes.find((h) => h.id === warning.subjectId)?.name ?? warband.henchmenGroups.find((g) => g.id === warning.subjectId)?.name ?? warning.subjectId);
+    problems.push({ code: "roster.itemRestriction", message: `${who}: ${warning.message}`, subjectId: warning.subjectId === "stash" ? undefined : warning.subjectId });
+  }
+
   return { ok: problems.length === 0, problems };
 }
 
 const POISON_RE = /poison|venom|lotus|blowpipe/i;
-const THROWN_RE = /throw|dart/i;
 
 /** Why this warrior may not carry this item under the list's rules, or null when it may. */
 export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: string, item: RosterItem): string | null {
@@ -290,25 +299,26 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
   const catalogue = findItem(item.itemId);
   if (!catalogue) return null;
   const name = catalogue.name;
-  const isHelmet = /helmet|helm\b/i.test(catalogue.id);
+  const helmet = isHelmet(catalogue);
+  const thrown = isThrownWeapon(catalogue);
   for (const ban of bans) {
     switch (ban) {
       case "allEquipment":
         return `${name} cannot be carried (the list gives this warrior no equipment)`;
       case "armour":
-        if (catalogue.category === "armour" && !isHelmet) return `${name} is armour, which this warrior may not wear`;
+        if (catalogue.category === "armour" && !helmet) return `${name} is armour, which this warrior may not wear`;
         break;
       case "heavyArmour":
-        if (/heavy_armour|gromril_armour|ithilmar_armour|chaos_armour/.test(catalogue.id)) return `${name} is heavy armour, which this warrior may not wear`;
+        if (isBodyArmour(catalogue) && isHeavyArmourClass(catalogue)) return `${name} is heavy armour, which this warrior may not wear`;
         break;
       case "helmets":
-        if (isHelmet) return `${name}: this warrior may not wear a helmet`;
+        if (helmet) return `${name}: this warrior may not wear a helmet`;
         break;
       case "missile":
         if (catalogue.category === "missile" || catalogue.category === "blackpowder") return `${name} is a missile weapon, which this warrior may not use`;
         break;
       case "missileExceptThrown":
-        if ((catalogue.category === "missile" || catalogue.category === "blackpowder") && !THROWN_RE.test(catalogue.id)) return `${name}: this warrior uses no missile weapons but thrown ones`;
+        if ((catalogue.category === "missile" || catalogue.category === "blackpowder") && !thrown) return `${name}: this warrior uses no missile weapons but thrown ones`;
         break;
       case "blackPowder":
         if (catalogue.category === "blackpowder") return `${name} is a black powder weapon, which this warband does not use`;
@@ -317,7 +327,7 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
         if (POISON_RE.test(catalogue.id)) return `${name}: this warband does not use poison`;
         break;
       case "onlyBlackPowderMissiles":
-        if (catalogue.category === "missile" && !THROWN_RE.test(catalogue.id)) return `${name}: this warband's ranged weapons are black powder only`;
+        if (catalogue.category === "missile" && !thrown) return `${name}: this warband's ranged weapons are black powder only`;
         break;
     }
   }

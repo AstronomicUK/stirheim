@@ -52,7 +52,8 @@ export function PreBattle({ roster, template, sheet, edit }: PreBattleProps) {
 }
 
 function PromptRow({ prompt, onRecord }: { prompt: Prompt; onRecord: (outcome: string, line: string) => void }) {
-  const [dice, setDice] = useState<(number | null)[]>(prompt.test === 'D6' ? [null] : [null, null])
+  // Leadership tests are 2D6; Toughness tests and table lookups are a single die.
+  const [dice, setDice] = useState<(number | null)[]>(prompt.test === 'D6' || prompt.test === 'T' ? [null] : [null, null])
   const complete = dice.every((d) => d !== null)
   const total = complete ? dice.reduce((n, d) => n + (d ?? 0), 0) : null
 
@@ -64,6 +65,12 @@ function PromptRow({ prompt, onRecord }: { prompt: Prompt; onRecord: (outcome: s
       if (prompt.key.startsWith('tarot:')) {
         if (sum <= prompt.target) return 'passed'
         return sum - prompt.target >= 3 ? 'disaster' : 'failed'
+      }
+      if (prompt.key.startsWith('rot:')) {
+        // A 6 spreads the Rot whatever else it does; it also fails the test unless T is 6.
+        const passed = sum <= prompt.target
+        if (values[0] === 6) return passed ? 'spread' : 'failed and spread'
+        return passed ? 'passed' : 'failed'
       }
       return sum <= prompt.target ? 'passed' : 'failed'
     }
@@ -86,6 +93,7 @@ function PromptRow({ prompt, onRecord }: { prompt: Prompt; onRecord: (outcome: s
         {total !== null && prompt.target !== null ? (
           <span className="pb-2 text-sm text-ink-dim">
             {total} against {prompt.test} {prompt.target}
+            {prompt.test === 'Ld' ? ' (2D6)' : ' (D6)'}
           </span>
         ) : null}
         <Button variant="secondary" onClick={() => record(dice.map(() => rollDie(6)))}>

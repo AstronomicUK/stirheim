@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { useRecordAdvanceRoll, useResolveAdvance, type PendingAdvanceRow } from '../../api/advances'
 import type { WarbandDetail } from '../../api/warbands'
 import { diffRoster } from '../../domain'
+import type { CampaignBans } from '../../rules/types/roster'
 import type { WarbandTemplate } from '../../rules/types'
 import { Button, Notice, Sheet } from '../../ui'
 import { skillTableName } from '../roster/view/lookups'
@@ -18,10 +19,12 @@ export interface ResolveSheetProps {
   subject: AdvanceSubject
   detail: WarbandDetail
   template: WarbandTemplate | undefined
+  /** The campaign's bans, when the warband is in one. */
+  bans?: CampaignBans
   onClose: () => void
 }
 
-export function ResolveSheet({ advance, subject, detail, template, onClose }: ResolveSheetProps) {
+export function ResolveSheet({ advance, subject, detail, template, bans, onClose }: ResolveSheetProps) {
   // The sheet is mounted with key={advance.id}, so this runs once per advance. The seed is a no-op
   // when a persisted draft already exists (a refresh mid-roll).
   const [store] = useState(() => {
@@ -39,7 +42,7 @@ export function ResolveSheet({ advance, subject, detail, template, onClose }: Re
   const record = useRecordAdvanceRoll(detail.warband.id)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const ctx: AdvanceContext = useMemo(() => ({ roster: detail.roster, template, thresholdXp: advance.threshold_xp }), [detail.roster, template, advance.threshold_xp])
+  const ctx: AdvanceContext = useMemo(() => ({ roster: detail.roster, template, thresholdXp: advance.threshold_xp, bans }), [detail.roster, template, advance.threshold_xp, bans])
   const plan = useMemo(() => {
     if (!draft) return null
     return subject.kind === 'group' ? planGroup(draft, subject.group, ctx, skillTableName) : planHero(draft, subject, ctx)

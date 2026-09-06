@@ -17,17 +17,19 @@ import {
   type Eligibility,
   type HiredSwordOption,
 } from './helpers'
+import type { CampaignBans } from '../../rules/types/roster'
 import type { RecruitTabProps } from './HeroesTab'
 import { outcomeFrom, useCommit, type Outcome } from './useCommit'
 
 export interface HiredSwordsTabProps extends Omit<RecruitTabProps, 'template'> {
   template: RecruitTabProps['template'] | undefined
+  bans?: CampaignBans
 }
 
 /** Pay or dismiss the swords already hired, then browse the catalogue for another. */
-export function HiredSwordsTab({ detail, template, canEdit, onDone }: HiredSwordsTabProps) {
+export function HiredSwordsTab({ detail, template, canEdit, onDone, bans }: HiredSwordsTabProps) {
   const active = detail.roster.hiredSwords.filter((s) => s.status === 'active')
-  const options = useMemo(() => hiredSwordOptions(detail.roster, template), [detail.roster, template])
+  const options = useMemo(() => hiredSwordOptions(detail.roster, template, bans), [detail.roster, template, bans])
   const [paying, setPaying] = useState<RosterHiredSword | null>(null)
   const [dismissing, setDismissing] = useState<RosterHiredSword | null>(null)
   const [hiring, setHiring] = useState<HiredSwordOption | null>(null)

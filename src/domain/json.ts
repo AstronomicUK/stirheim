@@ -54,6 +54,8 @@ export const warriorFlagsSchema = z.object({
   causesFear: z.boolean().optional(),
   captured: z.boolean().optional(),
   hates: z.string().optional(),
+  /** Has contracted Nurgle's Rot (Toughness test before each battle). */
+  nurglesRot: z.boolean().optional(),
 }) satisfies z.ZodType<WarriorFlags>;
 
 /** henchman_groups.stat_increases: increases already taken per characteristic. */

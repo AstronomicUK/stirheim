@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAdvanceHistory, usePendingAdvances, type PendingAdvanceRow } from '../../api/advances'
 import { useWarband, type WarbandDetail } from '../../api/warbands'
+import { useWarbandCampaign } from '../../api/trading'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { Button, Notice, PageHeader, Spinner } from '../../ui'
@@ -70,6 +71,7 @@ interface AdvancesViewProps {
 
 function AdvancesView({ detail, pending, history, historyPending, historyError, back }: AdvancesViewProps) {
   const { warband, roster } = detail
+  const campaign = useWarbandCampaign(warband.id)
   const user = useSession((s) => s.user)
   const isOwner = user?.id === warband.owner_id
   const template = useMemo(() => findWarbandTemplate(warband.type_rules_id), [warband.type_rules_id])
@@ -130,7 +132,7 @@ function AdvancesView({ detail, pending, history, historyPending, historyError, 
       </Section>
 
       {open && openSubject ? (
-        <ResolveSheet key={open.id} advance={open} subject={openSubject} detail={detail} template={template} onClose={() => setOpenId(null)} />
+        <ResolveSheet key={open.id} advance={open} subject={openSubject} detail={detail} template={template} bans={campaign.data?.settings.houseRules.bans} onClose={() => setOpenId(null)} />
       ) : null}
     </>
   )

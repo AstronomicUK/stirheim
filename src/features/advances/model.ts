@@ -49,7 +49,8 @@ import { STAT_NAMES } from '../../rules/resolve/injuries'
 import type { Stats, WarbandTemplate } from '../../rules/types'
 import type { StatKey } from '../../rules/types/common'
 import type { Spell, SpellLore } from '../../rules/types/magic'
-import type { ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../rules/types/roster'
+import type { CampaignBans, ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../rules/types/roster'
+import { isBanned } from '../../rules/resolve/houseRules'
 import { unitRules } from '../../rules/data/campaignRules'
 
 // ---------------------------------------------------------------------------------------------
@@ -206,9 +207,9 @@ export function loreForHero(hero: RosterHero, template: WarbandTemplate | undefi
   return row?.loreId ? (findLore(row.loreId) ?? null) : null
 }
 
-/** Spells of the lore the hero does not know yet, in table order. */
-export function unknownSpells(lore: SpellLore, hero: RosterHero): Spell[] {
-  return lore.spells.filter((s) => !hero.spellIds.includes(s.id))
+/** Spells of the lore the hero does not know yet, in table order; banned spells are left out. */
+export function unknownSpells(lore: SpellLore, hero: RosterHero, bans?: CampaignBans): Spell[] {
+  return lore.spells.filter((s) => !hero.spellIds.includes(s.id) && !isBanned(bans, 'spells', s.id))
 }
 
 /** The spell a D6 generates on the lore's table (the first when a band covers two). */
@@ -414,6 +415,8 @@ export interface AdvanceResolution {
   skillId?: string
   skillName?: string
   tableName?: string
+  /** The skill's restriction the player chose to set aside, when they did. */
+  restrictionNote?: string
   spellId?: string
   spellName?: string
   loreId?: string
@@ -454,7 +457,7 @@ export function summaryText(p: ResolutionParts): string {
       break
     }
     case 'skill':
-      body = `learned ${p.skillName ?? p.skillId ?? 'a skill'}${p.tableName ? ` (${p.tableName})` : ''}`
+      body = `learned ${p.skillName ?? p.skillId ?? 'a skill'}${p.tableName ? ` (${p.tableName})` : ''}${p.restrictionNote ? ` · outside its restriction: ${p.restrictionNote}` : ''}`
       break
     case 'spell':
       body = `learned the spell ${p.spellName ?? p.spellId ?? ''}`.trimEnd()
@@ -492,6 +495,8 @@ export interface AdvanceContext {
   template: WarbandTemplate | undefined
   /** The experience threshold this advance was earned at (pending_advances.threshold_xp). */
   thresholdXp?: number
+  /** Campaign bans: banned skills and spells are not offered. */
+  bans?: CampaignBans
 }
 
 export interface AdvanceResult {
@@ -586,8 +591,8 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     skillReason: null,
     allowSpell: false,
     lore,
-    spells: lore ? unknownSpells(lore, hero) : [],
-    skillTables: availableSkills(hero, warbandTemplateId),
+    spells: lore ? unknownSpells(lore, hero, ctx.bans) : [],
+    skillTables: availableSkills(hero, warbandTemplateId, { roster: ctx.roster, bans: ctx.bans }),
     result: null,
     error: null,
   }
@@ -635,6 +640,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
           outcome: 'skill',
           skillId: draft.skillId,
           skillName: skill?.name ?? draft.skillId,
+          ...(skill?.blocked ? { restrictionNote: skill.blocked } : {}),
           ...(table ? { tableName: table.tableName } : {}),
           ...(subRoll !== undefined ? { subRoll } : {}),
         }),
@@ -694,7 +700,18 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
       }
       const option = statOption(hero, stat, maxima.maxima)
       if (!option.eligible) {
-        return { ...skillRoute(`${STAT_NAMES[stat]} is already at its racial maximum of ${option.max}, so a skill is taken instead.`, false, draft.subRoll), subStat: stat, statOptions: [option] }
+        // "If a characteristic is at its maximum, take the other option": the pair's other characteristic,
+        // and only when both are maxed a skill (or a re-roll).
+        const other = roll.outcomes.map((o) => o.stat).find((s) => s !== stat)
+        const otherOption = other ? statOption(hero, other, maxima.maxima) : null
+        if (other && otherOption?.eligible) {
+          return { ...statRoute(other, draft.subRoll), subStat: other, statOptions: [option, otherOption], skillReason: `${STAT_NAMES[stat]} is already at its racial maximum of ${option.max}, so the other option, ${STAT_NAMES[other]}, is taken.` }
+        }
+        return {
+          ...skillRoute(`${STAT_NAMES[stat]}${other ? ` and ${STAT_NAMES[other]}` : ''} ${other ? 'are both' : 'is'} at the racial maximum, so a skill is taken instead (or roll the 2D6 again).`, false, draft.subRoll),
+          subStat: stat,
+          statOptions: otherOption ? [option, otherOption] : [option],
+        }
       }
       return { ...statRoute(stat, draft.subRoll), subStat: stat, statOptions: [option] }
     }

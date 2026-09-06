@@ -6,6 +6,11 @@ import { RARE_ROLL } from '../../rules/data/campaign/trading'
 import { parseDice } from '../../rules/resolve/dice'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
 import { buyItem, itemPrice, rareSearch } from '../../rules/resolve/trading'
+import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
+import { effectivePricing, warbandRareRollBonus } from '../../rules/resolve/itemPricing'
+import { itemEffect } from '../../rules/data/itemRules'
+import { isBanned } from '../../rules/resolve/houseRules'
+import { findWeapon } from '../../rules/data/weapons'
 import type { Item } from '../../rules/types/items'
 import { Button, DieField, NumberField, Notice, SelectField, Sheet, Stepper, TextField, OverrideField } from '../../ui'
 import { Tag } from '../roster/view/bits'
@@ -15,7 +20,8 @@ import type { TradeContext } from './useTrade'
 export function BuyTab({ trade }: { trade: TradeContext }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Item | null>(null)
-  const groups = useMemo(() => groupCatalogue(SHOP_ITEMS, query), [query])
+  const bans = trade.houseRules.bans
+  const groups = useMemo(() => groupCatalogue(SHOP_ITEMS.filter((i) => !isBanned(bans, 'items', i.id)), query), [query, bans])
   const searchesLeft = eligibleSearchers(trade.roster, trade.phase.heroesSearched, trade.phase.heroesOutOfAction).length
 
   return (
@@ -73,13 +79,14 @@ interface BuySheetProps {
   onClose: () => void
 }
 
-function BuySheet({ item, trade, onClose }: BuySheetProps) {
+function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const { roster, houseRules, phase, canTrade, pending, run, error, clearError } = trade
   const tracked = phase.matchId !== null
   const searchers = useMemo(() => eligibleSearchers(roster, phase.heroesSearched, phase.heroesOutOfAction), [roster, phase.heroesSearched, phase.heroesOutOfAction])
   const downCount = phase.heroesOutOfAction.filter((id) => roster.heroes.some((h) => h.id === id && h.status === 'active')).length
   const destinations = useMemo(() => locationOptions(roster), [roster])
-  const priceSpec = useMemo(() => (item.price.dice ? parseDice(item.price.dice) : null), [item.price.dice])
+  // Dice in the price never change with the buyer, so the listed entry is enough to size the fields.
+  const priceSpec = useMemo(() => (listed.price.dice ? parseDice(listed.price.dice) : null), [listed.price.dice])
   const rareSpec = useMemo(() => parseDice(RARE_ROLL), [])
 
   const [faces, setFaces] = useState<(number | null)[]>(() => (priceSpec ? Array.from({ length: priceSpec.count }, () => null) : []))
@@ -90,15 +97,48 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const [destinationKey, setDestinationKey] = useState('stash')
   const [quantity, setQuantity] = useState(1)
   const [searchRecorded, setSearchRecorded] = useState(false)
-  const isMap = item.id === 'mordheim_map'
+  const [huntDie, setHuntDie] = useState<number | null>(null)
+  const [huntRecorded, setHuntRecorded] = useState(false)
+  const [restrictionReason, setRestrictionReason] = useState('')
+  const [upgradeBase, setUpgradeBase] = useState('')
+  const isMap = listed.id === 'mordheim_map'
   const [mapDie, setMapDie] = useState<number | null>(null)
   const mapResult = isMap && mapDie !== null ? mordheimMapResult(mapDie) : null
+
+  // ---- Who is buying, and what the rules say to them ----
+  const destination = parseLocationKey(destinationKey)
+  const holder: ItemHolder = useMemo(() => {
+    if (destination.kind === 'hero') {
+      const h = roster.heroes.find((x) => x.id === destination.id)
+      return { kind: 'hero', id: destination.id, name: h?.name, unitTemplateId: h?.unitTemplateId, equipment: h?.equipment ?? [] }
+    }
+    if (destination.kind === 'henchmanGroup') {
+      const g = roster.henchmenGroups.find((x) => x.id === destination.id)
+      return { kind: 'henchmanGroup', id: destination.id, name: g?.name, unitTemplateId: g?.unitTemplateId, size: g?.size, equipment: g?.equipment ?? [] }
+    }
+    return { kind: 'stash', equipment: roster.stash }
+  }, [destination, roster])
+  const buyerHero = destination.kind === 'hero' ? roster.heroes.find((x) => x.id === destination.id) : undefined
+  const pricing = useMemo(
+    () => effectivePricing(listed, roster, { unitTemplateId: holder.unitTemplateId, role: holder.kind === 'henchmanGroup' ? 'henchman' : holder.kind === 'hero' ? 'hero' : undefined, hero: buyerHero }),
+    [listed, roster, holder.unitTemplateId, holder.kind, buyerHero],
+  )
+  const item = pricing.item
+  const warnings = useMemo(() => itemRestrictionWarnings(roster, item, holder, { quantity, bans: houseRules.bans }), [roster, item, holder, quantity, houseRules.bans])
+  const needsReason = warnings.length > 0 && restrictionReason.trim().length === 0
+  const upgrade = itemEffect(item.id)?.upgrade
+  const upgradeBases = upgrade ? (upgrade.bases === 'anyMelee' ? holder.equipment.map((e) => e.itemId).filter((id): id is string => Boolean(id && findWeapon(id)?.type === 'melee')) : upgrade.bases) : []
+  const hunt = pricing.strengthHunt
+  const huntStrength = buyerHero?.stats.S ?? null
+  const huntPassed = hunt === null || hunt.free || (huntDie !== null && huntStrength !== null && huntDie <= huntStrength)
+  const huntFailed = hunt !== null && !hunt.free && huntDie !== null && huntStrength !== null && huntDie > huntStrength
 
   // ---- Availability ----
   const kind = item.availability.kind
   const isRare = kind === 'rare' && item.availability.rarity !== undefined
   const searchTotal = diceTotal(rareSpec, searchFaces)
-  const rareBonus = warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0
+  const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
+  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus
   const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && tracked
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
@@ -113,7 +153,7 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
   const total = priceReady ? unitPrice * quantity : null
   const affordable = total !== null && total <= roster.gold
 
-  const canBuy = canTrade && available && searcherOk && priceReady && affordable && (!isRare || !searchRecorded) && (!isMap || mapResult !== null)
+  const canBuy = canTrade && available && searcherOk && priceReady && affordable && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -129,16 +169,34 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
 
   async function buy() {
     if (unitPrice === null) return
-    const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, mapResult?.note).value, {
+    const notes = [mapResult?.note, upgrade && upgradeBase ? `base: ${upgradeBase}` : null].filter((n): n is string => Boolean(n)).join(' · ') || undefined
+    const reasons = [
+      overrideReady(priceOverride) && computed !== null ? overrideNote(`${item.name} price`, `${computed} gc`, `${priceOverride.amount} gc`, priceOverride.reason) : null,
+      warnings.length > 0 ? `${item.name} bought despite: ${warnings.join(' ')} Reason: ${restrictionReason.trim()}` : null,
+    ].filter((r): r is string => Boolean(r))
+    const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, notes).value, {
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
-      reason: overrideReady(priceOverride) && computed !== null ? reasonWith('trading', overrideNote(`${item.name} price`, `${computed} gc`, `${priceOverride.amount} gc`, priceOverride.reason)) : undefined,
+      reason: reasons.length ? reasonWith('trading', reasons.join(' · ')) : undefined,
     })
     if (ok) onClose()
   }
 
   async function recordFailedSearch() {
-    const ok = await run(() => roster, { heroesSearched: [searcherId] })
+    // A Familiar's ritual costs its gold whether or not it works.
+    const spend = pricing.paidOnFailure && computed !== null ? computed : 0
+    const ok = await run(() => (spend > 0 ? { ...roster, gold: Math.max(0, roster.gold - spend) } : roster), {
+      heroesSearched: [searcherId],
+      reason: spend > 0 ? reasonWith('trading', `${item.name}: ${spend} gc spent on a failed search (paid on failure)`) : undefined,
+    })
     if (ok) setSearchRecorded(true)
+  }
+
+  async function recordFailedHunt() {
+    const spend = computed ?? unitPrice ?? 0
+    const ok = await run(() => ({ ...roster, gold: Math.max(0, roster.gold - spend) }), {
+      reason: reasonWith('trading', `${item.name}: hunt failed (rolled ${huntDie} against Strength ${huntStrength}); ${spend} gc spent`),
+    })
+    if (ok) setHuntRecorded(true)
   }
 
   function close() {
@@ -146,13 +204,17 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
     onClose()
   }
 
-  const footer = searchRecorded ? (
+  const footer = searchRecorded || huntRecorded ? (
     <Button variant="secondary" block onClick={close}>
       Close
     </Button>
   ) : isRare && search && !search.available && tracked ? (
     <Button block variant="secondary" pending={pending} disabled={!canTrade || !searcherOk} onClick={recordFailedSearch}>
-      Record the failed search
+      {pricing.paidOnFailure && computed !== null ? `Record the failed search (${computed} gc spent)` : 'Record the failed search'}
+    </Button>
+  ) : huntFailed ? (
+    <Button block variant="secondary" pending={pending} disabled={!canTrade} onClick={recordFailedHunt}>
+      Record the failed hunt (gold spent)
     </Button>
   ) : (
     <Button block pending={pending} disabled={!canBuy} onClick={buy}>
@@ -165,6 +227,50 @@ function BuySheet({ item, trade, onClose }: BuySheetProps) {
       <div className="flex flex-col gap-4 py-2">
         {item.description ? <p className="text-sm leading-relaxed text-ink-dim">{item.description}</p> : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
+        {pricing.notes.length > 0 ? (
+          <Notice tone="info" title="For this buyer">
+            {pricing.notes.join(' ')}
+          </Notice>
+        ) : null}
+        {warbandBonus.notes.length > 0 && isRare ? <p className="text-xs text-ink-dim">{warbandBonus.notes.join(' ')}</p> : null}
+        {warnings.length > 0 ? (
+          <Notice tone="warn" title="The rules say">
+            <ul className="flex flex-col gap-1">
+              {warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+            <TextField label="Reason for buying anyway" value={restrictionReason} autoComplete="off" placeholder="The table agreed …" hint="Goes on the record with the purchase." onChange={(e) => setRestrictionReason(e.target.value)} />
+          </Notice>
+        ) : null}
+        {upgrade ? (
+          <section className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Applied to which weapon?</h3>
+            <p className="text-xs text-ink-dim">{upgrade.note}</p>
+            <SelectField label="Base weapon" hideLabel value={upgradeBase} onChange={(e) => setUpgradeBase(e.target.value)}>
+              <option value="">Choose the weapon it upgrades</option>
+              {[...new Set(upgradeBases)].map((id) => (
+                <option key={id} value={id}>
+                  {findWeapon(id)?.name ?? id}
+                </option>
+              ))}
+            </SelectField>
+            {upgrade.bases === 'anyMelee' && upgradeBases.length === 0 ? <p className="text-xs text-warn">Give it to a warrior who carries a hand weapon, or add the base weapon first.</p> : null}
+          </section>
+        ) : null}
+        {hunt && !hunt.free ? (
+          <section className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">The hunt: D6 equal to or under Strength {huntStrength ?? '?'}</h3>
+            {huntStrength === null ? (
+              <p className="text-xs text-warn">Pick the hero who goes hunting as the destination first.</p>
+            ) : (
+              <div className="flex flex-wrap items-end gap-3">
+                <DieField label="Hunt D6" sides={6} value={huntDie} onChange={setHuntDie} rollable disabled={huntRecorded} />
+                {huntDie !== null ? <p className="text-sm text-ink">{huntDie <= huntStrength ? 'The beast is slain: buy the cloak below.' : 'The hunt fails; the gold is spent all the same.'}</p> : null}
+              </div>
+            )}
+          </section>
+        ) : null}
 
         {isMap ? (
           <section className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">

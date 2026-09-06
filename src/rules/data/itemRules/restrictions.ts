@@ -77,7 +77,14 @@ export const ITEM_RESTRICTIONS: Record<string, ItemRestriction> = {
   quarter_staff: { onlyWarbands: ["cathayans"], heroesOnly: false },
   chain_sticks: { onlyWarbands: ["cathayans"], heroesOnly: false },
   misericordia: { onlyWarbands: ["lustrianReavers", "cursedCavalcade"], heroesOnly: false },
-  trade_wagon_reputation: {},
+
+  // ---- Blessings of Nurgle: Tainted Ones, at recruitment; later ones cost double (the shop asks for the price) ----
+  stream_of_corruption: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  nurgles_rot: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  cloud_of_flies: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  bloated_foulness: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  mark_of_nurgle: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  hideous: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
 
   // ---- Weapons whose kit rule makes them Heroes-only in the lists ----
   forest_cloak: { onlyWarbands: ["outlaws"] },

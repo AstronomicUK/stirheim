@@ -47,7 +47,7 @@ describe("item catalogue", () => {
       expect(item.price.text.length, `${item.id}: empty price text`).toBeGreaterThan(0);
       expect(item.availability.text.length, `${item.id}: empty availability text`).toBeGreaterThan(0);
       expect(item.source.publication.length, `${item.id}: empty publication`).toBeGreaterThan(0);
-      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|warbands\/grade-[0-9a-z-]+)\.md:\d+-\d+$/);
+      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
       for (const rule of item.specialRules) {
         expect(rule.name.length, `${item.id}: unnamed special rule`).toBeGreaterThan(0);
       }
@@ -62,7 +62,7 @@ describe("item catalogue", () => {
     expect(MISC_ITEMS.length).toBe(110);
     expect(ANIMAL_ITEMS.length).toBe(14);
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(80);
-    expect(WARBAND_SPECIAL_ITEMS.length).toBe(24);
+    expect(WARBAND_SPECIAL_ITEMS.length).toBe(30);
     expect(ITEMS.length).toBe(246 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);

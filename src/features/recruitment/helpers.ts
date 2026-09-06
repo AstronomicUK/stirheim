@@ -2,6 +2,7 @@
 // eligibility, upkeep wording, default names and error messages. No React, no Supabase.
 
 import { findHiredSword, HIRED_SWORDS } from '../../rules/data/campaign/hiredSwords'
+import { isBanned } from '../../rules/resolve/houseRules'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
 import { heroCapacity } from '../../rules/data/warbandTemplates'
 import { isRulesError } from '../../rules/resolve/errors'
@@ -9,7 +10,7 @@ import { canRecruit, type CanRecruitResult } from '../../rules/resolve/recruitme
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
 import type { CharacterRole, UnitTemplate, WarbandTemplate } from '../../rules/types'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
-import type { RosterHenchmanGroup, RosterHiredSword, RosterWarband } from '../../rules/types/roster'
+import type { RosterHenchmanGroup, RosterHiredSword, RosterWarband, CampaignBans } from '../../rules/types/roster'
 import { warbandRules } from '../../rules/data/campaignRules'
 
 // ---------------------------------------------------------------------------------------------
@@ -220,7 +221,8 @@ export function warbandRestriction(entry: HiredSwordSummary, template: WarbandTe
 }
 
 /** Why this hired sword can or cannot be hired by the warband right now. */
-export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWarband, template: WarbandTemplate | undefined): Eligibility {
+export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWarband, template: WarbandTemplate | undefined, bans?: CampaignBans): Eligibility {
+  if (isBanned(bans, 'hiredSwords', entry.id)) return { kind: 'blocked', reason: 'Banned in this campaign.' }
   if (roster.hiredSwords.some((s) => s.hiredSwordId === entry.id && s.status === 'active')) {
     return { kind: 'blocked', reason: `Already in the warband; you can only have one of each type of Hired Sword.` }
   }
@@ -241,10 +243,10 @@ export interface HiredSwordOption {
 }
 
 /** Every hired sword, sorted by name, with its eligibility for this warband. */
-export function hiredSwordOptions(roster: RosterWarband, template: WarbandTemplate | undefined): HiredSwordOption[] {
+export function hiredSwordOptions(roster: RosterWarband, template: WarbandTemplate | undefined, bans?: CampaignBans): HiredSwordOption[] {
   return [...HIRED_SWORDS]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((entry) => ({ entry, eligibility: hiredSwordEligibility(entry, roster, template) }))
+    .map((entry) => ({ entry, eligibility: hiredSwordEligibility(entry, roster, template, bans) }))
 }
 
 export function findHiredSwordEntry(hiredSwordId: string): HiredSwordSummary | undefined {

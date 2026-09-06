@@ -25,7 +25,7 @@ export function formFromSettings(settings: CampaignSettings): SettingsForm {
   return {
     startingGold: settings.startingGold,
     maxRosters: settings.maxRosters,
-    houseRules: { ...settings.houseRules },
+    houseRules: { ...settings.houseRules, bans: { ...settings.houseRules.bans } },
     dicePolicy: settings.dicePolicy,
     combatMode: settings.combatMode,
     lockCombatMode: settings.lockCombatMode,
@@ -74,8 +74,14 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.houseRules.strengthArmourPiercing === b.houseRules.strengthArmourPiercing &&
     a.houseRules.optionalCriticalTables === b.houseRules.optionalCriticalTables &&
     a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour &&
-    a.houseRules.rabbitsFootBattleOnly === b.houseRules.rabbitsFootBattleOnly
+    a.houseRules.rabbitsFootBattleOnly === b.houseRules.rabbitsFootBattleOnly &&
+    bansEqual(a.houseRules.bans, b.houseRules.bans)
   )
+}
+
+function bansEqual(a: CampaignHouseRules['bans'], b: CampaignHouseRules['bans']): boolean {
+  const same = (x: readonly string[], y: readonly string[]) => x.length === y.length && [...x].sort().every((v, i) => v === [...y].sort()[i])
+  return same(a.items, b.items) && same(a.spells, b.spells) && same(a.hiredSwords, b.hiredSwords) && same(a.characters, b.characters) && same(a.skills, b.skills)
 }
 
 /** Campaign names are 1 to 80 characters (campaignRowSchema). Returns a message, or undefined when fine. */
@@ -86,8 +92,10 @@ export function validateCampaignName(name: string): string | undefined {
   return undefined
 }
 
+export type HouseRuleSwitchKey = Exclude<keyof CampaignHouseRules, 'bans'>
+
 export interface HouseRuleSwitch {
-  key: keyof CampaignHouseRules
+  key: HouseRuleSwitchKey
   label: string
   description: string
 }

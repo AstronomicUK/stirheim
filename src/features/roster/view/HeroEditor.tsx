@@ -28,6 +28,20 @@ export interface HeroEditorProps {
 const chip = (on: boolean) =>
   `min-h-11 rounded-full border px-3 text-sm transition-colors ${on ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'}`
 
+type BooleanFlag = 'oldBattleWound' | 'singleHandedWeaponsOnly' | 'noRunning' | 'blindedInOneEye' | 'stupidity' | 'frenzy' | 'immuneToFear' | 'causesFear' | 'nurglesRot'
+
+const CONDITION_FLAGS: { key: BooleanFlag; label: string }[] = [
+  { key: 'nurglesRot', label: "Nurgle's Rot" },
+  { key: 'frenzy', label: 'Frenzy' },
+  { key: 'stupidity', label: 'Stupidity' },
+  { key: 'immuneToFear', label: 'Immune to fear' },
+  { key: 'causesFear', label: 'Causes fear' },
+  { key: 'oldBattleWound', label: 'Old battle wound' },
+  { key: 'singleHandedWeaponsOnly', label: 'One-handed weapons only' },
+  { key: 'noRunning', label: 'May not run' },
+  { key: 'blindedInOneEye', label: 'Blind in one eye' },
+]
+
 export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove }: HeroEditorProps) {
   const [skillsOpen, setSkillsOpen] = useState(false)
   const prefix = `heroes.${hero.id}`
@@ -164,6 +178,32 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
           </div>
         ) : null}
       </div>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium text-ink-dim">Conditions</legend>
+        <div className="flex flex-wrap gap-2">
+          {CONDITION_FLAGS.map((f) => {
+            const on = Boolean(hero.flags[f.key])
+            return (
+              <button
+                key={f.key}
+                type="button"
+                aria-pressed={on}
+                className={chip(on)}
+                onClick={() => {
+                  const flags = { ...hero.flags }
+                  if (on) delete flags[f.key]
+                  else flags[f.key] = true
+                  onChange({ flags })
+                }}
+              >
+                {f.label}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-xs text-ink-dim">Injuries set most of these; tick by hand what the table decided, such as Nurgle's Rot caught in a fight.</p>
+      </fieldset>
 
       <TextArea label="Notes" value={hero.notes} rows={2} onChange={(e) => onChange({ notes: e.target.value })} />
 

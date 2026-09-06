@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { sellItem } from '../../rules/resolve/trading'
+import { sellBlockReason } from '../../rules/resolve/itemRestrictions'
 import { Button, NumberField, Notice, Sheet, Stepper } from '../../ui'
 import { itemName } from '../roster/shared/names'
 import { Tag } from '../roster/view/bits'
@@ -31,11 +32,14 @@ export function SellTab({ trade }: { trade: TradeContext }) {
         <section key={holder} className="flex flex-col gap-1">
           <h3 className="text-xs uppercase tracking-wider text-ink-dim">{holder}</h3>
           <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
-            {held.map((line) => (
+            {held.map((line) => {
+              const unsellable = sellBlockReason(line.item.itemId)
+              return (
               <li key={line.key}>
                 <button
                   type="button"
-                  disabled={!trade.canTrade}
+                  disabled={!trade.canTrade || unsellable !== null}
+                  title={unsellable ?? undefined}
                   onClick={() => setSelectedKey(line.key)}
                   className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-surface-high disabled:cursor-default disabled:hover:bg-transparent"
                 >
@@ -48,10 +52,11 @@ export function SellTab({ trade }: { trade: TradeContext }) {
                       {line.base === null ? 'No listed price' : `Listed ${line.base} gc`}
                     </span>
                   </span>
-                  {line.each === null ? <Tag tone="warn">Name a price</Tag> : <Tag tone="brass">{line.each} gc each</Tag>}
+                  {unsellable ? <Tag tone="warn">Cannot be sold</Tag> : line.each === null ? <Tag tone="warn">Name a price</Tag> : <Tag tone="brass">{line.each} gc each</Tag>}
                 </button>
               </li>
-            ))}
+              )
+            })}
           </ul>
         </section>
       ))}

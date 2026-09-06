@@ -345,7 +345,23 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
     ],
   },
   dreamwalkers_cult_of_morr: {
-    preBattle: [{ key: "guiding_dream", label: "Guiding Dream", unitId: "dreamwalkers_dreamer", test: "D6", text: "At the beginning of each battle the Dreamer rolls a D6 on the Guiding Dream table to learn what vision Morr sends (see the warband rule for the table)." }],
+    preBattle: [
+      {
+        key: "guiding_dream",
+        label: "Guiding Dream",
+        unitId: "dreamwalkers_dreamer",
+        test: "D6",
+        text: "At the beginning of each battle the Dreamer rolls a D6 on the Guiding Dream table to learn what vision Morr sends.",
+        outcomes: {
+          "1": "Disturbing Vision: the Dreamer is at -1\" Movement this battle.",
+          "2": "Vision of Truth: name one enemy hero; the Dreamer is +1 to hit that model.",
+          "3": "Vision of Truth: name one enemy hero; the Dreamer is +1 to hit that model.",
+          "4": "Empowering Vision: name one enemy hero; the Dreamer has +1 Strength against that model.",
+          "5": "Empowering Vision: name one enemy hero; the Dreamer has +1 Strength against that model.",
+          "6": "Infuriating Vision: name one enemy hero; the Dreamer is subject to Frenzy against that model.",
+        },
+      },
+    ],
     succession: { note: "The Priest of Morr leads until a genuine Dreamer joins.", candidateUnitIds: ["dreamwalkers_priest_of_morr"], anyHero: true },
   },
   dwarf_rangers: {

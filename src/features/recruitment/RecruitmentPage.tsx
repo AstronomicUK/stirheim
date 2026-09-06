@@ -5,6 +5,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useWarband, type WarbandDetail } from '../../api/warbands'
+import { useWarbandCampaign } from '../../api/trading'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import { warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
@@ -54,6 +55,8 @@ const TABS: { value: Tab; label: string }[] = [
 function RecruitView({ detail }: { detail: WarbandDetail }) {
   const { warband, roster } = detail
   const user = useSession((s) => s.user)
+  const campaign = useWarbandCampaign(warband.id)
+  const bans = campaign.data?.settings.houseRules.bans
   const template = useMemo(() => findWarbandTemplate(warband.type_rules_id), [warband.type_rules_id])
   const [tab, setTab] = useState<Tab>('heroes')
   const [outcome, setOutcome] = useState<Outcome | null>(null)
@@ -122,7 +125,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
       <SegmentedControl<Tab> label="Who to recruit" options={TABS} value={tab} onChange={setTab} />
 
       {tab === 'hired' ? (
-        <HiredSwordsTab detail={detail} template={template} canEdit={canEdit} onDone={done} />
+        <HiredSwordsTab detail={detail} template={template} canEdit={canEdit} onDone={done} bans={bans} />
       ) : !template ? (
         <Notice tone="warn" title="Warband type not in the rules data">
           &ldquo;{warband.type_rules_id}&rdquo; has no template, so heroes and henchmen cannot be hired from a list here. Add them by hand from

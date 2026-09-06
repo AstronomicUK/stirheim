@@ -32,6 +32,17 @@ export function prompts(roster: RosterWarband, template: WarbandTemplate | undef
       })
     }
   }
+  for (const warrior of [...roster.heroes.filter((h) => h.status === 'active'), ...roster.hiredSwords.filter((s) => s.status === 'active')]) {
+    if (!warrior.flags.nurglesRot) continue
+    out.push({
+      key: `rot:${warrior.id}`,
+      title: `Nurgle's Rot · ${warrior.name}`,
+      text: `Toughness test on a D6 (equal to or under T ${warrior.stats.T}). Failed: one point of Toughness is lost for good, and at zero the warrior dies. A 6 also passes the Rot to another member of the warband: pick one at random and mark it on their card.`,
+      hero: 'unitTemplateId' in warrior ? warrior : null,
+      test: 'T',
+      target: warrior.stats.T,
+    })
+  }
   const leader = template ? leaderTemplate(template) : undefined
   const leaderHero = leader ? roster.heroes.find((h) => h.status === 'active' && h.unitTemplateId === leader.id) : undefined
   for (const rule of warbandRules(roster.warbandTemplateId).preBattle ?? []) {

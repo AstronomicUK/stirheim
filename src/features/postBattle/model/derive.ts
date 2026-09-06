@@ -329,6 +329,21 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     if (Object.keys(patch).length > 0) heroes.push({ id: sword.id, patch })
   }
 
+  // Nurgle's Rot: a failed Toughness test before the game costs a point of Toughness; at zero the warrior dies.
+  for (const [key, outcome] of Object.entries(ctx.preBattle ?? {})) {
+    if (!key.startsWith('rot:') || !/failed/.test(outcome)) continue
+    const id = key.slice('rot:'.length)
+    const hero = ctx.roster.heroes.find((h) => h.id === id && h.status === 'active')
+    if (!hero) continue
+    const existing = heroes.find((h) => h.id === hero.id)
+    const stats = { ...(existing?.patch.stats ?? hero.stats) }
+    stats.T = Math.max(0, stats.T - 1)
+    const patch: ReportApplied['heroes'][number]['patch'] = { ...(existing?.patch ?? {}), stats }
+    if (stats.T === 0) patch.status = 'dead'
+    if (existing) existing.patch = patch
+    else heroes.push({ id: hero.id, patch })
+  }
+
   // A Tarot reading that turned to doom before the game: the hero refuses to fight the next one.
   for (const [key, outcome] of Object.entries(ctx.preBattle ?? {})) {
     if (!key.startsWith('tarot:') || outcome !== 'disaster') continue
@@ -464,7 +479,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     }
     const name = subjectName(subject)
     const advDraft = stored ?? emptyAdvanceDraft(UNSEEDED_HERO_ID, subject.kind === 'group' ? defaultPromotedName(subject.group, roster) : '')
-    const actx = { roster, template: ctx.template, thresholdXp: request.threshold_xp }
+    const actx = { roster, template: ctx.template, thresholdXp: request.threshold_xp, bans: ctx.houseRules?.bans }
     const plan = subject.kind === 'group' ? planGroup(advDraft, subject.group, actx, skillTableName) : planHero(advDraft, subject, actx)
     const step = effectiveStep(advDraft, plan)
     let complete: boolean

@@ -118,6 +118,9 @@ export interface StatGainRowView {
   relevant: { offensive: boolean; defensive: boolean }
   attackGain: number
   defendGain: number
+  /** The whole chain with this characteristic raised, so a table can show every metric at once. */
+  attack: StatGainBreakdown["rows"][number]["attack"]
+  defend: StatGainBreakdown["rows"][number]["defend"]
 }
 
 export function statGains(input: AnalyserInput, metric: ChainMetric, fallbackWeapon: Weapon): { breakdown: StatGainBreakdown; rows: StatGainRowView[] } {
@@ -141,6 +144,8 @@ export function statGains(input: AnalyserInput, metric: ChainMetric, fallbackWea
     relevant: statRelevance(r.stat, input.phase, input.weapons),
     attackGain: attackGain(breakdown.baselineAttack, r.attack, metric),
     defendGain: defendGain(breakdown.baselineDefend, r.defend, metric),
+    attack: r.attack,
+    defend: r.defend,
   }))
   return { breakdown, rows }
 }

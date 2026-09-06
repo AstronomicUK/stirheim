@@ -1,6 +1,10 @@
+import { Icon, type IconName } from './icons'
+
 export interface SegmentedOption<T extends string> {
   value: T
   label: string
+  /** Drawn before the label; the pill reads as a destination rather than a word. */
+  icon?: IconName
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -24,10 +28,11 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(option.value)}
-            className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm transition-colors ${
+            className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-sm transition-colors ${
               selected ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'
             }`}
           >
+            {option.icon ? <Icon name={option.icon} size={16} className={selected ? 'text-brass' : 'text-ink-dim'} /> : null}
             {option.label}
           </button>
         )

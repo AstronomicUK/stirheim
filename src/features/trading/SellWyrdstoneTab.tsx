@@ -20,13 +20,14 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
   const sizing = incomeSize(roster)
   const size = sizing.size
   const bandIndex = Math.max(0, Math.min(WARBAND_SIZE_BANDS.length - 1, warbandSizeBandIndex(size) + sizing.bandShift))
-  const income = wyrdstoneQuote(roster, selling)
+  const saleOpts = trade.perks?.wyrdstoneSaleBonus ? { bonusRate: trade.perks.wyrdstoneSaleBonus, bonusSource: trade.perks.wyrdstoneSaleSource?.districtName } : {}
+  const income = wyrdstoneQuote(roster, selling, saleOpts)
   const activeHiredSwords = roster.hiredSwords.filter((s) => s.status === 'active').length
   const soldAlready = phase.wyrdstoneSold
   const disabled = !canTrade || soldAlready || shards === 0 || selling < 1
 
   async function confirm() {
-    await run(() => sellWyrdstone(roster, selling).value, { wyrdstoneSold: true })
+    await run(() => sellWyrdstone(roster, selling, saleOpts).value, { wyrdstoneSold: true })
   }
 
   return (
@@ -39,6 +40,7 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
       <p className="text-sm leading-relaxed text-ink-dim">
         Income depends on how many shards you sell at once and how many warriors the warband must feed: active heroes and every henchman.
         {activeHiredSwords > 0 ? ` Hired swords (${activeHiredSwords}) are not counted.` : ''}
+        {trade.perks?.wyrdstoneSaleBonus ? ` ${trade.perks.wyrdstoneSaleSource?.districtName}: +${Math.round(trade.perks.wyrdstoneSaleBonus * 100)}% on the sale, rounded down (map advantage).` : ''}
       </p>
 
       {soldAlready ? (

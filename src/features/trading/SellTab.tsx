@@ -8,7 +8,8 @@ import { sellForGold, sellListing, type SaleLine } from './helpers'
 import type { TradeContext } from './useTrade'
 
 export function SellTab({ trade }: { trade: TradeContext }) {
-  const lines = useMemo(() => sellListing(trade.roster), [trade.roster])
+  const resaleAtFull = trade.perks?.resaleAtFull ?? null
+  const lines = useMemo(() => sellListing(trade.roster, { resaleAtFull: Boolean(resaleAtFull) }), [trade.roster, resaleAtFull])
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const selected = lines.find((l) => l.key === selectedKey) ?? null
   const holders = useMemo(() => {
@@ -24,7 +25,7 @@ export function SellTab({ trade }: { trade: TradeContext }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm leading-relaxed text-ink-dim">
-        Equipment sells for half its listed price, rounded down; variable-priced items fetch half the basic cost. Custom items and entries with no listed
+        {trade.perks?.resaleAtFull ? `${trade.perks.resaleAtFull.districtName}: weapons and armour sell back at their purchase price (map advantage).` : 'Equipment sells for half its listed price, rounded down; variable-priced items fetch half the basic cost.'} Custom items and entries with no listed
         price take whatever the group agrees.
       </p>
       {lines.length === 0 ? <p className="text-sm text-ink-dim">Nothing to sell: the stash and every warrior are empty-handed.</p> : null}
@@ -109,7 +110,7 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
         ) : null}
         {line.each !== null ? (
           <p className="text-sm tabular-nums text-ink">
-            {line.each} gc each (half of {line.base} gc){quantity > 1 ? ` × ${quantity} = ${computed} gc` : ''}
+            {line.each} gc each ({trade.perks?.resaleAtFull ? `purchase price, ${trade.perks.resaleAtFull.districtName}` : `half of ${line.base} gc`}){quantity > 1 ? ` × ${quantity} = ${computed} gc` : ''}
           </p>
         ) : (
           <NumberField

@@ -6,6 +6,7 @@ import { rollDie } from '../../rules/resolve/dice'
 import type { StatKey } from '../../rules/types/common'
 import type { Spell, SpellLore } from '../../rules/types/magic'
 import type { RosterHero } from '../../rules/types/roster'
+import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import type { AvailableSkillTable } from '../../rules/resolve/advances'
 import { Button, DieField, Notice, SegmentedControl, TextField } from '../../ui'
 import { Card, Tag } from '../roster/view/bits'
@@ -42,10 +43,12 @@ export interface AdvanceBodyProps {
   update: (edit: (d: AdvanceDraft) => AdvanceDraft) => void
   /** Hide the roll / choose / review rail (the wizard shows its own framing). */
   hideRail?: boolean
+  /** Map campaigns: the district that lets a new spell be chosen rather than rolled (Sage's Hall). */
+  chooseSpell?: PerkSource | null
 }
 
 /** The content of the current step. The caller decides the step (effectiveStep) and the footer buttons. */
-export function AdvanceBody({ draft, plan, subject, step, update, hideRail = false }: AdvanceBodyProps) {
+export function AdvanceBody({ draft, plan, subject, step, update, hideRail = false, chooseSpell = null }: AdvanceBodyProps) {
   return (
     <>
       {hideRail ? null : <StepRail current={step} />}
@@ -56,7 +59,7 @@ export function AdvanceBody({ draft, plan, subject, step, update, hideRail = fal
           {subject.kind === 'group' ? (
             <GroupChoice draft={draft} plan={plan as GroupPlan} update={update} />
           ) : (
-            <HeroChoice draft={draft} plan={plan as HeroPlan} hero={subject.kind === 'hero' ? subject.hero : null} update={update} />
+            <HeroChoice draft={draft} plan={plan as HeroPlan} hero={subject.kind === 'hero' ? subject.hero : null} update={update} chooseSpell={chooseSpell} />
           )}
         </>
       ) : null}
@@ -148,7 +151,7 @@ function MaximaNote({ plan }: { plan: HeroPlan | GroupPlan }) {
   )
 }
 
-function HeroChoice({ draft, plan, hero, update }: StepProps<HeroPlan> & { hero: RosterHero | null }) {
+function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPlan> & { hero: RosterHero | null; chooseSpell: PerkSource | null }) {
   if (plan.need === 'subRoll' || (plan.roll?.kind === 'statSubRoll' && plan.subStat === null)) {
     return (
       <Block title="Roll again (D6)">
@@ -167,6 +170,7 @@ function HeroChoice({ draft, plan, hero, update }: StepProps<HeroPlan> & { hero:
       spells={plan.spells}
       knownSpellIds={hero?.spellIds ?? []}
       update={update}
+      chooseSpell={chooseSpell}
     />
   )
 
@@ -369,9 +373,10 @@ interface SkillOrSpellPickerProps {
   spells: Spell[]
   knownSpellIds: readonly string[]
   update: (edit: (d: AdvanceDraft) => AdvanceDraft) => void
+  chooseSpell?: PerkSource | null
 }
 
-function SkillOrSpellPicker({ draft, tables, lore, spells, knownSpellIds, update }: SkillOrSpellPickerProps) {
+function SkillOrSpellPicker({ draft, tables, lore, spells, knownSpellIds, update, chooseSpell = null }: SkillOrSpellPickerProps) {
   return (
     <div className="flex flex-col gap-3">
       {lore ? (
@@ -386,7 +391,7 @@ function SkillOrSpellPicker({ draft, tables, lore, spells, knownSpellIds, update
         />
       ) : null}
       {lore && draft.mode === 'spell' ? (
-        <SpellPicker lore={lore} spells={spells} knownSpellIds={knownSpellIds} selected={draft.spellId} onSelect={(id) => update((d) => setSpell(d, id))} />
+        <SpellPicker lore={lore} spells={spells} knownSpellIds={knownSpellIds} selected={draft.spellId} onSelect={(id) => update((d) => setSpell(d, id))} chooseFrom={chooseSpell} />
       ) : (
         <SkillPicker tables={tables} selected={draft.skillId} onSelect={(id) => update((d) => setSkill(d, id))} />
       )}
@@ -447,9 +452,11 @@ interface SpellPickerProps {
   knownSpellIds: readonly string[]
   selected: string | null
   onSelect: (id: string | null) => void
+  /** Map campaigns: the district that lets the spell be chosen rather than rolled. */
+  chooseFrom?: PerkSource | null
 }
 
-function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect }: SpellPickerProps) {
+function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect, chooseFrom = null }: SpellPickerProps) {
   const [d6, setD6] = useState<number | null>(null)
   const rolledSpell = d6 !== null ? spellForRoll(lore, d6) : undefined
   const rolledKnown = rolledSpell !== undefined && knownSpellIds.includes(rolledSpell.id)
@@ -464,11 +471,19 @@ function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect }: SpellP
   if (spells.length === 0) return <Notice tone="warn">{lore.name}: every spell is already known. Take a skill instead.</Notice>
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm leading-relaxed text-ink-dim">Spells are generated at random: roll a {lore.die} on the {lore.name} table, or tap the one you rolled.</p>
-      <div className="flex flex-wrap items-end gap-3">
-        <DieField label={lore.die} sides={6} value={d6} onChange={roll} rollable />
-        {rolledKnown ? <p className="text-xs text-warn">Already known: roll again, or lower its difficulty by 1 by hand and pick another here.</p> : null}
-      </div>
+      {chooseFrom ? (
+        <p className="text-sm leading-relaxed text-ink-dim">
+          {chooseFrom.districtName} (map advantage): choose a spell from the {lore.name} table rather than rolling for it. Tap the one you want.
+        </p>
+      ) : (
+        <>
+          <p className="text-sm leading-relaxed text-ink-dim">Spells are generated at random: roll a {lore.die} on the {lore.name} table, or tap the one you rolled.</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <DieField label={lore.die} sides={6} value={d6} onChange={roll} rollable />
+            {rolledKnown ? <p className="text-xs text-warn">Already known: roll again, or lower its difficulty by 1 by hand and pick another here.</p> : null}
+          </div>
+        </>
+      )}
       <ul className="flex flex-col gap-1.5">
         {spells.map((s) => {
           const on = selected === s.id

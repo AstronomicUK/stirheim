@@ -5,6 +5,7 @@
 import { useEffect } from 'react'
 import { Button, SegmentedControl } from '../../../ui'
 import { AdvanceBody } from '../../advances/AdvanceBody'
+import type { PerkSource } from '../../../rules/resolve/mapAdvantages'
 import { defaultPromotedName, emptyDraft as emptyAdvanceDraft, setStep as setAdvanceStep } from '../../advances/model'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { seedAdvance, setAdvanceMode, updateAdvance, type AdvanceMode, type WizardAdvance } from '../model'
@@ -16,7 +17,7 @@ const MODE_OPTIONS: { value: AdvanceMode; label: string }[] = [
   { value: 'later', label: 'Roll later' },
 ]
 
-export function AdvancesStep({ derived, update }: StepProps) {
+export function AdvancesStep({ derived, update, ctx }: StepProps) {
   const { items, rosterAfter } = derived.advances
 
   // Give every earned advance a stored draft (with a real id for a promoted hero) on first view.
@@ -38,7 +39,7 @@ export function AdvancesStep({ derived, update }: StepProps) {
       {items.length > 0 ? (
         <Section title="Earned this battle" aside={`${items.length} ${items.length === 1 ? 'advance' : 'advances'}`}>
           {items.map((item) => (
-            <AdvanceCard key={item.key} item={item} update={update} />
+            <AdvanceCard key={item.key} item={item} update={update} chooseSpell={ctx.map?.perks.chooseSpell ?? null} />
           ))}
         </Section>
       ) : null}
@@ -46,7 +47,7 @@ export function AdvancesStep({ derived, update }: StepProps) {
   )
 }
 
-function AdvanceCard({ item, update }: { item: WizardAdvance; update: StepProps['update'] }) {
+function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; update: StepProps['update']; chooseSpell: PerkSource | null }) {
   const { subject, plan } = item
   const kind = subject?.kind === 'group' ? 'Henchman group' : subject?.kind === 'hiredSword' ? 'Hired sword' : 'Hero'
   const editAdvance = (edit: Parameters<typeof updateAdvance>[2]) => update((d) => updateAdvance(d, item.key, edit))
@@ -79,7 +80,7 @@ function AdvanceCard({ item, update }: { item: WizardAdvance; update: StepProps[
         <p className="text-sm text-ink-dim">Left pending. Roll it from the roster page under Bestow advancements.</p>
       ) : (
         <>
-          <AdvanceBody draft={item.draft} plan={plan} subject={subject} step={mode === 'pickLater' ? 'choose' : item.step} update={editAdvance} hideRail />
+          <AdvanceBody draft={item.draft} plan={plan} subject={subject} step={mode === 'pickLater' ? 'choose' : item.step} update={editAdvance} hideRail chooseSpell={chooseSpell} />
           {mode === 'pickLater' ? (
             <div className="flex items-center justify-between gap-3 rounded-md border border-brass/50 bg-surface-low px-3 py-2 text-sm">
               <span className="text-ink">Skill to be picked later.</span>

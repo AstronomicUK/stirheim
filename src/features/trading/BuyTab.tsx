@@ -9,6 +9,7 @@ import { buyItem, itemPrice, rareSearch } from '../../rules/resolve/trading'
 import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
 import { effectivePricing, warbandRareRollBonus } from '../../rules/resolve/itemPricing'
 import { braceAmountOf } from '../../rules/resolve/equipmentCost'
+import { halfPriceItemSource } from '../../rules/resolve/mapAdvantages'
 import { itemEffect } from '../../rules/data/itemRules'
 import { isBanned } from '../../rules/resolve/houseRules'
 import { findWeapon } from '../../rules/data/weapons'
@@ -139,7 +140,8 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const isRare = kind === 'rare' && item.availability.rarity !== undefined
   const searchTotal = diceTotal(rareSpec, searchFaces)
   const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
-  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus
+  const mapRareBonus = trade.perks?.rareRollBonus ?? 0
+  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus
   const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && tracked
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
@@ -148,7 +150,10 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   // ---- Price ----
   const rolledTotal = priceSpec ? diceTotal(priceSpec, faces) : undefined
   const quote = item.price.base === null ? null : priceSpec ? (rolledTotal === null ? null : itemPrice(item, houseRules, rolledTotal)) : itemPrice(item, houseRules)
-  const computed = quote?.total ?? null
+  // Map campaigns: a district held makes some items half price (rounded down).
+  const mapHalf = halfPriceItemSource(trade.perks, item.id)
+  const listedTotal = quote?.total ?? null
+  const computed = listedTotal !== null && mapHalf ? Math.floor(listedTotal / 2) : listedTotal
   const unitPrice = priceOverride !== null ? (overrideReady(priceOverride) ? priceOverride.amount : null) : (computed ?? manualPrice)
   const priceReady = unitPrice !== null && Number.isInteger(unitPrice) && unitPrice >= 0
   // Two pistols bought together are a brace at the bracketed price (the item's own line, house rules aside).
@@ -230,6 +235,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     <Sheet open onClose={close} title={item.name} description={`${availabilityLabel(item)} · ${item.price.text}`} footer={footer}>
       <div className="flex flex-col gap-4 py-2">
         {item.description ? <p className="text-sm leading-relaxed text-ink-dim">{item.description}</p> : null}
+        {mapHalf && listedTotal !== null ? <Notice tone="info">{mapHalf.districtName}: half price, {computed} gc instead of {listedTotal} gc (map advantage).</Notice> : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
         {pricing.notes.length > 0 ? (
           <Notice tone="info" title="For this buyer">
@@ -319,7 +325,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
         </section>
         {isRare ? (
           <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband)` : ''}</h3>
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband${mapRareBonus ? `, ${mapRareBonus} of it from ${trade.perks?.rareRollSource?.districtName}` : ''})` : ''}</h3>
             {needsSearcher ? (
               searchers.length === 0 ? (
                 <Notice tone="warn">Every hero able to search has done so this sequence{downCount > 0 ? ` (${downCount} taken out of action may not)` : ''}. No more rare-item rolls until the next battle.</Notice>

@@ -806,6 +806,34 @@ Phases 13 to 17 went live at https://stirheim.netlify.app in one deploy (local `
 was pushed to the hosted project. Next: a fresh campaign and a re-import of the battle records CSV, and
 handing the other players' warbands over.
 
+## Phase 20 built (2026-09-06)
+
+Map campaigns, part two, plus the battle-sheet request from test round 2. Tom said "go" on the
+scope listed under "Phase 20" in the conversation; built in three commits.
+
+**1/3: advantages applied in the report and the trading post.**
+- `rules/data/map/advantages.ts`: every district's legend as structured effects (exploration dice,
+  modify-one, maximum finds, wyrdstone sale bonus, half-price hires and items, rare-roll bonus,
+  resale at purchase price, 3D6 veteran pool by henchman kind, chosen spells, cheap Undead
+  recruits, Fear immunity, leader Ld, injury rewrites, pit-fight auto-win, finding Luthor, and
+  reminders for the rest). `rules/resolve/mapAdvantages.ts`: `mapPerksFor(state, warbandId)` folds
+  the districts a warband holds the advantage of (a foothold; control where Hard Fought) into one
+  `MapPerks` object; `halfPriceItemSource`, `halfPriceHireSource`, `injuryRewriteFor`,
+  `describeMapPerks`. `features/map/useMapPerks` reads them for a warband (optionally as the map
+  stood before a given match). `MapPerksCard` lists them on the trading post and recruitment.
+- Report (`ReportContext.map`): extra exploration dice with the districts named in the reason;
+  City Hall as a modify-one aid; Rich Quarter / Clock Tower take the maximum of a location's dice
+  finds; the Abundance D3 (draft `abundanceRoll`, required for the winner, added to wyrdstone with
+  a note); Temple of Morr / Temple of Sigmar offer a D6 (`districtTest` pending, `districtRoll` on
+  the flow) and the Gaol rewrites Captured outright, all recorded as "→ Full Recovery"; a third
+  veteran die (`veteranPoolExtra`) where Quayside / Memorial Gardens apply. Draft version 5.
+- Trading post: half-price items (rounded down, after the house rule), Market Square's +2 on rare
+  rolls, Raven Barracks resale at purchase price, The Rock's +20% on wyrdstone (income.ts
+  `bonusRate`), Luthor Wolfenbaum at half fee and found automatically from a gate. Recruitment:
+  half-fee hired swords, the Cemetery's Zombies and Ghouls. Advances: Sage's Hall lets a new spell
+  be chosen (`AdvanceBody.chooseSpell`).
+- Tests: `rules/resolve/__tests__/mapAdvantages.test.ts`, `features/postBattle/model/mapPerks.test.ts`.
+
 ## Test round 2 (2026-09-06)
 
 Tom released Phases 18-19 to Netlify (deploy 6a9d4a51dafe2bbae7543921) and sent his first desktop

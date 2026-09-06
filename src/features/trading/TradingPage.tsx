@@ -19,6 +19,8 @@ import { StashTab } from './StashTab'
 import { CharactersTab } from './CharactersTab'
 import { useMatchReports, type ReportView } from '../../api/reports'
 import { phaseInfo, useTrade, type PhaseInfo } from './useTrade'
+import { useMapPerks } from '../map/useMapPerks'
+import { MapPerksCard } from '../map/MapPerksCard'
 
 type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash' | 'characters'
 
@@ -85,7 +87,8 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
   const user = useSession((s) => s.user)
   const isOwner = user?.id === detail.warband.owner_id
   const houseRules = useMemo(() => applyHouseRuleDefaults(campaign?.settings.houseRules), [campaign])
-  const trade = useTrade(detail, houseRules, phase, isOwner)
+  const { perks } = useMapPerks(campaign?.campaignId, detail.warband.id, Boolean(campaign?.settings.mapCampaign))
+  const trade = useTrade(detail, houseRules, phase, isOwner, perks)
   const [tab, setTab] = useState<Tab>(detail.roster.wyrdstone > 0 && !phase.wyrdstoneSold ? 'wyrdstone' : 'buy')
 
   const searchesLeft = eligibleSearchers(detail.roster, phase.heroesSearched, phase.heroesOutOfAction).length
@@ -117,6 +120,8 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
           <> Not in a campaign: default house rules apply{houseRules.halfPriceArmour ? ' (armour at half price, shields and helmets excepted)' : ''}.</>
         )}
       </p>
+
+      {perks ? <MapPerksCard perks={perks} campaignId={campaign?.campaignId} /> : null}
 
       {trade.error && !sheetOwnsError(tab) ? <Notice tone="error">{trade.error}</Notice> : null}
 

@@ -17,6 +17,8 @@ import {
   type FoundItem,
 } from '../model'
 import { Intro, Row, type StepProps } from './bits'
+import { abundanceShardsDue } from '../model/derive'
+import { d3Of, setAbundanceRoll } from '../model/state'
 import { ExplorationAidsCard } from './ExplorationAids'
 import { StepBody } from './WizardShell'
 
@@ -101,6 +103,8 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
       </Section>
 
       <ExplorationAidsCard draft={draft} ctx={ctx} update={update} rolls={ex.rolls} />
+
+      <AbundanceCard draft={draft} ctx={ctx} update={update} />
 
       {ex.result ? (
         <Section title="What you found">
@@ -238,5 +242,28 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
         <TextArea label="Exploration notes" value={draft.exploration.notes} onChange={(e) => update((d) => setExplorationNotes(d, e.target.value))} placeholder="Straggler interrogated: roll one extra die next time." rows={2} />
       ) : null}
     </StepBody>
+  )
+}
+
+/** Map campaigns: the winner of a battle in an Abundance of Wyrdstone district gains D3 extra shards. */
+function AbundanceCard({ draft, ctx, update }: Pick<StepProps, 'draft' | 'ctx' | 'update'>) {
+  if (!abundanceShardsDue(draft, ctx) || !ctx.map) return null
+  const shards = d3Of(draft.abundanceRoll)
+  return (
+    <Section title="Abundance of Wyrdstone" aside={ctx.map.districtName}>
+      <Card className="flex flex-col gap-3 px-4 py-3">
+        <p className="text-sm leading-relaxed text-ink-dim">
+          {ctx.map.districtName} is rich in wyrdstone: the winner of a battle here gains D3 extra shards (map rules, Points of Interest). Roll a D6: 1-2 is one shard, 3-4 two, 5-6 three.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <DieField label="D6" sides={6} value={draft.abundanceRoll} onChange={(v) => update((d) => setAbundanceRoll(d, v))} rollable />
+          {shards !== null ? (
+            <p className="text-sm text-ink">
+              +{shards} {shards === 1 ? 'shard' : 'shards'}
+            </p>
+          ) : null}
+        </div>
+      </Card>
+    </Section>
   )
 }

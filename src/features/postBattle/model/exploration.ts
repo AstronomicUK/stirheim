@@ -25,6 +25,7 @@ import { explorationDiceAllowed, locationOutcome, resolveExploration, type Explo
 import type { ExplorationLocation, ExplorationReward } from '../../../rules/types/exploration'
 import type { RosterHero, RosterWarband } from '../../../rules/types/roster'
 import { isDie, type ExplorationDraft, type FoundItem } from './state'
+import { minMax } from '../../../rules/resolve/dice'
 
 export interface ExplorationInput {
   won: boolean
@@ -32,6 +33,11 @@ export interface ExplorationInput {
   eligibleHeroes: RosterHero[]
   /** Enemies this warband put out of action (Grave Goods and the like). */
   enemiesOut?: number
+  /** Map campaigns: extra exploration dice from districts held, and where from. */
+  extraDice?: number
+  extraDiceNote?: string
+  /** Map campaigns: a district that makes every find at a location its maximum (Rich Quarter, Clock Tower). */
+  maxFinds?: { districtName: string } | null
 }
 
 export interface DiceAmount {
@@ -78,7 +84,7 @@ export function foundItemFromName(name: string, quantity = 1): FoundItem {
   return item ? { item_rules_id: item.id, custom_name: null, quantity } : { item_rules_id: null, custom_name: name, quantity }
 }
 
-function diceAmount(rewards: ExplorationReward[], kind: 'gold' | 'wyrdstone', entered: number | null): DiceAmount {
+function diceAmount(rewards: ExplorationReward[], kind: 'gold' | 'wyrdstone', entered: number | null, maxFinds = false): DiceAmount {
   let fixed = 0
   const expressions: string[] = []
   for (const r of rewards) {
@@ -86,8 +92,17 @@ function diceAmount(rewards: ExplorationReward[], kind: 'gold' | 'wyrdstone', en
     if (typeof r.amount === 'number') fixed += r.amount
     else if (typeof r.amount === 'string') expressions.push(r.amount)
   }
-  const value = expressions.length === 0 ? fixed : entered
+  // A district that guarantees the maximum find replaces the roll with the expression's ceiling.
+  const value = expressions.length === 0 ? fixed : maxFinds ? fixed + expressions.reduce((n, e) => n + safeMax(e), 0) : entered
   return { fixed, expressions, value }
+}
+
+function safeMax(expression: string): number {
+  try {
+    return minMax(expression).max
+  } catch {
+    return 0
+  }
 }
 
 const NO_HEROES = 'No hero came through the battle without going out of action, so nobody can lead the search: no exploration this time.'
@@ -122,7 +137,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
 
   const eligible = new Set(input.eligibleHeroes.map((h) => h.id))
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
-  const suggested = explorationDiceAllowed(roster, { won: input.won, heroesOutOfAction })
+  const suggested = explorationDiceAllowed(roster, { won: input.won, heroesOutOfAction, extraDice: input.extraDice ?? 0, extraDiceNote: input.extraDiceNote })
   const override = draft.diceOverride
   const allowed: ExplorationDiceAllowed = override
     ? { count: override.count, capped: false, reason: `${suggested.reason}; changed to ${override.count}${override.reason.trim() ? `: ${override.reason.trim()}` : ''}` }
@@ -161,8 +176,9 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || draft.testPassed === true)
   const rewards = rewardsApply ? outcome!.rewards : []
 
-  const gold = diceAmount(rewards, 'gold', draft.gold)
-  const extraShards = diceAmount(rewards, 'wyrdstone', draft.extraShards)
+  const maxFinds = Boolean(input.maxFinds) && rewardsApply
+  const gold = diceAmount(rewards, 'gold', draft.gold, maxFinds)
+  const extraShards = diceAmount(rewards, 'wyrdstone', draft.extraShards, maxFinds)
   if (gold.value === null) problems.push(`Enter the gold found (${gold.expressions.join(' + ')} gc).`)
   if (extraShards.value === null) problems.push(`Enter the shards found at the location (${extraShards.expressions.join(' + ')}).`)
 
@@ -173,6 +189,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (location && outcome && !needsSubRoll && outcome.text !== location.rules) notes.push(`${location.name} D6 ${draft.subRoll}: ${outcome.text}`)
   if (needsTest) notes.push(draft.testPassed ? `${needsTest.stat} test passed.` : draft.testPassed === false ? `${needsTest.stat} test failed: ${needsTest.prompt}` : '')
   notes.push(...textNotes)
+  if (maxFinds && (gold.expressions.length > 0 || extraShards.expressions.length > 0)) notes.push(`${input.maxFinds!.districtName}: the maximum was taken for what the location gives (${[...gold.expressions.map((e) => `${e} gc`), ...extraShards.expressions.map((e) => `${e} shards`)].join(', ')}).`)
   if (draft.notes.trim() !== '') notes.push(draft.notes.trim())
 
   const bonuses = explorationBonuses(roster, result.shards, input.enemiesOut ?? 0)

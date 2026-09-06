@@ -7,6 +7,7 @@ import { useRecordAdvanceRoll, useResolveAdvance, type PendingAdvanceRow } from 
 import type { WarbandDetail } from '../../api/warbands'
 import { diffRoster } from '../../domain'
 import type { CampaignBans } from '../../rules/types/roster'
+import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import type { WarbandTemplate } from '../../rules/types'
 import { Button, Notice, Sheet } from '../../ui'
 import { skillTableName } from '../roster/view/lookups'
@@ -21,10 +22,12 @@ export interface ResolveSheetProps {
   template: WarbandTemplate | undefined
   /** The campaign's bans, when the warband is in one. */
   bans?: CampaignBans
+  /** Map campaigns: the district that lets a new spell be chosen (Sage's Hall). */
+  chooseSpell?: PerkSource | null
   onClose: () => void
 }
 
-export function ResolveSheet({ advance, subject, detail, template, bans, onClose }: ResolveSheetProps) {
+export function ResolveSheet({ advance, subject, detail, template, bans, chooseSpell = null, onClose }: ResolveSheetProps) {
   // The sheet is mounted with key={advance.id}, so this runs once per advance. The seed is a no-op
   // when a persisted draft already exists (a refresh mid-roll).
   const [store] = useState(() => {
@@ -137,7 +140,7 @@ export function ResolveSheet({ advance, subject, detail, template, bans, onClose
     <Sheet open onClose={onClose} title={name} description={`${roleLabel} · advance earned at ${advance.threshold_xp} xp`} footer={footer}>
       <div className="flex flex-col gap-4 py-2">
         {advance.rolled && step === 'choose' ? <p className="text-xs text-ink-dim">Rolled earlier; only the choice is left.</p> : null}
-        <AdvanceBody draft={draft} plan={plan} subject={subject} step={step} update={update} />
+        <AdvanceBody draft={draft} plan={plan} subject={subject} step={step} update={update} chooseSpell={chooseSpell} />
         {submitError ? (
           <Notice tone="error" title="Could not save the advance">
             {submitError}

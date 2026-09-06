@@ -36,6 +36,8 @@ import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
 import { defaultPromotedName, effectiveStep, emptyDraft as emptyAdvanceDraft, findSubject, planGroup, planHero, subjectName, type AdvanceDraft, type AdvanceStep, type AdvanceSubject, type GroupPlan, type HeroPlan } from '../../advances/model'
 import { skillTableName } from '../../roster/view/lookups'
 import type { CampaignHouseRules } from '../../../rules/types/roster'
+import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
+import { d3Of } from './state'
 
 export interface ReportContext {
   roster: RosterWarband
@@ -55,6 +57,16 @@ export interface ReportContext {
   itemsUsed?: Record<string, string[]>
   /** Warriors of this warband a Nurgle's Rot carrier wounded on a 6 (from the shared combat log): they contract the Rot. */
   rotVictims?: string[]
+  /** Map campaigns: the battle's district and the advantages this warband held going into it. */
+  map?: MapReportContext | null
+}
+
+export interface MapReportContext {
+  districtId: string
+  districtName: string
+  /** Abundance of Wyrdstone: the winner gains D3 extra shards. */
+  abundance: boolean
+  perks: MapPerks
 }
 
 export interface InjurySummary {
@@ -156,13 +168,13 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
   }
 }
 
-export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband): InjuriesDerived {
+export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null): InjuriesDerived {
   const out = heroOoaIds(draft)
   const heroes = participants.heroes
     .filter((h) => out.has(h.id))
     .map((hero) => {
       const skip = draft.injurySkips[hero.id]
-      return { hero, resolution: skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId) }
+      return { hero, resolution: skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId, perks) }
     })
   const hiredSwords = participants.hiredSwords
     .filter((s) => out.has(s.id))
@@ -243,7 +255,9 @@ export function thresholdsCrossed(role: 'hero' | 'henchman', xpBefore: number, x
 
 export function veteranPoolOf(draft: ReportDraft): number | null {
   const [a, b] = draft.veteranPool
-  return isDie(a, 6) && isDie(b, 6) ? a + b : null
+  if (!isDie(a, 6) || !isDie(b, 6)) return null
+  // A third die where a map district allows 3D6 (Quayside, Memorial Gardens).
+  return a + b + (isDie(draft.veteranPoolExtra, 6) ? draft.veteranPoolExtra : 0)
 }
 
 /** Every place the player overrode what the wizard suggested, for the report. */
@@ -262,7 +276,7 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
   return out
 }
 
-function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived): Record<StepId, string[]> {
+function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
   if (kit.pending > 0) problems.injuries.push(`${kit.pending} ${kit.pending === 1 ? 'roll' : 'rolls'} for kit after the battle still to make.`)
@@ -277,6 +291,8 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   problems.exploration.push(...exploration.problems)
   const [a, b] = draft.veteranPool
   if ((a === null) !== (b === null) || (a !== null && !isDie(a, 6)) || (b !== null && !isDie(b, 6))) problems.veterans.push('Enter both veteran-pool dice, or leave both blank.')
+  if (draft.veteranPoolExtra !== null && !isDie(draft.veteranPoolExtra, 6)) problems.veterans.push('The third veteran-pool die must be 1-6.')
+  if (abundanceShardsDue(draft, ctx) && draft.abundanceRoll === null) problems.exploration.push(`${ctx.map?.districtName} is an Abundance of Wyrdstone district: roll the D3 for the extra shards.`)
   return problems
 }
 
@@ -455,7 +471,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     heroes,
     groups,
     warband: {
-      wyrdstone_delta: draft.battleWyrdstone + (record?.shards ?? 0) + effects.shardsDelta,
+      wyrdstone_delta: draft.battleWyrdstone + (record?.shards ?? 0) + effects.shardsDelta + (abundanceShards(draft, ctx) ?? 0),
       gold_delta: draft.battleGold + (record?.goldFound ?? 0) + effects.goldDelta,
       veteran_pool: veteranPoolOf(draft),
     },
@@ -478,13 +494,26 @@ function ooaLines(draft: ReportDraft, participants: Participants): OoaLine[] {
   return lines
 }
 
-function battleNotes(draft: ReportDraft, kit?: KitDerived): string {
+function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext): string {
   const parts: string[] = []
   if (draft.battleWyrdstone > 0) parts.push(`${draft.battleWyrdstone} ${draft.battleWyrdstone === 1 ? 'shard' : 'shards'} of wyrdstone picked up during the battle.`)
+  const abundance = ctx ? abundanceShards(draft, ctx) : null
+  if (abundance) parts.push(`${ctx!.map!.districtName} (Abundance of Wyrdstone): +${abundance} ${abundance === 1 ? 'shard' : 'shards'} for winning there (D6 ${draft.abundanceRoll}).`)
+  if (ctx?.map && ctx.map.perks.districts.length > 0) parts.push(`Map advantages held: ${ctx.map.perks.districts.map((d) => d.districtName).join(', ')}.`)
   if (draft.battleGold > 0) parts.push(`${draft.battleGold} gc looted during the battle.`)
   if (kit) for (const line of kitEffects(kit).lines) parts.push(line)
   if (draft.notes.trim() !== '') parts.push(draft.notes.trim())
   return parts.join('\n')
+}
+
+/** The winner of a battle in an Abundance of Wyrdstone district owes a D3 for extra shards. */
+export function abundanceShardsDue(draft: ReportDraft, ctx: ReportContext): boolean {
+  return Boolean(ctx.map?.abundance) && draft.result === 'won'
+}
+
+/** The D3 result as shards, or null while it is not rolled (or not due). */
+export function abundanceShards(draft: ReportDraft, ctx: ReportContext): number | null {
+  return abundanceShardsDue(draft, ctx) ? d3Of(draft.abundanceRoll) : null
 }
 
 /** The roster as it will stand once the report's patches are applied (advances not yet rolled). */
@@ -579,16 +608,19 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: ctx.itemsUsed ?? {}, heroesOut: heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
-  const injuries = deriveInjuries(draft, participants, ctx.matchId, ctx.roster)
+  const injuries = deriveInjuries(draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks)
   const xp = deriveXp(draft, participants, injuries, ctx)
   const exploration = deriveExploration(draft.exploration, ctx.roster, {
     won: draft.result === 'won',
     eligibleHeroes: survivingHeroes,
     enemiesOut: Object.values(draft.enemiesOut).reduce((n, v) => n + (v ?? 0), 0),
+    extraDice: ctx.map?.perks.explorationDice ?? 0,
+    extraDiceNote: ctx.map?.perks.explorationDiceSources.join(', '),
+    maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   const advances = deriveAdvances(draft, ctx, applied)
-  const problems = stepProblems(draft, injuries, exploration, kit)
+  const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.advances.push(...advances.problems)
   const firstIncomplete = STEP_IDS.findIndex((id) => problems[id].length > 0)
   const firstIncompleteStep = firstIncomplete === -1 ? null : firstIncomplete
@@ -609,7 +641,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: battleNotes(draft, kit),
+      notes: battleNotes(draft, kit, ctx),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

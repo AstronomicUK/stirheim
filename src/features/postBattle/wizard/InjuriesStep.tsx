@@ -15,6 +15,7 @@ import {
   setKitExtraRoll,
   setKitRoll,
   setHeroInjurySubRoll,
+  setHeroDistrictRoll,
   setSwordInjury,
   type HeroInjuryResolution,
   type InjuryOutcome,
@@ -59,6 +60,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               onSkip={(reason) => update((d) => setInjurySkip(d, hero.id, reason))}
               onD66={(d66) => update((d) => addHeroInjuryRoll(d, hero.id, d66))}
               onSubRoll={(index, v) => update((d) => (v === null ? d : setHeroInjurySubRoll(d, hero.id, index, v)))}
+              onDistrictRoll={(index, v) => update((d) => (v === null ? d : setHeroDistrictRoll(d, hero.id, index, v)))}
               onCount={(v) => update((d) => (v === null ? d : setHeroInjuryCount(d, hero.id, v)))}
               onReset={() => update((d) => resetHeroInjury(d, hero.id))}
             />
@@ -261,11 +263,12 @@ interface HeroInjuryCardProps {
   onSkip: (reason: string | null) => void
   onD66: (d66: number) => void
   onSubRoll: (rollIndex: number, value: number | null) => void
+  onDistrictRoll: (rollIndex: number, value: number | null) => void
   onCount: (value: number | null) => void
   onReset: () => void
 }
 
-function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll, onCount, onReset }: HeroInjuryCardProps) {
+function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
   const { steps, pending, outcome } = resolution
   const lastApplied = [...steps].reverse().find((s) => !s.rerolled)
@@ -310,6 +313,12 @@ function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll
         <div className="flex flex-col gap-2">
           <p className="text-xs text-ink-dim">{pending.prompt}.</p>
           <DieField label="D6" sides={6} value={null} onChange={onCount} rollable />
+        </div>
+      ) : null}
+      {pending.kind === 'districtTest' ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-ink-dim">{pending.prompt}.</p>
+          <DieField label={`D6 (${pending.needed}+)`} sides={6} value={null} onChange={(v) => onDistrictRoll(pending.rollIndex, v)} rollable />
         </div>
       ) : null}
 

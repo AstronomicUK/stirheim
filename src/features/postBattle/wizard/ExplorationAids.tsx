@@ -17,6 +17,7 @@ export function ExplorationAidsCard({ draft, ctx, update, rolls }: Pick<StepProp
     houseRules: ctx.houseRules ?? defaultCampaignHouseRules(),
     heroesOutOfAction: [...heroOoaIds(draft)],
     preBattle: ctx.preBattle ?? {},
+    mapModifyOne: ctx.map?.perks.explorationModifyOne ? { districtName: ctx.map.perks.explorationModifyOne.districtName } : null,
   })
   if (aids.length === 0) return null
   return (

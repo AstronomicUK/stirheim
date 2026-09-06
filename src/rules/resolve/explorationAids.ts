@@ -42,6 +42,8 @@ export interface AidOptions {
   heroesOutOfAction: readonly string[];
   /** Outcomes recorded on the battle sheet before the game ("tarot:<heroId>" -> "passed"). */
   preBattle: Record<string, string>;
+  /** Map campaigns: a district that lets one exploration die be modified by 1 (City Hall). */
+  mapModifyOne?: { districtName: string } | null;
 }
 
 /** The map's purchase result is kept in the item's notes, e.g. "Map D6 5: Accurate". */
@@ -110,6 +112,7 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
     const seer = warband.heroes.find((h) => h.status === "active" && h.unitTemplateId === rule.rollTwoKeepOneWith && !down.has(h.id));
     if (seer) out.push({ key: `keepone:${seer.id}`, label: seer.name, kind: "rerollKeepEither", uses: 1, holderId: seer.id, holderName: seer.name, note: rule.note });
   }
+  if (opts.mapModifyOne) out.push({ key: "district:modify", label: opts.mapModifyOne.districtName, kind: "modify", uses: 1, holderId: null, holderName: "the warband", note: `${opts.mapModifyOne.districtName}: during the Exploration Procedure you may modify one dice by +1 or -1.` });
   return out;
 }
 

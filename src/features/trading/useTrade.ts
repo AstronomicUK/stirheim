@@ -2,6 +2,7 @@
 // the result here, and this diffs it against the loaded rows and posts the batch. There is no
 // local cart: after each call the queries refetch, so the screen always shows what the database holds.
 
+import type { MapPerks } from '../../rules/resolve/mapAdvantages'
 import { useState } from 'react'
 import { useRecordTrade, type TradePhaseStateRow } from '../../api/trading'
 import type { WarbandDetail } from '../../api/warbands'
@@ -28,6 +29,8 @@ export interface TradeContext {
   detail: WarbandDetail
   roster: RosterWarband
   houseRules: CampaignHouseRules
+  /** Map campaigns: the district advantages the warband holds; null when the campaign is not on the map. */
+  perks: MapPerks | null
   phase: PhaseInfo
   canTrade: boolean
   pending: boolean
@@ -44,7 +47,7 @@ export function phaseInfo(matchId: string | null, state: TradePhaseStateRow | nu
   return { matchId, wyrdstoneSold: state?.wyrdstone_sold ?? false, heroesSearched: state?.heroes_searched ?? [], heroesOutOfAction }
 }
 
-export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, phase: PhaseInfo, canTrade: boolean): TradeContext {
+export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, phase: PhaseInfo, canTrade: boolean, perks: MapPerks | null = null): TradeContext {
   const mutation = useRecordTrade(detail.warband.id)
   const [error, setError] = useState<string | null>(null)
 
@@ -74,6 +77,7 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
     detail,
     roster: detail.roster,
     houseRules,
+    perks,
     phase,
     canTrade,
     pending: mutation.isPending,

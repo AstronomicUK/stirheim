@@ -29,6 +29,9 @@ import { VeteransStep } from './wizard/VeteransStep'
 import { StepIndicator, WizardBar } from './wizard/WizardShell'
 import type { CampaignHouseRules } from '../../rules/types/roster'
 import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
+import { useMapPerks } from '../map/useMapPerks'
+import { findDistrict } from '../../rules/data/map/districts'
+import type { CampaignSettings } from '../../domain/settings'
 
 function BackToMatch({ matchId }: { matchId: string | undefined }) {
   return (
@@ -152,7 +155,7 @@ function Guarded({ match, participant, userId, liveState, amending, rotVictims }
       </>
     )
   }
-  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState} amending={amending} houseRules={applyHouseRuleDefaults(campaign.data?.settings.houseRules)} rotVictims={rotVictims} />
+  return <Wizard match={match} participant={participant} rosterData={roster.data} liveState={liveState} amending={amending} houseRules={applyHouseRuleDefaults(campaign.data?.settings.houseRules)} settings={campaign.data?.settings} rotVictims={rotVictims} />
 }
 
 interface WizardProps {
@@ -163,9 +166,13 @@ interface WizardProps {
   liveState: BattleLiveState | undefined
   amending: boolean
   houseRules: CampaignHouseRules
+  settings: CampaignSettings | undefined
 }
 
-function Wizard({ match, participant, rosterData, liveState, amending, houseRules, rotVictims }: WizardProps) {
+function Wizard({ match, participant, rosterData, liveState, amending, houseRules, settings, rotVictims }: WizardProps) {
+  // Map campaigns: the advantages held going into this battle (the battle itself is left out).
+  const { perks } = useMapPerks(match.campaign_id, participant.warband_id, Boolean(settings?.mapCampaign), match.id)
+  const district = findDistrict(match.district_id)
   const navigate = useNavigate()
   const store = useMemo(() => reportStore(match.id, participant.warband_id), [match.id, participant.warband_id])
   const draft = useReportStore(store, (s) => s.draft)
@@ -192,8 +199,9 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       preBattle: liveState?.preBattle ?? {},
       itemsUsed: liveState?.itemsUsed ?? {},
       rotVictims,
+      map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
     }),
-    [rosterData, match.id, participant.rating, opponents, houseRules, liveState, rotVictims],
+    [rosterData, match.id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

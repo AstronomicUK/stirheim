@@ -1,3 +1,4 @@
+import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
@@ -24,7 +25,7 @@ function withPool(result: RecruitHenchmenResult): RosterWarband {
 }
 
 /** Hire henchmen as a new group or into an existing group of the same type, paying for veterans' experience. */
-export function HenchmenTab({ detail, template, canEdit, onDone }: RecruitTabProps) {
+export function HenchmenTab({ detail, template, canEdit, onDone, perks }: RecruitTabProps) {
   const listings = useMemo(() => listUnits(detail.roster, template, 'henchman'), [detail.roster, template])
   const [picked, setPicked] = useState<UnitListing | null>(null)
   const pool = detail.roster.veteranPool
@@ -45,6 +46,7 @@ export function HenchmenTab({ detail, template, canEdit, onDone }: RecruitTabPro
           detail={detail}
           template={template}
           listing={picked}
+          cheap={perks?.cheapRecruits[picked.unit.id] ?? null}
           onClose={() => setPicked(null)}
           onDone={(outcome) => {
             setPicked(null)
@@ -62,11 +64,13 @@ interface HenchmenSheetProps {
   detail: WarbandDetail
   template: RecruitTabProps['template']
   listing: UnitListing
+  /** Map campaigns: a district price for this unit (the Cemetery's Zombies and Ghouls). */
+  cheap: { cost: number; source: PerkSource } | null
   onClose: () => void
   onDone: (outcome: Outcome) => void
 }
 
-function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenSheetProps) {
+function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone }: HenchmenSheetProps) {
   const { roster } = detail
   const unit = listing.unit
   const groups = useMemo(() => groupsOfType(roster, unit.id), [roster, unit.id])
@@ -79,7 +83,7 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
   const maxSize = useMemo(() => maxRecruitable(roster, template, unit), [roster, template, unit])
   const target = mode === 'join' ? groups.find((g) => g.id === groupId) : undefined
   const quote = veteranQuote(target, size, roster.veteranPool)
-  const listedHire = (unit.cost ?? 0) * size
+  const listedHire = (cheap ? cheap.cost : (unit.cost ?? 0)) * size
   const [costOverride, setCostOverride] = useState<Override | null>(null)
   const hireCost = overrideReady(costOverride) ? costOverride.amount : listedHire
   const costBlocks = costOverride !== null && !overrideReady(costOverride)
@@ -93,7 +97,7 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
         recruitHenchmen(roster, template, unit.id, groupName.trim(), size, id, {
           intoGroupId: mode === 'join' ? groupId : undefined,
           poolUsed: 0,
-          ...(overrideReady(costOverride) ? { costOverride: costOverride.amount } : {}),
+          ...(overrideReady(costOverride) ? { costOverride: costOverride.amount } : cheap ? { costOverride: listedHire } : {}),
         }),
       withPool,
       reasonWith('recruitment', overrideReady(costOverride) ? overrideNote('Hire cost', `${listedHire} gc`, `${costOverride.amount} gc`, costOverride.reason) : null),
@@ -156,6 +160,7 @@ function HenchmenSheet({ detail, template, listing, onClose, onDone }: HenchmenS
 
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire cost" value={`${hireCost} gc`} />
+          {cheap ? <p className="col-span-full text-xs text-ink-dim">{cheap.source.districtName}: {cheap.cost} gc each instead of {unit.cost ?? 0} gc (map advantage).</p> : null}
           <span className="col-span-full">
             <OverrideField what="the hire cost" suggested={listedHire} value={costOverride} onChange={setCostOverride} />
           </span>

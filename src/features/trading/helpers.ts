@@ -266,7 +266,7 @@ export interface SaleLine {
 }
 
 /** Every stack in the stash, on an active hero or in a henchman group. Hired swords' kit is not for sale. */
-export function sellListing(roster: RosterWarband): SaleLine[] {
+export function sellListing(roster: RosterWarband, opts: { resaleAtFull?: boolean } = {}): SaleLine[] {
   const out: SaleLine[] = []
   const push = (location: InventoryLocation, holder: string, items: RosterItem[]) => {
     items.forEach((item, i) => {
@@ -279,7 +279,7 @@ export function sellListing(roster: RosterWarband): SaleLine[] {
         item,
         catalogue,
         base,
-        each: base === null ? null : sellPrice(base),
+        each: base === null ? null : opts.resaleAtFull ? base : sellPrice(base),
       })
     })
   }

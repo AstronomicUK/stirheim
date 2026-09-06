@@ -11,7 +11,7 @@ import type { AdvanceDraft } from '../../advances/model'
 import type { AidUse } from '../../../rules/resolve/explorationAids'
 import { animalFighters } from '../../../rules/resolve/animals'
 
-export const REPORT_DRAFT_VERSION = 4
+export const REPORT_DRAFT_VERSION = 5
 
 export type ReportResult = 'won' | 'lost' | 'draw'
 
@@ -31,8 +31,12 @@ export const STEP_TITLES: Record<StepId, string> = {
 
 /** One hero's Serious Injury rolls, in the order they were made. */
 export interface HeroInjuryFlow {
-  /** D66 results; `subRoll` stays null until the injury asks for one and the player supplies it. */
-  rolls: { d66: number; subRoll: number | null }[]
+  /**
+   * D66 results; `subRoll` stays null until the injury asks for one and the player supplies it.
+   * `districtRoll` is the D6 a map district lets the player make to turn the result into a Full
+   * Recovery (Temple of Morr, Temple of Sigmar), null until rolled.
+   */
+  rolls: { d66: number; subRoll: number | null; districtRoll?: number | null }[]
   /** Multiple Injuries: the D6 that says how many further rolls to make. */
   countRoll: number | null
 }
@@ -129,6 +133,10 @@ export interface ReportDraft {
   battleGold: number
   /** The two veteran-pool dice. */
   veteranPool: [number | null, number | null]
+  /** A third veteran-pool die, where a map district allows 3D6 (Quayside, Memorial Gardens). */
+  veteranPoolExtra: number | null
+  /** Map campaigns: the D6 for the D3 extra shards of an Abundance of Wyrdstone district (winner only). */
+  abundanceRoll: number | null
   notes: string
 }
 
@@ -162,6 +170,8 @@ export function emptyDraft(): ReportDraft {
     battleWyrdstone: 0,
     battleGold: 0,
     veteranPool: [null, null],
+    veteranPoolExtra: null,
+    abundanceRoll: null,
     notes: '',
   }
 }
@@ -289,6 +299,26 @@ export function setHeroInjurySubRoll(draft: ReportDraft, heroId: string, rollInd
   if (rollIndex < 0 || rollIndex >= flow.rolls.length) return draft
   const rolls = flow.rolls.map((r, i) => (i === rollIndex ? { ...r, subRoll } : r))
   return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, rolls } } }
+}
+
+export function setHeroDistrictRoll(draft: ReportDraft, heroId: string, rollIndex: number, districtRoll: number): ReportDraft {
+  const flow = flowOf(draft, heroId)
+  if (rollIndex < 0 || rollIndex >= flow.rolls.length) return draft
+  const rolls = flow.rolls.map((r, i) => (i === rollIndex ? { ...r, districtRoll } : r))
+  return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, rolls } } }
+}
+
+export function setVeteranExtraDie(draft: ReportDraft, value: number | null): ReportDraft {
+  return { ...draft, veteranPoolExtra: value }
+}
+
+export function setAbundanceRoll(draft: ReportDraft, value: number | null): ReportDraft {
+  return { ...draft, abundanceRoll: value }
+}
+
+/** D3 from a D6 face: 1-2 = 1, 3-4 = 2, 5-6 = 3. */
+export function d3Of(d6: number | null): number | null {
+  return isDie(d6, 6) ? Math.ceil(d6 / 2) : null
 }
 
 export function setHeroInjuryCount(draft: ReportDraft, heroId: string, countRoll: number): ReportDraft {

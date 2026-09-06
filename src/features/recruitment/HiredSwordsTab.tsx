@@ -1,3 +1,4 @@
+import { halfPriceHireSource, halved, type PerkSource } from '../../rules/resolve/mapAdvantages'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
@@ -27,7 +28,7 @@ export interface HiredSwordsTabProps extends Omit<RecruitTabProps, 'template'> {
 }
 
 /** Pay or dismiss the swords already hired, then browse the catalogue for another. */
-export function HiredSwordsTab({ detail, template, canEdit, onDone, bans }: HiredSwordsTabProps) {
+export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks }: HiredSwordsTabProps) {
   const active = detail.roster.hiredSwords.filter((s) => s.status === 'active')
   const options = useMemo(() => hiredSwordOptions(detail.roster, template, bans), [detail.roster, template, bans])
   const [paying, setPaying] = useState<RosterHiredSword | null>(null)
@@ -153,7 +154,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans }: Hire
       {dismissing ? (
         <DismissHiredSwordSheet key={dismissing.id} detail={detail} hiredSword={dismissing} onClose={() => setDismissing(null)} onDone={finish} />
       ) : null}
-      {hiring ? <HireSheet key={hiring.entry.id} detail={detail} option={hiring} onClose={() => setHiring(null)} onDone={finish} /> : null}
+      {hiring ? <HireSheet key={hiring.entry.id} detail={detail} option={hiring} halfFrom={halfPriceHireSource(perks, hiring.entry.id)} onClose={() => setHiring(null)} onDone={finish} /> : null}
     </>
   )
 }
@@ -273,16 +274,19 @@ function DismissHiredSwordSheet({ detail, hiredSword: hs, onClose, onDone }: Swo
 interface HireSheetProps {
   detail: WarbandDetail
   option: HiredSwordOption
+  /** Map campaigns: the district that makes this sword half fee, if any. */
+  halfFrom: PerkSource | null
   onClose: () => void
   onDone: (outcome: Outcome) => void
 }
 
-function HireSheet({ detail, option, onClose, onDone }: HireSheetProps) {
+function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps) {
   const { roster } = detail
   const { entry, eligibility } = option
   const [name, setName] = useState('')
   const { commit, error, pending } = useCommit(detail)
-  const listedFee = entry.hireCost.base ?? 0
+  const fullFee = entry.hireCost.base ?? 0
+  const listedFee = halfFrom ? halved(fullFee) : fullFee
   const [feeOverride, setFeeOverride] = useState<Override | null>(null)
   const cost = overrideReady(feeOverride) ? feeOverride.amount : listedFee
   const feeBlocks = feeOverride !== null && !overrideReady(feeOverride)
@@ -293,7 +297,7 @@ function HireSheet({ detail, option, onClose, onDone }: HireSheetProps) {
     const trimmed = name.trim()
     const note = overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : null
     const result = await commit(
-      () => hireHiredSword(roster, entry.id, id, { ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : {}) }),
+      () => hireHiredSword(roster, entry.id, id, { ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom ? { feeOverride: listedFee } : {}) }),
       (w) => w,
       reasonWith('recruitment', note),
     )
@@ -317,6 +321,7 @@ function HireSheet({ detail, option, onClose, onDone }: HireSheetProps) {
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire fee" value={`${cost} gc`} />
+          {halfFrom ? <p className="col-span-full text-xs text-ink-dim">{halfFrom.districtName}: half the listed {fullFee} gc (map advantage).</p> : null}
           <span className="col-span-2">
             <OverrideField what="the hire fee" suggested={listedFee} value={feeOverride} onChange={setFeeOverride} />
           </span>

@@ -12,6 +12,8 @@ import { warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
 import { IconTabs, Notice, PageHeader, Spinner, type IconTab } from '../../ui'
 import { warbandTypeName } from '../roster/shared/names'
 import { Card, KeyValue } from '../roster/view/bits'
+import { useMapPerks } from '../map/useMapPerks'
+import { MapPerksCard } from '../map/MapPerksCard'
 import { DismissSection } from './DismissSection'
 import { HenchmenTab } from './HenchmenTab'
 import { HeroesTab } from './HeroesTab'
@@ -57,6 +59,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
   const user = useSession((s) => s.user)
   const campaign = useWarbandCampaign(warband.id)
   const bans = campaign.data?.settings.houseRules.bans
+  const { perks } = useMapPerks(campaign.data?.campaignId, warband.id, Boolean(campaign.data?.settings.mapCampaign))
   const template = useMemo(() => findWarbandTemplate(warband.type_rules_id), [warband.type_rules_id])
   const [tab, setTab] = useState<Tab>('heroes')
   const [outcome, setOutcome] = useState<Outcome | null>(null)
@@ -122,10 +125,12 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
         </Notice>
       ) : null}
 
+      {perks ? <MapPerksCard perks={perks} campaignId={campaign.data?.campaignId} /> : null}
+
       <IconTabs<Tab> label="Who to recruit" tabs={TABS} value={tab} onChange={setTab} />
 
       {tab === 'hired' ? (
-        <HiredSwordsTab detail={detail} template={template} canEdit={canEdit} onDone={done} bans={bans} />
+        <HiredSwordsTab detail={detail} template={template} canEdit={canEdit} onDone={done} bans={bans} perks={perks} />
       ) : !template ? (
         <Notice tone="warn" title="Warband type not in the rules data">
           &ldquo;{warband.type_rules_id}&rdquo; has no template, so heroes and henchmen cannot be hired from a list here. Add them by hand from
@@ -134,7 +139,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
       ) : tab === 'heroes' ? (
         <HeroesTab detail={detail} template={template} canEdit={canEdit} onDone={done} />
       ) : (
-        <HenchmenTab detail={detail} template={template} canEdit={canEdit} onDone={done} />
+        <HenchmenTab detail={detail} template={template} canEdit={canEdit} onDone={done} perks={perks} />
       )}
 
       {canEdit ? <DismissSection detail={detail} template={template} onDone={done} /> : null}

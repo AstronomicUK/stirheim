@@ -1,3 +1,4 @@
+import type { MapPerks } from '../../rules/resolve/mapAdvantages'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
@@ -18,6 +19,8 @@ export interface RecruitTabProps {
   template: WarbandTemplate
   canEdit: boolean
   onDone: (outcome: Outcome) => void
+  /** Map campaigns: the district advantages the warband holds. */
+  perks?: MapPerks | null
 }
 
 /** Hire a hero from the warband list: name him, pay the hire cost, arm him later at the trading post. */

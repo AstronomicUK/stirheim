@@ -12,6 +12,15 @@ import { unitRules, warbandRules } from "../data/campaignRules";
 export interface SellWyrdstoneOptions {
   /** Use this size instead of counting the roster (e.g. a house rule or a hired sword that does count). */
   sizeOverride?: number;
+  /** Map campaigns: extra gold as a fraction of the chart income, rounded down (The Rock: 0.2). */
+  bonusRate?: number;
+  /** Where the bonus comes from, for the record. */
+  bonusSource?: string;
+}
+
+/** The chart income plus any map bonus (rounded down). */
+export function withSaleBonus(income: number, rate: number | undefined): number {
+  return rate && rate > 0 ? income + Math.floor(income * rate) : income;
 }
 
 /**
@@ -90,7 +99,7 @@ function assertSellable(warband: RosterWarband, shards: number): void {
 export function wyrdstoneQuote(warband: RosterWarband, shards: number, opts: SellWyrdstoneOptions = {}): number {
   if (!Number.isInteger(shards) || shards < 1) return 0;
   const info = incomeSize(warband);
-  return wyrdstoneIncome(shards, opts.sizeOverride ?? info.size, opts.sizeOverride !== undefined ? 0 : info.bandShift);
+  return withSaleBonus(wyrdstoneIncome(shards, opts.sizeOverride ?? info.size, opts.sizeOverride !== undefined ? 0 : info.bandShift), opts.bonusRate);
 }
 
 /** Sell wyrdstone: adds the chart income to gold and removes the shards. Once per post-battle sequence (see trading.TradePhaseState). */
@@ -103,13 +112,14 @@ export function sellWyrdstone(
   const info = incomeSize(warband);
   const size = opts.sizeOverride ?? info.size;
   const shift = opts.sizeOverride !== undefined ? 0 : info.bandShift;
-  const gold = wyrdstoneIncome(shards, size, shift);
+  const chart = wyrdstoneIncome(shards, size, shift);
+  const gold = withSaleBonus(chart, opts.bonusRate);
   return {
     value: { ...warband, gold: warband.gold + gold, wyrdstone: warband.wyrdstone - shards },
     events: [
       {
         kind: "wyrdstone.sold",
-        message: `Sold ${shards} wyrdstone for ${gold} gc (warband size ${size}${shift ? `, band ${shift > 0 ? "+" : ""}${shift}` : ""})`,
+        message: `Sold ${shards} wyrdstone for ${gold} gc (warband size ${size}${shift ? `, band ${shift > 0 ? "+" : ""}${shift}` : ""}${gold !== chart ? `; ${chart} gc on the chart +${Math.round((opts.bonusRate ?? 0) * 100)}% from ${opts.bonusSource ?? "the map"}` : ""})`,
         data: { shards, gold, warbandSize: size },
       },
     ],

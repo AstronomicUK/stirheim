@@ -10,6 +10,7 @@ import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { rollDie } from '../../rules/resolve/dice'
 import { characterSearchers, resolveCharacterSearch, type SearcherRoll } from '../../rules/resolve/dramatis'
 import { hireHiredSword } from '../../rules/resolve/recruitment'
+import { halfPriceHireSource, halved } from '../../rules/resolve/mapAdvantages'
 import { actionsFor, performAction, type BetweenBattleAction } from '../../rules/resolve/betweenBattles'
 import { findItem } from '../../rules/data/items'
 import type { RosterHero } from '../../rules/types/roster'
@@ -90,7 +91,10 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
   const [rolls, setRolls] = useState<Record<string, number | null>>({})
   const [recorded, setRecorded] = useState<ReturnType<typeof resolveCharacterSearch> | null>(null)
   const entry = findHiredSword(persona.id)
-  const fee = entry?.hireCost.base ?? null
+  const listedFee = entry?.hireCost.base ?? null
+  const halfFrom = halfPriceHireSource(trade.perks, persona.id)
+  const fee = listedFee === null ? null : halfFrom ? halved(listedFee) : listedFee
+  const autoFound = persona.id === 'luthor_wolfenbaum' && trade.perks?.findsLuthor ? trade.perks.findsLuthor : null
   const canHire = fee !== null && !alreadyHired && roster.gold >= fee
 
   const lineup: SearcherRoll[] = chosen
@@ -105,8 +109,10 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
 
   async function search(autoRoll: boolean) {
     const withRolls = lineup.map((s) => ({ ...s, roll: autoRoll ? rollDie(6) : s.roll }))
-    const result = resolveCharacterSearch(withRolls)
-    if (!result.complete) return
+    const rolled = resolveCharacterSearch(withRolls)
+    if (!rolled.complete) return
+    // A gate district held: a hero sent to look for Luthor finds him.
+    const result = autoFound && !rolled.found ? { ...rolled, found: true, lines: [...rolled.lines, `${autoFound.districtName}: a hero sent to look for ${persona.name} finds him automatically.`] } : rolled
     if (autoRoll) setRolls(Object.fromEntries(withRolls.map((s) => [s.heroId, s.roll])))
     // Record the searchers on the phase (no roster change), so they cannot also look for rare items.
     const ok = await run(() => roster, { heroesSearched: withRolls.map((s) => s.heroId), reason: `trading · Searched for ${persona.name}: ${result.lines.join('; ')}` })
@@ -115,7 +121,7 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
 
   async function hire() {
     if (fee === null) return
-    const ok = await run(() => hireHiredSword(roster, persona.id, crypto.randomUUID()).value, { reason: `recruitment · ${persona.name} found and hired` })
+    const ok = await run(() => hireHiredSword(roster, persona.id, crypto.randomUUID(), halfFrom && fee !== null ? { feeOverride: fee } : {}).value, { reason: `recruitment · ${persona.name} found and hired${halfFrom ? ` at half fee (${halfFrom.districtName})` : ''}` })
     if (ok) onClose()
   }
 

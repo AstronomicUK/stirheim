@@ -17,12 +17,15 @@ import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
 import { applyHenchmanInjury, applyHeroInjury, applyHiredSwordInjury, MULTIPLE_INJURIES_REROLL_CODES } from '../../../rules/resolve/injuries'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../../rules/types/roster'
 import { isDie, type HeroInjuryFlow } from './state'
+import { injuryRewriteFor, type MapPerks } from '../../../rules/resolve/mapAdvantages'
 
 export type InjuryOutcome = HeroInjuryLine['outcome']
 
 export type HeroInjuryPending =
   | { kind: 'd66'; prompt: string }
   | { kind: 'subRoll'; die: 'D6' | 'D3'; prompt: string; rollIndex: number }
+  /** A map district offers a D6 to turn this result into a Full Recovery. */
+  | { kind: 'districtTest'; prompt: string; rollIndex: number; districtName: string; needed: number }
   | { kind: 'count'; prompt: string }
   | { kind: 'done' }
 
@@ -35,6 +38,8 @@ export interface HeroInjuryStep {
   effect: string | null
   /** Rolled during Multiple Injuries but excluded by the re-roll rule. */
   rerolled: boolean
+  /** A map district turned the result into a Full Recovery ("Temple of Morr, D6 5"). */
+  rewrittenBy?: string
 }
 
 export interface HeroInjuryResolution {
@@ -62,6 +67,8 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
   const rolls: number[] = []
   steps.forEach((s, i) => {
     rolls.push(s.d66)
+    const districtRoll = flow.rolls[i]?.districtRoll
+    if (typeof districtRoll === 'number') rolls.push(districtRoll)
     if (s.subRoll !== null) rolls.push(s.subRoll)
     if (i === 0 && flow.countRoll !== null) rolls.push(flow.countRoll)
   })
@@ -78,8 +85,10 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
   }
 }
 
+const FULL_RECOVERY_D66 = 41
+
 /** Replay a hero's injury rolls from the roster state at the end of the battle. */
-export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string): HeroInjuryResolution {
+export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null): HeroInjuryResolution {
   const ctx = matchId ? { matchId } : undefined
   const steps: HeroInjuryStep[] = []
   let current = hero
@@ -94,6 +103,30 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
       steps.push({ d66: roll.d66, subRoll: null, code: injury.code, name: injury.name, effect: null, rerolled: true })
       continue
     }
+    // Map districts: a Full Recovery instead, automatically or on a D6 (Temple of Morr 5+, the Gaol always).
+    const rewrite = injuryRewriteFor(perks, roll.d66)
+    if (rewrite) {
+      const districtRoll = roll.districtRoll ?? null
+      if (rewrite.test !== undefined && districtRoll === null) {
+        steps.push({ d66: roll.d66, subRoll: null, code: injury.code, name: injury.name, effect: null, rerolled: false })
+        pending = { kind: 'districtTest', prompt: `${hero.name}: ${rewrite.source.districtName} lets you roll a D6; on a ${rewrite.test}+ the result becomes Full Recovery`, rollIndex: i, districtName: rewrite.source.districtName, needed: rewrite.test }
+        break
+      }
+      const passed = rewrite.test === undefined || (districtRoll !== null && districtRoll >= rewrite.test)
+      if (passed) {
+        const recovered = applyHeroInjury(current, FULL_RECOVERY_D66, undefined, ctx)
+        current = recovered.value.hero
+        const label = rewrite.test === undefined ? rewrite.source.districtName : `${rewrite.source.districtName}, D6 ${districtRoll}`
+        steps.push({ d66: roll.d66, subRoll: null, code: 'full_recovery', name: `${injury.name} → Full Recovery`, effect: `${label}: the result becomes Full Recovery`, rerolled: false, rewrittenBy: label })
+        if (multi) {
+          remaining -= 1
+          if (remaining <= 0) pending = { kind: 'done' }
+        } else {
+          pending = { kind: 'done' }
+        }
+        continue
+      }
+    }
     const res = applyHeroInjury(current, roll.d66, roll.subRoll ?? undefined, ctx)
     if (res.value.needsSubRoll) {
       steps.push({ d66: roll.d66, subRoll: null, code: injury.code, name: injury.name, effect: null, rerolled: false })
@@ -102,7 +135,7 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
     }
     current = res.value.hero
     const record = current.injuries[current.injuries.length - 1]
-    steps.push({ d66: roll.d66, subRoll: roll.subRoll, code: injury.code, name: injury.name, effect: record?.effect ?? '', rerolled: false })
+    steps.push({ d66: roll.d66, subRoll: roll.subRoll, code: injury.code, name: injury.name, effect: `${record?.effect ?? ''}${rewrite && rewrite.test !== undefined ? ` (${rewrite.source.districtName} D6 ${roll.districtRoll}: not ${rewrite.test}+)` : ''}`, rerolled: false })
     if (res.value.needsMoreRolls) {
       if (flow.countRoll === null) {
         pending = { kind: 'count', prompt: `${hero.name}: roll a D6 for how many more times to roll on the chart` }

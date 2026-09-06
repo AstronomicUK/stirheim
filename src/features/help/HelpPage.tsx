@@ -268,7 +268,9 @@ export function HelpPage() {
           <B>Booking a battle.</B> The schedule form lists districts by who can reach them and says when a side cannot, what the map rules call for
           (Surprise Attack when one side controls the district, Defend the Find when both have footholds; one tap picks it) and the tolls: 5 gc at a gate
           without a foothold, and 2D6 gc to whoever controls the Middle Bridge when it is the only way through. The match page shows the district and lets
-          the GM or a participant move it while the battle is open. The advantages themselves are read from the map for now; the post-battle report will
+          the GM or a participant move it while the battle is open. The advantages a warband holds are applied where they bite: extra exploration dice, the
+          Abundance D3, a temple&apos;s Full Recovery roll and the third veteran die in the report; half prices, the rare-roll bonus and resale at cost in the
+          trading post and recruitment; a chosen spell on the advances screen. Each is labelled with its district. The rest of the report will
           apply them in a later phase.
         </P>
       </Topic>

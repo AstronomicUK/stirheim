@@ -2,27 +2,36 @@ import { rollDie } from '../../../rules/resolve/dice'
 import { Button, DieField, NumberField, TextArea } from '../../../ui'
 import { Card, Section } from '../../roster/view/bits'
 import { setBattleGold, setBattleWyrdstone, setNotes, setVeteranDie } from '../model'
+import { setVeteranExtraDie } from '../model/state'
 import { Intro, type StepProps } from './bits'
 import { StepBody } from './WizardShell'
 
-export function VeteransStep({ draft, derived, update }: StepProps) {
+export function VeteransStep({ draft, derived, update, ctx }: StepProps) {
   const [a, b] = draft.veteranPool
+  const veteranDice = ctx.map?.perks.veteranDice ?? []
   return (
     <StepBody title="Veterans & notes">
       <Intro>
         Rulebook: "Between each battle, roll 2D6: this represents the experience of the warriors currently available for hire." New henchmen may start with that much experience between them.
       </Intro>
-      <Section title="Veteran pool (2D6)">
+      <Section title={veteranDice.length > 0 ? 'Veteran pool (2D6, or 3D6 from the map)' : 'Veteran pool (2D6)'}>
         <Card className="flex flex-col gap-3 px-4 py-3">
           <div className="flex flex-wrap items-end gap-3">
             <DieField label="First D6" sides={6} value={a} onChange={(v) => update((d) => setVeteranDie(d, 0, v))} />
             <DieField label="Second D6" sides={6} value={b} onChange={(v) => update((d) => setVeteranDie(d, 1, v))} />
+            {veteranDice.length > 0 ? <DieField label="Third D6 (map)" sides={6} value={draft.veteranPoolExtra} onChange={(v) => update((d) => setVeteranExtraDie(d, v))} /> : null}
             <div className="flex flex-1 items-end justify-end">
               <Button variant="secondary" onClick={() => update((d) => setVeteranDie(setVeteranDie(d, 0, rollDie(6)), 1, rollDie(6)))}>
                 Roll for me
               </Button>
             </div>
           </div>
+          {veteranDice.length > 0 ? (
+            <p className="text-sm text-ink-dim">
+              {veteranDice.map((v) => `${v.source.districtName}: roll 3D6 when recruiting for existing ${v.kind === 'human' ? 'human' : 'non-human'} henchman groups`).join('. ')}. Add the third die when
+              the recruits are for such a group; leave it blank otherwise.
+            </p>
+          ) : null}
           <p className="text-sm text-ink-dim">
             {derived.veteranPool !== null ? (
               <>

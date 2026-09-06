@@ -37,6 +37,8 @@ export interface ExplorationDiceOptions {
   heroesOutOfAction: string[];
   /** Extra dice granted by skills or equipment, as entered by the player. */
   extraDice?: number;
+  /** Where the extra dice come from, for the reason line ("Executioner's Square"). */
+  extraDiceNote?: string;
 }
 
 export interface ExplorationDiceAllowed {
@@ -60,7 +62,7 @@ export function explorationDiceAllowed(warband: RosterWarband, opts: Exploration
   const parts = [`${survivors.length} surviving ${survivors.length === 1 ? "hero" : "heroes"}`];
   if (lazy > 0) parts.push(`${lazy} ${lazy === 1 ? "gives" : "give"} no die`);
   if (opts.won) parts.push("+1 for winning");
-  if (extra > 0) parts.push(`+${extra} from skills/equipment`);
+  if (extra > 0) parts.push(`+${extra} from ${opts.extraDiceNote?.trim() || "skills/equipment"}`);
   if (ruleDice > 0) parts.push(`+${ruleDice} (${rules?.note ?? "warband rule"})`);
   const capped = raw > EXPLORATION_MAX_DICE;
   const reason = `${parts.join(", ")} = ${raw} dice${capped ? `, capped at ${EXPLORATION_MAX_DICE}` : ""}`;

@@ -83,8 +83,13 @@ test.describe('match', () => {
     await page.getByRole('radio', { name: 'My warband' }).click()
     await expect(page.getByRole('group', { name: `enemies out by ${CAPTAIN}` })).toContainText('1')
     await page.getByRole('button', { name: 'More Watchmen out of action' }).click()
+    // Marking a model out asks who did it; the answer goes on the report as a key event.
+    const who = page.getByRole('dialog', { name: /Who took one of the Watchmen out/ })
+    await who.getByRole('button', { name: 'Skritch Nightblade' }).click()
+    await expect(who).toBeHidden()
     await expect(page.getByRole('group', { name: 'Watchmen out of action' })).toContainText('1')
     await expect(page.getByText('1 out of action')).toBeVisible()
+    await expect(page.getByText('Model 1: taken out by Skritch Nightblade (Claws of Eshin)')).toBeVisible()
 
     // The sheet saves itself; wait for it before ending the game.
     await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()

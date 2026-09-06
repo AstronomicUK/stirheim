@@ -462,6 +462,64 @@ export type Database = {
           },
         ]
       }
+      map_adjustments: {
+        Row: {
+          actor_id: string
+          at: string
+          campaign_id: string
+          district_id: string
+          id: string
+          kind: string
+          reason: string
+          value: boolean
+          warband_id: string
+        }
+        Insert: {
+          actor_id: string
+          at?: string
+          campaign_id: string
+          district_id: string
+          id?: string
+          kind: string
+          reason?: string
+          value: boolean
+          warband_id: string
+        }
+        Update: {
+          actor_id?: string
+          at?: string
+          campaign_id?: string
+          district_id?: string
+          id?: string
+          kind?: string
+          reason?: string
+          value?: boolean
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_adjustments_actor_profile_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "map_adjustments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_adjustments_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_participants: {
         Row: {
           accepted_at: string | null
@@ -610,6 +668,7 @@ export type Database = {
           created_by: string
           created_via: Database["public"]["Enums"]["match_origin"]
           custom_scenario_id: string | null
+          district_id: string | null
           id: string
           notes: string
           scenario_rules_id: string | null
@@ -626,6 +685,7 @@ export type Database = {
           created_by: string
           created_via?: Database["public"]["Enums"]["match_origin"]
           custom_scenario_id?: string | null
+          district_id?: string | null
           id?: string
           notes?: string
           scenario_rules_id?: string | null
@@ -642,6 +702,7 @@ export type Database = {
           created_by?: string
           created_via?: Database["public"]["Enums"]["match_origin"]
           custom_scenario_id?: string | null
+          district_id?: string | null
           id?: string
           notes?: string
           scenario_rules_id?: string | null
@@ -1105,6 +1166,7 @@ export type Database = {
         Args: {
           p_campaign_id: string
           p_custom_scenario_id?: string
+          p_district_id?: string
           p_notes?: string
           p_scenario_rules_id?: string
           p_scheduled_for?: string
@@ -1114,6 +1176,10 @@ export type Database = {
       }
       set_campaign_alias: {
         Args: { p_alias: string; p_campaign_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      set_match_district: {
+        Args: { p_district_id: string; p_match_id: string }
         Returns: undefined
       }
       start_match: {

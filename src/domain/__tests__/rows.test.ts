@@ -169,6 +169,7 @@ describe("row schemas parse realistic seed rows", () => {
         combatMode: "app",
         lockCombatMode: false,
         reportApproval: false,
+        mapCampaign: false,
       },
       rules_markdown: "Seed campaign. House rules: no armour erosion, optional criticals, half-price armour.",
       archived: false,
@@ -231,6 +232,7 @@ describe("row schemas parse realistic seed rows", () => {
       started_at: null,
       completed_at: null,
       notes: "",
+      district_id: null,
       created_at: T0,
       updated_at: T0,
     };
@@ -536,6 +538,7 @@ describe("insert schemas", () => {
         combatMode: "app",
         lockCombatMode: false,
         reportApproval: false,
+        mapCampaign: false,
     });
     expect(campaignInsertSchema.parse({ gm_id: GM_ID, name: "Ruins of the Stir" }).settings).toBeUndefined();
   });

@@ -28,6 +28,7 @@ import { Card, KeyValue, LinkButton, Section, Tag, TextLink } from '../campaign/
 import { MatchStateTag, ParticipantCard } from './shared/bits'
 import { formatMatchTime, matchActions, pendingLabel, scenarioLink, scenarioTitle, versusLabel } from './shared/helpers'
 import { ReportCard } from './shared/ReportCard'
+import { MatchDistrict } from './shared/MatchDistrict'
 
 export function MatchPage() {
   const { id } = useParams<{ id: string }>()
@@ -145,6 +146,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           {match.completed_at ? <KeyValue label={match.state === 'cancelled' ? 'Cancelled' : 'Ended'} value={formatMatchTime(match.completed_at)} /> : null}
         </dl>
         {link ? <TextLink to={link}>Read the scenario</TextLink> : <p className="text-sm text-ink-dim">Roll on the scenario table or agree one when you sit down.</p>}
+        {campaign.data?.settings.mapCampaign || match.district_id ? <MatchDistrict match={match} isGm={isGm} userId={userId} /> : null}
         {match.notes.trim() ? <p className="whitespace-pre-wrap border-t border-border pt-3 text-sm leading-relaxed text-ink">{match.notes}</p> : null}
       </Card>
 

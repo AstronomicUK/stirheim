@@ -18,6 +18,7 @@ describe('settings form mapping', () => {
       combatMode: 'players' as const,
       lockCombatMode: true,
       reportApproval: true,
+      mapCampaign: false,
     }
     const result = settingsFromForm(formFromSettings(settings))
     expect(result).toEqual({ ok: true, settings })

@@ -14,6 +14,7 @@ const SECTIONS = [
   { id: 'between-battles', title: 'Between battles' },
   { id: 'records', title: 'Battle records and CSV export' },
   { id: 'simulator', title: 'Simulator' },
+  { id: 'map', title: 'Map campaigns' },
   { id: 'moving-over', title: 'Moving from another tracker' },
   { id: 'house-rules', title: "Default house rules" },
 ] as const
@@ -244,6 +245,29 @@ export function HelpPage() {
           and shows how much the chosen figure moves, attacking and defending. <em>Skill gains</em> does the same for every modelled skill the warrior could
           still take, ranked best first; untick <em>Only skills on the lists</em> to see the rest. Conditional skills count only when their situation is
           ticked. House rules follow whichever campaign you pick or the group defaults. Nothing here is rolled or saved.
+        </P>
+      </Topic>
+
+      <Topic id="map" title="Map campaigns">
+        <P>
+          <B>Turn it on.</B> The GM ticks <em>Play on the Mordheim Campaign Map</em> in the campaign settings. From then on every battle is booked in one of
+          the thirty districts, the campaign page shows a map card, and <em>Open the map</em> leads to the map itself: drag to pan, scroll or pinch to
+          zoom, tap a district for its advantage, who holds it and its borders.
+        </P>
+        <P>
+          <B>Exploring and footholds.</B> Everyone enters through one of the four gates, so a new warband&apos;s first battle is at a gate. Fighting in a
+          district explores it; from an explored district that connects back to a gate a warband can reach its neighbours. Winning a battle in a district
+          gives a foothold there and takes the loser&apos;s away; a warband with the only foothold controls the district. Footholds bring the district&apos;s
+          advantage, except in <em>Hard Fought</em> districts where only the controller benefits. Winning in an <em>Abundance of Wyrdstone</em> district is
+          worth D3 extra shards. All of this follows from the reports filed in the app; the GM can correct a district (a game played off the app, a mistake)
+          with a reason that goes on the record.
+        </P>
+        <P>
+          <B>Booking a battle.</B> The schedule form lists districts by who can reach them and says when a side cannot, what the map rules call for
+          (Surprise Attack when one side controls the district, Defend the Find when both have footholds; one tap picks it) and the tolls: 5 gc at a gate
+          without a foothold, and 2D6 gc to whoever controls the Middle Bridge when it is the only way through. The match page shows the district and lets
+          the GM or a participant move it while the battle is open. The advantages themselves are read from the map for now; the post-battle report will
+          apply them in a later phase.
         </P>
       </Topic>
 

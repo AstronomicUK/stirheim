@@ -1,0 +1,212 @@
+// The map itself: the campaign map image with an SVG overlay of the thirty districts, panned and
+// zoomed with a mouse, a wheel or two fingers. Circles are filled in the controller's ink; small
+// dots around a circle mark every foothold; a ring marks the selected district; districts a chosen
+// warband can reach are lit, the rest dimmed.
+
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
+import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, findDistrict } from '../../rules/data/map/districts'
+import type { DistrictView } from './model'
+
+export const MAP_IMAGE_SRC = '/map/mordheim-campaign-map.jpg'
+
+export interface MapCanvasProps {
+  views: Map<string, DistrictView>
+  selectedId: string | null
+  onSelect: (districtId: string | null) => void
+  /** When set, districts outside this set are dimmed. */
+  reachable?: Set<string> | null
+  /** Districts the chosen warband has explored (drawn with a dashed ring). */
+  explored?: Set<string> | null
+  /** The chosen warband's ink, for the reach highlight. */
+  highlightColour?: string
+}
+
+interface Transform {
+  x: number
+  y: number
+  k: number
+}
+
+const MIN_K = 1
+const MAX_K = 6
+const BASE_RADIUS = 3.1
+
+function clamp(t: Transform, width: number, height: number): Transform {
+  const k = Math.min(MAX_K, Math.max(MIN_K, t.k))
+  const maxX = 0
+  const minX = width - width * k
+  const maxY = 0
+  const minY = height - height * k
+  return { k, x: Math.min(maxX, Math.max(minX, t.x)), y: Math.min(maxY, Math.max(minY, t.y)) }
+}
+
+export function MapCanvas({ views, selectedId, onSelect, reachable = null, explored = null, highlightColour = '#9a6f1f' }: MapCanvasProps) {
+  const frame = useRef<HTMLDivElement>(null)
+  const [t, setT] = useState<Transform>({ x: 0, y: 0, k: 1 })
+  const [size, setSize] = useState({ width: 1, height: 1 })
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const drag = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null)
+  const pinch = useRef<{ dist: number; k: number; cx: number; cy: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+
+  useEffect(() => {
+    const el = frame.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect()
+      setSize({ width: r.width, height: r.height })
+      setT((cur) => clamp(cur, r.width, r.height))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const zoomAt = useCallback(
+    (factor: number, cx: number, cy: number) => {
+      setT((cur) => {
+        const k = Math.min(MAX_K, Math.max(MIN_K, cur.k * factor))
+        const ratio = k / cur.k
+        return clamp({ k, x: cx - (cx - cur.x) * ratio, y: cy - (cy - cur.y) * ratio }, size.width, size.height)
+      })
+    },
+    [size.width, size.height],
+  )
+
+  function local(e: { clientX: number; clientY: number }) {
+    const r = frame.current!.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
+
+  function onWheel(e: ReactWheelEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const p = local(e)
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y)
+  }
+
+  function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    frame.current?.setPointerCapture(e.pointerId)
+    const p = local(e)
+    pointers.current.set(e.pointerId, p)
+    if (pointers.current.size === 1) {
+      drag.current = { x: p.x, y: p.y, tx: t.x, ty: t.y, moved: false }
+      setDragging(true)
+    }
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()]
+      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), k: t.k, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }
+      drag.current = null
+    }
+  }
+
+  function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!pointers.current.has(e.pointerId)) return
+    const p = local(e)
+    pointers.current.set(e.pointerId, p)
+    if (pinch.current && pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()]
+      const dist = Math.hypot(a.x - b.x, a.y - b.y)
+      const target = pinch.current.k * (dist / pinch.current.dist)
+      setT((cur) => {
+        const k = Math.min(MAX_K, Math.max(MIN_K, target))
+        const ratio = k / cur.k
+        return clamp({ k, x: pinch.current!.cx - (pinch.current!.cx - cur.x) * ratio, y: pinch.current!.cy - (pinch.current!.cy - cur.y) * ratio }, size.width, size.height)
+      })
+      return
+    }
+    if (drag.current) {
+      const dx = p.x - drag.current.x
+      const dy = p.y - drag.current.y
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true
+      setT((cur) => clamp({ k: cur.k, x: drag.current!.tx + dx, y: drag.current!.ty + dy }, size.width, size.height))
+    }
+  }
+
+  function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    pointers.current.delete(e.pointerId)
+    if (pointers.current.size < 2) pinch.current = null
+    if (pointers.current.size === 0) {
+      const moved = drag.current?.moved ?? false
+      drag.current = null
+      setDragging(false)
+      if (!moved && (e.target as Element).tagName !== 'circle') onSelect(null)
+    }
+  }
+
+  const dim = (id: string) => (reachable ? !reachable.has(id) : false)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        ref={frame}
+        className="relative w-full touch-none select-none overflow-hidden rounded-md border border-border bg-surface-high"
+        style={{ aspectRatio: `100 / ${MAP_VIEW_HEIGHT}`, cursor: dragging ? 'grabbing' : 'grab' }}
+        onWheel={onWheel}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <div className="absolute inset-0 origin-top-left" style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})` }}>
+          <img src={MAP_IMAGE_SRC} alt="The Mordheim Campaign Map: thirty districts of the ruined city" className="block h-full w-full" draggable={false} />
+          <svg viewBox={`0 0 100 ${MAP_VIEW_HEIGHT}`} className="absolute inset-0 h-full w-full" role="list" aria-label="Districts">
+            {MAP_LINKS.map(([a, b]) => {
+              const da = findDistrict(a)!
+              const db = findDistrict(b)!
+              const lit = reachable ? reachable.has(a) && reachable.has(b) : false
+              return <line key={`${a}-${b}`} x1={da.x} y1={da.y} x2={db.x} y2={db.y} stroke={lit ? highlightColour : '#241f1a'} strokeOpacity={lit ? 0.7 : 0.12} strokeWidth={lit ? 0.35 : 0.2} />
+            })}
+            {MAP_DISTRICTS.map((d) => {
+              const v = views.get(d.id)
+              const r = BASE_RADIUS * d.scale
+              const selected = d.id === selectedId
+              const fill = v?.controller?.colour ?? null
+              const isExplored = explored?.has(d.id) ?? false
+              return (
+                <g key={d.id} role="listitem" opacity={dim(d.id) ? 0.35 : 1}>
+                  <circle
+                    cx={d.x}
+                    cy={d.y}
+                    r={r}
+                    fill={fill ?? '#f8f3e8'}
+                    fillOpacity={fill ? 0.42 : 0.08}
+                    stroke={selected ? '#241f1a' : fill ?? '#241f1a'}
+                    strokeOpacity={selected ? 1 : fill ? 0.9 : 0.45}
+                    strokeWidth={selected ? 0.55 : 0.28}
+                    strokeDasharray={isExplored && !fill ? '0.6 0.4' : undefined}
+                    className="cursor-pointer"
+                    tabIndex={0}
+                    aria-label={`${d.name}${v?.controller ? `, controlled by ${v.controller.name}` : ''}`}
+                    onClick={() => onSelect(d.id === selectedId ? null : d.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onSelect(d.id)
+                      }
+                    }}
+                  />
+                  {reachable?.has(d.id) ? <circle cx={d.x} cy={d.y} r={r + 0.6} fill="none" stroke={highlightColour} strokeOpacity={0.9} strokeWidth={0.3} pointerEvents="none" /> : null}
+                  {(v?.footholds ?? []).map((w, i, all) => {
+                    const angle = -Math.PI / 2 + (i / Math.max(all.length, 1)) * Math.PI * 2
+                    return <circle key={w.id} cx={d.x + Math.cos(angle) * (r - 0.7)} cy={d.y + Math.sin(angle) * (r - 0.7)} r={0.55} fill={w.colour} stroke="#f8f3e8" strokeWidth={0.15} pointerEvents="none" />
+                  })}
+                </g>
+              )
+            })}
+          </svg>
+        </div>
+        <div className="absolute right-2 top-2 flex flex-col overflow-hidden rounded-md border border-border bg-surface-low/95 shadow-sm">
+          <button type="button" className="flex h-9 w-9 items-center justify-center text-lg text-ink hover:bg-surface-high" aria-label="Zoom in" onClick={() => zoomAt(1.4, size.width / 2, size.height / 2)}>
+            +
+          </button>
+          <button type="button" className="flex h-9 w-9 items-center justify-center border-t border-border text-lg text-ink hover:bg-surface-high" aria-label="Zoom out" onClick={() => zoomAt(1 / 1.4, size.width / 2, size.height / 2)}>
+            −
+          </button>
+          <button type="button" className="flex h-9 w-9 items-center justify-center border-t border-border text-xs text-ink hover:bg-surface-high" aria-label="Fit the whole map" onClick={() => setT({ x: 0, y: 0, k: 1 })}>
+            Fit
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-ink-dim">Drag to pan, scroll or pinch to zoom, tap a district for its details. Filled circles are controlled; the dots around a circle are footholds.</p>
+    </div>
+  )
+}

@@ -7,6 +7,7 @@ import { describeHouseRules } from '../../rules/resolve/houseRules'
 import { Button, Markdown, Notice, Sheet, Spinner, TwoColumn } from '../../ui'
 import { CampaignBattles } from '../match/shared/CampaignBattles'
 import { GmChecklist } from '../onboarding/GmChecklist'
+import { MapSummary } from '../map/MapSummary'
 import { usePageTitle } from '../onboarding/usePageTitle'
 import { activityLines, formatRelativeTime } from './activity'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
@@ -120,6 +121,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
             <Stat label="Dice" value={dicePolicyLabel(settings.dicePolicy)} />
             <Stat label="Combat" value={`${combatModeLabel(settings.combatMode)}${settings.lockCombatMode ? ' (locked)' : ''}`} />
             <Stat label="Reports" value={settings.reportApproval ? 'GM approves' : 'Apply at once'} />
+            <Stat label="Map" value={settings.mapCampaign ? 'Campaign Map' : 'Not used'} />
           </dl>
           <ul className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm leading-relaxed text-ink-dim">
             {houseRuleLines.map((line) => (
@@ -159,6 +161,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
           </div>
         ) : null}
       </Section>
+
+      {settings.mapCampaign ? <MapSummary campaignId={campaign.id} members={members} former={former_members} /> : null}
 
       <CampaignBattles campaignId={campaign.id} userId={user?.id} isGm={isGm} isMember={mine.length > 0} archived={campaign.archived} />
 

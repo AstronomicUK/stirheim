@@ -46,6 +46,8 @@ export const campaignSettingsSchema = z.object({
   lockCombatMode: z.boolean().default(false),
   /** When true, a player's post-battle report waits, applying nothing, until the GM approves it. */
   reportApproval: z.boolean().default(false),
+  /** The campaign is played on the Mordheim Campaign Map: battles are fought in districts, footholds and advantages tracked. */
+  mapCampaign: z.boolean().default(false),
 });
 
 /** A complete settings object, as stored and as read. */
@@ -62,5 +64,6 @@ export function defaultCampaignSettings(): CampaignSettings {
     combatMode: "app",
     lockCombatMode: false,
     reportApproval: false,
+    mapCampaign: false,
   };
 }

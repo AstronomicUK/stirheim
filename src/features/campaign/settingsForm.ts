@@ -15,6 +15,7 @@ export interface SettingsForm {
   combatMode: CombatMode
   lockCombatMode: boolean
   reportApproval: boolean
+  mapCampaign: boolean
 }
 
 export type SettingsFormErrors = Partial<Record<'startingGold' | 'maxRosters', string>>
@@ -30,6 +31,7 @@ export function formFromSettings(settings: CampaignSettings): SettingsForm {
     combatMode: settings.combatMode,
     lockCombatMode: settings.lockCombatMode,
     reportApproval: settings.reportApproval,
+    mapCampaign: settings.mapCampaign,
   }
 }
 
@@ -51,6 +53,7 @@ export function settingsFromForm(form: SettingsForm): SettingsFormResult {
     combatMode: form.combatMode,
     lockCombatMode: form.lockCombatMode,
     reportApproval: form.reportApproval,
+    mapCampaign: form.mapCampaign,
   })
   if (parsed.success) return { ok: true, settings: parsed.data }
 
@@ -71,6 +74,7 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.combatMode === b.combatMode &&
     a.lockCombatMode === b.lockCombatMode &&
     a.reportApproval === b.reportApproval &&
+    a.mapCampaign === b.mapCampaign &&
     a.houseRules.strengthArmourPiercing === b.houseRules.strengthArmourPiercing &&
     a.houseRules.optionalCriticalTables === b.houseRules.optionalCriticalTables &&
     a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour &&

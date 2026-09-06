@@ -85,6 +85,18 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
         </div>
       </Section>
 
+      <Section title="Campaign map">
+        <div className="flex flex-col rounded-md border border-border bg-surface-low px-4">
+          <ToggleRow
+            label="Play on the Mordheim Campaign Map"
+            description="Every battle is fought in a district. The winner gains a foothold, footholds bring the district's advantages, and the campaign page shows the map with who holds what."
+            checked={form.mapCampaign}
+            disabled={disabled}
+            onChange={(mapCampaign) => onChange({ ...form, mapCampaign })}
+          />
+        </div>
+      </Section>
+
       <Section title="Combat during battles">
         <SegmentedControl
           label="How games are scored by default"

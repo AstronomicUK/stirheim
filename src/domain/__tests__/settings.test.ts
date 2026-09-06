@@ -18,6 +18,7 @@ describe("campaign settings", () => {
       combatMode: "app",
       lockCombatMode: false,
       reportApproval: false,
+      mapCampaign: false,
     });
   });
 
@@ -37,6 +38,7 @@ describe("campaign settings", () => {
       combatMode: "app",
       lockCombatMode: false,
       reportApproval: false,
+      mapCampaign: false,
     };
     expect(campaignSettingsSchema.parse(fromSql)).toEqual(defaultCampaignSettings());
   });
@@ -61,6 +63,7 @@ describe("campaign settings", () => {
       combatMode: "app",
       lockCombatMode: false,
       reportApproval: false,
+      mapCampaign: false,
     });
     expect(campaignSettingsSchema.parse({ dicePolicy: "app_rolls" }).dicePolicy).toBe("app_rolls");
     expect(campaignSettingsSchema.parse({ combatMode: "players", lockCombatMode: true })).toMatchObject({ combatMode: "players", lockCombatMode: true });

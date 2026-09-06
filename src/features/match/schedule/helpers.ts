@@ -81,12 +81,16 @@ export interface NewMatchForm {
   /** datetime-local value; blank for "no date yet". */
   scheduledLocal: string
   notes: string
+  /** Map campaigns: the district; null when the campaign is not on the map. */
+  districtId?: string | null
 }
 
 export interface NewMatchOptions {
   mode: NewMatchMode
   /** The signed-in user's warbands enrolled in this campaign (only checked for a challenge). */
   myWarbandIds: string[]
+  /** Map campaigns: a district must be picked. */
+  requireDistrict?: boolean
 }
 
 export type NewMatchValidation = { ok: true; input: ScheduleMatchInput } | { ok: false; error: string }
@@ -103,6 +107,7 @@ export function validateNewMatch(form: NewMatchForm, options: NewMatchOptions): 
     if (ids.length < 2) return { ok: false, error: 'Pick at least one opponent.' }
   }
   if (ids.length < 2) return { ok: false, error: 'Pick at least two warbands.' }
+  if (options.requireDistrict && !form.districtId) return { ok: false, error: 'Pick the district the battle is fought in.' }
 
   let scheduledFor: string | null = null
   if (form.scheduledLocal.trim()) {
@@ -119,6 +124,7 @@ export function validateNewMatch(form: NewMatchForm, options: NewMatchOptions): 
       customScenarioId: form.scenario.kind === 'custom' ? form.scenario.id : null,
       scheduledFor,
       notes: form.notes.trim(),
+      districtId: form.districtId ?? null,
     },
   }
 }

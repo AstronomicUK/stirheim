@@ -18,6 +18,7 @@ const ResetPasswordPage = lazyPage(() => import('../features/account/ResetPasswo
 const SignInPage = lazyPage(() => import('../features/account/SignInPage'), 'SignInPage')
 const SignUpPage = lazyPage(() => import('../features/account/SignUpPage'), 'SignUpPage')
 const CampaignListPage = lazyPage(() => import('../features/campaign/CampaignListPage'), 'CampaignListPage')
+const MapPage = lazyPage(() => import('../features/map/MapPage'), 'MapPage')
 const SimulatorPage = lazyPage(() => import('../features/simulator/SimulatorPage'), 'SimulatorPage')
 const CampaignPage = lazyPage(() => import('../features/campaign/CampaignPage'), 'CampaignPage')
 const CampaignSettingsPage = lazyPage(() => import('../features/campaign/CampaignSettingsPage'), 'CampaignSettingsPage')
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
       { path: 'campaigns/join/:code', element: <RequireAuth><JoinCampaignPage /></RequireAuth> },
       { path: 'campaigns/:id', element: <RequireAuth><CampaignPage /></RequireAuth> },
       { path: 'campaigns/:id/settings', element: <RequireAuth><CampaignSettingsPage /></RequireAuth> },
+      { path: 'campaigns/:id/map', element: <RequireAuth><MapPage /></RequireAuth> },
       { path: 'campaigns/:id/matches/new', element: <RequireAuth><NewMatchPage /></RequireAuth> },
       { path: 'matches/:id', element: <RequireAuth><MatchPage /></RequireAuth> },
       { path: 'matches/:id/battle', element: <RequireAuth><BattlePage /></RequireAuth> },

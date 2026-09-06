@@ -3,13 +3,16 @@
 // rivals, who accept or decline from the match page.
 
 import { useMemo, useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCampaign, type CampaignDetail, type CampaignMemberView } from '../../api/campaigns'
+import { useMapEvents } from '../../api/map'
 import { useScheduleMatch } from '../../api/matches'
 import { useCustomScenarios } from '../../api/scenarios'
 import { useSession } from '../../app/session'
 import { Button, Notice, PageHeader, SegmentedControl, SelectField, Spinner, TextArea, TextField } from '../../ui'
 import { Card, Tag, TextLink } from '../campaign/bits'
+import { deriveMapState } from '../../rules/resolve/mapCampaign'
+import { DistrictPicker } from '../map/DistrictPicker'
 import { coreScenarios, filterScenarios, libraryScenarios } from '../scenarios/helpers'
 import {
   customScenariosFor,
@@ -53,8 +56,9 @@ export function NewMatchPage() {
 }
 
 function NewMatchForm({ detail }: { detail: CampaignDetail }) {
-  const { campaign, members } = detail
+  const { campaign, members, settings } = detail
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const user = useSession((s) => s.user)
   const schedule = useScheduleMatch()
   const custom = useCustomScenarios()
@@ -73,7 +77,11 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   const [search, setSearch] = useState('')
   const [scheduledLocal, setScheduledLocal] = useState('')
   const [notes, setNotes] = useState('')
+  const [districtId, setDistrictId] = useState<string | null>(params.get('district'))
   const [error, setError] = useState<string | null>(null)
+  const mapEvents = useMapEvents(campaign.id, settings.mapCampaign)
+  const mapState = useMemo(() => deriveMapState(mapEvents.data?.events ?? []), [mapEvents.data])
+  const nameOf = (warbandId: string) => members.find((m) => m.warband_id === warbandId)?.warband.name ?? 'A warband'
 
   const customRows = useMemo(() => customScenariosFor(custom.data ?? [], campaign.id), [custom.data, campaign.id])
   const libraryHits = useMemo(() => filterScenarios(LIBRARY, search), [search])
@@ -93,7 +101,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, scheduledLocal, notes }, { mode, myWarbandIds })
+    const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, scheduledLocal, notes, districtId }, { mode, myWarbandIds, requireDistrict: settings.mapCampaign })
     if (!result.ok) {
       setError(result.error)
       return
@@ -204,6 +212,25 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
           </ul>
         )}
       </fieldset>
+
+      {settings.mapCampaign ? (
+        <DistrictPicker
+          state={mapState}
+          warbandIds={warbandIds}
+          nameOf={nameOf}
+          value={districtId}
+          onChange={(id) => {
+            setDistrictId(id)
+            setError(null)
+          }}
+          onUseScenario={(id) => {
+            setSource('core')
+            setScenario({ kind: 'builtin', id })
+          }}
+          currentScenarioId={scenario.kind === 'builtin' ? scenario.id : null}
+          disabled={schedule.isPending}
+        />
+      ) : null}
 
       <fieldset className="flex min-w-0 flex-col gap-3">
         <legend className="mb-2 text-sm font-medium text-ink-dim">Scenario</legend>

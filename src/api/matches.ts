@@ -52,6 +52,8 @@ export interface MatchSummary {
   started_at: string | null
   completed_at: string | null
   notes: string
+  /** Map campaigns: the district the battle is fought in. */
+  district_id: string | null
   created_at: string
   updated_at: string
   participants: MatchParticipantView[]
@@ -118,6 +120,7 @@ function toSummary(row: MatchQueryRow, userId: string | undefined, aliases?: Ali
     started_at: row.started_at,
     completed_at: row.completed_at,
     notes: row.notes,
+    district_id: row.district_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     participants: row.match_participants
@@ -197,6 +200,8 @@ export interface ScheduleMatchInput {
   customScenarioId?: string | null
   scheduledFor?: string | null
   notes?: string
+  /** Map campaigns: where the battle is fought. */
+  districtId?: string | null
 }
 
 export async function scheduleMatch(input: ScheduleMatchInput): Promise<string> {
@@ -207,6 +212,7 @@ export async function scheduleMatch(input: ScheduleMatchInput): Promise<string> 
     p_custom_scenario_id: input.customScenarioId ?? undefined,
     p_scheduled_for: input.scheduledFor ?? undefined,
     p_notes: input.notes ?? '',
+    p_district_id: input.districtId ?? undefined,
   })
   if (error) throw new Error(error.message)
   return data

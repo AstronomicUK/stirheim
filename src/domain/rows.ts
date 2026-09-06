@@ -362,6 +362,8 @@ export const matchRowSchema = z
     started_at: timestampSchema.nullable(),
     completed_at: timestampSchema.nullable(),
     notes: z.string(),
+    /** Map campaigns: the district the battle is fought in. */
+    district_id: z.string().nullable().default(null),
     ...timestamps,
   })
   .refine((m) => m.scenario_rules_id == null || m.custom_scenario_id == null, {

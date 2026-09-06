@@ -806,6 +806,49 @@ Phases 13 to 17 went live at https://stirheim.netlify.app in one deploy (local `
 was pushed to the hosted project. Next: a fresh campaign and a re-import of the battle records CSV, and
 handing the other players' warbands over.
 
+## Phase 19 built (2026-09-06)
+
+Map campaigns, part one: the map, the districts, footholds and control, scheduling in a district.
+Tom confirmed his group plays the published map rules as written and will clear the image with its
+author before release. Migration 22 was pushed to the hosted project the same day; nothing has gone
+to Netlify. Where it lives:
+
+- **Data** (`rules/data/map/districts.ts`, generated from `reference/map/districts.json`): the 30
+  districts with image coordinates, advantage text, `abundance` / `hard` / `gate` flags and 63
+  two-way links. The rules text is `reference/map/campaign-rules.md`. The web copy of the map is
+  `public/map/mordheim-campaign-map.jpg` (2400 px, 1.6 MB), loaded only on the map page.
+- **Resolver** (`rules/resolve/mapCampaign.ts`, 11 tests): the map state is *derived*, never
+  stored. Events are battles fought in a district (both sides explore it; the winner gains a
+  foothold, the loser loses theirs; a draw or an unreported battle changes no footholds) and the
+  GM's adjustments, folded in time order. From the state: `controllerOf` (the only foothold),
+  `reachFor` / `canReach` (gates always; explored districts that connect to a gate through explored
+  districts, plus their neighbours), `gateToll` (5 gc without a foothold at a usable gate),
+  `bridgeTollOwedTo` (2D6 gc to the Middle Bridge's controller when it is the only way through),
+  `suggestedScenario` (Surprise Attack with the controller defending; Defend the Find when both
+  have footholds), `advantagesFor` (footholds; control where Hard Fought) and `standings`.
+- **Schema** (migration 22): `matches.district_id`; `schedule_match(..., p_district_id)`;
+  `set_match_district` (GM or participant, open matches only, audited as `set_district`);
+  `map_adjustments` (GM-only insert with `reason`, campaign readers select, never deleted);
+  `settings.mapCampaign` default false. `api/map.ts` builds the event list (matches in progress or
+  later with a district plus non-returned reports, and the adjustments) and writes adjustments.
+- **Screens**: campaign settings toggle "Play on the Mordheim Campaign Map"; `/campaigns/:id/map`
+  (`features/map/`): the image with an SVG overlay (`MapCanvas`: pan, wheel and pinch zoom, circles
+  filled in the controller's ink, foothold dots, reach highlight for a chosen warband), the
+  district panel (advantage, flags, controller, footholds, explored, borders, "Book a battle here",
+  GM corrections with a reason), standings, a warband's advantages in play, every district with
+  reach and toll, and the GM corrections log; a map card on the campaign page; the schedule form's
+  district picker (grouped by who can reach it, the rules' scenario with a "Use it" button, tolls,
+  a warning when a side cannot reach it); the match page's district line with Move / Set.
+- Integration test `api/__tests__/phase19.integration.test.ts` (3).
+
+Left for Phase 20 (the report side): D3 extra shards for winning in an Abundance district, the extra
+exploration dice / +1 or -1 / maximum finds from Executioner's Square, Poor Quarter, City Hall, Rich
+Quarter and Clock Tower, half-price hires and items in the trading post and hire sheet, the injury
+re-rolls of Temple of Morr, Temple of Sigmar, the Gaol and the Amphitheatre, the Cemetery's Fear
+immunity and cheap Undead recruits, the Statue's +1 Ld, the Rock's +20% wyrdstone, the Sage's Hall
+chosen spell, the Memorial Gardens / Quayside 3D6 recruit experience, the tolls charged to the
+treasury, and the Surprise Attack defender's +1 Ld in that district.
+
 ## Phase 18 built (2026-09-06)
 
 Built straight after the Phase 13-17 release, per Tom's ordering: campaign transfer and the

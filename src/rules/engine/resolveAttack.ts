@@ -46,6 +46,8 @@ export interface AttackInput {
   dodgeThreshold?: Threshold;
   /** Melee only: Step Aside — an extra 5+ save attempted after the armour save, once per wound. */
   stepAsideThreshold?: Threshold;
+  /** Peg Leg: an unmodified save after every failed save, both phases, once per wound; taken even when no other save was allowed. */
+  afterSaveThreshold?: Threshold;
   /** Ward save — attempted after the armour save AND Step Aside, once per wound, even when a crit ignores the armour save entirely. Never eroded by Strength. */
   wardSaveThreshold?: Threshold;
   /** Sum of non-crit Injury roll modifiers (Strike to Injure, etc.). */
@@ -155,8 +157,9 @@ interface WoundResolutionOptions {
 function woundEvents(input: AttackInput, opts: WoundResolutionOptions): WoundEvent[] {
   const pSaveArmour = opts.ignoresArmourSave ? 0 : probabilityAtLeast(input.armourThreshold);
   const pStepAside = input.stepAsideThreshold !== undefined ? probabilityAtLeast(input.stepAsideThreshold) : 0;
+  const pAfter = input.afterSaveThreshold !== undefined ? probabilityAtLeast(input.afterSaveThreshold) : 0;
   const pWard = input.wardSaveThreshold !== undefined ? probabilityAtLeast(input.wardSaveThreshold) : 0;
-  const perWoundThroughExtras = (1 - pStepAside) * (1 - pWard);
+  const perWoundThroughExtras = (1 - pStepAside) * (1 - pAfter) * (1 - pWard);
   const injury = injuryModsOf(input, opts.injuryBonus, opts.ignoresHelmetSave);
 
   const counts = new Array<number>(opts.wounds + 1).fill(0);

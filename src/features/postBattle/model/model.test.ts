@@ -503,6 +503,7 @@ describe('advances in the wizard', () => {
       pending_advances: [],
       remove_item_ids: [],
       stash_items: [],
+      item_patches: [],
     })
     expect(after.heroes.find((h) => h.id === 'captain')).toMatchObject({ xp: 24, status: 'captured', levelUps: 0 })
     expect(after.hiredSwords[0]).toMatchObject({ xp: 2, status: 'left' })

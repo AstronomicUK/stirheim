@@ -14,6 +14,7 @@ import type { Weapon } from "../types";
 import { MELEE_WEAPONS } from "./weapons/melee";
 import { RANGED_AND_CREATURE_WEAPONS } from "./weapons/ranged-and-creatures";
 import { MATERIAL_VARIANT_WEAPONS } from "./weapons/materialVariants";
+import { WARBAND_SPECIAL_WEAPONS } from "./weapons/warbandSpecial";
 
 const MANUAL_ADDITIONS: Weapon[] = [
   // Wight Blades (Restless Dead — Grave Guards, rules/warbands/grade-1c.md:3371, verified against the
@@ -43,7 +44,7 @@ const MANUAL_ADDITIONS: Weapon[] = [
   },
 ];
 
-export const WEAPONS: Weapon[] = [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...MANUAL_ADDITIONS];
+export const WEAPONS: Weapon[] = [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...WARBAND_SPECIAL_WEAPONS, ...MANUAL_ADDITIONS];
 
 export function findWeapon(id: string, customWeapons: Weapon[] = []): Weapon | undefined {
   return WEAPONS.find((w) => w.id === id) ?? customWeapons.find((w) => w.id === id);

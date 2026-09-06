@@ -78,6 +78,30 @@ export interface Weapon {
   chargeBonusAttacks?: number;
   /** Flat Initiative bonus from the weapon itself (e.g. an Ithilmar weapon's own +1). Recorded for completeness, matching Initiative's `not modeled` status elsewhere (Stat/Skill Gain Analysers) — Initiative isn't wired into the probability engine, so this is informational only until it is. Undefined = +0. */
   initiativeModifier?: number;
+  /** Flat Weapon Skill bonus while fighting with this weapon (Cathayan Longsword "Mastercrafted" +1). */
+  wsBonus?: number;
+  /** Extra attacks in the first turn of a hand-to-hand combat (Chain Sticks "Flurry" +2). */
+  firstTurnBonusAttacks?: number;
+  /** One extra attack when the weapon is used alone, from the wielder's free hand (Quarter Staff "Freestyle"). */
+  unarmedBonusAttack?: boolean;
+  /** The weapon parries on a fixed D6 roll instead of beating the to-hit roll (Starblade 4+). */
+  parryThreshold?: number;
+  /** Only shields (and skills) may save against it; body armour and helmets do not (Ladle). */
+  ignoresArmourSaveExceptShield?: boolean;
+  /** Modifier to the critical hit table roll from the weapon itself (Dark Elf Blade +1). */
+  critTableRollModifier?: number;
+  /** The saveModifier applies only when the weapon is wielded in both hands (Ogre Club "Crushing Attack"). */
+  saveModifierTwoHandedOnly?: boolean;
+  /** The strengthBonus applies only when charging while mounted (Lance). */
+  strengthBonusMountedChargeOnly?: boolean;
+  /** Against a knocked-down target roll 2D6 to wound and keep the highest (Misericordia). */
+  toWoundHighestOf2D6VsKnockedDown?: boolean;
+  /** Bonuses against targets carrying any of these traits (Sigmarite Warhammer +1 to wound versus Undead and Possessed; Silver-tip Stake +1 injury versus Vampires). */
+  vsTraits?: { traits: string[]; toWound?: number; injury?: number };
+  /** Enemies attacking the wielder in close combat suffer this to-hit modifier (Ball and Chain -1). */
+  defenderToBeHitModifier?: number;
+  /** An alternative fire mode the shooter may choose (single shot for repeaters, the Sling's double shot). */
+  altFire?: { label: string; shots: number; toHitPenalty: number; hint: string };
   special: string[];
   rangedProfile: RangedProfile | null;
 }
@@ -288,6 +312,14 @@ export interface CombatContext {
   insideBuildings: boolean;
   /** The defender's pavise faces the attacker (charged to the front), so it counts as a shield in close combat. Default true. */
   paviseFront?: boolean;
+  /** The attacker is mounted (Lance and Boar Spear charge bonuses; the Horo). */
+  mounted?: boolean;
+  /** The attacker wields the primary weapon in both hands: no off-hand weapon, shield or buckler (Ogre Club, Quarter Staff). Set by the caller from the loadout. */
+  twoHanded?: boolean;
+  /** The target is knocked down (Misericordia). */
+  targetKnockedDown?: boolean;
+  /** The shooter uses the weapon's alternative fire mode (Weapon.altFire). */
+  altFire?: boolean;
 }
 
 export function defaultCombatContext(): CombatContext {
@@ -321,6 +353,20 @@ export interface DefenderProfile {
   parryReroll: boolean;
   /** Ward save threshold, e.g. 5 = "Ward (5+)". Null = no Ward save. */
   wardSaveThreshold: number | null;
+  /** Special save against missile wounds only (Amulet of the Moon 5+, Shield of Sigmar 6+). */
+  missileWardSaveThreshold?: number | null;
+  /** Modifier to enemy to-hit rolls by phase, negative = harder to hit (Amulet of the Moon and cloaks against missiles; a Ball and Chain in close combat). */
+  toBeHit?: { melee?: number; missile?: number };
+  /** Bonus to the armour save by phase (Wolfcloak +1 against shooting, Silk Armour +1 to all); `savesFromNothing` gives a 6+ where there was no save. */
+  saveBonus?: { melee?: number; missile?: number; savesFromNothing?: boolean };
+  /** A save of the item's own by phase, used when better than the armour worn (Sea Dragon Cloak 5+ / 4+). */
+  ownSave?: { melee: number; missile: number };
+  /** Unmodified save after every failed save, both phases (Peg Leg 6+). */
+  afterSaveThreshold?: number;
+  /** A special stun save replacing the helmet's (Cooking Pot Helmet 5+, never modified). */
+  stunSave?: { threshold: number; unmodifiable: boolean };
+  /** The defender's parry item parries on a fixed roll (Starblade 4+). */
+  parryThreshold?: number;
 }
 
 export interface AttackerWeaponLoadout {

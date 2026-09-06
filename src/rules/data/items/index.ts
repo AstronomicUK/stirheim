@@ -9,8 +9,9 @@ import { ARMOUR_ITEMS } from "./armour";
 import { MISC_ITEMS } from "./misc";
 import { ANIMAL_ITEMS } from "./animals";
 import { MATERIAL_VARIANT_ITEMS } from "./materialVariants";
+import { WARBAND_SPECIAL_ITEMS } from "./warbandSpecial";
 
-export { MELEE_ITEMS, MISSILE_ITEMS, BLACKPOWDER_ITEMS, ARMOUR_ITEMS, MISC_ITEMS, ANIMAL_ITEMS, MATERIAL_VARIANT_ITEMS };
+export { MELEE_ITEMS, MISSILE_ITEMS, BLACKPOWDER_ITEMS, ARMOUR_ITEMS, MISC_ITEMS, ANIMAL_ITEMS, MATERIAL_VARIANT_ITEMS, WARBAND_SPECIAL_ITEMS };
 
 export const ITEMS: Item[] = [
   ...MELEE_ITEMS,
@@ -19,6 +20,7 @@ export const ITEMS: Item[] = [
   ...ARMOUR_ITEMS,
   ...MISC_ITEMS,
   ...ANIMAL_ITEMS,
+  ...WARBAND_SPECIAL_ITEMS,
   ...MATERIAL_VARIANT_ITEMS,
 ];
 

@@ -45,8 +45,9 @@ export interface AidOptions {
 }
 
 /** The map's purchase result is kept in the item's notes, e.g. "Map D6 5: Accurate". */
-export function mapGrade(item: RosterItem): "fake" | "vague" | "catacomb" | "accurate" | "master" | null {
+export function mapGrade(item: RosterItem): "fake" | "vague" | "catacomb" | "accurate" | "master" | "spent" | null {
   const note = (item.notes ?? "").toLowerCase();
+  if (note.includes("spent")) return "spent";
   if (note.includes("master")) return "master";
   if (note.includes("accurate")) return "accurate";
   if (note.includes("catacomb")) return "catacomb";

@@ -186,6 +186,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       opponentRating: opponents.reduce<number | null>((best, o) => (best === null || o.rating > best ? o.rating : best), null),
       houseRules,
       preBattle: liveState?.preBattle ?? {},
+      itemsUsed: liveState?.itemsUsed ?? {},
     }),
     [rosterData, match.id, participant.rating, opponents, houseRules, liveState],
   )

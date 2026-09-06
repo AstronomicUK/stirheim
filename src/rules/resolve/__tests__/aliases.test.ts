@@ -94,8 +94,10 @@ describe("resolveEquipmentName", () => {
   it("returns undefined for blanks and warband-specific gear", () => {
     expect(resolveEquipmentName("")).toBeUndefined();
     expect(resolveEquipmentName("   ")).toBeUndefined();
-    expect(resolveEquipmentName("Katana")).toBeUndefined();
-    expect(resolveEquipmentName("Pry Bar")).toBeUndefined();
+    // Phase 16: the warband pages' own kit is in the catalogue now; the Katana is the Dragon Sword by the source's note.
+    expect(resolveEquipmentName("Katana")?.id).toBe("dragon_sword");
+    expect(resolveEquipmentName("Pry Bar")?.id).toBe("pry_bar");
+    expect(resolveEquipmentName("Some Made-up Widget")).toBeUndefined();
   });
 
   it("every alias points at a real catalogue item", () => {

@@ -115,6 +115,8 @@ export const reportAppliedSchema = z.object({
   remove_item_ids: z.array(z.string()).default([]),
   /** Found items go to the stash. */
   stash_items: z.array(z.object({ item_rules_id: z.string().nullable(), custom_name: z.string().nullable(), quantity: z.number().int().min(1) })).default([]),
+  /** Item rows changed in place: consumables used up (quantity) and maps spent (notes). A quantity of 0 removes the row. */
+  item_patches: z.array(z.object({ id: z.string(), quantity: z.number().int().min(0).optional(), notes: z.string().optional() })).default([]),
 });
 export type ReportApplied = z.infer<typeof reportAppliedSchema>;
 

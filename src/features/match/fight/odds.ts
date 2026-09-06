@@ -10,6 +10,7 @@ import { countParryItems, parryRerollFromItems } from '../../../rules/domain/opp
 import type { Character, CombatContext, DefenderProfile, Weapon, WeaponKind } from '../../../rules/types'
 import { defaultCombatContext } from '../../../rules/types'
 import type { CampaignHouseRules } from '../../../rules/types/roster'
+import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import type { Combatant, Loadout } from './combatants'
 
 export interface FightSetup {
@@ -29,6 +30,61 @@ export interface FightSetup {
   parryUsed?: boolean
   /** Only this many attacks go at this target (splitting between enemies). */
   attackLimit?: number
+  /** Consumables the attacker has marked as taken or applied for this battle. */
+  attackerPreBattle?: PreBattleEffect[]
+  /** Consumables the target has marked. */
+  defenderPreBattle?: PreBattleEffect[]
+}
+
+/** The warrior after his pre-battle drugs and coatings: Toughness, traits and the weapons' own bonuses. */
+export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly PreBattleEffect[]): { combatant: Combatant; kit: Loadout } {
+  if (effects.length === 0) return { combatant: c, kit }
+  let stats = { ...c.stats }
+  const traits = [...c.traitIds]
+  let melee = kit.melee
+  let ranged = kit.ranged
+  for (const e of effects) {
+    if (e.appliesTo === 'self') {
+      if (e.toughnessBonus) stats = { ...stats, T: stats.T + e.toughnessBonus }
+      for (const t of e.traits ?? []) if (!traits.includes(t)) traits.push(t)
+      continue
+    }
+    const touches = (w: Weapon) => {
+      if (e.appliesTo === 'allWeapons') return true
+      if (e.appliesTo === 'melee') return w.type === 'melee'
+      if (e.appliesTo === 'ranged') return w.type === 'ranged'
+      if (e.appliesTo === 'bows') return ['bow', 'short_bow', 'longbow', 'elf_bow'].includes(w.id)
+      if (e.appliesTo === 'blackpowder') return w.type === 'ranged' && (w.saveModifier ?? 0) >= 2 && w.strength !== 'user'
+      return false
+    }
+    const coat = (w: Weapon): Weapon => {
+      if (!touches(w)) return w
+      const next: Weapon = { ...w, special: [...w.special, 'preBattleEffect'] }
+      if (e.strengthBonus) {
+        if (w.strength === 'user') next.strengthBonus = (w.strengthBonus ?? 0) + e.strengthBonus
+        else next.strength = w.strength + e.strengthBonus
+        // Reptile Venom adds Strength without the save modifier that would normally come with it.
+        if (e.strengthBonusNoSaveModifier) next.special = [...next.special, 'strengthBonusNoSaveModifier']
+      }
+      if (e.autoWoundOnSixToHit) {
+        next.autoWoundOnNaturalSixToHit = true
+        next.poisoned = true
+      }
+      if (e.toHitBonus) next.toHitBonus = (w.toHitBonus ?? 0) + e.toHitBonus
+      if (e.injuryRollBonus) next.special = [...next.special, `injuryBonus:${e.injuryRollBonus}`]
+      return next
+    }
+    melee = melee.map(coat)
+    ranged = ranged.map(coat)
+  }
+  const stunned = effects.some((e) => e.appliesTo === 'self' && e.stunnedBecomesKnockedDown)
+  if (stunned && !traits.includes('no_pain')) traits.push('no_pain')
+  return { combatant: { ...c, stats, traitIds: traits }, kit: { ...kit, melee, ranged } }
+}
+
+/** Injury bonus a coating writes onto the weapon (Hunting Arrows, the Forest Goblin poison). */
+export function weaponInjuryBonus(w: Weapon): number {
+  return w.special.reduce((n, tag) => n + (tag.startsWith('injuryBonus:') ? Number(tag.slice('injuryBonus:'.length)) || 0 : 0), 0)
 }
 
 export function toCharacter(c: Combatant, kit: Loadout): Character {
@@ -41,14 +97,17 @@ export function toCharacter(c: Combatant, kit: Loadout): Character {
     equippedWeapons: [...kit.melee, ...kit.ranged].map((w) => w.id),
     armour: kit.armour,
     helmet: kit.helmet,
-    skills: c.skillIds,
-    traits: c.traitIds,
+    skills: [...c.skillIds, ...kit.skillIds.filter((s) => !c.skillIds.includes(s))],
+    traits: [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))],
     wardSaveThreshold: kit.wardSaveThreshold,
     notes: '',
   }
 }
 
 export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
+  const traits = [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))]
+  const ballAndChain = kit.melee.reduce((n, w) => n + (w.defenderToBeHitModifier ?? 0), 0)
+  const parryFixed = kit.melee.filter((w) => w.parry && w.parryThreshold !== undefined).map((w) => w.parryThreshold as number)
   return {
     WS: c.stats.WS,
     T: c.stats.T,
@@ -56,12 +115,25 @@ export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
     W: Math.max(1, c.stats.W),
     armour: kit.armour,
     helmet: kit.helmet,
-    activeSkillIds: c.skillIds,
-    activeTraitIds: c.traitIds,
+    activeSkillIds: [...c.skillIds, ...kit.skillIds.filter((s) => !c.skillIds.includes(s))],
+    activeTraitIds: traits,
     parryWeaponCount: countParryItems(kit.melee, kit.armour),
     parryReroll: parryRerollFromItems(kit.melee, kit.armour),
     wardSaveThreshold: kit.wardSaveThreshold,
+    missileWardSaveThreshold: kit.missileWardSaveThreshold,
+    toBeHit: { melee: kit.toBeHit.melee + ballAndChain, missile: kit.toBeHit.missile },
+    saveBonus: kit.saveBonus.melee || kit.saveBonus.missile ? kit.saveBonus : undefined,
+    ownSave: kit.ownSave ?? undefined,
+    afterSaveThreshold: kit.afterSaveThreshold ?? undefined,
+    stunSave: kit.stunSave ?? undefined,
+    // Only when every parry item parries on the fixed roll (a Starblade alone); mixed kit keeps the normal parry.
+    parryThreshold: parryFixed.length > 0 && parryFixed.length === countParryItems(kit.melee, kit.armour) ? Math.min(...parryFixed) : undefined,
   }
+}
+
+/** Both hands on the primary weapon: no off-hand weapon, shield or buckler. */
+export function isTwoHandedUse(kit: Loadout, offHand: Weapon | null): boolean {
+  return offHand === null && !kit.armour.shield && !kit.armour.buckler && !kit.armour.kiteShield
 }
 
 /** The campaign's switches in the engine's terms. */
@@ -102,22 +174,31 @@ export interface FightOdds {
 }
 
 export function computeOdds(setup: FightSetup): FightOdds {
-  const attacker = toCharacter(setup.attacker, setup.attackerKit)
-  const defender = toDefender(setup.defender, setup.defenderKit)
+  const dosed = applyPreBattle(setup.attacker, setup.attackerKit, setup.attackerPreBattle ?? [])
+  const targetDosed = applyPreBattle(setup.defender, setup.defenderKit, setup.defenderPreBattle ?? [])
+  const attacker = toCharacter(dosed.combatant, dosed.kit)
+  const defender = toDefender(targetDosed.combatant, targetDosed.kit)
   const phase: WeaponKind = setup.primary.type
-  const weapons = setup.offHand && phase === 'melee' ? [setup.primary, setup.offHand] : [setup.primary]
+  // The chosen weapons, as coated: the same entries by id in the dosed kit.
+  const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => k.id === w.id) ?? w
+  const primary = pick(setup.primary)
+  const offHand = setup.offHand ? pick(setup.offHand) : null
+  const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing }
+  const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
   const perWeapon: WeaponOdds[] = weaponsForPhase(weapons, phase).map((weapon, index) => {
-    const full = computeAttackCount(attacker, weapon, index === 0, setup.context)
+    const full = computeAttackCount(attacker, weapon, index === 0, context)
     const attacks = Math.min(full, Math.max(0, remaining))
     remaining -= attacks
-    const input = buildAttackInput({ attacker, weapon, defender, context: setup.context, houseRules })
+    const raw = buildAttackInput({ attacker, weapon, defender, context, houseRules })
+    const input = adjustForCoatings(raw, weapon, phase, dosed.kit)
     const single = resolveSingleAttack(input)
-    const { ws, strength } = effectiveOffensiveStats(attacker, weapon, setup.context)
+    const { ws, strength } = effectiveOffensiveStats(attacker, weapon, context)
     const pSave = probabilityAtLeast(input.armourThreshold)
     const pStep = input.stepAsideThreshold !== undefined ? probabilityAtLeast(input.stepAsideThreshold) : 0
+    const pAfter = input.afterSaveThreshold !== undefined ? probabilityAtLeast(input.afterSaveThreshold) : 0
     const pWard = input.wardSaveThreshold !== undefined ? probabilityAtLeast(input.wardSaveThreshold) : 0
     return {
       weapon,
@@ -127,20 +208,32 @@ export function computeOdds(setup: FightSetup): FightOdds {
       strength,
       pHit: single.pHit,
       pWound: single.pWound,
-      pThroughSaves: (1 - pSave) * (1 - pStep) * (1 - pWard),
+      pThroughSaves: (1 - pSave) * (1 - pStep) * (1 - pAfter) * (1 - pWard),
       injury: single.normalOutcome,
     }
   })
 
   const parryAttempts = phase === 'melee' && !setup.parryUsed && perWeapon.some((w) => w.input.parryEligible) ? computeMaxParries(defender) : 0
   const woundsAlreadyLost = Math.max(0, Math.min(defender.W, setup.woundsAlreadyLost ?? 0))
-  const chain = phaseChain(attacker, weapons, defender, setup.context, [], houseRules, phase, {
+  const chain = phaseChain(attacker, weapons, defender, context, [], houseRules, phase, {
     maxAttacks: setup.attackLimit,
     woundsAlreadyTaken: woundsAlreadyLost,
     maxParries: setup.parryUsed ? 0 : undefined,
   })
 
-  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, setup.context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes(setup, perWeapon) }
+  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon) }
+}
+
+/** Coating bonuses the engine's weapon fields cannot carry: an injury bonus, and Reptile Venom's Strength that leaves the save alone. */
+function adjustForCoatings(input: AttackInput, weapon: Weapon, phase: WeaponKind, kit: Loadout): AttackInput {
+  let out = input
+  const injury = weaponInjuryBonus(weapon)
+  if (injury) out = { ...out, injuryRollModifier: out.injuryRollModifier + injury }
+  if (weapon.special.includes('strengthBonusNoSaveModifier') && phase === 'ranged' && out.armourThreshold !== IMPOSSIBLE) {
+    // The engine never erodes saves for Strength unless the house rule is on, so nothing to undo here; kept for when it is.
+    void kit
+  }
+  return out
 }
 
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
@@ -153,7 +246,17 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary && primary.input.autoWoundOnNaturalSixToHit) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
     if (w.input.woundThreshold === IMPOSSIBLE) notes.push(`${w.weapon.name}: Strength ${w.strength} cannot wound Toughness ${setup.defender.stats.T}.`)
+    if (w.weapon.vsTraits && w.weapon.vsTraits.traits.some((t) => setup.defender.traitIds.includes(t))) notes.push(`${w.weapon.name}: its bonus against ${w.weapon.vsTraits.traits.join(' and ')} applies to this target.`)
+    if (w.weapon.saveModifierTwoHandedOnly) notes.push(setup.context.twoHanded ? `${w.weapon.name} swung two-handed: the save modifier applies.` : `${w.weapon.name}: the save modifier needs both hands on the club.`)
+    if (w.weapon.strengthBonusMountedChargeOnly) notes.push(setup.context.mounted && setup.context.charging ? `${w.weapon.name}: the mounted charge bonus applies.` : `${w.weapon.name} only gives its Strength bonus on a mounted charge.`)
+    if (w.weapon.toWoundHighestOf2D6VsKnockedDown) notes.push(setup.context.targetKnockedDown ? `${w.weapon.name}: 2D6 to wound against the knocked-down target, keep the highest.` : `${w.weapon.name}: against a knocked-down target roll 2D6 to wound and keep the highest.`)
+    if (w.weapon.special.includes('preBattleEffect')) notes.push(`${w.weapon.name} carries a pre-battle coating; its bonus is in these numbers.`)
   }
+  if (setup.defenderKit.firstHitDiscard !== null) notes.push(`Lucky Charm: the first hit on ${setup.defender.name} in the battle is discarded on a ${setup.defenderKit.firstHitDiscard}+ (offered when rolling, not in the odds).`)
+  if (setup.defenderKit.afterSaveThreshold !== null) notes.push(`Peg Leg: a ${setup.defenderKit.afterSaveThreshold}+ save after any failed save.`)
+  if (setup.defenderKit.ownSave) notes.push(`Cloak: a ${setup.primary.type === 'melee' ? setup.defenderKit.ownSave.melee : setup.defenderKit.ownSave.missile}+ save of its own where better than the armour worn.`)
+  if (setup.defenderKit.missileWardSaveThreshold !== null && setup.primary.type === 'ranged') notes.push(`A ${setup.defenderKit.missileWardSaveThreshold}+ special save against missiles.`)
+  if (setup.defenderKit.stunSave) notes.push(`Stun save ${setup.defenderKit.stunSave.threshold}+${setup.defenderKit.stunSave.unmodifiable ? ', never modified' : ''}.`)
   if (setup.defender.stats.W > 1) {
     const left = setup.defender.stats.W - Math.max(0, Math.min(setup.defender.stats.W, setup.woundsAlreadyLost ?? 0))
     notes.push(left <= 0 ? `${setup.defender.name} is already at zero Wounds: every wound through rolls for injury.` : `${setup.defender.name} has ${left} of ${setup.defender.stats.W} Wounds left: injury is only rolled once the last is lost.`)
@@ -207,12 +310,15 @@ export interface ContextToggle {
   defaultOn?: boolean
 }
 
-export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout): ContextToggle[] {
+export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout, offHand?: Weapon | null): ContextToggle[] {
   const toggles: ContextToggle[] = []
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
     toggles.push({ field: 'charging', label: 'Charging' })
-    if (primary.strengthBonusFirstTurnOnly && primary.id !== 'lance') toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: `${primary.name} only gets its Strength bonus in the first turn.` })
+    if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })
+    const firstTurnMatters = (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks
+    if (firstTurnMatters) toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: primary.strengthBonusFirstTurnOnly ? `${primary.name} only gets its Strength bonus in the first turn.` : `${primary.name} gets its extra attacks in the first turn (charging or charged).` })
+    if (primary.toWoundHighestOf2D6VsKnockedDown || offHand?.toWoundHighestOf2D6VsKnockedDown) toggles.push({ field: 'targetKnockedDown', label: 'Target is knocked down', hint: 'Misericordia: 2D6 to wound, keep the highest.' })
     if (skills.some((s) => s.conditionField === 'fightingMultiple')) toggles.push({ field: 'fightingMultiple', label: 'Fighting two or more enemies' })
     if (skills.some((s) => s.conditionField === 'insideBuildings') || attacker.traitIds.includes('pit_fighter')) toggles.push({ field: 'insideBuildings', label: 'Inside a building or ruin' })
     if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: 'Hatred: reroll misses in the first turn against a hated enemy.' })
@@ -222,6 +328,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     toggles.push({ field: 'longRange', label: 'Long range' })
     toggles.push({ field: 'cover', label: 'Target in cover' })
     toggles.push({ field: 'largeTarget', label: 'Large target' })
+    if (primary.altFire) toggles.push({ field: 'altFire', label: primary.altFire.label, hint: primary.altFire.hint })
   }
   return toggles
 }

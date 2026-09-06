@@ -140,6 +140,20 @@ export function setNotes(state: BattleLiveState, notes: string): BattleLiveState
   return touch(state, { notes })
 }
 
+/** Record (or take back) that a warrior used a consumable this battle. */
+export function setItemUsed(state: BattleLiveState, warriorId: string, itemId: string, used: boolean): BattleLiveState {
+  const current = state.itemsUsed[warriorId] ?? []
+  const next = used ? (current.includes(itemId) ? current : [...current, itemId]) : current.filter((id) => id !== itemId)
+  const itemsUsed = { ...state.itemsUsed }
+  if (next.length === 0) delete itemsUsed[warriorId]
+  else itemsUsed[warriorId] = next
+  return touch(state, { itemsUsed })
+}
+
+export function itemsUsedBy(state: BattleLiveState, warriorId: string): string[] {
+  return state.itemsUsed[warriorId] ?? []
+}
+
 /** Blank loot lines are ignored. */
 export function addLoot(state: BattleLiveState, line: string): BattleLiveState {
   const trimmed = line.trim()

@@ -25,6 +25,8 @@ import { deriveExploration, type ExplorationDerived } from './exploration'
 import { resolveGroupInjuries, resolveHeroInjuryFlow, resolveHiredSwordInjury, type GroupInjuryResolution, type HeroInjuryResolution, type HiredSwordInjuryResolution, type InjuryOutcome } from './injuries'
 import { participantsOf, type Participants } from './participants'
 import { advanceKey, isDie, STEP_IDS, type AdvanceMode, type ReportDraft, type StepId } from './state'
+import { isConsumable } from '../../../rules/data/itemRules'
+import { mapGrade } from '../../../rules/resolve/explorationAids'
 import { unitRules } from '../../../rules/data/campaignRules'
 import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
@@ -46,6 +48,8 @@ export interface ReportContext {
   houseRules?: CampaignHouseRules
   /** Outcomes recorded on the battle sheet before the game (tarot readings, list rules). */
   preBattle?: Record<string, string>
+  /** Consumables marked as used on the battle sheet: warrior id -> item ids. */
+  itemsUsed?: Record<string, string[]>
 }
 
 export interface InjurySummary {
@@ -260,6 +264,32 @@ function heldItemIds(items: readonly ItemRow[], holderId: string): string[] {
   return items.filter((i) => i.holder_type === 'hero' && i.holder_id === holderId).map((i) => i.id)
 }
 
+/**
+ * Kit changed by the battle: consumables marked as used are one fewer (a stack of one goes), and a
+ * Mordheim Map whose re-rolls were used in exploration is noted as spent (a Master map lasts).
+ */
+export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportApplied['item_patches'] {
+  const patches: ReportApplied['item_patches'] = []
+  const rows = ctx.items
+  for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed ?? {})) {
+    for (const itemId of new Set(itemIds)) {
+      if (!isConsumable(itemId)) continue
+      const row = rows.find((r) => r.holder_id === holderId && r.item_rules_id === itemId) ?? rows.find((r) => r.holder_type === 'stash' && r.item_rules_id === itemId)
+      if (!row || patches.some((p) => p.id === row.id)) continue
+      patches.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
+    }
+  }
+  const mapsUsed = new Set(draft.exploration.aids.filter((u) => u.aidKey.startsWith('map:')).map((u) => u.aidKey.slice('map:'.length)))
+  for (const holder of mapsUsed) {
+    const row = rows.find((r) => r.item_rules_id === 'mordheim_map' && (holder === 'stash' ? r.holder_type === 'stash' : r.holder_id === holder))
+    if (!row || patches.some((p) => p.id === row.id)) continue
+    const grade = mapGrade({ itemId: 'mordheim_map', quantity: row.quantity, notes: row.notes })
+    if (grade === 'master') continue
+    patches.push({ id: row.id, notes: `${row.notes.trim()}${row.notes.trim() ? ' · ' : ''}spent` })
+  }
+  return patches
+}
+
 function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Participants, injuries: InjuriesDerived, xp: XpDerived, exploration: ExplorationDerived): ReportApplied {
   const xpBySubject = new Map(xp.lines.map((l) => [l.subjectId, l]))
   const heroes: ReportApplied['heroes'] = []
@@ -297,6 +327,18 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
       for (const t of thresholdsCrossed('hero', line.xpBefore, line.xpAfter)) pending.push({ subject_type: 'hero', subject_id: sword.id, threshold_xp: t })
     }
     if (Object.keys(patch).length > 0) heroes.push({ id: sword.id, patch })
+  }
+
+  // A Tarot reading that turned to doom before the game: the hero refuses to fight the next one.
+  for (const [key, outcome] of Object.entries(ctx.preBattle ?? {})) {
+    if (!key.startsWith('tarot:') || outcome !== 'disaster') continue
+    const hero = ctx.roster.heroes.find((h) => h.id === key.slice('tarot:'.length) && h.status === 'active')
+    if (!hero) continue
+    const existing = heroes.find((h) => h.id === hero.id)
+    const flags = { ...(existing?.patch.flags ?? hero.flags) }
+    flags.missNextGames = Math.max(flags.missNextGames ?? 0, 1)
+    if (existing) existing.patch.flags = flags
+    else heroes.push({ id: hero.id, patch: { flags } })
   }
 
   // Heroes who missed this game: one fewer to miss.
@@ -337,6 +379,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     pending_advances: pending,
     remove_item_ids: [...new Set(removeItemIds)],
     stash_items: record?.itemsFound ?? [],
+    item_patches: itemPatchesFor(ctx, draft),
   }
 }
 

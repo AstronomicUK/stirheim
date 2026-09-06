@@ -36,6 +36,8 @@ export const battleLiveStateSchema = z.object({
   notes: z.string().default(""),
   /** Pre-battle prompts answered on the sheet: "tarot:<heroId>" -> "passed" | "failed" | "disaster", list rules by key. */
   preBattle: z.record(z.string(), z.string()).default({}),
+  /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
+  itemsUsed: z.record(z.string(), z.array(z.string())).default({}),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });

@@ -15,6 +15,8 @@ import {
 import { MELEE_WEAPONS } from "../weapons/melee";
 import { RANGED_AND_CREATURE_WEAPONS } from "../weapons/ranged-and-creatures";
 import { MATERIAL_VARIANT_WEAPONS } from "../weapons/materialVariants";
+import { WARBAND_SPECIAL_WEAPONS } from "../weapons/warbandSpecial";
+import { WARBAND_SPECIAL_ITEMS } from "../items/warbandSpecial";
 import { MATERIAL_VARIANT_ITEMS } from "../items/materialVariants";
 import { SHOP_ITEMS } from "../items";
 import type { ItemCategory } from "../../types/items";
@@ -45,7 +47,7 @@ describe("item catalogue", () => {
       expect(item.price.text.length, `${item.id}: empty price text`).toBeGreaterThan(0);
       expect(item.availability.text.length, `${item.id}: empty availability text`).toBeGreaterThan(0);
       expect(item.source.publication.length, `${item.id}: empty publication`).toBeGreaterThan(0);
-      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^02-weapons-armour-equipment\.md:\d+-\d+$/);
+      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|warbands\/grade-[0-9a-z-]+)\.md:\d+-\d+$/);
       for (const rule of item.specialRules) {
         expect(rule.name.length, `${item.id}: unnamed special rule`).toBeGreaterThan(0);
       }
@@ -60,11 +62,12 @@ describe("item catalogue", () => {
     expect(MISC_ITEMS.length).toBe(110);
     expect(ANIMAL_ITEMS.length).toBe(14);
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(80);
-    expect(ITEMS.length).toBe(246 + MATERIAL_VARIANT_ITEMS.length);
+    expect(WARBAND_SPECIAL_ITEMS.length).toBe(24);
+    expect(ITEMS.length).toBe(246 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);
     }
-    expect(itemsByCategory("armour")).toEqual(ARMOUR_ITEMS);
+    expect(itemsByCategory("armour")).toEqual(ITEMS.filter((i) => i.category === "armour"));
   });
 
   it("covers at least 90% of the ### headings in the source Markdown", () => {
@@ -136,7 +139,7 @@ describe("item catalogue", () => {
 
   it("links every weaponId to an entry in the weapons database", () => {
     const weaponIds = new Set(
-      [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS].map((w) => w.id),
+      [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...WARBAND_SPECIAL_WEAPONS].map((w) => w.id),
     );
     let linked = 0;
     for (const item of ITEMS) {

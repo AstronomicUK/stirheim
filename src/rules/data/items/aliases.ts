@@ -25,10 +25,11 @@ import { BLACKPOWDER_ITEMS } from "./blackpowder";
 import { MELEE_ITEMS } from "./melee";
 import { MISC_ITEMS } from "./misc";
 import { MISSILE_ITEMS } from "./missile";
+import { WARBAND_SPECIAL_ITEMS } from "./warbandSpecial";
 
 // Built from the category files rather than ./index so that index.ts can re-export this module
 // without a circular import evaluating ITEMS before it exists.
-const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS];
+const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS];
 
 /**
  * Equipment-list names that are different words for a catalogue item. Keys are the names as written
@@ -88,7 +89,43 @@ export const EQUIPMENT_ALIASES: Record<string, string> = {
   "Horse (Fallen nobles only if the Captain is mounted)": "riding_draft_horse",
   "Pike": "pike_tileans",
   "Pike (Sell-swords only)": "pike_merchant_caravans",
+  // Phase 16: the source's own note says the Katana is the Dragon Sword; a plain Staff is a club
+  // (the Tomb Guardians list prices it at 3 gc); "Shield/Buckler" is a 5 gc choice, taken as the shield.
+  "Katana": "dragon_sword",
+  "Staff": "club",
+  "Shield/Buckler": "shield",
+  "Darksteel blade": "darksteel_blade",
+  "Beastwhip (Packmaster or Apprentices only)": "beastwhip",
+  "Thingcatcher (Packmaster or Apprentices only)": "thingcatcher",
+  "Boar Spear (Aristocrat only)": "boar_spear",
+  "Bone Helmet (Skink Priest only)": "bone_helmet",
+  "Hedonist Whip (Heroes only)": "hedonist_whip",
+  "Slaaneshi Man-Catcher (Whipmaster only)": "slaaneshi_man_catcher",
+  "Shield of Sigmar (Heroes only)": "shield_of_sigmar",
+  "Pebble (fixed, x1, included)": "pebble",
 };
+
+/**
+ * Equipment-list lines that are a set of items bought together (the Pit Fighters' fighting styles).
+ * The builder adds every component; the list price is charged once, on the first component. Where
+ * the style offers a choice ("Trident or Javelins"), the first option is taken and the player may
+ * swap it afterwards.
+ */
+export const EQUIPMENT_BUNDLES: Record<string, string[]> = {
+  "Chaos Style — Helmet; Dagger; Flail; Shield; Light armour": ["helmet", "dagger", "flail", "shield", "light_armour"],
+  "Empire Style — Helmet; Dagger; Double-handed Weapon; Light armour": ["helmet", "dagger", "double_handed_weapon", "light_armour"],
+  "Orc Style — Helmet; Dagger; Axe; Shield": ["helmet", "dagger", "axe", "shield"],
+  "Undead Style — Helmet; Dagger; Spiked Gauntlet; Sword": ["helmet", "dagger", "spiked_gauntlet", "sword"],
+  "Skink Style — Helmet; Dagger; Trident or Javelins; Net or Buckler": ["helmet", "dagger", "trident", "net"],
+  "Witch Elf Style — Helmet; Dagger; 2 x Sword or Spear & Net": ["helmet", "dagger", "sword", "sword"],
+};
+
+/** The component item ids of a bundle line, or undefined when the name is not a bundle. */
+export function equipmentBundle(name: string): Item[] | undefined {
+  const ids = EQUIPMENT_BUNDLES[name.trim()];
+  if (!ids) return undefined;
+  return ids.map((id) => BY_ID.get(id)).filter((i): i is Item => i !== undefined);
+}
 
 /** Lowercase, "&" -> "and", everything but letters and digits removed. */
 function normaliseKey(text: string): string {
@@ -147,5 +184,5 @@ export function equipmentListNames(): string[] {
 
 /** Equipment-list names with no catalogue item (see the aliases test for the expected set). */
 export function unresolvedEquipmentNames(): string[] {
-  return equipmentListNames().filter((name) => resolveEquipmentName(name) === undefined);
+  return equipmentListNames().filter((name) => resolveEquipmentName(name) === undefined && equipmentBundle(name) === undefined);
 }

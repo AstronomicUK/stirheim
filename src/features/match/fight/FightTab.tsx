@@ -12,6 +12,8 @@ import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner, Stepp
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutOf, offHandCandidates, type Combatant, type Loadout } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
+import { itemsUsedBy, setItemUsed } from '../battle/sheet'
+import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type RollState } from './rollThrough'
 import { useEnemyRosters } from './useEnemyRosters'
 
@@ -27,6 +29,8 @@ export interface FightTabProps {
   readOnly: boolean
   /** Append a result to the shared combat log; both sheets pick it up. */
   onLogEvent: (payload: AttackEventPayload) => Promise<void>
+  /** Edit the player's own sheet (marking consumables used); absent when read only. */
+  edit?: (fn: (state: BattleLiveState) => BattleLiveState) => void
 }
 
 interface WeaponChoice {
@@ -44,9 +48,11 @@ interface TargetMemory {
   parryUsedTurn: number | null
   /** Worst thing that happened to them this turn, and when. */
   worst: { turn: number; label: string } | null
+  /** Their Lucky Charm has been rolled for this battle. */
+  charmUsed?: boolean
 }
 
-export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent }: FightTabProps) {
+export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent, edit }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
 
   const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet), [roster, template, sheet])
@@ -109,18 +115,26 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
       ? parryOverride.used
       : targetMemory?.parryUsedTurn === sheet.turn
     : false
-  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined) : []
+  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null) : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)
+
+  // Consumables the attacker has marked on the sheet (poisons, drugs, special ammunition) shape the odds and are used up by the report.
+  const usedIds = attacker ? itemsUsedBy(sheet, attacker.id) : []
+  const attackerPreBattle: PreBattleEffect[] = attackerKit ? attackerKit.consumables.filter((c) => usedIds.includes(c.itemId)).map((c) => c.effect) : []
+  const defenderSession = defender ? sessions.find((s) => s.warband_id === defender.warbandId) : undefined
+  const defenderUsed = defender && defenderSession ? itemsUsedBy(defenderSession.live_state, defender.id) : []
+  const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
   const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}` : ''
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, attackLimit })
+      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, attackLimit, attackerPreBattle, defenderPreBattle })
       : null
+  const charmAvailable = Boolean(defender && defenderKit && defenderKit.firstHitDiscard !== null && !targetMemory?.charmUsed)
 
   function rememberFight(state: RollState) {
     if (!defender) return
@@ -135,6 +149,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           woundsLost: Math.max(prev?.woundsLost ?? 0, state.woundsLost),
           parryUsedTurn: state.parriesLeft < (odds?.parryAttempts ?? 0) ? turn : (prev?.parryUsedTurn ?? null),
           worst: worstLabel ? { turn, label: worstLabel } : prev?.worst?.turn === turn ? prev.worst : null,
+          charmUsed: Boolean(prev?.charmUsed) || (state.charmUsed && state.plans.some((p) => p.luckyCharm !== undefined)),
         },
       }
     })
@@ -156,6 +171,30 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           ))}
         </SelectField>
         {attacker && attackerKit ? <CombatantLine c={attacker} kit={attackerKit} /> : null}
+        {attacker && attackerKit && attackerKit.consumables.length > 0 ? (
+          <fieldset className="flex min-w-0 flex-col gap-1 rounded-md border border-border bg-surface-low px-3 py-2">
+            <legend className="px-1 text-xs uppercase tracking-wider text-ink-dim">Taken or applied this battle</legend>
+            {attackerKit.consumables.map((c) => {
+              const on = usedIds.includes(c.itemId)
+              return (
+                <label key={c.itemId} className="flex min-h-11 items-start gap-3 py-1 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0 accent-brass"
+                    checked={on}
+                    disabled={readOnly || !edit}
+                    onChange={(e) => edit?.((s) => setItemUsed(s, attacker.id, c.itemId, e.target.checked))}
+                  />
+                  <span>
+                    {c.effect.label} <span className="text-ink-dim">({c.name})</span>
+                    {c.effect.note ? <span className="block text-xs text-ink-dim">{c.effect.note}</span> : null}
+                    <span className="block text-xs text-ink-dim">Marked items are used up when the report is filed.</span>
+                  </span>
+                </label>
+              )
+            })}
+          </fieldset>
+        ) : null}
       </Section>
 
       <Section title="Target">
@@ -278,6 +317,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             attacker={attacker}
             defender={defender}
             defenderKit={defenderKit!}
+            charmAvailable={charmAvailable}
             readOnly={readOnly}
             onLog={(state) =>
               onLogEvent({
@@ -454,9 +494,11 @@ interface RollSectionProps {
   onLog: (state: RollState) => Promise<void>
   /** Called once when the last roll lands, so the tab can carry Wounds and the parry into the next fight. */
   onFinished: (state: RollState) => void
+  /** The target's Lucky Charm has not been rolled for yet this battle. */
+  charmAvailable: boolean
 }
 
-function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished }: RollSectionProps) {
+function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
   const [logError, setLogError] = useState<string | null>(null)
@@ -466,12 +508,13 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
       Array.from({ length: w.attacks }, () => ({
         weaponName: w.weapon.name,
         input: w.input,
-        parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit) },
+        parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit), fixedThreshold: fixedParryThreshold(defenderKit) },
+        luckyCharm: defenderKit.firstHitDiscard ?? undefined,
       })),
     )
     setLogged('no')
     setLogError(null)
-    setState(startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost))
+    setState(startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost, charmAvailable))
   }
 
   async function log() {
@@ -523,7 +566,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                 <DieField key={state.log.length} label={state.pending.label} sides={6} value={null} onChange={(v) => v !== null && advance((s) => applyRoll(s, v))} rollable hideLabel />
                 {state.pending.optional ? (
                   <Button variant="ghost" onClick={() => advance(declineRoll)}>
-                    No parry
+                    {state.pending.kind === 'luckyCharm' ? 'Keep the charm' : 'No parry'}
                   </Button>
                 ) : null}
               </div>
@@ -577,6 +620,13 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
 }
 
 /** Mirrors the engine's parry reroll rule (buckler + sword, Dwarf axes, fighting claws, iron fists). */
+/** A Starblade parries on a fixed 4+ when it is the target's only parry item. */
+function fixedParryThreshold(kit: Loadout): number | undefined {
+  const fixed = kit.melee.filter((w) => w.parry && w.parryThreshold !== undefined)
+  const all = kit.melee.filter((w) => w.parry).length + (kit.armour.buckler ? 1 : 0)
+  return fixed.length > 0 && fixed.length === all ? Math.min(...fixed.map((w) => w.parryThreshold as number)) : undefined
+}
+
 function defenderKitReroll(kit: Loadout): boolean {
   return parryRerollFromItems(kit.melee, kit.armour)
 }

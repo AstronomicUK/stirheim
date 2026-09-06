@@ -94,7 +94,9 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   if (weapon.type === "ranged") {
     const nimble = skills.some((s) => s.id === "nimble" && isActive(s, context));
     if (weapon.moveOrFire && context.movedThisTurn && !nimble) return 0;
-    const count = (weapon.rangedProfile?.shotsPerTurn ?? 1) + skillBonus();
+    // An alternative fire mode (single shot for repeaters, the Sling's double shot) replaces the profile's shots.
+    const shots = context.altFire && weapon.altFire ? weapon.altFire.shots : (weapon.rangedProfile?.shotsPerTurn ?? 1);
+    const count = shots + skillBonus();
     return Math.max(0, count);
   }
 
@@ -105,7 +107,12 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   let count = baseAttacks + skillBonus();
   if (pitFighterActive(character, context)) count += 1;
   if (weapon.paired) count += 1;
-  if (context.charging && weapon.chargeBonusAttacks) count += weapon.chargeBonusAttacks;
+  // Whipcrack: +1 Attack when charging, and +1 against the charger when charged (the first turn either way).
+  if (isFirstTurnOfCombat(context) && weapon.chargeBonusAttacks) count += weapon.chargeBonusAttacks;
+  // Chain Sticks' Flurry: extra attacks in the first turn of each combat.
+  if (isFirstTurnOfCombat(context) && weapon.firstTurnBonusAttacks) count += weapon.firstTurnBonusAttacks;
+  // Quarter Staff: the free hand strikes as well when the staff is used alone.
+  if (weapon.unarmedBonusAttack && context.twoHanded) count += 1;
   if (weapon.maxAttacks !== undefined) count = Math.min(count, weapon.maxAttacks);
   return Math.max(0, count);
 }
@@ -161,8 +168,8 @@ function findActiveEffect(skills: Skill[], context: CombatContext, weaponType: W
 /** The weapon's Strength bonus this turn — Heavy weapons (Flail, Morning Star, Censer) and the Lance only get theirs in the first turn / on the charge. */
 function weaponStrengthBonus(weapon: Weapon, context: CombatContext): number {
   const bonus = weapon.strengthBonus ?? 0;
+  if (weapon.strengthBonusMountedChargeOnly) return context.charging && context.mounted ? bonus : 0;
   if (!weapon.strengthBonusFirstTurnOnly) return bonus;
-  if (weapon.id === "lance") return context.charging ? bonus : 0;
   return isFirstTurnOfCombat(context) ? bonus : 0;
 }
 
@@ -171,6 +178,7 @@ export function effectiveOffensiveStats(attacker: Character, weapon: Weapon, con
   const attackerSkills = resolveSkills(attacker.skills, customSkills);
   let ws = effectiveStat(attacker.stats, attackerSkills, context, weapon.type, "WS", "self");
   if (weapon.type === "melee" && pitFighterActive(attacker, context)) ws += 1;
+  if (weapon.type === "melee" && weapon.wsBonus) ws += weapon.wsBonus;
   const s = effectiveStat(attacker.stats, attackerSkills, context, weapon.type, "S", "self");
   return { ws, strength: weapon.strength === "user" ? s + weaponStrengthBonus(weapon, context) : weapon.strength };
 }
@@ -203,7 +211,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   // ---- To Hit ----
   let hitThreshold: number;
   if (weapon.type === "melee") {
-    hitThreshold = meleeToHitThreshold(effectiveWS, defender.WS);
+    // Kit on either side can shift the roll: a kick at -1 (Iron Shod Boots), a Ball and Chain's -1 to be hit.
+    hitThreshold = meleeToHitThreshold(effectiveWS, defender.WS) - (weapon.toHitBonus ?? 0) - (defender.toBeHit?.melee ?? 0);
   } else {
     let modifierSum = 0;
     // A pavise makes its bearer count as in cover against missiles (02: Pavise), the same -1 as real cover.
@@ -212,13 +221,19 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     // Moving and shooting is always -1 (01:673); Nimble only lets Move-or-Fire weapons shoot at all (see computeAttackCount).
     if (context.movedThisTurn) modifierSum -= 1;
     if (context.largeTarget || defender.activeTraitIds.includes("large_target")) modifierSum += 1;
-    if ((weapon.rangedProfile?.shotsPerTurn ?? 1) > 1 && weapon.multiShotToHitPenalty) modifierSum -= weapon.multiShotToHitPenalty;
+    if (context.altFire && weapon.altFire) modifierSum -= weapon.altFire.toHitPenalty;
+    else if ((weapon.rangedProfile?.shotsPerTurn ?? 1) > 1 && weapon.multiShotToHitPenalty) modifierSum -= weapon.multiShotToHitPenalty;
     modifierSum += weapon.toHitBonus ?? 0;
+    // Cloaks and amulets: -1 to be hit by missiles.
+    modifierSum += defender.toBeHit?.missile ?? 0;
     hitThreshold = rangedToHitBaseThreshold(attacker.stats.BS) - modifierSum;
   }
 
   // ---- To Wound ----
-  const woundThreshold = toWoundThreshold(strengthForToWound, defender.T);
+  const vsTraitsApply = Boolean(weapon.vsTraits && weapon.vsTraits.traits.some((t) => defender.activeTraitIds.includes(t)));
+  const woundBase = toWoundThreshold(strengthForToWound, defender.T);
+  // Sigmarite Warhammer: +1 to wound against Undead and Possessed (a 6 is still needed for a critical, handled by the trigger faces).
+  const woundThreshold: Threshold = vsTraitsApply && weapon.vsTraits?.toWound && woundBase !== IMPOSSIBLE ? Math.max(2, woundBase - weapon.vsTraits.toWound) : woundBase;
 
   // ---- Armour save ----
   // Base save from armour/shield (with the Strength erosion house rule if on), then the weapon's
@@ -232,8 +247,17 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   } else {
     // A pavise counts as a shield in close combat only when the bearer was charged to the front; never against shooting.
     const paviseCounts = weapon.type === "melee" && (context.paviseFront ?? true);
-    const base = armourSaveThreshold(defender.armour, attackStrength, houseRules.strengthArmourPiercing, paviseCounts);
-    const modifier = weapon.saveModifier ?? 0;
+    // A Ladle lets only a shield save; body armour and helmets do not count.
+    const armour = weapon.ignoresArmourSaveExceptShield ? { ...defender.armour, type: "none" as const, kiteShield: false } : defender.armour;
+    let base = armourSaveThreshold(armour, attackStrength, houseRules.strengthArmourPiercing, paviseCounts);
+    // A Sea Dragon Cloak is a save of its own, used when better than the armour worn.
+    const own = defender.ownSave ? (weapon.type === "melee" ? defender.ownSave.melee : defender.ownSave.missile) : null;
+    if (own !== null && !weapon.ignoresArmourSaveExceptShield && (base === IMPOSSIBLE || own < base)) base = own;
+    // Wolfcloaks, Silk Armour: a bonus to the save, sometimes even a 6+ from nothing.
+    const bonus = weapon.ignoresArmourSaveExceptShield ? 0 : (weapon.type === "melee" ? defender.saveBonus?.melee : defender.saveBonus?.missile) ?? 0;
+    if (bonus > 0) base = base === IMPOSSIBLE ? (defender.saveBonus?.savesFromNothing ? 7 - bonus : IMPOSSIBLE) : Math.max(2, base - bonus);
+    // The Ogre Club's Crushing Attack needs both hands on the club.
+    const modifier = weapon.saveModifierTwoHandedOnly && !context.twoHanded ? 0 : (weapon.saveModifier ?? 0);
     if (base === IMPOSSIBLE) {
       armourThreshold = modifier < 0 ? saveThresholdOrImpossible(7 + modifier) : IMPOSSIBLE;
     } else {
@@ -246,7 +270,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const dodgeSkill = weapon.type === "ranged" ? findActiveEffect(defenderSkills, context, weapon.type, "extraSaveThreshold") : undefined;
 
   // ---- Injury roll modifiers ----
-  const injuryRollModifier = sumEffect(attackerSkills, context, weapon.type, "injuryRollModifier");
+  const injuryRollModifier = sumEffect(attackerSkills, context, weapon.type, "injuryRollModifier") + (vsTraitsApply ? weapon.vsTraits?.injury ?? 0 : 0);
   const remapSkill = findActiveEffect(defenderSkills, context, weapon.type, "injuryChartRemap");
   const hardToKill = defender.activeTraitIds.includes("hard_to_kill");
   // Hard Head (Dwarf racial trait): ignores the special rules for maces, clubs, etc. — Concussion never applies.
@@ -254,8 +278,13 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   // Stun avoidance: Helmet 4+ (02:1339); Thick Skull 3+, or 2+ with a helmet, replacing the helmet's own save.
   const stunAvoidanceSkill = findActiveEffect(defenderSkills, context, weapon.type, "stunAvoidance");
   let stunAvoidanceThreshold: number | undefined;
-  if (stunAvoidanceSkill?.effect.threshold !== undefined) {
-    stunAvoidanceThreshold = Math.max(2, stunAvoidanceSkill.effect.threshold - (defender.helmet ? 1 : 0));
+  if (defender.stunSave?.unmodifiable) {
+    // Cooking Pot Helmet: a 5+ that is never modified and does not stack with Thick Skull.
+    stunAvoidanceThreshold = defender.stunSave.threshold;
+  } else if (stunAvoidanceSkill?.effect.threshold !== undefined) {
+    stunAvoidanceThreshold = Math.max(2, stunAvoidanceSkill.effect.threshold - (defender.helmet || defender.stunSave ? 1 : 0));
+  } else if (defender.stunSave) {
+    stunAvoidanceThreshold = defender.stunSave.threshold;
   } else if (defender.helmet) {
     stunAvoidanceThreshold = 4;
   }
@@ -276,7 +305,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   else if (variantWightBlade) critTriggerFaces = [5, 6];
   else critTriggerFaces = [6];
   const critTable: CritTableKey = context.critMode === "standard" ? "standard" : weapon.critCategory;
-  const critTableRollModifier = sumEffect(attackerSkills, context, weapon.type, "critTableRollModifier");
+  const critTableRollModifier = sumEffect(attackerSkills, context, weapon.type, "critTableRollModifier") + (weapon.critTableRollModifier ?? 0);
 
   // ---- Rerolls ----
   // Expert Swordsman (03:381 — normal swords and Weeping Blades only, on the charge) and Hatred
@@ -287,8 +316,20 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
 
   // ---- Parry (01:836-848; Sword / Buckler / Dwarf Axe rules; Master of Blades) ----
   const masterOfBlades = defenderSkills.some((s) => s.id === "master_of_blades" && isActive(s, context));
-  const parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && attackStrength < 2 * defender.S;
-  const parrySuccessProbGivenAttempt = parryEligible ? parrySuccessProbability(hitThreshold, masterOfBlades, defender.parryReroll) : 0;
+  // The Ogre Club counts one Strength higher for the parry check when swung two-handed.
+  const parryStrength = attackStrength + (weapon.id === "ogre_club" && context.twoHanded ? 1 : 0);
+  const parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S;
+  const parrySuccessProbGivenAttempt = parryEligible
+    ? defender.parryThreshold !== undefined
+      ? probabilityAtLeastForParry(defender.parryThreshold, defender.parryReroll)
+      : parrySuccessProbability(hitThreshold, masterOfBlades, defender.parryReroll)
+    : 0;
+  // Misericordia against a knocked-down target: 2D6 to wound, keep the highest.
+  const rerollToWound = Boolean(weapon.toWoundHighestOf2D6VsKnockedDown && context.targetKnockedDown);
+  // Amulet of the Moon and the Shield of Sigmar: a special save against missiles, the better of it and any Ward.
+  const missileWard = weapon.type === "ranged" ? defender.missileWardSaveThreshold ?? null : null;
+  const wardCandidates = [defender.wardSaveThreshold, missileWard].filter((t): t is number => t !== null && t !== undefined);
+  const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 
   return {
     hitThreshold,
@@ -296,7 +337,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     armourThreshold,
     dodgeThreshold: dodgeSkill?.effect.threshold,
     stepAsideThreshold: stepAsideSkill?.effect.threshold,
-    wardSaveThreshold: defender.wardSaveThreshold !== null && defender.wardSaveThreshold !== undefined ? saveThresholdOrImpossible(defender.wardSaveThreshold) ?? undefined : undefined,
+    wardSaveThreshold: wardThreshold !== undefined ? saveThresholdOrImpossible(wardThreshold) ?? undefined : undefined,
+    afterSaveThreshold: defender.afterSaveThreshold,
     injuryRollModifier,
     concussion,
     trueGrit: Boolean(remapSkill),
@@ -309,6 +351,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     critTable,
     critTableRollModifier,
     rerollToHit,
+    rerollToWound: rerollToWound || undefined,
     autoWoundOnNaturalSixToHit: autoWound,
     parryEligible,
     parrySuccessProbGivenAttempt,
@@ -326,6 +369,12 @@ export function computeMaxParries(defender: DefenderProfile, customSkills: Skill
   if (defender.parryWeaponCount >= 2 && masterOfBlades) return 2;
   if (defender.parryWeaponCount >= 1) return 1;
   return 0;
+}
+
+/** A Starblade parries on a fixed roll (4+) rather than beating the to-hit die. */
+export function probabilityAtLeastForParry(threshold: number, reroll: boolean): number {
+  const p = Math.max(0, Math.min(1, (7 - Math.max(2, Math.min(6, threshold))) / 6));
+  return reroll ? 1 - (1 - p) * (1 - p) : p;
 }
 
 /**

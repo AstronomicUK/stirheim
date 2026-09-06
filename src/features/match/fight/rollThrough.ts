@@ -9,7 +9,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'hit' | 'hitReroll' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'critTable' | 'save' | 'stepAside' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'critTable' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -25,17 +25,20 @@ export interface PendingRoll {
 export interface AttackPlan {
   weaponName: string
   input: AttackInput
-  /** Parry mechanics not carried by AttackInput. */
-  parry: { beatsOrMatches: boolean; reroll: boolean }
+  /** Parry mechanics not carried by AttackInput. A fixed threshold (Starblade 4+) replaces the beat-the-hit-roll test. */
+  parry: { beatsOrMatches: boolean; reroll: boolean; fixedThreshold?: number }
+  /** Lucky Charm: the target may discard the first hit of the battle on this roll (offered once). */
+  luckyCharm?: number
 }
 
-export type Outcome = 'miss' | 'parried' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
+export type Outcome = 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { miss: 0, parried: 0, dodged: 0, noWound: 0, saved: 0, ignored: 0, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 0, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
   miss: 'Missed',
   parried: 'Parried',
+  charmed: 'Discarded by the Lucky Charm',
   dodged: 'Dodged',
   noWound: 'Failed to wound',
   saved: 'Saved',
@@ -52,7 +55,7 @@ export interface LogLine {
 }
 
 interface SaveStep {
-  kind: 'save' | 'stepAside' | 'ward'
+  kind: 'save' | 'stepAside' | 'afterSave' | 'ward'
   /** Which wound of this hit the step protects (0-based); -1 = one armour save gating every wound. */
   wound: number
 }
@@ -79,6 +82,8 @@ export interface RollState {
   woundsLost: number
   parriesLeft: number
   critUsed: boolean
+  /** The Lucky Charm has been rolled for (or the phase started without one). */
+  charmUsed: boolean
   pending: PendingRoll | null
   cur: Current
   log: LogLine[]
@@ -105,7 +110,7 @@ function passesSave(roll: number, threshold: Threshold): boolean {
   return roll >= 2 && roll >= threshold
 }
 
-export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: number, woundsAlreadyLost = 0): RollState {
+export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: number, woundsAlreadyLost = 0, charmAvailable = false): RollState {
   const state: RollState = {
     plans,
     index: 0,
@@ -113,6 +118,7 @@ export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: n
     woundsLost: Math.max(0, Math.min(Math.max(1, defenderW), Math.trunc(woundsAlreadyLost))),
     parriesLeft: maxParries,
     critUsed: false,
+    charmUsed: !charmAvailable,
     pending: null,
     cur: freshCurrent(),
     log: [],
@@ -162,9 +168,10 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
   return beginAttack({ ...next, index: state.index + 1 })
 }
 
-/** The defender declines an optional roll (a parry attempt): the hit stands. */
+/** The defender declines an optional roll (a parry attempt, or the Lucky Charm): the hit stands. */
 export function declineRoll(state: RollState): RollState {
   if (!state.pending?.optional) return state
+  if (state.pending.kind === 'luckyCharm') return offerParry(log(state, 'The Lucky Charm is kept for later.'))
   return afterHit(log(state, 'No parry attempted.'))
 }
 
@@ -178,6 +185,9 @@ export function applyRoll(state: RollState, roll: number): RollState {
     case 'hitReroll': {
       if (passes(roll, input.hitThreshold)) {
         const s = log({ ...state, cur: { ...state.cur, hitRoll: roll } }, `${attackName(state)}: rolled ${roll} to hit. Hit.`, 'good')
+        if (!s.charmUsed && plan.luckyCharm !== undefined) {
+          return { ...s, charmUsed: true, pending: { kind: 'luckyCharm', who: 'defender', label: 'Lucky Charm', detail: `The first hit of the battle: discarded on ${plan.luckyCharm}+`, optional: true } }
+        }
         return offerParry(s)
       }
       if (pending.kind === 'hit' && input.rerollToHit) {
@@ -189,10 +199,14 @@ export function applyRoll(state: RollState, roll: number): RollState {
       }
       return finishAttack(log(state, `${attackName(state)}: rolled ${roll} to hit. Missed.`, 'bad'), 'miss')
     }
+    case 'luckyCharm': {
+      if (passesSave(roll, plan.luckyCharm ?? IMPOSSIBLE)) return finishAttack(log(state, `Lucky Charm: rolled ${roll}. The hit is discarded.`, 'bad'), 'charmed')
+      return offerParry(log(state, `Lucky Charm: rolled ${roll}. No luck.`, 'good'))
+    }
     case 'parry':
     case 'parryReroll': {
       const hitRoll = state.cur.hitRoll ?? 6
-      const success = plan.parry.beatsOrMatches ? roll >= hitRoll : roll > hitRoll
+      const success = plan.parry.fixedThreshold !== undefined ? passesSave(roll, plan.parry.fixedThreshold) : plan.parry.beatsOrMatches ? roll >= hitRoll : roll > hitRoll
       if (success) return finishAttack(log(state, `Parry: rolled ${roll} against the ${hitRoll} to hit. Parried!`, 'bad'), 'parried')
       if (pending.kind === 'parry' && plan.parry.reroll) {
         return {
@@ -206,9 +220,13 @@ export function applyRoll(state: RollState, roll: number): RollState {
       if (passesSave(roll, input.dodgeThreshold ?? IMPOSSIBLE)) return finishAttack(log(state, `Dodge: rolled ${roll}. Dodged!`, 'bad'), 'dodged')
       return askWound(log(state, `Dodge: rolled ${roll}. Failed.`, 'good'))
     }
-    case 'wound': {
+    case 'wound':
+    case 'woundReroll': {
       const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6
       const wounded = auto || passes(roll, input.woundThreshold)
+      if (!wounded && pending.kind === 'wound' && input.rerollToWound) {
+        return { ...log(state, `To wound: rolled ${roll}. No wound on the first die; roll the second and keep the highest.`), pending: { kind: 'woundReroll', who: 'attacker', label: 'To wound (second die)', detail: `Needs ${thresholdText(input.woundThreshold)}` } }
+      }
       if (!wounded) return finishAttack(log(state, `To wound: rolled ${roll}. No wound.`, 'bad'), 'noWound')
       const critEligible = !state.critUsed && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
       if (critEligible) {
@@ -249,10 +267,11 @@ export function applyRoll(state: RollState, roll: number): RollState {
       return nextSaveStep({ ...s, cur: { ...s.cur, saveQueue: s.cur.saveQueue.slice(1) } })
     }
     case 'stepAside':
+    case 'afterSave':
     case 'ward': {
       const step = state.cur.saveQueue[0]
-      const threshold = pending.kind === 'stepAside' ? input.stepAsideThreshold : input.wardSaveThreshold
-      const name = pending.kind === 'stepAside' ? 'Step Aside' : 'Ward save'
+      const threshold = pending.kind === 'stepAside' ? input.stepAsideThreshold : pending.kind === 'afterSave' ? input.afterSaveThreshold : input.wardSaveThreshold
+      const name = pending.kind === 'stepAside' ? 'Step Aside' : pending.kind === 'afterSave' ? 'Peg Leg' : 'Ward save'
       if (passesSave(roll, threshold ?? IMPOSSIBLE)) {
         const savedWounds = new Set(state.cur.savedWounds).add(step.wound)
         const queue = state.cur.saveQueue.slice(1).filter((q) => q.wound !== step.wound)
@@ -284,6 +303,7 @@ export function applyRoll(state: RollState, roll: number): RollState {
 }
 
 function parryDetail(plan: AttackPlan, hitRoll: number): string {
+  if (plan.parry.fixedThreshold !== undefined) return `Parries on ${plan.parry.fixedThreshold}+ whatever was rolled to hit`
   return plan.parry.beatsOrMatches ? `Must match or beat the ${hitRoll} rolled to hit` : `Must beat the ${hitRoll} rolled to hit${hitRoll >= 6 ? ' (impossible)' : ''}`
 }
 
@@ -327,6 +347,7 @@ function startSaves(state: RollState): RollState {
   for (let i = 0; i < state.cur.wounds; i++) {
     if (armourApplies && separate) queue.push({ kind: 'save', wound: i })
     if (input.stepAsideThreshold !== undefined) queue.push({ kind: 'stepAside', wound: i })
+    if (input.afterSaveThreshold !== undefined) queue.push({ kind: 'afterSave', wound: i })
     if (input.wardSaveThreshold !== undefined) queue.push({ kind: 'ward', wound: i })
   }
   return nextSaveStep({ ...state, cur: { ...state.cur, saveQueue: queue } })
@@ -339,6 +360,7 @@ function nextSaveStep(state: RollState): RollState {
     const many = state.cur.wounds > 1 && step.wound >= 0 ? ` (wound ${step.wound + 1})` : ''
     if (step.kind === 'save') return { ...state, pending: { kind: 'save', who: 'defender', label: `Armour save${many}`, detail: `Needs ${thresholdText(input.armourThreshold)}` } }
     if (step.kind === 'stepAside') return { ...state, pending: { kind: 'stepAside', who: 'defender', label: `Step Aside${many}`, detail: `Needs ${thresholdText(input.stepAsideThreshold ?? IMPOSSIBLE)}` } }
+    if (step.kind === 'afterSave') return { ...state, pending: { kind: 'afterSave', who: 'defender', label: `Peg Leg${many}`, detail: `Needs ${thresholdText(input.afterSaveThreshold ?? IMPOSSIBLE)}, never modified` } }
     return { ...state, pending: { kind: 'ward', who: 'defender', label: `Ward save${many}`, detail: `Needs ${thresholdText(input.wardSaveThreshold ?? IMPOSSIBLE)}` } }
   }
   return woundsThrough(state)

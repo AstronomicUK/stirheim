@@ -305,7 +305,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
             <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
           ) : null}
           {sideTab === 'fight' && match.combat_mode === 'app' ? (
-            <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} />
+            <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} edit={readOnly ? undefined : handle.edit} />
           ) : null}
           {sideTab === 'log' && match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}

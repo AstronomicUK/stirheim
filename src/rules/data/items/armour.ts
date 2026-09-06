@@ -59,6 +59,7 @@ export const ARMOUR_ITEMS: Item[] = [
       { name: "Gift of Chaos", text: "Chaos armour is a gift from the Dark Gods to the worthy warrior. A Hero who has successfully purchased a suit of Chaos armour will never give it away to another warband member but put it on himself immediately. Chaos armour becomes fused to the body of its wearer. It can never be removed." },
       { name: "Spellcasters", text: "Chaos armour does not hinder its wearer from casting spells or rituals. It can be worn by spellcasters but they cannot combine it with a shield or buckler without appropriate skills." },
       { name: "Movement Penalty", text: "There is no Movement penalty for combining Chaos Armour with a Shield." },
+      { name: "Chaos armour", text: "By its rules the Mechanical Suit is a suit of Chaos armour: a 4+ save, fused to the wearer (Stirheim reading; the source gives no save line)." },
     ],
     source: { publication: "Border Town Burning supplement (1c)", file: "02-weapons-armour-equipment.md:1279-1291" },
     armourSave: 4,
@@ -207,6 +208,7 @@ export const ARMOUR_ITEMS: Item[] = [
       { name: "Movement Penalty", text: "There is no Movement penalty for combining Chaos Armour with a Shield." },
     ],
     source: { publication: "Border Town Burning supplement (1c)", file: "02-weapons-armour-equipment.md:1390-1401" },
+    armourSave: 4,
   },
   {
     id: "pavise",

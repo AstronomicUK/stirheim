@@ -18,6 +18,8 @@ import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText,
 import { itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type RollState } from './rollThrough'
+import { CritWheel } from './CritWheel'
+import { critTableName } from '../../../rules/engine/crit'
 import { useEnemyRosters } from './useEnemyRosters'
 
 export interface FightTabProps {
@@ -607,23 +609,36 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
         <Card className="flex flex-col gap-3 px-4 py-4">
           {shown ? <RollResult dice={[shown.value]} headline={shown.label} detail={shown.text} tone={shown.tone} /> : null}
           {state.pending ? (
-            <div className="flex flex-col gap-2 rounded-md border border-brass/50 bg-surface-low px-3 py-3">
+            <div className={`flex flex-col gap-2 rounded-md border px-3 py-3 ${state.pending.who === 'defender' ? 'border-accent/60 bg-accent/5' : 'border-brass/50 bg-surface-low'}`}>
+              {state.pending.who === 'defender' ? (
+                <p className="text-[11px] font-bold uppercase tracking-wider text-accent">Over to {defender.name}</p>
+              ) : null}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-ink">{state.pending.label}</p>
                   <p className="text-xs leading-relaxed text-ink-dim">{state.pending.detail}</p>
                 </div>
                 <span className="shrink-0">
-                  <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'neutral'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
+                  <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'danger'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
                 </span>
               </div>
-              <DicePicker
-                key={state.log.length}
-                count={1}
-                label={state.pending.label}
-                resetKey={state.log.length}
-                onComplete={(values) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label })}
-              />
+              {state.pending.kind === 'critTable' ? (
+                <CritWheel
+                  key={state.log.length}
+                  table={state.plans[state.index].input.critTable}
+                  rollModifier={state.plans[state.index].input.critTableRollModifier}
+                  tableName={critTableName(state.plans[state.index].input.critTable)}
+                  onSettled={(face) => advance((s) => applyRoll(s, face))}
+                />
+              ) : (
+                <DicePicker
+                  key={state.log.length}
+                  count={1}
+                  label={state.pending.label}
+                  resetKey={state.log.length}
+                  onComplete={(values) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label })}
+                />
+              )}
               {state.pending.optional ? (
                 <div>
                   <Button variant="ghost" onClick={() => advance(declineRoll)}>

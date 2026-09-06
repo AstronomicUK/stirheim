@@ -324,7 +324,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
             <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} edit={readOnly ? undefined : handle.edit} boosts={boosts} />
           ) : null}
           {sideTab === 'log' && inApp ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
-          {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}
+          {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} scenarioId={match.scenario_rules_id} custom={match.custom_scenario_name !== null} /> : null}
         </div>
       </div>
 

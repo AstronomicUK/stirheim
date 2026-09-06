@@ -2,16 +2,26 @@ import { useState } from 'react'
 import type { BattleLiveState } from '../../../domain'
 import { Button, Stepper, TextArea, TextField } from '../../../ui'
 import { Card, Section } from '../../roster/view/bits'
+import { scenarioIsKnown, scenarioObjectives } from '../../../rules/data/campaign/scenarioObjectives'
 import { addLoot, removeLoot, setNotes, setWyrdstoneFound } from './sheet'
 
 export interface NotesTabProps {
   sheet: BattleLiveState
   edit: (fn: (sheet: BattleLiveState) => BattleLiveState) => void
   readOnly: boolean
+  /** The scenario being played, so the tab only offers what this game actually yields. */
+  scenarioId?: string | null
+  /** A scenario written by the group: the app has no rules for it, so it offers everything. */
+  custom?: boolean
 }
 
-export function NotesTab({ sheet, edit, readOnly }: NotesTabProps) {
+export function NotesTab({ sheet, edit, readOnly, scenarioId, custom = false }: NotesTabProps) {
   const [lootDraft, setLootDraft] = useState('')
+  const objectives = scenarioObjectives(scenarioId)
+  // A custom scenario, or one the catalogue does not carry, gets both: better to offer than to hide.
+  const unknown = custom || (Boolean(scenarioId) && !scenarioIsKnown(scenarioId))
+  const showWyrdstone = unknown || objectives.wyrdstone !== null || sheet.wyrdstoneFound > 0
+  const showLoot = unknown || objectives.treasure || sheet.loot.length > 0
 
   function submitLoot() {
     const line = lootDraft.trim()
@@ -22,16 +32,22 @@ export function NotesTab({ sheet, edit, readOnly }: NotesTabProps) {
 
   return (
     <>
-      <Section title="Wyrdstone">
-        <Card className="flex items-center justify-between gap-3 px-4 py-3">
-          <div>
-            <p className="text-sm text-ink">Shards found</p>
-            <p className="text-xs text-ink-dim">Picked up during the battle. Exploration comes after.</p>
-          </div>
-          <Stepper value={sheet.wyrdstoneFound} onChange={(v) => edit((s) => setWyrdstoneFound(s, v))} label="wyrdstone shards" disabled={readOnly} />
-        </Card>
-      </Section>
+      {showWyrdstone ? (
+        <Section title="Wyrdstone">
+          <Card className="flex flex-col gap-2 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm text-ink">Shards found</p>
+                <p className="text-xs text-ink-dim">Picked up during the battle. Exploration comes after.</p>
+              </div>
+              <Stepper value={sheet.wyrdstoneFound} onChange={(v) => edit((s) => setWyrdstoneFound(s, v))} label="wyrdstone shards" disabled={readOnly} />
+            </div>
+            {objectives.wyrdstone ? <p className="border-t border-border pt-2 text-xs leading-relaxed text-ink-dim">{objectives.wyrdstone}</p> : null}
+          </Card>
+        </Section>
+      ) : null}
 
+      {showLoot ? (
       <Section title="Loot" aside={sheet.loot.length > 0 ? `${sheet.loot.length}` : undefined}>
         {sheet.loot.length > 0 ? (
           <Card>
@@ -73,6 +89,13 @@ export function NotesTab({ sheet, edit, readOnly }: NotesTabProps) {
           </form>
         ) : null}
       </Section>
+      ) : null}
+
+      {!showWyrdstone && !showLoot ? (
+        <p className="text-sm leading-relaxed text-ink-dim">
+          This scenario places no wyrdstone or treasure on the table. Anything found comes out of the exploration phase after the game.
+        </p>
+      ) : null}
 
       <Section title="Notes">
         <TextArea

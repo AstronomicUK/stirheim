@@ -114,3 +114,58 @@ export function critDistribution(table: CritTableKey, rollModifier: number): Arr
 export function critResultForRoll(table: CritTableKey, roll: number, rollModifier: number): CritResult {
   return pickBand(CRIT_TABLES[table], roll + rollModifier);
 }
+
+/** One printed row of a crit chart: the faces that reach it and what they give. */
+export interface CritRow {
+  /** "1-2", "5", "6" — as the chart prints it. */
+  faces: string;
+  from: number;
+  to: number;
+  result: CritResult;
+}
+
+/** A crit chart as rows, for showing the table the roll is made against. */
+export function critRows(table: CritTableKey): CritRow[] {
+  const bands = CRIT_TABLES[table];
+  const rows: CritRow[] = [];
+  let from = 1;
+  for (const band of bands) {
+    const to = band.maxFace;
+    rows.push({ faces: from === to ? String(from) : `${from}-${to}`, from, to, result: band.result });
+    from = to + 1;
+  }
+  return rows;
+}
+
+/** What a crit result actually does, in plain words, built from the flags the engine reads. */
+export function describeCrit(result: CritResult): string {
+  const parts: string[] = [];
+  if (result.woundsCaused === 2) parts.push(result.separateSaves ? "two wounds, each taking its own armour save" : "two wounds instead of one");
+  if (result.ignoresArmourSave) parts.push("no armour save");
+  if (result.ignoresHelmetSave) parts.push("no helmet or Thick Skull save against being stunned");
+  if (result.injuryRollBonus > 0) parts.push(`+${result.injuryRollBonus} on the Injury roll`);
+  if (result.autoOOAOnFailedSave) parts.push("out of action outright if the armour save fails, and nothing at all if it holds");
+  if (result.minSeverityKnockedDown) parts.push("knocked down whether or not the wound is saved");
+  if (result.ricochet) parts.push("the shot ricochets on (resolve the second hit at the table)");
+  if (parts.length === 0) parts.push("no change to the wound or the save");
+  const sentence = parts.join("; ");
+  return result.flavourOnly ? `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}. ${result.flavourOnly}` : `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}.`;
+}
+
+/** The chart's printed name, for a heading. */
+export function critTableName(table: CritTableKey): string {
+  switch (table) {
+    case "standard":
+      return "Critical hits";
+    case "missile":
+      return "Missile critical hits";
+    case "bludgeoning":
+      return "Bludgeoning critical hits";
+    case "bladed":
+      return "Bladed critical hits";
+    case "unarmed":
+      return "Unarmed critical hits";
+    case "thrusting":
+      return "Thrusting critical hits";
+  }
+}

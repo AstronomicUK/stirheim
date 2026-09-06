@@ -24,8 +24,10 @@ test.describe('campaign', () => {
 
     await expect(page.getByRole('heading', { name: CAMPAIGN.name })).toBeVisible()
     await expect(page.getByText(`Run by ${GM.displayName}.`)).toBeVisible()
-    await expect(page.getByRole('link', { name: new RegExp(REIKLAND_WATCH.name) })).toBeVisible()
-    await expect(page.getByRole('link', { name: new RegExp(CLAWS_OF_ESHIN.name) })).toBeVisible()
+    // The activity feed links warband names too, so look inside the Warbands section.
+    const warbands = page.getByRole('heading', { name: 'Warbands' }).locator('xpath=ancestor::section[1]')
+    await expect(warbands.getByRole('link', { name: new RegExp(REIKLAND_WATCH.name) })).toBeVisible()
+    await expect(warbands.getByRole('link', { name: new RegExp(CLAWS_OF_ESHIN.name) })).toBeVisible()
     await expect(page.getByText('2 enrolled')).toBeVisible()
   })
 

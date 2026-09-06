@@ -13,7 +13,7 @@ test.describe('between battles', () => {
     const goldBefore = await readNumber(keyValue(page, 'Gold'))
     const stashBefore = await readNumber(keyValue(page, 'Stash'))
 
-    await page.getByRole('radiogroup', { name: 'Trading post section' }).getByRole('radio', { name: 'Buy' }).click()
+    await page.getByRole('tablist', { name: 'Trading post section' }).getByRole('tab', { name: /^Buy/ }).click()
     await page.getByLabel('Search the catalogue').fill('sword')
     await page.getByRole('button', { name: /^Sword \d+ gc/ }).click()
 

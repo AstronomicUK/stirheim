@@ -66,7 +66,7 @@ const PATHS: Record<IconName, string> = {
   wyrdstone: 'M12 2l5.5 6.5L12 22 6.5 8.5zM6.5 8.5h11M12 2v20M9 8.5l3 13.5M15 8.5l-3 13.5',
   rating: 'M12 14a5 5 0 100-10 5 5 0 000 10zM9.5 13.5L7 21l5-2.5 5 2.5-2.5-7.5',
   models: 'M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM2 20c0-3.5 2.5-5.5 6-5.5s6 2 6 5.5M13 15c1-.4 2-.5 3-.5 3.5 0 6 2 6 5.5h-8',
-  heroes: 'M5 13a7 7 0 0114 0v6H5zM5 16h14M12 6v13M8.5 12.5h7',
+  heroes: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z',
   henchmen: 'M9 9a3 3 0 100-6 3 3 0 000 6zM3 20c0-4 2.5-6 6-6s6 2 6 6M17 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM16 14.5c3 .3 5 2.3 5 5.5h-3.5',
   hired: 'M4 20l7-7M9 8l7 7M14 4l6 6-3 3-6-6zM3 21l3-1-2-2z',
   buy: 'M3 9h18l-2 11H5zM8 9l4-6 4 6M9 13v4M15 13v4',
@@ -90,6 +90,12 @@ const PATHS: Record<IconName, string> = {
   back: 'M15 19l-7-7 7-7',
 }
 
+/**
+ * Icons drawn solid rather than stroked. `heroes` is the henchmen figure, singular and filled: the
+ * pair reads as "one of the named ones" against "the rank and file" without needing two ideas.
+ */
+const FILLED = new Set<IconName>(['heroes'])
+
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName
   /** Pixel size; defaults to 20. */
@@ -97,6 +103,7 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
 }
 
 export function Icon({ name, size = 20, className = '', ...rest }: IconProps) {
+  const filled = FILLED.has(name)
   return (
     <svg
       viewBox="0 0 24 24"
@@ -105,8 +112,8 @@ export function Icon({ name, size = 20, className = '', ...rest }: IconProps) {
       aria-hidden
       focusable="false"
       className={`shrink-0 ${className}`}
-      fill="none"
-      stroke="currentColor"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke={filled ? 'none' : 'currentColor'}
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"

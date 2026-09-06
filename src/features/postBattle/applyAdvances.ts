@@ -8,6 +8,7 @@ import { fetchPendingAdvances, recordAdvanceRoll, resolvePendingAdvance, type Pe
 import { fetchWarband } from '../../api/warbands'
 import { diffRoster } from '../../domain'
 import type { WarbandTemplate } from '../../rules/types'
+import type { CampaignHouseRules } from '../../rules/types/roster'
 import { findSubject, planGroup, planHero, rolledFromDraft } from '../advances/model'
 import { skillTableName } from '../roster/view/lookups'
 import type { WizardAdvance } from './model'
@@ -19,7 +20,7 @@ export interface ApplyAdvancesOutcome {
   failed: { name: string; reason: string }[]
 }
 
-export async function applyWizardAdvances(warbandId: string, items: WizardAdvance[], template: WarbandTemplate | undefined): Promise<ApplyAdvancesOutcome> {
+export async function applyWizardAdvances(warbandId: string, items: WizardAdvance[], template: WarbandTemplate | undefined, houseRules?: CampaignHouseRules | null): Promise<ApplyAdvancesOutcome> {
   const outcome: ApplyAdvancesOutcome = { resolved: 0, deferred: 0, failed: [] }
   const todo = items.filter((i) => i.subject !== null && i.complete && ((i.mode === 'now' && i.plan?.result) || i.mode === 'pickLater'))
   if (todo.length === 0) return outcome
@@ -39,7 +40,7 @@ export async function applyWizardAdvances(warbandId: string, items: WizardAdvanc
       const detail = await fetchWarband(warbandId)
       const subject = findSubject(detail.roster, item.request.subject_type, item.request.subject_id)
       if (!subject) throw new Error('warrior not found on the roster')
-      const ctx = { roster: detail.roster, template, thresholdXp: item.request.threshold_xp }
+      const ctx = { roster: detail.roster, template, thresholdXp: item.request.threshold_xp, bans: houseRules?.bans, houseRules: houseRules ?? null }
       const plan = subject.kind === 'group' ? planGroup(item.draft, subject.group, ctx, skillTableName) : planHero(item.draft, subject, ctx)
       if (item.mode === 'pickLater') {
         if (!plan.roll) throw new Error('the advance was not rolled')

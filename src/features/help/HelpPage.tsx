@@ -91,8 +91,9 @@ export function HelpPage() {
           roster (logged as a GM edit) and archive the campaign.
         </P>
         <P>
-          <B>House rules.</B> Four switches cover the group's usual variations; the current set is listed on the campaign page. Half-price armour is
-          applied automatically in the trading post and the Rabbit&apos;s Foot switch in the exploration step; the other two are for the table to remember.
+          <B>House rules.</B> The switches cover the group's usual variations; the current set is listed on the campaign page. Half-price armour is
+          applied automatically in the trading post and when a warband is built, rounding down, with sub-switches to bring shields and helmets into it; the
+          Rabbit&apos;s Foot switch applies in the exploration step and Rewards of the Shadowlord in the advance flow; the other two are for the table to remember.
           <em>Bans</em> remove items, spells, hired swords, Dramatis Personae or skills from the campaign: banned entries disappear from the trading post,
           spell tables, the hire sheet and skill pickers, and a roster that already holds one shows a warning. Anything else goes in the campaign rules text.
         </P>
@@ -194,7 +195,10 @@ export function HelpPage() {
         <P>
           <B>Advances.</B> When a warrior crosses an experience box the roster shows an advance owed. Open Advances from the roster, roll 2D6 (or have the
           app roll), then pick a skill from the warrior's tables or take the stat increase. Henchmen who roll "The lad's got talent" become heroes; the
-          follow-up rolls are queued for you.
+          follow-up rolls are queued for you. With the <em>Rewards of the Shadowlord</em> house rule on, a Cult of the Possessed Magister or Mutant who
+          rolls a New Skill may instead roll 2D6 on the Rewards table: the app walks the result through, from a vanished warrior (kit and all) to Chaos
+          Armour, a Daemon Weapon in the form you name, or a Possessed warrior whose weapons and armour go to the stash with a note. A Nothing result
+          still spends the advance.
         </P>
         <P>
           <B>Trading post.</B> Buy common items at list price, search for rare items once per hero per trading phase, sell wyrdstone by the size band and

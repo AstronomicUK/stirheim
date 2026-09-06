@@ -20,6 +20,7 @@ function MUTATION(court = false): ItemRestriction {
 
 export const ITEM_RESTRICTIONS: Record<string, ItemRestriction> = {
   // ---- Miscellaneous equipment henchmen may use ----
+  daemon_weapon: { fused: true, unsellable: true, note: "A Reward of the Shadowlord: bound to its bearer, never sold." },
   rain_coat: { heroesOnly: false, note: "An exception to the Heroes-only rule: henchmen may carry Rain Coats." },
   winter_furs: { heroesOnly: false, notWarbands: ["beastmen"], note: "Henchmen may wear Winter Furs; Beastmen may not." },
   reptile_venom: { heroesOnly: false, onlyUnits: ["lizardmen_skink_brave"], note: "Skink henchmen only, one per missile weapon." },

@@ -10,6 +10,7 @@ import { findItem } from "../data/items";
 import { describeWarbandRefs, itemRestriction, warbandInAny } from "../data/itemRules";
 import type { Item } from "../types/items";
 import type { CampaignBans, RosterItem, RosterWarband } from "../types/roster";
+import { POSSESSED_ALLOWED_ITEM_IDS } from "../data/campaign/rewards";
 import { isBanned } from "./houseRules";
 
 export type HolderKind = "hero" | "henchmanGroup" | "hiredSword" | "stash";
@@ -158,7 +159,14 @@ export function rosterItemWarnings(warband: RosterWarband, opts: Pick<Restrictio
       }
     }
   };
-  for (const hero of warband.heroes) if (hero.status === "active") check({ kind: "hero", id: hero.id, name: hero.name, unitTemplateId: hero.unitTemplateId, equipment: hero.equipment });
+  for (const hero of warband.heroes) {
+    if (hero.status !== "active") continue;
+    check({ kind: "hero", id: hero.id, name: hero.name, unitTemplateId: hero.unitTemplateId, equipment: hero.equipment });
+    if (hero.flags.daemonPossessed) {
+      const banned = hero.equipment.filter((e) => !e.itemId || !(POSSESSED_ALLOWED_ITEM_IDS as readonly string[]).includes(e.itemId));
+      if (banned.length > 0) out.push({ subjectId: hero.id, message: `${hero.name} is Possessed by a Daemon and may use no weapons or armour except Chaos Armour and Daemon weapons: ${banned.map((e) => (e.itemId ? (findItem(e.itemId)?.name ?? e.itemId) : (e.customName ?? "item"))).join(", ")} should go to the stash.` });
+    }
+  }
   for (const group of warband.henchmenGroups) if (group.size > 0) check({ kind: "henchmanGroup", id: group.id, name: group.name, unitTemplateId: group.unitTemplateId, size: group.size, equipment: group.equipment });
   if (opts.bans) {
     for (const entry of warband.stash) {

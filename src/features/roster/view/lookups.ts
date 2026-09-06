@@ -184,6 +184,7 @@ export function flagTags(flags: WarriorFlags): string[] {
   if (flags.captured) tags.push('Captured')
   if (flags.hates) tags.push(`Hates ${flags.hates}`)
   if (flags.nurglesRot) tags.push("Nurgle's Rot")
+  if (flags.daemonPossessed) tags.push('Possessed by a Daemon')
   if (flags.addictedTo && flags.addictedTo.length > 0) tags.push(`Addicted (${flags.addictedTo.map((id) => findItem(id)?.name ?? id).join(', ')})`)
   return tags
 }

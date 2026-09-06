@@ -58,6 +58,8 @@ export const warriorFlagsSchema = z.object({
   nurglesRot: z.boolean().optional(),
   /** Item ids the warrior is addicted to (Crimson Shade). */
   addictedTo: z.array(z.string()).optional(),
+  /** Rewards of the Shadowlord: Possessed by a Daemon. */
+  daemonPossessed: z.boolean().optional(),
 }) satisfies z.ZodType<WarriorFlags>;
 
 /** henchman_groups.stat_increases: increases already taken per characteristic. */

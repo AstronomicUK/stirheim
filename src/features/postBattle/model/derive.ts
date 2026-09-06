@@ -583,7 +583,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     }
     const name = subjectName(subject)
     const advDraft = stored ?? emptyAdvanceDraft(UNSEEDED_HERO_ID, subject.kind === 'group' ? defaultPromotedName(subject.group, roster) : '')
-    const actx = { roster, template: ctx.template, thresholdXp: request.threshold_xp, bans: ctx.houseRules?.bans }
+    const actx = { roster, template: ctx.template, thresholdXp: request.threshold_xp, bans: ctx.houseRules?.bans, houseRules: ctx.houseRules ?? null }
     const plan = subject.kind === 'group' ? planGroup(advDraft, subject.group, actx, skillTableName) : planHero(advDraft, subject, actx)
     const step = effectiveStep(advDraft, plan)
     let complete: boolean

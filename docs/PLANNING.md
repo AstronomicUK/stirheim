@@ -1069,6 +1069,29 @@ what came up while building. Grouped so Tom can strike or reorder.
   restriction blocks; full map-campaign support (territories, movement, map-driven scenarios);
   per-user light/dark toggle; a domain name; the CSV column mapping wants a real export sample.
 
+## Phase 21 built (2026-09-06)
+
+Tom's answers: Cult of the Possessed only, Magister and Mutants as written; Wrath takes the kit;
+Nothing spends the advance; Possessed! moves the kit to the stash with a note; mutation choices
+unlimited; half-price armour applies at creation too, rounding down.
+
+- **Half-price armour switches** (commit 1/2): `halfPriceShields`, `halfPriceHelmets` under the
+  existing rule (sub-switches in settings, `isHalfPriceEligible(item, rules)`,
+  `halfPriceIfEligible`, `describeHouseRules`, trading post copy); the builder prices under the
+  campaign's house rules (`draftItemCost(item, houseRules)`, `draftCosts` / `validateDraft` /
+  `draftToRosterWarband` / `draftToCreatePayload` take them, `BuilderRulesContext`); migration 24
+  updates the settings default (pushed to hosted 2026-09-06).
+- **Rewards of the Shadowlord** (commit 2/2): house rule `rewardsOfTheShadowlord`; data
+  `rules/data/campaign/rewards.ts` (table, eligibility, Possessed mutation ids, allowed kit);
+  resolver `rules/resolve/rewards.ts` (`planReward`: needs and outcomes for every row); new item and
+  weapon `daemon_weapon` (S+1, +1 to hit, fused, unsellable); `WarriorFlags.daemonPossessed` with a
+  roster warning when such a warrior holds other kit and a "Possessed by a Daemon" tag; the advance
+  flow (`AdvanceDraft.mode 'reward'`, `AdvanceDraft.reward`, `setReward`, `HeroPlan.allowReward` /
+  `reward`, outcome `'reward'` on the record, pick-later keeps the mode) with a `RewardPicker` in
+  `AdvanceBody` used by both Bestow advancements and the wizard; `AdvanceContext.houseRules`
+  threaded from the advances page, the wizard and the wizard's applier. Tests:
+  `rules/resolve/__tests__/rewards.test.ts`, `features/advances/model.test.ts`.
+
 ## Phase 21 candidates (added 2026-09-06 by Tom)
 
 - **Half-price armour, finer grained.** The existing house rule (armour at half price, shields and

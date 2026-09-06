@@ -28,6 +28,7 @@ import {
   toggleSkillTable,
   type AdvanceContext,
   type AdvanceDraft,
+  setReward,
 } from './model'
 
 const roster: RosterWarband = toRosterWarband(reiklandWatch, reiklandHeroes, reiklandGroups, reiklandItems)
@@ -338,5 +339,37 @@ describe('names and steps', () => {
     expect(changed.subRoll).toBeNull()
     expect(changed.skillId).toBeNull()
     expect(changed.step).toBe('roll')
+  })
+})
+
+describe('Rewards of the Shadowlord', () => {
+  const possessed = findWarbandTemplate('cult_of_the_possessed')
+  const magister: RosterHero = { ...captain, id: 'mag', name: 'Vhorsk', unitTemplateId: 'cult_of_the_possessed_magister', skillTableIds: ['combat', 'academic', 'speed'], skillIds: [], spellIds: [], equipment: [{ itemId: 'sword', quantity: 1 }] }
+  const cultRoster: RosterWarband = { ...roster, warbandTemplateId: 'cult_of_the_possessed', heroes: [magister] }
+  const on: AdvanceContext = { roster: cultRoster, template: possessed, houseRules: { rewardsOfTheShadowlord: true } }
+
+  it('is offered on a New Skill only when the house rule is on and the warrior is a Possessed Magister or Mutant', () => {
+    expect(planHero(rolled(2, 2), heroSubject(magister), on).allowReward).toBe(true)
+    expect(planHero(rolled(2, 2), heroSubject(magister), { ...on, houseRules: { rewardsOfTheShadowlord: false } }).allowReward).toBe(false)
+    expect(planHero(rolled(2, 2), heroSubject(captain), { roster, template, houseRules: { rewardsOfTheShadowlord: true } }).allowReward).toBe(false)
+    // A characteristic roll never offers it.
+    expect(planHero(rolled(4, 5), heroSubject(magister), on).allowReward).toBe(false)
+  })
+
+  it('rolls the table instead of taking a skill and carries the outcome into the roster and the record', () => {
+    let draft = setReward(rolled(2, 2), { dice: [4, 5] })
+    const plan = planHero(draft, heroSubject(magister), on)
+    expect(plan.need).toBeNull()
+    expect(plan.reward?.row?.kind).toBe('chaosArmour')
+    const next = plan.result!.next.heroes.find((h) => h.id === 'mag')!
+    expect(next.equipment.some((e) => e.itemId === 'chaos_armour')).toBe(true)
+    expect(next.skillIds).toEqual([])
+    expect(plan.result!.resolution).toMatchObject({ outcome: 'reward', rewardTotal: 9, rewardTitle: 'Chaos Armour' })
+    expect(plan.result!.resolution.text).toMatch(/Rolled 4: Rewards of the Shadowlord, rolled 9: Chaos Armour\. Chaos Armour, 4\+ save\./)
+    // A result that still needs a choice leaves the plan waiting.
+    draft = setReward(rolled(2, 2), { dice: [6, 6] })
+    expect(planHero(draft, heroSubject(magister), on).need).toBe('reward')
+    // Pick later keeps the mode.
+    expect(rolledFromDraft(draft, 'New skill')?.mode).toBe('reward')
   })
 })

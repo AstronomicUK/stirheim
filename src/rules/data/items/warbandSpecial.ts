@@ -423,6 +423,24 @@ export const WARBAND_SPECIAL_ITEMS: Item[] = [
     source: { publication: "Carnival of Chaos (1a)", file: "warbands/core-and-grade-1a.md:2023-2023" },
   },
 
+  // ---- Rewards of the Shadowlord (rulebook optional rule) ----
+  {
+    id: "daemon_weapon",
+    name: "Daemon Weapon",
+    category: "melee",
+    price: { base: null, text: "A Reward of the Shadowlord (not bought)" },
+    availability: { kind: "special", restriction: "Rewards of the Shadowlord, 11", text: "Special (Rewards of the Shadowlord, 11)" },
+    description: "A weapon with a bound Daemon inside it. The warrior chooses its form (a sword, an axe, and so on); it has none of the special abilities of a common weapon of that type.",
+    range: "Close Combat",
+    strength: "As user +1",
+    specialRules: [
+      { name: "Bound Daemon", text: "Adds +1 to the wielder's Strength in close combat and grants +1 on all to hit rolls made with it. The weapon has none of the special abilities normally associated with common weapons of its form: an axe with a bound Daemon has no extra save modifier." },
+      { name: "Bound to the bearer", text: "Given by the Shadowlord; it cannot be sold or handed to another warrior." },
+    ],
+    weaponId: "daemon_weapon",
+    source: { publication: "Mordheim Rulebook (optional rules)", file: "03-campaigns-magic-optional-rules.md:4294-4307" },
+  },
+
   // ---- Mutations (Cult of the Possessed; also bought by Court heroes, Marauder Mutants and Clan Moulder Rat Ogres) ----
   {
     id: "daemon_soul",

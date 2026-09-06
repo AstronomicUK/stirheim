@@ -5,6 +5,8 @@
 import type { Weapon } from "../../types";
 
 export const WARBAND_SPECIAL_WEAPONS: Weapon[] = [
+  // Rewards of the Shadowlord 11: +1 Strength in close combat and +1 to hit, no other special rules whatever its form.
+  { id: "daemon_weapon", name: "Daemon Weapon", type: "melee", strength: "user", strengthBonus: 1, toHitBonus: 1, critCategory: "bladed", concussion: false, special: [], rangedProfile: null },
   { id: "beastwhip", name: "Beastwhip", type: "melee", strength: "user", critCategory: "bladed", concussion: false, cannotBeParried: true, chargeBonusAttacks: 1, special: ["whipcrackBonusAttack", "cruelBarbsGoading"], rangedProfile: null },
   { id: "boar_spear", name: "Boar Spear", type: "melee", strength: "user", strengthBonus: 1, critCategory: "thrusting", concussion: false, special: ["strikesFirstFirstTurn", "unwieldyOffHandOnly", "mountedChargeStrengthBonus", "crossGuardChargerMinus1Attack"], rangedProfile: null },
   { id: "chest_talon", name: "Chest Talon", type: "melee", strength: "user", strengthBonus: 1, critCategory: "thrusting", concussion: false, vsTraits: { traits: ["vampire"], toWound: 1 }, special: ["twoHanded", "heartPierceVsBloodThirster"], rangedProfile: null },

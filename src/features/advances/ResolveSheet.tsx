@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react'
 import { useRecordAdvanceRoll, useResolveAdvance, type PendingAdvanceRow } from '../../api/advances'
 import type { WarbandDetail } from '../../api/warbands'
 import { diffRoster } from '../../domain'
-import type { CampaignBans } from '../../rules/types/roster'
+import type { CampaignBans, CampaignHouseRules } from '../../rules/types/roster'
 import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import type { WarbandTemplate } from '../../rules/types'
 import { Button, Notice, Sheet } from '../../ui'
@@ -24,10 +24,12 @@ export interface ResolveSheetProps {
   bans?: CampaignBans
   /** Map campaigns: the district that lets a new spell be chosen (Sage's Hall). */
   chooseSpell?: PerkSource | null
+  /** The campaign's house rules (Rewards of the Shadowlord). */
+  houseRules?: CampaignHouseRules | null
   onClose: () => void
 }
 
-export function ResolveSheet({ advance, subject, detail, template, bans, chooseSpell = null, onClose }: ResolveSheetProps) {
+export function ResolveSheet({ advance, subject, detail, template, bans, chooseSpell = null, houseRules = null, onClose }: ResolveSheetProps) {
   // The sheet is mounted with key={advance.id}, so this runs once per advance. The seed is a no-op
   // when a persisted draft already exists (a refresh mid-roll).
   const [store] = useState(() => {
@@ -45,7 +47,7 @@ export function ResolveSheet({ advance, subject, detail, template, bans, chooseS
   const record = useRecordAdvanceRoll(detail.warband.id)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const ctx: AdvanceContext = useMemo(() => ({ roster: detail.roster, template, thresholdXp: advance.threshold_xp, bans }), [detail.roster, template, advance.threshold_xp, bans])
+  const ctx: AdvanceContext = useMemo(() => ({ roster: detail.roster, template, thresholdXp: advance.threshold_xp, bans, houseRules }), [detail.roster, template, advance.threshold_xp, bans, houseRules])
   const plan = useMemo(() => {
     if (!draft) return null
     return subject.kind === 'group' ? planGroup(draft, subject.group, ctx, skillTableName) : planHero(draft, subject, ctx)

@@ -134,7 +134,7 @@ function AdvancesView({ detail, pending, history, historyPending, historyError, 
       </Section>
 
       {open && openSubject ? (
-        <ResolveSheet key={open.id} advance={open} subject={openSubject} detail={detail} template={template} bans={campaign.data?.settings.houseRules.bans} chooseSpell={perks?.chooseSpell ?? null} onClose={() => setOpenId(null)} />
+        <ResolveSheet key={open.id} advance={open} subject={openSubject} detail={detail} template={template} bans={campaign.data?.settings.houseRules.bans} houseRules={campaign.data?.settings.houseRules ?? null} chooseSpell={perks?.chooseSpell ?? null} onClose={() => setOpenId(null)} />
       ) : null}
     </>
   )

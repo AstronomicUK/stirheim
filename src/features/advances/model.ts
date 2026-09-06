@@ -24,6 +24,8 @@ import { findHiredSword } from '../../rules/data/campaign/hiredSwords'
 import { findRacialMaximum } from '../../rules/data/campaign/experience'
 import { SPELL_LORES, WIZARD_ALLOCATIONS, findLore } from '../../rules/data/campaign/magic'
 import { findUnitTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
+import { rewardsEligible } from '../../rules/data/campaign/rewards'
+import { emptyRewardChoices, planReward, type RewardChoices, type RewardPlan } from '../../rules/resolve/rewards'
 import {
   CORE_SKILL_TABLE_IDS,
   STAT_KEYS,
@@ -49,7 +51,7 @@ import { STAT_NAMES } from '../../rules/resolve/injuries'
 import type { Stats, WarbandTemplate } from '../../rules/types'
 import type { StatKey } from '../../rules/types/common'
 import type { Spell, SpellLore } from '../../rules/types/magic'
-import type { CampaignBans, ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../rules/types/roster'
+import type { CampaignBans, ResolutionEvent, RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband, CampaignHouseRules } from '../../rules/types/roster'
 import { isBanned } from '../../rules/resolve/houseRules'
 import { unitRules } from '../../rules/data/campaignRules'
 
@@ -233,8 +235,10 @@ export interface AdvanceDraft {
   subRoll: number | null
   /** 2D6 totals that had to be re-rolled, oldest first. */
   rerolled: number[]
-  /** New Skill result: learn a skill, or (wizards) a spell instead. */
-  mode: 'skill' | 'spell'
+  /** New Skill result: learn a skill, or (wizards) a spell instead, or (Possessed Magister / Mutants, house rule) roll on the Rewards of the Shadowlord table. */
+  mode: 'skill' | 'spell' | 'reward'
+  /** Rewards of the Shadowlord: the 2D6 and every follow-up choice. */
+  reward: RewardChoices
   skillId: string | null
   spellId: string | null
   stat: StatKey | null
@@ -254,6 +258,7 @@ export function emptyDraft(newHeroId: string, newHeroName = ''): AdvanceDraft {
     subRoll: null,
     rerolled: [],
     mode: 'skill',
+    reward: emptyRewardChoices(),
     skillId: null,
     spellId: null,
     stat: null,
@@ -272,7 +277,7 @@ export function diceTotal(draft: Pick<AdvanceDraft, 'dice'>): number | null {
 
 /** Anything chosen after the roll is forgotten when the roll changes. */
 function clearChoices(draft: AdvanceDraft): AdvanceDraft {
-  return { ...draft, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill' }
+  return { ...draft, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill', reward: emptyRewardChoices() }
 }
 
 export function setDie(draft: AdvanceDraft, index: 0 | 1, value: number | null): AdvanceDraft {
@@ -303,9 +308,16 @@ export function setSpell(draft: AdvanceDraft, spellId: string | null): AdvanceDr
   return { ...draft, spellId, skillId: null, mode: 'spell' }
 }
 
-export function setMode(draft: AdvanceDraft, mode: 'skill' | 'spell'): AdvanceDraft {
+export function setMode(draft: AdvanceDraft, mode: 'skill' | 'spell' | 'reward'): AdvanceDraft {
   if (draft.mode === mode) return draft
   return { ...draft, mode, skillId: null, spellId: null }
+}
+
+/** Rewards of the Shadowlord: change one of the choices (a new 2D6 forgets the follow-ups). */
+export function setReward(draft: AdvanceDraft, patch: Partial<RewardChoices>): AdvanceDraft {
+  const reward = { ...(draft.reward ?? emptyRewardChoices()), ...patch }
+  if (patch.dice) Object.assign(reward, { mutationD6: null, lostStat: null, mutationId: null, weaponForm: '', skillsD6: null, lostSkillIds: [] })
+  return { ...draft, reward, mode: 'reward', skillId: null, spellId: null }
 }
 
 export function setSkillInstead(draft: AdvanceDraft, skillInstead: boolean): AdvanceDraft {
@@ -333,7 +345,7 @@ export interface AdvanceRolled {
   dice: [number, number]
   subRoll?: number
   rerolled?: number[]
-  mode?: 'skill' | 'spell'
+  mode?: 'skill' | 'spell' | 'reward'
   /** "Rolled 11: New skill" for lists. */
   text: string
 }
@@ -345,6 +357,7 @@ export function rolledFromDraft(draft: AdvanceDraft, rollText: string): AdvanceR
   if (draft.subRoll !== null) out.subRoll = draft.subRoll
   if (draft.rerolled.length > 0) out.rerolled = [...draft.rerolled]
   if (draft.mode === 'spell') out.mode = 'spell'
+  if (draft.mode === 'reward') out.mode = 'reward'
   return out
 }
 
@@ -359,7 +372,7 @@ export function draftFromRolled(rolled: Record<string, unknown> | null | undefin
     dice: [a, b],
     subRoll: typeof rolled.subRoll === 'number' ? rolled.subRoll : null,
     rerolled: Array.isArray(rolled.rerolled) ? rolled.rerolled.filter((n): n is number => typeof n === 'number') : [],
-    mode: rolled.mode === 'spell' ? 'spell' : 'skill',
+    mode: rolled.mode === 'spell' ? 'spell' : rolled.mode === 'reward' ? 'reward' : 'skill',
     step: 'choose',
   }
 }
@@ -398,7 +411,7 @@ export function defaultPromotedName(group: RosterHenchmanGroup, roster: RosterWa
 // The resolution stored on the row
 // ---------------------------------------------------------------------------------------------
 
-export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion'
+export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion' | 'reward'
 
 export interface AdvanceResolution {
   version: 1
@@ -423,6 +436,10 @@ export interface AdvanceResolution {
   newHeroId?: string
   newHeroName?: string
   skillTableIds?: string[]
+  /** Rewards of the Shadowlord: the 2D6 total, the row and what it did. */
+  rewardTotal?: number
+  rewardTitle?: string
+  rewardSummary?: string
   /** Advances the database should queue when this one closes (promotion: the new hero's hero-table roll and the group's re-roll). */
   followUps?: AdvanceFollowUp[]
   /** One-line summary for the history list. */
@@ -465,6 +482,9 @@ export function summaryText(p: ResolutionParts): string {
     case 'promotion':
       body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero`
       break
+    case 'reward':
+      body = `${p.rewardSummary ?? `Rewards of the Shadowlord: ${p.rewardTitle ?? ''}`}`.trimEnd()
+      break
   }
   const rerolled = p.rerolled && p.rerolled.length > 0 ? ` · re-rolled ${p.rerolled.join(', ')}` : ''
   return `${rolled}: ${body}${rerolled}`
@@ -497,6 +517,8 @@ export interface AdvanceContext {
   thresholdXp?: number
   /** Campaign bans: banned skills and spells are not offered. */
   bans?: CampaignBans
+  /** The campaign's house rules (Rewards of the Shadowlord is a switch). */
+  houseRules?: Pick<CampaignHouseRules, 'rewardsOfTheShadowlord'> | null
 }
 
 export interface AdvanceResult {
@@ -515,7 +537,7 @@ export interface StatOption {
   reason: string | null
 }
 
-export type HeroNeed = 'roll' | 'subRoll' | 'stat' | 'skill'
+export type HeroNeed = 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
 
 export interface HeroPlan {
   total: number | null
@@ -531,6 +553,10 @@ export interface HeroPlan {
   skillReason: string | null
   /** A spell may be taken instead of the skill. */
   allowSpell: boolean
+  /** The Rewards of the Shadowlord table may be rolled instead of the skill (house rule, Possessed Magister and Mutants). */
+  allowReward: boolean
+  /** The Rewards roll so far, when that route is taken. */
+  reward: RewardPlan | null
   lore: SpellLore | null
   spells: Spell[]
   skillTables: AvailableSkillTable[]
@@ -590,6 +616,8 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     fallbackToAny: false,
     skillReason: null,
     allowSpell: false,
+    allowReward: false,
+    reward: null,
     lore,
     spells: lore ? unknownSpells(lore, hero, ctx.bans) : [],
     skillTables: availableSkills(hero, warbandTemplateId, { roster: ctx.roster, bans: ctx.bans }),
@@ -613,8 +641,15 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   }
 
   const skillRoute = (reason: string | null, allowSpell: boolean, subRoll?: number): HeroPlan => {
-    const out: HeroPlan = { ...plan, skillReason: reason, allowSpell: allowSpell && lore !== null }
+    const allowReward = !isSword && allowSpell && Boolean(ctx.houseRules?.rewardsOfTheShadowlord) && rewardsEligible(warbandTemplateId, hero.unitTemplateId)
+    const out: HeroPlan = { ...plan, skillReason: reason, allowSpell: allowSpell && lore !== null, allowReward }
     try {
+      if (allowReward && draft.mode === 'reward') {
+        const rp = planReward(ctx.roster, hero, draft.reward ?? emptyRewardChoices())
+        if (!rp.result) return { ...out, need: 'reward', reward: rp }
+        const resolution = buildResolution({ ...base, outcome: 'reward', rewardTotal: rp.total ?? undefined, rewardTitle: rp.row?.title, rewardSummary: rp.result.summary, ...(subRoll !== undefined ? { subRoll } : {}) })
+        return { ...out, reward: rp, result: { next: rp.result.roster, events: rp.result.events, resolution } }
+      }
       if (out.allowSpell && draft.mode === 'spell') {
         if (!draft.spellId || !lore) return { ...out, need: 'skill' }
         const spell = lore.spells.find((s) => s.id === draft.spellId)

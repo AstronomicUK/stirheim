@@ -49,7 +49,15 @@ export type IconName =
   | 'speed'
   | 'back'
 
-const PATHS: Record<IconName, string> = {
+/**
+ * An icon is one stroked path, or — where the drawing needs both — a stroked part and a filled one.
+ * The three head-counts are one figure used three ways: `heroes` fills it, `henchmen` outlines the
+ * same shape, and `models` sets a filled one between two outlined, so it reads as a hero and two
+ * henchmen rather than as another anonymous crowd.
+ */
+type IconArt = string | { stroke?: string; fill?: string }
+
+const PATHS: Record<IconName, IconArt> = {
   warbands: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
   campaigns: 'M5 3v18M5 4h13l-3 4 3 4H5',
   scenarios: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14',
@@ -68,9 +76,9 @@ const PATHS: Record<IconName, string> = {
   gold: 'M12 8c3.9 0 7-1.3 7-3s-3.1-3-7-3-7 1.3-7 3 3.1 3 7 3zM5 5v4c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 9v4c0 1.7 3.1 3 7 3s7-1.3 7-3V9M5 13v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4',
   wyrdstone: 'M12 2l5.5 6.5L12 22 6.5 8.5zM6.5 8.5h11M12 2v20M9 8.5l3 13.5M15 8.5l-3 13.5',
   rating: 'M12 14a5 5 0 100-10 5 5 0 000 10zM9.5 13.5L7 21l5-2.5 5 2.5-2.5-7.5',
-  models: 'M12 11.2a3.1 3.1 0 100-6.2 3.1 3.1 0 000 6.2zM6.9 20.2c0-3 2.3-4.9 5.1-4.9s5.1 1.9 5.1 4.9M5.4 10.9a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4zM2 19.6c0-2.4 1.5-3.9 3.4-3.9.5 0 1 .1 1.4.2M18.6 10.9a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4zM22 19.6c0-2.4-1.5-3.9-3.4-3.9-.5 0-1 .1-1.4.2',
-  heroes: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z',
-  henchmen: 'M9 9a3 3 0 100-6 3 3 0 000 6zM3 20c0-4 2.5-6 6-6s6 2 6 6M17 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM16 14.5c3 .3 5 2.3 5 5.5h-3.5',
+  models: { fill: 'M12 10.8a2.8 2.8 0 100-5.6 2.8 2.8 0 000 5.6zM12 12.1c-3.3 0-5.5 2-5.5 5 0 .5.4.9.9.9h9.2c.5 0 .9-.4.9-.9 0-3-2.2-5-5.5-5z', stroke: 'M4.7 12.3a2 2 0 100-4 2 2 0 000 4zM4.7 13.6c-2 0-3.3 1.3-3.3 3.3 0 .3.2.5.5.5h2.2M19.3 12.3a2 2 0 100-4 2 2 0 000 4zM19.3 13.6c2 0 3.3 1.3 3.3 3.3 0 .3-.2.5-.5.5h-2.2' },
+  heroes: { fill: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z' },
+  henchmen: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z',
   hired: 'M4 20l7-7M9 8l7 7M14 4l6 6-3 3-6-6zM3 21l3-1-2-2z',
   buy: 'M3 9h18l-2 11H5zM8 9l4-6 4 6M9 13v4M15 13v4',
   sell: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v10M8.5 10.5L12 7l3.5 3.5',
@@ -93,12 +101,6 @@ const PATHS: Record<IconName, string> = {
   back: 'M15 19l-7-7 7-7',
 }
 
-/**
- * Icons drawn solid rather than stroked. `heroes` is the henchmen figure, singular and filled: the
- * pair reads as "one of the named ones" against "the rank and file" without needing two ideas.
- */
-const FILLED = new Set<IconName>(['heroes'])
-
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName
   /** Pixel size; defaults to 20. */
@@ -106,7 +108,9 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
 }
 
 export function Icon({ name, size = 20, className = '', ...rest }: IconProps) {
-  const filled = FILLED.has(name)
+  const art = PATHS[name]
+  const stroke = typeof art === 'string' ? art : art.stroke
+  const fill = typeof art === 'string' ? undefined : art.fill
   return (
     <svg
       viewBox="0 0 24 24"
@@ -115,14 +119,15 @@ export function Icon({ name, size = 20, className = '', ...rest }: IconProps) {
       aria-hidden
       focusable="false"
       className={`shrink-0 ${className}`}
-      fill={filled ? 'currentColor' : 'none'}
-      stroke={filled ? 'none' : 'currentColor'}
+      fill="none"
+      stroke="currentColor"
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
       {...rest}
     >
-      <path d={PATHS[name]} />
+      {stroke ? <path d={stroke} /> : null}
+      {fill ? <path d={fill} fill="currentColor" stroke="none" /> : null}
     </svg>
   )
 }

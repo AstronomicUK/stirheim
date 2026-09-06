@@ -36,6 +36,14 @@ export function bansCount(bans: CampaignBans | undefined): number {
 }
 
 /** One line per switch, stating what is in force. */
+/** "; shields and helmets included" / "; shields included, helmets full price" / "; shields and helmets stay full price". */
+function halfPriceScope(rules: CampaignHouseRules): string {
+  if (rules.halfPriceShields && rules.halfPriceHelmets) return "; shields and helmets included";
+  if (rules.halfPriceShields) return "; shields included, helmets full price";
+  if (rules.halfPriceHelmets) return "; helmets included, shields full price";
+  return "; shields, bucklers and helmets stay full price";
+}
+
 export function describeHouseRules(rules: CampaignHouseRules): string[] {
   return [
     rules.strengthArmourPiercing
@@ -45,11 +53,14 @@ export function describeHouseRules(rules: CampaignHouseRules): string[] {
       ? "Critical hits use the expanded per-weapon-type charts (Optional Rules)."
       : "Critical hits use the core rulebook chart.",
     rules.halfPriceArmour
-      ? "Armour costs half its listed price, rounding down; shields, bucklers and helmets stay full price (house rule)."
+      ? `Armour costs half its listed price, rounding down, at creation and in the trading post${halfPriceScope(rules)} (house rule).`
       : "Armour costs its listed price.",
     rules.rabbitsFootBattleOnly
       ? "A Rabbit's Foot re-rolls one die during the battle only; no exploration re-roll (house rule)."
       : "A Rabbit's Foot unused in the battle re-rolls one exploration die (rulebook).",
+    rules.rewardsOfTheShadowlord
+      ? "Rewards of the Shadowlord: a Possessed Magister or Mutant may roll on the Rewards table instead of taking a skill (rulebook optional rule)."
+      : "Rewards of the Shadowlord not in use.",
     bansCount(rules.bans) === 0
       ? "Nothing is banned: every item, spell, hired sword, character and skill in the rules is in play."
       : `Banned in this campaign: ${bansCount(rules.bans)} ${bansCount(rules.bans) === 1 ? "entry" : "entries"} (${[

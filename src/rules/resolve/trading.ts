@@ -27,12 +27,24 @@ export interface ItemPriceQuote {
  * shields and helmets), rounding down" (docs/PLANNING.md, House rules). Bucklers are small
  * shields so they are excluded too. Matched on id and name so future catalogue entries behave.
  */
-const HALF_PRICE_EXCLUSIONS = ["shield", "buckler", "helmet", "helm", "pavise"];
+const SHIELD_WORDS = ["shield", "buckler", "pavise"];
+const HELMET_WORDS = ["helmet", "helm"];
 
-export function isHalfPriceEligible(item: Item): boolean {
+/**
+ * Which armour the half-price house rule covers: body armour always; shields (with bucklers, kite
+ * shields and pavises) and helmets only when the campaign's switches include them.
+ */
+export function isHalfPriceEligible(item: Item, rules: Pick<CampaignHouseRules, "halfPriceShields" | "halfPriceHelmets"> = { halfPriceShields: false, halfPriceHelmets: false }): boolean {
   if (item.category !== "armour") return false;
   const haystack = `${item.id} ${item.name}`.toLowerCase();
-  return !HALF_PRICE_EXCLUSIONS.some((word) => haystack.includes(word));
+  if (SHIELD_WORDS.some((word) => haystack.includes(word))) return rules.halfPriceShields;
+  if (HELMET_WORDS.some((word) => haystack.includes(word))) return rules.halfPriceHelmets;
+  return true;
+}
+
+/** Half price, rounded down, when the house rule covers the item; otherwise the amount unchanged. */
+export function halfPriceIfEligible(item: Item, amount: number, rules: CampaignHouseRules): number {
+  return rules.halfPriceArmour && isHalfPriceEligible(item, rules) ? Math.floor(amount / 2) : amount;
 }
 
 /**
@@ -60,7 +72,7 @@ export function itemPrice(item: Item, houseRules: CampaignHouseRules, rolledDice
   }
 
   const listed = base + variable;
-  const halfPriceApplied = houseRules.halfPriceArmour && isHalfPriceEligible(item);
+  const halfPriceApplied = houseRules.halfPriceArmour && isHalfPriceEligible(item, houseRules);
   const total = halfPriceApplied ? Math.floor(listed / 2) : listed;
 
   const parts: string[] = [];

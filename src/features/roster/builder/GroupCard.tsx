@@ -16,6 +16,7 @@ import { useDraftStore } from './draftStore'
 import { EquipmentRows } from './EquipmentRows'
 import { EquipmentSheet } from './EquipmentSheet'
 import { formatAmount, groupCost, groupSizeCeiling } from './helpers'
+import { useBuilderRules } from './rulesContext'
 
 export interface GroupCardProps {
   group: DraftGroup
@@ -29,7 +30,8 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
   const [shopping, setShopping] = useState(false)
   const unit = findUnitTemplate(template, group.unitTemplateId)
   const options = useMemo(() => equipmentOptionsFor(template, group.unitTemplateId, bans), [template, group.unitTemplateId, bans])
-  const cost = groupCost(group, template)
+  const houseRules = useBuilderRules()
+  const cost = groupCost(group, template, houseRules)
   const ceiling = unit ? groupSizeCeiling(draft, group, unit) : null
   const subject = { kind: 'group' as const, id: group.id }
   const perModelHire = unit?.cost ?? 0

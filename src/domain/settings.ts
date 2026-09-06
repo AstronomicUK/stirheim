@@ -28,7 +28,10 @@ export const campaignHouseRulesSchema = z.object({
   strengthArmourPiercing: z.boolean().default(false),
   optionalCriticalTables: z.boolean().default(true),
   halfPriceArmour: z.boolean().default(true),
+  halfPriceShields: z.boolean().default(false),
+  halfPriceHelmets: z.boolean().default(false),
   rabbitsFootBattleOnly: z.boolean().default(true),
+  rewardsOfTheShadowlord: z.boolean().default(false),
   bans: campaignBansSchema.default(emptyCampaignBans),
 }) satisfies z.ZodType<CampaignHouseRules, unknown>;
 

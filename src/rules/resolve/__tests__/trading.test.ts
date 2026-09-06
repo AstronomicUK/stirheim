@@ -54,6 +54,12 @@ describe("itemPrice", () => {
     expect(itemPrice(item("shield"), halfOn)).toMatchObject({ base: 5, total: 5, halfPriceApplied: false });
     expect(itemPrice(item("buckler"), halfOn)).toMatchObject({ base: 5, total: 5, halfPriceApplied: false });
     expect(itemPrice(item("helmet"), halfOn)).toMatchObject({ base: 10, total: 10, halfPriceApplied: false });
+    // The two switches bring shields (and bucklers) and helmets into the rule, rounding down.
+    const withShields = { ...halfOn, halfPriceShields: true };
+    expect(itemPrice(item("shield"), withShields)).toMatchObject({ base: 5, total: 2, halfPriceApplied: true });
+    expect(itemPrice(item("buckler"), withShields)).toMatchObject({ base: 5, total: 2, halfPriceApplied: true });
+    expect(itemPrice(item("helmet"), withShields)).toMatchObject({ base: 10, total: 10, halfPriceApplied: false });
+    expect(itemPrice(item("helmet"), { ...halfOn, halfPriceHelmets: true })).toMatchObject({ base: 10, total: 5, halfPriceApplied: true });
     expect(isHalfPriceEligible(item("shield"))).toBe(false);
     expect(isHalfPriceEligible(item("light_armour"))).toBe(true);
     expect(isHalfPriceEligible(item("sword"))).toBe(false);

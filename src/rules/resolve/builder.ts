@@ -23,7 +23,7 @@
 
 import type { Stats, UnitTemplate, WarbandTemplate } from "../types";
 import type { Item } from "../types/items";
-import type { RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband, CampaignBans } from "../types/roster";
+import type { RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband, CampaignBans, CampaignHouseRules } from "../types/roster";
 import { findItem } from "../data/items";
 import { resolveEquipmentName } from "../data/items/aliases";
 import { findEquipmentList, findUnitTemplate } from "../data/warbandTemplates";
@@ -31,6 +31,7 @@ import { equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "./equ
 import { advancesEarned } from "../data/campaign/experience";
 import { RulesError } from "./errors";
 import { isBanned } from "./houseRules";
+import { halfPriceIfEligible } from "./trading";
 import { freeDaggerLine } from "./freeDagger";
 import { unitRules, warbandRules } from "../data/campaignRules";
 import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
@@ -400,14 +401,21 @@ export interface DraftCosts {
  * item, so the "1st free" copy is always in this line (alreadyOwnedFree false). A player-entered
  * unitCost replaces the list amount but keeps the first-free / brace structure of the list cost.
  */
-export function draftItemCost(item: DraftItem): number | null {
+export function draftItemCost(item: DraftItem, houseRules?: CampaignHouseRules | null): number | null {
   const parsed = parseEquipmentCost(item.costText);
-  if (item.unitCost === null) return equipmentLineCost(parsed, item.quantity, false);
-  if (parsed.kind === "multiplier" || parsed.kind === "unknown") return item.unitCost * item.quantity;
-  return equipmentLineCost({ ...parsed, amount: item.unitCost }, item.quantity, false);
+  let cost: number | null;
+  if (item.unitCost === null) cost = equipmentLineCost(parsed, item.quantity, false);
+  else if (parsed.kind === "multiplier" || parsed.kind === "unknown") cost = item.unitCost * item.quantity;
+  else cost = equipmentLineCost({ ...parsed, amount: item.unitCost }, item.quantity, false);
+  // The half-price armour house rule applies at creation as in the trading post, rounding down.
+  if (cost !== null && houseRules?.halfPriceArmour && item.itemId) {
+    const catalogue = findItem(item.itemId);
+    if (catalogue) cost = halfPriceIfEligible(catalogue, cost, houseRules);
+  }
+  return cost;
 }
 
-export function draftCosts(draft: WarbandDraft, template: WarbandTemplate): DraftCosts {
+export function draftCosts(draft: WarbandDraft, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): DraftCosts {
   const lines: DraftCostLine[] = [];
   let hires = 0;
   let equipment = 0;
@@ -415,7 +423,7 @@ export function draftCosts(draft: WarbandDraft, template: WarbandTemplate): Draf
 
   const addEquipment = (label: string, items: DraftItem[], models: number) => {
     for (const item of items) {
-      const each = draftItemCost(item);
+      const each = draftItemCost(item, houseRules);
       const amount = each === null ? null : each * models;
       if (amount === null) unknownLines++;
       else equipment += amount;
@@ -482,8 +490,8 @@ export interface DraftRosterIds {
 }
 
 /** The draft as a RosterWarband (gold = what is left), for validateRoster and warbandRating. */
-export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTemplate, ids: DraftRosterIds = {}): RosterWarband {
-  const costs = draftCosts(draft, template);
+export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTemplate, ids: DraftRosterIds = {}, houseRules?: CampaignHouseRules | null): RosterWarband {
+  const costs = draftCosts(draft, template, houseRules);
 
   const heroes: RosterHero[] = draft.heroes.map((hero) => {
     const unit = findUnitTemplate(template, hero.unitTemplateId);
@@ -539,10 +547,10 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
 // ---- Validation ----
 
 /** Every roster problem at creation plus the builder's own: overspend, blank names, unknown prices. */
-export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, bans?: CampaignBans): RosterProblem[] {
-  const roster = draftToRosterWarband(draft, template);
+export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, bans?: CampaignBans, houseRules?: CampaignHouseRules | null): RosterProblem[] {
+  const roster = draftToRosterWarband(draft, template, {}, houseRules);
   const problems: RosterProblem[] = [...validateRoster(roster, template, { atCreation: true, bans }).problems];
-  const costs = draftCosts(draft, template);
+  const costs = draftCosts(draft, template, houseRules);
 
   if (costs.remaining < 0) {
     problems.push({
@@ -639,8 +647,8 @@ function toPayloadItem(item: DraftItem, multiplier: number): PayloadItem {
 }
 
 /** The draft as the create_warband SQL payload (snake_case). Validate with validateDraft first. */
-export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTemplate): CreateWarbandPayload {
-  const costs = draftCosts(draft, template);
+export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): CreateWarbandPayload {
+  const costs = draftCosts(draft, template, houseRules);
   return {
     name: draft.name,
     type_rules_id: draft.warbandTemplateId,

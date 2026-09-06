@@ -14,6 +14,8 @@ import {
   type WarbandDraft,
 } from '../../rules/resolve/builder'
 import { warbandRating } from '../../rules/resolve/rating'
+import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
+import { BuilderRulesContext } from './builder/rulesContext'
 import { leaderTemplate } from '../../rules/resolve/roster'
 import type { WarbandTemplate } from '../../rules/types'
 import { Button, Notice, PageHeader, TextField, TwoColumn } from '../../ui'
@@ -84,6 +86,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
   const navigate = useNavigate()
   const campaign = useCampaign(draft.campaignId ?? undefined)
   const bans = campaign.data?.campaign.settings.houseRules.bans
+  const houseRules = useMemo(() => applyHouseRuleDefaults(campaign.data?.settings.houseRules), [campaign.data])
   const update = useDraftStore((s) => s.update)
   const clear = useDraftStore((s) => s.clear)
   const lastError = useDraftStore((s) => s.lastError)
@@ -95,11 +98,11 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
   const [createError, setCreateError] = useState<string | null>(null)
 
   const derived = useMemo(() => {
-    const costs = draftCosts(draft, template)
-    const problems = validateDraft(draft, template, bans)
-    const rating = warbandRating(draftToRosterWarband(draft, template), template).total
+    const costs = draftCosts(draft, template, houseRules)
+    const problems = validateDraft(draft, template, bans, houseRules)
+    const rating = warbandRating(draftToRosterWarband(draft, template, {}, houseRules), template).total
     return { costs, problems, rating }
-  }, [draft, template, bans])
+  }, [draft, template, bans, houseRules])
 
   const leader = leaderTemplate(template)
   const capacity = heroCapacity(template)
@@ -110,7 +113,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
     if (!ready || create.isPending) return
     setCreateError(null)
     try {
-      const id = await create.mutateAsync(draftToCreatePayload(draft, template))
+      const id = await create.mutateAsync(draftToCreatePayload(draft, template, houseRules))
       clear()
       navigate(`/warbands/${id}`, { replace: true })
     } catch (err) {
@@ -124,7 +127,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
   }
 
   return (
-    <>
+    <BuilderRulesContext.Provider value={houseRules}>
       <PageHeader eyebrow="New warband" title={template.name} description={`${template.race} · ${template.originalSetting}`} />
 
       <SummaryBar
@@ -256,6 +259,6 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
           setAdding(null)
         }}
       />
-    </>
+    </BuilderRulesContext.Provider>
   )
 }

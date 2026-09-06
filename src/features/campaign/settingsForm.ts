@@ -75,10 +75,7 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.lockCombatMode === b.lockCombatMode &&
     a.reportApproval === b.reportApproval &&
     a.mapCampaign === b.mapCampaign &&
-    a.houseRules.strengthArmourPiercing === b.houseRules.strengthArmourPiercing &&
-    a.houseRules.optionalCriticalTables === b.houseRules.optionalCriticalTables &&
-    a.houseRules.halfPriceArmour === b.houseRules.halfPriceArmour &&
-    a.houseRules.rabbitsFootBattleOnly === b.houseRules.rabbitsFootBattleOnly &&
+    HOUSE_RULE_SWITCHES.every((s) => a.houseRules[s.key] === b.houseRules[s.key]) &&
     bansEqual(a.houseRules.bans, b.houseRules.bans)
   )
 }
@@ -102,6 +99,8 @@ export interface HouseRuleSwitch {
   key: HouseRuleSwitchKey
   label: string
   description: string
+  /** A sub-switch shown indented under its parent, and only when the parent is on. */
+  parent?: HouseRuleSwitchKey
 }
 
 /** One switch per house rule, with the one-line explanation the form shows under it. */
@@ -119,12 +118,29 @@ export const HOUSE_RULE_SWITCHES: HouseRuleSwitch[] = [
   {
     key: 'halfPriceArmour',
     label: 'Half-price armour',
-    description: 'Armour costs half its listed price, rounded down. Shields, bucklers and helmets stay at full price.',
+    description: 'Armour costs half its listed price, rounded down, in the trading post and when a warband is built. Shields and helmets only with the switches below.',
+  },
+  {
+    key: 'halfPriceShields',
+    label: 'Include shields',
+    description: 'Shields, bucklers, kite shields and pavises at half price too.',
+    parent: 'halfPriceArmour',
+  },
+  {
+    key: 'halfPriceHelmets',
+    label: 'Include helmets',
+    description: 'Helmets at half price too.',
+    parent: 'halfPriceArmour',
   },
   {
     key: 'rabbitsFootBattleOnly',
     label: "Rabbit's Foot: battle only",
     description: 'The re-roll may only be used during the battle. Off means the rulebook rule: an unused foot re-rolls one exploration die.',
+  },
+  {
+    key: 'rewardsOfTheShadowlord',
+    label: 'Rewards of the Shadowlord',
+    description: "Rulebook optional rule: a Cult of the Possessed Magister or Mutant earning a New Skill may roll 2D6 on the Rewards table instead. Wrath on a 2, nothing on 3-6, a mutation on 7-8, Chaos Armour on 9-10, a Daemon Weapon on 11, Possessed on 12.",
   },
 ]
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findWarbandTemplate } from "../../data/warbandTemplates";
+import { defaultCampaignHouseRules } from "../../types/roster";
 import {
   addDraftEquipment,
   addDraftGroup,
@@ -448,5 +449,26 @@ describe("withFreeDagger", () => {
     let d = newWarbandDraft(REIKLAND, "Daggers", "captain");
     d = addDraftEquipment(d, hero("captain"), SWORD);
     expect(withFreeDagger(d, REIKLAND, hero("captain"))).toBe(d);
+  });
+});
+
+describe("half-price armour at creation", () => {
+  it("halves eligible armour under the house rule, rounding down, and reaches the roster's gold and the payload", () => {
+    let d = reiklandBuild();
+    d = addDraftEquipment(d, hero("captain"), LIGHT_ARMOUR);
+    const full = draftCosts(d, REIKLAND);
+    const half = draftCosts(d, REIKLAND, defaultCampaignHouseRules());
+    // Light armour is 20 gc on the list: 10 under the rule.
+    expect(full.total - half.total).toBe(10);
+    expect(draftToRosterWarband(d, REIKLAND, {}, defaultCampaignHouseRules()).gold).toBe(half.remaining);
+    expect(draftToCreatePayload(d, REIKLAND, defaultCampaignHouseRules()).gold).toBe(half.remaining);
+    // A shield stays full price until the switch says otherwise.
+    const shieldOption = option(MERC_OPTIONS, "Shield");
+    d = addDraftEquipment(d, hero("captain"), shieldOption);
+    const shieldFull = draftCosts(d, REIKLAND, defaultCampaignHouseRules());
+    const shieldHalf = draftCosts(d, REIKLAND, { ...defaultCampaignHouseRules(), halfPriceShields: true });
+    // 5 gc shield: 2 gc under the switch (rounded down), so 3 gc saved.
+    expect(shieldFull.total - shieldHalf.total).toBe(3);
+    expect(validateDraft(d, REIKLAND, undefined, defaultCampaignHouseRules()).map((p) => p.code)).not.toContain("builder.overspent");
   });
 });

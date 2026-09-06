@@ -164,16 +164,22 @@ export interface CampaignHouseRules {
   strengthArmourPiercing: boolean;
   /** Use the expanded per-weapon-type critical hit charts (Optional Rules). */
   optionalCriticalTables: boolean;
-  /** Armour costs half its listed price, rounded down. Shields and helmets are excluded. */
+  /** Armour costs half its listed price, rounded down (trading post and at creation). Shields and helmets unless the switches below say so. */
   halfPriceArmour: boolean;
+  /** Half-price armour also covers shields, bucklers, kite shields and pavises. */
+  halfPriceShields: boolean;
+  /** Half-price armour also covers helmets. */
+  halfPriceHelmets: boolean;
   /** A Rabbit's Foot re-rolls one die in the battle only; its exploration re-roll is off (house rule). */
   rabbitsFootBattleOnly: boolean;
+  /** Rewards of the Shadowlord (rulebook optional rule): a Possessed Magister or Mutant may roll on the Rewards table instead of taking a skill. */
+  rewardsOfTheShadowlord: boolean;
   /** Content removed from the campaign. */
   bans: CampaignBans;
 }
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
-  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, rabbitsFootBattleOnly: true, bans: emptyCampaignBans() };
+  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, bans: emptyCampaignBans() };
 }
 
 /** Any change a resolver makes, so the UI can narrate it and the server can audit it. */

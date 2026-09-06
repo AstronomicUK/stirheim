@@ -1,6 +1,7 @@
 // Pure helpers behind the warband list, template picker and builder screens. No React, no store:
 // everything here is unit-tested in helpers.test.ts.
 
+import type { CampaignHouseRules } from '../../../rules/types/roster'
 import type { WarbandSummary } from '../../../api/warbands'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
 import {
@@ -138,25 +139,25 @@ export interface SubjectCost {
   total: number | null
 }
 
-function equipmentTotal(items: DraftItem[], models: number): number | null {
+function equipmentTotal(items: DraftItem[], models: number, houseRules?: CampaignHouseRules | null): number | null {
   let sum = 0
   for (const item of items) {
-    const each = draftItemCost(item)
+    const each = draftItemCost(item, houseRules)
     if (each === null) return null
     sum += each * models
   }
   return sum
 }
 
-export function heroCost(hero: DraftHero, template: WarbandTemplate): SubjectCost {
+export function heroCost(hero: DraftHero, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): SubjectCost {
   const hire = findUnitTemplate(template, hero.unitTemplateId)?.cost ?? 0
-  const equipment = equipmentTotal(hero.equipment, 1)
+  const equipment = equipmentTotal(hero.equipment, 1, houseRules)
   return { hire, equipment, total: equipment === null ? null : hire + equipment }
 }
 
-export function groupCost(group: DraftGroup, template: WarbandTemplate): SubjectCost {
+export function groupCost(group: DraftGroup, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): SubjectCost {
   const hire = (findUnitTemplate(template, group.unitTemplateId)?.cost ?? 0) * group.size
-  const equipment = equipmentTotal(group.equipment, group.size)
+  const equipment = equipmentTotal(group.equipment, group.size, houseRules)
   return { hire, equipment, total: equipment === null ? null : hire + equipment }
 }
 

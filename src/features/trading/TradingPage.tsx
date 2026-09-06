@@ -114,7 +114,7 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
           <>
             {' '}
             House rules from <span className="text-ink">{campaign.name}</span>
-            {houseRules.halfPriceArmour ? ': armour at half price (shields and helmets excepted).' : '.'}
+            {houseRules.halfPriceArmour ? `: armour at half price${houseRules.halfPriceShields && houseRules.halfPriceHelmets ? ', shields and helmets included' : houseRules.halfPriceShields ? ', shields included' : houseRules.halfPriceHelmets ? ', helmets included' : ' (shields and helmets excepted)'}.` : '.'}
           </>
         ) : (
           <> Not in a campaign: default house rules apply{houseRules.halfPriceArmour ? ' (armour at half price, shields and helmets excepted)' : ''}.</>

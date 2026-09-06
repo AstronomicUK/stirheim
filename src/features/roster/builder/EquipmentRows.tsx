@@ -12,6 +12,7 @@ import { Stepper } from '../../../ui'
 import { itemName } from '../shared/names'
 import { useDraftStore } from './draftStore'
 import { formatAmount, itemCurrency, needsPrice, optionForItem } from './helpers'
+import { useBuilderRules } from './rulesContext'
 
 export interface EquipmentRowsProps {
   subject: DraftSubject
@@ -24,6 +25,7 @@ export interface EquipmentRowsProps {
 
 /** The kit a warrior (or every model of a group) carries: one row per stack with a quantity stepper, remove and, when the list has no price, a price field. */
 export function EquipmentRows({ subject, equipment, options, models = 1 }: EquipmentRowsProps) {
+  const houseRules = useBuilderRules()
   const update = useDraftStore((s) => s.update)
 
   if (equipment.length === 0) return <p className="text-sm text-ink-dim">No equipment yet.</p>
@@ -32,7 +34,7 @@ export function EquipmentRows({ subject, equipment, options, models = 1 }: Equip
     <ul className="flex flex-col divide-y divide-border">
       {equipment.map((item) => {
         const option = optionForItem(options, item)
-        const each = draftItemCost(item)
+        const each = draftItemCost(item, houseRules)
         const currency = itemCurrency(item)
         const key = item.itemId ?? `custom:${item.customName ?? ''}`
         return (

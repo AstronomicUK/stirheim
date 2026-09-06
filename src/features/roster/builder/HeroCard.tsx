@@ -9,6 +9,7 @@ import { useDraftStore } from './draftStore'
 import { EquipmentRows } from './EquipmentRows'
 import { EquipmentSheet } from './EquipmentSheet'
 import { formatAmount, heroCost } from './helpers'
+import { useBuilderRules } from './rulesContext'
 
 export interface HeroCardProps {
   hero: DraftHero
@@ -23,7 +24,8 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
   const [shopping, setShopping] = useState(false)
   const unit = findUnitTemplate(template, hero.unitTemplateId)
   const options = useMemo(() => equipmentOptionsFor(template, hero.unitTemplateId, bans), [template, hero.unitTemplateId, bans])
-  const cost = heroCost(hero, template)
+  const houseRules = useBuilderRules()
+  const cost = heroCost(hero, template, houseRules)
   const subject = { kind: 'hero' as const, id: hero.id }
 
   return (

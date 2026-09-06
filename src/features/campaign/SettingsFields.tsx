@@ -47,15 +47,16 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
 
       <Section title="House rules">
         <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low px-4">
-          {HOUSE_RULE_SWITCHES.map((rule) => (
-            <ToggleRow
-              key={rule.key}
-              label={rule.label}
-              description={rule.description}
-              checked={form.houseRules[rule.key]}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...form, houseRules: { ...form.houseRules, [rule.key]: checked } })}
-            />
+          {HOUSE_RULE_SWITCHES.filter((rule) => !rule.parent || form.houseRules[rule.parent]).map((rule) => (
+            <div key={rule.key} className={rule.parent ? 'pl-6' : ''}>
+              <ToggleRow
+                label={rule.label}
+                description={rule.description}
+                checked={form.houseRules[rule.key]}
+                disabled={disabled}
+                onChange={(checked) => onChange({ ...form, houseRules: { ...form.houseRules, [rule.key]: checked } })}
+              />
+            </div>
           ))}
         </div>
         <BansEditor bans={form.houseRules.bans} disabled={disabled} onChange={(bans) => onChange({ ...form, houseRules: { ...form.houseRules, bans } })} />

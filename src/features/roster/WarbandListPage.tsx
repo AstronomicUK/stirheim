@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useMyCampaigns } from '../../api/campaigns'
 import { useMyWarbands, type WarbandSummary } from '../../api/warbands'
 import { useSession } from '../../app/session'
-import { Icon, Notice, PageHeader, Spinner } from '../../ui'
+import { Icon, Notice, PageHeader, Spinner, type IconName } from '../../ui'
 import { PrimaryLink } from '../onboarding/bits'
 import { GettingStartedChecklist, JoinCampaignNudge } from '../onboarding/GettingStarted'
 import { homeStage } from '../onboarding/checklist'
@@ -11,6 +11,16 @@ import { usePageTitle } from '../onboarding/usePageTitle'
 import { useDraftStore } from './builder/draftStore'
 import { groupByCampaign, splitArchived } from './builder/helpers'
 import { warbandTypeName } from './shared/names'
+
+/** Icon then value, the icon in its own fixed column so the values line up down the grid. */
+function Figure({ icon, value, strong = false }: { icon: IconName; value: string; strong?: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${strong ? 'text-ink' : 'text-ink-dim'}`}>
+      <Icon name={icon} size={14} className="shrink-0 text-brass" />
+      {value}
+    </span>
+  )
+}
 
 export function WarbandListPage() {
   usePageTitle('Your warbands')
@@ -137,25 +147,14 @@ function WarbandRows({ warbands }: { warbands: WarbandSummary[] }) {
               </span>
               <span className="truncate text-sm text-ink-dim">{warbandTypeName(w.type_rules_id)}</span>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5 text-sm tabular-nums">
-              <span className="inline-flex items-center gap-1.5 text-ink">
-                <Icon name="gold" size={14} className="text-brass" />
-                {w.gold} gc
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-ink-dim">
-                <Icon name="wyrdstone" size={14} className="text-brass" />
-                {w.wyrdstone} {w.wyrdstone === 1 ? 'shard' : 'shards'}
-                <span aria-hidden>·</span>
-                <Icon name="models" size={14} className="text-brass" />
-                {w.model_count} {w.model_count === 1 ? 'model' : 'models'}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-ink-dim">
-                <Icon name="heroes" size={14} className="text-brass" />
-                {w.hero_count} {w.hero_count === 1 ? 'hero' : 'heroes'}
-                <span aria-hidden>·</span>
-                <Icon name="henchmen" size={14} className="text-brass" />
-                {w.model_count - w.hero_count} henchmen
-              </span>
+            {/* A grid, not stacked rows: right-aligning lines of different widths left their icons in
+                different places from one line to the next. */}
+            <div className="grid shrink-0 grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-sm tabular-nums">
+              <Figure icon="gold" value={`${w.gold} gc`} strong />
+              <Figure icon="wyrdstone" value={`${w.wyrdstone} ${w.wyrdstone === 1 ? 'shard' : 'shards'}`} strong />
+              <Figure icon="heroes" value={`${w.hero_count} ${w.hero_count === 1 ? 'hero' : 'heroes'}`} />
+              <Figure icon="henchmen" value={`${w.model_count - w.hero_count} henchmen`} />
+              <Figure icon="models" value={`${w.model_count} ${w.model_count === 1 ? 'model' : 'models'}`} />
             </div>
           </Link>
         </li>

@@ -25,6 +25,7 @@ import { WarbandHistory } from './view/WarbandHistory'
 import { ImportFixups } from './view/ImportFixups'
 import { ImportQuestions } from './view/ImportQuestions'
 import { GrimoireCard } from './view/GrimoireCard'
+import { PendingBattleCard } from './view/PendingBattleCard'
 
 
 export function WarbandPage() {
@@ -181,6 +182,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         <KeyValue icon="heroes" label="Heroes" value={warbandHeroCount(roster)} />
         {warband.veteran_pool !== null ? <KeyValue icon="history" label="Veteran pool" value={warband.veteran_pool} /> : null}
       </Card>
+
+      {canEdit ? <PendingBattleCard warbandId={warband.id} campaignId={campaign.data?.campaignId} userId={user?.id} /> : null}
 
       <ImportFixups detail={detail} canEdit={canEdit} />
 

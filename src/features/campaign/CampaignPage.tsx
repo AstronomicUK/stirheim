@@ -4,7 +4,7 @@ import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail
 import { useCampaignMatches } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
-import { Button, Icon, Markdown, Notice, Sheet, Spinner, TwoColumn } from '../../ui'
+import { Button, Icon, Markdown, Notice, Sheet, Spinner, TwoColumn, type IconName } from '../../ui'
 import { CampaignBattles } from '../match/shared/CampaignBattles'
 import { GmChecklist } from '../onboarding/GmChecklist'
 import { MapSummary } from '../map/MapSummary'
@@ -271,6 +271,16 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
+/** One figure with its icon, right-aligned: width is what a phone is short of, not height. */
+function Figure({ icon, value, label, strong = false }: { icon: IconName; value: string | number; label: string; strong?: boolean }) {
+  return (
+    <span className="flex items-center gap-1.5" title={label}>
+      <span className={strong ? 'text-ink' : 'text-ink-dim'}>{value}</span>
+      <Icon name={icon} size={14} className="text-brass" aria-label={label} />
+    </span>
+  )
+}
+
 function MemberRows({ members, userId, gmId, former = false }: { members: CampaignMemberView[]; userId: string | undefined; gmId: string; former?: boolean }) {
   const counts = usePendingAdvanceCounts(former ? [] : members.map((m) => m.warband_id))
   return (
@@ -286,19 +296,16 @@ function MemberRows({ members, userId, gmId, former = false }: { members: Campai
                 {(counts.data?.[m.warband_id] ?? 0) > 0 ? <Tag tone="warn">{counts.data![m.warband_id]} {counts.data![m.warband_id] === 1 ? 'advance' : 'advances'} due</Tag> : null}
               </span>
               <span className="truncate text-sm text-ink-dim">
-                {m.display_name}
-                {m.user_id === gmId ? ' (GM)' : ''} · {m.warband.type_name}
+                {/* The "You" tag above already names the owner on your own row. */}
+                {m.user_id === userId ? m.warband.type_name : `${m.display_name}${m.user_id === gmId ? ' (GM)' : ''} · ${m.warband.type_name}`}
               </span>
               {former && m.left_at ? <span className="text-xs text-ink-dim">Left {formatRelativeTime(m.left_at)}</span> : null}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-0.5 text-sm tabular-nums">
-              <span className="text-ink">Rating {m.warband.rating}</span>
-              <span className="text-ink-dim">
-                {m.warband.gold} gc · {m.warband.wyrdstone} shards
-              </span>
-              <span className="text-ink-dim">
-                {m.warband.model_count} {m.warband.model_count === 1 ? 'model' : 'models'}
-              </span>
+              <Figure icon="rating" value={m.warband.rating} label="rating" strong />
+              <Figure icon="gold" value={`${m.warband.gold} gc`} label="gold" />
+              <Figure icon="wyrdstone" value={m.warband.wyrdstone} label="wyrdstone shards" />
+              <Figure icon="models" value={m.warband.model_count} label="models" />
             </div>
           </Link>
         </li>

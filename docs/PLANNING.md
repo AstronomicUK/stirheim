@@ -924,9 +924,17 @@ leftovers, with a proposed order.
   GM tools to set control and resolve contests; hooks into scheduling (fight for a node), the
   post-battle report (capture, node bonuses into exploration and income) and the campaign page
   (territory map, standings). Large: two phases (data + map + GM controls, then the battle and
-  report integration). Needs from Tom: the real map image (the URL given was a placeholder), the
-  node-link data from the CoWork project (any export: CSV, JSON, a table), and the list of node
-  benefits and fort nodes.
+  report integration).
+  Source: the fan-made Mordheim Campaign Map by Philip (Beyond the Tabletop) with Tuomas Pirinen and
+  others, https://beyondthetabletop.com/mordheim-campaign-map/ (English "for screen" JPG 4000 x 2829,
+  5 MB; A2 print version 13 MB; French, German, Italian, Spanish, Ukrainian versions). The map is a
+  standalone piece with its own campaign rules printed on it: districts with a key of benefits,
+  Foothold tokens for winning a battle in a district, Exploration tokens for fighting there without
+  winning, adjacency between districts, and Hard Fought Districts that only one warband may hold (the
+  "fort" nodes). It is not official Games Workshop material, so embedding the image in Stirheim
+  should be cleared with the author (or the map linked out / uploaded per campaign by the GM).
+  Still needed from Tom: the node-link (adjacency) data from the CoWork project (any export: CSV,
+  JSON, a table) and the benefit and Hard Fought list per district if it differs from the map's key.
 
 **Tier 2 leftovers**
 - Strike order and Initiative on the calculator (small).

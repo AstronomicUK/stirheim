@@ -43,6 +43,8 @@ export interface Combatant {
   weaponIds?: string[]
   /** The hero an animal belongs to. */
   holderName?: string
+  /** Skill lists the warrior may pick advances from (heroes and template units), for the skill analyser. */
+  skillTableIds?: string[]
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -121,6 +123,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         stats: warrior.stats,
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
+        skillTableIds: warrior.skillTableIds,
         traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [])], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,

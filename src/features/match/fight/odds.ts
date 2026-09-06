@@ -7,7 +7,7 @@ import { IMPOSSIBLE, probabilityAtLeast, type Threshold } from '../../../rules/e
 import { resolveSingleAttack, type AttackInput, type Severity4Distribution } from '../../../rules/engine/resolveAttack'
 import { findSkill } from '../../../rules/data/skills'
 import { countParryItems, parryRerollFromItems } from '../../../rules/domain/opponentScenario'
-import type { Character, CombatContext, DefenderProfile, Weapon, WeaponKind } from '../../../rules/types'
+import type { Character, CombatContext, DefenderProfile, SkillCategory, Weapon, WeaponKind } from '../../../rules/types'
 import { defaultCombatContext } from '../../../rules/types'
 import type { CampaignHouseRules } from '../../../rules/types/roster'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
@@ -100,6 +100,7 @@ export function toCharacter(c: Combatant, kit: Loadout): Character {
     skills: [...c.skillIds, ...kit.skillIds.filter((s) => !c.skillIds.includes(s))],
     traits: [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))],
     wardSaveThreshold: kit.wardSaveThreshold,
+    skillTableIds: c.skillTableIds?.filter((t): t is SkillCategory => ['combat', 'shooting', 'strength', 'speed', 'academic', 'warband-unique'].includes(t)),
     notes: '',
   }
 }

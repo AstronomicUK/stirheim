@@ -10,7 +10,7 @@ export function BottomNav() {
       aria-label="Main"
       className="sticky bottom-0 z-20 border-t border-border bg-surface-low/95 backdrop-blur supports-[backdrop-filter]:bg-surface-low/85 lg:hidden"
     >
-      <ul className="mx-auto grid w-full max-w-md grid-cols-4 pb-[env(safe-area-inset-bottom)]">
+      <ul className="mx-auto grid w-full max-w-md grid-cols-5 pb-[env(safe-area-inset-bottom)]">
         {NAV_TABS.map((t) => (
           <li key={t.to}>
             <NavLink

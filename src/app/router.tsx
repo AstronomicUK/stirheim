@@ -18,6 +18,7 @@ const ResetPasswordPage = lazyPage(() => import('../features/account/ResetPasswo
 const SignInPage = lazyPage(() => import('../features/account/SignInPage'), 'SignInPage')
 const SignUpPage = lazyPage(() => import('../features/account/SignUpPage'), 'SignUpPage')
 const CampaignListPage = lazyPage(() => import('../features/campaign/CampaignListPage'), 'CampaignListPage')
+const SimulatorPage = lazyPage(() => import('../features/simulator/SimulatorPage'), 'SimulatorPage')
 const CampaignPage = lazyPage(() => import('../features/campaign/CampaignPage'), 'CampaignPage')
 const CampaignSettingsPage = lazyPage(() => import('../features/campaign/CampaignSettingsPage'), 'CampaignSettingsPage')
 const ImportPage = lazyPage(() => import('../features/importer/ImportPage'), 'ImportPage')
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
       { path: 'matches/:id/report/:warbandId', element: <RequireAuth><PostBattlePage /></RequireAuth> },
       { path: 'campaigns/:id/records', element: <RequireAuth><BattleRecordsPage /></RequireAuth> },
       { path: 'campaigns/:id/import', element: <RequireAuth><ImportPage /></RequireAuth> },
+      { path: 'simulator', element: <RequireAuth><SimulatorPage /></RequireAuth> },
       { path: 'scenarios', element: <RequireAuth><ScenarioLibraryPage /></RequireAuth> },
       { path: 'scenarios/new', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
       { path: 'scenarios/custom/:id/edit', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },

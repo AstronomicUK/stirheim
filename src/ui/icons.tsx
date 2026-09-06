@@ -17,7 +17,7 @@ export type IconName =
   | 'records'
   | 'more'
   | 'template'
-  | 'import'
+  | 'import' | 'simulator'
 
 const PATHS: Record<IconName, string> = {
   warbands: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
@@ -34,6 +34,7 @@ const PATHS: Record<IconName, string> = {
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   template: 'M4 4h16v16H4zM4 10h16M10 10v10',
   import: 'M12 3v12M7 10l5 5 5-5M4 21h16',
+  simulator: 'M4 17l4-8 4 5 3-3 5 6M4 21h16M4 3v18',
 }
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

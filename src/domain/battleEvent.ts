@@ -4,7 +4,7 @@
 // player writing to the other's row. Reverting an event puts everything back.
 
 import { z } from "zod";
-import type { BattleLiveState, BattleWarriorTally } from "./battle";
+import type { TakenOutBy, BattleLiveState, BattleWarriorTally } from "./battle";
 import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
@@ -65,6 +65,7 @@ function withTallyChange(tallies: BattleWarriorTally[], id: string, kind: Battle
  */
 export function applyBattleEvents(sheet: BattleLiveState, events: readonly BattleEventRow[], warbandId: string): BattleLiveState {
   let tallies = sheet.tallies;
+  let takenOutBy = sheet.takenOutBy;
   for (const e of events) {
     if (e.reverted_at !== null || e.kind !== "attack") continue;
     const p = e.payload;
@@ -78,9 +79,19 @@ export function applyBattleEvents(sheet: BattleLiveState, events: readonly Battl
         const outOfAction = p.target_kind === "hero" ? 1 : Math.min(p.target_size, t.outOfAction + 1);
         return { ...t, woundsLost, outOfAction };
       });
+      if (p.out_of_action) {
+        // The log names the attacker; it takes the place of a manual "taken out by" for that model.
+        const existing = takenOutBy[p.target_id] ?? [];
+        const already = existing.some((x) => x.modelId === p.attacker_id && x.turn === p.turn);
+        if (!already) {
+          const entry: TakenOutBy = { warbandId: p.attacker_warband_id, modelId: p.attacker_id, name: p.attacker_name, turn: p.turn };
+          const manual = existing.filter((x) => x.modelId === null || x.warbandId !== null);
+          takenOutBy = { ...takenOutBy, [p.target_id]: p.target_kind === "hero" ? [entry] : [...manual, entry] };
+        }
+      }
     }
   }
-  return tallies === sheet.tallies ? sheet : { ...sheet, tallies };
+  return tallies === sheet.tallies && takenOutBy === sheet.takenOutBy ? sheet : { ...sheet, tallies, takenOutBy };
 }
 
 /** How much of a warrior's tally comes from the log (so the sheet can say "1 from the log"). */

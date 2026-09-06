@@ -34,6 +34,8 @@ export const ooaLineSchema = z.object({
   subjectName: z.string(),
   /** Heroes: 1. Groups: models taken out of action. */
   count: z.number().int().min(1),
+  /** Who did it, one name per model out ("Skritch Nightblade (Claws of Eshin)", "a fall"), when recorded on the sheet. */
+  by: z.array(z.string()).optional(),
 });
 export type OoaLine = z.infer<typeof ooaLineSchema>;
 

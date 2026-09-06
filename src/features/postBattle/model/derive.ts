@@ -59,6 +59,8 @@ export interface ReportContext {
   rotVictims?: string[]
   /** Map campaigns: the battle's district and the advantages this warband held going into it. */
   map?: MapReportContext | null
+  /** From the battle sheet: who took each warrior out, one entry per model (names already resolved). */
+  takenOutBy?: Record<string, string[]>
 }
 
 export interface MapReportContext {
@@ -482,14 +484,18 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
   }
 }
 
-function ooaLines(draft: ReportDraft, participants: Participants): OoaLine[] {
+function ooaLines(draft: ReportDraft, participants: Participants, takenOutBy: Record<string, string[]> = {}): OoaLine[] {
   const out = heroOoaIds(draft)
   const lines: OoaLine[] = []
-  for (const h of participants.heroes) if (out.has(h.id)) lines.push({ subjectType: 'hero', subjectId: h.id, subjectName: h.name, count: 1 })
-  for (const s of participants.hiredSwords) if (out.has(s.id)) lines.push({ subjectType: 'hiredSword', subjectId: s.id, subjectName: s.name, count: 1 })
+  const by = (id: string, n: number): { by?: string[] } => {
+    const names = (takenOutBy[id] ?? []).slice(0, n)
+    return names.length > 0 ? { by: names } : {}
+  }
+  for (const h of participants.heroes) if (out.has(h.id)) lines.push({ subjectType: 'hero', subjectId: h.id, subjectName: h.name, count: 1, ...by(h.id, 1) })
+  for (const s of participants.hiredSwords) if (out.has(s.id)) lines.push({ subjectType: 'hiredSword', subjectId: s.id, subjectName: s.name, count: 1, ...by(s.id, 1) })
   for (const g of participants.groups) {
     const n = Math.min(g.size, draft.groupsOut[g.id] ?? 0)
-    if (n > 0) lines.push({ subjectType: 'group', subjectId: g.id, subjectName: g.name, count: n })
+    if (n > 0) lines.push({ subjectType: 'group', subjectId: g.id, subjectName: g.name, count: n, ...by(g.id, n) })
   }
   return lines
 }
@@ -637,7 +643,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       result: draft.result,
       routed: draft.routed,
       xp_log: xp.lines,
-      ooa: ooaLines(draft, participants),
+      ooa: ooaLines(draft, participants, ctx.takenOutBy),
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),

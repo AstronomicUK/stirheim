@@ -110,9 +110,12 @@ export function ReportCard({ report, onWithdraw, onApprove, onReturn, amendTo, b
             ) : (
               <ul className="flex flex-col gap-1">
                 {report.ooa.map((line, i) => (
-                  <li key={`${line.subjectId}-${i}`} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate text-ink">{line.subjectName}</span>
-                    <span className="shrink-0 tabular-nums text-ink-dim">{line.subjectType === 'group' ? `${line.count} out of action` : 'out of action'}</span>
+                  <li key={`${line.subjectId}-${i}`} className="flex flex-col gap-0.5 text-sm">
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="truncate text-ink">{line.subjectName}</span>
+                      <span className="shrink-0 tabular-nums text-ink-dim">{line.subjectType === 'group' ? `${line.count} out of action` : 'out of action'}</span>
+                    </span>
+                    {line.by && line.by.length > 0 ? <span className="text-xs text-ink-dim">Taken out by {line.by.join(line.subjectType === 'group' ? '; ' : ', ')}</span> : null}
                   </li>
                 ))}
               </ul>

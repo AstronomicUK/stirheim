@@ -111,7 +111,9 @@ export function HelpPage() {
         </P>
         <P>
           <B>Battle helper.</B> Once the match starts each player gets a sheet for their warband: enemies taken out of action per warrior (for experience),
-          your own casualties, wyrdstone found, loot, the turn, the rout state and notes. The scenario rules and the other warbands' stat lines are a tap away. Saves
+          your own casualties, wyrdstone found, loot, the turn, the rout state and notes. Marking a warrior out of action asks who did it: an enemy model, or a
+          fall, terrain or a spell. Skip it if nobody knows, or change it later. Kills logged from the attack calculator answer it by themselves. The answers
+          appear on the report and in the battle records as who took whom out. The scenario rules and the other warbands' stat lines are a tap away. Saves
           sync to every phone at the table.
         </P>
         <P>
@@ -270,8 +272,9 @@ export function HelpPage() {
           without a foothold, and 2D6 gc to whoever controls the Middle Bridge when it is the only way through. The match page shows the district and lets
           the GM or a participant move it while the battle is open. The advantages a warband holds are applied where they bite: extra exploration dice, the
           Abundance D3, a temple&apos;s Full Recovery roll and the third veteran die in the report; half prices, the rare-roll bonus and resale at cost in the
-          trading post and recruitment; a chosen spell on the advances screen. Each is labelled with its district. The rest of the report will
-          apply them in a later phase.
+          trading post and recruitment; a chosen spell on the advances screen; the Statue&apos;s Leadership, a defended district&apos;s Leadership and the
+          Cemetery&apos;s Fear immunity in the battle calculator and the rout check. Tolls are paid from the match page: the gate&apos;s 5 gc, or the
+          Middle Bridge&apos;s 2D6 gc straight into its controller&apos;s treasury. Each is labelled with its district.
         </P>
       </Topic>
 

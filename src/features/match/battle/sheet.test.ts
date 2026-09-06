@@ -210,3 +210,20 @@ describe('wounds lost', () => {
     expect(s.tallies).toHaveLength(0)
   })
 })
+
+describe('taken out by', () => {
+  it('keeps one answer per model out and drops them as warriors come back in', async () => {
+    const { emptyBattleLiveState } = await import('../../../domain')
+    const { setGroupOut, setTakenOutBy, takenOutBy, toggleHeroOut } = await import('./sheet')
+    const fall = { warbandId: null, modelId: null, name: 'a fall, terrain or a spell', turn: 1 }
+    let s = toggleHeroOut(emptyBattleLiveState(), 'cap')
+    s = setTakenOutBy(s, 'cap', [fall])
+    expect(takenOutBy(s, 'cap')).toEqual([fall])
+    s = toggleHeroOut(s, 'cap')
+    expect(takenOutBy(s, 'cap')).toEqual([])
+    s = setGroupOut(s, 'grp', 2, 4)
+    s = setTakenOutBy(s, 'grp', [fall, { ...fall, name: 'Skritch (Claws)', modelId: 'skritch', warbandId: 'w2' }])
+    s = setGroupOut(s, 'grp', 1, 4)
+    expect(takenOutBy(s, 'grp')).toEqual([fall])
+  })
+})

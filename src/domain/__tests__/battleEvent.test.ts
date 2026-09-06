@@ -79,3 +79,19 @@ describe("applyBattleEvents", () => {
     expect(attackSummary(attack({ out_of_action: false, kill: false, wounds_lost: 0, outcome: "Missed" }).payload)).toBe("Turn 2: Captain missed Skritch.");
   });
 });
+
+describe("who took whom out", () => {
+  it("a logged kill names the attacker on the target's sheet; a hero keeps one entry, a group one per model", () => {
+    const hero = applyBattleEvents(emptyBattleLiveState(), [attack()], B);
+    expect(hero.takenOutBy.skritch).toEqual([{ warbandId: A, modelId: "captain", name: "Captain", turn: 2 }]);
+    const group = applyBattleEvents(
+      emptyBattleLiveState(),
+      [attack({ target_id: "verminkin", target_kind: "group", target_name: "Verminkin", target_size: 4 }), attack({ target_id: "verminkin", target_kind: "group", target_name: "Verminkin", target_size: 4, attacker_id: "champ", attacker_name: "Marta", turn: 3 })],
+      B,
+    );
+    expect(group.takenOutBy.verminkin?.map((b) => b.name)).toEqual(["Captain", "Marta"]);
+    // The attacker's own sheet records nothing about it; a reverted kill counts for nothing.
+    expect(applyBattleEvents(emptyBattleLiveState(), [attack()], A).takenOutBy).toEqual({});
+    expect(applyBattleEvents(emptyBattleLiveState(), [attack({}, true)], B).takenOutBy).toEqual({});
+  });
+});

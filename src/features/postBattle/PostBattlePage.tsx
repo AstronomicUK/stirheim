@@ -200,6 +200,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       itemsUsed: liveState?.itemsUsed ?? {},
       rotVictims,
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
+      takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
     }),
     [rosterData, match.id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
   )

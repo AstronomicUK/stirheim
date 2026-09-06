@@ -22,6 +22,18 @@ export const battleWarriorTallySchema = z.object({
 });
 export type BattleWarriorTally = z.infer<typeof battleWarriorTallySchema>;
 
+/** One "taken out by" record: an enemy model, or a fall / terrain / spell with no model. */
+export const takenOutBySchema = z.object({
+  /** Enemy warband, when a model did it. */
+  warbandId: z.string().nullable(),
+  /** Enemy warrior or group id, when a model did it. */
+  modelId: z.string().nullable(),
+  /** What to print: the model's name, or "a fall", "unknown". */
+  name: z.string(),
+  turn: z.number().int().min(0).default(0),
+});
+export type TakenOutBy = z.infer<typeof takenOutBySchema>;
+
 export const battleLiveStateSchema = z.object({
   version: z.literal(BATTLE_LIVE_STATE_VERSION).default(BATTLE_LIVE_STATE_VERSION),
   turn: z.number().int().min(0).default(0),
@@ -38,6 +50,12 @@ export const battleLiveStateSchema = z.object({
   preBattle: z.record(z.string(), z.string()).default({}),
   /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
   itemsUsed: z.record(z.string(), z.array(z.string())).default({}),
+  /**
+   * Who took each of this warband's warriors out of action: warrior or group id -> one entry per
+   * model out (the enemy model by id and name, or a fall / other with no id). Fills the report's
+   * key events; the calculator's logged kills are laid over it from the shared log.
+   */
+  takenOutBy: z.record(z.string(), z.array(takenOutBySchema)).default({}),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });

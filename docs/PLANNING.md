@@ -811,6 +811,16 @@ handing the other players' warbands over.
 Map campaigns, part two, plus the battle-sheet request from test round 2. Tom said "go" on the
 scope listed under "Phase 20" in the conversation; built in three commits.
 
+**3/3: who took whom out.**
+- `BattleLiveState.takenOutBy` (warrior or group id -> one `TakenOutBy` per model out: enemy
+  warband and model ids with a printable name, or a fall / terrain / spell with none). Marking a
+  warrior out of action on the sheet, in either combat mode, opens `TakenOutBySheet` listing the
+  enemy warriors and groups fit to fight, plus "A fall, terrain or a spell" and "Not sure, skip";
+  the answer can be changed from the card. `applyBattleEvents` lays the calculator's logged kills
+  over it (the attacker's name), and marking a warrior back in trims the entries.
+- Report: `OoaLine.by` (names), filled from the sheet through `ReportContext.takenOutBy`; the
+  report card's Casualties block reads "Taken out by …". Help copy updated.
+
 **2/3: in battle, and the tolls.**
 - `BattleBoosts` (`features/match/fight/combatants.ts`, `useBattleBoosts`): the Statue of Count
   Gotthard's +1 Ld on the leader, +1 Ld for a leader whose warband held the battle's district
@@ -919,13 +929,9 @@ to Netlify. Where it lives:
   a warning when a side cannot reach it); the match page's district line with Move / Set.
 - Integration test `api/__tests__/phase19.integration.test.ts` (3).
 
-Left for Phase 20 (the report side): D3 extra shards for winning in an Abundance district, the extra
-exploration dice / +1 or -1 / maximum finds from Executioner's Square, Poor Quarter, City Hall, Rich
-Quarter and Clock Tower, half-price hires and items in the trading post and hire sheet, the injury
-re-rolls of Temple of Morr, Temple of Sigmar, the Gaol and the Amphitheatre, the Cemetery's Fear
-immunity and cheap Undead recruits, the Statue's +1 Ld, the Rock's +20% wyrdstone, the Sage's Hall
-chosen spell, the Memorial Gardens / Quayside 3D6 recruit experience, the tolls charged to the
-treasury, and the Surprise Attack defender's +1 Ld in that district.
+The report and trading side of the map (advantages, tolls, the defender's Leadership) was built as
+Phase 20; see "Phase 20 built" above. Still text-only: the Pit's exploration swap and the
+Amphitheatre's automatic pit-fight win (shown as reminders).
 
 ## Phase 18 built (2026-09-06)
 

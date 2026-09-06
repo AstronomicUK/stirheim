@@ -310,13 +310,13 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
         {desktop ? (
           <div className="flex flex-col gap-3">
             <h2 className="text-xs uppercase tracking-[0.25em] text-ink-dim">My warband</h2>
-            <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} />
+            <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} />
           </div>
         ) : null}
         <div className="flex flex-col gap-6">
           <SegmentedControl options={tabOptions} value={sideTab} onChange={setTab} label="Battle sheet section" />
 
-          {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} /> : null}
+          {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
           {sideTab === 'enemy' ? (
             <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
           ) : null}

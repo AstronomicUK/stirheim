@@ -2,7 +2,7 @@
 // decision of when to adopt a sheet that arrived from the server (another device). No React, no
 // network, so it is unit-tested in node.
 
-import type { BattleLiveState, BattleWarriorTally } from '../../../domain'
+import type { TakenOutBy, BattleLiveState, BattleWarriorTally } from '../../../domain'
 import { battleTotals, routThreshold, tallyFor, withTally } from '../../../domain'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { animalFighters, isAnimalId, parseAnimalId, ANIMAL_KINDS, type AnimalFighter } from '../../../rules/resolve/animals'
@@ -120,6 +120,25 @@ export function addEnemyOut(state: BattleLiveState, id: string, delta: number): 
   return withTally(state, { ...tally, enemiesOutOfAction: Math.max(0, tally.enemiesOutOfAction + delta) })
 }
 
+/** Record who took a warrior (or one model of a group) out of action; `null` entries mean a fall or other. */
+export function setTakenOutBy(state: BattleLiveState, id: string, entries: TakenOutBy[]): BattleLiveState {
+  const takenOutBy = { ...state.takenOutBy }
+  if (entries.length === 0) delete takenOutBy[id]
+  else takenOutBy[id] = entries
+  return touch(state, { takenOutBy })
+}
+
+export function takenOutBy(state: BattleLiveState, id: string): TakenOutBy[] {
+  return state.takenOutBy[id] ?? []
+}
+
+/** A hero marked back in loses the attribution; a group keeps as many entries as models still out. */
+export function trimTakenOutBy(state: BattleLiveState, id: string, out: number): BattleLiveState {
+  const current = state.takenOutBy[id] ?? []
+  if (current.length <= out) return state
+  return setTakenOutBy(state, id, current.slice(0, out))
+}
+
 export function isHeroOut(state: BattleLiveState, id: string): boolean {
   return (tallyFor(state, id)?.outOfAction ?? 0) > 0
 }
@@ -127,7 +146,8 @@ export function isHeroOut(state: BattleLiveState, id: string): boolean {
 /** A hero is either standing or out of action. */
 export function toggleHeroOut(state: BattleLiveState, id: string): BattleLiveState {
   const tally = baseTally(state, id, 'hero')
-  return withTally(state, { ...tally, outOfAction: tally.outOfAction > 0 ? 0 : 1 })
+  const next = withTally(state, { ...tally, outOfAction: tally.outOfAction > 0 ? 0 : 1 })
+  return tally.outOfAction > 0 ? trimTakenOutBy(next, id, 0) : next
 }
 
 export function groupOut(state: BattleLiveState, id: string): number {
@@ -138,7 +158,7 @@ export function groupOut(state: BattleLiveState, id: string): number {
 export function setGroupOut(state: BattleLiveState, id: string, count: number, size: number): BattleLiveState {
   const tally = baseTally(state, id, 'group')
   const clamped = Math.max(0, Math.min(size, Math.trunc(count)))
-  return withTally(state, { ...tally, outOfAction: clamped })
+  return trimTakenOutBy(withTally(state, { ...tally, outOfAction: clamped }), id, clamped)
 }
 
 export function setTurn(state: BattleLiveState, turn: number): BattleLiveState {

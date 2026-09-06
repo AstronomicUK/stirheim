@@ -12,9 +12,20 @@ import type { CharacterRole, NamedRule, SkillCategory, Stats, WarbandTemplate } 
 import { unitStartingStats } from '../../../rules/resolve/builder'
 import type { WarriorFlags } from '../../../rules/types/roster'
 import { toRosterItem, type ItemRow, type WarriorStatus } from '../../../domain'
+import { WARBAND_UNIQUE_TABLE_ID } from '../../../rules/resolve/advances'
+import type { IconName } from '../../../ui'
 import type { RosterItem } from '../../../rules/types/roster'
 
 export const CORE_SKILL_CATEGORIES: readonly SkillCategory[] = ['combat', 'shooting', 'academic', 'strength', 'speed']
+
+const CATEGORY_ICON: Record<SkillCategory, IconName> = {
+  combat: 'battle',
+  shooting: 'shooting',
+  academic: 'academic',
+  strength: 'strength',
+  speed: 'speed',
+  'warband-unique': 'template',
+}
 
 const CATEGORY_LABEL: Record<SkillCategory, string> = {
   combat: 'Combat',
@@ -38,7 +49,14 @@ export function skillText(id: string): string | undefined {
 /** A skill table id is either a core category or a warband skill table id. */
 export function skillTableName(id: string): string {
   if (isCoreCategory(id)) return CATEGORY_LABEL[id]
+  if (id === WARBAND_UNIQUE_TABLE_ID) return 'Warband skills'
   return WARBAND_SKILL_TABLES.find((t) => t.id === id)?.name ?? id
+}
+
+/** One icon per skill table, so a hero's tables read at a glance on his card and in the picker. */
+export function skillTableIcon(id: string): IconName {
+  if (isCoreCategory(id)) return CATEGORY_ICON[id]
+  return 'template'
 }
 
 function isCoreCategory(id: string): id is SkillCategory {
@@ -54,9 +72,9 @@ export interface SkillOption {
 }
 
 /** Every skill a hero with these skill tables may pick, grouped by table, for the editor. */
-export function skillOptionsFor(skillTableIds: readonly string[]): SkillOption[] {
+export function skillOptionsFor(skillTableIds: readonly string[], warbandTemplateId?: string): SkillOption[] {
   const out: SkillOption[] = []
-  for (const tableId of skillTableIds) {
+  for (const tableId of expandTableIds(skillTableIds, warbandTemplateId)) {
     if (isCoreCategory(tableId)) {
       const label = CATEGORY_LABEL[tableId]
       for (const s of SKILLS) if (s.category === tableId) out.push({ id: s.id, name: s.name, text: s.description, group: label })
@@ -66,6 +84,25 @@ export function skillOptionsFor(skillTableIds: readonly string[]): SkillOption[]
     if (table) for (const s of table.skills) out.push({ id: s.id, name: s.name, text: s.text, group: table.name })
   }
   return out
+}
+
+/**
+ * Templates and imports write the pseudo-table "warband-unique" rather than naming a table, which
+ * the roster's own lists cannot resolve. Swap it for the warband's real tables (and, with no
+ * warband to go on, for the core catalogue's warband-unique entries).
+ */
+export function expandTableIds(skillTableIds: readonly string[], warbandTemplateId?: string): string[] {
+  const out: string[] = []
+  for (const id of skillTableIds) {
+    if (id !== WARBAND_UNIQUE_TABLE_ID) {
+      out.push(id)
+      continue
+    }
+    const own = warbandTemplateId ? skillTablesForWarband(warbandTemplateId) : []
+    if (own.length > 0) out.push(...own.map((t) => t.id))
+    else out.push(id)
+  }
+  return [...new Set(out)]
 }
 
 /** The skill tables a hero of this warband could be given: the five core lists plus the warband's own. */

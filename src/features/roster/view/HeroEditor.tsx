@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { WarriorStatus } from '../../../domain'
-import { Button, NumberField, SelectField, Sheet, TextArea, TextField } from '../../../ui'
+import { Button, Icon, NumberField, SelectField, Sheet, TextArea, TextField, type IconName } from '../../../ui'
 import { unitTypeName } from '../shared/names'
 import { Card, Tag } from './bits'
 import type { HeroDraft } from './diff'
@@ -10,7 +10,9 @@ import {
   hiredSwordName,
   skillName,
   skillOptionsFor,
+  skillTableIcon,
   skillTableName,
+  expandTableIds,
   skillTableOptions,
   spellName,
 } from './lookups'
@@ -48,7 +50,22 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
   const err = (field: string) => errors[`${prefix}.${field}`]
   const typeName = hero.is_hired_sword ? hiredSwordName(hero.hired_sword_rules_id ?? '') : unitTypeName(warbandTemplateId, hero.unit_type_rules_id ?? '')
   const tableOptions = useMemo(() => skillTableOptions(warbandTemplateId), [warbandTemplateId])
-  const skillOptions = useMemo(() => skillOptionsFor(hero.skill_tables), [hero.skill_tables])
+  const skillOptions = useMemo(() => skillOptionsFor(hero.skill_tables, warbandTemplateId), [hero.skill_tables, warbandTemplateId])
+  // Which table's skills the picker is showing; null until the sheet opens on the first one.
+  const [skillGroup, setSkillGroup] = useState<string | null>(null)
+  // One tab per table the hero may draw from, in the order his tables are listed.
+  const groups = useMemo(() => {
+    const byName = new Map<string, { name: string; icon: IconName; skills: typeof skillOptions; chosen: number }>()
+    for (const option of skillOptions) {
+      const table = expandTableIds(hero.skill_tables, warbandTemplateId).find((id) => skillTableName(id) === option.group)
+      const entry = byName.get(option.group) ?? { name: option.group, icon: skillTableIcon(table ?? option.group), skills: [], chosen: 0 }
+      entry.skills.push(option)
+      if (hero.skills.includes(option.id)) entry.chosen += 1
+      byName.set(option.group, entry)
+    }
+    return [...byName.values()]
+  }, [skillOptions, hero.skill_tables, hero.skills, warbandTemplateId])
+  const shownGroup = groups.some((g) => g.name === skillGroup) ? skillGroup : (groups[0]?.name ?? null)
   const spellOptions = useMemo(() => allSpellOptions().sort((a, b) => a.lore.localeCompare(b.lore) || a.name.localeCompare(b.name)), [])
   const lores = useMemo(() => [...new Set(spellOptions.map((s) => s.lore))], [spellOptions])
 
@@ -106,7 +123,8 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
             {tableOptions.map((t) => {
               const on = hero.skill_tables.includes(t.id)
               return (
-                <button key={t.id} type="button" aria-pressed={on} className={chip(on)} onClick={() => toggleTable(t.id)}>
+                <button key={t.id} type="button" aria-pressed={on} className={`${chip(on)} inline-flex items-center gap-1.5`} onClick={() => toggleTable(t.id)}>
+                  <Icon name={skillTableIcon(t.id)} size={14} className={on ? 'text-brass' : 'text-ink-dim'} />
                   {t.name}
                 </button>
               )
@@ -114,7 +132,8 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
             {hero.skill_tables
               .filter((id) => !tableOptions.some((t) => t.id === id))
               .map((id) => (
-                <button key={id} type="button" aria-pressed className={chip(true)} onClick={() => toggleTable(id)}>
+                <button key={id} type="button" aria-pressed className={`${chip(true)} inline-flex items-center gap-1.5`} onClick={() => toggleTable(id)}>
+                  <Icon name={skillTableIcon(id)} size={14} className="text-brass" />
                   {skillTableName(id)}
                 </button>
               ))}
@@ -211,35 +230,54 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
         open={skillsOpen}
         onClose={() => setSkillsOpen(false)}
         title={`Skills for ${hero.name || typeName}`}
-        description={
-          skillOptions.length === 0
-            ? 'Tick at least one skill table above to see skills.'
-            : `From ${hero.skill_tables.map(skillTableName).join(', ')}.`
-        }
+        description={groups.length === 0 ? 'Tick at least one skill table above to see skills.' : 'Pick a table, then the skills from it.'}
         footer={
           <Button block onClick={() => setSkillsOpen(false)}>
             Done
           </Button>
         }
       >
-        <ul className="flex flex-col divide-y divide-border">
-          {skillOptions.map((s) => {
-            const on = hero.skills.includes(s.id)
-            return (
-              <li key={s.id}>
-                <label className="flex min-h-12 cursor-pointer items-start gap-3 py-2.5">
-                  <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={on} onChange={() => toggleSkill(s.id)} />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="text-ink">
-                      {s.name} <span className="text-xs text-ink-dim">· {s.group}</span>
+        <div className="flex flex-col gap-3">
+          {groups.length > 1 ? (
+            <div role="tablist" aria-label="Skill table" className="flex flex-wrap gap-1.5">
+              {groups.map((g) => {
+                const on = g.name === shownGroup
+                return (
+                  <button
+                    key={g.name}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setSkillGroup(g.name)}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors ${
+                      on ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'
+                    }`}
+                  >
+                    <Icon name={g.icon} size={15} className={on ? 'text-brass' : 'text-ink-dim'} />
+                    {g.name}
+                    {g.chosen > 0 ? <span className="rounded-full bg-brass px-1.5 text-[11px] font-bold text-surface-low">{g.chosen}</span> : null}
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
+          <ul className="flex flex-col divide-y divide-border">
+            {(groups.find((g) => g.name === shownGroup)?.skills ?? []).map((s) => {
+              const on = hero.skills.includes(s.id)
+              return (
+                <li key={s.id}>
+                  <label className="flex min-h-12 cursor-pointer items-start gap-3 py-2.5">
+                    <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={on} onChange={() => toggleSkill(s.id)} />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-ink">{s.name}</span>
+                      <span className="text-xs leading-relaxed text-ink-dim">{s.text}</span>
                     </span>
-                    <span className="text-xs leading-relaxed text-ink-dim">{s.text}</span>
-                  </span>
-                </label>
-              </li>
-            )
-          })}
-        </ul>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </Sheet>
     </Card>
   )

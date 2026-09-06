@@ -40,6 +40,11 @@ export type IconName =
   | 'enemy'
   | 'dice'
   | 'book'
+  | 'shooting'
+  | 'academic'
+  | 'strength'
+  | 'speed'
+  | 'back'
 
 const PATHS: Record<IconName, string> = {
   warbands: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
@@ -78,6 +83,11 @@ const PATHS: Record<IconName, string> = {
   enemy: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 10l6 6M15 10l-6 6',
   dice: 'M4 4h16v16H4zM8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01',
   book: 'M4 4h6a3 3 0 013 3v13a2.5 2.5 0 00-2.5-2.5H4zM20 4h-6a3 3 0 00-3 3v13a2.5 2.5 0 012.5-2.5H20z',
+  shooting: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 17a5 5 0 100-10 5 5 0 000 10zM12 13a1 1 0 100-2 1 1 0 000 2zM12 1v3M12 20v3M1 12h3M20 12h3',
+  academic: 'M12 4l9 4-9 4-9-4zM6 10.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-5.5M21 8v6',
+  strength: 'M6.5 9v6M17.5 9v6M4 10.5v3M20 10.5v3M6.5 12h11',
+  speed: 'M13 2L5 14h6l-1 8 8-12h-6z',
+  back: 'M15 19l-7-7 7-7',
 }
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

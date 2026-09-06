@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 import { Spinner, Wordmark } from '../ui'
+import { BackButton } from './BackButton'
 import { BottomNav } from './BottomNav'
 import { SideRail } from './SideRail'
 import { useSession } from './session'
@@ -18,8 +19,9 @@ export function AppShell() {
       {signedIn ? <SideRail /> : null}
       <div className="flex min-h-dvh min-w-0 flex-col">
         {signedIn ? (
-          <header className="flex items-center justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))] lg:hidden">
+          <header className="flex items-center justify-between gap-3 px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))] lg:hidden">
             <Wordmark />
+            <BackButton />
           </header>
         ) : (
           <div className="pt-[env(safe-area-inset-top)]" />

@@ -6,9 +6,12 @@ import { useMemo, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleLiveState } from '../../../domain'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
+import { findTrait } from '../../../rules/data/traits'
+import { findSkill } from '../../../rules/data/skills'
+import { findWarbandSkill } from '../../../rules/data/campaign/warbandSkills'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DicePicker, Notice, RollResult, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
+import { Button, DicePicker, HoverCard, Notice, RollResult, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
@@ -381,11 +384,39 @@ function CombatantLine({ c, kit, defending = false }: { c: Combatant; kit: Loado
       <p className="text-xs text-ink-dim">{armourText(kit)}</p>
       {c.traitIds.length > 0 || c.skillIds.length > 0 ? (
         <div className="flex flex-wrap gap-1">
-          {c.traitIds.map((t) => (
-            <Tag key={t} tone="neutral">
-              {t.replace(/_/g, ' ').replace('5plus', '5+')}
-            </Tag>
-          ))}
+          {c.traitIds.map((id) => {
+            const trait = findTrait(id)
+            return (
+              <HoverCard
+                key={id}
+                title={trait?.name ?? tidyId(id)}
+                label={
+                  <Tag tone="neutral">
+                    <span className="border-b border-dotted border-current">{trait?.name ?? tidyId(id)}</span>
+                  </Tag>
+                }
+              >
+                {trait?.description ?? 'No rules text for this trait.'}
+              </HoverCard>
+            )
+          })}
+          {c.skillIds.map((id) => {
+            const skill = findSkill(id) ?? findWarbandSkill(id)?.skill
+            const text = skill && 'description' in skill ? skill.description : skill && 'text' in skill ? skill.text : undefined
+            return (
+              <HoverCard
+                key={id}
+                title={skill?.name ?? tidyId(id)}
+                label={
+                  <Tag tone="brass">
+                    <span className="border-b border-dotted border-current">{skill?.name ?? tidyId(id)}</span>
+                  </Tag>
+                }
+              >
+                {text ?? 'No rules text for this skill.'}
+              </HoverCard>
+            )
+          })}
         </div>
       ) : null}
     </Card>
@@ -650,6 +681,12 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
       )}
     </Section>
   )
+}
+
+/** A last resort when the catalogue has no entry: "fear_5plus" -> "Fear 5+". */
+function tidyId(id: string): string {
+  const words = id.replace(/_/g, ' ').replace('5plus', '5+')
+  return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
 /** Mirrors the engine's parry reroll rule (buckler + sword, Dwarf axes, fighting claws, iron fists). */

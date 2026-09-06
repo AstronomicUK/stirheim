@@ -5,6 +5,7 @@ import { HIRED_SWORDS } from '../../rules/data/campaign/hiredSwords'
 import { SHOP_ITEMS } from '../../rules/data/items'
 import { WARBAND_SKILL_TABLES } from '../../rules/data/campaign/warbandSkills'
 import type { CampaignBans } from '../../rules/types/roster'
+import type { IconName } from '../../ui'
 import { allSpellOptions, skillOptionsFor, CORE_SKILL_CATEGORIES } from '../roster/view/lookups'
 
 export type BanKind = keyof CampaignBans
@@ -16,6 +17,9 @@ export interface Entry {
 }
 
 export const KIND_LABEL: Record<BanKind, string> = { items: 'Items', spells: 'Spells', hiredSwords: 'Hired swords', characters: 'Characters', skills: 'Skills' }
+
+/** One icon per list, so the five tabs are told apart at a glance. */
+export const KIND_ICON: Record<BanKind, IconName> = { items: 'trade', spells: 'cast', hiredSwords: 'hired', characters: 'characters', skills: 'advances' }
 
 /** Every entry of a kind the GM may ban, sorted by name. */
 export function banCandidates(kind: BanKind): Entry[] {

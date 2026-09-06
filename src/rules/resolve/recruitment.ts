@@ -33,6 +33,7 @@ import type {
   RosterItem,
   RosterWarband,
 } from "../types/roster";
+import { resolveEquipmentName } from "../data/items/aliases";
 import { findHiredSword } from "../data/campaign/hiredSwords";
 import { VETERAN_XP_COST_GC } from "../data/campaign/trading";
 import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
@@ -387,14 +388,49 @@ export interface HireHiredSwordOptions {
   feeOverride?: number;
 }
 
-/** One custom item per line of the entry's Weapons/Armour (or Equipment) text. */
+/** Prose the entries open with before they list anything: "A Warlock carries", "He wears". */
+const KIT_PREAMBLE = /^(?:the\s+[\w' -]+?|a\s+[\w' -]+?|an\s+[\w' -]+?|he|she|they)\s+(?:carries|carry|wears|wear|is equipped with|are equipped with|has|have)\s+/i;
+
+/** Sentences after the kit list that explain rather than list ("The spiked gauntlet counts as…"). */
+const KIT_PROSE = /\b(?:counts as an|cannot|may not|if you are using|when mounted|and no,|his save|note that)\b/i;
+
+/**
+ * The catalogue items a hired sword arrives with, read out of the entry's Weapons/Armour (or
+ * Equipment) sentence: "Elf Bow, Sword and Elven Cloak." is three items, not one line of prose.
+ * Anything the catalogue cannot name is still kept, as a custom line, so nothing is quietly lost.
+ */
 export function hiredSwordEquipment(detail: HiredSwordDetail | undefined): RosterItem[] {
   const text = detail?.weaponsArmour?.trim() || detail?.equipment?.trim() || "";
-  return text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .map((line) => ({ itemId: null, customName: line, quantity: 1 }));
+  const out: RosterItem[] = [];
+  for (const line of text.split(/\n+/)) {
+    // Only the first sentence lists kit; the rest explains it.
+    const [first = "", ...rest] = line.split(/(?<=\.)\s+/);
+    const listed = first.replace(KIT_PREAMBLE, "").replace(/\.$/, "").trim();
+    if (listed.length === 0) continue;
+    // A line offering a choice ("Two Axes or a Double-Handed Axe") is one decision, not a list:
+    // it stays as written, for the hiring player to settle.
+    if (/\b(?:either|or)\b/i.test(listed)) {
+      out.push({ itemId: null, customName: first.replace(KIT_PREAMBLE, "").trim(), quantity: 1 });
+    } else {
+      for (const piece of splitKit(listed)) {
+        const item = resolveEquipmentName(piece) ?? resolveEquipmentName(piece.replace(/\s*\([^)]*\)\s*$/, "").trim());
+        if (item) out.push({ itemId: item.id, quantity: 1 });
+        else out.push({ itemId: null, customName: piece, quantity: 1 });
+      }
+    }
+    // Keep the explanatory sentences as a note on the last item so the rules travel with the kit.
+    const note = rest.filter((sentence) => KIT_PROSE.test(sentence)).join(" ").trim();
+    if (note && out.length > 0) out[out.length - 1] = { ...out[out.length - 1], notes: note };
+  }
+  return out;
+}
+
+/** "Sword, Dagger, and an Elven Cloak" -> three names, without the articles or the Oxford "and". */
+function splitKit(listed: string): string[] {
+  return listed
+    .split(/,\s*|\s+and\s+/i)
+    .map((piece) => piece.trim().replace(/^(?:and\s+)?(?:(?:a|an|the)\s+)?/i, "").trim())
+    .filter((piece) => piece.length > 0 && !/^\(/.test(piece));
 }
 
 /** Hire a hired sword from HIRED_SWORDS: pays the hire fee, one of each type only. */

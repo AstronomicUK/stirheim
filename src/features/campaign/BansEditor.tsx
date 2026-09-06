@@ -4,8 +4,8 @@
 
 import { useMemo, useState } from 'react'
 import type { CampaignBans } from '../../rules/types/roster'
-import { SegmentedControl, TextField } from '../../ui'
-import { KIND_LABEL, banCandidates, banName, type BanKind } from './bans'
+import { Icon, TextField } from '../../ui'
+import { KIND_ICON, KIND_LABEL, banCandidates, banName, type BanKind } from './bans'
 
 /** Commonly banned at most tables; offered as one-tap chips while the list is empty. */
 
@@ -43,26 +43,48 @@ export function BansEditor({ bans, onChange, disabled = false }: BansEditorProps
       <p className="text-xs leading-relaxed text-ink-dim">
         Banned entries disappear from the trading post, the builder, spell tables, the hire sheet and skill pickers, and a roster that already holds one shows a warning.
       </p>
-      <SegmentedControl label="What to ban" options={(Object.keys(KIND_LABEL) as BanKind[]).map((k) => ({ value: k, label: `${KIND_LABEL[k]}${bans[k].length ? ` (${bans[k].length})` : ''}` }))} value={kind} onChange={(v) => setKind(v as BanKind)} />
+      <div role="radiogroup" aria-label="What to ban" className="flex flex-wrap gap-1.5">
+        {(Object.keys(KIND_LABEL) as BanKind[]).map((k) => {
+          const on = k === kind
+          return (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setKind(k)}
+              className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm transition-colors ${
+                on ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'
+              }`}
+            >
+              <Icon name={KIND_ICON[k]} size={16} className={on ? 'text-brass' : 'text-ink-dim'} />
+              {KIND_LABEL[k]}
+              {bans[k].length > 0 ? <span className="rounded-full bg-accent px-1.5 text-[11px] font-bold text-surface-low">{bans[k].length}</span> : null}
+            </button>
+          )
+        })}
+      </div>
       {current.length > 0 ? (
-        <ul className="flex flex-wrap gap-2" aria-label={`Banned ${KIND_LABEL[kind].toLowerCase()}`}>
-          {current.map((id) => (
-            <li key={id}>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => remove(kind, id)}
-                aria-label={`Unban ${banName(kind, id)}`}
-                className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent/40 bg-surface px-3 text-xs text-ink line-through decoration-accent/70 hover:border-accent disabled:opacity-60"
-              >
-                {banName(kind, id)}
-                <span aria-hidden className="no-underline text-ink-dim">
-                  ×
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-2 rounded-md border border-accent/50 bg-accent/10 px-3 py-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-accent">Banned {KIND_LABEL[kind].toLowerCase()}</p>
+          <ul className="flex flex-wrap gap-2" aria-label={`Banned ${KIND_LABEL[kind].toLowerCase()}`}>
+            {current.map((id) => (
+              <li key={id}>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => remove(kind, id)}
+                  aria-label={`Unban ${banName(kind, id)}`}
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent bg-surface px-3 text-xs text-ink hover:bg-surface-high disabled:opacity-60"
+                >
+                  {banName(kind, id)}
+                  <span aria-hidden className="text-accent">×</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-ink-dim">Tap one to lift the ban.</p>
+        </div>
       ) : null}
       <TextField label={`Search ${KIND_LABEL[kind].toLowerCase()}`} value={query} autoComplete="off" disabled={disabled} placeholder="Type at least two letters" onChange={(e) => setQuery(e.target.value)} />
       {q.length >= 2 ? (

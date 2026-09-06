@@ -13,7 +13,7 @@ import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
 import { validateRoster, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
-import { ActionTile, Button, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
+import { ActionTile, Button, Icon, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
 import { BUTTON_BASE, BUTTON_VARIANTS } from '../../ui/buttonStyles'
 import { unitTypeName, warbandTypeName } from './shared/names'
 import { Card, ItemLines, KeyValue, Section, Tag } from './view/bits'
@@ -424,7 +424,8 @@ function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { wa
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="self-start text-xs text-brass underline-offset-4 hover:underline">
+      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 self-start text-xs text-brass underline-offset-4 hover:underline">
+        <Icon name={currentCampaign ? 'campaigns' : 'join'} size={14} />
         {currentCampaign ? 'Move to another campaign' : 'Join a campaign'}
       </button>
       <Sheet
@@ -474,13 +475,14 @@ function HandOver({ warbandId, warbandName, ownerId, viewerId, onError }: { warb
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="self-start text-xs text-brass underline-offset-4 hover:underline">
-        Hand over to another player
+      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 self-start text-xs text-brass underline-offset-4 hover:underline">
+        <Icon name="hired" size={14} />
+        Transfer warband to another player
       </button>
       <Sheet
         open={open}
         onClose={() => setOpen(false)}
-        title="Hand this warband over"
+        title="Transfer this warband"
         description={`${warbandName} moves to another player's account. They take over its roster, reports and advances; you keep nothing but the history.${owner && owner.user_id !== viewerId ? ` Current owner: ${owner.display_name}.` : ''}`}
         footer={
           <div className="flex gap-3">

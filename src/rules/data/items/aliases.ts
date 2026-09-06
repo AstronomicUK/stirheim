@@ -93,6 +93,10 @@ export const EQUIPMENT_ALIASES: Record<string, string> = {
   // (the Tomb Guardians list prices it at 3 gc); "Shield/Buckler" is a 5 gc choice, taken as the shield.
   "Katana": "dragon_sword",
   "Staff": "club",
+  "Cooking pot": "cooking_pot_helmet",
+  "Throwing Daggers": "throwing_knives_stars",
+  "Throwing Dagger": "throwing_knives_stars",
+  "Cooking Pot": "cooking_pot_helmet",
   "Shield/Buckler": "shield",
   "Darksteel blade": "darksteel_blade",
   "Beastwhip (Packmaster or Apprentices only)": "beastwhip",

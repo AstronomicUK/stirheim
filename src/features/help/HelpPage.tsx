@@ -293,7 +293,7 @@ export function HelpPage() {
           <B>Rosters.</B> Open the roster's printer-friendly page in the old tracker (or, as GM, another player's warband from its campaign details
           panel), select all the text, copy it, and paste it into <Go to="/warbands/import">Import a roster</Go>. The app reads the treasury, every hero,
           henchman group and hired sword with their experience, characteristics, kit, skills, spells and injuries, and shows anything it could not match for
-          you to fix before it creates the warband. The importer owns it; <em>Hand over to another player</em> on the roster page passes it on once its player
+          you to fix before it creates the warband. The importer owns it; <em>Transfer warband to another player</em> on the roster page passes it on once its player
           has signed up.
         </P>
         <P>Moving a running campaign over is a two-part job. Nothing is copied automatically from the old tracker, so each player does their own roster.</P>

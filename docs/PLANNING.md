@@ -900,6 +900,49 @@ what came up while building. Grouped so Tom can strike or reorder.
   restriction blocks; full map-campaign support (territories, movement, map-driven scenarios);
   per-user light/dark toggle; a domain name; the CSV column mapping wants a real export sample.
 
+## Phase 18+ candidates (2026-09-06, awaiting Tom's ordering)
+
+Tier 1 of both audits is done (Phases 14-17). Tom added three items; here they sit against the Tier 2
+leftovers, with a proposed order.
+
+**New requests**
+- **Campaign transfer.** Move a warband from one campaign to another (leave + join in one step,
+  keeping the roster; battle records stay with the campaign they were fought in; the GM of the
+  target campaign can be asked to approve, or an invite code used). Small: one SQL function, a
+  "Move to another campaign" action on the warband page, a settings toggle for whether joins need
+  GM approval.
+- **Simulator in Stirheim.** Bring the `mordheim-simulator` screens in as a menu section: the
+  Character Builder (any published warrior or a custom profile), the odds analyser, the Stat Gain
+  and Skill Gain analysers, house rules taken from the campaign. New: pick warriors straight from
+  the user's active warbands (and enemies from the campaign's other rosters) instead of typing
+  them. The engine and data already live in Stirheim (`src/rules/engine`, the simulator snapshot
+  is `reference/simulator-src`), so this is screens plus a roster picker (~1,800 lines of React in
+  the original, recharts for the analysers). Medium: one phase.
+- **Map campaigns.** Interactive map of the region: a high-resolution image with a pan-and-zoom
+  SVG overlay of nodes and links; per node its benefits (extra wyrdstone, income, rare-roll
+  bonuses, scenario effects), whether it is a fort (one warband may hold it), who controls it;
+  GM tools to set control and resolve contests; hooks into scheduling (fight for a node), the
+  post-battle report (capture, node bonuses into exploration and income) and the campaign page
+  (territory map, standings). Large: two phases (data + map + GM controls, then the battle and
+  report integration). Needs from Tom: the real map image (the URL given was a placeholder), the
+  node-link data from the CoWork project (any export: CSV, JSON, a table), and the list of node
+  benefits and fort nodes.
+
+**Tier 2 leftovers**
+- Strike order and Initiative on the calculator (small).
+- Wheelo and Eye of the Gods tables (small).
+- Capture flows: Kidnapped, Stragglers, ransom and exchange (medium).
+- Black powder handling: reload cadence, misfires, pistols in hand-to-hand, blasts (medium-large).
+- Mounts and mounted combat (large).
+- Spell and prayer items (blocked on a spell-casting flow).
+
+**Proposed order**
+1. Phase 18: campaign transfer + the simulator, with strike order and the two bespoke tables as
+   fillers. Self-contained, no inputs needed, and the simulator is the first of the two USPs.
+2. Phase 19 and 20: map campaigns, once the map image, node links and benefits are in hand
+   (Tom gathers them while 18 is built).
+3. Phase 21: black powder + captures; mounts after that; spell items when spells exist.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

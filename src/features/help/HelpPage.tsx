@@ -13,6 +13,7 @@ const SECTIONS = [
   { id: 'post-battle', title: 'Post-battle report' },
   { id: 'between-battles', title: 'Between battles' },
   { id: 'records', title: 'Battle records and CSV export' },
+  { id: 'simulator', title: 'Simulator' },
   { id: 'moving-over', title: 'Moving from another tracker' },
   { id: 'house-rules', title: "Default house rules" },
 ] as const
@@ -91,6 +92,11 @@ export function HelpPage() {
           applied automatically in the trading post and the Rabbit&apos;s Foot switch in the exploration step; the other two are for the table to remember.
           <em>Bans</em> remove items, spells, hired swords, Dramatis Personae or skills from the campaign: banned entries disappear from the trading post,
           spell tables, the hire sheet and skill pickers, and a roster that already holds one shows a warning. Anything else goes in the campaign rules text.
+        </P>
+        <P>
+          <B>Moving to another campaign.</B> The warband page has <em>Move to another campaign</em> for owners: type the new campaign&apos;s invite code
+          and the warband leaves its current campaign and joins the new one in one step. Battle records stay with the campaign they were fought in, and the
+          old membership is kept in the history rather than deleted. A warband in no campaign simply joins.
         </P>
       </Topic>
 
@@ -222,6 +228,22 @@ export function HelpPage() {
           Every campaign page links to its battle records: each finished match with the scenario, who fought, who won and each side's report (gold,
           wyrdstone, injuries, deaths, experience). Filter by warband or scenario and tap <em>Export CSV</em> to download a spreadsheet of everything shown.
           The GM can withdraw a report so a player can refile it; roster changes already applied stay and are listed in the activity log.
+        </P>
+      </Topic>
+
+      <Topic id="simulator" title="Simulator">
+        <P>
+          <B>Any two warriors.</B> <Go to="/simulator">Simulator</Go> puts one warrior against another and shows the exact odds of the phase: to hit,
+          to wound, their save, what a wound does, who strikes first and the chance of at least one hit, a wound through, knocked down, stunned or out of
+          action. Each side is a warrior from one of your warbands, a warrior from another roster in one of your campaigns, or any published unit type
+          with kit ticked from its list and skills added by hand. Choose the weapon, the other hand and the situation (charging, high ground, and so on)
+          just as on the battle calculator.
+        </P>
+        <P>
+          <B>Stat gains and skill gains.</B> The two other tabs answer the advance question. <em>Stat gains</em> adds one to each characteristic in turn
+          and shows how much the chosen figure moves, attacking and defending. <em>Skill gains</em> does the same for every modelled skill the warrior could
+          still take, ranked best first; untick <em>Only skills on the lists</em> to see the rest. Conditional skills count only when their situation is
+          ticked. House rules follow whichever campaign you pick or the group defaults. Nothing here is rolled or saved.
         </P>
       </Topic>
 

@@ -806,6 +806,39 @@ Phases 13 to 17 went live at https://stirheim.netlify.app in one deploy (local `
 was pushed to the hosted project. Next: a fresh campaign and a re-import of the battle records CSV, and
 handing the other players' warbands over.
 
+## Phase 18 built (2026-09-06)
+
+Built straight after the Phase 13-17 release, per Tom's ordering: campaign transfer and the
+simulator, with strike order and the two bespoke tables as fillers. Migration 21 was pushed to the
+hosted project the same day; nothing has gone to Netlify. Where it lives:
+
+- **Move a warband to another campaign** (migration 21 `move_warband_campaign`, `api/campaigns.ts`
+  `useMoveWarbandCampaign`, `MoveCampaign` on the warband page beside Hand over): owner-only, invite
+  code lookup with the same checks as joining (code, archived, roster cap), the current membership is
+  closed with `left_at` rather than deleted, the new one is upserted (moving back reopens the old
+  row). Battle records stay with the campaign they were fought in. Integration test
+  `api/__tests__/phase18.integration.test.ts`.
+- **The simulator** (`features/simulator/`, route `/simulator`, fifth navigation tab): the combat
+  engine turned loose on any two warriors. Sides: my warbands (`useMyWarbands` + `useWarband` ->
+  `combatantsOf`), a campaign roster (members via `useCampaign`, rosters readable through the
+  `can_read_warband` co-member policy), or any published unit type (`combatantFromTemplate`: starting
+  stats, kit ticked from `equipmentOptionsFor`, skills searched from the lists it may use, race and
+  kind traits). Weapon / other hand / situation as on the battle calculator; house rules from a chosen
+  campaign or the group defaults. Tabs: **Odds** (per-weapon thresholds, injury split, strike order,
+  whole-phase chain), **Stat gains** (`computeStatGainBreakdown`: +1 to each characteristic,
+  attacking and defending, in percentage points) and **Skill gains** (`computeSkillSensitivity`
+  ranked, respecting the warrior's skill lists via the new `Combatant.skillTableIds`). Bars are plain
+  CSS; nothing is rolled or saved.
+- **Strike order** (`odds.ts` `strikeOrder`): Strike Last weapons, charging, Strike First on the
+  first turn or when charged, then Initiative with the weapon's modifier, equal -> roll off. Shown
+  on the calculator and the simulator.
+- **Bespoke tables**: Wheelo (never promoted, destroyed on a 1) and Marauders' Eye of the Gods
+  (`WarbandCampaignRules.postBattle`, rolled in "Kit after the battle" with the loss / win modifiers,
+  Chaos Spawn after a loss retires the leader).
+
+Not in this phase (unchanged from the candidates list): map campaigns (19-20), black powder,
+captures, mounts, spell items.
+
 ## Phase 17 built (2026-09-06)
 
 Tom approved the scope below minus the items left for a later phase (mounts, black powder, strike

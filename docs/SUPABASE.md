@@ -127,8 +127,8 @@ editor changes are distinguishable in the history.
 
 Every migration added after the first release goes live with `npx supabase db push` from the linked CLI
 (no database password needed) **before** the matching `netlify deploy`, so the live app never calls a
-function that is not there yet. Migration 20 (Phase 16: report item patches, the bans settings default) was pushed to the hosted project on
-2026-09-06 with Tom's OK. Migrations 18 (Phase 13) and 19 (Phase 15) were pushed to the hosted project on 2026-09-05, ahead of
+function that is not there yet. Migration 21 (Phase 18: `move_warband_campaign`) and migration 20 (Phase 16: report item patches, the
+bans settings default) were pushed to the hosted project on 2026-09-06 with Tom's OK. Migrations 18 (Phase 13) and 19 (Phase 15) were pushed to the hosted project on 2026-09-05, ahead of
 the combined Phase 13-15 deploy; the live Phase 12 build ignores the new tables and columns until then.
 
 ### How it was actually done (2026-09-05)

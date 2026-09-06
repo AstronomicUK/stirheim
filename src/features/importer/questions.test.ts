@@ -29,17 +29,23 @@ describe('questions left by an import', () => {
     expect(importQuestions(input())).toEqual([])
   })
 
-  it('offers the catalogue entry for a written-in item, or keeping it as written', () => {
-    const q = importQuestions(input({ items: [item({ custom_name: "Wizard's Staff" })] }))
+  it('asks only about a written-in item the catalogue can nearly name', () => {
+    // An exact hit on the alias table is the rules speaking, so ./fixups.ts applies it silently.
+    expect(importQuestions(input({ items: [item({ custom_name: "Wizard's Staff" })] }))).toEqual([])
+    expect(importQuestions(input({ items: [item({ custom_name: 'Staff' })] }))).toEqual([])
+
+    // "Cooking pot (counts as a Helmet)" too: the qualifier is part of the alias.
+    expect(importQuestions(input({ items: [item({ custom_name: 'Cooking pot (counts as a Helmet)' })] }))).toEqual([])
+
+    // A name the alias table misses but the catalogue nearly matches is a judgement call, so it is asked.
+    const q = importQuestions(input({ items: [item({ custom_name: 'Elven Runeston' })] }))
     expect(q).toHaveLength(1)
-    expect(q[0]).toMatchObject({ kind: 'customItem', title: "Wizard's Staff" })
+    expect(q[0]).toMatchObject({ kind: 'customItem', title: 'Elven Runeston' })
     expect(q[0].detail).toContain('Nephanis')
-    expect(q[0].options[0].label).toBe("Use Wizard's Staff")
-    expect(q[0].options[0].changes).toEqual([{ table: 'items', op: 'update', id: 'i1', data: { item_rules_id: 'wizards_staff', custom_name: null } }])
+    expect(q[0].options[0].label).toBe('Use Elven Runestones')
+    expect(q[0].options[0].changes).toEqual([{ table: 'items', op: 'update', id: 'i1', data: { item_rules_id: 'elven_runestones', custom_name: null } }])
     expect(q[0].options[1].changes).toEqual([])
-    // The old tracker's qualifier is stripped: "Cooking pot (counts as a Helmet)" is the Cooking Pot Helmet.
-    const pot = importQuestions(input({ items: [item({ custom_name: 'Cooking pot (counts as a Helmet)' })] }))
-    expect(pot[0]?.options[0].label).toBe('Use Cooking Pot Helmet')
+
     // Nothing to say about a custom line the catalogue still cannot name.
     expect(importQuestions(input({ items: [item({ custom_name: "Hunter's cloak" })] }))).toEqual([])
   })

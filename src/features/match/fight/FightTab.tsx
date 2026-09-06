@@ -2,17 +2,18 @@
 // this phase of attacks, then (optionally) walk real dice through it step by step. An out of
 // action result can be logged straight to the attacker's "Enemies out" tally.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleLiveState } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
 import { findSkill } from '../../../rules/data/skills'
+import { findItem } from '../../../rules/data/items'
 import { findWarbandSkill } from '../../../rules/data/campaign/warbandSkills'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DicePicker, HoverCard, Notice, RollResult, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
+import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet, Spinner, Stepper, type IconName } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
@@ -105,6 +106,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
+  // The roll-through lives in a sheet the dice button opens, rather than a slab down the page.
+  const [rolling, setRolling] = useState(false)
 
   // Carry-over between fights: the target's remaining Wounds (their sheet, or what we saw happen here),
   // whether their one parry this turn is spent, and how many of the attacker's attacks go at them.
@@ -169,155 +172,162 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
 
   return (
     <>
-      <Section title="Attacker">
-        <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => setAttackerId(e.target.value)}>
-          {mine.map((c) => (
-            <option key={c.id} value={c.id}>
-              {combatantLabel(c)}
-              {c.out ? ' (out of action)' : ''}
-            </option>
-          ))}
-        </SelectField>
-        {attacker && attackerKit ? <CombatantLine c={attacker} kit={attackerKit} /> : null}
-        {attacker && attackerKit && attackerKit.consumables.length > 0 ? (
-          <fieldset className="flex min-w-0 flex-col gap-1 rounded-md border border-border bg-surface-low px-3 py-2">
-            <legend className="px-1 text-xs uppercase tracking-wider text-ink-dim">Taken or applied this battle</legend>
-            {attackerKit.consumables.map((c) => {
-              const on = usedIds.includes(c.itemId)
-              return (
-                <label key={c.itemId} className="flex min-h-11 items-start gap-3 py-1 text-sm text-ink">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-5 w-5 shrink-0 accent-brass"
-                    checked={on}
-                    disabled={readOnly || !edit}
-                    onChange={(e) => edit?.((s) => setItemUsed(s, attacker.id, c.itemId, e.target.checked))}
-                  />
-                  <span>
-                    {c.effect.label} <span className="text-ink-dim">({c.name})</span>
-                    {c.effect.note ? <span className="block text-xs text-ink-dim">{c.effect.note}</span> : null}
-                    <span className="block text-xs text-ink-dim">Marked items are used up when the report is filed.</span>
-                  </span>
-                </label>
-              )
-            })}
-          </fieldset>
-        ) : null}
-      </Section>
-
-      <Section title="Target">
-        {enemies.isPending && targets.length === 0 ? (
-          <div className="flex justify-center py-4">
-            <Spinner label="Loading the enemy rosters" />
-          </div>
-        ) : null}
-        {enemies.error ? <Notice tone="error">{enemies.error}</Notice> : null}
-        {!enemies.isPending && targets.length === 0 ? <p className="text-sm text-ink-dim">No enemy models to pick from.</p> : null}
-        {targets.length > 0 ? (
-          <SelectField label="Enemy model" hideLabel value={defender?.id ?? ''} onChange={(e) => setDefenderId(e.target.value)}>
-            {enemies.warbands.map((w) => (
-              <optgroup key={w.participant.warband_id} label={w.participant.warband_name}>
-                {targets
-                  .filter((c) => c.warbandId === w.roster.id)
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {combatantLabel(c)}
-                      {c.out ? ' (out of action)' : ''}
-                    </option>
-                  ))}
-              </optgroup>
+      {/* Attacker and defender face each other, with the dice between them. */}
+      <div className="relative grid grid-cols-2 items-start gap-3 lg:gap-8">
+        <FightBox icon="battle" title="Attacker" tone="brass">
+          <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => setAttackerId(e.target.value)}>
+            {mine.map((c) => (
+              <option key={c.id} value={c.id}>
+                {combatantLabel(c)}
+                {c.out ? ' (out of action)' : ''}
+              </option>
             ))}
           </SelectField>
-        ) : null}
-        {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending /> : null}
-        {defender && (defender.stats.W > 1 || odds?.parryAttempts || parryUsed || targetMemory?.worst?.turn === sheet.turn) ? (
-          <Card className="flex flex-col gap-3 px-4 py-3">
-            {defender.stats.W > 1 ? (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wider text-ink-dim">Wounds already lost</span>
-                  <span className="text-xs text-ink-dim">
-                    {defender.stats.W - woundsAlreadyLost} of {defender.stats.W} left
-                    {defender.woundsLost > 0 ? ' · from their sheet' : targetMemory && targetMemory.woundsLost > 0 ? ' · from earlier fights here' : ''}
-                  </span>
-                </div>
-                <Stepper value={woundsAlreadyLost} onChange={(v) => setWoundsOverride({ id: defender.id, value: v })} label={`wounds already lost by ${defender.name}`} max={defender.stats.W} />
-              </div>
-            ) : null}
-            {odds?.parryAttempts || parryUsed ? (
-              <label className="flex min-h-11 items-center gap-3 text-sm text-ink">
-                <input type="checkbox" className="h-5 w-5 shrink-0 accent-brass" checked={parryUsed} onChange={(e) => setParryOverride({ id: defender.id, turn: sheet.turn, used: e.target.checked })} />
-                <span>
-                  Parry already used this turn
-                  <span className="block text-xs text-ink-dim">One parry per turn, whoever attacks. Resets when the turn counter moves.</span>
-                </span>
-              </label>
-            ) : null}
-            {targetMemory?.worst && targetMemory.worst.turn === sheet.turn ? (
-              <p className="text-xs text-ink-dim">
-                Earlier this turn: {targetMemory.worst.label.toLowerCase()}. If this fight ends worse, the worse result stands.
-              </p>
-            ) : null}
-          </Card>
-        ) : null}
-      </Section>
+          {attacker && attackerKit ? <CombatantLine c={attacker} kit={attackerKit} compact /> : null}
 
-      {attacker && current && primary ? (
-        <Section title="Weapon">
-          <SegmentedControl
-            label="Weapon"
-            options={weapons.map((_, i) => ({ value: String(i), label: weaponLabel(weapons, i) }))}
-            value={String(current.primary)}
-            onChange={(v) => {
-              const index = Number(v)
-              const next = weapons[index]
-              const off = next.type === 'melee' ? defaultOffHand(melee, next) : null
-              setChoice({ attackerId: attacker.id, primary: index, offHand: off ? melee.indexOf(off) : -1 })
-            }}
-          />
-          {primary.type === 'melee' && offHandOptions.length > 0 ? (
-            <SelectField
-              label="Other hand"
-              value={offHandValid && offHand ? String(melee.indexOf(offHand)) : '-1'}
-              onChange={(e) => setChoice({ ...current, offHand: Number(e.target.value) })}
-              hint="A second hand weapon gives one extra attack."
-            >
-              <option value="-1">Nothing (one weapon)</option>
-              {offHandOptions.map((w) => (
-                <option key={melee.indexOf(w)} value={String(melee.indexOf(w))}>
-                  {w.name}
-                </option>
+          {attacker && current && primary ? (
+            <>
+              <SelectField
+                label="Weapon"
+                value={String(current.primary)}
+                onChange={(e) => {
+                  const index = Number(e.target.value)
+                  const next = weapons[index]
+                  const off = next.type === 'melee' ? defaultOffHand(melee, next) : null
+                  setChoice({ attackerId: attacker.id, primary: index, offHand: off ? melee.indexOf(off) : -1 })
+                }}
+              >
+                {weapons.map((_, i) => (
+                  <option key={i} value={String(i)}>
+                    {weaponLabel(weapons, i)}
+                  </option>
+                ))}
+              </SelectField>
+              {primary.type === 'melee' && offHandOptions.length > 0 ? (
+                <SelectField label="Other hand" value={offHandValid && offHand ? String(melee.indexOf(offHand)) : '-1'} onChange={(e) => setChoice({ ...current, offHand: Number(e.target.value) })}>
+                  <option value="-1">Nothing</option>
+                  {offHandOptions.map((w) => (
+                    <option key={melee.indexOf(w)} value={String(melee.indexOf(w))}>
+                      {w.name}
+                    </option>
+                  ))}
+                </SelectField>
+              ) : null}
+              {odds && odds.fullAttacks > 1 ? (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs text-ink-dim">Attacks here</span>
+                  <Stepper value={odds.attacks} onChange={(v) => setAttackLimitChoice({ key: attackKey, value: v })} label={`attacks at ${defender?.name ?? 'the target'}`} min={1} max={odds.fullAttacks} />
+                </div>
+              ) : null}
+              {toggleList.length > 0 ? (
+                <fieldset className="flex min-w-0 flex-col gap-0.5">
+                  <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Situation</legend>
+                  {toggleList.map((t) => (
+                    <label key={t.field} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={t.hint}>
+                      <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" checked={toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => setToggles((s) => ({ ...s, [t.field]: e.target.checked }))} />
+                      <span>{t.label}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              ) : null}
+            </>
+          ) : null}
+
+          {attacker && attackerKit && attackerKit.consumables.length > 0 ? (
+            <fieldset className="flex min-w-0 flex-col gap-0.5">
+              <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Taken this battle</legend>
+              {attackerKit.consumables.map((c) => {
+                const on = usedIds.includes(c.itemId)
+                return (
+                  <label key={c.itemId} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={c.effect.note ?? c.name}>
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-brass"
+                      checked={on}
+                      disabled={readOnly || !edit}
+                      onChange={(e) => edit?.((s) => setItemUsed(s, attacker.id, c.itemId, e.target.checked))}
+                    />
+                    <span>{c.effect.label}</span>
+                  </label>
+                )
+              })}
+            </fieldset>
+          ) : null}
+        </FightBox>
+
+
+        <FightBox icon="shield" title="Defender" tone="accent">
+          {enemies.isPending && targets.length === 0 ? (
+            <div className="flex justify-center py-3">
+              <Spinner label="Loading the enemy rosters" />
+            </div>
+          ) : null}
+          {enemies.error ? <Notice tone="error">{enemies.error}</Notice> : null}
+          {!enemies.isPending && targets.length === 0 ? <p className="text-xs text-ink-dim">No enemy models to pick from.</p> : null}
+          {targets.length > 0 ? (
+            <SelectField label="Enemy model" hideLabel value={defender?.id ?? ''} onChange={(e) => setDefenderId(e.target.value)}>
+              {enemies.warbands.map((w) => (
+                <optgroup key={w.participant.warband_id} label={w.participant.warband_name}>
+                  {targets
+                    .filter((c) => c.warbandId === w.roster.id)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {combatantLabel(c)}
+                        {c.out ? ' (out of action)' : ''}
+                      </option>
+                    ))}
+                </optgroup>
               ))}
             </SelectField>
           ) : null}
-          {odds && odds.fullAttacks > 1 ? (
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-ink-dim">Attacks at this target</span>
-                <span className="text-xs text-ink-dim">Fighting more than one enemy? Split the {odds.fullAttacks} attacks as you like.</span>
-              </div>
-              <Stepper value={odds.attacks} onChange={(v) => setAttackLimitChoice({ key: attackKey, value: v })} label={`attacks at ${defender?.name ?? 'the target'}`} min={1} max={odds.fullAttacks} />
+          {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
+          {defender && defender.stats.W > 1 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-ink-dim">
+                Wounds lost
+                <span className="block text-[10px]">
+                  {defender.stats.W - woundsAlreadyLost} of {defender.stats.W} left
+                </span>
+              </span>
+              <Stepper value={woundsAlreadyLost} onChange={(v) => setWoundsOverride({ id: defender.id, value: v })} label={`wounds already lost by ${defender.name}`} max={defender.stats.W} />
             </div>
           ) : null}
-          {toggleList.length > 0 ? (
-            <fieldset className="flex min-w-0 flex-col gap-1">
-              <legend className="mb-1 text-sm font-medium text-ink-dim">Situation</legend>
-              {toggleList.map((t) => (
-                <label key={t.field} className="flex min-h-11 items-start gap-3 py-1 text-sm text-ink">
-                  <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => setToggles((s) => ({ ...s, [t.field]: e.target.checked }))} />
-                  <span>
-                    {t.label}
-                    {t.hint ? <span className="block text-xs text-ink-dim">{t.hint}</span> : null}
-                  </span>
-                </label>
-              ))}
-            </fieldset>
+          {defender && (odds?.parryAttempts || parryUsed) ? (
+            <label className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title="One parry per turn, whoever attacks. Resets when the turn counter moves.">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" checked={parryUsed} onChange={(e) => setParryOverride({ id: defender.id, turn: sheet.turn, used: e.target.checked })} />
+              <span>Parry used this turn</span>
+            </label>
           ) : null}
-        </Section>
-      ) : null}
+          {defender && targetMemory?.worst && targetMemory.worst.turn === sheet.turn ? (
+            <p className="text-[10px] leading-snug text-ink-dim">Earlier this turn: {targetMemory.worst.label.toLowerCase()}. A worse result stands.</p>
+          ) : null}
+        </FightBox>
+
+        {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
+        <button
+          type="button"
+          disabled={!odds || !attacker || !defender || odds.attacks < 1}
+          onClick={() => setRolling(true)}
+          aria-label="Roll it through"
+          className="absolute left-1/2 top-8 z-10 flex size-12 -translate-x-1/2 items-center justify-center rounded-full border-2 border-brass bg-surface text-brass shadow-[0_2px_6px_rgba(36,31,26,0.18)] transition-colors hover:bg-brass/15 disabled:opacity-40"
+        >
+          <Icon name="dice" size={24} />
+        </button>
+      </div>
 
       {odds && attacker && defender ? (
         <>
+          <Sheet
+            open={rolling}
+            onClose={() => setRolling(false)}
+            title={`${attacker.name} attacks ${defender.name}`}
+            description={`${odds.attacks === 1 ? '1 attack' : `${odds.attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
+            footer={
+              <Button variant="secondary" block onClick={() => setRolling(false)}>
+                Close
+              </Button>
+            }
+          >
           <RollSection
             key={`${attackKey}:${JSON.stringify(context)}`}
             odds={odds}
@@ -362,6 +372,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             }
             onFinished={rememberFight}
           />
+          </Sheet>
           <OddsSection odds={odds} attacker={attacker} defender={defender} />
         </>
       ) : null}
@@ -388,16 +399,21 @@ function armourText(kit: Loadout): string {
   return parts.length > 0 ? parts.join(', ') : 'no armour'
 }
 
-function CombatantLine({ c, kit, defending = false }: { c: Combatant; kit: Loadout; defending?: boolean }) {
+function CombatantLine({ c, kit, defending = false, compact = false }: { c: Combatant; kit: Loadout; defending?: boolean; compact?: boolean }) {
   const s = c.stats
   const line = defending ? `WS ${s.WS} · T ${s.T} · W ${s.W}` : `WS ${s.WS} · BS ${s.BS} · S ${s.S} · A ${s.A}`
   return (
-    <Card className="flex flex-col gap-1 px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <span className="text-sm text-ink">{c.typeName}</span>
-        <span className="text-sm tabular-nums text-ink">{line}</span>
+    <Card className={`flex min-w-0 flex-col gap-1 ${compact ? 'px-2 py-2' : 'px-4 py-3'}`}>
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className={`min-w-0 ${compact ? 'text-xs' : 'text-sm'} text-ink`}>{c.typeName}</span>
+        <span className={`${compact ? 'text-xs' : 'text-sm'} tabular-nums text-ink`}>{line}</span>
       </div>
-      <ItemLines items={c.equipment} emptyText="No equipment" />
+      {/* In a narrow column the kit is a list of names; the roster tabs carry the full lines. */}
+      {compact ? (
+        <p className="text-xs leading-snug text-ink-dim">{kitNames(c) || 'No equipment'}</p>
+      ) : (
+        <ItemLines items={c.equipment} emptyText="No equipment" />
+      )}
       <p className="text-xs text-ink-dim">{armourText(kit)}</p>
       {c.traitIds.length > 0 || c.skillIds.length > 0 ? (
         <div className="flex flex-wrap gap-1">
@@ -408,9 +424,7 @@ function CombatantLine({ c, kit, defending = false }: { c: Combatant; kit: Loado
                 key={id}
                 title={trait?.name ?? tidyId(id)}
                 label={
-                  <Tag tone="neutral">
-                    <span className="border-b border-dotted border-current">{trait?.name ?? tidyId(id)}</span>
-                  </Tag>
+                  <Tag tone="neutral">{trait?.name ?? tidyId(id)}</Tag>
                 }
               >
                 {trait?.description ?? 'No rules text for this trait.'}
@@ -425,9 +439,7 @@ function CombatantLine({ c, kit, defending = false }: { c: Combatant; kit: Loado
                 key={id}
                 title={skill?.name ?? tidyId(id)}
                 label={
-                  <Tag tone="brass">
-                    <span className="border-b border-dotted border-current">{skill?.name ?? tidyId(id)}</span>
-                  </Tag>
+                  <Tag tone="brass">{skill?.name ?? tidyId(id)}</Tag>
                 }
               >
                 {text ?? 'No rules text for this skill.'}
@@ -610,6 +622,13 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
   }
 
   // Stepping happens outside setState: an updater must be pure, and a phase must only finish once.
+  // The sheet is opened in order to roll, so the first step is already waiting when it appears.
+  useEffect(() => {
+    if (odds.attacks > 0) start()
+    // Mounted fresh for each fight (the caller keys it), so this runs once per attack.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function advance(step: (s: RollState) => RollState, rolled?: { value: number; label: string }) {
     const current = stateRef.current
     if (!current) return
@@ -622,20 +641,12 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     if (next.done && !current.done) onFinished(next)
   }
 
-  const canRoll = odds.attacks > 0
   return (
-    <Section title="Roll it through" aside={state ? `${state.outcomes.length} of ${state.plans.length} rolled` : undefined}>
+    <div className="flex flex-col gap-3 py-1" aria-label={state ? `${state.outcomes.length} of ${state.plans.length} rolled` : undefined}>
       {!state ? (
-        <Card className="flex flex-col gap-3 px-4 py-4">
-          <p className="text-sm text-ink-dim">
-            Roll your dice (or tap Roll) one step at a time: to hit, parry, to wound, criticals, saves and injury. The result can be logged to your tally.
-          </p>
-          <Button variant="secondary" block disabled={!canRoll} onClick={start}>
-            Start rolling
-          </Button>
-        </Card>
+        <p className="text-sm text-ink-dim">Nothing to roll: this warrior has no attacks against that target.</p>
       ) : (
-        <Card className="flex flex-col gap-3 px-4 py-4">
+        <div className="flex flex-col gap-3">
           {shown ? <RollResult dice={[shown.value]} headline={shown.label} detail={shown.text} tone={shown.tone} /> : null}
           {state.pending ? (
             <div className={`flex flex-col gap-2 rounded-md border px-3 py-3 ${state.pending.who === 'defender' ? 'border-accent/60 bg-accent/5' : 'border-brass/50 bg-surface-low'}`}>
@@ -737,15 +748,36 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
             block
             onClick={() => {
               stateRef.current = null
-              setState(null)
               setShown(null)
+              start()
             }}
           >
-            {state.done ? 'Start again' : 'Abandon these rolls'}
+            Start again
           </Button>
-        </Card>
+        </div>
       )}
-    </Section>
+    </div>
+  )
+}
+
+/** Just the names of what a warrior carries, for the narrow fight boxes. */
+function kitNames(c: Combatant): string {
+  return c.equipment
+    .map((e) => (e.itemId ? (findItem(e.itemId)?.name ?? e.itemId) : (e.customName ?? '')))
+    .filter(Boolean)
+    .join(', ')
+}
+
+/** One side of the fight: a headed box so the two read as facing each other on a phone. */
+function FightBox({ icon, title, tone, children }: { icon: IconName; title: string; tone: 'brass' | 'accent'; children: ReactNode }) {
+  return (
+    <section className={`flex min-w-0 flex-col gap-2 rounded-md border bg-surface-low px-2.5 py-2.5 ${tone === 'brass' ? 'border-brass/50' : 'border-accent/50'}`}>
+      <h3 className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${tone === 'brass' ? 'text-brass' : 'text-accent'}`}>
+        <Icon name={icon} size={14} />
+        {title}
+      </h3>
+      {children}
+    </section>
   )
 }
 

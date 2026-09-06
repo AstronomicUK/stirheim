@@ -1,7 +1,10 @@
 // GENERATED from reference/rules/06-scenarios.md via the scraped scenario details.
 // What a scenario yields during the battle itself: the verbatim Wyrdstone section where it has one,
-// and whether its rules place treasure or loot counters. A scenario missing from this map yields
-// neither — wyrdstone still comes from exploration afterwards, which is a different screen.
+// and whether its rules place treasure or loot counters.
+//
+// KNOWN lists every scenario the catalogue carries, so a scenario that yields nothing (a Skirmish)
+// is told apart from one the app has never heard of (something your group wrote). Only the first
+// should have its wyrdstone and loot fields hidden; the second gets both, since the app cannot say.
 //
 // Regenerate rather than hand-edit: the scenario details are too large to ship to the battle sheet,
 // so this is the slice of them the sheet needs.
@@ -39,12 +42,116 @@ const OBJECTIVES: Record<string, ScenarioObjectives> = {
   wyrdstone_hunt: { wyrdstone: "Your warriors earn one shard of wyrdstone for each counter still in their possession at the end of the battle. ![](/assets/images/scenario-3-7ee356af5ba18971636a5a628ad19292.jpg)", treasure: false },
 };
 
-/** What this scenario yields during the battle. Unknown ids (custom scenarios) yield neither. */
+const KNOWN = new Set<string>([
+  "a_night_in_the_graveyard",
+  "a_stroll_in_the_garden",
+  "ambush",
+  "ambush_archive_pestilen",
+  "ambush_archive_pestilen_michael_reuvers",
+  "assault_on_the_rock",
+  "bar_room_brawl",
+  "battle_for_the_farm",
+  "blood_hunt",
+  "blood_on_the_pasturelands",
+  "bounty_hunting",
+  "breakthrough",
+  "breakthrough_archive_pestilen",
+  "brigands_in_the_pasturelands",
+  "burn_the_witches",
+  "chance_encounter",
+  "death_in_the_mists",
+  "defend_the_find",
+  "defend_the_oasis",
+  "defend_the_village",
+  "don_t_wake_the_giant",
+  "down_at_the_docks",
+  "encampment_raid",
+  "finders_keepers",
+  "forbidden_square",
+  "gathering_of_the_horde",
+  "gift_of_the_truthsayers",
+  "grudge_match",
+  "happy_harpy_hunting_grounds",
+  "haunted_treasure",
+  "haunted_treasure_archive_pestilen",
+  "hidden_treasure",
+  "hunt_the_heretic",
+  "in_the_dead_of_the_night",
+  "island_hopping",
+  "it_s_all_mine",
+  "jungle_skirmish_the_fog_of_war",
+  "kidnapped",
+  "lost_in_the_bogs",
+  "lost_temple_of_the_slann",
+  "monster_hunt",
+  "mordheim_s_burning",
+  "mule_train",
+  "night_of_the_dead",
+  "occupy",
+  "one_man_s_rescue_is_another_man_s_kidnap",
+  "protect_hornsby_s_ferry",
+  "protect_the_prince",
+  "raid",
+  "raids",
+  "rat_attack",
+  "rawhide",
+  "rescue",
+  "river_watch",
+  "romero_s_pride",
+  "round_up_at_the_mordheim_corral",
+  "scourge_and_purge",
+  "scourge_and_purge_archive_pestilen",
+  "scripts_of_sigmar",
+  "skirmish",
+  "stagecoash_ambush",
+  "stake_out",
+  "stop_thief",
+  "street_brawl",
+  "street_fight",
+  "surprise_attack",
+  "surrounded",
+  "that_s_all_mine",
+  "the_battle_at_koleshire_keep",
+  "the_bodyguards",
+  "the_caravan",
+  "the_caravan_archive_pestilen",
+  "the_forbidden_square",
+  "the_frenzied_mob",
+  "the_gauntlet",
+  "the_hunters_become_the_hunted",
+  "the_item_lost",
+  "the_lair_of_the_snake",
+  "the_lost_prince",
+  "the_mummy",
+  "the_night_of_the_headless_one",
+  "the_ogham_stones",
+  "the_pool",
+  "the_rat_s_lair",
+  "the_recipe",
+  "the_restless_dead",
+  "the_script_of_sigmar",
+  "the_secrets_of_beujuntae",
+  "the_square_of_the_snake",
+  "the_sword_of_the_herald",
+  "the_thing_in_the_woods",
+  "the_watchers",
+  "the_watchtower",
+  "the_wizard_s_mansion",
+  "the_wizard_s_tower",
+  "through_black_fire_pass",
+  "tomb_raid",
+  "treasure_hunt",
+  "upon_the_eerie_downs",
+  "wolf_hunt",
+  "wyrdstone_hunt",
+]);
+
+/** What this scenario yields during the battle. A scenario with no entry yields neither. */
 export function scenarioObjectives(scenarioId: string | null | undefined): ScenarioObjectives {
   return (scenarioId ? OBJECTIVES[scenarioId] : undefined) ?? { wyrdstone: null, treasure: false };
 }
 
-/** Whether the catalogue knows this scenario at all: a custom one should not be second-guessed. */
+/** Whether the catalogue carries this scenario's rules at all. */
 export function scenarioIsKnown(scenarioId: string | null | undefined): boolean {
-  return Boolean(scenarioId && scenarioId in OBJECTIVES);
+  return Boolean(scenarioId && KNOWN.has(scenarioId));
 }

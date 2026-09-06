@@ -48,7 +48,8 @@ test.describe('match', () => {
     matchId = page.url().split('/').pop()!
 
     await expect(page.getByRole('heading', { name: SCENARIO })).toBeVisible()
-    await expect(page.getByText(`${REIKLAND_WATCH.name} vs ${CLAWS_OF_ESHIN.name}`)).toBeVisible()
+    // The pairing is a tag per warband rather than one sentence, so a long name cannot run off a phone.
+    for (const w of [REIKLAND_WATCH, CLAWS_OF_ESHIN]) await expect(page.getByText(w.name, { exact: true }).first()).toBeVisible()
     await expect(page.getByText('Scheduled', { exact: true })).toBeVisible()
   })
 
@@ -68,7 +69,8 @@ test.describe('match', () => {
     await page.getByRole('button', { name: 'Attack', exact: false }).first().click()
     await expect(page.getByText('2 attacks this phase')).toBeVisible()
     await expect(page.getByText('At least one hit').locator('xpath=following-sibling::span')).toHaveText('75%')
-    await page.getByRole('button', { name: 'Start rolling' }).click()
+    // Rolling happens in a sheet the dice button opens, with the first step already waiting.
+    await page.getByRole('button', { name: 'Roll it through' }).click()
     await rollDie(page, 'Sword: to hit', 4)
     await page.getByRole('button', { name: 'No parry' }).click()
     await rollDie(page, 'To wound', 4)
@@ -76,6 +78,7 @@ test.describe('match', () => {
     await expect(page.getByRole('status').filter({ hasText: 'Result: Out of action' })).toBeVisible()
     await page.getByRole('button', { name: 'Log to both sheets' }).click()
     await expect(page.getByRole('button', { name: 'Logged to both sheets' })).toBeDisabled()
+    await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).last().click()
 
     // The shared log lists it, and back on "My warband" the kill sits on the captain's counter; one Watchman goes down by hand.
     await page.getByRole('button', { name: 'Log', exact: false }).first().click()

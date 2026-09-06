@@ -21,6 +21,8 @@ export interface CritWheelProps {
 const SPINS = 2
 const TICK_START = 55
 const TICK_END = 300
+/** The landed row is held and flashed before the step moves on, so the result is read. */
+const SETTLE_MS = 1100
 
 export function CritWheel({ table, rollModifier, onSettled, tableName, disabled = false }: CritWheelProps) {
   const rows = critRows(table)
@@ -50,7 +52,7 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     if (reduced) {
       setCursor(target)
-      onSettled(value)
+      timers.current.push(window.setTimeout(() => onSettled(value), 400))
       return
     }
     setSpinning(true)
@@ -64,13 +66,12 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
       timers.current.push(
         window.setTimeout(() => {
           setCursor(last ? target : index)
-          if (last) {
-            setSpinning(false)
-            onSettled(value)
-          }
+          if (last) setSpinning(false)
         }, at),
       )
     }
+    // Hold on the answer before handing back, so the row that came up is actually read.
+    timers.current.push(window.setTimeout(() => onSettled(value), at + SETTLE_MS))
   }
 
   const settled = !spinning && cursor !== null
@@ -93,7 +94,7 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
           return (
             <li
               key={row.faces}
-              className={`flex items-start gap-3 px-3 py-2 transition-colors ${done ? 'bg-accent text-surface-low' : on ? 'bg-brass/25 text-ink' : 'text-ink-dim'}`}
+              className={`flex items-start gap-3 px-3 py-2 transition-colors ${done ? 'stirheim-land-row bg-accent text-surface-low' : on ? 'bg-brass/25 text-ink' : 'text-ink-dim'}`}
             >
               <span className={`w-9 shrink-0 text-xs tabular-nums ${done ? 'text-surface-low/80' : 'text-ink-dim'}`}>{row.faces}</span>
               <span className="min-w-0">
@@ -107,7 +108,9 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
 
       {settled && face !== null ? (
         <div className="flex items-center gap-3 rounded-md border border-accent/60 bg-accent/5 px-3 py-2.5" role="status">
-          <DieFace value={face} size={34} tone="bad" />
+          <span className="stirheim-land inline-flex">
+            <DieFace value={face} size={34} tone="bad" />
+          </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-ink">{rows[cursor]?.result.label}</span>
             <span className="block text-xs leading-relaxed text-ink-dim">{rows[cursor] ? describeCrit(rows[cursor].result) : ''}</span>

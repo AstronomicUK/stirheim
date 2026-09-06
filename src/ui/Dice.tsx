@@ -99,6 +99,8 @@ export interface DicePickerProps {
 
 const TUMBLE_MS = 620
 const TICK_MS = 70
+/** How long the settled face is held before the caller is told, so the result is seen. */
+const SETTLE_MS = 780
 
 /**
  * Ask for a roll. Each die is a row of six tappable faces, or the player hits Roll and watches it
@@ -113,6 +115,8 @@ export function DicePicker({ resetKey, ...rest }: DicePickerProps) {
 function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, rollable = true, className = '' }: Omit<DicePickerProps, 'resetKey'>) {
   const [values, setValues] = useState<(number | null)[]>(() => Array<number | null>(count).fill(null))
   const [tumbling, setTumbling] = useState<number[] | null>(null)
+  // The faces that just came up, held and flashed before the step moves on.
+  const [landed, setLanded] = useState<number[] | null>(null)
   const timers = useRef<number[]>([])
   // Mirrors `values` so two taps landing in the same frame do not both read the pre-tap array.
   const latest = useRef<(number | null)[]>(Array<number | null>(count).fill(null))
@@ -157,8 +161,14 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
     timers.current.push(
       window.setTimeout(() => {
         setTumbling(null)
-        settle(result)
+        setLanded(result)
       }, TUMBLE_MS),
+    )
+    timers.current.push(
+      window.setTimeout(() => {
+        setLanded(null)
+        settle(result)
+      }, TUMBLE_MS + SETTLE_MS),
     )
   }
 
@@ -166,7 +176,7 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
   return (
     <div className={`flex flex-col gap-2 ${className}`} role="group" aria-label={label}>
       {Array.from({ length: count }, (_, die) => {
-        const chosen = tumbling ? tumbling[die] : values[die]
+        const chosen = tumbling ? tumbling[die] : (landed?.[die] ?? values[die])
         return (
           <div key={die} className="flex flex-wrap items-center gap-1.5">
             {count > 1 ? <span className="w-10 text-[10px] uppercase tracking-wide text-ink-dim">Die {die + 1}</span> : null}
@@ -176,11 +186,11 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
                 <button
                   key={face}
                   type="button"
-                  disabled={disabled || tumbling !== null}
+                  disabled={disabled || tumbling !== null || landed !== null}
                   aria-label={count > 1 ? `${label}: die ${die + 1}, ${face}` : `${label}: ${face}`}
                   aria-pressed={active}
                   onClick={() => set(die, face)}
-                  className={`rounded-[22%] transition-transform disabled:cursor-default ${active ? 'scale-105' : 'opacity-60 hover:opacity-100'}`}
+                  className={`rounded-[22%] transition-transform disabled:cursor-default ${active ? (landed ? 'stirheim-land' : 'scale-105') : 'opacity-60 hover:opacity-100'}`}
                 >
                   <DieFace value={face} size={38} tone={active ? 'brass' : 'plain'} rolling={tumbling !== null} />
                 </button>
@@ -193,11 +203,11 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
         <div>
           <button
             type="button"
-            disabled={disabled || tumbling !== null}
+            disabled={disabled || tumbling !== null || landed !== null}
             onClick={rollAll}
             className="min-h-9 rounded-md border border-brass bg-brass/10 px-3 text-sm font-semibold text-brass hover:bg-brass/20 disabled:opacity-60"
           >
-            {tumbling ? 'Rolling…' : count > 1 ? `Roll ${count}D${sides}` : `Roll D${sides}`}
+            {tumbling ? 'Rolling…' : landed ? 'Rolled!' : count > 1 ? `Roll ${count}D${sides}` : `Roll D${sides}`}
           </button>
         </div>
       ) : null}

@@ -6,26 +6,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUpdateRoster, type WarbandDetail } from '../../../api/warbands'
 import { Notice } from '../../../ui'
-import { describeFixup, fixupChanges, planHeroFixup, type HeroFixup } from '../../importer/fixups'
+import { describeFixup, fixupChanges, itemFixupChanges, planHeroFixup, type HeroFixup } from '../../importer/fixups'
 
 export function ImportFixups({ detail, canEdit }: { detail: WarbandDetail; canEdit: boolean }) {
   const update = useUpdateRoster(detail.warband.id)
   const fixups = useMemo(() => detail.heroes.map(planHeroFixup).filter((f): f is HeroFixup => f !== null), [detail.heroes])
+  // Written-in items the alias table can name outright: the rules have already decided, so they
+  // are matched rather than asked about.
+  const itemChanges = useMemo(() => itemFixupChanges(detail.items), [detail.items])
   const ran = useRef(false)
   const [applied, setApplied] = useState<string[] | null>(null)
 
   useEffect(() => {
-    if (!canEdit || ran.current || fixups.length === 0) return
+    if (!canEdit || ran.current || (fixups.length === 0 && itemChanges.length === 0)) return
     ran.current = true
-    const lines = fixups.map(describeFixup)
+    const lines = [...fixups.map(describeFixup), ...(itemChanges.length ? [`${itemChanges.length} written-in ${itemChanges.length === 1 ? 'item' : 'items'} matched to the catalogue`] : [])]
     update
-      .mutateAsync({ reason: 'import_fixup', changes: fixupChanges(fixups, detail.heroes) })
+      .mutateAsync({ reason: 'import_fixup', changes: [...fixupChanges(fixups, detail.heroes), ...itemChanges] })
       .then(() => setApplied(lines))
       .catch(() => {
         // Left as it was; the notes still list the names, and the next visit tries again.
         ran.current = false
       })
-  }, [canEdit, fixups, detail.heroes, update])
+  }, [canEdit, fixups, itemChanges, detail.heroes, update])
 
   if (!applied) return null
   return (

@@ -13,11 +13,10 @@ import { SPELL_LORES } from '../../rules/data/campaign/magic'
 import { WARBAND_SKILL_TABLES } from '../../rules/data/campaign/warbandSkills'
 import { findHiredSword } from '../../rules/data/campaign/hiredSwords'
 import { ITEMS } from '../../rules/data/items'
-import { resolveEquipmentName } from '../../rules/data/items/aliases'
 import { findUnitTemplate, findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { unitStartingStats } from '../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../rules/types'
-import { unmatchedNames } from './fixups'
+import { namedByCatalogue, stripQualifier, unmatchedNames } from './fixups'
 import { matchSkillOrSpell, normaliseName } from './rosterImport'
 
 export interface ImportQuestionOption {
@@ -44,11 +43,6 @@ export interface QuestionInput {
   heroes: HeroRow[]
   groups: HenchmanGroupRow[]
   items: ItemRow[]
-}
-
-/** "Cooking pot (counts as a Helmet)" -> "Cooking pot": the old tracker's parenthetical. */
-function stripQualifier(name: string): string {
-  return name.replace(/\s*\([^)]*\)\s*$/, '').trim()
 }
 
 /** A candidate whose name starts with, or is started by, the written name: "Flight Of Zim" -> "Flight of Zimmeran". */
@@ -92,18 +86,18 @@ export function importQuestions(input: QuestionInput): ImportQuestion[] {
     return list.find((h) => h.id === item.holder_id)?.name ?? 'a warrior'
   }
 
-  // 1. Custom items that the catalogue can now name, exactly or near enough to be worth asking.
+  // 1. Custom items the catalogue can nearly name. An exact hit on the alias table is not a
+  //    judgement call and is applied silently by ./fixups.ts, so only near misses are asked about.
   for (const item of input.items) {
     if (item.item_rules_id !== null || !item.custom_name) continue
-    const exact = resolveEquipmentName(item.custom_name)
-    const near = exact ? undefined : closestByPrefix(stripQualifier(item.custom_name), ITEMS, (i) => i.name)
-    const match = exact ?? near
+    if (namedByCatalogue(item.custom_name)) continue
+    const match = closestByPrefix(stripQualifier(item.custom_name), ITEMS, (i) => i.name)
     if (!match) continue
     out.push({
       id: `item:${item.id}`,
       kind: 'customItem',
       title: item.custom_name,
-      detail: `Written in by the import, held by ${holderName(item)}. ${exact ? `The catalogue has ${match.name}.` : `The nearest catalogue entry is ${match.name}.`}`,
+      detail: `Written in by the import, held by ${holderName(item)}. The nearest catalogue entry is ${match.name}.`,
       options: [
         { id: 'use', label: `Use ${match.name}`, hint: 'Its rules, price and tooltip come with it.', changes: [{ table: 'items', op: 'update', id: item.id, data: { item_rules_id: match.id, custom_name: null } }] },
         { id: 'keep', label: 'Keep it as written', hint: 'Stays a custom line with no rules attached.', changes: [] },

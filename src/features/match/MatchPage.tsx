@@ -135,7 +135,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
       <PageHeader
         eyebrow={campaign.data ? campaign.data.campaign.name : 'Battle'}
         title={scenarioTitle(match)}
-        description={versusLabel(match.participants)}
+        description={<WarbandTags participants={match.participants} />}
         aside={<TextLink to={`/campaigns/${match.campaign_id}`}>Campaign</TextLink>}
       />
 
@@ -520,5 +520,21 @@ function Tallies({ session, loading }: { session: BattleSessionView | undefined;
         <span>Updated {formatRelativeTime(session.updated_at)}</span>
       </div>
     </div>
+  )
+}
+
+/** The warbands at the table, one tag each, so a long pairing wraps instead of truncating. */
+function WarbandTags({ participants }: { participants: MatchSummary['participants'] }) {
+  return (
+    <span className="flex flex-wrap gap-1.5">
+      {participants.map((p) => (
+        <span
+          key={p.warband_id}
+          className={`min-w-0 truncate rounded-full border px-2.5 py-0.5 text-sm ${p.mine ? 'border-brass bg-brass/15 text-ink' : 'border-border text-ink-dim'}`}
+        >
+          {p.warband_name}
+        </span>
+      ))}
+    </span>
   )
 }

@@ -3,9 +3,10 @@
 // and "roll again" injuries carried the whole sub-table as their effect. Both can be re-run against
 // today's data from the roster page, as one logged edit.
 
-import type { HeroRow } from '../../domain'
+import type { HeroRow, ItemRow } from '../../domain'
 import type { RosterChange } from '../../domain/rosterChange'
 import type { AppliedInjury } from '../../rules/types/roster'
+import { resolveEquipmentName } from '../../rules/data/items/aliases'
 import { matchInjury, matchSkillOrSpell } from './rosterImport'
 
 const TO_CHECK = /Skills\/spells to check: ([^\n]*?)\.?(?=\n|$)/
@@ -75,6 +76,33 @@ export function fixupChanges(fixups: readonly HeroFixup[], heroes: readonly Pick
     if (f.injuries) data.injuries = f.injuries
     return { table: 'heroes', op: 'update', id: f.heroId, data }
   })
+}
+
+/** "Cooking pot (counts as a Helmet)" -> "Cooking pot": the old tracker's parenthetical aside. */
+export function stripQualifier(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, '').trim()
+}
+
+/** The catalogue entry a written-in name resolves to outright, aside and all. */
+export function namedByCatalogue(customName: string) {
+  return resolveEquipmentName(customName) ?? resolveEquipmentName(stripQualifier(customName))
+}
+
+/**
+ * A written-in item the catalogue can name outright. The alias table is the rules speaking — a
+ * Staff is the rulebook's Club / Mace / Hammer entry, a cooking pot is the Cooking Pot Helmet — so
+ * there is no judgement to put to the player, and asking every time a roster is opened is noise.
+ * Anything the alias table cannot name stays a question (see ./questions.ts).
+ */
+export function itemFixupChanges(items: readonly Pick<ItemRow, 'id' | 'item_rules_id' | 'custom_name'>[]): RosterChange[] {
+  const out: RosterChange[] = []
+  for (const item of items) {
+    if (item.item_rules_id !== null || !item.custom_name) continue
+    const named = namedByCatalogue(item.custom_name)
+    if (!named) continue
+    out.push({ table: 'items', op: 'update', id: item.id, data: { item_rules_id: named.id, custom_name: null } })
+  }
+  return out
 }
 
 /** One line per hero, for the notice. */

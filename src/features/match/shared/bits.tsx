@@ -7,7 +7,7 @@ import type { MatchParticipantView, MatchSummary } from '../../../api/matches'
 import type { MatchState } from '../../../domain'
 import { Button } from '../../../ui'
 import { Tag } from '../../campaign/bits'
-import { formatMatchTime, MATCH_STATE_LABELS, matchWhen, pendingLabel, scenarioTitle, versusLabel } from './helpers'
+import { formatMatchTime, MATCH_STATE_LABELS, matchWhen, pendingLabel, scenarioTitle } from './helpers'
 
 type TagTone = 'neutral' | 'warn' | 'brass'
 
@@ -48,8 +48,18 @@ export function MatchRows({ matches, onRespond, respondingTo = null, muted = fal
         return (
           <li key={m.id} className="flex flex-col">
             <Link to={`/matches/${m.id}`} className="flex min-h-11 items-start justify-between gap-3 px-4 py-3 no-underline hover:bg-surface-high">
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="truncate font-medium text-ink">{versusLabel(m.participants)}</span>
+              <span className="flex min-w-0 flex-col gap-1">
+                {/* One tag per warband: "A vs B vs C" ran off the side of a phone. */}
+                <span className="flex flex-wrap gap-1">
+                  {m.participants.map((p) => (
+                    <span
+                      key={p.warband_id}
+                      className={`min-w-0 truncate rounded-full border px-2 py-0.5 text-xs ${p.mine ? 'border-brass bg-brass/15 text-ink' : 'border-border text-ink-dim'}`}
+                    >
+                      {p.warband_name}
+                    </span>
+                  ))}
+                </span>
                 <span className="truncate text-sm text-ink-dim">
                   {scenarioTitle(m)}
                   {when ? ` · ${formatMatchTime(when)}` : m.state === 'scheduled' ? ' · No date yet' : ''}

@@ -48,6 +48,7 @@ export type IconName =
   | 'strength'
   | 'speed'
   | 'back'
+  | 'shield'
 
 /**
  * An icon is one stroked path, or — where the drawing needs both — a stroked part and a filled one.
@@ -99,6 +100,7 @@ const PATHS: Record<IconName, IconArt> = {
   strength: 'M6.5 9v6M17.5 9v6M4 10.5v3M20 10.5v3M6.5 12h11',
   speed: 'M13 2L5 14h6l-1 8 8-12h-6z',
   back: 'M15 19l-7-7 7-7',
+  shield: 'M12 21c-4-1.2-7-4-7-8.5V6l7-2.5L19 6v6.5c0 4.5-3 7.3-7 8.5z',
 }
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

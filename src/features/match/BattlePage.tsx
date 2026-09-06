@@ -10,7 +10,7 @@ import { useBattleBoosts } from './battle/useBattleBoosts'
 import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
-import { applyBattleEvents, emptyBattleLiveState, type AttackEventPayload, type BattleEventRow } from '../../domain'
+import { applyBattleEvents, battleTotals, emptyBattleLiveState, routThreshold, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -137,7 +137,6 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
   }
 
   const scenario = scenarioName(match)
-  const opponentsLine = others.length > 0 ? `vs ${others.map((p) => p.warband_name).join(', ')}` : 'No opponents listed'
 
   const endSheet = (
     <Sheet
@@ -219,7 +218,6 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
       onLogEvent={(payload) => logEvent.mutateAsync({ matchId: match.id, actorWarbandId: mine.warband_id, payload }).then(() => undefined)}
       roster={myRoster.data.roster}
       scenario={scenario}
-      opponentsLine={opponentsLine}
       handle={handle}
       readOnly={!editable}
       tab={tab}
@@ -242,7 +240,6 @@ interface PlayerBattleProps {
   onLogEvent: (payload: AttackEventPayload) => Promise<void>
   roster: RosterWarband
   scenario: string
-  opponentsLine: string
   handle: ReturnType<typeof useBattleSheet>
   readOnly: boolean
   tab: Tab
@@ -255,7 +252,7 @@ interface PlayerBattleProps {
   children: ReactNode
 }
 
-function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, opponentsLine, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
+function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
   const myBoosts = boosts[roster.id] ?? NO_BOOSTS
   const boostLines = [
     ...(myBoosts.leaderLd ? [`Leader +${myBoosts.leaderLd} Ld (${myBoosts.leaderLdSources.join(', ')})`] : []),
@@ -274,7 +271,17 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
   // Shares the Enemy tab's cache, so this costs nothing extra: it only feeds the "enemies out of N".
   const enemyRosters = useEnemyRosters(match.id, others)
   const prompts = useBattlePrompts(match.id)
-  const enemyModels = enemyRosters.warbands.length === others.length && others.length > 0 ? enemyRosters.warbands.reduce((n, w) => n + startingModels(w.roster), 0) : null
+  // The other side taken together: what they have lost, and how close that puts them to a rout
+  // test. Read from their own sheets, so it counts everything that felled them, not only my kills.
+  const enemy = useMemo(() => {
+    if (others.length === 0 || enemyRosters.warbands.length !== others.length) return null
+    const models = enemyRosters.warbands.reduce((n, w) => n + startingModels(w.roster), 0)
+    const out = others.reduce((n, p) => {
+      const theirs = sessions.find((x) => x.warband_id === p.warband_id)
+      return n + (theirs ? battleTotals(theirs.live_state).ownOutOfAction : 0)
+    }, 0)
+    return { outOfAction: out, models, routAt: routThreshold(models) }
+  }, [others, enemyRosters.warbands, sessions])
   const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
   const sideTab: Tab = desktop && tab === 'mine' ? 'enemy' : tab
 
@@ -282,14 +289,14 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
     <>
       <TopStrip
         scenario={scenario}
-        opponents={`${roster.name} ${opponentsLine}`}
+        warbands={[{ name: roster.name, mine: true }, ...others.map((p) => ({ name: p.warband_name, mine: false }))]}
         turn={shown.turn}
         onTurn={(turn) => handle.edit((s) => setTurn(s, turn))}
         totals={totals}
         rout={rout}
         onRouted={(routed) => handle.edit((s) => setRouted(s, routed))}
         readOnly={readOnly}
-        enemyModels={enemyModels}
+        enemy={enemy}
       />
 
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}

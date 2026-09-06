@@ -1,0 +1,97 @@
+// Getting around the battle sheet. The five pills the sheet used to carry were doing three
+// unrelated jobs, so they are now three groups: a slider that swaps between the two rosters, the
+// quick actions a player reaches for mid-turn, and the record of what has happened.
+
+import { Icon, type IconName } from '../../../ui'
+
+export type BattleTab = 'mine' | 'enemy' | 'fight' | 'cast' | 'log' | 'notes'
+
+export interface BattleNavProps {
+  tab: BattleTab
+  setTab: (tab: BattleTab) => void
+  /** The Attack and Log panels only exist when the match is being fought in the app. */
+  inApp: boolean
+  /** Somebody on the roster can cast a spell or recite a prayer. */
+  canCast: boolean
+  /** On desktop my own warband is always on the left, so the slider has nothing to swap. */
+  desktop: boolean
+}
+
+/** Two halves that light up, so which roster you are looking at reads from across the table. */
+function WarbandSlider({ tab, setTab }: Pick<BattleNavProps, 'tab' | 'setTab'>) {
+  const onEnemy = tab === 'enemy'
+  const showing = tab === 'mine' || tab === 'enemy'
+  return (
+    <div role="radiogroup" aria-label="Which warband" className="grid grid-cols-2 gap-0 overflow-hidden rounded-full border border-border bg-surface-low p-1">
+      {(
+        [
+          { value: 'mine', label: 'My warband', icon: 'warbands', active: showing && !onEnemy, tone: 'bg-brass text-surface-low' },
+          { value: 'enemy', label: 'Enemy warband', icon: 'enemy', active: showing && onEnemy, tone: 'bg-accent text-surface-low' },
+        ] as const
+      ).map((side) => (
+        <button
+          key={side.value}
+          type="button"
+          role="radio"
+          aria-checked={side.active}
+          onClick={() => setTab(side.value)}
+          className={`flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold transition-colors ${
+            side.active ? side.tone : 'text-ink-dim hover:text-ink'
+          }`}
+        >
+          <Icon name={side.icon} size={18} />
+          <span className="truncate">{side.label}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function NavTile({ icon, label, detail, active, tone, onClick }: { icon: IconName; label: string; detail?: string; active: boolean; tone: 'accent' | 'brass'; onClick: () => void }) {
+  const ring = active ? (tone === 'accent' ? 'border-accent bg-accent/10' : 'border-brass bg-brass/10') : 'border-border bg-surface-low hover:bg-surface-high'
+  const ink = active ? (tone === 'accent' ? 'text-accent' : 'text-brass') : 'text-brass'
+  return (
+    <button type="button" aria-pressed={active} onClick={onClick} className={`flex min-h-16 flex-1 flex-col items-start gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${ring}`}>
+      <Icon name={icon} size={20} className={ink} />
+      <span className="text-sm font-semibold leading-tight text-ink">{label}</span>
+      {detail ? <span className="text-xs leading-snug text-ink-dim">{detail}</span> : null}
+    </button>
+  )
+}
+
+export function BattleNav({ tab, setTab, inApp, canCast, desktop }: BattleNavProps) {
+  const quick = inApp || canCast;
+  return (
+    <div className="flex flex-col gap-4">
+      {desktop ? null : <WarbandSlider tab={tab} setTab={setTab} />}
+      {desktop ? (
+        <button
+          type="button"
+          aria-pressed={tab === 'enemy'}
+          onClick={() => setTab('enemy')}
+          className={`flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
+            tab === 'enemy' ? 'border-accent bg-accent text-surface-low' : 'border-border bg-surface-low text-ink-dim hover:text-ink'
+          }`}
+        >
+          <Icon name="enemy" size={18} />
+          Enemy warband
+        </button>
+      ) : null}
+
+      {quick ? (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-xs uppercase tracking-[0.2em] text-ink-dim">Quick actions</h3>
+          <div className="flex gap-2">
+            {inApp ? <NavTile icon="battle" label="Attack" detail="Odds and dice, step by step" active={tab === 'fight'} tone="accent" onClick={() => setTab('fight')} /> : null}
+            {canCast ? <NavTile icon="cast" label="Cast" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} /> : null}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="flex gap-2">
+        {inApp ? <NavTile icon="log" label="Log" detail="What both sides have rolled" active={tab === 'log'} tone="brass" onClick={() => setTab('log')} /> : null}
+        <NavTile icon="notes" label="Notes" detail="Objectives and scribbles" active={tab === 'notes'} tone="brass" onClick={() => setTab('notes')} />
+      </section>
+    </div>
+  )
+}

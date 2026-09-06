@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RosterHero } from "../../types/roster";
-import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, useReroll } from "../casting";
+import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll } from "../casting";
 
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 8 };
 
@@ -97,7 +97,7 @@ describe("rolling a cast", () => {
     const missed = applyCastRoll(startCast(p, spell), [1, 2]);
     expect(missed.pending?.kind).toBe("chooseReroll");
     expect(availableRerolls(missed).map((r) => r.id)).toEqual(["familiar"]);
-    const spending = useReroll(missed, "familiar");
+    const spending = spendReroll(missed, "familiar");
     expect(spending.pending?.kind).toBe("reroll");
     expect(spending.used).toContain("familiar");
     const second = applyCastRoll(spending, [1, 1]);
@@ -111,7 +111,7 @@ describe("rolling a cast", () => {
     const p = profileOf(hero({ equipment: [{ itemId: "magic_gubbinz", quantity: 1 }] }));
     const spell = spellOf(p, "Vision of Torment");
     const missed = applyCastRoll(startCast(p, spell), [1, 2]);
-    const gate = useReroll(missed, "magic_gubbinz");
+    const gate = spendReroll(missed, "magic_gubbinz");
     expect(gate.pending).toMatchObject({ kind: "gate", dice: 1 });
     expect(applyCastRoll(gate, [5]).pending?.kind).toBe("reroll");
     const failedGate = applyCastRoll(gate, [2]);
@@ -122,7 +122,7 @@ describe("rolling a cast", () => {
     const p = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_mind_focus"] }));
     const spell = spellOf(p, "Vision of Torment");
     const missed = applyCastRoll(startCast(p, spell), [1, 2]);
-    const focus = useReroll(missed, "mind_focus");
+    const focus = spendReroll(missed, "mind_focus");
     expect(focus.pending?.kind).toBe("rerollOneDie");
     const fixed = applyCastRoll(focus, [1, 6]);
     expect(fixed.dice).toEqual([6, 2]);

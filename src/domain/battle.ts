@@ -34,6 +34,22 @@ export const takenOutBySchema = z.object({
 });
 export type TakenOutBy = z.infer<typeof takenOutBySchema>;
 
+/** One attempt to cast a spell or recite a prayer, kept so the sheet remembers what has been spent. */
+export const castRecordSchema = z.object({
+  heroId: z.string(),
+  heroName: z.string(),
+  spellId: z.string(),
+  spellName: z.string(),
+  turn: z.number().int().min(0).default(0),
+  outcome: z.enum(["automatic", "cast", "failed", "dispelled"]),
+  /** The 2D6 total with modifiers, and what it had to beat; null for a spell that needs no roll. */
+  total: z.number().int().nullable().default(null),
+  difficulty: z.number().int().nullable().default(null),
+  /** Re-roll ids spent on this attempt (a Rat Familiar is once a game, a Familiar once a turn). */
+  used: z.array(z.string()).default([]),
+});
+export type CastRecord = z.infer<typeof castRecordSchema>;
+
 export const battleLiveStateSchema = z.object({
   version: z.literal(BATTLE_LIVE_STATE_VERSION).default(BATTLE_LIVE_STATE_VERSION),
   turn: z.number().int().min(0).default(0),
@@ -56,6 +72,8 @@ export const battleLiveStateSchema = z.object({
    * key events; the calculator's logged kills are laid over it from the shared log.
    */
   takenOutBy: z.record(z.string(), z.array(takenOutBySchema)).default({}),
+  /** Spells and prayers attempted this battle, in order. */
+  casts: z.array(castRecordSchema).default([]),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });
@@ -80,6 +98,22 @@ export function withTally(state: BattleLiveState, tally: BattleWarriorTally): Ba
   const rest = state.tallies.filter((t) => t.id !== tally.id);
   const keep = tally.enemiesOutOfAction > 0 || tally.outOfAction > 0 || tally.woundsLost > 0 || tally.note.trim() !== "";
   return { ...state, tallies: keep ? [...rest, tally] : rest, editedAt: new Date().toISOString() };
+}
+
+/** Add one cast to the sheet. */
+export function withCast(state: BattleLiveState, cast: CastRecord): BattleLiveState {
+  return { ...state, casts: [...state.casts, cast], editedAt: new Date().toISOString() };
+}
+
+/** Casts this hero has already made in the given turn: the one-spell-per-turn rule. */
+export function castsThisTurn(state: BattleLiveState, heroId: string, turn: number): CastRecord[] {
+  return state.casts.filter((c) => c.heroId === heroId && c.turn === turn);
+}
+
+/** Re-rolls this hero has spent, by scope: everything from this battle, and everything from this turn. */
+export function rerollsSpent(state: BattleLiveState, heroId: string, turn: number): { game: string[]; turn: string[] } {
+  const mine = state.casts.filter((c) => c.heroId === heroId);
+  return { game: mine.flatMap((c) => c.used), turn: mine.filter((c) => c.turn === turn).flatMap((c) => c.used) };
 }
 
 export interface BattleTotals {

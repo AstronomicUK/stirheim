@@ -34,6 +34,12 @@ export type IconName =
   | 'join'
   | 'settings'
   | 'map'
+  | 'cast'
+  | 'log'
+  | 'notes'
+  | 'enemy'
+  | 'dice'
+  | 'book'
 
 const PATHS: Record<IconName, string> = {
   warbands: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
@@ -66,6 +72,12 @@ const PATHS: Record<IconName, string> = {
   join: 'M10 17l5-5-5-5M15 12H3M13 3h6v18h-6',
   settings: 'M12 15a3 3 0 100-6 3 3 0 000 6zM12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4',
   map: 'M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11zM12 12a2 2 0 100-4 2 2 0 000 4z',
+  cast: 'M5 19l9-9M7 3v4M5 5h4M17 5v3M15.5 6.5h3M13.5 9.5l3.5-3.5 2 2-3.5 3.5zM16 16v3M14.5 17.5h3',
+  log: 'M4 5h16M4 10h16M4 15h11M4 20h7',
+  notes: 'M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h4',
+  enemy: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 10l6 6M15 10l-6 6',
+  dice: 'M4 4h16v16H4zM8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01',
+  book: 'M4 4h6a3 3 0 013 3v13a2.5 2.5 0 00-2.5-2.5H4zM20 4h-6a3 3 0 00-3 3v13a2.5 2.5 0 012.5-2.5H20z',
 }
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

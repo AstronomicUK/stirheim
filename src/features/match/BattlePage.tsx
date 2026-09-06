@@ -15,28 +15,24 @@ import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { RosterWarband } from '../../rules/types/roster'
-import { Button, Notice, SegmentedControl, Sheet, Spinner, useIsDesktop } from '../../ui'
+import { Button, Notice, Sheet, Spinner, useIsDesktop } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
 import { FightTab } from './fight/FightTab'
+import { BattleNav, type BattleTab } from './battle/BattleNav'
+import { useEnemyRosters } from './fight/useEnemyRosters'
+import { CastTab } from './battle/CastTab'
+import { castersOf } from './battle/casters'
 import { LogTab } from './battle/LogTab'
 import { MyWarbandTab } from './battle/MyWarbandTab'
 import { NotesTab } from './battle/NotesTab'
 import { SaveBar } from './battle/SaveBar'
-import { routStatus, setRouted, setTurn, sheetTotals } from './battle/sheet'
+import { routStatus, setRouted, setTurn, sheetTotals, startingModels } from './battle/sheet'
 import { PreBattle } from './battle/PreBattle'
 import { RoutCheck } from './battle/RoutCheck'
 import { TopStrip } from './battle/TopStrip'
 import { useBattleSheet } from './battle/useBattleSheet'
 
-type Tab = 'mine' | 'enemy' | 'fight' | 'log' | 'notes'
-
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'mine', label: 'My warband' },
-  { value: 'enemy', label: 'Enemy' },
-  { value: 'fight', label: 'Attack' },
-  { value: 'log', label: 'Log' },
-  { value: 'notes', label: 'Notes' },
-]
+type Tab = BattleTab
 
 /**
  * Every sheet at the table with the shared log laid over it. A warband that has not saved a sheet
@@ -273,7 +269,11 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
   const rout = routStatus(shown, totals.startingModels)
   // Desktop: my warband always on the left, the other sections as tabs on the right.
   const desktop = useIsDesktop()
-  const tabOptions = (match.combat_mode === 'app' ? TABS : TABS.filter((t) => t.value !== 'fight' && t.value !== 'log')).filter((t) => !desktop || t.value !== 'mine')
+  const inApp = match.combat_mode === 'app'
+  // Shares the Enemy tab's cache, so this costs nothing extra: it only feeds the "enemies out of N".
+  const enemyRosters = useEnemyRosters(match.id, others)
+  const enemyModels = enemyRosters.warbands.length === others.length && others.length > 0 ? enemyRosters.warbands.reduce((n, w) => n + startingModels(w.roster), 0) : null
+  const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
   const sideTab: Tab = desktop && tab === 'mine' ? 'enemy' : tab
 
   return (
@@ -287,6 +287,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
         rout={rout}
         onRouted={(routed) => handle.edit((s) => setRouted(s, routed))}
         readOnly={readOnly}
+        enemyModels={enemyModels}
       />
 
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
@@ -314,16 +315,15 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, o
           </div>
         ) : null}
         <div className="flex flex-col gap-6">
-          <SegmentedControl options={tabOptions} value={sideTab} onChange={setTab} label="Battle sheet section" />
+          <BattleNav tab={sideTab} setTab={setTab} inApp={inApp} canCast={canCast} desktop={desktop} />
 
           {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
-          {sideTab === 'enemy' ? (
-            <EnemyView matchId={match.id} participants={others} sessions={sessions} intro="Their rosters for reference, and whatever they have tallied so far. Refreshes live." />
-          ) : null}
-          {sideTab === 'fight' && match.combat_mode === 'app' ? (
+          {sideTab === 'enemy' ? <EnemyView matchId={match.id} participants={others} sessions={sessions} events={events} turn={shown.turn} /> : null}
+          {sideTab === 'cast' ? <CastTab roster={roster} template={template} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
+          {sideTab === 'fight' && inApp ? (
             <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} edit={readOnly ? undefined : handle.edit} boosts={boosts} />
           ) : null}
-          {sideTab === 'log' && match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
+          {sideTab === 'log' && inApp ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} /> : null}
         </div>
       </div>

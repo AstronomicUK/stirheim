@@ -9,7 +9,7 @@ import type { AdvanceRate } from '../../../rules/data/campaign/experience'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { itemLineName, itemName, itemProfile } from '../shared/names'
-import { isPlainNote, xpProgress, xpTrack } from './lookups'
+import { isPlainNote, xpNotches, xpProgress } from './lookups'
 import { useRosterView } from './context'
 import { Icon, type IconName } from '../../../ui/icons'
 
@@ -43,18 +43,14 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 }
 
 /**
- * Experience as a segmented track: one segment per gap between advance boxes (2, 4, 6, 8, 11, 14…
- * for heroes; 2, 5, 9, 14 for henchmen), filled to the current total, the next box named. A
- * warrior who has just reached a box shows that box full rather than an empty bar.
- */
-/**
- * The experience track as on the roster sheet: one pip per point of experience, every advance box
- * drawn as a taller node, earned points filled in brass. Segments between boxes stay together when
- * the row wraps, so a glance shows how far the next skill is.
+ * The stretch to the next advance, drawn across the full width: one notch per point of experience
+ * between the box he last crossed and the box he is heading for, filled as far as he has got. The
+ * empty notches are the answer to "how much more" without anyone having to do the arithmetic, and
+ * because the bar always ends at the next box it needs no marker of its own.
  */
 export function XpBar({ xp, levelUps, role, rate = 'normal', noExperience = false }: { xp: number; levelUps: number; role: CharacterRole; rate?: AdvanceRate; noExperience?: boolean }) {
   const p = xpProgress(xp, levelUps, role, rate)
-  const segments = xpTrack(xp, role, rate)
+  const notches = xpNotches(xp, role, rate)
   if (noExperience) return <p className="text-xs text-ink-dim">Gains no experience.</p>
   const toGo = p.next !== null ? p.next - xp : null
   return (
@@ -64,7 +60,8 @@ export function XpBar({ xp, levelUps, role, rate = 'normal', noExperience = fals
           <span className="font-semibold text-ink">{xp} xp</span>
           {p.next !== null ? (
             <span>
-              {' '}· next advance at {p.next} ({toGo} to go){rate === 'half' ? ', half rate' : ''}
+              {' '}
+              · next advance at {p.next} ({toGo} to go){rate === 'half' ? ', half rate' : ''}
             </span>
           ) : (
             <span> · no further advances</span>
@@ -72,25 +69,13 @@ export function XpBar({ xp, levelUps, role, rate = 'normal', noExperience = fals
         </span>
         {p.advancesOwed > 0 ? <Tag tone="brass">{p.advancesOwed === 1 ? 'Advance owed' : `${p.advancesOwed} advances owed`}</Tag> : null}
       </div>
-      <div className="flex flex-wrap items-end gap-x-1.5 gap-y-1" aria-hidden>
-        {segments.map((seg) => (
-          <span key={seg.to} className="flex items-end gap-px">
-            {Array.from({ length: seg.to - seg.from }, (_, i) => seg.from + i + 1).map((point) => {
-              const earned = point <= xp
-              const node = point === seg.to
-              return (
-                <span
-                  key={point}
-                  title={node ? `Advance at ${point} xp` : `${point} xp`}
-                  className={`${node ? 'h-3.5 w-2 rounded-[2px] border' : 'h-2 w-1.5 rounded-[1px]'} ${
-                    earned ? (node ? 'border-brass bg-brass' : 'bg-brass') : node ? 'border-ink-dim/70 bg-surface-low' : 'bg-surface-high'
-                  }`}
-                />
-              )
-            })}
-          </span>
-        ))}
-      </div>
+      {notches.length > 0 ? (
+        <div className="flex w-full items-center gap-1" aria-hidden>
+          {notches.map((notch) => (
+            <span key={notch.point} title={`${notch.point} xp`} className={`h-2.5 min-w-0 flex-1 rounded-[2px] ${notch.earned ? 'bg-brass' : 'bg-surface-high'}`} />
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

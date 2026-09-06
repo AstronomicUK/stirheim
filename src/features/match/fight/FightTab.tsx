@@ -8,7 +8,7 @@ import type { AttackEventPayload, BattleLiveState } from '../../../domain'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DieField, Notice, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
+import { Button, DicePicker, Notice, RollResult, SegmentedControl, SelectField, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
@@ -312,7 +312,6 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
 
       {odds && attacker && defender ? (
         <>
-          <OddsSection odds={odds} attacker={attacker} defender={defender} />
           <RollSection
             key={`${attackKey}:${JSON.stringify(context)}`}
             odds={odds}
@@ -343,6 +342,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             }
             onFinished={rememberFight}
           />
+          <OddsSection odds={odds} attacker={attacker} defender={defender} />
         </>
       ) : null}
     </>
@@ -510,6 +510,8 @@ interface RollSectionProps {
 
 function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
+  // The die just thrown, held so the result can be shown as dice rather than only as a log line.
+  const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral' } | null>(null)
   const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
   const [logError, setLogError] = useState<string | null>(null)
 
@@ -525,6 +527,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     )
     setLogged('no')
     setLogError(null)
+    setShown(null)
     setState(startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost, charmAvailable))
   }
 
@@ -541,10 +544,13 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     }
   }
 
-  function advance(step: (s: RollState) => RollState) {
+  function advance(step: (s: RollState) => RollState, rolled?: { value: number; label: string }) {
     setState((s) => {
       if (!s) return s
       const next = step(s)
+      const line = next.log.at(-1)
+      if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone })
+      else if (!rolled) setShown(null)
       if (next.done && !s.done) queueMicrotask(() => onFinished(next))
       return next
     })
@@ -564,23 +570,32 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
         </Card>
       ) : (
         <Card className="flex flex-col gap-3 px-4 py-4">
+          {shown ? <RollResult dice={[shown.value]} headline={shown.label} detail={shown.text} tone={shown.tone} /> : null}
           {state.pending ? (
             <div className="flex flex-col gap-2 rounded-md border border-brass/50 bg-surface-low px-3 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-ink">{state.pending.label}</p>
-                  <p className="text-xs text-ink-dim">{state.pending.detail}</p>
+                  <p className="text-xs leading-relaxed text-ink-dim">{state.pending.detail}</p>
                 </div>
-                <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'neutral'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
+                <span className="shrink-0">
+                  <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'neutral'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
+                </span>
               </div>
-              <div className="flex flex-wrap items-end gap-2">
-                <DieField key={state.log.length} label={state.pending.label} sides={6} value={null} onChange={(v) => v !== null && advance((s) => applyRoll(s, v))} rollable hideLabel />
-                {state.pending.optional ? (
+              <DicePicker
+                key={state.log.length}
+                count={1}
+                label={state.pending.label}
+                resetKey={state.log.length}
+                onComplete={(values) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label })}
+              />
+              {state.pending.optional ? (
+                <div>
                   <Button variant="ghost" onClick={() => advance(declineRoll)}>
                     {state.pending.kind === 'luckyCharm' ? 'Keep the charm' : 'No parry'}
                   </Button>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -621,7 +636,14 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
             </div>
           ) : null}
 
-          <Button variant="ghost" block onClick={() => setState(null)}>
+          <Button
+            variant="ghost"
+            block
+            onClick={() => {
+              setState(null)
+              setShown(null)
+            }}
+          >
             {state.done ? 'Start again' : 'Abandon these rolls'}
           </Button>
         </Card>

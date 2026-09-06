@@ -387,7 +387,7 @@ export function applyCastRoll(state: CastState, values: number[]): CastState {
 
   switch (step.kind) {
     case "chooseReroll":
-      // Nothing to roll here: the player picks a re-roll with useReroll, or declines.
+      // Nothing to roll here: the player picks a re-roll with spendReroll, or declines.
       return state;
     case "cast":
     case "reroll": {
@@ -475,7 +475,7 @@ export function declineCastStep(state: CastState): CastState {
 }
 
 /** Spend a named re-roll: pushes its gate roll first when it has one. */
-export function useReroll(state: CastState, rerollId: string): CastState {
+export function spendReroll(state: CastState, rerollId: string): CastState {
   const reroll = state.profile.rerolls.find((r) => r.id === rerollId);
   if (!reroll || state.used.includes(rerollId)) return state;
   const next: CastState = { ...state, log: [...state.log], used: [...state.used] };

@@ -144,27 +144,25 @@ export function xpProgress(xp: number, levelUps: number, role: CharacterRole, ra
   return { xp, next, previous, advancesOwed: Math.max(0, crossed.length - levelUps), fraction }
 }
 
-export interface XpSegment {
-  from: number
-  to: number
-  /** 0..1 of this segment earned. */
-  fill: number
+export interface XpNotch {
+  /** The experience total this notch stands for. */
+  point: number
+  /** He has reached it. */
+  earned: boolean
 }
 
 /**
- * The advance boxes as track segments, from 0 to the first box and between each pair after it: the
- * whole sheet, so a hero sees all twenty-one boxes and a henchman group its four.
+ * The stretch the warrior is on, one notch per point: the box he last crossed (or his start), then
+ * a notch for every point up to the next box. The notch he is standing on is earned, so a warrior
+ * who has just advanced shows one filled notch and the rest empty, and the count of empty notches
+ * is how many more points he needs. Empty once there are no boxes left.
  */
-export function xpTrack(xp: number, role: CharacterRole, rate: AdvanceRate = 'normal'): XpSegment[] {
-  const thresholds = xpThresholds(role, rate)
-  const segments: XpSegment[] = []
-  let from = 0
-  for (const to of thresholds) {
-    const fill = xp >= to ? 1 : xp <= from ? 0 : (xp - from) / (to - from)
-    segments.push({ from, to, fill })
-    from = to
-  }
-  return segments
+export function xpNotches(xp: number, role: CharacterRole, rate: AdvanceRate = 'normal'): XpNotch[] {
+  const { previous, next } = xpProgress(xp, 0, role, rate)
+  if (next === null) return []
+  const notches: XpNotch[] = []
+  for (let point = previous; point <= next; point++) notches.push({ point, earned: point <= xp })
+  return notches
 }
 
 /** Short labels for a warrior's persistent conditions, in a stable order. */

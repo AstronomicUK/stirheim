@@ -2,7 +2,7 @@
 // decision of when to adopt a sheet that arrived from the server (another device). No React, no
 // network, so it is unit-tested in node.
 
-import type { TakenOutBy, BattleLiveState, BattleWarriorTally } from '../../../domain'
+import type { TakenOutBy, BattleEventRow, BattleLiveState, BattleWarriorTally } from '../../../domain'
 import { battleTotals, routThreshold, tallyFor, withTally } from '../../../domain'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { animalFighters, isAnimalId, parseAnimalId, ANIMAL_KINDS, type AnimalFighter } from '../../../rules/resolve/animals'
@@ -304,3 +304,21 @@ export const EXPERIENCE_REMINDERS: readonly { who: string; text: string }[] = [
   { who: 'Henchman groups', text: '+1 for surviving the battle; henchmen do not earn experience for kills.' },
   { who: 'Scenario', text: 'Some scenarios award extra experience (for example, carrying a shard off the table). Note it under Notes.' },
 ]
+
+/**
+ * Who on this warband is still down. The shared log records the worst thing each attack did; a
+ * knocked-down or stunned model recovers, so only results from the current turn count, and being
+ * hit again later in the same turn replaces the earlier state.
+ */
+export function conditionsFor(events: BattleEventRow[], warbandId: string, turn: number): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const event of events) {
+    if (event.reverted_at !== null) continue
+    const p = event.payload
+    if (p.target_warband_id !== warbandId || p.turn !== turn) continue
+    const outcome = p.outcome.toLowerCase()
+    if (outcome === 'knocked down' || outcome === 'stunned') out.set(p.target_id, p.outcome)
+    else out.delete(p.target_id)
+  }
+  return out
+}

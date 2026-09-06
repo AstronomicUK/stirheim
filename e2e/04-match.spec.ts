@@ -18,9 +18,9 @@ async function next(page: Page) {
   await page.getByRole('button', { name: 'Next' }).click()
 }
 
-/** Calculator dice: the field is replaced by the next step as soon as a valid roll lands, so only fill it. */
+/** Calculator dice: tap the face that came up; the step advances as soon as it lands. */
 async function rollDie(page: Page, label: string, value: number) {
-  await page.getByLabel(label, { exact: true }).fill(String(value))
+  await page.getByRole('button', { name: `${label}: ${value}`, exact: true }).click()
 }
 
 async function expectStep(page: Page, n: number, title: string) {
@@ -65,7 +65,7 @@ test.describe('match', () => {
     await expect(page.getByRole('heading', { name: CAPTAIN })).toBeVisible()
 
     // Attack calculator: the captain's sword and dagger against the Skaven assassin, dice typed.
-    await page.getByRole('radio', { name: 'Attack' }).click()
+    await page.getByRole('button', { name: 'Attack', exact: false }).first().click()
     await expect(page.getByText('2 attacks this phase')).toBeVisible()
     await expect(page.getByText('At least one hit').locator('xpath=following-sibling::span')).toHaveText('75%')
     await page.getByRole('button', { name: 'Start rolling' }).click()
@@ -78,9 +78,9 @@ test.describe('match', () => {
     await expect(page.getByRole('button', { name: 'Logged to both sheets' })).toBeDisabled()
 
     // The shared log lists it, and back on "My warband" the kill sits on the captain's counter; one Watchman goes down by hand.
-    await page.getByRole('radio', { name: 'Log' }).click()
+    await page.getByRole('button', { name: 'Log', exact: false }).first().click()
     await expect(page.getByText(`${CAPTAIN} took Skritch Nightblade out of action`, { exact: false })).toBeVisible()
-    await page.getByRole('radio', { name: 'My warband' }).click()
+    await page.getByRole('radio', { name: 'My warband', exact: true }).click()
     await expect(page.getByRole('group', { name: `enemies out by ${CAPTAIN}` })).toContainText('1')
     await page.getByRole('button', { name: 'More Watchmen out of action' }).click()
     // Marking a model out asks who did it; the answer goes on the report as a key event.

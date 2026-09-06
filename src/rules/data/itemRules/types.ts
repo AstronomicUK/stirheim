@@ -25,6 +25,8 @@ export interface ItemRestriction {
   onePerModel?: boolean;
   /** May only be bought when the warband is created. */
   creationOnly?: boolean;
+  /** Bought for a warrior when he is recruited (mutations, Blessings of Nurgle); the hire sheet offers it and later purchases warn. Second and later ones cost double. */
+  recruitOnly?: boolean;
   /** Bought once per campaign per warband (Liber Bubonicus). */
   oncePerCampaign?: boolean;
   /** Once bought it stays with the buyer: never moved to the stash or another warrior. */

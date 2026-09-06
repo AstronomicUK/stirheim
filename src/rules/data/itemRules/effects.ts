@@ -213,6 +213,17 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
     upgrade: { bases: ["sword", "axe", "hammer"], apply: { strengthBonus: 1, initiativeModifier: -1 }, namePrefix: "Obsidian", note: "Sons of Hashut obsidian: a sword, axe or hammer keeping its own rules, at +1 Strength and -1 Initiative." },
   },
 
+  // ---- Mutations ----
+  great_claw: { extraWeaponId: "great_claw", note: "Great Claw: an extra attack at +1 Strength; no weapon in that arm." },
+  scorpion_tail: { extraWeaponId: "scorpion_tail", note: "Scorpion Tail: an extra Strength 5 attack each close combat phase (Strength 2 against a target immune to poison)." },
+  hideous_mutation: { traits: ["causes_fear"], note: "Hideous: causes Fear." },
+  daemon_soul: { note: "Daemon Soul: a 4+ save against spells and prayers." },
+  cloven_hoofs: { note: "Cloven Hoofs: +1 Movement (enter it on the profile)." },
+  tentacle: { note: "Tentacle: the opponent in close combat loses one attack (minimum 1), the mutant's choice." },
+  blackblood: { note: "Blackblood: a Strength 3 hit on everyone in base contact when the model loses a wound in close combat." },
+  spines: { note: "Spines: an automatic Strength 1 hit on models in base contact at the start of each close combat phase." },
+  extra_arm: { note: "Extra Arm: a single-handed weapon in the extra arm for +1 attack, or a shield or buckler; pick the weapon in the calculator's off-hand." },
+
   // ---- Blessings of Nurgle ----
   nurgles_rot: { traits: ["immune_to_poison"], note: "Nurgle's Rot: a 6 to wound in close combat infects a living target with the Rot (mark it on their roster); immune to poison." },
   mark_of_nurgle: { traits: ["immune_to_poison"], note: "Mark of Nurgle: immune to poison (+1 Wound on the profile)." },

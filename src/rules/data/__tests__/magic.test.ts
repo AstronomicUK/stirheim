@@ -38,17 +38,20 @@ describe("spell lores", () => {
     // The task brief said 29, but the source has 30 lore headings (Necromancy and
     // Necromancy (The Restless Dead) are separate lores); the source is the ground truth.
     expect(headings.length).toBe(30);
-    expect(SPELL_LORES.length).toBe(headings.length);
+    // Plus the Sorcerous Society's four Elemental Lores, which live on the warband page (Phase 17).
+    const elemental = SPELL_LORES.filter((l) => l.id.startsWith("elemental_lore_of_"));
+    expect(elemental).toHaveLength(4);
+    expect(SPELL_LORES.length).toBe(headings.length + elemental.length);
     expect(new Set(SPELL_LORES.map((l) => l.id)).size).toBe(SPELL_LORES.length);
-    expect(SPELL_LORES.map((l) => l.name)).toEqual(headings.map((h) => h.slice("## Magic — ".length).trim()));
+    expect(SPELL_LORES.filter((l) => !l.id.startsWith("elemental_lore_of_")).map((l) => l.name)).toEqual(headings.map((h) => h.slice("## Magic — ".length).trim()));
   });
 
   it("every lore has a source URL, intro, D6 die and a source ref into the reference file", () => {
     for (const l of SPELL_LORES) {
-      expect(l.sourceUrl, l.id).toMatch(/^https:\/\/mordheimer\.net\/docs\/magic\//);
+      expect(l.sourceUrl, l.id).toMatch(/^https:\/\/mordheimer\.net\/docs\/(magic|warbands)\//);
       expect(l.intro.length, l.id).toBeGreaterThan(0);
       expect(l.die, l.id).toBe("D6");
-      expect(l.source.file, l.id).toMatch(/^03-campaigns-magic-optional-rules\.md:\d+-\d+$/);
+      expect(l.source.file, l.id).toMatch(/^(03-campaigns-magic-optional-rules|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
       expect(new Set(l.spells.map((s) => s.id)).size, `${l.id}: duplicate spell ids`).toBe(l.spells.length);
       for (const s of l.spells) expect(s.text.length, `${l.id}/${s.id}: empty text`).toBeGreaterThan(0);
     }
@@ -117,7 +120,7 @@ describe("spell lores", () => {
 
 describe("wizard allocations", () => {
   it("covers every row of the Wizard -> Type of Magic table and resolves each to a lore", () => {
-    expect(WIZARD_ALLOCATIONS.length).toBe(39);
+    expect(WIZARD_ALLOCATIONS.length).toBe(41);
     const loreNames = new Set(SPELL_LORES.map((l) => l.name));
     for (const a of WIZARD_ALLOCATIONS) {
       if (loreNames.has(a.loreName)) {

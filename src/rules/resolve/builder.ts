@@ -23,13 +23,14 @@
 
 import type { Stats, UnitTemplate, WarbandTemplate } from "../types";
 import type { Item } from "../types/items";
-import type { RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband } from "../types/roster";
+import type { RosterHenchmanGroup, RosterHero, RosterItem, RosterWarband, CampaignBans } from "../types/roster";
 import { findItem } from "../data/items";
 import { resolveEquipmentName } from "../data/items/aliases";
 import { findEquipmentList, findUnitTemplate } from "../data/warbandTemplates";
 import { equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "./equipmentCost";
 import { advancesEarned } from "../data/campaign/experience";
 import { RulesError } from "./errors";
+import { isBanned } from "./houseRules";
 import { freeDaggerLine } from "./freeDagger";
 import { unitRules, warbandRules } from "../data/campaignRules";
 import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
@@ -70,6 +71,8 @@ export interface WarbandDraft {
   heroes: DraftHero[];
   groups: DraftGroup[];
   notes: string;
+  /** The campaign the warband is being built for, when the player named one: its bans apply to the lists. */
+  campaignId?: string | null;
 }
 
 export type DraftSubject = { kind: "hero" | "group"; id: string };
@@ -122,7 +125,7 @@ function assertSize(size: number): void {
 }
 
 /** Start a draft for `template`: starting gold from the template (or 500) and the mandatory leader. */
-export function newWarbandDraft(template: WarbandTemplate, name: string, leaderId = DEFAULT_LEADER_ID): WarbandDraft {
+export function newWarbandDraft(template: WarbandTemplate, name: string, leaderId = DEFAULT_LEADER_ID, campaignId: string | null = null): WarbandDraft {
   const leader = leaderTemplate(template);
   const draft: WarbandDraft = {
     name,
@@ -131,6 +134,7 @@ export function newWarbandDraft(template: WarbandTemplate, name: string, leaderI
     heroes: [],
     groups: [],
     notes: "",
+    campaignId,
   };
   return leader ? addDraftHero(draft, template, leader.id, leaderId) : draft;
 }
@@ -210,10 +214,11 @@ export function renameDraftGroup(draft: WarbandDraft, id: string, name: string):
 // ---- Equipment ----
 
 /** What a unit may buy at creation: its equipment list, priced and resolved against the catalogue. */
-export function equipmentOptionsFor(template: WarbandTemplate, unitTemplateId: string): EquipmentOption[] {
+export function equipmentOptionsFor(template: WarbandTemplate, unitTemplateId: string, bans?: CampaignBans): EquipmentOption[] {
   const unit = requireUnit(template, unitTemplateId);
   const list = findEquipmentList(template, unit.equipmentListId);
   if (!list) return [];
+  const banned = (o: EquipmentOption) => o.item !== undefined && isBanned(bans, "items", o.item.id);
   const section = (entries: { name: string; cost: string }[], kind: EquipmentOption["section"]) =>
     entries.map((entry) => ({
       name: entry.name,
@@ -226,7 +231,7 @@ export function equipmentOptionsFor(template: WarbandTemplate, unitTemplateId: s
     ...melee.flatMap((option) => (option.item?.superseded ? materialVariantOptions(option, melee) : [option])),
     ...section(list.missileWeapons, "missile"),
     ...section(list.armour, "armour"),
-  ];
+  ].filter((o) => !banned(o));
 }
 
 /**
@@ -534,9 +539,9 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
 // ---- Validation ----
 
 /** Every roster problem at creation plus the builder's own: overspend, blank names, unknown prices. */
-export function validateDraft(draft: WarbandDraft, template: WarbandTemplate): RosterProblem[] {
+export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, bans?: CampaignBans): RosterProblem[] {
   const roster = draftToRosterWarband(draft, template);
-  const problems: RosterProblem[] = [...validateRoster(roster, template, { atCreation: true }).problems];
+  const problems: RosterProblem[] = [...validateRoster(roster, template, { atCreation: true, bans }).problems];
   const costs = draftCosts(draft, template);
 
   if (costs.remaining < 0) {

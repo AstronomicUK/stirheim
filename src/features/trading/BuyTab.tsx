@@ -281,6 +281,38 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
             </div>
           </section>
         ) : null}
+        <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
+          <h3 className="text-xs uppercase tracking-wider text-ink-dim">Destination</h3>
+          <SelectField label="Give to" hideLabel value={destinationKey} onChange={(e) => chooseDestination(e.target.value)}>
+            <option value="stash">Stash</option>
+            <optgroup label="Heroes">
+              {destinations
+                .filter((d) => d.group === 'Heroes')
+                .map((d) => (
+                  <option key={d.key} value={d.key}>
+                    {d.label}
+                  </option>
+                ))}
+            </optgroup>
+            <optgroup label="Henchmen">
+              {destinations
+                .filter((d) => d.group === 'Henchmen')
+                .map((d) => (
+                  <option key={d.key} value={d.key}>
+                    {d.label}
+                  </option>
+                ))}
+            </optgroup>
+          </SelectField>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-ink">Quantity</span>
+            <Stepper label="quantity" value={quantity} min={1} onChange={setQuantity} />
+          </div>
+          {isRare && quantity > 1 ? <p className="text-xs text-warn">The rulebook allows one rare item per successful roll.</p> : null}
+          {destinationKey.startsWith('henchmanGroup:') ? (
+            <p className="text-xs text-ink-dim">Every member of a henchman group must be equipped alike, so buy one per model.</p>
+          ) : null}
+        </section>
         {isRare ? (
           <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
             <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband)` : ''}</h3>
@@ -371,38 +403,6 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
               {computed !== null ? <OverrideField what="the cost" suggested={computed} value={priceOverride} onChange={setPriceOverride} /> : null}
             </section>
 
-            <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-              <h3 className="text-xs uppercase tracking-wider text-ink-dim">Destination</h3>
-              <SelectField label="Give to" hideLabel value={destinationKey} onChange={(e) => chooseDestination(e.target.value)}>
-                <option value="stash">Stash</option>
-                <optgroup label="Heroes">
-                  {destinations
-                    .filter((d) => d.group === 'Heroes')
-                    .map((d) => (
-                      <option key={d.key} value={d.key}>
-                        {d.label}
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Henchmen">
-                  {destinations
-                    .filter((d) => d.group === 'Henchmen')
-                    .map((d) => (
-                      <option key={d.key} value={d.key}>
-                        {d.label}
-                      </option>
-                    ))}
-                </optgroup>
-              </SelectField>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-ink">Quantity</span>
-                <Stepper label="quantity" value={quantity} min={1} onChange={setQuantity} />
-              </div>
-              {isRare && quantity > 1 ? <p className="text-xs text-warn">The rulebook allows one rare item per successful roll.</p> : null}
-              {destinationKey.startsWith('henchmanGroup:') ? (
-                <p className="text-xs text-ink-dim">Every member of a henchman group must be equipped alike, so buy one per model.</p>
-              ) : null}
-            </section>
 
             <div className="flex items-baseline justify-between gap-3 px-1">
               <span className="text-sm text-ink-dim">Treasury {roster.gold} gc</span>

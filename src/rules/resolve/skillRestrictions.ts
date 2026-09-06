@@ -21,6 +21,38 @@ function singular(word: string): string {
   return word;
 }
 
+/** Restriction subjects whose unit names say something else: which unit ids they mean. */
+export const SUBJECT_UNITS: Record<string, string[]> = {
+  gnoblars: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter"],
+  ogres: ["ogre_hunting_party_ogre_hunter", "maneaters_captain", "maneaters_youngbloods", "maneaters_mountain_guide", "ostlander_elder"],
+  slayers: ["dwarf_slayer_cult_giant_slayer", "dwarf_slayer_cult_doomseeker_hero", "dwarf_slayer_cult_troll_slayers"],
+  "troll slayers": ["dwarf_slayer_cult_giant_slayer", "dwarf_slayer_cult_doomseeker_hero", "dwarf_slayer_cult_troll_slayers"],
+  skinks: ["lizardmen_skink_priest", "lizardmen_skink_great_crest", "lizardmen_skink_brave"],
+  saurus: ["lizardmen_saurus_totem_warrior", "lizardmen_saurus_brave"],
+  "warrior priest": ["warrior_priest", "witch_hunters_warrior_priest"],
+  "squig herders": ["night_goblins_web_boss", "night_goblins_big_boss"],
+  "strigany heroes": ["seer", "domnu"],
+  "strigoi vampire": ["strigoi_vampire"],
+  rememberer: ["dwarf_slayer_cult_rememberer_hero"],
+  dreamer: ["dreamwalkers_dreamer"],
+  shinobi: ["nipponese_shinobi_hero"],
+  "shadow weavers": ["shadow_warriors_shadow_weaver"],
+  matriarch: ["sisters_of_sigmar_matriarch"],
+  "beastmen chief": ["beastmen_chieftain"],
+  "questing knight": ["bretonnian_knights_questing_knight", "bretonnian_questing_knight"],
+  "halfling thieves": ["mootlanders_halfling_thief"],
+  stormvermin: ["stormvermin"],
+  snotlings: ["bigsnotz", "snotling_scouts", "snotling_shaman"],
+};
+
+/** Does the unit answer to the restriction's subject, by an explicit id list first, then by name? */
+export function unitMatches(unitId: string, unitName: string, subject: string): boolean {
+  const key = normalise(subject).replace(/\bonly\b/g, "").trim();
+  const listed = SUBJECT_UNITS[key] ?? SUBJECT_UNITS[singular(key)];
+  if (listed) return listed.includes(unitId);
+  return unitAnswersTo(unitName, subject);
+}
+
 /** Does the unit name (e.g. "Troll Slayers") answer to the restriction's subject (e.g. "Slayers", "Troll Slayer")? */
 export function unitAnswersTo(unitName: string, subject: string): boolean {
   const unit = normalise(unitName).split(" ").map(singular);
@@ -86,7 +118,7 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
   const exclusion = /(?:may not be (?:taken|used) by|may never take|cannot be taken by|never take) (?:the )?([a-z' ,-]+?)(?:\.|,| there| and no| the|$)/i.exec(text) ?? /^the ([a-z' -]+?) may never take/i.exec(text);
   if (exclusion && unit) {
     const subjects = exclusion[1].split(/\s+or\s+|,\s*/).map((s) => s.trim()).filter(Boolean);
-    if (subjects.some((s) => unitAnswersTo(unit.name, s))) return `${unit.name} may not take this skill.`;
+    if (subjects.some((s) => unitMatches(unit.id, unit.name, s))) return `${unit.name} may not take this skill.`;
   }
 
   // "X only" / "Only the X may have this skill" / "only be taken by X" / "This skill is for X only" / "Only for X".
@@ -94,7 +126,7 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
   if (only && unit) {
     const subject = only[1].trim();
     if (/leader|spellcaster|warrior capable of casting/i.test(subject)) return null;
-    if (!unitAnswersTo(unit.name, subject)) return `${text.replace(/\.$/, "")}: ${unit.name} are not ${subject.replace(/^the /i, "")}.`;
+    if (!unitMatches(unit.id, unit.name, subject)) return `${text.replace(/\.$/, "")}: ${unit.name} are not ${subject.replace(/^the /i, "")}.`;
   }
   return null;
 }

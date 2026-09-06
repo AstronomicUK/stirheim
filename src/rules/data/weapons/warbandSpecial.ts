@@ -27,6 +27,8 @@ export const WARBAND_SPECIAL_WEAPONS: Weapon[] = [
   { id: "slingshot", name: "Slingshot", type: "ranged", strength: 2, critCategory: "missile", concussion: false, special: ["fireTwiceAtMinus1IfStationaryWithinHalfRange"], rangedProfile: { shortRange: 9, maxRange: 18, shotsPerTurn: 1 } },
 
   // ---- Attacks granted by miscellaneous kit ----
+  { id: "great_claw", name: "Great Claw", type: "melee", strength: "user", strengthBonus: 1, critCategory: "unarmed", concussion: false, maxAttacks: 1, special: ["mutationExtraAttack"], rangedProfile: null },
+  { id: "scorpion_tail", name: "Scorpion Tail", type: "melee", strength: 5, critCategory: "thrusting", concussion: false, maxAttacks: 1, poisoned: true, special: ["mutationExtraAttack", "strength2VsImmuneToPoison"], rangedProfile: null },
   { id: "stream_of_corruption", name: "Stream of Corruption", type: "ranged", strength: 3, critCategory: "missile", concussion: false, ignoresArmourSave: true, special: ["blessingOfNurgle"], rangedProfile: { shortRange: 6, maxRange: 6, shotsPerTurn: 1 } },
   { id: "sword_gnoblar_attack", name: "Sword-Gnoblar", type: "melee", strength: 2, critCategory: "bladed", concussion: false, maxAttacks: 1, special: ["extraAttackAtOwnersWs"], rangedProfile: null },
   { id: "iron_shod_boots_kick", name: "Iron Shod Boots (kick)", type: "melee", strength: "user", critCategory: "unarmed", concussion: false, maxAttacks: 1, toHitBonus: -1, special: ["extraKickAttack"], rangedProfile: null },

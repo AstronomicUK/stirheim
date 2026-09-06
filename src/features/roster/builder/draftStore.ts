@@ -17,7 +17,7 @@ export interface DraftState {
   /** Message from the last edit the builder refused (not persisted). */
   lastError: string | null
   /** Replace whatever is there with a fresh draft for `template`. */
-  start(template: WarbandTemplate, name: string): void
+  start(template: WarbandTemplate, name: string, campaignId?: string | null): void
   /** Replace whatever is there with a draft built elsewhere (from a saved template). */
   load(draft: WarbandDraft): void
   /** Apply a pure builder function to the current draft. No-op when there is no draft. */
@@ -32,8 +32,8 @@ export const useDraftStore = create<DraftState>()(
       draft: null,
       updatedAt: null,
       lastError: null,
-      start: (template, name) =>
-        set({ draft: newWarbandDraft(template, name), updatedAt: new Date().toISOString(), lastError: null }),
+      start: (template, name, campaignId = null) =>
+        set({ draft: newWarbandDraft(template, name, undefined, campaignId), updatedAt: new Date().toISOString(), lastError: null }),
       load: (draft) => set({ draft, updatedAt: new Date().toISOString(), lastError: null }),
       update: (edit) => {
         const current = get().draft

@@ -56,6 +56,9 @@ export const WIZARD_ALLOCATIONS: WizardAllocation[] = [
   { wizard: "Witch", loreName: "Charms & Hexes", loreId: "charms_and_hexes" },
   { wizard: "Witch Hunters Warrior-Priest", loreName: "Prayers of Sigmar", loreId: "prayers_of_sigmar" },
   { wizard: "Wolf Priest of Ulric", loreName: "Prayers of Ulric", loreId: "prayers_of_ulric" },
+  // The Sorcerous Society picks one of four Elemental Lores per wizard; the hero editor records the first spell and the advance flow follows that lore.
+  { wizard: "Sorcerous Society Magus", loreName: "Elemental Lores (choose one)", loreId: null },
+  { wizard: "Sorcerous Society Mages", loreName: "Elemental Lores (choose one)", loreId: null },
 ];
 
 export const SPELL_LORES: SpellLore[] = [
@@ -2104,6 +2107,76 @@ Range 12". Each of the two bolts causes D3 S3 hits; the bolts can either be fire
       },
     ],
     source: { publication: "mordheimer.net — Magic: Waaaagh! Magic (https://mordheimer.net/docs/magic/waaaagh)", file: "03-campaigns-magic-optional-rules.md:3437-3501" },
+  },
+
+  // ---- Sorcerous Society (Phase 17): the four Elemental Lores ----
+  {
+    id: "elemental_lore_of_water",
+    name: "Elemental Lore of Water",
+    sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/sorcerous-society",
+    intro: `One of the four Elemental Lores of the Sorcerous Society. A Magus or Mage picks a lore and rolls on its table.`,
+    usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
+    die: "D6",
+    spells: [
+      { id: "geyser", name: "Geyser", roll: { min: 1, max: 1 }, difficulty: 9, text: `Calling upon the earth, the caster beckons a steaming geyser to erupt. The spell has a range of 10 inches and cannot target elevated targets. The unit suffers a S4 hit and is blown 2 inches in a random direction. Should the model collide with something, both will suffer an additional S2 hit.` },
+      { id: "portent_of_amul", name: "Portent of Amul", roll: { min: 2, max: 2 }, difficulty: 6, text: `Divining auspicious signs, the wizard guides the minds of his fellow warriors, allowing them to predict the actions of their foes. This spell affects all of the wizard's friendly units. During this and their opponents' Close Combat phase, any 1's that are cast may be re-rolled. Re-rolled scores of 1 must stand, as you may never re-roll a re-roll.` },
+      { id: "premonition", name: "Premonition", roll: { min: 3, max: 3 }, difficulty: 8, text: `The wizard closes his eyes and seeks to foresee the outcome of the battle. As long as the wizard stands, the warband will gain +1 to its Leadership and the ability to re-roll any failed Rout Tests. The wizard has foretold of their victory, and they are not easily swayed from his Premonition.` },
+      { id: "frostbolts", name: "Frostbolts", roll: { min: 4, max: 4 }, difficulty: 8, text: `Holding a small icicle aloft, the wizard channels the power of the Winds of Magic into it. Borne upon the arcane winds, the frozen bolts arc through the skies at the wizard's foe. Frostbolts is a magic missile with a range of 16 inches. If successfully cast, a squall of frozen missiles hit the target and causes D3 S3 hits.` },
+      { id: "blindness_of_the_depths", name: "Blindness of the Depths", roll: { min: 5, max: 5 }, difficulty: 7, text: `The caster binds the enemy in the shadows and silence of the deep, rendering him oblivious to the world around him. This spell has a range of 12 inches. The target may make an immediate Initiative test. If passed, the spell has no effect. If the test is failed, the model is Blind and may not fight or shoot any missile weapons, nor cast any spells. Furthermore, the model may not be charged or targeted for ranged fire or spells, as it is completely engulfed in shadow. The model may make an Initiative test during each of its own Recovery Phases. Once passed, the spell fades.` },
+      { id: "lifespring", name: "Lifespring", roll: { min: 6, max: 6 }, difficulty: 8, text: `Bearing the gift of life, the wizard wisely taps into the Lifespring and offers its blessing to his friends. Any one friendly model within 4 inches of the wizard instantly regains a wound, and recovers from being Knocked Down or Stunned and may act as normal this turn.` },
+    ],
+    source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
+  },
+  {
+    id: "elemental_lore_of_fire",
+    name: "Elemental Lore of Fire",
+    sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/sorcerous-society",
+    intro: `One of the four Elemental Lores of the Sorcerous Society. A Magus or Mage picks a lore and rolls on its table.`,
+    usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
+    die: "D6",
+    spells: [
+      { id: "jorun_s_blast_of_brimstone", name: "Jorun's Blast of Brimstone", roll: { min: 1, max: 1 }, difficulty: 9, text: `The Mage casts a small ball of mixed stuffs, mostly ash, sulfur and coal, at his enemies. The results are, to say the least, explosive. Range of the spell equals the caster's Strength plus 1D6 inches. The caster then throws the small sulfurous rock at any model he has Line of Sight to within that range, and it explodes upon impact. The rock does a S3 hit to that model, and any others within 1.5 inches from it.` },
+      { id: "tazoul_s_burning_skull", name: "Tazoul's Burning Skull", roll: { min: 2, max: 2 }, difficulty: 9, text: `Throwing one's own head o'er the battlefield is never recommended, especially when it's aflame. The Wizard known as Tazoul never heeded such warnings. The flaming skull has a range of 8 inches and causes one S5 hit. On a roll of 5+ it will hit the nearest enemy model with a S3 hit. On a further roll of 4+ it will hit the next nearest enemy model with a S2 hit. The spell may not target the same model during one casting.` },
+      { id: "hades_heat", name: "Hades Heat", roll: { min: 3, max: 3 }, difficulty: 6, text: `The wizard calls upon the sun to intensify its rays o'er a small area. Place a small Blast Template (3 inches) anywhere within 8 inches of the caster. Models that are under or partially under the template suffer -1WS and -1S due to the exhaustion the intense heat causes until the caster's next turn.` },
+      { id: "shield_of_flame", name: "Shield of Flame", roll: { min: 4, max: 4 }, difficulty: 8, text: `The wizard weaves a shield of pure flame, aiding him in his defense. The Shield of Flame hovers between the wizard and his foes. He is free to use his weapons normally as the Shield of Flame moves in conjunction with the Wizard's attacks. The shield grants the Wizard an Armour Save of 4+ in Close Combat and 5+ to ranged attacks. These do not stack and are unmodifiable.` },
+      { id: "u_zhul_s_inferno", name: "U'zhul's Inferno", roll: { min: 5, max: 5 }, difficulty: 9, text: `A pillar of flame erupts from the caster's hand, engulfing all in its path. The pillar of flame has a range of 12 inches and is 1 inch wide. It hits all models in its path with a S2 hit. The target of the spell suffers the brunt of the attack, receiving a S4 hit. All hits have a -1 AS modifier.` },
+      { id: "flesh_of_the_forge", name: "Flesh of the Forge", roll: { min: 6, max: 6 }, difficulty: 6, text: `Surrendering himself to the winds of magic, the alchemist imbues his flesh with the heat of the forge. The Wizard's skin becomes hot, smoldering with the heat of a thousand coals. All hits against the wizard in Close Combat are at -1 to hit. Roll a D6 during the Wizard's Recovery phase. On a roll of 1–2, his flesh reverts to its natural form.` },
+    ],
+    source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
+  },
+  {
+    id: "elemental_lore_of_earth",
+    name: "Elemental Lore of Earth",
+    sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/sorcerous-society",
+    intro: `One of the four Elemental Lores of the Sorcerous Society. A Magus or Mage picks a lore and rolls on its table.`,
+    usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
+    die: "D6",
+    spells: [
+      { id: "flesh_of_clay", name: "Flesh of Clay", roll: { min: 1, max: 1 }, difficulty: 8, text: `Attuning himself to the earth, the wizard's flesh becomes as dense as clay. The wizard doubles his Toughness, but halves his Movement and Initiative. The spell remains in effect until the caster is Knocked Down, Stunned or taken Out of Action.` },
+      { id: "healing_might", name: "Healing Might", roll: { min: 2, max: 2 }, difficulty: 9, text: `Allowing the healing power of the earth to rise up within him, the wizard aids even those with the most grievous wounds around him. All models within 4 inches of the wizard rise from the ground, shrugging off the effects of being Knocked Down or Stunned. Furthermore, any units within 2 inches of the wizard have all of their wounds restored.` },
+      { id: "curse_of_thorns", name: "Curse of Thorns", roll: { min: 3, max: 3 }, difficulty: 6, text: `The caster curses his foes, calling upon their life-force to transform into a jagged and thorny essence. The target of the spell must be within 18 inches. The model must pass a Toughness test or be wracked with unimaginable pain. The model will remain immobile and will only defend himself if attacked. A Toughness test must be passed before the spell will fade.` },
+      { id: "jozun_s_decay", name: "Jozun's Decay", roll: { min: 4, max: 4 }, difficulty: 9, text: `Ashes and dust. The caster calls upon the earth to reclaim what is rightfully hers. This spell has a range of 12 inches. Upon a successful casting, the target must pass a Leadership Test or suffer a one point reduction to its Toughness attribute. Each Recovery phase the model must attempt to pass a Leadership test, reducing its Toughness a further point for each failure. Should a model be reduced to 0 Toughness, it is removed from the game irrespective of how many wounds it has left. Should a Leadership test be passed, the model must play the remainder of the game at its modified Toughness score. A model may not be targeted by this spell more than once per game.` },
+      { id: "the_hunter_s_spear", name: "The Hunter's Spear", roll: { min: 5, max: 5 }, difficulty: 8, text: `Beseeching Venor the Hunter, the caster conjures a pure manifestation of amber-hued magic in the shape of a mighty hunting spear. The wizard's weapon takes on an amber-hue and transmutes into a hunting spear. It grants the caster an additional two points to his Strength, and grants him an additional attack. The caster must make a Leadership test during his Recovery phases. The spear fades away if the test is failed.` },
+      { id: "shifting_sands", name: "Shifting Sands", roll: { min: 6, max: 6 }, difficulty: 8, text: `Calling upon the very fibers of the earth, the mage forces the ground to swallow his foes. This spell may be cast on any enemy model within sight of the wizard. The model in question must make a successful Initiative test or be treated as Knocked Down until its next Recovery phase, where it has another chance to pass an Initiative test. Any friendly models within 1 inch of the trapped model reduce the difficulty of the Initiative test by 1, to a minimum of 1.` },
+    ],
+    source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
+  },
+  {
+    id: "elemental_lore_of_air",
+    name: "Elemental Lore of Air",
+    sourceUrl: "https://mordheimer.net/docs/warbands/grade-2a-warbands/sorcerous-society",
+    intro: `One of the four Elemental Lores of the Sorcerous Society. A Magus or Mage picks a lore and rolls on its table.`,
+    usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
+    die: "D6",
+    spells: [
+      { id: "winter_s_gale", name: "Winter's Gale", roll: { min: 1, max: 1 }, difficulty: 10, text: `Calling to the northern winds, the wizard brings forth freezing air and biting snow. Place the large blast template (5 inches) over a location within 12 inches of the caster. Any model covered or partially covered will suffer a S4 hit. Undead and Possessed models do not suffer as mortals do from the cold, and thus only suffer a S2 hit instead.` },
+      { id: "crow_s_feast", name: "Crow's Feast", roll: { min: 2, max: 2 }, difficulty: 9, text: `With dark intentions, the caster brings the attentions of Corvos the Crow upon his enemies. Crow's Feast is a magic missile spell, with a range of 24 inches. If successfully cast, the spell causes D6 S3 hits.` },
+      { id: "dust_dervish", name: "Dust Dervish", roll: { min: 3, max: 3 }, difficulty: 9, text: `Calling upon minor elementals, the caster bids them to seek out and attack his foes. The spell summons D3 Dust Dervishes, who attack a model each who are within 12 inches of the caster. No other targeting restrictions apply, so even a model that is hidden may be sought out by the air elementals. Each Dust Dervish delivers a rapid succession of attacks, delivering D6 S1 hits to its target prior to vanishing back from whence it came.` },
+      { id: "howler_wind", name: "Howler Wind", roll: { min: 4, max: 4 }, difficulty: 8, text: `The fury of the skies unbound is a force that few can hold at bay. This spell is cast upon the wizard himself. Both he and any models within 8 inches of him gain the protection of the Howler Wind. Anyone targeting these models with mundane ranged weapons suffer a -2 penalty to their Ballistic Skill, however shooting past these models does not affect the missile in any way.` },
+      { id: "celestial_shield", name: "Celestial Shield", roll: { min: 5, max: 5 }, difficulty: 8, text: `The wizard manipulates the magic of the cosmos to create a scintillating blue shield capable of turning aside even the most powerful of projectile or spell. This spell can be cast upon any friendly model within 6 inches of the caster, or the caster himself. The Celestial Shield provides a 4+ save versus all ranged attacks, and a 5+ save versus all hostile spells. Should the recipient of the Shield be the primary target of an area-effect spell and the save be made, no models shall suffer any of the spell's effects.` },
+      { id: "shade_mount", name: "Shade Mount", roll: { min: 6, max: 6 }, difficulty: 8, text: `Darkness forms about the caster, carrying him aloft upon wings of shadow. This spell may be cast upon the wizard himself, or a hero within 8 inches of him. Upon a successful casting, the model may immediately fly up to 12 inches. Should this movement bring the model into Base to Base contact with an enemy model, consider it a charge.` },
+    ],
+    source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
   },
 ];
 

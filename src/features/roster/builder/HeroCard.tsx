@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
+import type { CampaignBans } from '../../../rules/types/roster'
 import { equipmentOptionsFor, removeDraftHero, renameDraftHero, type DraftHero } from '../../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../../rules/types'
 import { Button, TextField } from '../../../ui'
@@ -14,13 +15,14 @@ export interface HeroCardProps {
   template: WarbandTemplate
   /** The mandatory leader cannot be removed. */
   isLeader: boolean
+  bans?: CampaignBans
 }
 
-export function HeroCard({ hero, template, isLeader }: HeroCardProps) {
+export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
   const update = useDraftStore((s) => s.update)
   const [shopping, setShopping] = useState(false)
   const unit = findUnitTemplate(template, hero.unitTemplateId)
-  const options = useMemo(() => equipmentOptionsFor(template, hero.unitTemplateId), [template, hero.unitTemplateId])
+  const options = useMemo(() => equipmentOptionsFor(template, hero.unitTemplateId, bans), [template, hero.unitTemplateId, bans])
   const cost = heroCost(hero, template)
   const subject = { kind: 'hero' as const, id: hero.id }
 

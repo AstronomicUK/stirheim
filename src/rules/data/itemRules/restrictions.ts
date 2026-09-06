@@ -11,6 +11,13 @@ import type { ItemRestriction } from "./types";
 
 export const BOWS = ["bow", "short_bow", "longbow", "elf_bow"];
 
+/** Units that buy mutations at recruitment: the Possessed and Mutants, Marauder heroes with the Mutant skill, Clan Moulder Rat Ogres; the Court's heroes may take three of them. */
+const MUTATION_UNITS = ["cult_of_the_possessed_possessed", "cult_of_the_possessed_mutants", "marauders_chieftain", "marauders_seer", "marauders_champions", "marauders_condemned", "rat_ogres"];
+const COURT_UNITS = ["court_of_pleasures_whipmaster", "court_of_pleasures_danseuse", "court_of_pleasures_flesh_merchant", "court_of_pleasures_priest_of_obscene", "court_of_pleasures_devout"];
+function MUTATION(court = false): ItemRestriction {
+  return { heroesOnly: false, recruitOnly: true, fused: true, unsellable: true, onlyUnits: court ? [...MUTATION_UNITS, ...COURT_UNITS] : MUTATION_UNITS, onlyWarbands: ["cult_of_the_possessed", "marauders_of_chaos", "skaven_of_clan_moulder", "court_of_the_profane_pleasures"], note: "A mutation is bought when the warrior is recruited and never removed; second and later mutations on the same model cost double." };
+}
+
 export const ITEM_RESTRICTIONS: Record<string, ItemRestriction> = {
   // ---- Miscellaneous equipment henchmen may use ----
   rain_coat: { heroesOnly: false, note: "An exception to the Heroes-only rule: henchmen may carry Rain Coats." },
@@ -79,12 +86,23 @@ export const ITEM_RESTRICTIONS: Record<string, ItemRestriction> = {
   misericordia: { onlyWarbands: ["lustrianReavers", "cursedCavalcade"], heroesOnly: false },
 
   // ---- Blessings of Nurgle: Tainted Ones, at recruitment; later ones cost double (the shop asks for the price) ----
-  stream_of_corruption: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
-  nurgles_rot: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
-  cloud_of_flies: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
-  bloated_foulness: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
-  mark_of_nurgle: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
-  hideous: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  stream_of_corruption: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], recruitOnly: true, fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  nurgles_rot: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], recruitOnly: true, fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  cloud_of_flies: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], recruitOnly: true, fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  bloated_foulness: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], recruitOnly: true, fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  mark_of_nurgle: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], recruitOnly: true, fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+  hideous: { onlyWarbands: ["carnival_of_chaos"], onlyUnits: ["carnival_of_chaos_tainted_ones"], recruitOnly: true, fused: true, unsellable: true, note: "A Blessing is bought when the Tainted One is recruited and stays with him." },
+
+  // ---- Mutations: bought when the warrior is recruited; second and later ones cost double ----
+  daemon_soul: MUTATION(),
+  great_claw: MUTATION(true),
+  cloven_hoofs: MUTATION(),
+  tentacle: MUTATION(true),
+  blackblood: MUTATION(),
+  spines: MUTATION(),
+  scorpion_tail: MUTATION(),
+  extra_arm: MUTATION(true),
+  hideous_mutation: MUTATION(),
 
   // ---- Weapons whose kit rule makes them Heroes-only in the lists ----
   forest_cloak: { onlyWarbands: ["outlaws"] },

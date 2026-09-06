@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
+import type { CampaignBans } from '../../../rules/types/roster'
 import {
   equipmentOptionsFor,
   removeDraftGroup,
@@ -20,13 +21,14 @@ export interface GroupCardProps {
   group: DraftGroup
   draft: WarbandDraft
   template: WarbandTemplate
+  bans?: CampaignBans
 }
 
-export function GroupCard({ group, draft, template }: GroupCardProps) {
+export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
   const update = useDraftStore((s) => s.update)
   const [shopping, setShopping] = useState(false)
   const unit = findUnitTemplate(template, group.unitTemplateId)
-  const options = useMemo(() => equipmentOptionsFor(template, group.unitTemplateId), [template, group.unitTemplateId])
+  const options = useMemo(() => equipmentOptionsFor(template, group.unitTemplateId, bans), [template, group.unitTemplateId, bans])
   const cost = groupCost(group, template)
   const ceiling = unit ? groupSizeCeiling(draft, group, unit) : null
   const subject = { kind: 'group' as const, id: group.id }

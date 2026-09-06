@@ -62,7 +62,7 @@ describe("item catalogue", () => {
     expect(MISC_ITEMS.length).toBe(110);
     expect(ANIMAL_ITEMS.length).toBe(14);
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(80);
-    expect(WARBAND_SPECIAL_ITEMS.length).toBe(30);
+    expect(WARBAND_SPECIAL_ITEMS.length).toBe(39);
     expect(ITEMS.length).toBe(246 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);

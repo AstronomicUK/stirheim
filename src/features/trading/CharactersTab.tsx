@@ -10,6 +10,9 @@ import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { rollDie } from '../../rules/resolve/dice'
 import { characterSearchers, resolveCharacterSearch, type SearcherRoll } from '../../rules/resolve/dramatis'
 import { hireHiredSword } from '../../rules/resolve/recruitment'
+import { actionsFor, performAction, type BetweenBattleAction } from '../../rules/resolve/betweenBattles'
+import { findItem } from '../../rules/data/items'
+import type { RosterHero } from '../../rules/types/roster'
 import type { DramatisPersonaSummary } from '../../rules/types/campaignContent'
 import { Button, DieField, Notice, Sheet } from '../../ui'
 import { readRestriction, type Eligibility } from '../recruitment/helpers'
@@ -41,6 +44,7 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
           ? `${searchers.length} ${searchers.length === 1 ? 'hero' : 'heroes'} can look this sequence.`
           : 'No post-battle sequence is in progress, so a search here is not counted against a hero.'}
       </p>
+      <ActionsSection trade={trade} searchers={searchers} />
       <Section title="Characters" aside={`${rows.length}`}>
         <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
           {rows.map(({ persona, eligibility }) => (
@@ -208,6 +212,114 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
           </Card>
         ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
+      </div>
+    </Sheet>
+  )
+}
+
+
+/** Things a hero may do instead of searching: brew poison, rob travellers, run a con, sell from the Trade Wagon. */
+function ActionsSection({ trade, searchers }: { trade: TradeContext; searchers: RosterHero[] }) {
+  const { roster, phase, run, pending, canTrade } = trade
+  const able = roster.heroes.filter((h) => h.status === 'active' && actionsFor(h).length > 0)
+  const [picked, setPicked] = useState<{ hero: RosterHero; action: BetweenBattleAction } | null>(null)
+  if (able.length === 0) return null
+  const searcherIds = new Set(searchers.map((s) => s.id))
+  return (
+    <Section title="Instead of searching">
+      <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
+        {able.flatMap((hero) =>
+          actionsFor(hero).map((action) => {
+            const free = phase.matchId === null || searcherIds.has(hero.id)
+            return (
+              <li key={`${hero.id}:${action.id}`}>
+                <button type="button" disabled={!canTrade || !free} onClick={() => setPicked({ hero, action })} className="flex min-h-12 w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-surface-high disabled:cursor-default disabled:opacity-60">
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-medium text-ink">
+                      {hero.name}: {action.label}
+                    </span>
+                    <span className="text-sm text-ink-dim">{action.text}</span>
+                  </span>
+                  {!free ? <Tag tone="warn">Searched already</Tag> : null}
+                </button>
+              </li>
+            )
+          }),
+        )}
+      </ul>
+      {picked ? (
+        <ActionSheet
+          key={`${picked.hero.id}:${picked.action.id}`}
+          hero={picked.hero}
+          action={picked.action}
+          trade={trade}
+          pending={pending}
+          onClose={() => setPicked(null)}
+          onRun={async (rolls, stashItemId) => {
+            const ok = await run(() => performAction(roster, { actionId: picked.action.id, heroId: picked.hero.id, rolls, stashItemId }).value, {
+              heroesSearched: phase.matchId !== null ? [picked.hero.id] : [],
+              reason: `trading · ${picked.hero.name}: ${picked.action.label} (${Object.entries(rolls)
+                .map(([k, v]) => `${k} ${v}`)
+                .join(', ')})`,
+            })
+            if (ok) setPicked(null)
+          }}
+        />
+      ) : null}
+    </Section>
+  )
+}
+
+interface ActionSheetProps {
+  hero: RosterHero
+  action: BetweenBattleAction
+  trade: TradeContext
+  pending: boolean
+  onClose: () => void
+  onRun: (rolls: Record<string, number>, stashItemId?: string) => Promise<void>
+}
+
+function ActionSheet({ hero, action, trade, pending, onClose, onRun }: ActionSheetProps) {
+  const [rolls, setRolls] = useState<Record<string, number | null>>({})
+  const [stashItemId, setStashItemId] = useState('')
+  const rare = trade.roster.stash.filter((i) => i.itemId && findItem(i.itemId)?.availability.kind === 'rare')
+  const failed = rolls.d6 === 1
+  const needed = action.dice.filter((d) => !(d.key.startsWith('gold') && failed))
+  const complete = needed.every((d) => typeof rolls[d.key] === 'number') && (!action.needsStashItem || stashItemId !== '')
+  const filled = Object.fromEntries(Object.entries(rolls).filter(([, v]) => v !== null)) as Record<string, number>
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={`${hero.name}: ${action.label}`}
+      description={action.text}
+      footer={
+        <Button block pending={pending} disabled={!complete} onClick={() => void onRun(filled, stashItemId || undefined)}>
+          Record it
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-4 py-2">
+        {action.needsStashItem ? (
+          rare.length === 0 ? (
+            <Notice tone="warn">Nothing rare is stored in the stash to sell.</Notice>
+          ) : (
+            <select className="min-h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-ink" aria-label="Item to sell" value={stashItemId} onChange={(e) => setStashItemId(e.target.value)}>
+              <option value="">Choose the item to sell</option>
+              {rare.map((i) => (
+                <option key={i.itemId!} value={i.itemId!}>
+                  {findItem(i.itemId!)?.name} (basic {findItem(i.itemId!)?.price.base ?? 0} gc)
+                </option>
+              ))}
+            </select>
+          )
+        ) : null}
+        <div className="flex flex-wrap items-end gap-3">
+          {needed.map((d) => (
+            <DieField key={d.key} label={d.label} sides={d.sides} value={rolls[d.key] ?? null} onChange={(v) => setRolls((r) => ({ ...r, [d.key]: v }))} rollable />
+          ))}
+        </div>
+        <p className="text-xs text-ink-dim">Taking this uses {hero.name}'s rare-item search for the sequence.</p>
       </div>
     </Sheet>
   )

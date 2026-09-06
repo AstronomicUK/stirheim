@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useMyCampaigns } from '../../api/campaigns'
+import { useSession } from '../../app/session'
 import { WARBAND_TEMPLATES } from '../../rules/data/warbandTemplates'
 import type { UnitTemplate, WarbandTemplate } from '../../rules/types'
-import { Button, Notice, PageHeader, SegmentedControl, Sheet, TextField } from '../../ui'
+import { Button, Notice, PageHeader, SegmentedControl, Sheet, TextField, SelectField } from '../../ui'
 import { useDraftStore } from './builder/draftStore'
 import { compositionSummary, filterTemplates, gradeLabel, gradesPresent, type GradeFilter } from './builder/helpers'
 import { SavedTemplates } from './SavedTemplates'
@@ -79,14 +81,18 @@ function TemplateSheet({ template, onClose }: { template: WarbandTemplate; onClo
   const draft = useDraftStore((s) => s.draft)
   const start = useDraftStore((s) => s.start)
   const [name, setName] = useState('')
+  const [campaignId, setCampaignId] = useState('')
   const [confirmReplace, setConfirmReplace] = useState(false)
+  const user = useSession((s) => s.user)
+  const campaigns = useMyCampaigns(user?.id)
+  const openCampaigns = (campaigns.data ?? []).filter((c) => !c.archived)
 
   const trimmed = name.trim()
   const sameTemplateDraft = draft && draft.warbandTemplateId === template.id ? draft : null
   const otherDraft = draft && draft.warbandTemplateId !== template.id ? draft : null
 
   function begin() {
-    start(template, trimmed)
+    start(template, trimmed, campaignId || null)
     navigate(`/warbands/new/${template.id}`)
   }
 
@@ -150,6 +156,16 @@ function TemplateSheet({ template, onClose }: { template: WarbandTemplate; onClo
           }}
           hint="You can rename it while building."
         />
+        {openCampaigns.length > 0 ? (
+          <SelectField label="Building for a campaign" hint="Its bans are kept out of the equipment lists; the warband still joins with the invite code afterwards." value={campaignId} onChange={(e) => setCampaignId(e.target.value)}>
+            <option value="">No campaign yet</option>
+            {openCampaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </SelectField>
+        ) : null}
 
         {template.specialRules.length > 0 ? (
           <section className="flex flex-col gap-2">

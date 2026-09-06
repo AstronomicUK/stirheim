@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { useCampaign } from '../../api/campaigns'
 import { useCreateWarband } from '../../api/warbands'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import {
@@ -81,6 +82,8 @@ export function BuilderPage() {
 
 function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTemplate }) {
   const navigate = useNavigate()
+  const campaign = useCampaign(draft.campaignId ?? undefined)
+  const bans = campaign.data?.campaign.settings.houseRules.bans
   const update = useDraftStore((s) => s.update)
   const clear = useDraftStore((s) => s.clear)
   const lastError = useDraftStore((s) => s.lastError)
@@ -93,10 +96,10 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
 
   const derived = useMemo(() => {
     const costs = draftCosts(draft, template)
-    const problems = validateDraft(draft, template)
+    const problems = validateDraft(draft, template, bans)
     const rating = warbandRating(draftToRosterWarband(draft, template), template).total
     return { costs, problems, rating }
-  }, [draft, template])
+  }, [draft, template, bans])
 
   const leader = leaderTemplate(template)
   const capacity = heroCapacity(template)
@@ -213,7 +216,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
           </span>
         </div>
         {draft.heroes.map((hero) => (
-          <HeroCard key={hero.id} hero={hero} template={template} isLeader={hero.unitTemplateId === leader?.id} />
+          <HeroCard key={hero.id} hero={hero} template={template} isLeader={hero.unitTemplateId === leader?.id} bans={bans} />
         ))}
         <Button variant="secondary" block onClick={() => setAdding('hero')}>
           Add hero
@@ -229,7 +232,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
         </div>
         {draft.groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups yet.</p> : null}
         {draft.groups.map((group) => (
-          <GroupCard key={group.id} group={group} draft={draft} template={template} />
+          <GroupCard key={group.id} group={group} draft={draft} template={template} bans={bans} />
         ))}
         <Button variant="secondary" block onClick={() => setAdding('henchman')}>
           Add group

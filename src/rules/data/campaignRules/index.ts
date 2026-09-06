@@ -136,9 +136,27 @@ export interface SuccessionRule {
   grantsSkillIds?: string[];
 }
 
+/** A roll the list calls for after each battle (Marauders' Eye of the Gods). Read by features/postBattle/model/kit.ts. */
+export interface WarbandPostBattleRule {
+  key: string;
+  label: string;
+  text: string;
+  dice: "D6" | "2D6";
+  /** The leader must have fought for the roll to be owed. */
+  leaderFought?: boolean;
+  /** Modifiers the report computes: +1 per hero out of action after a loss, +1 per enemy the leader put down after a win. */
+  modifiers?: { lostPerHeroOut?: number; wonPerLeaderKill?: number };
+  /** Outcome bands on the modified total; `effect` names what the report applies. */
+  outcomes: { min: number; max: number; text: string; effect?: "leaderSpawn" | "leaderMark" }[];
+  /** Total at which the list's big result happens, by warband variant note (Norse 13+, Tattooed Body 10+): shown as a note, the outcomes use the base 12+. */
+  note?: string;
+}
+
 export interface WarbandCampaignRules {
   /** Rolls the list calls for before each battle. */
   preBattle?: PreBattleRule[];
+  /** Rolls the list calls for after each battle. */
+  postBattle?: WarbandPostBattleRule[];
   /** What happens when the leader is dead. */
   succession?: SuccessionRule;
   exploration?: ExplorationRules;
@@ -311,6 +329,10 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   wolf_rats: ANIMAL,
   rat_ogres: { ...ANIMAL, large: true },
   snotling_shoota_team: { injury: { deadOn: [1, 2, 3], label: "dead", note: "Not-So-Tough Gits: Snotling henchmen die on a 1-3." } },
+  snotling_wheelo: {
+    promotion: { never: true, note: "A Wheelo never learns The lad's got talent." },
+    injury: { deadOn: [1], label: "destroyed", note: "Tough Machine: on a 1 the Wheelo is destroyed; on a 2 it misses the next 1D3 games for repairs (note it on the group); 3-6 it is unscathed." },
+  },
   snotling_mobs: { promotion: { never: true, note: "Snotling Mobs are never promoted." }, injury: { deadOn: [1, 2, 3], label: "dead", note: "Not-So-Tough Gits: Snotling henchmen die on a 1-3." } },
   runts: { injury: { deadOn: [1, 2, 3, 4], label: "dead", note: "Smallest of the Small: Runts die on a 1-4." } },
   companions: { neverLeads: true },
@@ -331,6 +353,23 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
 const DWARF_NO_ELVES: HiredSwordRules = { denyKeywords: ["elf"], note: "Dwarfs will not hire Elves." };
 
 export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
+  marauders_of_chaos: {
+    postBattle: [
+      {
+        key: "eye_of_the_gods",
+        label: "Eye of the Gods",
+        text: "Roll 2D6 after every battle the leader fought in. After a loss add +1 for each hero taken out of action: on 12 or more the leader turns into a Chaos Spawn (experience, skills, injuries and kit lost). After a win add +1 for every enemy the leader took out of action: on 12 or more he may choose a Mark of Chaos. Once he bears a Mark the test stops.",
+        dice: "2D6",
+        leaderFought: true,
+        modifiers: { lostPerHeroOut: 1, wonPerLeaderKill: 1 },
+        outcomes: [
+          { min: 2, max: 11, text: "The Dark Gods are unmoved." },
+          { min: 12, max: 30, text: "12 or more: after a loss the leader becomes a Chaos Spawn (remove him; add a Spawn of Chaos henchman by hand if the warband has none); after a win choose a Mark of Chaos for him (note it on his card).", effect: "leaderSpawn" },
+        ],
+        note: "Norse tribes need 13 or more; a leader with Tattooed Body needs only 10 (11 for the Norse). A leader who already bears a Mark does not roll.",
+      },
+    ],
+  },
   mercenaries_marienburg: { startingGold: 600, rareRollBonus: 1, notes: ["Marienburgers start with 600 gc and add +1 to rare-item rolls."] },
   tileans_trantios: { startingGold: 600, notes: ["Trantios: an extra 100 gc when the warband is founded."] },
   bretonnian_knights: {

@@ -171,6 +171,8 @@ export interface FightOdds {
   parryAttempts: number
   /** Plain-English caveats: rules in play the engine approximates or ignores. */
   notes: string[]
+  /** Who strikes first this turn and why (a line, not a number). */
+  strikeOrder: string
 }
 
 export function computeOdds(setup: FightSetup): FightOdds {
@@ -221,7 +223,38 @@ export function computeOdds(setup: FightSetup): FightOdds {
     maxParries: setup.parryUsed ? 0 : undefined,
   })
 
-  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon) }
+  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context }) }
+}
+
+/**
+ * Who strikes first in close combat (rulebook: chargers first, then Initiative order, ties roll off),
+ * with the weapon rules that override it: Strike First weapons in the first turn or when charged,
+ * Strike Last weapons always last, and each weapon's own Initiative modifier.
+ */
+export function strikeOrder(setup: FightSetup): string {
+  if (setup.primary.type === 'ranged') return 'Shooting: no strike order.'
+  const a = setup.attacker
+  const d = setup.defender
+  const aWeapons = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
+  const dWeapons = setup.defenderKit.melee
+  const first = (ws: Weapon[]) => ws.some((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))
+  const last = (ws: Weapon[]) => ws.some((w) => w.special.includes('strikesLast'))
+  const aI = a.stats.I + Math.max(0, ...aWeapons.map((w) => w.initiativeModifier ?? 0), 0) + Math.min(0, ...aWeapons.map((w) => w.initiativeModifier ?? 0), 0)
+  const dI = d.stats.I + Math.max(0, ...dWeapons.map((w) => w.initiativeModifier ?? 0), 0) + Math.min(0, ...dWeapons.map((w) => w.initiativeModifier ?? 0), 0)
+  const firstTurn = setup.context.charging || setup.context.firstTurnOfCombat
+  if (last(aWeapons) && !last(dWeapons)) return `${d.name} strikes first: ${a.name}'s ${aWeapons.find((w) => w.special.includes('strikesLast'))!.name} always strikes last.`
+  if (last(dWeapons) && !last(aWeapons)) return `${a.name} strikes first: ${d.name}'s ${dWeapons.find((w) => w.special.includes('strikesLast'))!.name} always strikes last.`
+  if (setup.context.charging) {
+    if (firstTurn && first(dWeapons)) return `${d.name} strikes first despite the charge (${dWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}); a Strike First charger would roll off.`
+    return `${a.name} strikes first: charging.`
+  }
+  if (firstTurn && first(aWeapons) && !first(dWeapons)) return `${a.name} strikes first in the first turn (${aWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}).`
+  if (firstTurn && first(dWeapons) && !first(aWeapons)) return `${d.name} strikes first in the first turn (${dWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}).`
+  const aNote = aI !== a.stats.I ? ` (${a.stats.I}${aI - a.stats.I > 0 ? '+' : ''}${aI - a.stats.I} from the weapon)` : ''
+  const dNote = dI !== d.stats.I ? ` (${d.stats.I}${dI - d.stats.I > 0 ? '+' : ''}${dI - d.stats.I} from the weapon)` : ''
+  if (aI > dI) return `${a.name} strikes first: Initiative ${aI}${aNote} against ${dI}${dNote}.`
+  if (dI > aI) return `${d.name} strikes first: Initiative ${dI}${dNote} against ${aI}${aNote}.`
+  return `Equal Initiative (${aI}${aNote} each): roll off for who strikes first.`
 }
 
 /** Coating bonuses the engine's weapon fields cannot carry: an injury bonus, and Reptile Venom's Strength that leaves the save alone. */
@@ -262,13 +295,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
     notes.push(left <= 0 ? `${setup.defender.name} is already at zero Wounds: every wound through rolls for injury.` : `${setup.defender.name} has ${left} of ${setup.defender.stats.W} Wounds left: injury is only rolled once the last is lost.`)
   }
   if (setup.parryUsed) notes.push(`${setup.defender.name} has already parried this turn.`)
-  notes.push(`Initiative: ${setup.attacker.name} ${setup.attacker.stats.I}, ${setup.defender.name} ${setup.defender.stats.I}. Chargers strike first; otherwise the higher Initiative does.`)
-  const order = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
-  for (const w of order) {
-    if (w.special.includes('strikesFirstFirstTurn')) notes.push(`${w.name} strikes first in the first turn of a combat, even against a charge.`)
-    if (w.special.includes('strikesLast')) notes.push(`${w.name} always strikes last.`)
-    if (w.special.includes('strikesFirstWhenCharged')) notes.push(`${w.name} strikes first when its wielder is charged.`)
-  }
+  // Strike order has its own line (FightOdds.strikeOrder).
   if (setup.defenderKit.wardSaveThreshold !== null) notes.push(`Ward save ${setup.defenderKit.wardSaveThreshold}+ against every wound.`)
   if (setup.defenderKit.armour.pavise) notes.push(setup.primary.type === 'ranged' ? 'Pavise: the target counts as in cover (-1 to hit).' : 'Pavise: counts as a shield only while it faces the attacker.')
   const unknownSkills = [...setup.attacker.skillIds, ...setup.defender.skillIds].filter((id) => {

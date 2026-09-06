@@ -454,6 +454,12 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
             </div>
           </div>
         ) : null}
+        {odds.phase === 'melee' ? (
+          <div className="flex flex-col gap-1 border-t border-border pt-3">
+            <p className="text-[10px] uppercase tracking-wider text-ink-dim">Who strikes first</p>
+            <p className="text-sm text-ink">{odds.strikeOrder}</p>
+          </div>
+        ) : null}
         <div className="flex flex-col gap-2 border-t border-border pt-3">
           <p className="text-[10px] uppercase tracking-wider text-ink-dim">
             {attacker.name} against {defender.name}, whole phase

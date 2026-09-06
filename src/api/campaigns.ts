@@ -230,6 +230,12 @@ export async function joinCampaign(code: string, warbandId: string): Promise<voi
   if (error) throw new Error(error.message)
 }
 
+/** Take the warband out of its current campaign and enrol it in the one the invite code names, in one step. */
+export async function moveWarbandCampaign(warbandId: string, code: string): Promise<void> {
+  const { error } = await supabase.rpc('move_warband_campaign', { p_warband_id: warbandId, p_invite_code: code })
+  if (error) throw new Error(error.message)
+}
+
 export async function leaveCampaign(campaignId: string, warbandId: string): Promise<void> {
   const { error } = await supabase.rpc('leave_campaign', { p_campaign_id: campaignId, p_warband_id: warbandId })
   if (error) throw new Error(error.message)
@@ -318,6 +324,19 @@ export function useUpdateCampaign(id: string) {
 export function useJoinCampaign() {
   const invalidate = useInvalidateCampaigns()
   return useMutation({ mutationFn: ({ code, warbandId }: { code: string; warbandId: string }) => joinCampaign(code, warbandId), onSuccess: invalidate })
+}
+
+export function useMoveWarbandCampaign() {
+  const invalidate = useInvalidateCampaigns()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ warbandId, code }: { warbandId: string; code: string }) => moveWarbandCampaign(warbandId, code),
+    onSuccess: async () => {
+      await invalidate()
+      await qc.invalidateQueries({ queryKey: ['warbands'] })
+      await qc.invalidateQueries({ queryKey: ['trading'] })
+    },
+  })
 }
 
 export function useLeaveCampaign() {

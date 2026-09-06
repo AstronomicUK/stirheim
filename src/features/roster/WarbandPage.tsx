@@ -4,6 +4,7 @@ import { usePendingAdvances } from '../../api/advances'
 import { useSaveTemplate } from '../../api/templates'
 import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
 import { useWarbandCampaign } from '../../api/trading'
+import { useMoveWarbandCampaign } from '../../api/campaigns'
 import { rosterToTemplatePayload } from '../../rules/resolve/warbandTemplates'
 import { appointLeader, successionOptions } from '../../rules/resolve/succession'
 import { diffRoster } from '../../domain/rosterDiff'
@@ -128,7 +129,10 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
             {!isOwner ? <Tag tone="brass">GM view</Tag> : null}
           </div>
         </div>
-        <HandOver warbandId={warband.id} warbandName={warband.name} ownerId={warband.owner_id} viewerId={user?.id} onError={setActionError} />
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <HandOver warbandId={warband.id} warbandName={warband.name} ownerId={warband.owner_id} viewerId={user?.id} onError={setActionError} />
+          {isOwner ? <MoveCampaign warbandId={warband.id} warbandName={warband.name} currentCampaign={campaign.data?.name ?? null} onError={setActionError} /> : null}
+        </div>
       </header>
 
       <TwoColumn
@@ -385,6 +389,55 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
         )}
       </div>
     </Notice>
+  )
+}
+
+/** Owner: take the warband to another campaign with its invite code, in one step. */
+function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { warbandId: string; warbandName: string; currentCampaign: string | null; onError: (e: string | null) => void }) {
+  const [open, setOpen] = useState(false)
+  const [code, setCode] = useState('')
+  const move = useMoveWarbandCampaign()
+
+  async function confirm() {
+    if (!code.trim()) return
+    onError(null)
+    try {
+      await move.mutateAsync({ warbandId, code: code.trim() })
+      setOpen(false)
+      setCode('')
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Could not move the warband.')
+    }
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="self-start text-xs text-brass underline-offset-4 hover:underline">
+        {currentCampaign ? 'Move to another campaign' : 'Join a campaign'}
+      </button>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title={currentCampaign ? 'Move to another campaign' : 'Join a campaign'}
+        description={
+          currentCampaign
+            ? `${warbandName} leaves ${currentCampaign} and joins the campaign whose invite code you enter. The roster comes with it; the battles it fought stay in ${currentCampaign}'s records.`
+            : `${warbandName} joins the campaign whose invite code you enter.`
+        }
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)} disabled={move.isPending}>
+              Cancel
+            </Button>
+            <Button className="flex-1" disabled={!code.trim()} pending={move.isPending} onClick={() => void confirm()}>
+              {currentCampaign ? 'Move' : 'Join'}
+            </Button>
+          </div>
+        }
+      >
+        <TextField label="Invite code" value={code} autoComplete="off" placeholder="e.g. uz8k-hxtx" hint="The GM of the campaign you are joining shares this." onChange={(e) => setCode(e.target.value)} />
+      </Sheet>
+    </>
   )
 }
 

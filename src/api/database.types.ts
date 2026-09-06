@@ -1045,6 +1045,22 @@ export type Database = {
         Returns: undefined
       }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
+      move_warband_campaign: {
+        Args: { p_invite_code: string; p_warband_id: string }
+        Returns: {
+          campaign_id: string
+          joined_at: string
+          left_at: string | null
+          user_id: string
+          warband_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "campaign_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       owns_warband: { Args: { p_warband_id: string }; Returns: boolean }
       record_trade: {
         Args: {

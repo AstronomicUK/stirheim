@@ -146,11 +146,13 @@ describe('carry-over between fights', () => {
     expect(one.chain.anyHit).toBeCloseTo(0.5, 10)
   })
 
-  it('names Initiative and strike-order weapon rules', () => {
+  it('says who strikes first: Initiative, the charge, and the weapons that override them', () => {
     const spearman = combatant('Spearman', [{ itemId: 'spear', quantity: 1 }])
-    const notes = computeOdds(setup(spearman, skaven, 'spear', null)).notes
-    expect(notes.some((n) => /Initiative: Spearman 3, Skritch 3/.test(n))).toBe(true)
-    expect(notes.some((n) => /Spear strikes first in the first turn/.test(n))).toBe(true)
+    const base = setup(spearman, skaven, 'spear', null)
+    expect(computeOdds(base).strikeOrder).toMatch(/Equal Initiative \(3 each\)/)
+    expect(computeOdds({ ...base, context: { ...base.context, charging: true } }).strikeOrder).toMatch(/Spearman strikes first: charging/)
+    // A spear strikes first in the first turn of a combat even when it is the one being charged.
+    expect(computeOdds({ ...base, context: { ...base.context, firstTurnOfCombat: true } }).strikeOrder).toMatch(/Spearman strikes first in the first turn \(Spear\)/)
   })
 })
 

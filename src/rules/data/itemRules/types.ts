@@ -117,7 +117,7 @@ export interface PostBattleOutcome {
   effect?: {
     /** Permanent characteristic change on the holder (Mandrake Root -1 T, Crimson Shade +1 I). */
     statDelta?: Partial<Record<"M" | "WS" | "BS" | "S" | "T" | "W" | "I" | "A" | "Ld", number>>;
-    flag?: "stupidity" | "missNextGame" | "addicted";
+    flag?: "stupidity" | "missNextGame" | "addicted" | "leaderSpawn";
     /** The item is lost (Cathayan Silk Clothes ruined, the Lamp lost). */
     removeItem?: boolean;
     /** Gold to the treasury: a fixed sum, or dice times a figure (D6x5 = { dice: 1, perPoint: 5 }). Negative for losses. */

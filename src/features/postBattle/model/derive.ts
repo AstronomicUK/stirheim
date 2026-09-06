@@ -363,6 +363,8 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
       if (change.flag === 'stupidity') flags.stupidity = true
       if (change.flag === 'missNextGame') flags.missNextGames = Math.max(flags.missNextGames ?? 0, 1)
       if (change.flag === 'addicted') flags.addictedTo = [...new Set([...(flags.addictedTo ?? []), change.itemId])]
+      // Eye of the Gods after a loss: the leader is gone (a Chaos Spawn); after a win he stays and takes a Mark by hand.
+      if (change.flag === 'leaderSpawn' && draft.result === 'lost') patch.status = 'retired'
       patch.flags = flags
     }
     if (existing) existing.patch = patch
@@ -574,7 +576,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
 
 export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedReport {
   const participants = participantsOf(ctx.roster, ctx.template)
-  const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: ctx.itemsUsed ?? {}, heroesOut: heroOoaIds(draft), leaderId: participants.leaderId })
+  const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: ctx.itemsUsed ?? {}, heroesOut: heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const injuries = deriveInjuries(draft, participants, ctx.matchId, ctx.roster)

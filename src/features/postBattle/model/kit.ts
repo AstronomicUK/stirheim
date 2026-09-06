@@ -6,16 +6,22 @@
 // reads the dice the player entered and says what each outcome does to the roster.
 
 import { findItem } from '../../../rules/data/items'
+import { warbandRules } from '../../../rules/data/campaignRules'
 import { itemEffect, type PostBattleOutcome, type PostBattlePrompt } from '../../../rules/data/itemRules'
 import type { RosterHero, RosterWarband } from '../../../rules/types/roster'
 import type { StatKey } from '../../../rules/types/common'
 import type { ReportDraft } from './state'
 
 export interface KitPromptInstance {
-  /** Unique per report: `${itemId}:${holderId}:${prompt.key}`. */
+  /** Unique per report: `${itemId}:${holderId}:${prompt.key}` (or `rule:<key>:<heroId>` for a list rule). */
   key: string
+  /** The item, or `rule` for a list rule. */
   itemId: string
   itemName: string
+  /** Added to the dice total before reading the table (Eye of the Gods). */
+  modifier?: number
+  /** What the modifier is made of. */
+  modifierText?: string
   /** The hero the item belongs to (the stash for warband-wide items). */
   holderId: string | null
   holderName: string
@@ -45,15 +51,18 @@ export interface KitContext {
   /** Heroes taken out of action this battle. */
   heroesOut: ReadonlySet<string>
   leaderId: string | null
+  /** The battle's result and the leader's kills, for the list rules whose modifiers depend on them (Eye of the Gods). */
+  result?: 'won' | 'lost' | 'draw' | null
+  leaderKills?: number
 }
 
 function diceCount(dice: PostBattlePrompt['dice']): number {
   return dice === '2D6' ? 2 : 1
 }
 
-export function outcomeFor(prompt: PostBattlePrompt, rolls: readonly (number | null)[]): PostBattleOutcome | null {
+export function outcomeFor(prompt: PostBattlePrompt, rolls: readonly (number | null)[], modifier = 0): PostBattleOutcome | null {
   if (rolls.length < diceCount(prompt.dice) || rolls.some((r) => r === null)) return null
-  const total = rolls.reduce<number>((n, r) => n + (r ?? 0), 0)
+  const total = rolls.reduce<number>((n, r) => n + (r ?? 0), 0) + modifier
   return prompt.outcomes.find((o) => total >= o.min && total <= o.max) ?? null
 }
 
@@ -73,6 +82,7 @@ export function summarise(itemName: string, holderName: string, outcome: PostBat
   if (e?.flag === 'stupidity') bits.push(`${holderName} becomes subject to Stupidity`)
   if (e?.flag === 'missNextGame') bits.push(`${holderName} misses the next game`)
   if (e?.flag === 'addicted') bits.push(`${holderName} is addicted to ${itemName}: buy a new batch before every battle or he leaves`)
+  if (e?.flag === 'leaderSpawn') bits.push(`the Dark Gods answer: ${holderName} is removed as a Chaos Spawn after a loss, or takes a Mark of Chaos after a win`)
   if (e?.removeItem) bits.push(`${itemName} is lost`)
   if (gold !== null && gold !== 0) bits.push(`${gold > 0 ? '+' : ''}${gold} gc`)
   if (e?.shards) bits.push(`+${e.shards} shard${e.shards === 1 ? '' : 's'}`)
@@ -84,17 +94,19 @@ export function summarise(itemName: string, holderName: string, outcome: PostBat
 export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
   const prompts: KitPromptInstance[] = []
   const heroes = new Map(ctx.roster.heroes.filter((h) => h.status === 'active').map((h) => [h.id, h]))
-  const add = (itemId: string, holderId: string | null, holderName: string, prompt: PostBattlePrompt) => {
-    const key = `${itemId}:${holderId ?? 'stash'}:${prompt.key}`
+  const add = (itemId: string, holderId: string | null, holderName: string, prompt: PostBattlePrompt, modifier = 0, modifierText?: string) => {
+    const key = itemId === 'rule' ? `rule:${prompt.key}:${holderId ?? 'warband'}` : `${itemId}:${holderId ?? 'stash'}:${prompt.key}`
     const rolls = draft.kit[key] ?? []
-    const outcome = outcomeFor(prompt, rolls)
+    const outcome = outcomeFor(prompt, rolls, modifier)
     const extraRolls = draft.kitExtra[key] ?? []
     const gold = outcome ? outcomeGold(outcome, extraRolls) : null
     const complete = prompt.optional && rolls.every((r) => r === null) ? true : outcome !== null && gold !== null
     prompts.push({
       key,
       itemId,
-      itemName: findItem(itemId)?.name ?? itemId,
+      itemName: itemId === 'rule' ? prompt.label : findItem(itemId)?.name ?? itemId,
+      modifier: modifier || undefined,
+      modifierText,
       holderId,
       holderName,
       prompt,
@@ -102,8 +114,35 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
       outcome,
       extraRolls,
       complete,
-      summary: outcome ? summarise(findItem(itemId)?.name ?? itemId, holderName, outcome, gold) : null,
+      summary: outcome ? summarise(itemId === 'rule' ? prompt.label : findItem(itemId)?.name ?? itemId, holderName, outcome, gold) : null,
     })
+  }
+
+  // The list's own post-battle rolls (Eye of the Gods): owed by the leader when he fought.
+  const leader = ctx.leaderId ? heroes.get(ctx.leaderId) : undefined
+  for (const rule of warbandRules(ctx.roster.warbandTemplateId).postBattle ?? []) {
+    if (rule.leaderFought && !leader) continue
+    const parts: string[] = []
+    let modifier = 0
+    if (ctx.result === 'lost' && rule.modifiers?.lostPerHeroOut) {
+      const n = ctx.heroesOut.size * rule.modifiers.lostPerHeroOut
+      if (n) parts.push(`+${n} for ${ctx.heroesOut.size} hero${ctx.heroesOut.size === 1 ? '' : 'es'} out of action after a loss`)
+      modifier += n
+    }
+    if (ctx.result === 'won' && rule.modifiers?.wonPerLeaderKill) {
+      const n = (ctx.leaderKills ?? 0) * rule.modifiers.wonPerLeaderKill
+      if (n) parts.push(`+${n} for the leader's ${ctx.leaderKills} kill${ctx.leaderKills === 1 ? '' : 's'} after a win`)
+      modifier += n
+    }
+    const prompt: PostBattlePrompt = {
+      key: rule.key,
+      label: rule.label,
+      trigger: 'used',
+      dice: rule.dice,
+      text: `${rule.text}${rule.note ? ` ${rule.note}` : ''}`,
+      outcomes: rule.outcomes.map((o) => ({ min: o.min, max: o.max, text: o.text, effect: o.effect === 'leaderSpawn' ? { flag: 'leaderSpawn' } : undefined })),
+    }
+    add('rule', leader?.id ?? null, leader?.name ?? ctx.roster.name, prompt, modifier, parts.join('; ') || undefined)
   }
 
   // Items marked as used this battle.
@@ -128,7 +167,7 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
 
 /** The roster effects of every resolved prompt, grouped for the report builder. */
 export interface KitEffects {
-  heroPatches: { heroId: string; statDelta?: Partial<Record<StatKey, number>>; flag?: 'stupidity' | 'missNextGame' | 'addicted'; itemId: string }[]
+  heroPatches: { heroId: string; statDelta?: Partial<Record<StatKey, number>>; flag?: 'stupidity' | 'missNextGame' | 'addicted' | 'leaderSpawn'; itemId: string }[]
   /** Item rows to remove (by item id on the holder). */
   removeItems: { holderId: string | null; itemId: string }[]
   goldDelta: number
@@ -142,7 +181,7 @@ export function kitEffects(kit: KitDerived): KitEffects {
     if (!p.outcome || !p.complete) continue
     const e = p.outcome.effect
     const gold = outcomeGold(p.outcome, p.extraRolls) ?? 0
-    out.lines.push(`${p.itemName} (${p.holderName}): rolled ${p.rolls.join('+')}: ${p.outcome.text}${p.summary && p.summary !== 'No lasting effect.' ? ` [${p.summary}]` : ''}`)
+    out.lines.push(`${p.itemName} (${p.holderName}): rolled ${p.rolls.join('+')}${p.modifier ? ` ${p.modifier > 0 ? '+' : ''}${p.modifier} (${p.modifierText})` : ''}: ${p.outcome.text}${p.summary && p.summary !== 'No lasting effect.' ? ` [${p.summary}]` : ''}`)
     if (!e) continue
     if (p.holderId && (e.statDelta || e.flag)) out.heroPatches.push({ heroId: p.holderId, statDelta: e.statDelta, flag: e.flag, itemId: p.itemId })
     if (e.removeItem) out.removeItems.push({ holderId: p.holderId, itemId: p.itemId })

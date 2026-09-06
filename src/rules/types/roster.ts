@@ -64,6 +64,12 @@ export interface WarriorFlags {
   daemonPossessed?: boolean;
   /** Item ids the warrior is addicted to (Crimson Shade): a new batch before every battle or he leaves. */
   addictedTo?: string[];
+  /** Has read a Tome of Magic: each copy benefits only one model, so a second does nothing for him. */
+  readTomeOfMagic?: boolean;
+  /** Has read a Book of the Dead. */
+  readBookOfTheDead?: boolean;
+  /** Has read the Liber Bubonicus (a warband may use one only, once, in a campaign). */
+  readLiberBubonicus?: boolean;
 }
 
 export interface RosterHero {

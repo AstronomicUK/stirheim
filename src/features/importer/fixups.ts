@@ -9,6 +9,7 @@ import type { RosterChange } from '../../domain/rosterChange'
 import type { AppliedInjury } from '../../rules/types/roster'
 import { resolveEquipmentName } from '../../rules/data/items/aliases'
 import { HERO_INJURIES } from '../../rules/data/campaign/injuries'
+import { describeInjuryOutcome } from '../../rules/resolve/injuries'
 import type { InjurySubOutcome } from '../../rules/types/campaign'
 import { matchInjury, matchSkillOrSpell } from './rosterImport'
 
@@ -43,7 +44,7 @@ export interface HeroFixup {
  */
 function tidyInjury(injury: AppliedInjury, flags: WarriorFlags): AppliedInjury | null {
   const outcome = subOutcomeFor(injury, flags)
-  if (outcome?.name && injury.name !== outcome.name) return { ...injury, name: outcome.name, effect: outcome.text }
+  if (outcome?.name && injury.name !== outcome.name) return { ...injury, name: outcome.name, effect: describeInjuryOutcome(outcome) }
   if (!/^Roll again:/i.test(injury.effect)) return null
   const again = matchInjury(injury.name).injury
   if (!again || (again.name === injury.name && again.effect === injury.effect)) return null

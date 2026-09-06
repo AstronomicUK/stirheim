@@ -173,7 +173,7 @@ describe('payloads', () => {
     const frenzy = matchInjury('Frenzy').injury!
     expect(frenzy.injuryCode).toBe('madness')
     expect(frenzy.name).toBe('Frenzy')
-    expect(frenzy.effect).toMatch(/frenzy from now on/)
+    expect(frenzy.effect).toMatch(/double his Attacks in hand-to-hand/)
     expect(matchInjury('Madness - Stupidity').injury?.name).toBe('Stupidity')
     expect(matchInjury('Arm Wound - Severe').injury?.name).toBe('Severe Arm Wound')
 

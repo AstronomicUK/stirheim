@@ -36,7 +36,9 @@ describe('injuries recorded before the outcome was the thing recorded', () => {
 
   it('renames a stored Madness to what its follow-up die actually gave', () => {
     const plan = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24, subRoll: 5 }, effect: 'Frenzy' }]))
-    expect(plan?.injuries?.[0]).toMatchObject({ name: 'Frenzy', effect: 'The warrior suffers from frenzy from now on.' })
+    // The line on the sheet is what Frenzy does, not that he has it.
+    expect(plan?.injuries?.[0]?.name).toBe('Frenzy')
+    expect(plan?.injuries?.[0]?.effect).toMatch(/double his Attacks in hand-to-hand/)
 
     const stupid = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24, subRoll: 1 }, effect: 'Stupidity' }]))
     expect(stupid?.injuries?.[0]).toMatchObject({ name: 'Stupidity' })
@@ -45,7 +47,8 @@ describe('injuries recorded before the outcome was the thing recorded', () => {
   it('reads an imported injury, which kept no dice, from the condition the importer set', () => {
     // Bill came in as "Madness" with frenzy already flagged: that is which way it fell.
     const bill = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 0 }, effect: 'Roll again: ...' }], { frenzy: true }))
-    expect(bill?.injuries?.[0]).toMatchObject({ name: 'Frenzy', effect: 'The warrior suffers from frenzy from now on.' })
+    expect(bill?.injuries?.[0]?.name).toBe('Frenzy')
+    expect(bill?.injuries?.[0]?.effect).toMatch(/must charge any enemy within charge range/)
 
     // With neither a die nor a flag there is nothing to go on, so it is left as it is.
     const unknown = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 0 }, effect: 'Madness: the follow-up roll was not recorded, so which outcome he got is unknown.' }]))

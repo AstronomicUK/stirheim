@@ -115,6 +115,29 @@ const FLAG_KEYS: Record<InjuryFlag, keyof WarriorFlags | null> = {
   bitterEnmity: null, // set via flags.hates from the sub-roll outcome text
 };
 
+/**
+ * What the condition actually does, for the line the roster sheet shows. The injury chart only
+ * names these ("the warrior suffers from frenzy"), which is no use to somebody reading the sheet
+ * a month later; the rules themselves are in 01-introduction-and-rules.md and the injury entries.
+ */
+const FLAG_RULE: Record<InjuryFlag, string> = {
+  frenzy:
+    "Frenzy: must charge any enemy within charge range, the player having no say in it, and fights with double his Attacks in hand-to-hand — a weapon in each hand still adds its +1, which is not doubled. Immune to all other psychology while within charge range. Knocked down or stunned, he is frenzied no longer and fights on as normal.",
+  stupidity:
+    "Stupidity: tests at the start of each of his turns, 2D6 equal to or under his Leadership. Passed, he acts normally. Failed, he neither casts nor fights in hand-to-hand until his next turn, and if he is not already in combat, a D6 decides — on 1-3 he shambles directly forward at half speed and does not shoot, on 4-6 he stands inactive.",
+  immuneToFear: "Immune to fear: inured to the horrors of Mordheim, he never takes a fear test again.",
+  causesFear: "Causes fear: his scars are horrible to behold, and enemies must test against fear to charge him or to stand and fight when he charges them.",
+  oldBattleWound: "Old battle wound: roll a D6 at the start of every battle from now on. On a 1 the wound flares up and he may not take part in that game.",
+  singleHandedWeaponsOnly: "The arm was amputated. He may only ever use a single one-handed weapon from now on: no second weapon, no shield and no buckler alongside it.",
+  noRunning: "The leg never set. He may not run again, though he may still charge.",
+  captured: "Held by the enemy warband, who may ransom him back, exchange him for one of their own, or sell him.",
+  blindedInOneEye: "Blinded in one eye: -1 Ballistic Skill. Should he ever lose the sight in the remaining eye, he must retire from the warband.",
+  robbed: "He escaped, but every weapon, piece of armour and item he was carrying is gone.",
+  soldToThePits:
+    "Sold to the fighting pits of Cutthroat's Haven, where he must fight a Pit Fighter before he can rejoin the warband. Winning is worth 50 gc and +2 Experience and he keeps his kit; losing means a D66 injury roll, and if he lives he is thrown out without his weapons or armour.",
+  bitterEnmity: "bitter enmity",
+};
+
 const FLAG_TEXT: Record<InjuryFlag, string> = {
   stupidity: "suffers from stupidity",
   frenzy: "suffers from frenzy",
@@ -129,6 +152,15 @@ const FLAG_TEXT: Record<InjuryFlag, string> = {
   soldToThePits: "sold to the fighting pits of Cutthroat's Haven",
   bitterEnmity: "bitter enmity",
 };
+
+/**
+ * What a sub-table outcome does, in the words the roster sheet should carry: the condition's own
+ * rules where it sets one, and the chart's wording where it does not (a missed game, a lost point).
+ */
+export function describeInjuryOutcome(outcome: InjurySubOutcome): string {
+  const rules = outcome.effects.filter((e) => e.kind === "flag").map((e) => FLAG_RULE[e.flag]);
+  return rules.length > 0 ? rules.join(" ") : outcome.text;
+}
 
 interface ApplyState {
   hero: RosterHero;
@@ -212,7 +244,7 @@ function applyEffects(
         if (effect.flag === "captured") {
           state.hero = { ...state.hero, status: "captured" };
         }
-        state.effectTexts.push(FLAG_TEXT[effect.flag].charAt(0).toUpperCase() + FLAG_TEXT[effect.flag].slice(1));
+        state.effectTexts.push(FLAG_RULE[effect.flag]);
         if (effect.flag === "soldToThePits") {
           state.events.push({ kind: "pitFight", subjectId: id, message: `${name} has been sold to the pits and must fight a Pit Fighter before rejoining the warband (resolve that fight separately).` });
         } else if (effect.flag !== "robbed") {

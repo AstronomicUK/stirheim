@@ -799,6 +799,13 @@ Initiative modifiers, A5 post-battle item consequences (Crimson Shade addiction,
 Cathayan Silk, Lamp of the Djinn, Monkey's Paw, Treasure Map, captures), A14 spell and prayer items
 (needs the spell flow), remaining consumables.
 
+## Release (2026-09-06)
+
+Phases 13 to 17 went live at https://stirheim.netlify.app in one deploy (local `npm run build`, then
+`npx netlify deploy --prod --dir=dist --no-build`), deploy id 6a9d2234a24809d1090a2f14, after migration 20
+was pushed to the hosted project. Next: a fresh campaign and a re-import of the battle records CSV, and
+handing the other players' warbands over.
+
 ## Phase 17 built (2026-09-06)
 
 Tom approved the scope below minus the items left for a later phase (mounts, black powder, strike

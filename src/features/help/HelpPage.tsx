@@ -284,6 +284,12 @@ export function HelpPage() {
 
       <Topic id="moving-over" title="Moving from another tracker">
         <P>
+          <B>Questions from the import.</B> What the importer could not decide is asked the first time the roster is opened: a written-in item the catalogue
+          can now name, a skill or spell that never matched (with the nearest name offered), a hired sword the warband's own list carries as a unit of its own,
+          or a henchman group whose type was never settled. One tap answers each and the answer is saved as a logged edit. <em>Not now</em> closes it and
+          <em>Stop asking</em> puts it away for good on that device. Skills and spells that match exactly are added quietly, without asking.
+        </P>
+        <P>
           <B>Rosters.</B> Open the roster's printer-friendly page in the old tracker (or, as GM, another player's warband from its campaign details
           panel), select all the text, copy it, and paste it into <Go to="/warbands/import">Import a roster</Go>. The app reads the treasury, every hero,
           henchman group and hired sword with their experience, characteristics, kit, skills, spells and injuries, and shows anything it could not match for

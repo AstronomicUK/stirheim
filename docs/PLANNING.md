@@ -1069,6 +1069,28 @@ what came up while building. Grouped so Tom can strike or reorder.
   restriction blocks; full map-campaign support (territories, movement, map-driven scenarios);
   per-user light/dark toggle; a domain name; the CSV column mapping wants a real export sample.
 
+## Import questions (2026-09-06)
+
+Tom, on being told the Bone Goliath fix would be undone by a re-import: "Maybe just a pop-up for
+any import related issues like this? When the warband is first opened, it asks about any import
+issues and asks them how to resolve."
+
+`features/importer/questions.ts` derives the open questions from the roster itself (nothing new is
+stored): a custom item the catalogue can name exactly or by a near match ("Cooking pot (counts as a
+Helmet)" -> Cooking Pot Helmet), a name left in a hero's "Skills/spells to check" note with the
+nearest skill or spell offered ("Flight Of Zim" -> Flight of Zimmeran), a hired sword whose name
+matches a unit in the warband's own list (the Restless Dead Variant's Bone Goliath), and a henchman
+group whose unit type is not in the template. Each question carries its answers as RosterChange[].
+`features/roster/view/ImportQuestions.tsx` asks them in a sheet the first time the roster is opened,
+saves each answer as one `import_fixup` edit, and remembers "Stop asking" per warband in
+localStorage. The silent `fixups.ts` pass still handles exact matches without asking.
+
+Live data, same day: The Call of the Grave was already on The Restless Dead (Variant) (the importer
+picks the variant when a Bone Goliath is on the roster), and its Bone Goliath was converted from a
+hired sword to the variant's own 0-1 henchman with a SQL one-off (audit reason `import_fixup`).
+Rating fell 45 (the hired sword entry gave a flat +50; a henchman gives 5 + xp), it stops earning
+experience (Mindless) and now counts toward the income band.
+
 ## Phase 21 built (2026-09-06)
 
 Tom's answers: Cult of the Possessed only, Magister and Mutants as written; Wrath takes the kit;

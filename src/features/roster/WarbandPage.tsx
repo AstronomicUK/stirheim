@@ -23,6 +23,7 @@ import { WarriorCard } from './view/WarriorCard'
 import { RosterViewContext } from './view/context'
 import { WarbandHistory } from './view/WarbandHistory'
 import { ImportFixups } from './view/ImportFixups'
+import { ImportQuestions } from './view/ImportQuestions'
 
 
 export function WarbandPage() {
@@ -181,6 +182,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       </Card>
 
       <ImportFixups detail={detail} canEdit={canEdit} />
+
+      <ImportQuestions detail={detail} canEdit={canEdit} />
 
       {problems.length > 0 ? (
         <Notice tone="warn" title="Roster problems">

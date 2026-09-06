@@ -1195,6 +1195,55 @@ leftovers, with a proposed order.
    (Tom gathers them while 18 is built).
 3. Phase 21: black powder + captures; mounts after that; spell items when spells exist.
 
+## Phase 22 built: spellcasting (2026-09-06)
+
+The last of the magic gap. `rules/resolve/casting.ts` plays a cast as the rulebook does: 2D6
+against the spell's Difficulty, with Sorcery and a Holy Tome always on, a Scribe's scroll, Dark
+Ritual and Forbidden Rite spent by the player, re-rolls named and limited (Familiar and Rosary per
+turn, Magic Gubbinz behind its own 4+, a Rat Familiar once a game, Mind Focus on one die of the
+two), the enemy's dispel, and Magical Aptitude's second spell on a Toughness test with an injury
+roll for failing it. Armour, a shield or a buckler stops a wizard; helmets, Chaos Armour and every
+prayer are exempt. `BattleLiveState.casts` records each attempt, which is what makes
+one-spell-per-turn and the once-a-game re-rolls hold between attempts.
+
+`rules/resolve/grimoires.ts` reads the three books — Tome of Magic (own lore or Lesser Magic, or
+Lesser Magic for a warrior with Arcane Lore; bound to its reader), Book of the Dead (Necromancy,
+for a Necromancer or a Vampire with Arcane Lore), Liber Bubonicus (the Horned Rat list for a
+Pestilens Sorcerer, or spellcasting for a Plague Priest with Magical Aptitude; spent, once per
+campaign). A spell rolled twice is re-rolled or taken at one lower Difficulty. `GrimoireCard` on
+the warband page.
+
+Still text only: Staff of Damnation (warband special equipment, no catalogue item).
+
+## Test round 3 (2026-09-06)
+
+Tom's mobile pass. Fixed: the Restless Dead's missing skills and the hyphenated "warband-unique"
+tab (one bug — nothing expanded the pseudo-table); the Warlock's staff (a hired sword's kit
+sentence was one custom item; the entry's kit line is parsed into catalogue items now, and a Staff
+is the rulebook's Club / Mace / Hammer entry, confirmed with Tom); trait tags as ids in lower case
+with no tooltip; the bans list's strikethrough and its colour; no way back on a phone; "Hand over
+to another player" renamed; the campaign map switch buried in the house rules; Members listing
+warbands; a time on the schedule date; the simulator's analysers reduced to one-metric bars and
+losing your weapon choice when the other side reloaded; the warband card's figures not lining up;
+the Notes tab offering wyrdstone in a Skirmish; the Enemy tab's filler line and text-heavy header;
+no sign of a fixture on the warband page.
+
+Two faults the work turned up rather than Tom: a caster who knew spells from two lores only saw
+one lore's, and both roll-throughs recorded twice because they stepped their state machine inside
+a setState updater.
+
+New shared pieces: `ui/Dice.tsx` (tappable pip faces, a tumbling Roll, and `RollResult`),
+`match/battle/BattleNav.tsx`, `match/fight/CritWheel.tsx`, `match/schedule/RandomScenario.tsx`,
+`rules/data/campaign/scenarioObjectives.ts` (generated; regenerate rather than hand-edit).
+
+Waiting on Tom: which hero icon (six drawn, artifact). Decided by Tom: the experience bar is the
+stretch to the next advance only, one notch per point, the point he stands on filled.
+
+**Next phase.** Location negotiation: propose a district, approve, counter or roll off, with a
+notice on the campaign screen. Needs a table and a migration. The defender's own device asking for
+its saves belongs with it — the shared log only carries finished attacks today, so both want the
+same widening of `battle_events`.
+
 ## Known gaps in the scraped rules (found starting Phase 1, 2026-09-03)
 
 The mordheimer.net scrape in `reference/rules` is missing three things the app needs. Filled

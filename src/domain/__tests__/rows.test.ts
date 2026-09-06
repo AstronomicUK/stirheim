@@ -236,6 +236,7 @@ describe("row schemas parse realistic seed rows", () => {
       completed_at: null,
       notes: "",
       district_id: null,
+      district_decided_by: null,
       created_at: T0,
       updated_at: T0,
     };

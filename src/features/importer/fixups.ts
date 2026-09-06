@@ -4,6 +4,7 @@
 // today's data from the roster page, as one logged edit.
 
 import type { HeroRow, ItemRow } from '../../domain'
+import type { WarriorFlags } from '../../rules/types/roster'
 import type { RosterChange } from '../../domain/rosterChange'
 import type { AppliedInjury } from '../../rules/types/roster'
 import { resolveEquipmentName } from '../../rules/data/items/aliases'
@@ -40,27 +41,36 @@ export interface HeroFixup {
  * is still the whole sub-table ("Roll again: …"), and a name that is the roll rather than what came
  * of it — a warrior has Frenzy or Stupidity, never Madness, which by itself does nothing.
  */
-function tidyInjury(injury: AppliedInjury): AppliedInjury | null {
-  const outcome = subOutcomeFor(injury)
+function tidyInjury(injury: AppliedInjury, flags: WarriorFlags): AppliedInjury | null {
+  const outcome = subOutcomeFor(injury, flags)
   if (outcome?.name && injury.name !== outcome.name) return { ...injury, name: outcome.name, effect: outcome.text }
   if (!/^Roll again:/i.test(injury.effect)) return null
   const again = matchInjury(injury.name).injury
-  if (!again) return null
+  if (!again || (again.name === injury.name && again.effect === injury.effect)) return null
   return { ...injury, name: again.name, effect: again.effect }
 }
 
-/** The sub-table outcome a recorded injury landed on, from the follow-up die it kept. */
-function subOutcomeFor(injury: AppliedInjury): InjurySubOutcome | undefined {
-  const sub = injury.rolled.subRoll
-  if (sub === undefined) return undefined
+/**
+ * Which outcome of a sub-table an injury landed on. The follow-up die settles it where one was
+ * kept; where none was — every imported injury, which carries no dice — the condition the importer
+ * set from the same line does, so long as exactly one outcome could have set it.
+ */
+function subOutcomeFor(injury: AppliedInjury, flags: WarriorFlags): InjurySubOutcome | undefined {
   const result = HERO_INJURIES.find((i) => i.code === injury.injuryCode)
   const table = result?.effects.find((e) => e.kind === 'subRoll')
   if (!table || table.kind !== 'subRoll') return undefined
-  return table.outcomes.find((o) => sub >= o.band.min && sub <= o.band.max)
+
+  const sub = injury.rolled.subRoll
+  if (sub !== undefined) return table.outcomes.find((o) => sub >= o.band.min && sub <= o.band.max)
+
+  // Not every injury flag is a warrior flag (a robbery is not a condition), hence the lookup.
+  const set = flags as Record<string, unknown>
+  const byFlag = table.outcomes.filter((o) => o.effects.some((e) => e.kind === 'flag' && set[e.flag] === true))
+  return byFlag.length === 1 ? byFlag[0] : undefined
 }
 
 /** What re-running the matchers would change on a hero, or null when nothing would. */
-export function planHeroFixup(hero: Pick<HeroRow, 'id' | 'name' | 'notes' | 'skills' | 'spells' | 'injuries'>): HeroFixup | null {
+export function planHeroFixup(hero: Pick<HeroRow, 'id' | 'name' | 'notes' | 'skills' | 'spells' | 'injuries' | 'flags'>): HeroFixup | null {
   const names = unmatchedNames(hero.notes)
   const skillIds: string[] = []
   const spellIds: string[] = []
@@ -73,7 +83,7 @@ export function planHeroFixup(hero: Pick<HeroRow, 'id' | 'name' | 'notes' | 'ski
   }
   let injuriesChanged = false
   const injuries = hero.injuries.map((inj) => {
-    const tidy = tidyInjury(inj)
+    const tidy = tidyInjury(inj, hero.flags)
     if (tidy) injuriesChanged = true
     return tidy ?? inj
   })

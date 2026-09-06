@@ -125,7 +125,7 @@ export function matchInjury(name: string): { injury: AppliedInjury | null; flag:
   const sub = result.effects.find((e) => e.kind === 'subRoll')
   const outcome = sub && sub.kind === 'subRoll' ? pickSubRollOutcome(sub.outcomes, norm) : null
   const label = outcome ? outcomeLabel(outcome) : null
-  const effect = outcome ? outcome.text : sub ? `${result.text.split('\n')[0]} (the follow-up roll was not recorded)` : result.effects.map((e) => ('text' in e && typeof e.text === 'string' ? e.text : '')).filter(Boolean).join(' ') || result.text.slice(0, 120)
+  const effect = outcome ? outcome.text : sub ? `${result.name}: the follow-up roll was not recorded, so which outcome he got is unknown.` : result.effects.map((e) => ('text' in e && typeof e.text === 'string' ? e.text : '')).filter(Boolean).join(' ') || result.text.slice(0, 120)
   // The outcome is the injury where it is a condition of its own: a warrior has Frenzy, not Madness.
   const named = outcome?.name ?? (label ? `${result.name} (${label})` : result.name)
   const injury: AppliedInjury = { injuryCode: result.code, name: named, rolled: { d66: 0 }, effect }

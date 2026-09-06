@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { AppliedInjury } from '../../rules/types/roster'
+import type { AppliedInjury, WarriorFlags } from '../../rules/types/roster'
 import { describeFixup, fixupChanges, planHeroFixup, unmatchedNames } from './fixups'
 
-const hero = (over: Partial<Parameters<typeof planHeroFixup>[0]> = {}) => ({ id: 'h1', name: 'Magus', notes: '', skills: [] as string[], spells: [] as string[], injuries: [] as never[], ...over })
+const hero = (over: Partial<Parameters<typeof planHeroFixup>[0]> = {}) => ({ id: 'h1', name: 'Magus', notes: '', skills: [] as string[], spells: [] as string[], injuries: [] as never[], flags: {}, ...over })
 
 describe('imported roster fix-ups', () => {
   it('reads the names left to check', () => {
@@ -32,7 +32,7 @@ describe('imported roster fix-ups', () => {
 })
 
 describe('injuries recorded before the outcome was the thing recorded', () => {
-  const hurt = (injuries: AppliedInjury[]) => ({ id: 'h1', name: 'Bill', notes: '', skills: [] as string[], spells: [] as string[], injuries })
+  const hurt = (injuries: AppliedInjury[], flags: WarriorFlags = {}) => ({ id: 'h1', name: 'Bill', notes: '', skills: [] as string[], spells: [] as string[], injuries, flags })
 
   it('renames a stored Madness to what its follow-up die actually gave', () => {
     const plan = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24, subRoll: 5 }, effect: 'Frenzy' }]))
@@ -42,9 +42,27 @@ describe('injuries recorded before the outcome was the thing recorded', () => {
     expect(stupid?.injuries?.[0]).toMatchObject({ name: 'Stupidity' })
   })
 
-  it('leaves alone an injury already named for its outcome, or with no follow-up die kept', () => {
+  it('reads an imported injury, which kept no dice, from the condition the importer set', () => {
+    // Bill came in as "Madness" with frenzy already flagged: that is which way it fell.
+    const bill = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 0 }, effect: 'Roll again: ...' }], { frenzy: true }))
+    expect(bill?.injuries?.[0]).toMatchObject({ name: 'Frenzy', effect: 'The warrior suffers from frenzy from now on.' })
+
+    // With neither a die nor a flag there is nothing to go on, so it is left as it is.
+    const unknown = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 0 }, effect: 'Madness: the follow-up roll was not recorded, so which outcome he got is unknown.' }]))
+    expect(unknown).toBeNull()
+  })
+
+  it('leaves alone an injury already named for its outcome, or with nothing to correct', () => {
     expect(planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Frenzy', rolled: { d66: 24, subRoll: 5 }, effect: 'x' }]))).toBeNull()
-    expect(planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24 }, effect: 'x' }]))).toBeNull()
     expect(planHeroFixup(hurt([{ injuryCode: 'leg_wound', name: 'Leg Wound', rolled: { d66: 22 }, effect: '-1 Movement' }]))).toBeNull()
+  })
+
+  it('does not report a change when the tidy-up would rewrite an injury to what it already says', () => {
+    // The old fallback text began "Roll again:" and rewrote itself to the same string on every
+    // visit, which left a success notice on the roster for good.
+    const settled = { injuryCode: 'madness', name: 'Madness', rolled: { d66: 0 }, effect: 'Roll again: (the follow-up roll was not recorded)' }
+    const first = planHeroFixup(hurt([settled]))
+    expect(first?.injuries?.[0].effect).not.toMatch(/^Roll again:/)
+    expect(planHeroFixup(hurt([first!.injuries![0]]))).toBeNull()
   })
 })

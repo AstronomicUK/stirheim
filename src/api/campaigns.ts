@@ -16,6 +16,7 @@ export const campaignKeys = {
   mine: (userId: string | undefined) => ['campaigns', 'mine', userId] as const,
   one: (id: string | undefined) => ['campaigns', 'one', id] as const,
   activity: (id: string | undefined) => ['campaigns', 'activity', id] as const,
+  warbandActivity: (warbandId: string | undefined) => ['warbands', 'activity', warbandId] as const,
   preview: (code: string) => ['campaigns', 'preview', code] as const,
 }
 
@@ -179,13 +180,32 @@ export async function fetchCampaignActivity(id: string, limit = 40): Promise<Cam
     .order('at', { ascending: false })
     .limit(limit)
   if (error) throw new Error(error.message)
+  return describeAuditRows(data, id)
+}
+
+/** One warband's own history: every audit row that names it, newest first. */
+export async function fetchWarbandActivity(warbandId: string, limit = 60): Promise<CampaignActivity[]> {
+  const { data, error } = await supabase
+    .from('audit_log')
+    .select('id, at, actor_id, table_name, action, reason, warband_id, campaign_id, before, after')
+    .eq('warband_id', warbandId)
+    .order('at', { ascending: false })
+    .limit(limit)
+  if (error) throw new Error(error.message)
+  const campaignId = data.find((d) => d.campaign_id)?.campaign_id ?? null
+  return describeAuditRows(data, campaignId)
+}
+
+type AuditRow = { id: number | string; at: string; actor_id: string | null; table_name: string; action: string; reason: string | null; warband_id: string | null; campaign_id: string | null; before: Json | null; after: Json | null }
+
+async function describeAuditRows(data: AuditRow[], campaignId: string | null): Promise<CampaignActivity[]> {
   const actorIds = [...new Set(data.map((d) => d.actor_id).filter((x): x is string => Boolean(x)))]
   const warbandIds = [...new Set(data.map((d) => d.warband_id).filter((x): x is string => Boolean(x)))]
   const [profiles, warbands] = await Promise.all([
     actorIds.length ? supabase.from('profiles').select('user_id, display_name').in('user_id', actorIds) : Promise.resolve({ data: [], error: null }),
     warbandIds.length ? supabase.from('warbands').select('id, name').in('id', warbandIds) : Promise.resolve({ data: [], error: null }),
   ])
-  const aliases = await fetchCampaignAliases(id).catch(() => new Map<string, string>())
+  const aliases = campaignId ? await fetchCampaignAliases(campaignId).catch(() => new Map<string, string>()) : new Map<string, string>()
   const names = new Map((profiles.data ?? []).map((p) => [p.user_id, nameIn(aliases, p.user_id, p.display_name)]))
   const wnames = new Map((warbands.data ?? []).map((w) => [w.id, w.name]))
   return data.map((d) => ({
@@ -295,6 +315,10 @@ export function useMyCampaigns(userId: string | undefined) {
 
 export function useCampaign(id: string | undefined) {
   return useQuery({ queryKey: campaignKeys.one(id), queryFn: () => fetchCampaign(id!), enabled: Boolean(id) })
+}
+
+export function useWarbandActivity(warbandId: string | undefined) {
+  return useQuery({ queryKey: campaignKeys.warbandActivity(warbandId), queryFn: () => fetchWarbandActivity(warbandId!), enabled: Boolean(warbandId) })
 }
 
 export function useCampaignActivity(id: string | undefined) {

@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { UNIT_RULES, WARBAND_RULES, unitGainsExperience, unitRules } from "../../data/campaignRules";
 import { advancesEarned, findRacialMaximum, nextThreshold, xpThresholds } from "../../data/campaign/experience";
-import { findUnitTemplate, findWarbandTemplate, heroCapacity, WARBAND_TEMPLATES } from "../../data/warbandTemplates";
+import { findUnitTemplate, findWarbandTemplate, heroCapacity, listedHeroSlots, WARBAND_TEMPLATES } from "../../data/warbandTemplates";
 import { HIRED_SWORDS } from "../../data/campaign/hiredSwords";
 import type { RosterHenchmanGroup, RosterHero, RosterWarband } from "../../types/roster";
 import { newWarbandDraft, unitIsLarge, unitStartingStats } from "../builder";
@@ -82,7 +82,8 @@ describe("recruitment and the builder", () => {
     const maneaters = findWarbandTemplate("maneaters")!;
     expect(unitIsLarge(findUnitTemplate(maneaters, "maneaters_captain"))).toBe(true);
     expect(unitIsLarge(findUnitTemplate(maneaters, "maneaters_half_growns"))).toBe(false);
-    expect(heroCapacity(findWarbandTemplate("outlaws_of_stirwood_forest")!)).toBe(5);
+    expect(listedHeroSlots(findWarbandTemplate("outlaws_of_stirwood_forest")!)).toBe(5);
+    expect(heroCapacity(findWarbandTemplate("outlaws_of_stirwood_forest")!)).toBe(6);
   });
 });
 

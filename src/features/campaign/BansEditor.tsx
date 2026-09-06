@@ -4,11 +4,10 @@
 
 import { useMemo, useState } from 'react'
 import type { CampaignBans } from '../../rules/types/roster'
-import { Button, SegmentedControl, TextField } from '../../ui'
+import { SegmentedControl, TextField } from '../../ui'
 import { KIND_LABEL, banCandidates, banName, type BanKind } from './bans'
 
 /** Commonly banned at most tables; offered as one-tap chips while the list is empty. */
-const SUGGESTED: Partial<Record<BanKind, string[]>> = { items: ['nurgles_rot'] }
 
 export interface BansEditorProps {
   bans: CampaignBans
@@ -64,16 +63,6 @@ export function BansEditor({ bans, onChange, disabled = false }: BansEditorProps
             </li>
           ))}
         </ul>
-      ) : null}
-      {current.length === 0 && SUGGESTED[kind]?.some((id) => candidates.some((c) => c.id === id)) ? (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-dim">
-          Often banned:
-          {SUGGESTED[kind]!.filter((id) => candidates.some((c) => c.id === id)).map((id) => (
-            <Button key={id} variant="secondary" disabled={disabled} onClick={() => add(id)} className="min-h-8 px-3 text-xs">
-              Ban {banName(kind, id)}
-            </Button>
-          ))}
-        </div>
       ) : null}
       <TextField label={`Search ${KIND_LABEL[kind].toLowerCase()}`} value={query} autoComplete="off" disabled={disabled} placeholder="Type at least two letters" onChange={(e) => setQuery(e.target.value)} />
       {q.length >= 2 ? (

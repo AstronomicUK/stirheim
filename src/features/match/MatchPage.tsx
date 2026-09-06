@@ -28,6 +28,7 @@ import { Card, KeyValue, LinkButton, Section, Tag, TextLink } from '../campaign/
 import { MatchStateTag, ParticipantCard } from './shared/bits'
 import { formatMatchTime, matchActions, pendingLabel, scenarioLink, scenarioTitle, versusLabel } from './shared/helpers'
 import { ReportCard } from './shared/ReportCard'
+import { underdogBonus } from '../../rules/data/campaign/experience'
 import { MatchDistrict } from './shared/MatchDistrict'
 
 export function MatchPage() {
@@ -120,6 +121,13 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   }
 
   const sessionFor = (warbandId: string): BattleSessionView | undefined => sessions.data?.find((s) => s.warband_id === warbandId)
+  const underdog = (() => {
+    if (match.participants.length !== 2 || match.state === 'cancelled') return null
+    const [a, b] = [...match.participants].sort((x, y) => x.rating - y.rating)
+    const difference = b.rating - a.rating
+    const bonus = underdogBonus(difference)
+    return bonus > 0 ? { name: a.warband_name, difference, bonus } : null
+  })()
   const reportFor = (warbandId: string): ReportView | undefined => reports.data?.find((r) => r.warband_id === warbandId)
 
   return (
@@ -231,6 +239,11 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
       ) : null}
 
       <Section title="Warbands" aside={`${match.participants.length}`}>
+        {underdog ? (
+          <p className="text-sm text-ink-dim">
+            <span className="text-ink">{underdog.name}</span> is the underdog by {underdog.difference} rating points: +{underdog.bonus} Experience to each of its survivors (rulebook, Underdogs). The report offers it as a tick.
+          </p>
+        ) : null}
         {match.participants.length === 0 ? (
           <Card className="px-4 py-4">
             <p className="text-sm text-ink-dim">Every warband has dropped out of this match.</p>

@@ -193,7 +193,7 @@ export function validateRoster(
   if (capacity !== null && heroes > capacity) {
     problems.push({
       code: "roster.tooManyHeroes",
-      message: `${heroes} heroes but ${template.name} may have at most ${capacity}`,
+      message: `${heroes} heroes but ${template.name} may have at most ${capacity} (the list's slots, or six once The Lad's Got Talent has struck)`,
     });
   }
 

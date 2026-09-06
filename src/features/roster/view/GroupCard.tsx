@@ -59,7 +59,6 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
         <div className="flex flex-col gap-1">
           <p className="text-[10px] uppercase tracking-wider text-ink-dim">{kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'}</p>
           <ItemLines items={kit.items} detailed={expanded} />
-          {!kit.exact ? <p className="text-xs text-ink-dim">Group totals shown: the kit does not divide evenly between {group.size} models.</p> : null}
         </div>
         {(group.model_names ?? []).filter((n) => n.trim()).length > 0 ? (
           <div className="flex flex-col gap-1">

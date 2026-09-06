@@ -8,8 +8,10 @@ import { HoverCard } from '../../../ui/HoverCard'
 import type { AdvanceRate } from '../../../rules/data/campaign/experience'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
-import { itemName, itemProfile } from '../shared/names'
-import { xpProgress, xpTrack } from './lookups'
+import { itemLineName, itemName, itemProfile } from '../shared/names'
+import { isPlainNote, xpProgress, xpTrack } from './lookups'
+import { useRosterView } from './context'
+import { Icon, type IconName } from '../../../ui/icons'
 
 type TagTone = 'neutral' | 'warn' | 'danger' | 'brass'
 
@@ -45,23 +47,47 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
  * for heroes; 2, 5, 9, 14 for henchmen), filled to the current total, the next box named. A
  * warrior who has just reached a box shows that box full rather than an empty bar.
  */
+/**
+ * The experience track as on the roster sheet: one pip per point of experience, every advance box
+ * drawn as a taller node, earned points filled in brass. Segments between boxes stay together when
+ * the row wraps, so a glance shows how far the next skill is.
+ */
 export function XpBar({ xp, levelUps, role, rate = 'normal', noExperience = false }: { xp: number; levelUps: number; role: CharacterRole; rate?: AdvanceRate; noExperience?: boolean }) {
   const p = xpProgress(xp, levelUps, role, rate)
-  const track = xpTrack(xp, role, rate)
+  const segments = xpTrack(xp, role, rate)
   if (noExperience) return <p className="text-xs text-ink-dim">Gains no experience.</p>
+  const toGo = p.next !== null ? p.next - xp : null
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-3 text-xs text-ink-dim">
         <span>
           <span className="font-semibold text-ink">{xp} xp</span>
-          {p.next !== null ? <span> · next advance at {p.next}{rate === 'half' ? ' (half rate)' : ''}</span> : <span> · no further advances</span>}
+          {p.next !== null ? (
+            <span>
+              {' '}· next advance at {p.next} ({toGo} to go){rate === 'half' ? ', half rate' : ''}
+            </span>
+          ) : (
+            <span> · no further advances</span>
+          )}
         </span>
         {p.advancesOwed > 0 ? <Tag tone="brass">{p.advancesOwed === 1 ? 'Advance owed' : `${p.advancesOwed} advances owed`}</Tag> : null}
       </div>
-      <div className="flex gap-0.5" aria-hidden>
-        {track.map((seg) => (
-          <span key={seg.to} className="relative h-1.5 overflow-hidden rounded-[2px] bg-surface-high" style={{ flex: `${seg.to - seg.from} 0 0` }}>
-            {seg.fill > 0 ? <span className="absolute inset-y-0 left-0 bg-brass" style={{ width: `${Math.round(seg.fill * 100)}%` }} /> : null}
+      <div className="flex flex-wrap items-end gap-x-1.5 gap-y-1" aria-hidden>
+        {segments.map((seg) => (
+          <span key={seg.to} className="flex items-end gap-px">
+            {Array.from({ length: seg.to - seg.from }, (_, i) => seg.from + i + 1).map((point) => {
+              const earned = point <= xp
+              const node = point === seg.to
+              return (
+                <span
+                  key={point}
+                  title={node ? `Advance at ${point} xp` : `${point} xp`}
+                  className={`${node ? 'h-3.5 w-2 rounded-[2px] border' : 'h-2 w-1.5 rounded-[1px]'} ${
+                    earned ? (node ? 'border-brass bg-brass' : 'bg-brass') : node ? 'border-ink-dim/70 bg-surface-low' : 'bg-surface-high'
+                  }`}
+                />
+              )
+            })}
           </span>
         ))}
       </div>
@@ -88,20 +114,21 @@ export function ItemLines({ items, detailed = false, emptyText = 'No equipment',
   return (
     <ul className="flex flex-col gap-1 text-sm">
       {items.map((item, i) => (
-        <ItemLine key={`${item.itemId ?? item.customName}-${i}-${detailed ? 'd' : 'c'}`} item={item} open={detailed} plain={plain} />
+        <ItemLine key={`${item.itemId ?? item.customName}-${i}-${detailed ? 'd' : 'c'}`} item={item} companions={items} open={detailed} plain={plain} />
       ))}
     </ul>
   )
 }
 
-function ItemLine({ item, open, plain }: { item: RosterItem; open: boolean; plain: boolean }) {
+function ItemLine({ item, companions, open, plain }: { item: RosterItem; companions: RosterItem[]; open: boolean; plain: boolean }) {
   const catalogue = item.itemId ? findItem(item.itemId) : undefined
-  const profile = itemProfile(item)
+  const profile = itemProfile(item, companions)
   const hasDetail = Boolean(catalogue) || Boolean(item.notes)
+  const line = itemLineName(item)
   const name = (
     <>
-      {itemName(item)}
-      {item.quantity > 1 ? <span className="text-ink-dim"> ×{item.quantity}</span> : null}
+      {line.name}
+      {line.count > 1 ? <span className="text-ink-dim"> ×{line.count}</span> : null}
     </>
   )
   return (
@@ -127,30 +154,39 @@ function ItemLine({ item, open, plain }: { item: RosterItem; open: boolean; plai
   )
 }
 
+/** The first sentence stands; the rest is struck through with the house rule named. */
+function HouseRuledText({ text }: { text: string }) {
+  const cut = text.indexOf('. ')
+  if (cut === -1) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, cut + 1)} <s className="text-ink-dim/70">{text.slice(cut + 2)}</s> <span className="text-ink-dim">(disabled by house rules)</span>
+    </>
+  )
+}
+
 /** Range, Strength, save, special rules, description and price: the catalogue entry as a few lines. */
 function ItemDetail({ item, catalogue }: { item: RosterItem; catalogue: Item | undefined }) {
+  const { houseRules } = useRosterView()
+  const rabbitsFootBattleOnly = item.itemId === 'rabbits_foot' && houseRules?.rabbitsFootBattleOnly === true
   return (
     <>
       {item.notes ? <p className="text-ink">{item.notes}</p> : null}
       {catalogue?.range ? (
         <p>
           <span className="font-semibold text-ink">Range.</span> {catalogue.range}
-          {catalogue.strength ? (
-            <>
-              {' · '}
-              <span className="font-semibold text-ink">Strength.</span> {catalogue.strength}
-            </>
-          ) : null}
         </p>
-      ) : catalogue?.strength ? (
+      ) : null}
+      {catalogue?.strength ? (
         <p>
           <span className="font-semibold text-ink">Strength.</span> {catalogue.strength}
         </p>
       ) : null}
       {catalogue?.armourSave ? <p>Armour save {catalogue.armourSave}+</p> : null}
-      {catalogue?.specialRules.map((rule) => (
-        <p key={rule.name}>
-          <span className="font-semibold text-ink">{rule.name}.</span> {rule.text}
+      {catalogue?.specialRules.map((rule, i) => (
+        <p key={`${rule.name}-${i}`}>
+          {isPlainNote(rule.name) ? null : <span className="font-semibold text-ink">{rule.name}. </span>}
+          {rabbitsFootBattleOnly ? <HouseRuledText text={rule.text} /> : rule.text}
         </p>
       ))}
       {catalogue && catalogue.specialRules.length === 0 && catalogue.description ? <p>{catalogue.description}</p> : null}
@@ -168,9 +204,9 @@ export function RuleList({ rules }: { rules: { name: string; text: string }[] })
   if (rules.length === 0) return null
   return (
     <dl className="flex flex-col gap-2 text-xs leading-relaxed">
-      {rules.map((rule) => (
-        <div key={rule.name}>
-          <dt className="font-medium text-ink">{rule.name}</dt>
+      {rules.map((rule, i) => (
+        <div key={`${rule.name}-${i}`}>
+          {isPlainNote(rule.name) ? null : <dt className="font-medium text-ink">{rule.name}</dt>}
           <dd className="whitespace-pre-line text-ink-dim">{rule.text}</dd>
         </div>
       ))}
@@ -178,11 +214,14 @@ export function RuleList({ rules }: { rules: { name: string; text: string }[] })
   )
 }
 
-export function KeyValue({ label, value }: { label: string; value: ReactNode }) {
+export function KeyValue({ label, value, icon }: { label: string; value: ReactNode; icon?: IconName }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-ink-dim">{label}</span>
-      <span className="text-xl font-semibold leading-tight tabular-nums text-ink">{value}</span>
+    <div className="flex items-start gap-2">
+      {icon ? <Icon name={icon} size={20} className="mt-0.5 text-brass" /> : null}
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-ink-dim">{label}</span>
+        <span className="text-xl font-semibold leading-tight tabular-nums text-ink">{value}</span>
+      </div>
     </div>
   )
 }

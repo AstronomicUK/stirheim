@@ -3,6 +3,8 @@ import type { HeroRow } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { StatLine } from '../shared/StatLine'
+import { statDrift } from '../shared/stats'
+import { startingProfile } from './lookups'
 import { unitTypeName } from '../shared/names'
 import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { HoverCard } from '../../../ui/HoverCard'
@@ -25,6 +27,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
     : unitTypeName(template?.id ?? '', hero.unit_type_rules_id ?? '')
   const tags = flagTags(hero.flags)
   const rules = warriorSpecialRules(template, hero.unit_type_rules_id, hero.hired_sword_rules_id)
+  const drift = statDrift(hero.stats, startingProfile(template, hero.unit_type_rules_id, hero.hired_sword_rules_id))
 
   return (
     <Card className={inactive ? 'opacity-70' : ''}>
@@ -51,7 +54,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
             ))}
           </div>
         </div>
-        <StatLine stats={hero.stats} />
+        <StatLine stats={hero.stats} raised={drift.raised} lowered={drift.lowered} />
         <XpBar xp={hero.xp} levelUps={hero.level_ups} role="hero" rate={unitRules(hero.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={!unitGainsExperience(hero.unit_type_rules_id)} />
       </button>
 

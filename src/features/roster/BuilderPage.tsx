@@ -66,7 +66,7 @@ export function BuilderPage() {
         </Notice>
         <Link
           to={`/warbands/new/${draft.warbandTemplateId}`}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-4 text-base font-medium text-ink no-underline hover:bg-accent-strong"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-4 text-base font-medium text-surface-low no-underline hover:bg-accent-strong"
         >
           Continue that draft
         </Link>

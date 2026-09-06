@@ -171,7 +171,6 @@ function MyGroupCard({ group, template, sheet, edit, readOnly }: MyGroupCardProp
       <WarriorBody
         equipment={kit.items}
         kitLabel={kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'}
-        kitNote={kit.exact ? undefined : `Group totals shown: the kit does not divide evenly between ${group.size} models.`}
         rules={groupRules(group, template)}
         expanded={expanded}
       >

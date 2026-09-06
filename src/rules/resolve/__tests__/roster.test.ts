@@ -144,8 +144,10 @@ describe("validateRoster", () => {
     const result = validateRoster(wb, REIKLAND);
     expect(result.ok).toBe(false);
     expect(result.problems.map((p) => p.code)).toContain("roster.multipleLeaders");
-    // The heroes total (6) also breaks the 5-hero capacity.
-    expect(result.problems.map((p) => p.code)).toContain("roster.tooManyHeroes");
+    // Six heroes is the rulebook ceiling (five slots plus The Lad's Got Talent), so no capacity problem yet.
+    expect(result.problems.map((p) => p.code)).not.toContain("roster.tooManyHeroes");
+    const seven = legalReikland({ heroes: [...wb.heroes, hero("captain3", "mercenaries_reikland_captain")] });
+    expect(validateRoster(seven, REIKLAND).problems.map((p) => p.code)).toContain("roster.tooManyHeroes");
   });
 
   it("flags a missing captain", () => {

@@ -167,4 +167,16 @@ describe('payloads', () => {
     expect(matchInjury('Leg Wound').injury?.injuryCode).toBe('leg_wound')
     expect(matchInjury('Hardened')).toMatchObject({ flag: 'immuneToFear' })
   })
+
+  it('records the outcome of a roll-again injury, never the table', () => {
+    const frenzy = matchInjury('Frenzy').injury!
+    expect(frenzy.injuryCode).toBe('madness')
+    expect(frenzy.name).toBe('Madness (Frenzy)')
+    expect(frenzy.effect).toMatch(/frenzy from now on/)
+    const madness = matchInjury('Madness').injury!
+    expect(madness.name).toBe('Madness')
+    expect(madness.effect).toMatch(/not recorded/)
+    expect(madness.effect).not.toMatch(/4-6/)
+    expect(matchInjury('Madness - Stupidity').injury?.name).toBe('Madness (Stupidity)')
+  })
 })

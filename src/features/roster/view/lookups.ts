@@ -8,7 +8,8 @@ import { SPELL_LORES } from '../../../rules/data/campaign/magic'
 import { WARBAND_SKILL_TABLES, findWarbandSkill, skillTablesForWarband } from '../../../rules/data/campaign/warbandSkills'
 import { SKILLS, findSkill } from '../../../rules/data/skills'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
-import type { CharacterRole, NamedRule, SkillCategory, WarbandTemplate } from '../../../rules/types'
+import type { CharacterRole, NamedRule, SkillCategory, Stats, WarbandTemplate } from '../../../rules/types'
+import { unitStartingStats } from '../../../rules/resolve/builder'
 import type { WarriorFlags } from '../../../rules/types/roster'
 import { toRosterItem, type ItemRow, type WarriorStatus } from '../../../domain'
 import type { RosterItem } from '../../../rules/types/roster'
@@ -104,6 +105,16 @@ export function hiredSwordName(id: string): string {
   return findHiredSword(id)?.name ?? id
 }
 
+/** The profile a warrior started with: the unit's stats (with any list bonus) or the hired sword's first profile. */
+export function startingProfile(template: WarbandTemplate | undefined, unitId: string | null, hiredSwordId: string | null): Stats | undefined {
+  if (hiredSwordId) return findHiredSword(hiredSwordId)?.detail?.profiles[0]?.stats
+  if (template && unitId) {
+    const unit = findUnitTemplate(template, unitId)
+    return unit ? unitStartingStats(unit) : undefined
+  }
+  return undefined
+}
+
 /** Special rules shown when a card is expanded: the unit's own (heroes, henchmen) or the hired sword entry's. */
 export function warriorSpecialRules(template: WarbandTemplate | undefined, unitId: string | null, hiredSwordId: string | null): NamedRule[] {
   if (hiredSwordId) return findHiredSword(hiredSwordId)?.detail?.specialRules ?? []
@@ -141,16 +152,14 @@ export interface XpSegment {
 }
 
 /**
- * The advance boxes as track segments, from 0 to the first box and between each pair after it,
- * shown up to two boxes past the current total so the track always has somewhere to go.
+ * The advance boxes as track segments, from 0 to the first box and between each pair after it: the
+ * whole sheet, so a hero sees all twenty-one boxes and a henchman group its four.
  */
 export function xpTrack(xp: number, role: CharacterRole, rate: AdvanceRate = 'normal'): XpSegment[] {
   const thresholds = xpThresholds(role, rate)
-  const nextIndex = thresholds.findIndex((t) => t > xp)
-  const shownUpTo = nextIndex === -1 ? thresholds.length : Math.min(thresholds.length, Math.max(nextIndex + 2, 6))
   const segments: XpSegment[] = []
   let from = 0
-  for (const to of thresholds.slice(0, shownUpTo)) {
+  for (const to of thresholds) {
     const fill = xp >= to ? 1 : xp <= from ? 0 : (xp - from) / (to - from)
     segments.push({ from, to, fill })
     from = to
@@ -213,4 +222,9 @@ export function itemsByHolder(items: readonly ItemRow[]): Map<string, RosterItem
     else map.set(key, [toRosterItem(item)])
   }
   return map
+}
+
+/** Catalogue rules headed "Note" are just the item's text; the heading adds nothing. */
+export function isPlainNote(name: string): boolean {
+  return /^notes?:?$/i.test(name.trim())
 }

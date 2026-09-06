@@ -39,6 +39,12 @@ const MULTIPLIER_RE = /^(\d+)\s*(?:x|times)\s*(?:the\s+)?(?:cost|price)\b/i;
 const FIXED_RE = /^\+?(\d+)\s*(gc|wt)?\b(.*)$/is;
 const BRACE_RE = /(\d+)\s*(?:gc|wt)?\s*(?:for\s+)?(?:a\s+)?brace\b/i;
 
+/** The bracketed brace price of a pistol's own price line ("15 gc (30 for a brace)" -> 30), or null. */
+export function braceAmountOf(priceText: string): number | null {
+  const m = BRACE_RE.exec(priceText);
+  return m ? Number(m[1]) : null;
+}
+
 /** Parse one equipment-list cost string. Never throws; unrecognised text comes back as kind "unknown". */
 export function parseEquipmentCost(cost: string): EquipmentCost {
   const text = cost.trim();

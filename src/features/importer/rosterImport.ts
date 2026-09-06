@@ -14,6 +14,7 @@ import { SKILLS } from '../../rules/data/skills'
 import { WARBAND_TEMPLATES, findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { CreateWarbandPayload } from '../../rules/resolve/builder'
 import type { Stats, UnitTemplate, WarbandTemplate } from '../../rules/types'
+import type { InjuryEffect } from '../../rules/types/campaign'
 import type { AppliedInjury, WarriorFlags } from '../../rules/types/roster'
 import type { ParsedRoster, ParsedWarrior } from './rosterText'
 
@@ -115,9 +116,38 @@ const FLAG_INJURIES: Record<string, keyof WarriorFlags> = { frenzy: 'frenzy', ha
 export function matchInjury(name: string): { injury: AppliedInjury | null; flag: keyof WarriorFlags | null } {
   const norm = normaliseName(name)
   const flag = FLAG_INJURIES[norm] ?? null
-  const result = HERO_INJURIES.find((i) => sameName(i.name, name)) ?? (norm === 'frenzy' ? HERO_INJURIES.find((i) => i.code === 'madness') : undefined)
-  const injury: AppliedInjury | null = result ? { injuryCode: result.code, name: result.name, rolled: { d66: 0 }, effect: result.effects.map((e) => ('text' in e && typeof e.text === 'string' ? e.text : '')).filter(Boolean).join(' ') || result.text.slice(0, 120) } : null
+  // "Madness - Frenzy", "Madness (Frenzy)": the injury before the separator, the outcome after it.
+  const base = name.split(/\s+[-–:]\s+|\s*\(/)[0] ?? name
+  const result = HERO_INJURIES.find((i) => sameName(i.name, name)) ?? HERO_INJURIES.find((i) => sameName(i.name, base)) ?? (norm === 'frenzy' ? HERO_INJURIES.find((i) => i.code === 'madness') : undefined)
+  if (!result) return { injury: null, flag }
+  // "Roll again" injuries (Madness, Arm Wound, Smashed Leg…): the roster names the outcome, or at
+  // least the injury; record the outcome that was rolled, never the table itself.
+  const sub = result.effects.find((e) => e.kind === 'subRoll')
+  const outcome = sub && sub.kind === 'subRoll' ? pickSubRollOutcome(sub.outcomes, norm) : null
+  const label = outcome ? outcomeLabel(outcome) : null
+  const effect = outcome ? outcome.text : sub ? `${result.text.split('\n')[0]} (the follow-up roll was not recorded)` : result.effects.map((e) => ('text' in e && typeof e.text === 'string' ? e.text : '')).filter(Boolean).join(' ') || result.text.slice(0, 120)
+  const injury: AppliedInjury = { injuryCode: result.code, name: label ? `${result.name} (${label})` : result.name, rolled: { d66: 0 }, effect }
   return { injury, flag }
+}
+
+type SubOutcome = Extract<InjuryEffect, { kind: 'subRoll' }>['outcomes'][number]
+
+const OUTCOME_FLAG_LABELS: Partial<Record<string, string>> = { frenzy: 'Frenzy', stupidity: 'Stupidity', noRunning: 'may not run', singleHandedWeaponsOnly: 'one-handed weapons only' }
+
+function outcomeLabel(outcome: SubOutcome): string | null {
+  for (const e of outcome.effects) if (e.kind === 'flag' && OUTCOME_FLAG_LABELS[e.flag]) return OUTCOME_FLAG_LABELS[e.flag]!
+  return null
+}
+
+/** The outcome the roster text names: its flag word or a word of its text no other outcome uses. */
+function pickSubRollOutcome(outcomes: readonly SubOutcome[], norm: string): SubOutcome | null {
+  const words = (o: SubOutcome) => new Set(normaliseName(o.text).split(' ').filter((w) => w.length >= 5))
+  for (const o of outcomes) for (const e of o.effects) if (e.kind === 'flag' && norm.includes(e.flag.toLowerCase())) return o
+  for (const o of outcomes) {
+    const others = new Set(outcomes.filter((x) => x !== o).flatMap((x) => [...words(x)]))
+    if ([...words(o)].some((w) => !others.has(w) && norm.includes(w))) return o
+  }
+  return null
 }
 
 export interface ItemMatch {
@@ -300,7 +330,8 @@ export function toCreatePayload(resolved: ResolvedRoster, importedFrom = 'anothe
         level_ups: levelUpsFor('henchman', g.parsed.xp),
         is_large: Boolean(unit?.traitIds?.includes('large_target')),
         sort_order: i,
-        equipment: toPayloadItems(g.items),
+        // The tracker lists a group's kit once; every model carries it, so the row holds group totals.
+        equipment: toPayloadItems(g.items).map((item) => ({ ...item, quantity: item.quantity * Math.max(1, g.size) })),
       }
     }),
     stash: toPayloadItems(resolved.stash),

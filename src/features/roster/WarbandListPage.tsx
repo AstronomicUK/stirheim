@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useMyCampaigns } from '../../api/campaigns'
 import { useMyWarbands, type WarbandSummary } from '../../api/warbands'
 import { useSession } from '../../app/session'
-import { Notice, PageHeader, Spinner } from '../../ui'
+import { Icon, Notice, PageHeader, Spinner } from '../../ui'
 import { PrimaryLink } from '../onboarding/bits'
 import { GettingStartedChecklist, JoinCampaignNudge } from '../onboarding/GettingStarted'
 import { homeStage } from '../onboarding/checklist'
@@ -138,12 +138,23 @@ function WarbandRows({ warbands }: { warbands: WarbandSummary[] }) {
               <span className="truncate text-sm text-ink-dim">{warbandTypeName(w.type_rules_id)}</span>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-0.5 text-sm tabular-nums">
-              <span className="text-ink">{w.gold} gc</span>
-              <span className="text-ink-dim">
-                {w.wyrdstone} shards · {w.model_count} {w.model_count === 1 ? 'model' : 'models'}
+              <span className="inline-flex items-center gap-1.5 text-ink">
+                <Icon name="gold" size={14} className="text-brass" />
+                {w.gold} gc
               </span>
-              <span className="text-ink-dim">
-                {w.hero_count} {w.hero_count === 1 ? 'hero' : 'heroes'} · {w.model_count - w.hero_count} henchmen
+              <span className="inline-flex items-center gap-1.5 text-ink-dim">
+                <Icon name="wyrdstone" size={14} className="text-brass" />
+                {w.wyrdstone} {w.wyrdstone === 1 ? 'shard' : 'shards'}
+                <span aria-hidden>·</span>
+                <Icon name="models" size={14} className="text-brass" />
+                {w.model_count} {w.model_count === 1 ? 'model' : 'models'}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-ink-dim">
+                <Icon name="heroes" size={14} className="text-brass" />
+                {w.hero_count} {w.hero_count === 1 ? 'hero' : 'heroes'}
+                <span aria-hidden>·</span>
+                <Icon name="henchmen" size={14} className="text-brass" />
+                {w.model_count - w.hero_count} henchmen
               </span>
             </div>
           </Link>

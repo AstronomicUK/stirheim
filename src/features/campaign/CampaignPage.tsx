@@ -4,7 +4,7 @@ import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail
 import { useCampaignMatches } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
-import { Button, Markdown, Notice, Sheet, Spinner, TwoColumn } from '../../ui'
+import { Button, Icon, Markdown, Notice, Sheet, Spinner, TwoColumn } from '../../ui'
 import { CampaignBattles } from '../match/shared/CampaignBattles'
 import { GmChecklist } from '../onboarding/GmChecklist'
 import { MapSummary } from '../map/MapSummary'
@@ -178,8 +178,17 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         ) : (
           <ol className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
             {lines.map((line) => (
-              <li key={line.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
-                <span className="text-sm leading-relaxed text-ink">{line.text}</span>
+              <li key={line.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                <span className="flex min-w-0 items-start gap-2.5">
+                  <Icon name={line.icon} size={18} className="mt-0.5 shrink-0 text-brass" />
+                  {line.to ? (
+                    <Link to={line.to} className="text-sm leading-relaxed text-ink underline-offset-4 hover:underline">
+                      {line.text}
+                    </Link>
+                  ) : (
+                    <span className="text-sm leading-relaxed text-ink">{line.text}</span>
+                  )}
+                </span>
                 <time dateTime={line.at} className="shrink-0 text-xs text-ink-dim">
                   {formatRelativeTime(line.at)}
                 </time>

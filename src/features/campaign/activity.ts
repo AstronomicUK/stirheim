@@ -4,6 +4,7 @@
 
 import type { CampaignActivity } from '../../api/campaigns'
 import type { Json } from '../../api/database.types'
+import type { IconName } from '../../ui/icons'
 
 type Row = Record<string, Json | undefined>
 
@@ -179,6 +180,95 @@ export interface ActivityLine {
   text: string
   /** How many audit rows this line stands for. */
   count: number
+  /** What sort of thing happened, for the icon beside the line. */
+  icon: IconName
+  /** Where the changed thing lives, when it has a page. */
+  to: string | null
+}
+
+/** The icon for an audit entry: what was done first, then which table it touched. */
+export function activityIcon(entry: CampaignActivity): IconName {
+  switch (entry.reason) {
+    case 'trading':
+    case 'record_trade':
+      return 'trade'
+    case 'recruitment':
+    case 'hire':
+      return 'recruit'
+    case 'advancement':
+    case 'resolve_pending_advance':
+      return 'advances'
+    case 'post_battle':
+    case 'amend_report':
+    case 'approve_report':
+    case 'return_report':
+    case 'withdraw_report':
+      return 'records'
+    case 'manual_edit':
+      return 'edit'
+    case 'schedule':
+    case 'challenge':
+    case 'accept_challenge':
+    case 'decline_challenge':
+    case 'start_match':
+    case 'end_match':
+    case 'cancel_match':
+    case 'set_district':
+      return 'battle'
+    case 'transfer_warband':
+    case 'move_warband_campaign':
+      return 'join'
+  }
+  switch (entry.table_name) {
+    case 'warbands':
+      return 'warbands'
+    case 'heroes':
+      return 'heroes'
+    case 'henchman_groups':
+      return 'henchmen'
+    case 'items':
+      return 'stash'
+    case 'campaigns':
+      return 'settings'
+    case 'campaign_members':
+      return 'join'
+    case 'matches':
+    case 'match_participants':
+    case 'battle_sessions':
+    case 'battle_events':
+      return 'battle'
+    case 'match_reports':
+    case 'report_revisions':
+      return 'records'
+    case 'map_adjustments':
+      return 'map'
+    default:
+      return 'history'
+  }
+}
+
+/** The page for an audit entry: the warband for roster rows, the match for battle rows. */
+export function activityLink(entry: CampaignActivity): string | null {
+  const after = asRow(entry.after)
+  const before = asRow(entry.before)
+  const row = after ?? before
+  switch (entry.table_name) {
+    case 'matches':
+    case 'match_participants':
+    case 'battle_sessions':
+    case 'battle_events':
+    case 'match_reports':
+    case 'report_revisions': {
+      const matchId = entry.table_name === 'matches' ? str(row, 'id') : str(row, 'match_id')
+      return matchId ? `/matches/${matchId}` : null
+    }
+    case 'campaigns':
+      return null
+    case 'map_adjustments':
+      return str(row, 'campaign_id') ? `/campaigns/${str(row, 'campaign_id')}/map` : null
+    default:
+      return entry.warband_id ? `/warbands/${entry.warband_id}` : null
+  }
 }
 
 /** Rows of the same batch, in the order we prefer to headline them. */
@@ -206,7 +296,7 @@ export function activityLines(entries: CampaignActivity[], windowMs = 3000): Act
   const flush = () => {
     if (!group.length) return
     const headline = [...group].sort((a, b) => headlineRank(a.table_name) - headlineRank(b.table_name))[0]
-    lines.push({ id: headline.id, at: group[0].at, text: describeActivity(headline), count: group.length })
+    lines.push({ id: headline.id, at: group[0].at, text: describeActivity(headline), count: group.length, icon: activityIcon(headline), to: activityLink(headline) })
     group = []
   }
 

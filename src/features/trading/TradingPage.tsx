@@ -9,7 +9,7 @@ import { useLatestReport, useTradePhaseState, useWarbandCampaign, type WarbandCa
 import { useWarband, type WarbandDetail } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
-import { Notice, PageHeader, SegmentedControl, Spinner } from '../../ui'
+import { IconTabs, Notice, PageHeader, Spinner, type IconTab } from '../../ui'
 import { Card, KeyValue } from '../roster/view/bits'
 import { BuyTab } from './BuyTab'
 import { eligibleSearchers, phaseSummary } from './helpers'
@@ -22,12 +22,12 @@ import { phaseInfo, useTrade, type PhaseInfo } from './useTrade'
 
 type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash' | 'characters'
 
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'wyrdstone', label: 'Sell wyrdstone' },
-  { value: 'buy', label: 'Buy' },
-  { value: 'sell', label: 'Sell' },
-  { value: 'stash', label: 'Stash' },
-  { value: 'characters', label: 'Characters' },
+const TABS: IconTab<Tab>[] = [
+  { value: 'wyrdstone', label: 'Sell wyrdstone', icon: 'wyrdstone' },
+  { value: 'buy', label: 'Buy', icon: 'buy' },
+  { value: 'sell', label: 'Sell', icon: 'sell' },
+  { value: 'stash', label: 'Stash', icon: 'stash' },
+  { value: 'characters', label: 'Characters', icon: 'characters' },
 ]
 
 export function TradingPage() {
@@ -94,9 +94,9 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
   return (
     <>
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
-        <KeyValue label="Gold" value={`${detail.warband.gold} gc`} />
-        <KeyValue label="Wyrdstone" value={detail.warband.wyrdstone} />
-        <KeyValue label="Stash" value={detail.roster.stash.reduce((n, i) => n + i.quantity, 0)} />
+        <KeyValue icon="gold" label="Gold" value={`${detail.warband.gold} gc`} />
+        <KeyValue icon="wyrdstone" label="Wyrdstone" value={detail.warband.wyrdstone} />
+        <KeyValue icon="stash" label="Stash" value={detail.roster.stash.reduce((n, i) => n + i.quantity, 0)} />
       </Card>
 
       {!isOwner ? (
@@ -120,9 +120,12 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
 
       {trade.error && !sheetOwnsError(tab) ? <Notice tone="error">{trade.error}</Notice> : null}
 
-      <SegmentedControl
+      <IconTabs
         label="Trading post section"
-        options={TABS}
+        tabs={TABS.map((t) => ({
+          ...t,
+          detail: t.value === 'wyrdstone' ? `${detail.warband.wyrdstone} ${detail.warband.wyrdstone === 1 ? 'shard' : 'shards'}` : t.value === 'buy' ? `${detail.warband.gold} gc` : t.value === 'stash' ? `${detail.roster.stash.reduce((n, i) => n + i.quantity, 0)} items` : undefined,
+        }))}
         value={tab}
         onChange={(next) => {
           trade.clearError()

@@ -51,6 +51,20 @@ export function rosterLimitUpperBound(rosterLimit: string): number | null {
  * line is unlimited ("1+", "any" …), since the total is then unbounded.
  */
 export function heroCapacity(template: WarbandTemplate): number | null {
+  const listed = listedHeroSlots(template);
+  if (listed === null) return null;
+  return Math.max(listed, HERO_MAXIMUM);
+}
+
+/**
+ * The rulebook's ceiling: "If you already have the maximum number of Heroes, roll again" (The
+ * Lad's Got Talent). Every list starts with five or six hero slots and may grow to six through the
+ * Lad; lists that already field more keep their own total.
+ */
+export const HERO_MAXIMUM = 6;
+
+/** The hero slots the list itself offers (sum of upper bounds, or a ruled override); null when open-ended. */
+export function listedHeroSlots(template: WarbandTemplate): number | null {
   const ruled = warbandRules(template.id).heroCapacity;
   if (ruled !== undefined) return ruled;
   let total = 0;

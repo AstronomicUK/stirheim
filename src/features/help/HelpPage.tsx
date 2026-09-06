@@ -61,9 +61,11 @@ export function HelpPage() {
           roster that already has history.
         </P>
         <P>
-          <B>Read.</B> Hover over (or tap) any weapon, armour, skill or spell on a roster for its rules. Each warrior's experience shows as a track
-          segmented at the advance boxes, filled to the current total; a brass pill means an advance is owed. Henchman groups can carry a name for each
-          model (manual editor › Model names), shown on the card and the printed sheet.
+          <B>Read.</B> Hover over (or tap) any weapon, armour, skill or spell on a roster for its rules. Each warrior's experience shows as a row of pips,
+          one per point, with a taller node at every advance box; filled pips are earned and a brass pill means an advance is owed. Characteristics above
+          the starting profile show in green, below it in red. Two pistols read as a brace; armour and a shield each show the save they make together.
+          Henchman groups can carry a name for each model (manual editor › Model names), shown on the card and the printed sheet. The
+          <em> History</em> section at the foot of the roster lists everything that has changed it, manual edits included.
         </P>
         <P>
           <B>Templates.</B> <em>More › Save as template</em> on a roster keeps its warband type, warriors and kit. <Go to="/warbands/new">New warband</Go>{' '}

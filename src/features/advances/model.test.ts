@@ -255,7 +255,7 @@ describe('planGroup', () => {
     const pending = planGroup(rolled(5, 6), watchmen, ctx, (id) => id.toUpperCase())
     expect(pending.roll?.kind).toBe('ladsGotTalent')
     expect(pending.need).toBe('promotion')
-    expect(pending.heroCapacity).toBe(5)
+    expect(pending.heroCapacity).toBe(6)
     expect(pending.dissolvesGroup).toBe(false)
     expect(pending.tableOptions.slice(0, 2)).toEqual([
       { id: 'combat', name: 'COMBAT' },
@@ -281,10 +281,11 @@ describe('planGroup', () => {
   })
 
   it('refuses a promotion when the hero roster is full', () => {
-    const full: RosterWarband = { ...roster, heroes: [...roster.heroes, { ...captain, id: NEW_ID, name: 'Fifth' }] }
+    // Six heroes is the rulebook ceiling: five list slots plus one Lad already promoted.
+    const full: RosterWarband = { ...roster, heroes: [...roster.heroes, { ...captain, id: NEW_ID, name: 'Fifth' }, { ...captain, id: 'sixth', name: 'Sixth' }] }
     const plan = planGroup(rolled(5, 6), watchmen, { roster: full, template })
     expect(plan.need).toBe('reroll')
-    expect(plan.rerollReason).toMatch(/maximum of 5 heroes/)
+    expect(plan.rerollReason).toMatch(/maximum of 6 heroes/)
   })
 
   it('a third table pick replaces the oldest', () => {

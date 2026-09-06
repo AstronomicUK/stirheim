@@ -806,6 +806,43 @@ Phases 13 to 17 went live at https://stirheim.netlify.app in one deploy (local `
 was pushed to the hosted project. Next: a fresh campaign and a re-import of the battle records CSV, and
 handing the other players' warbands over.
 
+## Test round 2 (2026-09-06)
+
+Tom released Phases 18-19 to Netlify (deploy 6a9d4a51dafe2bbae7543921) and sent his first desktop
+test list; mobile testing to follow. Fixed the same day (built, not yet deployed):
+
+- **Hero maximum.** `heroCapacity` is now the rulebook ceiling: six heroes for every list (the
+  list's slots plus one from The Lad's Got Talent), or the list's own total where it is higher
+  (`HERO_MAXIMUM`, `listedHeroSlots`). Witch Hunters with six heroes no longer show a roster
+  problem.
+- **Experience track** redrawn: one pip per point over the whole sheet, every advance box a taller
+  node, "next advance at N (k to go)". Henchman groups show their four boxes, heroes all twenty-one.
+- **Stat colours** on the roster: heroes and hired swords compare against their starting profile
+  (`startingProfile`, `statDrift`): raised in green, lowered (injuries) in oxblood, with a title.
+- **Injuries from the importer**: "Roll again" injuries record the outcome that was rolled
+  ("Madness (Frenzy)" with the frenzy text), never the sub-table; an unknown outcome says so.
+- **Brace of pistols**: two braceable pistols read "Brace of Pistols" on kit lines and summaries;
+  the shop charges the bracketed brace price for exactly two.
+- **Saves**: body armour and a shield each show the save they make together
+  ("4+ save · 3+ with shield", "6+ save · 3+ with Gromril Armour").
+- **Roster and warbands list icons** (gold, wyrdstone, rating, models, heroes, henchmen); the
+  trading post and recruitment use icon tabs (`ui/IconTabs`) instead of text pills.
+- **Warband history** section on the roster page (every audit row for the warband, manual edits
+  with what changed); campaign activity lines carry an icon and link to the warband or match.
+- **Rabbit's Foot** under the battle-only house rule: the exploration sentence struck through
+  "(disabled by house rules)" via `RosterViewContext`.
+- "Note" headings dropped from item rules; Range and Strength on their own rows in tooltips; the
+  "Group totals shown" note removed (imported groups now hold size × kit); "Often banned" removed
+  from the bans editor; oxblood link-buttons use light text; underdog line on the match page.
+
+Answers for Tom: the two-missile-weapon warning is the rulebook's own rule ("up to two different
+missile weapons ... a brace of pistols counts as a single missile weapon", Weapons and Armour); the
+underdog bonus is computed from the ratings and offered as a tick in the report (now also shown on
+the match page); the campaign move shipped with Phase 18; the Sorcerous Society spells were added in
+Phase 17, so a re-import links them; "Hunter's cloak" is a custom item from the old tracker with no
+rulebook entry, so it has no tooltip. Still to build: out-of-action attribution ("taken out by") on
+the battle sheet and key events in the report (planned with Phase 20).
+
 ## Phase 19 built (2026-09-06)
 
 Map campaigns, part one: the map, the districts, footholds and control, scheduling in a district.

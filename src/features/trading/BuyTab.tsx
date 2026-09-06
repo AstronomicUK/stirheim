@@ -8,6 +8,7 @@ import { overrideNote, overrideReady, reasonWith, type Override } from '../../do
 import { buyItem, itemPrice, rareSearch } from '../../rules/resolve/trading'
 import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
 import { effectivePricing, warbandRareRollBonus } from '../../rules/resolve/itemPricing'
+import { braceAmountOf } from '../../rules/resolve/equipmentCost'
 import { itemEffect } from '../../rules/data/itemRules'
 import { isBanned } from '../../rules/resolve/houseRules'
 import { findWeapon } from '../../rules/data/weapons'
@@ -150,7 +151,10 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const computed = quote?.total ?? null
   const unitPrice = priceOverride !== null ? (overrideReady(priceOverride) ? priceOverride.amount : null) : (computed ?? manualPrice)
   const priceReady = unitPrice !== null && Number.isInteger(unitPrice) && unitPrice >= 0
-  const total = priceReady ? unitPrice * quantity : null
+  // Two pistols bought together are a brace at the bracketed price (the item's own line, house rules aside).
+  const braceAmount = braceAmountOf(item.price.text)
+  const isBrace = braceAmount !== null && quantity === 2 && priceOverride === null && computed !== null
+  const total = priceReady ? (isBrace ? braceAmount : unitPrice * quantity) : null
   const affordable = total !== null && total <= roster.gold
 
   const canBuy = canTrade && available && searcherOk && priceReady && affordable && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')

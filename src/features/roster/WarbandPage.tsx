@@ -20,6 +20,8 @@ import { Card, ItemLines, KeyValue, Section, Tag } from './view/bits'
 import { GroupCard } from './view/GroupCard'
 import { itemsByHolder } from './view/lookups'
 import { WarriorCard } from './view/WarriorCard'
+import { RosterViewContext } from './view/context'
+import { WarbandHistory } from './view/WarbandHistory'
 
 
 export function WarbandPage() {
@@ -135,6 +137,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </div>
       </header>
 
+      <RosterViewContext.Provider value={{ houseRules: campaign.data?.settings.houseRules ?? null }}>
       <TwoColumn
         railFirst
         rail={
@@ -168,12 +171,12 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         }
       >
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3 md:grid-cols-6">
-        <KeyValue label="Gold" value={`${warband.gold} gc`} />
-        <KeyValue label="Wyrdstone" value={warband.wyrdstone} />
-        <KeyValue label="Rating" value={rating.total} />
-        <KeyValue label="Models" value={warbandModelCount(roster)} />
-        <KeyValue label="Heroes" value={warbandHeroCount(roster)} />
-        {warband.veteran_pool !== null ? <KeyValue label="Veteran pool" value={warband.veteran_pool} /> : null}
+        <KeyValue icon="gold" label="Gold" value={`${warband.gold} gc`} />
+        <KeyValue icon="wyrdstone" label="Wyrdstone" value={warband.wyrdstone} />
+        <KeyValue icon="rating" label="Rating" value={rating.total} />
+        <KeyValue icon="models" label="Models" value={warbandModelCount(roster)} />
+        <KeyValue icon="heroes" label="Heroes" value={warbandHeroCount(roster)} />
+        {warband.veteran_pool !== null ? <KeyValue icon="history" label="Veteran pool" value={warband.veteran_pool} /> : null}
       </Card>
 
       {problems.length > 0 ? (
@@ -236,7 +239,10 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         </Card>
       </Section>
 
+            <WarbandHistory warbandId={warband.id} />
+
       </TwoColumn>
+      </RosterViewContext.Provider>
 
       <div className="mt-auto pt-2 lg:hidden">
         <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">

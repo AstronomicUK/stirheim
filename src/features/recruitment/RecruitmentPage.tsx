@@ -9,7 +9,7 @@ import { useWarbandCampaign } from '../../api/trading'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import { warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
-import { Notice, PageHeader, SegmentedControl, Spinner } from '../../ui'
+import { IconTabs, Notice, PageHeader, Spinner, type IconTab } from '../../ui'
 import { warbandTypeName } from '../roster/shared/names'
 import { Card, KeyValue } from '../roster/view/bits'
 import { DismissSection } from './DismissSection'
@@ -46,10 +46,10 @@ export function RecruitmentPage() {
 
 type Tab = 'heroes' | 'henchmen' | 'hired'
 
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'heroes', label: 'Heroes' },
-  { value: 'henchmen', label: 'Henchmen' },
-  { value: 'hired', label: 'Hired swords' },
+const TABS: IconTab<Tab>[] = [
+  { value: 'heroes', label: 'Heroes', icon: 'heroes' },
+  { value: 'henchmen', label: 'Henchmen', icon: 'henchmen' },
+  { value: 'hired', label: 'Hired swords', icon: 'hired' },
 ]
 
 function RecruitView({ detail }: { detail: WarbandDetail }) {
@@ -122,7 +122,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
         </Notice>
       ) : null}
 
-      <SegmentedControl<Tab> label="Who to recruit" options={TABS} value={tab} onChange={setTab} />
+      <IconTabs<Tab> label="Who to recruit" tabs={TABS} value={tab} onChange={setTab} />
 
       {tab === 'hired' ? (
         <HiredSwordsTab detail={detail} template={template} canEdit={canEdit} onDone={done} bans={bans} />

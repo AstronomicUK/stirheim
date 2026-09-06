@@ -46,7 +46,7 @@ export function KeyValue({ label, value }: { label: string; value: ReactNode }) 
 export function LinkButton({ to, variant = 'primary', children }: { to: string; variant?: 'primary' | 'secondary'; children: ReactNode }) {
   const look =
     variant === 'primary'
-      ? 'bg-accent text-ink hover:bg-accent-strong'
+      ? 'bg-accent text-surface-low hover:bg-accent-strong'
       : 'border border-border bg-surface-high text-ink hover:border-ink-dim'
   return (
     <Link to={to} className={`inline-flex min-h-11 w-full items-center justify-center rounded-md px-4 text-base font-medium no-underline transition-colors ${look}`}>

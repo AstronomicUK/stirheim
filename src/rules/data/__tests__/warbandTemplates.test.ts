@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WARBAND_TEMPLATES, findWarbandTemplate, heroCapacity, rosterLimitUpperBound } from "../warbandTemplates";
+import { WARBAND_TEMPLATES, findWarbandTemplate, heroCapacity, listedHeroSlots, rosterLimitUpperBound } from "../warbandTemplates";
 import { TRAITS } from "../traits";
 import { SKILLS } from "../skills";
 
@@ -68,7 +68,8 @@ describe("warband templates", () => {
     expect(rosterLimitUpperBound("0-2 (shares its recruitment slot with the Cleric)")).toBe(2);
     expect(rosterLimitUpperBound("1+")).toBeNull();
     expect(rosterLimitUpperBound("any")).toBeNull();
-    // Mercenaries (Reikland): 1 Captain + 0-2 Champions + 0-2 Youngbloods.
-    expect(heroCapacity(findWarbandTemplate("mercenaries_reikland")!)).toBe(5);
+    // Mercenaries (Reikland): 1 Captain + 0-2 Champions + 0-2 Youngbloods = 5 slots; six heroes once The Lad's Got Talent strikes.
+    expect(listedHeroSlots(findWarbandTemplate("mercenaries_reikland")!)).toBe(5);
+    expect(heroCapacity(findWarbandTemplate("mercenaries_reikland")!)).toBe(6);
   });
 });

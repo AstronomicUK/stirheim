@@ -337,7 +337,10 @@ describe("validateDraft", () => {
     d = addDraftHero(d, REIKLAND, CHAMPIONS, "champ3", "Third");
     const codes = validateDraft(d, REIKLAND).map((p) => p.code);
     expect(codes).toContain("roster.unitLimit");
-    expect(codes).toContain("roster.tooManyHeroes");
+    // Six heroes is still within the rulebook ceiling; a seventh is not.
+    expect(codes).not.toContain("roster.tooManyHeroes");
+    d = addDraftHero(d, REIKLAND, CHAMPIONS, "champ4", "Fourth");
+    expect(validateDraft(d, REIKLAND).map((p) => p.code)).toContain("roster.tooManyHeroes");
   });
 
   it("requires names", () => {

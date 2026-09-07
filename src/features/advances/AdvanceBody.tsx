@@ -184,6 +184,33 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
   if (plan.roll?.kind === 'statSubRoll' && plan.subStat !== null) {
     const rolledOption = plan.statOptions[0]
     const taken = plan.statOptions.find((o) => o.stat === plan.subStat) ?? rolledOption
+    if (plan.fallbackToAny) {
+      return (
+        <Block title="Characteristic at its maximum">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-ink">
+              Rolled {draft.subRoll}: {rolledOption.name}
+            </p>
+            <button type="button" onClick={() => update((d) => setSubRoll(d, null))} className="text-xs text-brass underline-offset-4 hover:underline">
+              Change
+            </button>
+          </div>
+          <Notice tone="warn">Both characteristics from this roll are at their racial maximum. The rulebook lets you take any other characteristic that is not, or a skill instead.</Notice>
+          {!draft.skillInstead ? <StatGrid options={plan.statOptions} selected={draft.stat} onSelect={(stat) => update((d) => setStat(d, stat))} /> : null}
+          <SegmentedControl
+            label="Take a characteristic or a skill"
+            value={draft.skillInstead ? 'skill' : 'stat'}
+            options={[
+              { value: 'stat', label: 'Another characteristic' },
+              { value: 'skill', label: 'A skill instead' },
+            ]}
+            onChange={(v) => update((d) => setSkillInstead(d, v === 'skill'))}
+          />
+          {draft.skillInstead ? skillPicker : null}
+          <MaximaNote plan={plan} />
+        </Block>
+      )
+    }
     return (
       <Block title={taken.eligible ? `+1 ${taken.name}` : 'Characteristic at its maximum'}>
         <div className="flex items-center justify-between gap-3">

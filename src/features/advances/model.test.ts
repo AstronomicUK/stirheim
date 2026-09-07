@@ -171,7 +171,7 @@ describe('planHero', () => {
     expect(plan.result!.resolution.text).toBe('Rolled 6 (then 2): +1 Strength, now S4')
   })
 
-  it('takes the other option when the sub-rolled stat is at its racial maximum, and a skill when both are', () => {
+  it('takes the other option when the sub-rolled stat is at its racial maximum, and any other characteristic (or a skill) when both are (#63)', () => {
     // Rolled 6 then 1-3: Strength. Strength is maxed, so the pair's other option, Attacks, is taken.
     const strong: RosterHero = { ...captain, stats: { ...captain.stats, S: 4 } }
     const other = planHero(setSubRoll(rolled(3, 3), 1), heroSubject(strong), ctx)
@@ -184,12 +184,24 @@ describe('planHero', () => {
     ])
     expect(other.result!.resolution).toMatchObject({ outcome: 'stat', stat: 'A', subRoll: 1 })
 
-    // Both maxed: a skill instead (or a re-roll).
+    // Both maxed: the rulebook's "you may increase any other characteristic instead" fallback, same
+    // as the roll-of-7 branch — not a forced skill. Movement is excluded here only because this
+    // Human captain's Movement already sits at its own racial maximum.
     const both: RosterHero = { ...captain, stats: { ...captain.stats, S: 4, A: 4 } }
     const pending = planHero(setSubRoll(rolled(3, 3), 1), heroSubject(both), ctx)
-    expect(pending.need).toBe('skill')
-    expect(pending.skillReason).toMatch(/Strength and Attacks are both at the racial maximum/)
-    const plan = planHero(setSkill(setSubRoll(rolled(3, 3), 1), 'strike_to_injure'), heroSubject(both), ctx)
+    expect(pending.need).toBe('stat')
+    expect(pending.fallbackToAny).toBe(true)
+    expect(pending.statOptions.filter((o) => o.eligible).map((o) => o.stat)).toEqual(['WS', 'BS', 'T', 'W', 'I', 'Ld'])
+
+    // Picking one of the fallback characteristics raises it.
+    const picked = planHero(setStat(setSubRoll(rolled(3, 3), 1), 'T'), heroSubject(both), ctx)
+    expect(picked.result!.resolution).toMatchObject({ outcome: 'stat', stat: 'T', subRoll: 1 })
+
+    // A skill is still offered as an alternative to the fallback characteristic.
+    const skillInstead = planHero(setSkillInstead(setSubRoll(rolled(3, 3), 1), true), heroSubject(both), ctx)
+    expect(skillInstead.need).toBe('skill')
+    expect(skillInstead.skillReason).toMatch(/Strength and Attacks are both at their racial maximum/)
+    const plan = planHero(setSkill(setSkillInstead(setSubRoll(rolled(3, 3), 1), true), 'strike_to_injure'), heroSubject(both), ctx)
     expect(plan.result!.resolution).toMatchObject({ outcome: 'skill', skillId: 'strike_to_injure', subRoll: 1 })
   })
 

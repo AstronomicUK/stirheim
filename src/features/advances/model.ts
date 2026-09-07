@@ -730,21 +730,30 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
         return { ...plan, need: 'subRoll', error: errorMessage(e) }
       }
       const option = statOption(hero, stat, maxima.maxima)
-      if (!option.eligible) {
-        // "If a characteristic is at its maximum, take the other option": the pair's other characteristic,
-        // and only when both are maxed a skill (or a re-roll).
-        const other = roll.outcomes.map((o) => o.stat).find((s) => s !== stat)
-        const otherOption = other ? statOption(hero, other, maxima.maxima) : null
-        if (other && otherOption?.eligible) {
-          return { ...statRoute(other, draft.subRoll), subStat: other, statOptions: [option, otherOption], skillReason: `${STAT_NAMES[stat]} is already at its racial maximum of ${option.max}, so the other option, ${STAT_NAMES[other]}, is taken.` }
-        }
-        return {
-          ...skillRoute(`${STAT_NAMES[stat]}${other ? ` and ${STAT_NAMES[other]}` : ''} ${other ? 'are both' : 'is'} at the racial maximum, so a skill is taken instead (or roll the 2D6 again).`, false, draft.subRoll),
-          subStat: stat,
-          statOptions: otherOption ? [option, otherOption] : [option],
-        }
+      if (option.eligible) return { ...statRoute(stat, draft.subRoll), subStat: stat, statOptions: [option] }
+
+      // "If a characteristic is at its maximum, take the other option": the pair's other characteristic,
+      // automatically, when only one of the pair is maxed.
+      const pairStats = [...new Set(roll.outcomes.map((o) => o.stat))]
+      const other = pairStats.find((s) => s !== stat)
+      const otherOption = other ? statOption(hero, other, maxima.maxima) : null
+      if (other && otherOption?.eligible) {
+        return { ...statRoute(other, draft.subRoll), subStat: other, statOptions: [option, otherOption], skillReason: `${STAT_NAMES[stat]} is already at its racial maximum of ${option.max}, so the other option, ${STAT_NAMES[other]}, is taken.` }
       }
-      return { ...statRoute(stat, draft.subRoll), subStat: stat, statOptions: [option] }
+
+      // Both of the pair are maxed: "you may increase any other (that is not already at its racial
+      // maximum) instead" — the same eligible-fallback / skill-instead choice the roll-of-7 branch
+      // already offers, since neither Advance table ever names Movement directly and this is the
+      // only route to it for some races.
+      const eligibility = eligibleStatChoices(hero, pairStats, maxima.maxima)
+      const offered = otherOption ? [option, otherOption] : [option]
+      const fallback = eligibility.fallbackToAny ? eligibility.options.map((s) => statOption(hero, s, maxima.maxima)) : []
+      const withOptions: HeroPlan = { ...plan, subStat: stat, statOptions: [...offered, ...fallback], fallbackToAny: eligibility.fallbackToAny }
+      if (eligibility.fallbackToAny && draft.skillInstead) {
+        return { ...skillRoute(`${pairStats.map((s) => STAT_NAMES[s]).join(' and ')} are both at their racial maximum.`, false, draft.subRoll), subStat: stat, statOptions: withOptions.statOptions, fallbackToAny: true }
+      }
+      if (draft.stat && eligibility.options.includes(draft.stat)) return { ...statRoute(draft.stat, draft.subRoll), subStat: stat, statOptions: withOptions.statOptions, fallbackToAny: eligibility.fallbackToAny }
+      return { ...withOptions, need: 'stat' }
     }
   }
 }

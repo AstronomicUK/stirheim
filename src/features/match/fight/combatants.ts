@@ -83,6 +83,9 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
   if (warrior.flags.frenzy) ids.push('frenzy')
   if (warrior.flags.hates) ids.push('hatred')
   if (warrior.flags.nurglesRot) ids.push('nurgles_rot')
+  if (warrior.flags.stupidity) ids.push('stupidity')
+  if (warrior.flags.immuneToFear) ids.push('immune_to_fear')
+  if (warrior.flags.causesFear) ids.push('causes_fear')
   if (isLarge) ids.push('large_target')
   return unique(ids)
 }

@@ -171,6 +171,12 @@ describe('combatantsOf', () => {
     expect(ogre.traitIds).not.toContain('hard_to_kill')
   })
 
+  it('Stupidity, Hardened and Horrible Scars badge like any other injury/madness flag', () => {
+    const roster = warband({ heroes: [hero('cap', { flags: { stupidity: true, immuneToFear: true, causesFear: true } })] })
+    const [cap] = combatantsOf(roster, findWarbandTemplate('mercenaries_reikland'), roster.name, undefined)
+    expect(cap.traitIds).toEqual(expect.arrayContaining(['stupidity', 'immune_to_fear', 'causes_fear']))
+  })
+
   it('marks who is already out of action from the sheet', () => {
     const roster = warband({ heroes: [hero('cap')], henchmenGroups: [group('Watchmen', { size: 2 })] })
     let sheet = toggleHeroOut(emptyBattleLiveState(), 'cap')

@@ -84,13 +84,20 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 5. The injury-enforcement audit only covered two injuries
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed (the actionable gap it found); one bigger gap split out as #54
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-06 (part of the same list as #1)
 
 > "Injury audit: are things like Old Battle Wound actually enforced?"
 
 **Notes:** Old Battle Wound (pre-battle D6, benches on a 1) and Severe Arm Wound (no second weapon/shield/buckler) are now enforced — those were the two gaps identified at the time. The question was broader than those two by its own wording ("things *like*"); nobody has since gone through every other injury outcome in `rules/data/injuries` checking each one actually changes app behaviour rather than just sitting on the sheet as text. Worth a proper full pass rather than assuming the two found so far were the only ones.
+
+**Full audit (2026-09-07):** went through every serious-injury outcome in `src/rules/data/campaign/injuries.ts` against its applier (`src/rules/resolve/injuries.ts`) and the combat-trait hook (`src/features/match/fight/combatants.ts`). Good news first — everything else already checked out:
+
+- **Enforced correctly:** Dead (status + equipment cleared), Multiple Injuries (reroll loop), the five stat-loss wounds (Leg/Chest/Nervous Condition/Hand/Blinded in One Eye, via `clampStat`), a second Blinded in One Eye forcing retirement, Light Arm Wound / Smashed Leg (2-6) / Deep Wound (miss-a-game bench, with the counter ticking down post-battle), Robbed (equipment cleared), Bitter Enmity (drives the `hatred` combat trait — correctly a manual toggle since the app can't know who's on the table), Captured (benched, excluded from rating), Survives Against the Odds (+1 XP), Frenzy (doubles Attacks; its charge-compulsion is explicitly documented as out of scope, not silently dropped). Full Recovery correctly does nothing.
+- **The real gap:** three flags — **Stupidity** (Madness result), **Hardened** → immune to fear, **Horrible Scars** → causes fear — were stored on the hero and shown as a tag on the roster sheet, but never reached `warriorTraits()` in `combatants.ts`, so they didn't even appear as a reminder badge in the Fight tab the way Frenzy and Hatred already do (both traits already existed in the catalogue, correctly marked `modeled: false` — "no Hit/Wound/Injury math effect" — this was never about faking mechanical enforcement the engine can't actually do, just making the condition visible to whoever's rolling). **Fix:** three lines added to `warriorTraits()` pushing `stupidity`/`immune_to_fear`/`causes_fear` from the matching flags, exactly mirroring how Frenzy and Hatred already work. Covered by a new test in `combatants.test.ts`; `tsc -b`, `oxlint` and the full suite (1175 passed) clean.
+- **Split out as its own entry, not fixed here:** Sold to the Pits — see #54. It's a real resolution flow with gold/XP/equipment stakes, not a one-line badge fix.
+- **Explicitly out of scope, not a bug:** Smashed Leg's "may not run" has no hook because the app has no movement/running model at all to hook into — the same category as Frenzy's charge-compulsion, just not yet written down as an intentional exclusion. Worth a one-line comment in `traits.ts` if this comes up again, but not worth code for.
 
 ### 6. Two large rules-completeness audits already exist and are still open
 
@@ -966,7 +973,15 @@ Gone immediately, no prompt.
   **roster importer** (the Witch Hunters fixture parsed cleanly, with two sensible "things to check").
   All correct.
 
+### 54. Sold to the Pits has no resolution flow — the pit fight it triggers is logged and then abandoned
 
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — split out of #5's full injury-enforcement audit, not something Tom flagged directly
+
+**Notes:** Found while auditing every serious-injury outcome for #5. The Sold to the Pits result (a Serious Injury Chart outcome) sends the captured Hero to fight in the pits for the crowd's entertainment, with real stakes either way: win and he returns with 50 gc and +2 Experience, keeping his equipment; lose and he's gone for good, rolling a full D66 again to see what actually happens to him (possibly losing his gear along the way). Today, `injuries.ts:248-249` only emits a one-off `pitFight` event with a comment to "resolve that fight separately" — there is no wizard step, no roster reminder, and no UI anywhere to actually record the win/lose outcome or apply its consequences. Once the injury lands, everything past that point is entirely off the app, same shape as Old Battle Wound's gap before that got a proper pre-battle prompt.
+
+A reasonable fix would follow that same pattern: a persistent flag (`pitFightOwed`, alongside the existing `missNextGames`/`oldBattleWound` flags on `WarriorFlags`) set when the injury lands, then a prompt — either in the post-battle wizard's Injuries step or as its own between-battles card — to record whether the model won or lost and apply the gold/XP/equipment or the follow-up D66 roll accordingly. Left open rather than attempted here since it's a real feature (a new roll, a new set of consequences, new UI), not a one-line enforcement fix like the badge gap #5 actually closed.
 
 <!--
 ### N. Short title

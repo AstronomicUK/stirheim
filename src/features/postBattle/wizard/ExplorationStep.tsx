@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { findItem } from '../../../rules/data/items'
 import { rollDice, rollDie } from '../../../rules/resolve/dice'
-import { Button, DieField, Markdown, Notice, NumberField, SegmentedControl, SelectField, Stepper, TextArea, TextField } from '../../../ui'
+import { Button, DieFace, DieField, Markdown, Notice, NumberField, SegmentedControl, SelectField, Stepper, TextArea, TextField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import {
   foundItemFromName,
@@ -15,6 +15,7 @@ import {
   setExplorationSubRoll,
   setExplorationTest,
   setExplorationTestSubject,
+  toggleExplorationKeep,
   type FoundItem,
 } from '../model'
 import { Intro, Row, type StepProps } from './bits'
@@ -55,7 +56,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
       <Intro>
         Suggested: {ex.suggested?.count ?? allowed.count} {(ex.suggested?.count ?? allowed.count) === 1 ? 'die' : 'dice'} ({ex.suggested?.reason ?? allowed.reason}). Surviving{' '}
         {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.{won ? '' : ' No winner’s die.'}
-        {ex.suggested?.capped ? ' The rulebook caps the roll at six.' : ''} Roll a different number if a skill, item, map bonus or house rule says so; the change is logged.
+        {ex.suggested?.capped ? ' You may keep and score only six of them: pick which once they are all rolled.' : ''} Roll a different number if a skill, item, map bonus or house rule says so; the change is logged.
       </Intro>
       <Card className="flex flex-col gap-3 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
@@ -102,6 +103,32 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
           </div>
         </Card>
       </Section>
+
+      {allowed.capped ? (
+        <Section title="Keep six">
+          <Card className="flex flex-col gap-3 px-4 py-3">
+            <p className="text-sm text-ink-dim">
+              You rolled {allowed.count}; the rulebook lets you keep and score only {allowed.keep} of them, even though you were entitled to roll more. Tap the ones to keep ({ex.kept.length} of {allowed.keep} chosen).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ex.rolls.map((v, i) =>
+                v === null ? null : (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={`Die ${i + 1}, ${v}: ${ex.kept.includes(i) ? 'kept' : 'discarded'}`}
+                    aria-pressed={ex.kept.includes(i)}
+                    onClick={() => update((d) => toggleExplorationKeep(d, i, allowed.keep))}
+                    className={`rounded-[22%] transition-opacity ${ex.kept.includes(i) ? '' : 'opacity-40 hover:opacity-70'}`}
+                  >
+                    <DieFace value={v} size={38} tone={ex.kept.includes(i) ? 'good' : 'plain'} />
+                  </button>
+                ),
+              )}
+            </div>
+          </Card>
+        </Section>
+      ) : null}
 
       <ExplorationAidsCard draft={draft} ctx={ctx} update={update} rolls={ex.rolls} />
 

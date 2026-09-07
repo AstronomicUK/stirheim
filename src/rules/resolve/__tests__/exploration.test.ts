@@ -115,17 +115,18 @@ describe("explorationDiceAllowed", () => {
     expect(r.reason).toContain("3 surviving heroes");
   });
 
-  it("caps at six", () => {
+  it("rolls the true total, not capped at six, but keeps at most six (#66)", () => {
     const wb = makeWarband({ heroes: ["a", "b", "c", "d", "e", "f"].map((id) => hero(id)) });
     const r = explorationDiceAllowed(wb, { won: true, heroesOutOfAction: [] });
-    expect(r.count).toBe(6);
+    expect(r.count).toBe(7);
+    expect(r.keep).toBe(6);
     expect(r.capped).toBe(true);
   });
 
-  it("adds extra dice from skills and equipment before capping", () => {
+  it("adds extra dice from skills and equipment before the keep cap applies", () => {
     const wb = makeWarband({ heroes: [hero("a"), hero("b")] });
     expect(explorationDiceAllowed(wb, { won: false, heroesOutOfAction: [], extraDice: 2 }).count).toBe(4);
-    expect(explorationDiceAllowed(wb, { won: true, heroesOutOfAction: [], extraDice: 5 })).toMatchObject({ count: 6, capped: true });
+    expect(explorationDiceAllowed(wb, { won: true, heroesOutOfAction: [], extraDice: 5 })).toMatchObject({ count: 8, keep: 6, capped: true });
   });
 
   it("hired swords do not roll", () => {

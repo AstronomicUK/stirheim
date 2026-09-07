@@ -42,13 +42,16 @@ export interface ExplorationDiceOptions {
 }
 
 export interface ExplorationDiceAllowed {
+  /** How many dice the warband actually rolls — not capped: "even if you are allowed to roll seven dice or more" (03:585). */
   count: number;
-  /** True when the uncapped total exceeded EXPLORATION_MAX_DICE. */
+  /** How many of those rolled dice may be kept and scored; always min(count, EXPLORATION_MAX_DICE). */
+  keep: number;
+  /** True when count exceeds EXPLORATION_MAX_DICE: some rolled dice must be picked to discard before scoring. */
   capped: boolean;
   reason: string;
 }
 
-/** How many exploration dice the warband rolls: one per surviving active hero, +1 if won, + extras, max six. */
+/** How many exploration dice the warband rolls: one per surviving active hero, +1 if won, + extras. Keep at most six of them (03:585: roll every die you are entitled to, then pick your best six). */
 export function explorationDiceAllowed(warband: RosterWarband, opts: ExplorationDiceOptions): ExplorationDiceAllowed {
   const outOfAction = new Set(opts.heroesOutOfAction);
   const rules = warbandRules(warband.warbandTemplateId).exploration;
@@ -58,15 +61,15 @@ export function explorationDiceAllowed(warband: RosterWarband, opts: Exploration
   const extra = Math.max(0, Math.floor(opts.extraDice ?? 0));
   const ruleDice = rules?.extraDice && (survivors.length > 0 || rules.extraDiceWithoutHeroes) ? rules.extraDice : 0;
   const raw = survivors.length + (opts.won ? 1 : 0) + extra + ruleDice;
-  const count = Math.min(raw, EXPLORATION_MAX_DICE);
+  const keep = Math.min(raw, EXPLORATION_MAX_DICE);
   const parts = [`${survivors.length} surviving ${survivors.length === 1 ? "hero" : "heroes"}`];
   if (lazy > 0) parts.push(`${lazy} ${lazy === 1 ? "gives" : "give"} no die`);
   if (opts.won) parts.push("+1 for winning");
   if (extra > 0) parts.push(`+${extra} from ${opts.extraDiceNote?.trim() || "skills/equipment"}`);
   if (ruleDice > 0) parts.push(`+${ruleDice} (${rules?.note ?? "warband rule"})`);
   const capped = raw > EXPLORATION_MAX_DICE;
-  const reason = `${parts.join(", ")} = ${raw} dice${capped ? `, capped at ${EXPLORATION_MAX_DICE}` : ""}`;
-  return { count, capped, reason };
+  const reason = `${parts.join(", ")} = ${raw} dice${capped ? `; pick your best ${EXPLORATION_MAX_DICE} to keep` : ""}`;
+  return { count: raw, keep, capped, reason };
 }
 
 export interface ExplorationBonuses {

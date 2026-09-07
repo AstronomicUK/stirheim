@@ -21,6 +21,7 @@
 import type { ExplorationRecord, ReportAdjustment } from '../../../domain'
 import { resolveEquipmentName } from '../../../rules/data/items/aliases'
 import { warbandRules } from '../../../rules/data/campaignRules'
+import { EXPLORATION_MAX_DICE } from '../../../rules/data/campaign/income'
 import { explorationDiceAllowed, locationOutcome, resolveExploration, type ExplorationDiceAllowed, type ExplorationResult, type LocationOutcome, explorationBonuses } from '../../../rules/resolve/exploration'
 import type { ExplorationLocation, ExplorationReward } from '../../../rules/types/exploration'
 import type { RosterHero, RosterWarband } from '../../../rules/types/roster'
@@ -61,6 +62,10 @@ export interface ExplorationDerived {
   /** Sized to the dice allowed. */
   rolls: (number | null)[]
   complete: boolean
+  /** True once every die is entered and more were rolled than the six the rulebook lets you keep: pick which to score. */
+  needsKeepChoice: boolean
+  /** Indices into `rolls` currently chosen to keep and score. */
+  kept: number[]
   result: ExplorationResult | null
   location: ExplorationLocation | null
   outcome: LocationOutcome | null
@@ -121,6 +126,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     skippedReason: null,
     rolls: [],
     complete: false,
+    needsKeepChoice: false,
+    kept: [],
     result: null,
     location: null,
     outcome: null,
@@ -146,7 +153,12 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const suggested = explorationDiceAllowed(roster, { won: input.won, heroesOutOfAction, extraDice: input.extraDice ?? 0, extraDiceNote: input.extraDiceNote })
   const override = draft.diceOverride
   const allowed: ExplorationDiceAllowed = override
-    ? { count: override.count, capped: false, reason: `${suggested.reason}; changed to ${override.count}${override.reason.trim() ? `: ${override.reason.trim()}` : ''}` }
+    ? {
+        count: override.count,
+        keep: Math.min(override.count, EXPLORATION_MAX_DICE),
+        capped: override.count > EXPLORATION_MAX_DICE,
+        reason: `${suggested.reason}; changed to ${override.count}${override.reason.trim() ? `: ${override.reason.trim()}` : ''}`,
+      }
     : suggested
   const adjustment: ReportAdjustment | null =
     override && override.count !== suggested.count
@@ -160,14 +172,24 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     rolls.push(isDie(v, 6) ? v : null)
   }
   const complete = rolls.every((r) => r !== null)
+  // "You must pick a maximum of six dice out of all the dice you roll, even if you are allowed to
+  // roll seven dice or more" (03:585): once every rolled die has a value, the player chooses which
+  // six to keep and score, discarding the rest.
+  const needsKeepChoice = rolls.length > allowed.keep
+  const kept = needsKeepChoice ? (draft.kept ?? []) : rolls.map((_, i) => i)
   const problems: string[] = []
   if (adjustment && adjustment.reason === '') problems.push('Say why the number of exploration dice was changed.')
   if (!complete) {
     problems.push(`Enter all ${allowed.count} exploration dice.`)
-    return { ...base, allowed, suggested, adjustment, rolls, problems }
+    return { ...base, allowed, suggested, adjustment, rolls, needsKeepChoice, kept, problems }
   }
+  if (needsKeepChoice && kept.length !== allowed.keep) {
+    problems.push(`Choose ${allowed.keep} of the ${rolls.length} dice to keep (${kept.length} chosen so far).`)
+    return { ...base, allowed, suggested, adjustment, rolls, complete, needsKeepChoice, kept, problems }
+  }
+  const keptRolls = kept.map((i) => rolls[i] as number)
 
-  const result = resolveExploration(rolls as number[])
+  const result = resolveExploration(keptRolls)
   const location = result.location
   let outcome: LocationOutcome | null = null
   let needsSubRoll = false
@@ -205,6 +227,10 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (draft.notes.trim() !== '') notes.push(draft.notes.trim())
 
   const bonuses = explorationBonuses(roster, result.shards, input.enemiesOut ?? 0)
+  if (needsKeepChoice) {
+    const discarded = rolls.map((v, i) => (kept.includes(i) ? null : v)).filter((v): v is number => v !== null)
+    notes.push(`Rolled ${rolls.length} dice (${(rolls as number[]).join(', ')}); kept ${keptRolls.join(', ')}, discarded ${discarded.join(', ')}.`)
+  }
   for (const use of draft.aids ?? []) notes.push(`Die ${use.dieIndex + 1}: ${use.from} re-rolled to ${use.to} with ${use.label}${use.test ? ` (Ld test ${use.test.rolls[0]}+${use.test.rolls[1]} passed)` : ''}`)
   const totalShards = result.shards + (extraShards.value ?? 0) + bonuses.shards
   notes.push(...bonuses.notes)
@@ -233,6 +259,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     adjustment,
     rolls,
     complete,
+    needsKeepChoice,
+    kept,
     result,
     location,
     outcome,

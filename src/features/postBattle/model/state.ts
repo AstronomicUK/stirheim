@@ -74,6 +74,8 @@ export interface ExplorationDraft {
   diceOverride: DiceOverride | null
   /** One entry per die allowed; null until entered. */
   rolls: (number | null)[]
+  /** Indices into `rolls` chosen to keep, when more were rolled than the six the rulebook lets you score; null until chosen. */
+  kept: number[] | null
   /** The location's own D6, when it has a table. */
   subRoll: number | null
   /** The location's characteristic test, when it has one: null until recorded. */
@@ -143,7 +145,7 @@ export interface ReportDraft {
 }
 
 export function emptyExploration(): ExplorationDraft {
-  return { diceOverride: null, rolls: [], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, aids: [], notes: '' }
+  return { diceOverride: null, rolls: [], kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, aids: [], notes: '' }
 }
 
 export function emptyDraft(): ReportDraft {
@@ -412,8 +414,8 @@ export function applyExplorationAid(draft: ReportDraft, use: AidUse): ReportDraf
 
 /** Roll a different number of exploration dice than suggested (1..12); null goes back to the suggestion. The reason is required to file. */
 export function setExplorationDiceOverride(draft: ReportDraft, override: DiceOverride | null): ReportDraft {
-  if (override === null) return withExploration(draft, { diceOverride: null })
-  return withExploration(draft, { diceOverride: { count: Math.max(1, Math.min(12, Math.trunc(override.count))), reason: override.reason } })
+  if (override === null) return withExploration(draft, { diceOverride: null, kept: null })
+  return withExploration(draft, { diceOverride: { count: Math.max(1, Math.min(12, Math.trunc(override.count))), reason: override.reason }, kept: null })
 }
 
 /**
@@ -426,11 +428,19 @@ export function setExplorationRoll(draft: ReportDraft, index: number, value: num
   while (rolls.length <= index) rolls.push(null)
   if (rolls[index] === value) return draft
   rolls[index] = value
-  return withExploration(draft, { rolls, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
+  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
 }
 
 export function setExplorationRolls(draft: ReportDraft, rolls: (number | null)[]): ReportDraft {
-  return withExploration(draft, { rolls, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
+  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
+}
+
+/** Toggle whether a rolled die (by index) is one of the six kept and scored; extra picks past `limit` are ignored. */
+export function toggleExplorationKeep(draft: ReportDraft, index: number, limit: number): ReportDraft {
+  const current = draft.exploration.kept ?? []
+  if (current.includes(index)) return withExploration(draft, { kept: current.filter((i) => i !== index) })
+  if (current.length >= limit) return draft
+  return withExploration(draft, { kept: [...current, index] })
 }
 
 /** The location's D6; a new value resets the answers that depend on it. */

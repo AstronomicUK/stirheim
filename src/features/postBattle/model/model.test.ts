@@ -13,6 +13,7 @@ import {
   setExplorationRolls,
   setExplorationSubRoll,
   setExplorationDiceOverride,
+  toggleExplorationKeep,
   setInjurySkip,
   setGroupInjuryDice,
   setGroupInjuryRoll,
@@ -405,6 +406,31 @@ describe('exploration', () => {
     expect(d.exploration.skippedReason).toMatch(/no exploration/)
     expect(d.problems.exploration).toEqual([])
     expect(d.report?.exploration).toBeNull()
+  })
+
+  it('rolling more than six dice rolls the true total and needs a keep choice before scoring (#66)', () => {
+    let draft = setResult(emptyDraft(), 'won')
+    draft = setExplorationDiceOverride(draft, { count: 7, reason: 'Mordheim Map' })
+    expect(deriveReport(draft, ctx()).exploration.allowed?.count).toBe(7)
+    draft = setExplorationRolls(draft, [6, 5, 4, 3, 2, 1, 1]) // no multiple among the six best, so no location to resolve
+    let d = deriveReport(draft, ctx())
+    expect(d.exploration.needsKeepChoice).toBe(true)
+    expect(d.exploration.result).toBeNull()
+    expect(d.problems.exploration).toEqual(['Choose 6 of the 7 dice to keep (0 chosen so far).'])
+
+    // Keep the six highest; discard the spare 1 (index 6).
+    for (const i of [0, 1, 2, 3, 4, 5]) draft = toggleExplorationKeep(draft, i, 6)
+    d = deriveReport(draft, ctx())
+    expect(d.problems.exploration).toEqual([])
+    expect(d.exploration.result?.total).toBe(21) // 6+5+4+3+2+1, not all 7 rolled pips (22)
+    expect(d.exploration.record?.rolls).toEqual([6, 5, 4, 3, 2, 1, 1]) // every rolled die kept on the record
+    expect(d.exploration.record?.notes.some((n) => n.includes('kept 6, 5, 4, 3, 2, 1, discarded 1'))).toBe(true)
+
+    // Toggling a kept die back off drops it, so a wrong pick can be corrected.
+    draft = toggleExplorationKeep(draft, 5, 6)
+    d = deriveReport(draft, ctx())
+    expect(d.exploration.needsKeepChoice).toBe(true)
+    expect(d.problems.exploration).toEqual(['Choose 6 of the 7 dice to keep (5 chosen so far).'])
   })
 })
 

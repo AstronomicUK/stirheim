@@ -1001,6 +1001,143 @@ Gone immediately, no prompt.
 
 A reasonable fix would follow that same pattern: a persistent flag (`pitFightOwed`, alongside the existing `missNextGames`/`oldBattleWound` flags on `WarriorFlags`) set when the injury lands, then a prompt — either in the post-battle wizard's Injuries step or as its own between-battles card — to record whether the model won or lost and apply the gold/XP/equipment or the follow-up D66 roll accordingly. Left open rather than attempted here since it's a real feature (a new roll, a new set of consequences, new UI), not a one-line enforcement fix like the badge gap #5 actually closed.
 
+**More detail from the rules-audit session's own pass over the same injury (2026-09-07):** the loss branch specifically needs a D66 roll *restricted to the 11-35 range* (there's no existing support anywhere for a range-restricted D66 — worth building that as a small reusable piece, since Sold to the Pits is the only place that needs it today but the shape could recur), and if he survives that roll he rejoins **without his armour and weapons** (win keeps kit; lose strips it) — the equipment side of this needs to be part of the fix, not just gold/XP. Separately, and "slightly embarrassing" in the auditor's own words: the Amphitheatre map district already grants a `pitFightAutoWin` perk and the perks summary already prints "A hero Sold to the Pits wins the fight (Amphitheatre)" to the player — a promise the app makes today with nothing behind it, since there's no fight to auto-win. Worth fixing both halves together: once a real resolution flow exists, `pitFightAutoWin` should skip straight to the win outcome instead of prompting.
+
+### 55. The battle page crashes for any warband holding a hired sword
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** n/a — found by the rules-audit session auditing magic and prayers, reviewed by Tom before being handed over; confirmed live
+
+> "The battle page throws as soon as the warband has any hired sword. `castersOf` builds its list as `[...roster.heroes, ...(roster.hiredSwords as unknown as RosterHero[])]`, but `RosterHiredSword` has no `spellIds` field — not in the type, not from `hireHiredSword`, and not from `toRosterHiredSword` when a roster is loaded from the database. `loreForCaster` then reads `hero.spellIds.length` and throws `TypeError: Cannot read properties of undefined (reading 'length')`. I confirmed it live: hiring a plain Pit Fighter, who casts nothing, is enough. `BattlePage.tsx:286` calls `castersOf` in an unguarded `useMemo` to decide whether to show the Cast tab, and `CastTab.tsx:36` calls it again. Adding `spellIds` to the hired sword type and both builders fixes it and unblocks finding 2. This is the most serious thing in this audit and is not really a magic gap at all — it breaks the battle page for any warband with a hired sword." (`docs/MAGIC-RULES-GAPS.md` A1, source: `src/features/match/battle/casters.ts`)
+
+**Notes:** This is a live crash, not a rules-fidelity gap — any warband that has ever hired a hired sword (of any kind, caster or not) cannot open its own battle page at all once that hired sword is on the roster. Given the severity, fixing this is the immediate next thing after logging it, ahead of the rest of this batch.
+
+### 56. No hired sword or Dramatis Persona can ever hold or cast a spell
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the same magic and prayers rules audit as #55, reviewed by Tom
+
+**Notes:** Same root cause as #55 (no `spellIds` field on `RosterHiredSword`), but even once that's added, nothing ever *writes* a spell onto one — `hireHiredSword` has nowhere to put a first spell and the advance flow's spell-picker is wired to heroes only. Seven Wizard-table entries exist purely to cast: Warlock (Lesser Magic), Witch (Charms & Hexes), Elf Mage (Spells of the Djed'hi), Norse Shaman (Norse Runes), Wolf Priest of Ulric (Prayers of Ulric), Dark Emissary (Lore of Darkness), Truthsayer (Lore of Light), plus Khar-mel the Djinn (Arabian Elemental Magic) and the Priest of Morr (Funerary Rites) — none of these can ever cast anything in the app today, even after #55.
+
+### 57. 19 wizard units get no starting spell and are never prompted — including two core/Grade 1a warbands
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the magic and prayers rules audit, reviewed by Tom; directly extends #28's own `loreForUnit` matching
+
+**Notes:** `loreForUnit` (the function #28 built to detect a spellcasting unit at creation) matches the Wizard table by exact label, trying `"<warband name> <unit name>"` and `"<unit name>"`. The builder's First Spell card only renders `{lore ? … : null}`, so wherever the label misses, the card silently never appears and the wizard starts the campaign with nothing — no error, no hint anything is missing. Eight units miss on a label mismatch:
+
+| Warband :: unit | Wizard-table row | Why it misses |
+|---|---|---|
+| The Sisters of Sigmar :: Sigmarite Matriarch | "Sisters of Sigmar Sigmarite Matriarch" | template name carries a leading "The" |
+| The Undead :: Necromancer | "Undead Necromancer" | same leading "The" |
+| Skaven of Clan Eshin :: Eshin Sorcerer | "Skaven Sorcerer" | neither label shape matches |
+| Orc Mob :: Orc Shaman | "Orc Mob Shaman" | unit is "Orc Shaman", not "Shaman" |
+| Ostlander Mercenaries :: Priest of Taal | "Ostlanders Priest of Taal" | warband is "Ostlander Mercenaries" |
+| Skaven of Clan Pestilens :: Plague Priest, Pestilens Sorcerer | "Skaven of Clan Pestilens Sorcerer" | unit names differ |
+| Marauders of Chaos :: Seer | four rows, each "… Seer (with the Mark of X)" | the Mark is part of the label (see below) |
+
+The Sisters of Sigmar and The Undead are core-rulebook warbands, among the most played in the game — this isn't an edge case. Nine more units have no Wizard-table row at all because the table itself stops at the source site's list (Court of the Profane Pleasures Priest of Obscene, Druchii Sorceress, Nipponese Vim-To Mage, Protectorate of Sigmar Warrior Priest, Snotlings Snotling Shaman, Survivors of Strigos Seer, Wood Elves of Athel Loren Forest Mage, the Restless Dead Variant's Liche and Necromancer), and the Sorcerous Society's Magus and Mages have a row but a null `loreId` since they choose one of four Elemental Lores with no UI to make that choice (see #59). At battle time the existing hero recovers fine once he knows any spell (`loreForCaster` looks the lore up from spells already known) — the damage is only at creation and on later advances, never mid-battle.
+
+Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all — the four rows are the only case where one unit maps to four different lores depending on a creation-time choice, and nothing on the roster records a Seer's Mark yet, so fixing the label match alone still leaves this one needing a real picker.
+
+### 58. Magic and prayers: smaller rules-fidelity gaps (rulebook clauses with no code effect)
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the magic and prayers rules audit, reviewed by Tom
+
+**Notes:** The casting system itself is "the strongest part of the app I have audited so far" per the auditor — all 34 lores present verbatim, the casting roll correctly assembles every kit/skill modifier, the armour prohibition and its sensible exceptions are built, prayers are correctly kept separate from sorcery, Magical Aptitude's second spell is carried with its Toughness test, two-lore warriors (Tome of Magic, Book of the Dead) list spells from both correctly, and the first-spell house rule from #28 is wired to a campaign setting. The remaining gaps, roughly in order of how likely a table would notice them:
+
+- **A duplicate spell can't be recorded at reduced difficulty.** The advance screen tells the player to "roll again, or lower its difficulty by 1 by hand" but there's nowhere on the roster to put a per-spell difficulty modifier, so the casting screen always shows the printed number regardless. Rolling again works fine; the other half of the rulebook's own offered choice doesn't.
+- **Warrior Wizard doesn't lift the armour-casting ban** (carried over from the skills audit, #59 below — the skill itself has no effect anywhere).
+- **The prayer armour exception covers four lores where the rulebook names only one** ("The only exception is the Prayers of Sigmar. Sisters of Sigmar and Warrior Priests may wear armour and use their prayers.") `PRAYER_LORE_IDS` also exempts Prayers of Taal, Prayers of Ulric and the Lady's Prayers — probably the reading most groups actually use, but applied inconsistently: Funerary Rites and Mortuary Cult Scrolls read as prayers too and are *not* exempted, so a Priest of Morr is blocked by armour while a Priest of Taal isn't. Worth Tom settling one way or the other rather than leaving the inconsistency.
+- `prayers_of_myrmidia` is a dead id sitting in `PRAYER_LORE_IDS` with no such lore anywhere in the data or the rules reference — harmless, but it's how the inconsistency above crept in (the list was written from memory, not from the lore table).
+- **Spell damage isn't modelled** (no critical hits from spells, armour saves always apply) — reasonable scope, since the fight calculator has no spell-damage path at all, only melee/missile duels.
+- **The Sorcerous Society's four Elemental Lores have no picker anywhere** — 24 complete spells with no route to them, the same "scraped in faithfully, never wired to a unit" shape as the orphaned skill tables in #59/#60.
+- A hero with two lores' spells gets his "home" lore reported as whichever lore happens to come first in the data order, if that differs from the one he actually started with — cosmetic (the spell list itself is always correct), only the heading is affected.
+
+### 59. Skills rules audit: 18 skills have no effect anywhere, and warband-restriction text is often ignored or wrong
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the skills rules audit, reviewed by Tom, handed to the QA session before being redirected here
+
+**Notes:** The advance flow itself is solid — table access, banned/known-skill filtering, restricted-pick tagging (soft: shown with a reason, the pick still goes through) and the wizard's spell-instead-of-skill option all work as designed, and warband skill *data* is essentially complete (all 38 published warband skill lists present, every skill name matching). The gaps are all in what a skill actually *does* once picked, or who's allowed to pick it:
+
+- **18 skills have no effect anywhere in the app** (`modeled: false`, and no code reads the id): Weapons Training, Weapons Expert, Hunter, Fearsome, Strongman, Leap, Sprint, Acrobat, Scale Sheer Surfaces, Lightning Reflexes, Jump Up, Battle Tongue, Streetwise, Haggle, Wyrdstone Hunter, Warrior Wizard, plus the warband-unique Extra Tough and Resource Hunter. Several of these are campaign-side effects the tracker genuinely could apply (not just tabletop-only text): **Streetwise** (+2 to rare-item rolls — trading has a `rareRollBonus` hook for warband rules but never checks hero skills), **Haggle** (2D6 gc off one purchase per sequence, min 1 gc — nothing in trading reads it), **Wyrdstone Hunter** (re-roll one exploration die — `explorationAids.ts` handles items, not this skill), **Weapons Training/Expert** (may use any weapon type — equipment-list checks never consult skills, so a Skaven with Weapons Training is still told a halberd is off-list), **Strongman** (double-handed weapons stop losing "strike last" — no `strikesLast` toggle exists for it), **Fearsome** (causes Fear — the traits layer never adds it from a skill).
+- **Core skills carry no restriction text in data at all** (the `Skill` type has no `restriction` field): Quick Shot (bows/crossbows only), Battle Tongue (leader only, not Undead), Sorcery (spellcasters only, not Sisters of Sigmar or Warrior Priests), Arcane Lore (not Witch Hunters, Sisters or Warrior Priests), Warrior Wizard (wizards only) — a Sister of Sigmar can take Sorcery with no note today.
+- **The warband-skill restriction resolver actively blocks the heroes each restriction is meant to *permit*, in 8 of 75 cases** — the exact opposite of the intended effect: Dwarf Treasure Hunters & Dwarf Rangers' "Troll Slayers only" blocks their own Troll Slayer; Night Goblins' "Night Goblin Big Boss only" (Sneaky Git) blocks the Big Boss; Halflings' "halfling thieves only" (Stealthy) blocks the Halfling Thief; Snotlings' "Scout and Promoted Runts only" (Worm) blocks Snotling Scouts; Wood Elves' "Only one Elven Hero may possess this skill" (Seeker) blocks *every* hero; Dark Elves' Powerful Build exclusion clause never actually excludes the Sorceress it names. A further 5 restrictions (Horned Hunters' Pathfinder cap, Norse Explorers' Battle Tongue leader-only, Dreamwalkers' two skills, Maneaters' once-only, Sorcerous Society's caster-only) never fire at all in either direction. Full table with the exact regex reason for each is in `docs/SKILLS-RULES-GAPS.md` section D.
+- **Skills granted automatically at recruitment are populated for 2 units and should cover far more**: all six Pit Fighter hero/henchman types (Pit Fighter skill), the five Imperial Outrider mounted units (Ride, plus role-specific extras), Marauders of Chaos heroes (Ride Warhorse), Bretonnian Chapel Guard Questing Knight (Ride Warhorse), Nipponese Hatamoto/Retainers (Ride), Cursed Cavalcade Fighting Apes (Scale Sheer Surfaces, Acrobat, Dodge), Mazzalupo Master of Finances (Haggle), Order of the Mare knights (Ride, optional Blazing Saddles).
+- **No cavalry skills exist in the catalogue at all** (Ride, Ride Warhorse, Combat Riding, Trick Riding, Horse Archer, Cavalry Commander, Evade, Running Dismount, Athletic Mount, Mounted Combat Master, Beast Handler) — Imperial Outriders' whole "Cavalry" skill-table column, and the Knights of the White Wolf hired sword, point at nothing.
+- **Two warband skill tables are orphaned** (`tomb_guardians_additional_skills`, `sorcerous_society_additional_academic_skills`) — no hero of that warband has the `warband-unique` flag the resolver needs to reach them, so Drive Chariot, Scribe, Mind Focus and Magical Aptitude (the last two already understood as casting skills elsewhere in the code) are unreachable.
+- **Skills that should change what a hero may learn afterwards aren't wired**: Powerful Build (opens the Strength table), Proven Warrior (Black Orc Young'un becomes a full Black Orc), Big Bully (BigSnotz immediately learns a Strength skill), Renowned Virtue (Chapel Guard: learn a Bretonnian Virtue), Forest Goblin Brave (may remove Animosity instead of a skill) — nothing edits `skillTableIds` or grants a follow-on pick.
+- **Smaller data fixes**: Ostermark Mercenaries should let the player pick which Mercenary skill table applies (data hard-codes Reikland's); Court of the Profane Pleasures heroes have no skill table at all (the rulebook admits none was published — needs a house-rule fallback or at least a note); Forest Goblin Brave and the three Imperial Outrider mounted heroes carry `warband-unique` with no table behind it.
+
+### 60. Hired swords and Dramatis Personae: the app actively contradicts the rulebook in six places
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the hired swords and Dramatis Personae rules audit, reviewed by Tom, handed to the QA session before being redirected here
+
+**Notes:** The administrative frame (hire/dismiss/upkeep, eligibility text-parsing, roster/rating/model-count exclusions, no shopping for their kit, advance-table access, finding a persona) is solid and in several cases ("a genuinely hard piece of text parsing done properly") better than expected. The gaps below aren't missing features so much as places the app currently does the opposite of what the rulebook says:
+
+- **Hired swords are offered as Leadership for Rout tests, when the rulebook explicitly forbids it** ("You may not use the Leadership of any of the Hired Swords for Rout tests.") `leadershipOptions` builds its candidate list from every fighting hero *and* hired sword, and the guard that should exclude them only checks a `neverLeads` flag on `unitTemplateId` — which a hired sword doesn't have, so the guard always passes. An Ogre Bodyguard on Ld 7 in a Ld 6 warband gets sorted to the top and suggested as the one to lead the Rout test.
+- **Dramatis Personae earn Experience, when the rulebook says plainly they never do** ("Special characters do not earn Experience points, although they suffer serious injuries, just like Heroes.") The XP gate checks `unitGainsExperience(unitId)`, and a hired sword's `unitTemplateId` is null — which resolves to "gains experience" by default. Every one of the 30 personae banks XP and earns advances they should never get.
+- **Dramatis Personae roll the henchman injury die (1-2 dead, 3-6 recovers) instead of the full Serious Injuries D66 chart** the same sentence calls for ("suffer serious injuries, just like Heroes"). Ordinary hired swords are correctly on the henchman die; the 30 personae should be on the Heroes chart and aren't.
+- **The single root cause of the three findings above: nothing distinguishes a Dramatis Persona from an ordinary hired sword at runtime.** The lookup deliberately merges the two lists and there's no `isDramatisPersona(id)` anywhere in the rules layer. None of the three can be fixed properly until this exists — described in the audit as "the single most useful change in this audit."
+- **Upkeep is never prompted after a battle.** The rule is explicit that upkeep is due "after each battle he fights, including the first." The seven-step post-battle wizard never mentions it — the word "upkeep" doesn't appear anywhere under `src/features/postBattle`. Paying is a manual action buried in the Recruitment page's own Hired Swords tab; a player who simply forgets keeps the hired sword for free indefinitely, with nothing in the app ever noticing.
+- **Hired swords advance on the Hero experience boxes (24/28/32...) rather than the Henchman ones (2/5/9/14...).** The rulebook's own wording is genuinely ambiguous here (they "gain experience in exactly the same way as Henchmen" but roll on the Heroes Advancement table) — flagged as a question for Tom rather than a certain bug, since reasonable groups read it either way, but the app's current reading is the less common one.
+
+### 61. Hired swords and Dramatis Personae: entry data the app has but never reads (skills, kit, racial maxima, unusual fees)
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the same hired swords and Dramatis Personae rules audit as #60, reviewed by Tom
+
+**Notes:** All from a full probe of every one of the 102 entries (72 hired swords, 30 personae):
+
+- **35 entries default to all five core skill tables**, because the skill-table guesser scans each entry's "Skills" prose for the words combat/shooting/academic/strength/speed and falls back to granting *all five* when it finds none — but most persona entries don't describe tables at all, they list skills the character already has ("Johann has the following skills: Dodge, Scale Sheer Surfaces…"). So Johann the Knife, Aenur, Veskit, Bertha, the Dark Jester and dozens more can currently pick freely from every skill table in the game, and (combined with the Dramatis Personae XP bug in #60) get real advances to spend on it.
+- **20 entries explicitly name skills the character starts with, and none of them are actually granted** — hiring always sets `skillIds: []`. The Knight of the White Wolf doesn't start with Unstoppable Charge or Ride Warhorse, the Ninja doesn't start with Expert Swordsman/Knife-Fighter/Scale Sheer Surfaces, and every persona arrives with none of their listed skills. The stat profiles are right; the abilities that make each one distinctive are missing.
+- **16 entries have a unique skill table already sitting in the data with no code path that ever surfaces it** (Troll Slayer Skills, Elven Skills, Merchant Skills, Assassin Skills, Halfling Thief Skills, Human Scout Skills, Kislev Ranger Skills, Pathfinder Special Skills, Hobgoblin Skills, Pyromaniac Skills, Swordsmith Skill, Ungor Trapper Skills and others).
+- **3 entries point at a Cavalry skill table that doesn't exist** (Highwayman, Roadwarden, Knight of the White Wolf) — same underlying gap as #59's missing cavalry skill catalogue.
+- **81 of 102 fall back correctly to Human racial maxima via a keyword match on the race in the name, but 11 clear misses cap non-humans at human maximums**: Runesmith Journeyman (Dwarf), Shadow Warrior (Elf), Aenur (Elf), Veskit (Skaven), Ulli & Marquand (Ulli is a Dwarf), Chaos Centaur, Ninja Gnoblar, Chaos Fury, Bone Goliath, Cursed Hillman, Khar-mel the Djinn.
+- **A handful of plain, resolvable items sit as unmatched custom kit lines**: Two Axes, three Torches, a cloak, Gromril Hammer, Hammer of Sigmar, Whip, Pickaxe, Mining Pick, Scimitar, Repeating Crossbow, Cavalry Spear, Rope, Hook, Two Daggers — worth adding as catalogue aliases. Six entries (Chameleon Skink, Snake Charmer, Ulli & Marquand, Dark Emissary, Truthsayer, Luthor Wolfenbaum) parse no kit at all.
+- **Fee/upkeep edge cases**: 9 entries can't be hired through the app at all because their fee isn't a plain gold number (the button is disabled with an honest message) — of these, four (Old Prospector, plus three others paid in wyrdstone or treasures) could actually be supported properly since wyrdstone is already tracked on the roster, rather than staying blocked. The Ninja's printed fee is "70 + 3D6" and the app silently charges a flat 70, dropping the dice half — the same `feeOverride` hook the map-advantage half-price perks already use would fix this cheaply.
+
+### 62. Experience and advances: recruited heroes and henchmen are credited with advances they never earned
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** n/a — found by the experience and advances rules audit, reviewed by Tom, sent directly for the tracker
+
+> "Heroes recruited mid-campaign are credited with advances they never earned. `builder.ts` computes `startingLevelUps` so a new warband's Captain owes nothing for his starting experience. `recruitment.ts` — the path used after a battle — sets `levelUps: 0` instead, at both `recruitment.ts:145` (heroes) and `:283` (henchman groups). `xpProgress` in `features/roster/view/lookups.ts:181` then reports `advancesOwed = boxes crossed - levelUps`, so every box the starting experience already crossed reads as an advance waiting to be rolled. 211 of the hero templates across the 49 warbands have starting experience, so this is close to universal rather than an edge case. A Mercenary Champion recruited at 8 experience shows four advances owed. The worst case found is the Lustrian Reavers Conqueror at 24 experience, who arrives owing nine. The fix is one line each: call `startingLevelUps` the way the builder and the importer already do." (`docs/EXPERIENCE-RULES-GAPS.md` A1)
+
+**Notes:** This is the same `startingLevelUps` helper #35 (the leader's free dagger) and the roster importer already call correctly — `recruitment.ts` is simply the one path that never adopted it. High priority given the reach (211 of the hero templates in the game) and how visibly wrong the result is (a freshly-hired Champion immediately showing multiple advances "owed" for experience nobody actually earned in play).
+
+### 63. Movement can never be increased by an advance, for anyone, ever
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the experience and advances rules audit, reviewed by Tom, sent directly for the tracker
+
+> "When a sub-roll's pair is fully maxed, the app takes a skill; the rulebook says take any other characteristic. The rule reads: 'If a characteristic is at its maximum, take the other option or roll again if you can only increase one characteristic. If both are already at their racial maximum, you may increase any other (that is not already at its racial maximum) by +1 instead. Note that this is the only way to gain the maximum Movement for some races.' `features/advances/model.ts:741` handles the both-maxed case by routing to a skill with a note that both are at the maximum. The any-other-characteristic option is never offered. This affects the three sub-roll results: 6 (Strength/Attacks), 8 (Initiative/Leadership) and 9 (Wounds/Toughness). The app already implements this fallback correctly one branch above, for the roll of 7 (`eligibleStatChoices`, with `fallbackToAny`), and offers a skill there only as an alternative. So the two halves of the same rule disagree with each other. Neither Advance table ever names Movement directly, so this fallback is the *only* route to it — which the rulebook says in as many words. With the fallback missing from the sub-rolls and available only on the roll of 7, Movement is reachable only if a hero happens to roll a 7 with both Weapon Skill and Ballistic Skill already maxed. In practice no warrior in this app will ever gain the Movement his racial maximum allows." (`docs/EXPERIENCE-RULES-GAPS.md` A2-A3)
+
+**Notes:** A contained fix — the roll-of-7 branch (`eligibleStatChoices`/`fallbackToAny`) is the working reference implementation; the three sub-roll branches (6, 8, 9) just need the same fallback wired in instead of defaulting straight to a skill.
+
+### 64. Experience and advances: smaller points worth a look
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the experience and advances rules audit, reviewed by Tom
+
+**Notes:** Named as "built closer to the rulebook than anything else audited so far" overall — both Advance tables exact band-for-band, all 30 racial maximum profiles correct, henchman +1-per-stat caps tracked properly with re-rolls on a maxed/repeated result, "a lad's got talent" promotion faithful in every particular (including the units that should never be promoted), the underdog table correct and switchable, starting experience correctly granting no free advances at creation (the working reference case for #62's bug), veteran recruits implemented properly. Remaining smaller items:
+
+- **A scenario's own bespoke experience award is never shown when awarding experience** — the three standard awards apply automatically and correctly, but anything a scenario adds (six scenarios deviate from the standard leader award, two giving +2 and one +5) has to be typed in by hand via "Add scenario experience" with nothing on screen reminding the player it applies. The match already knows which scenario was played and every scenario's `experience` text already exists in the data — just needs surfacing at the point of award.
+- `promoteHenchman` drops the group's `statIncreases` record on promotion — harmless today since a promoted hero is bound by racial maxima rather than the henchman +1 cap, but worth knowing the history doesn't carry across if that ever needs reconstructing.
+
 <!--
 ### N. Short title
 

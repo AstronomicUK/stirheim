@@ -10,7 +10,7 @@ import {
   type WarbandDraft,
 } from '../../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../../rules/types'
-import { Button, Stepper, TextField } from '../../../ui'
+import { Button, Sheet, Stepper, TextField } from '../../../ui'
 import { StatLine } from '../shared/StatLine'
 import { useDraftStore } from './draftStore'
 import { EquipmentRows } from './EquipmentRows'
@@ -28,6 +28,7 @@ export interface GroupCardProps {
 export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
   const update = useDraftStore((s) => s.update)
   const [shopping, setShopping] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const unit = findUnitTemplate(template, group.unitTemplateId)
   const options = useMemo(() => equipmentOptionsFor(template, group.unitTemplateId, bans), [template, group.unitTemplateId, bans])
   const houseRules = useBuilderRules()
@@ -47,7 +48,7 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
         </div>
         <button
           type="button"
-          onClick={() => update((d) => removeDraftGroup(d, group.id))}
+          onClick={() => setConfirmRemove(true)}
           className="-mr-2 inline-flex min-h-11 shrink-0 items-center px-2 text-xs text-ink-dim hover:text-accent-strong"
         >
           Remove
@@ -83,6 +84,25 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
         options={options}
         template={template}
       />
+
+      <Sheet
+        open={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        title="Remove this group?"
+        description={`${group.name.trim() || unit?.name || 'This group'} and everything bought for it will be gone, with no way to bring it back.`}
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setConfirmRemove(false)}>
+              Keep it
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={() => update((d) => removeDraftGroup(d, group.id))}>
+              Remove
+            </Button>
+          </div>
+        }
+      >
+        {null}
+      </Sheet>
     </article>
   )
 }

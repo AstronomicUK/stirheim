@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import {
   addDraftEquipment,
   draftItemCost,
@@ -26,7 +26,6 @@ export interface EquipmentRowsProps {
 /** The kit a warrior (or every model of a group) carries: one row per stack with a quantity stepper, remove and, when the list has no price, a price field. */
 export function EquipmentRows({ subject, equipment, options, models = 1 }: EquipmentRowsProps) {
   const houseRules = useBuilderRules()
-  const update = useDraftStore((s) => s.update)
 
   if (equipment.length === 0) return <p className="text-sm text-ink-dim">No equipment yet.</p>
 
@@ -34,52 +33,79 @@ export function EquipmentRows({ subject, equipment, options, models = 1 }: Equip
     <ul className="flex flex-col divide-y divide-border">
       {equipment.map((item) => {
         const option = optionForItem(options, item)
-        const each = draftItemCost(item, houseRules)
-        const currency = itemCurrency(item)
         const key = item.itemId ?? `custom:${item.customName ?? ''}`
-        return (
-          <li key={key} className="flex flex-col gap-2 py-2">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-col">
-                <span className="truncate text-sm text-ink">{itemName(item)}</span>
-                <span className="text-xs tabular-nums text-ink-dim">
-                  {discountedCostText(item.costText, option?.item, houseRules)}
-                  {each !== null && models > 1 ? ` · ${formatAmount(each * models, currency)} for ${models}` : ''}
-                  {each !== null && models === 1 ? ` · ${formatAmount(each, currency)}` : ''}
-                </span>
-              </div>
-              {option ? (
-                <div className="flex shrink-0 items-center gap-1">
-                  <Stepper
-                    label={itemName(item)}
-                    value={item.quantity}
-                    min={0}
-                    onChange={(next) =>
-                      update((d) =>
-                        next > item.quantity
-                          ? addDraftEquipment(d, subject, option, next - item.quantity)
-                          : removeDraftEquipment(d, subject, option, item.quantity - next),
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    aria-label={`Remove ${itemName(item)}`}
-                    onClick={() => update((d) => removeDraftEquipment(d, subject, option, item.quantity))}
-                    className="inline-flex min-h-11 items-center px-2 text-xs text-ink-dim hover:text-accent-strong"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <span className="text-sm text-ink-dim">x{item.quantity}</span>
-              )}
-            </div>
-            {option && needsPrice(item) ? <PriceField item={item} subject={subject} option={option} /> : null}
-          </li>
-        )
+        return <EquipmentRow key={key} subject={subject} item={item} option={option} houseRules={houseRules} models={models} />
       })}
     </ul>
+  )
+}
+
+interface EquipmentRowProps {
+  subject: DraftSubject
+  item: DraftItem
+  option: EquipmentOption | undefined
+  houseRules: ReturnType<typeof useBuilderRules>
+  models: number
+}
+
+function EquipmentRow({ subject, item, option, houseRules, models }: EquipmentRowProps) {
+  const update = useDraftStore((s) => s.update)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const each = draftItemCost(item, houseRules)
+  const currency = itemCurrency(item)
+
+  return (
+    <li className="flex flex-col gap-2 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm text-ink">{itemName(item)}</span>
+          <span className="text-xs tabular-nums text-ink-dim">
+            {discountedCostText(item.costText, option?.item, houseRules)}
+            {each !== null && models > 1 ? ` · ${formatAmount(each * models, currency)} for ${models}` : ''}
+            {each !== null && models === 1 ? ` · ${formatAmount(each, currency)}` : ''}
+          </span>
+        </div>
+        {option ? (
+          confirmRemove ? (
+            <div className="flex shrink-0 items-center gap-1 text-xs">
+              <span className="text-ink-dim">Remove it?</span>
+              <button type="button" onClick={() => update((d) => removeDraftEquipment(d, subject, option, item.quantity))} className="text-accent-strong underline-offset-4 hover:underline">
+                Remove
+              </button>
+              <button type="button" onClick={() => setConfirmRemove(false)} className="text-brass underline-offset-4 hover:underline">
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <div className="flex shrink-0 items-center gap-1">
+              <Stepper
+                label={itemName(item)}
+                value={item.quantity}
+                min={0}
+                onChange={(next) =>
+                  update((d) =>
+                    next > item.quantity
+                      ? addDraftEquipment(d, subject, option, next - item.quantity)
+                      : removeDraftEquipment(d, subject, option, item.quantity - next),
+                  )
+                }
+              />
+              <button
+                type="button"
+                aria-label={`Remove ${itemName(item)}`}
+                onClick={() => setConfirmRemove(true)}
+                className="inline-flex min-h-11 items-center px-2 text-xs text-ink-dim hover:text-accent-strong"
+              >
+                Remove
+              </button>
+            </div>
+          )
+        ) : (
+          <span className="text-sm text-ink-dim">x{item.quantity}</span>
+        )}
+      </div>
+      {option && needsPrice(item) ? <PriceField item={item} subject={subject} option={option} /> : null}
+    </li>
   )
 }
 

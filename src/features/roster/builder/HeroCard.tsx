@@ -4,7 +4,7 @@ import { loreForUnit } from '../../../rules/data/campaign/magic'
 import type { CampaignBans } from '../../../rules/types/roster'
 import { equipmentOptionsFor, removeDraftHero, renameDraftHero, setDraftHeroSpell, type DraftHero } from '../../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../../rules/types'
-import { Button, TextField } from '../../../ui'
+import { Button, Sheet, TextField } from '../../../ui'
 import { StatLine } from '../shared/StatLine'
 import { useDraftStore } from './draftStore'
 import { EquipmentRows } from './EquipmentRows'
@@ -24,6 +24,7 @@ export interface HeroCardProps {
 export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
   const update = useDraftStore((s) => s.update)
   const [shopping, setShopping] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const unit = findUnitTemplate(template, hero.unitTemplateId)
   const options = useMemo(() => equipmentOptionsFor(template, hero.unitTemplateId, bans), [template, hero.unitTemplateId, bans])
   const houseRules = useBuilderRules()
@@ -43,7 +44,7 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
         {!isLeader ? (
           <button
             type="button"
-            onClick={() => update((d) => removeDraftHero(d, hero.id))}
+            onClick={() => setConfirmRemove(true)}
             className="-mr-2 inline-flex min-h-11 shrink-0 items-center px-2 text-xs text-ink-dim hover:text-accent-strong"
           >
             Remove
@@ -79,6 +80,25 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
         options={options}
         template={template}
       />
+
+      <Sheet
+        open={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        title="Remove this hero?"
+        description={`${hero.name.trim() || unit?.name || 'This hero'} and everything bought for them will be gone, with no way to bring them back.`}
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setConfirmRemove(false)}>
+              Keep them
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={() => update((d) => removeDraftHero(d, hero.id))}>
+              Remove
+            </Button>
+          </div>
+        }
+      >
+        {null}
+      </Sheet>
     </article>
   )
 }

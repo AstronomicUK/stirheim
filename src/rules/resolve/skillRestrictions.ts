@@ -25,8 +25,11 @@ function singular(word: string): string {
 export const SUBJECT_UNITS: Record<string, string[]> = {
   gnoblars: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter"],
   ogres: ["ogre_hunting_party_ogre_hunter", "maneaters_captain", "maneaters_youngbloods", "maneaters_mountain_guide", "ostlander_elder"],
-  slayers: ["dwarf_slayer_cult_giant_slayer", "dwarf_slayer_cult_doomseeker_hero", "dwarf_slayer_cult_troll_slayers"],
-  "troll slayers": ["dwarf_slayer_cult_giant_slayer", "dwarf_slayer_cult_doomseeker_hero", "dwarf_slayer_cult_troll_slayers"],
+  slayers: ["dwarf_slayer_cult_giant_slayer", "dwarf_slayer_cult_doomseeker_hero", "dwarf_slayer_cult_troll_slayers", "dwarf_treasure_hunters_troll_slayers", "dwarf_rangers_troll_slayer"],
+  "troll slayers": ["dwarf_slayer_cult_giant_slayer", "dwarf_slayer_cult_doomseeker_hero", "dwarf_slayer_cult_troll_slayers", "dwarf_treasure_hunters_troll_slayers", "dwarf_rangers_troll_slayer"],
+  "night goblin big boss": ["night_goblins_big_boss"],
+  "halfling thieves": ["mootlanders_halfling_thief", "halflings_thief_hero"],
+  "scout and promoted runts": ["snotling_scouts", "bigsnotz"],
   skinks: ["lizardmen_skink_priest", "lizardmen_skink_great_crest", "lizardmen_skink_brave"],
   saurus: ["lizardmen_saurus_totem_warrior", "lizardmen_saurus_brave"],
   "warrior priest": ["warrior_priest", "witch_hunters_warrior_priest"],
@@ -40,7 +43,6 @@ export const SUBJECT_UNITS: Record<string, string[]> = {
   matriarch: ["sisters_of_sigmar_matriarch"],
   "beastmen chief": ["beastmen_chieftain"],
   "questing knight": ["bretonnian_knights_questing_knight", "bretonnian_questing_knight"],
-  "halfling thieves": ["mootlanders_halfling_thief"],
   stormvermin: ["stormvermin"],
   snotlings: ["bigsnotz", "snotling_scouts", "snotling_shaman"],
 };
@@ -100,29 +102,45 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
     if (id && !ctx.hero.skillIds.includes(id)) return `Requires ${prereq[1].trim()} first.`;
   }
 
-  // Leader only.
+  // Leader only. ("...with the leader skill" means the leader role, not a takeable skill: no such skill exists in the catalogue.)
   if (/leader/.test(lower) && /only/.test(lower) && ctx.template) {
     const leader = leaderTemplate(ctx.template);
-    if (leader && ctx.hero.unitTemplateId !== leader.id && !/leader skill/.test(lower)) return `Only the warband's leader may take this skill.`;
+    if (leader && ctx.hero.unitTemplateId !== leader.id) return `Only the warband's leader may take this skill.`;
   }
 
-  // Limits across the warband: "no more than two warriors", "Only one Elven Hero may possess this skill".
-  const limit = /(?:no more than|never be more than|more than|only) (one|two|three|1|2|3) (?:elven |dwarf |human )?(?:warriors?|heroes?|elves|dwarfs|models?)/i.exec(text);
+  // Limits across the warband: "no more than two warriors", "Only one Elven Hero may possess this skill",
+  // "A warband may only contain one pathfinder" (a role name standing in for the noun), "may be taken only once".
+  const limit =
+    /(?:no more than|never be more than|more than|only|may only contain|may contain no more than) (one|two|three|1|2|3)(?: (?:elven |dwarf |human )?(?:warriors?|heroes?|elves|dwarfs|models?|[a-z]+))?/i.exec(text) ??
+    /(?:may be taken|taken|used) only once\b/i.exec(text);
   if (limit && ctx.roster && ctx.skillId) {
-    const max = { one: 1, two: 2, three: 3, "1": 1, "2": 2, "3": 3 }[limit[1].toLowerCase()] ?? 1;
+    const max = limit[1] ? ({ one: 1, two: 2, three: 3, "1": 1, "2": 2, "3": 3 }[limit[1].toLowerCase()] ?? 1) : 1;
     const holders = ctx.roster.heroes.filter((h) => h.status === "active" && h.id !== ctx.hero.id && h.skillIds.includes(ctx.skillId!)).length;
-    if (holders >= max) return `The warband may only have ${max === 1 ? "one warrior" : `${max} warriors`} with this skill, and it already does.`;
+    const message = holders >= max ? `The warband may only have ${max === 1 ? "one warrior" : `${max} warriors`} with this skill, and it already does.` : null;
+    // A clause that IS the whole restriction (matched at the very start of the text) is fully handled
+    // here; don't let its own "only N ..." phrasing also be reinterpreted by the "X only" check below
+    // as if it named a unit type. A clause combined with a separate exclusion elsewhere in the text
+    // (e.g. "The Sorceress may never take this skill and no more than two Elves...") falls through.
+    if (limit.index === 0) return message;
+    if (message) return message;
   }
 
-  // Exclusions: "may not be taken by Shadow Weavers", "may not be used by Sisters of Sigmar or Warrior Priests", "The Sorceress may never take this skill".
-  const exclusion = /(?:may not be (?:taken|used) by|may never take|cannot be taken by|never take) (?:the )?([a-z' ,-]+?)(?:\.|,| there| and no| the|$)/i.exec(text) ?? /^the ([a-z' -]+?) may never take/i.exec(text);
+  // Exclusions: "The Sorceress may never take this skill" (checked first: more specific, so its
+  // trailing clause doesn't get swallowed by the general pattern below), "may not be taken by Shadow
+  // Weavers", "may not be used by Sisters of Sigmar or Warrior Priests".
+  const exclusion = /^the ([a-z' -]+?) may never take/i.exec(text) ?? /(?:may not be (?:taken|used) by|may never take|cannot be taken by|never take) (?:the )?([a-z' ,-]+?)(?:\.|,| there| and no| the|$)/i.exec(text);
   if (exclusion && unit) {
     const subjects = exclusion[1].split(/\s+or\s+|,\s*/).map((s) => s.trim()).filter(Boolean);
     if (subjects.some((s) => unitMatches(unit.id, unit.name, s))) return `${unit.name} may not take this skill.`;
   }
 
   // "X only" / "Only the X may have this skill" / "only be taken by X" / "This skill is for X only" / "Only for X".
-  const only = /^([a-z' -]+?) only!?$/i.exec(text) ?? /^only (?:the |a |for )?([a-z' -]+?)(?: may| can)/i.exec(text) ?? /only be taken by (?:a |an |the )?([a-z' -]+?)(?: with| who| and|\.|$)/i.exec(text) ?? /is for (?:the )?([a-z' -]+?) only/i.exec(text);
+  const only =
+    /^([a-z' -]+?) only!?$/i.exec(text) ??
+    /^only (?:the |a |for )?([a-z' -]+?)(?: may| can)/i.exec(text) ??
+    /only be taken by (?:a |an |the )?([a-z' -]+?)(?: with| who| and|\.|$)/i.exec(text) ??
+    /is for (?:the )?([a-z' -]+?) only/i.exec(text) ??
+    /^only for (?:the )?([a-z' -]+?)\.?$/i.exec(text);
   if (only && unit) {
     const subject = only[1].trim();
     if (/leader|spellcaster|warrior capable of casting/i.test(subject)) return null;

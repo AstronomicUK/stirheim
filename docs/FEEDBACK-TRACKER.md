@@ -1080,7 +1080,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 60. Hired swords and Dramatis Personae: the app actively contradicts the rulebook in six places
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the hired swords and Dramatis Personae rules audit, reviewed by Tom, handed to the QA session before being redirected here
 
@@ -1092,6 +1092,10 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 - **The single root cause of the three findings above: nothing distinguishes a Dramatis Persona from an ordinary hired sword at runtime.** The lookup deliberately merges the two lists and there's no `isDramatisPersona(id)` anywhere in the rules layer. None of the three can be fixed properly until this exists — described in the audit as "the single most useful change in this audit."
 - **Upkeep is never prompted after a battle.** The rule is explicit that upkeep is due "after each battle he fights, including the first." The seven-step post-battle wizard never mentions it — the word "upkeep" doesn't appear anywhere under `src/features/postBattle`. Paying is a manual action buried in the Recruitment page's own Hired Swords tab; a player who simply forgets keeps the hired sword for free indefinitely, with nothing in the app ever noticing.
 ~~Hired swords advance on the Hero experience boxes rather than the Henchman ones.~~ **Withdrawn by the auditor 2026-09-07:** already settled — `docs/PLANNING.md:361` records it under "Confirmed as-is": "hired swords roll D6 injuries and earn xp as heroes." The app does exactly what Tom decided; not a bug.
+
+**Fixed:** The Rout-test Leadership bullet — `mayLead`'s guard was `!('unitTemplateId' in w)`, true for a hired sword (the property doesn't exist on that type) regardless of the `neverLeads` flag it was meant to check, so a hired sword was always eligible and could out-rank every hero. Fixed to require being a hero at all before checking the flag; the dropdown now also labels an ineligible option "may not lead a Rout test" rather than leaving it unexplained. Added a regression test (a Ld 9 hired sword that must never be suggested over a Ld 7 leader) since the existing fixture had no hired sword and never exercised this path. Commit `3260858`.
+
+Still open: Dramatis Personae earning XP, rolling the wrong injury die, no `isDramatisPersona()` to fix either properly, and upkeep never being prompted.
 
 ### 61. Hired swords and Dramatis Personae: entry data the app has but never reads (skills, kit, racial maxima, unusual fees)
 
@@ -1202,7 +1206,7 @@ Equipment-list membership (the first bullet above) is left open — it needs a d
 **Notes:** The rating maths itself was praised as correct, including the parts needing a judgement call, and documented in the resolver's own header — not worth re-checking: 5 per warrior, 20 per large creature plus accumulated experience, dead/retired/captured heroes excluded, hired swords parsed from their own printed "Rating:" text across four phrasings, and the rout threshold (`Math.ceil(models / 4)`) matching the rulebook's worked example. Every remaining finding is at the rout *check* rather than the rating:
 
 - **Rout-counting exceptions exist for animals but not for warriors.** `countsForRout` lives on animal kinds only (a Wardog counts, a Gnoblar doesn't), so five warband-specific model-counting rules have nowhere to go: Snotlings' "Insignificant" (the whole mob counts as ONE model for rout, max warband size and income), Night Goblins' "Just Squigs" (Squigs count as HALF a model), Battle Monks' "Ignored" (Peasants out of action don't count at all), Ogre Hunting Party's "Ignored" (Sabretusks the same), Orc Mob's "Not Orcs" (Goblins/Cave Squigs going down doesn't unsettle the Orcs). The income half of the Snotling rule already exists (`groupIncomeCountsAs: 1` in `campaignRules`) — this needs a rout equivalent and a max-warband-size one, same shape.
-- **Hired swords are still offered as Rout-test Leadership.** Same finding as #60 (A1) — the auditor flagged it again here since rout is its home topic, not as a new item.
+- ~~Hired swords are still offered as Rout-test Leadership.~~ Same finding as #60 (A1) — **fixed alongside #60**, see there.
 - **The battle sheet has no "stunned" state, so half the leader-substitution rule can't be applied.** The rule: if the leader is out of action *or stunned*, use the highest Leadership among fighters who are neither. The sheet only ever records out-of-action per warrior; stunned and knocked-down exist nowhere but free-text notes, so `suggestedLeadership` can suggest a stunned leader with no way to warn. Defensible for a tracker that doesn't follow turns, but it's a rule the app silently gets wrong rather than declines to model.
 - **Merchant Caravans' Bribery has no flow**: "Whenever the warband has to take a Rout test... He may immediately pay 5 gc per non-Hero" to avoid it.
 - **Trade Wagon abandonment isn't modelled**: "If the warband fails its Rout test and no model is driving the Trade Wagon, then it is abandoned" to the winning warband — a failed rout just sets `routed` and ends the battle; the wagon stays on the roster.

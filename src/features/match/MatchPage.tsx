@@ -28,6 +28,7 @@ import { Card, KeyValue, LinkButton, Section, Tag, TextLink } from '../campaign/
 import { MatchStateTag, ParticipantCard } from './shared/bits'
 import { formatMatchTime, matchActions, pendingLabel, scenarioLink, scenarioTitle, versusLabel } from './shared/helpers'
 import { ReportCard } from './shared/ReportCard'
+import { PostBattleSequence } from './battle/PostBattleSequence'
 import { underdogBonus } from '../../rules/data/campaign/experience'
 import { MatchDistrict } from './shared/MatchDistrict'
 
@@ -313,6 +314,8 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           )}
         </Section>
       ) : null}
+
+      {showReports ? <PostBattleSequence matchId={match.id} /> : null}
 
       {match.state === 'cancelled' ? (
         <Notice tone="warn" title="Cancelled">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyBattleLiveState } from "../battle";
-import { applyBattleEvents, attackSummary, eventContribution, type AttackEventPayload, type BattleEventRow } from "../battleEvent";
+import { applyBattleEvents, attackRollsLine, attackSummary, eventContribution, type AttackEventPayload, type BattleEventRow } from "../battleEvent";
 
 const A = "aaaaaaaa-0000-4000-8000-000000000001";
 const B = "aaaaaaaa-0000-4000-8000-000000000002";
@@ -22,6 +22,7 @@ function attack(over: Partial<AttackEventPayload> = {}, reverted = false): Battl
     kill: true,
     outcome: "Out of action",
     turn: 2,
+    rolls: [],
     ...over,
   };
   return {
@@ -77,6 +78,12 @@ describe("applyBattleEvents", () => {
     expect(attackSummary(attack().payload)).toBe("Turn 2: Captain took Skritch out of action.");
     expect(attackSummary(attack({ out_of_action: false, kill: false, outcome: "Stunned" }).payload)).toBe("Turn 2: Captain wounded Skritch (stunned).");
     expect(attackSummary(attack({ out_of_action: false, kill: false, wounds_lost: 0, outcome: "Missed" }).payload)).toBe("Turn 2: Captain missed Skritch.");
+  });
+
+  it("condenses every roll of the walk-through onto one line", () => {
+    expect(attackRollsLine(attack().payload)).toBe("");
+    const rolls = ["Sword: rolled 5 to hit. Hit.", "To wound: rolled 4. Wounded.", "Armour save: rolled 2. Failed.", "Injury: rolled 45. Out of action."];
+    expect(attackRollsLine(attack({ rolls }).payload)).toBe(rolls.join(" "));
   });
 });
 

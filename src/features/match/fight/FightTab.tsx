@@ -368,6 +368,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
                 nurgles_rot: state.rotPassed,
+                rolls: state.log.map((line) => line.text),
               })
             }
             onFinished={rememberFight}

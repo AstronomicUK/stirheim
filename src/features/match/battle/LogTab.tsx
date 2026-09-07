@@ -5,9 +5,10 @@
 import { useState } from 'react'
 import type { MatchParticipantView } from '../../../api/matches'
 import { useRevertBattleEvent } from '../../../api/matches'
-import type { BattleEventRow } from '../../../domain'
+import { attackRollsLine, type BattleEventRow } from '../../../domain'
 import { Button, Notice, Sheet, TextArea } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
+import { PostBattleSequence } from './PostBattleSequence'
 
 export interface LogTabProps {
   matchId: string
@@ -60,6 +61,7 @@ export function LogTab({ matchId, events, participants, canRevert }: LogTabProps
                       <span className={`text-sm ${reverted ? 'line-through text-ink-dim' : 'text-ink'}`}>{e.summary}</span>
                       {reverted ? <Tag tone="warn">Reverted</Tag> : null}
                     </div>
+                    {e.payload.rolls.length > 0 ? <p className={`text-xs leading-relaxed ${reverted ? 'line-through text-ink-dim' : 'text-ink-dim'}`}>{attackRollsLine(e.payload)}</p> : null}
                     <div className="flex items-center justify-between gap-3 text-xs text-ink-dim">
                       <span>
                         Logged by {by} · {new Date(e.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
@@ -78,6 +80,7 @@ export function LogTab({ matchId, events, participants, canRevert }: LogTabProps
           </Card>
         )}
       </Section>
+      <PostBattleSequence matchId={matchId} />
       <Sheet
         open={reverting !== null}
         onClose={() => setReverting(null)}

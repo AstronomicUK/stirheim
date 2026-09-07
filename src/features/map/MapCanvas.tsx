@@ -4,7 +4,7 @@
 // warband can reach are lit, the rest dimmed.
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
-import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, findDistrict } from '../../rules/data/map/districts'
+import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, findDistrict, type MapDistrict } from '../../rules/data/map/districts'
 import type { DistrictView } from './model'
 
 export const MAP_IMAGE_SRC = '/map/mordheim-campaign-map.jpg'
@@ -48,6 +48,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
   const drag = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null)
   const pinch = useRef<{ dist: number; k: number; cx: number; cy: number } | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null)
 
   useEffect(() => {
     const el = frame.current
@@ -77,6 +78,21 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
     return { x: e.clientX - r.left, y: e.clientY - r.top }
   }
 
+  // With the pointer captured to the frame (needed so drags keep tracking off the edge), the browser
+  // retargets click/pointerup's `e.target` to the frame itself rather than whatever circle is under
+  // the pointer — so district hit-testing has to be done in map space here instead of trusting e.target.
+  function districtAt(px: number, py: number): MapDistrict | null {
+    const svgX = ((px - t.x) / t.k / size.width) * 100
+    const svgY = ((py - t.y) / t.k / size.height) * MAP_VIEW_HEIGHT
+    let best: { d: MapDistrict; dist: number } | null = null
+    for (const d of MAP_DISTRICTS) {
+      const r = BASE_RADIUS * d.scale
+      const dist = Math.hypot(svgX - d.x, svgY - d.y)
+      if (dist <= r && (!best || dist < best.dist)) best = { d, dist }
+    }
+    return best?.d ?? null
+  }
+
   function onWheel(e: ReactWheelEvent<HTMLDivElement>) {
     e.preventDefault()
     const p = local(e)
@@ -99,7 +115,14 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
   }
 
   function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (pointers.current.size === 0) {
+      const p = local(e)
+      const d = districtAt(p.x, p.y)
+      setHover(d ? { id: d.id, x: p.x, y: p.y } : null)
+      return
+    }
     if (!pointers.current.has(e.pointerId)) return
+    setHover(null)
     const p = local(e)
     pointers.current.set(e.pointerId, p)
     if (pinch.current && pointers.current.size === 2) {
@@ -128,7 +151,11 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
       const moved = drag.current?.moved ?? false
       drag.current = null
       setDragging(false)
-      if (!moved && (e.target as Element).tagName !== 'circle') onSelect(null)
+      if (!moved) {
+        const p = local(e)
+        const district = districtAt(p.x, p.y)
+        onSelect(district ? (district.id === selectedId ? null : district.id) : null)
+      }
     }
   }
 
@@ -145,6 +172,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onPointerLeave={() => setHover(null)}
       >
         <div className="absolute inset-0 origin-top-left" style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})` }}>
           <img src={MAP_IMAGE_SRC} alt="The Mordheim Campaign Map: thirty districts of the ruined city" className="block h-full w-full" draggable={false} />
@@ -176,7 +204,6 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
                     className="cursor-pointer"
                     tabIndex={0}
                     aria-label={`${d.name}${v?.controller ? `, controlled by ${v.controller.name}` : ''}`}
-                    onClick={() => onSelect(d.id === selectedId ? null : d.id)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
@@ -194,6 +221,22 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
             })}
           </svg>
         </div>
+        {hover
+          ? (() => {
+              const d = findDistrict(hover.id)
+              if (!d) return null
+              const v = views.get(hover.id)
+              return (
+                <div
+                  className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-border bg-surface-low px-2 py-1 text-xs text-ink shadow-sm"
+                  style={{ left: hover.x, top: hover.y - 10 }}
+                >
+                  {d.name}
+                  {v?.controller ? ` — ${v.controller.name}` : ''}
+                </div>
+              )
+            })()
+          : null}
         <div className="absolute right-2 top-2 flex flex-col overflow-hidden rounded-md border border-border bg-surface-low/95 shadow-sm">
           <button type="button" className="flex h-9 w-9 items-center justify-center text-lg text-ink hover:bg-surface-high" aria-label="Zoom in" onClick={() => zoomAt(1.4, size.width / 2, size.height / 2)}>
             +

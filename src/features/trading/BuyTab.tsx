@@ -229,9 +229,12 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
       Record the failed hunt (gold spent)
     </Button>
   ) : (
-    <Button block pending={pending} disabled={!canBuy} onClick={buy}>
-      {total === null ? 'Buy' : `Buy for ${total} gc`}
-    </Button>
+    <div className="flex flex-col gap-1.5">
+      {isRare && searchTotal === null ? <p className="text-xs text-ink-dim">Roll the rarity dice first.</p> : null}
+      <Button block pending={pending} disabled={!canBuy} onClick={buy}>
+        {total === null ? 'Buy' : `Buy for ${total} gc`}
+      </Button>
+    </div>
   )
 
   return (

@@ -255,7 +255,7 @@ Confirmed, and Well genuinely is the only outcome with this exact problem. Every
 
 > "When you file a report, for a brief second it comes up with a page that says something like "A report for this battle is already in,'" before redirecting to the main battle report page."
 
-**Notes:**
+**Notes:** Confirmed as a genuine render race, not a display bug — the "Already filed" check itself is correct, it's just seeing a true fact slightly before the page moves away. `PostBattlePage.tsx`'s `file()` (lines ~233-249): `await submit.mutateAsync(...)` (238) resolves once the RPC succeeds *and* its own `onSuccess: invalidate` (`useSubmitBattleReport` in `src/api/reports.ts`, which invalidates `matchKeys.all`) has run — that invalidation kicks off a background refetch of the still-mounted `useMatch(id, ...)` query that drives this same page's `filed` check. Execution then continues past that line into `closing.current = true` and `await applyWizardAdvances(...)` (242) — a further async step (rolling/applying each pending advance) that takes real time. If the match refetch from the invalidation resolves during that gap, the outer `PostBattlePage()` function — which owns the `useMatch` call and the "Already filed" check, and renders it *instead of* `<Guarded>`/`<Wizard>` when `filed` is true — re-renders with `reported_warband_ids` now including this warband, so the guard briefly takes over and the `Wizard` (mid-`applyWizardAdvances`) gets unmounted under it, until `file()` finishes and `navigate(...)` moves the page on anyway. `closing.current` already exists for a related purpose but lives inside `Wizard`, one level below where the guard is checked — it can't gate the guard as-is. A fix needs some "a submission for this warband is in flight" signal visible to the *outer* component (lifted state, a ref shared via context, or a transient flag in the report draft store) rather than a one-line change to the existing ref.
 
 ### 18. Advancements' skill picker needs a skill-type filter, defaulting to "All Skills"
 
@@ -309,7 +309,16 @@ Any fix needs to decide where the retained history is meant to live (kept only f
 
 > "I ran a test battle between two warbands that I control and then I submitted the battle report on one of the warbands. When I went to the second one, I was no longer able to submit their battle report. This seems like a bug as then they can't benefit from any of the XP or advancement rolls in the post-game sequence."
 
-**Notes:**
+**Notes:** Read through the whole path first — `submit_battle_report`'s SQL (uniqueness is per `(match_id, warband_id)`, `complete_match_if_reported` counts per participant row not per user, `can_edit_warband` checks ownership not "did someone else on this account already file today"), `PostBattlePage.tsx`'s "already filed" guard (keyed correctly per `participant.warband_id`), and `useMatchRoster`'s query key (includes `warbandId`, so no shared-cache collision between the two warbands) — nothing there should behave differently just because both warbands share an owner.
+
+Then reproduced it live end to end on the local dev stack to be sure: joined Tom (GM)'s own second warband ("The Argent Hammer") into the same campaign as his first ("Reikland Watch"), scheduled and started a battle between the two, ended it, filed Reikland Watch's report fully through all 8 steps, then opened The Argent Hammer's report — **it loaded and filed cleanly, both reports ended up "2 of 2" and the match completed.** Could not reproduce the block under the most literal reading of the report.
+
+Given it didn't reproduce under a plain same-campaign, no-map, GM-owns-both-warbands test, the difference is probably something about Tom's actual live setup that this local repro didn't have — worth checking, roughly in order of likelihood:
+- **Map campaign settings.** `PostBattlePage.tsx`'s `Wizard` calls `useMapPerks(...)` whenever `settings.mapCampaign` is on; this wasn't exercised at all in the repro (the test campaign isn't on the map). If that hook throws or misbehaves for a specific warband/district combination, it could plausibly block the whole wizard for just one side without an obvious server-side cause.
+- **GM approval house rule**, combined with whether Tom was actually the GM of the campaign he tested in (if not, `reportApproval` could route his second filing to "pending" rather than "applied" — that wouldn't fully block submission, but might look like it if the UI's handling of a pending state isn't clear).
+- **Timing/order** — the repro was done slowly and sequentially (each step awaited); if the real attempt involved two tabs open at once, or clicking through very fast right after the first mutation, a query-cache race is still possible even if not found in the static read.
+
+Given it's not reproducible from the description alone, the most useful next step is probably to have it happen again and capture exactly what the page showed (an error banner, a disabled button, a redirect) rather than guessing further — recommend downgrading from "definitely a bug" to "reproduce and capture the exact symptom" before writing a fix.
 
 ### 22. Move "Transfer Warband to Another Player" and "Move to another Campaign" under the warband page's "More" button
 

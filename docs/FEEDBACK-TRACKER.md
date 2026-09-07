@@ -929,7 +929,7 @@ shared-environment churn than the fix warranted.
 
 ### 49. Most screens leave the browser tab reading "Stirheim - Campaign Ledger"
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -942,6 +942,15 @@ PWA's window title. The hook already exists and is one line per page.
 
 **How to replicate:** Open any warband. The tab reads "Stirheim - Campaign Ledger", not the warband
 name.
+
+**Fixed:** `4d1b47b`. Added the one-line `usePageTitle` call to every remaining page (a warband, the
+builder, trading post, recruit, advancements, a match, the battle sheet, the post-battle wizard,
+battle records, the scenario library and scenario pages, the simulator), using the warband,
+campaign, match or scenario name where one is in scope; the sign-in family shares one title via
+`FormPage`, which already receives a distinct title prop per screen. Verified live: a warband's tab
+now reads "The Argent Hammer · Stirheim", its Recruit and Trading post screens append their own
+label, a scenario page reads its own name ("Defend the Find · Stirheim"), and the Simulator and
+Scenarios list pick up their static titles too.
 
 ### 50. Items with no numeric price sit in the Buy catalogue where they can never be bought
 

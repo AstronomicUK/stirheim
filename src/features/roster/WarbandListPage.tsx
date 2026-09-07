@@ -28,7 +28,9 @@ export function WarbandListPage() {
   const warbands = useMyWarbands(user?.id)
   const campaigns = useMyCampaigns(user?.id)
   const draft = useDraftStore((s) => s.draft)
+  const clearDraft = useDraftStore((s) => s.clear)
   const [showArchived, setShowArchived] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const split = warbands.data ? splitArchived(warbands.data) : null
   // Archived warbands do not count: someone whose only warband is put away is back at the start.
@@ -57,9 +59,26 @@ export function WarbandListPage() {
       {draft ? (
         <Notice tone="warn" title="Unfinished draft">
           <span className="text-ink">{draft.name.trim() || 'Unnamed warband'}</span> ({warbandTypeName(draft.warbandTemplateId)}).{' '}
-          <Link to={`/warbands/new/${draft.warbandTemplateId}`} className="text-brass underline-offset-4 hover:underline">
-            Continue building
-          </Link>
+          {confirmDiscard ? (
+            <>
+              Discard it?{' '}
+              <button type="button" onClick={() => { clearDraft(); setConfirmDiscard(false) }} className="text-accent-strong underline-offset-4 hover:underline">
+                Discard
+              </button>{' '}
+              <button type="button" onClick={() => setConfirmDiscard(false)} className="text-brass underline-offset-4 hover:underline">
+                Keep it
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to={`/warbands/new/${draft.warbandTemplateId}`} className="text-brass underline-offset-4 hover:underline">
+                Continue building
+              </Link>{' '}
+              <button type="button" onClick={() => setConfirmDiscard(true)} className="text-ink-dim underline-offset-4 hover:underline">
+                Discard
+              </button>
+            </>
+          )}
         </Notice>
       ) : null}
 

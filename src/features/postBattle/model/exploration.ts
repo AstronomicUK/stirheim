@@ -66,6 +66,10 @@ export interface ExplorationDerived {
   outcome: LocationOutcome | null
   needsSubRoll: boolean
   needsTest: LocationOutcome['needsTest'] | null
+  /** The Hero the test names, when `needsTest.pickHero` is set (Well) — null until chosen. */
+  testSubject: RosterHero | null
+  /** Set when the test was failed and failing has a structured consequence (Well: misses the next game). */
+  missNextGameHeroId: string | null
   /** Rewards count: no test, or the test was recorded as passed. */
   rewardsApply: boolean
   gold: DiceAmount
@@ -122,6 +126,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     outcome: null,
     needsSubRoll: false,
     needsTest: null,
+    testSubject: null,
+    missNextGameHeroId: null,
     rewardsApply: false,
     gold: empty,
     extraShards: empty,
@@ -172,8 +178,12 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     if (needsSubRoll) problems.push(`${location.name}: roll the location's D6.`)
   }
   const needsTest = outcome?.needsTest ?? null
+  const testSubject = needsTest?.pickHero ? (input.eligibleHeroes.find((h) => h.id === draft.testSubjectId) ?? null) : null
+  if (needsTest?.pickHero && !testSubject) problems.push(`${location?.name}: choose which Hero was sent.`)
   if (needsTest && draft.testPassed === null) problems.push(`${location?.name}: record whether the test was passed.`)
   const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || draft.testPassed === true)
+  // Well (03:671-675): a Hero who fails the test misses the next game through sickness.
+  const missNextGameHeroId = needsTest?.failEffect === 'missNextGame' && draft.testPassed === false && testSubject ? testSubject.id : null
   const rewards = rewardsApply ? outcome!.rewards : []
 
   const maxFinds = Boolean(input.maxFinds) && rewardsApply
@@ -187,7 +197,9 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
   const notes: string[] = []
   if (location && outcome && !needsSubRoll && outcome.text !== location.rules) notes.push(`${location.name} D6 ${draft.subRoll}: ${outcome.text}`)
-  if (needsTest) notes.push(draft.testPassed ? `${needsTest.stat} test passed.` : draft.testPassed === false ? `${needsTest.stat} test failed: ${needsTest.prompt}` : '')
+  const testSubjectLabel = testSubject ? `${testSubject.name}'s ` : ''
+  if (needsTest) notes.push(draft.testPassed ? `${testSubjectLabel}${needsTest.stat} test passed.` : draft.testPassed === false ? `${testSubjectLabel}${needsTest.stat} test failed: ${needsTest.prompt}` : '')
+  if (missNextGameHeroId) notes.push(`${testSubject!.name} misses the next game through sickness.`)
   notes.push(...textNotes)
   if (maxFinds && (gold.expressions.length > 0 || extraShards.expressions.length > 0)) notes.push(`${input.maxFinds!.districtName}: the maximum was taken for what the location gives (${[...gold.expressions.map((e) => `${e} gc`), ...extraShards.expressions.map((e) => `${e} shards`)].join(', ')}).`)
   if (draft.notes.trim() !== '') notes.push(draft.notes.trim())
@@ -226,6 +238,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     outcome,
     needsSubRoll,
     needsTest,
+    testSubject,
+    missNextGameHeroId,
     rewardsApply,
     gold,
     extraShards,

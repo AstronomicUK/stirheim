@@ -442,6 +442,18 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     else heroes.push({ id: hero.id, patch: { flags } })
   }
 
+  // The Well: a Hero who fails the Toughness test misses the next game through sickness (03:671-675).
+  if (exploration.missNextGameHeroId) {
+    const hero = ctx.roster.heroes.find((h) => h.id === exploration.missNextGameHeroId && h.status === 'active')
+    if (hero) {
+      const existing = heroes.find((h) => h.id === hero.id)
+      const flags = { ...(existing?.patch.flags ?? hero.flags) }
+      flags.missNextGames = Math.max(flags.missNextGames ?? 0, 1)
+      if (existing) existing.patch.flags = flags
+      else heroes.push({ id: hero.id, patch: { flags } })
+    }
+  }
+
   // Heroes who missed this game: one fewer to miss.
   for (const sat of participants.satOut) {
     if (sat.missNextGames && sat.missNextGames > 0) {

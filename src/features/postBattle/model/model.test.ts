@@ -378,14 +378,20 @@ describe('exploration', () => {
     let d = deriveReport(draft, ctx())
     expect(d.exploration.location?.id).toBe('well')
     expect(d.exploration.needsTest?.stat).toBe('T')
-    expect(d.problems.exploration).toHaveLength(1)
+    expect(d.problems.exploration).toEqual(['Well: choose which Hero was sent.', 'Well: record whether the test was passed.'])
+    draft = { ...draft, exploration: { ...draft.exploration, testSubjectId: 'captain' } }
+    d = deriveReport(draft, ctx())
+    expect(d.problems.exploration).toEqual(['Well: record whether the test was passed.'])
     draft = { ...draft, exploration: { ...draft.exploration, testPassed: true } }
     d = deriveReport(draft, ctx())
     expect(d.exploration.record?.shards).toBe(3)
+    expect(d.exploration.missNextGameHeroId).toBeNull()
     draft = { ...draft, exploration: { ...draft.exploration, testPassed: false } }
     d = deriveReport(draft, ctx())
     expect(d.exploration.record?.shards).toBe(2)
     expect(d.exploration.record?.notes[0]).toMatch(/T test failed/)
+    expect(d.exploration.missNextGameHeroId).toBe('captain')
+    expect(d.report?.applied.heroes).toContainEqual(expect.objectContaining({ id: 'captain', patch: expect.objectContaining({ flags: expect.objectContaining({ missNextGames: 1 }) }) }))
   })
 
   it('no surviving hero means no exploration at all', () => {

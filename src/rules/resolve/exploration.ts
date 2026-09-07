@@ -235,7 +235,7 @@ export interface LocationOutcome {
   /** Set when the location needs a D6 that has not been supplied yet. */
   needsSubRoll?: { die: string; prompt: string };
   /** Set when the location calls for a characteristic test the player must make. */
-  needsTest?: { stat: "T" | "I" | "Ld" | "S" | "WS"; prompt: string };
+  needsTest?: { stat: "T" | "I" | "Ld" | "S" | "WS"; prompt: string; pickHero?: boolean; failEffect?: "missNextGame" };
 }
 
 /**
@@ -244,7 +244,7 @@ export interface LocationOutcome {
  * the test — the caller decides whether it was passed. Everything else returns the fixed rewards.
  */
 export function locationOutcome(location: ExplorationLocation, subRoll?: number): LocationOutcome {
-  const needsTest = location.test ? { stat: location.test.stat, prompt: location.test.prompt } : undefined;
+  const needsTest = location.test ? { stat: location.test.stat, prompt: location.test.prompt, pickHero: location.test.pickHero, failEffect: location.test.failEffect } : undefined;
 
   if (location.subRoll) {
     if (subRoll === undefined) {

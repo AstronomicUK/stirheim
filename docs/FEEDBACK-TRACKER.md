@@ -215,7 +215,7 @@ The content-mismatch half is very likely a perception effect **of** that speed, 
 
 ### 14. Warband units — possibly Sons of Hashut specifically, possibly wider — start at 1 XP instead of 0
 
-**Status:** 🔲 Open
+**Status:** ⛔ Blocked — needs Tom to check the audit log (or say how that warband was created)
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -227,9 +227,20 @@ Given the data says this shouldn't be happening, the most likely explanations ar
 
 **Tom asked (2026-09-07):** "Are you saying that the rules you have access to show that the Sons of Hashut should start on 1 xp? what about other henchmen from other warbands?" — no, the opposite: to answer this precisely, every `henchmanTemplates` entry across every warband data file was scanned by script (not just spot-checked) for its `startingExperience` value. **Result: 113 henchman template entries across every warband in the game, zero exceptions — all 113 are `startingExperience: 0`, including all three of Sons of Hashut's.** So the rules data is unambiguous and matches what Tom expected (henchmen start at 0 everywhere), and the builder code reads that value correctly for both heroes and henchman groups (`builder.ts:507` and `:524`, same `unit?.startingExperience ?? 0` pattern, no divergent code path for henchmen). This makes it more certain, not less, that something outside the normal rules-data-driven creation path produced the 1 XP Tom saw — the importer or a post-creation edit are the remaining candidates, not the rules data or the builder.
 
+**Follow-up investigation (2026-09-07): the importer was checked too, and it's clean as well.**
+
+- **The roster/warband importer** (`src/features/importer/rosterText.ts`, `rosterImport.ts`, `RosterImportPage.tsx`) — `rosterText.ts`'s `emptyWarrior()` defaults every parsed unit to `xp: 0`, only overwritten by an explicit `Exp N` line in the pasted text; `rosterImport.ts:331-332` passes that parsed value straight through to `create_warband` with no offset. Ran the actual parser against this repo's own Sons of Hashut fixture (`src/features/importer/fixtures/roster-azgul.txt`, template `the_sons_of_hashut`, all 5 henchman groups written as `Exp 0`) — every group came out `xp: 0` at both the parse and payload stage. The importer's `followUpChanges` step (which patches `heroes`/`warbands` after creation for skills, spells, injuries, flags) **never touches `henchman_groups` at all** — for henchmen, `xp` is written exactly once, inside the `create_warband` payload, and never revisited.
+- **The battle-records importer** ("Import battle records") is a different, unrelated tool — its own migration file says outright "Rosters are NOT touched: imported reports carry summary experience and casualty totals only" (`supabase/migrations/20260904000010_import.sql:1-7`), and the code matches: it only ever writes to `matches`/`match_participants`/`match_reports`.
+- **Every SQL revision** of `create_warband`/`update_roster` (four migration files, from the original through Phase 13 and leader succession) uses the identical `coalesce((v_group ->> 'xp')::int, 0)` on insert and `xp = coalesce((v_data ->> 'xp')::int, xp)` on update — no hardcoded `1`, no revision drifted from this.
+- **"Save as template" → new warband** explicitly does not copy XP ("Experience, injuries and gold are not copied", `src/features/roster/SavedTemplates.tsx:121`).
+- **No bulk-edit/"correction" tool exists** in the codebase at all (searched for bulk-award, correction, migration-script and "give everyone" patterns — nothing). The only way to set henchman XP by hand is the roster editor's own Experience field, which simply writes whatever number the GM types.
+- **The display layer isn't the culprit either** — `XpBar` (`src/features/roster/view/bits.tsx:53-83`) renders the stored number directly, no floor or +1 anywhere.
+
+So every code path that can ever set `henchman_groups.xp` — the rules data, the normal builder, both importers, every SQL revision, template-copying, and the display — has now been checked and is clean. **Recommended next step (needs production data access this investigation didn't have):** query the `audit_log` for this warband's `henchman_groups` insert row. If the very first (`insert`) row already shows `xp: 1`, the GM's pasted "old tracker" text genuinely had a nonzero `Exp` line for those units (inherited historical data, not a Stirheim defect). If the insert shows `xp: 0` and a later `update` row changed it, that row's actor/reason will point to a manual edit made afterward via the roster page — since `followUpChanges` never writes to `henchman_groups`, the importer itself structurally cannot be the source of a post-creation change. Left Blocked rather than marked Fixed, since there is genuinely nothing left in the app's own code to change — the remaining question is about this one warband's actual history, which only the audit log (or Tom's memory of how it was built) can answer.
+
 ### 15. The Well exploration outcome doesn't ask which model missed the next game (and other outcomes probably have the same gap)
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed (Well only — see the scope note below)
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -249,9 +260,19 @@ Other exploration outcomes with the same gap (all from `exploration.ts`, all cur
 
 Given the number and variety of these (a permanent stat/skill change, a permanent death, a recurring bonus, not just a missed game), this is a real structural gap rather than a one-off, and any fix should probably generalise to "this outcome affects a specific model" rather than patching Well alone.
 
+**Fix (Well only — scoped to what was actually reported):** the other five locations listed above have no structured effect at all today (no "chosen Hero gains a skill / is devoured / gets a permanent bonus" field anywhere — they're flavour text only), so building pickers for them would mean designing and wiring five separate new mechanics with no existing consequence to hook into; that's a substantially bigger feature than this report, not something to fold in silently. Well is different: it already has a real, working mechanism (`missNextGames`) elsewhere in the app (Casualties/Injuries steps, a Tarot-disaster pre-battle effect) that just wasn't connected here, so this is a genuine bug fix rather than new scope.
+
+- `ExplorationLocation.test` (`src/rules/types/exploration.ts`) gained two optional fields: `pickHero?: boolean` (the text names a specific Hero, as opposed to the Tavern/Shattered Building tests, which are always against the warband leader and need no picker) and `failEffect?: "missNextGame"`. Well's data entry sets both; nothing else does, since Well is genuinely the only location where a `test.stat` isn't automatically the leader's.
+- Both fields flow through `locationOutcome()` (`src/rules/resolve/exploration.ts`) into `LocationOutcome.needsTest`, then into the post-battle model (`ExplorationDraft` gained a `testSubjectId`; `deriveExploration` validates "choose which Hero was sent" the same way it already validates "record whether the test was passed", and computes a new `missNextGameHeroId` when the test failed).
+- `ExplorationStep.tsx` shows a Hero picker (scoped to `ex.eligibleHeroes`, the same survivors who get an exploration die) whenever `needsTest.pickHero` is set, right above the pass/fail control, plus a line naming the consequence when the hero fails.
+- `derive.ts`'s `buildApplied` reads `exploration.missNextGameHeroId` and patches that hero's `flags.missNextGames`, using the exact same merge pattern as the existing Tarot-disaster effect a few lines above it.
+- `REPORT_DRAFT_VERSION` bumped 5 → 6 (a new required draft field) so an in-flight report started before this deploy is dropped rather than read with a missing field, matching this store's own stated policy ("a draft from an older shape is dropped rather than guessed at").
+
+Verified live end-to-end on local dev: fought a battle, rolled exploration dice to a Well result, the Hero picker appeared with a validation message until a Hero was chosen, picked Pieter and marked the test Failed — the step showed "Pieter swallows tainted water and misses the next game through sickness," the Review step named him again, and after filing the report the database showed `heroes.flags = {"missNextGames": 1}` on Pieter's row. `tsc -b`, `oxlint`, and the full `vitest run` suite (1169 passed, including an updated/extended test in `model.test.ts`) all clean.
+
 ### 16. The Well exploration outcome asks the user to input treasure found, when the app should already know the amount
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -260,6 +281,8 @@ Given the number and variety of these (a permanent stat/skill change, a permanen
 **Notes:** Same report as #15 — see that entry for the missing-unit-picker half.
 
 Confirmed, and Well genuinely is the only outcome with this exact problem. Every gold/wyrdstone reward across `exploration.ts` is a dice expression ("D6", "2D6", "D6x10", "D6+1", etc.) except the Well's, which is a plain fixed `amount: 1` — the only such case in the whole file, so a manual-entry field is correctly used everywhere else. The model layer already treats it as known (`exploration.ts` model's `diceAmount()`: a reward with no dice expressions just becomes `value = fixed` automatically), but `ExplorationStep.tsx` (lines ~173-189) still renders the "Shards at the location" `NumberField` whenever `fixed > 0` — it's `disabled` (greyed out) rather than hidden or shown as plain text, so it still visually reads as "please enter this," pre-filled with the right answer. Small, contained fix: when there are no dice expressions at all, show the fixed amount as plain text instead of a disabled input.
+
+**Fix:** in `ExplorationStep.tsx`, both the Gold and Shards blocks now branch on `expressions.length > 0`: with dice expressions, the same editable field + Roll button as before; with none (fixed only, i.e. Well), a plain `Row` showing the amount as text — no input, disabled or otherwise. Fixed the same way for both gold and shards for consistency, even though only shards ever hits the fixed-only case today (nothing currently gives fixed-only gold). Verified live: the Well step now reads "Shards at the location: 1" as plain text once the test passes, no greyed-out field. `tsc -b`, `oxlint` and the full `vitest run` suite clean.
 
 ### 17. Filing a report briefly flashes an "already filed" page before redirecting
 

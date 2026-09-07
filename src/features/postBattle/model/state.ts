@@ -11,7 +11,7 @@ import type { AdvanceDraft } from '../../advances/model'
 import type { AidUse } from '../../../rules/resolve/explorationAids'
 import { animalFighters } from '../../../rules/resolve/animals'
 
-export const REPORT_DRAFT_VERSION = 5
+export const REPORT_DRAFT_VERSION = 6
 
 export type ReportResult = 'won' | 'lost' | 'draw'
 
@@ -78,6 +78,8 @@ export interface ExplorationDraft {
   subRoll: number | null
   /** The location's characteristic test, when it has one: null until recorded. */
   testPassed: boolean | null
+  /** The Hero the test was taken against, when the text names a specific Hero rather than the leader (Well): null until chosen. */
+  testSubjectId: string | null
   /** Gold found at the location; null = not entered yet (the fixed amount is used when the text states one). */
   gold: number | null
   /** Shards the location itself gives (on top of the dice total); null = not entered yet. */
@@ -141,7 +143,7 @@ export interface ReportDraft {
 }
 
 export function emptyExploration(): ExplorationDraft {
-  return { diceOverride: null, rolls: [], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null, aids: [], notes: '' }
+  return { diceOverride: null, rolls: [], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, aids: [], notes: '' }
 }
 
 export function emptyDraft(): ReportDraft {
@@ -405,7 +407,7 @@ export function applyExplorationAid(draft: ReportDraft, use: AidUse): ReportDraf
   const rolls = [...draft.exploration.rolls]
   while (rolls.length <= use.dieIndex) rolls.push(null)
   rolls[use.dieIndex] = use.to
-  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, gold: null, extraShards: null, items: null })
+  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
 }
 
 /** Roll a different number of exploration dice than suggested (1..12); null goes back to the suggestion. The reason is required to file. */
@@ -424,11 +426,11 @@ export function setExplorationRoll(draft: ReportDraft, index: number, value: num
   while (rolls.length <= index) rolls.push(null)
   if (rolls[index] === value) return draft
   rolls[index] = value
-  return withExploration(draft, { rolls, subRoll: null, testPassed: null, gold: null, extraShards: null, items: null })
+  return withExploration(draft, { rolls, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
 }
 
 export function setExplorationRolls(draft: ReportDraft, rolls: (number | null)[]): ReportDraft {
-  return withExploration(draft, { rolls, subRoll: null, testPassed: null, gold: null, extraShards: null, items: null })
+  return withExploration(draft, { rolls, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null })
 }
 
 /** The location's D6; a new value resets the answers that depend on it. */
@@ -439,6 +441,10 @@ export function setExplorationSubRoll(draft: ReportDraft, subRoll: number | null
 
 export function setExplorationTest(draft: ReportDraft, testPassed: boolean | null): ReportDraft {
   return withExploration(draft, { testPassed, gold: null, extraShards: null, items: null })
+}
+
+export function setExplorationTestSubject(draft: ReportDraft, heroId: string | null): ReportDraft {
+  return withExploration(draft, { testSubjectId: heroId })
 }
 
 export function setExplorationGold(draft: ReportDraft, gold: number | null): ReportDraft {

@@ -40,7 +40,14 @@ export interface ExplorationLocation {
   /** Set when the text says "roll a D6" and resolves it with a table or an unambiguous band list. */
   subRoll?: { die: DiceExpression; prompt: string; outcomes: SubRollOutcome[] };
   /** A characteristic test the text calls for, e.g. Well: pick a Hero, D6 <= Toughness. */
-  test?: { stat: "T" | "I" | "Ld" | "S" | "WS"; prompt: string };
+  test?: {
+    stat: "T" | "I" | "Ld" | "S" | "WS";
+    prompt: string;
+    /** The text names a specific Hero for the test (Well), rather than testing the warband leader (Tavern, Shattered Building). */
+    pickHero?: boolean;
+    /** A structured consequence of failing, beyond the reward text — Well: the chosen Hero misses the next game. */
+    failEffect?: "missNextGame";
+  };
   /** Fixed rewards stated in the text (Shop: D6 gc). Conditions are spelled out in each `text`. */
   rewards: ExplorationReward[];
   source: SourceRef;

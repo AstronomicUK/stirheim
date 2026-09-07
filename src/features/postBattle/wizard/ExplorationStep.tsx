@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { findItem } from '../../../rules/data/items'
 import { rollDice, rollDie } from '../../../rules/resolve/dice'
-import { Button, DieField, Markdown, Notice, NumberField, SegmentedControl, Stepper, TextArea, TextField } from '../../../ui'
+import { Button, DieField, Markdown, Notice, NumberField, SegmentedControl, SelectField, Stepper, TextArea, TextField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import {
   foundItemFromName,
@@ -14,6 +14,7 @@ import {
   setExplorationRolls,
   setExplorationSubRoll,
   setExplorationTest,
+  setExplorationTestSubject,
   type FoundItem,
 } from '../model'
 import { Intro, Row, type StepProps } from './bits'
@@ -138,6 +139,20 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
               {ex.needsTest ? (
                 <div className="flex flex-col gap-2 border-t border-border pt-3">
                   <p className="text-xs text-ink-dim">Test ({ex.needsTest.stat}): {ex.needsTest.prompt}</p>
+                  {ex.needsTest.pickHero ? (
+                    <SelectField
+                      label="Which Hero"
+                      value={ex.testSubject?.id ?? ''}
+                      onChange={(e) => update((d) => setExplorationTestSubject(d, e.target.value || null))}
+                    >
+                      <option value="">Choose a Hero</option>
+                      {ex.eligibleHeroes.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name}
+                        </option>
+                      ))}
+                    </SelectField>
+                  ) : null}
                   <SegmentedControl
                     options={[
                       { value: 'pending', label: 'Not rolled yet' },
@@ -148,44 +163,43 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
                     onChange={(v: TestChoice) => update((d) => setExplorationTest(d, v === 'pending' ? null : v === 'passed'))}
                     label="Test result"
                   />
+                  {ex.missNextGameHeroId ? <p className="text-sm text-ink">{ex.testSubject?.name} swallows tainted water and misses the next game through sickness.</p> : null}
                 </div>
               ) : null}
 
               {ex.rewardsApply ? (
                 <div className="flex flex-col gap-3 border-t border-border pt-3">
-                  {ex.gold.expressions.length > 0 || ex.gold.fixed > 0 ? (
+                  {ex.gold.expressions.length > 0 ? (
                     <div className="flex items-end gap-2">
                       <NumberField
-                        label={`Gold found${ex.gold.expressions.length > 0 ? ` (${ex.gold.expressions.join(' + ')} gc)` : ''}`}
+                        label={`Gold found (${ex.gold.expressions.join(' + ')} gc)`}
                         value={ex.gold.value}
                         onChange={(v) => update((d) => setExplorationGold(d, v === null || Number.isNaN(v) ? null : v))}
                         allowEmpty
-                        disabled={ex.gold.expressions.length === 0}
                         className="flex-1"
                       />
-                      {ex.gold.expressions.length > 0 ? (
-                        <Button variant="secondary" onClick={() => update((d) => setExplorationGold(d, ex.gold.fixed + ex.gold.expressions.reduce((n, e) => n + rollDice(e).total, 0)))}>
-                          Roll
-                        </Button>
-                      ) : null}
+                      <Button variant="secondary" onClick={() => update((d) => setExplorationGold(d, ex.gold.fixed + ex.gold.expressions.reduce((n, e) => n + rollDice(e).total, 0)))}>
+                        Roll
+                      </Button>
                     </div>
+                  ) : ex.gold.fixed > 0 ? (
+                    <Row label="Gold found" value={`${ex.gold.fixed} gc`} />
                   ) : null}
-                  {ex.extraShards.expressions.length > 0 || ex.extraShards.fixed > 0 ? (
+                  {ex.extraShards.expressions.length > 0 ? (
                     <div className="flex items-end gap-2">
                       <NumberField
-                        label={`Shards at the location${ex.extraShards.expressions.length > 0 ? ` (${ex.extraShards.expressions.join(' + ')})` : ''}`}
+                        label={`Shards at the location (${ex.extraShards.expressions.join(' + ')})`}
                         value={ex.extraShards.value}
                         onChange={(v) => update((d) => setExplorationExtraShards(d, v === null || Number.isNaN(v) ? null : v))}
                         allowEmpty
-                        disabled={ex.extraShards.expressions.length === 0}
                         className="flex-1"
                       />
-                      {ex.extraShards.expressions.length > 0 ? (
-                        <Button variant="secondary" onClick={() => update((d) => setExplorationExtraShards(d, ex.extraShards.fixed + ex.extraShards.expressions.reduce((n, e) => n + rollDice(e).total, 0)))}>
-                          Roll
-                        </Button>
-                      ) : null}
+                      <Button variant="secondary" onClick={() => update((d) => setExplorationExtraShards(d, ex.extraShards.fixed + ex.extraShards.expressions.reduce((n, e) => n + rollDice(e).total, 0)))}>
+                        Roll
+                      </Button>
                     </div>
+                  ) : ex.extraShards.fixed > 0 ? (
+                    <Row label="Shards at the location" value={ex.extraShards.fixed} />
                   ) : null}
                   {ex.textNotes.map((t) => (
                     <p key={t} className="text-xs text-ink-dim">

@@ -39,7 +39,12 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
       "The public wells, of which there were several in Mordheim, were covered by rooves raised up on pillars and adorned with carvings and fountains. The city was proud of its water system. Unfortunately, like all the other wells, this one is in a parlous state and undoubtedly polluted with wyrdstone.",
     rules:
       "Choose one of your Heroes and roll a D6. If the result is equal to or lower than his Toughness, he finds one shard of wyrdstone at the bottom of the well. If he fails, the Hero swallows tainted water and must miss the next game through sickness.",
-    test: { stat: "T", prompt: "Choose one of your Heroes and roll a D6. If the result is equal to or lower than his Toughness, he finds one shard of wyrdstone at the bottom of the well. If he fails, the Hero swallows tainted water and must miss the next game through sickness." },
+    test: {
+      stat: "T",
+      prompt: "Choose one of your Heroes and roll a D6. If the result is equal to or lower than his Toughness, he finds one shard of wyrdstone at the bottom of the well. If he fails, the Hero swallows tainted water and must miss the next game through sickness.",
+      pickHero: true,
+      failEffect: "missNextGame",
+    },
     rewards: [
       { kind: "wyrdstone", amount: 1, text: "one shard of wyrdstone at the bottom of the well (only if the Toughness test is passed)" },
     ],

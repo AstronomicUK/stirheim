@@ -981,7 +981,7 @@ never be bought" bug as reported, so left as-is.
 
 ### 51. The "Unfinished draft" banner on the warband list can't be dismissed from there
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -992,6 +992,11 @@ balance that the rest of the draft handling is well done — starting a *differe
 template's builder URL is guarded too, so this is only about the banner.
 
 **How to replicate:** Warbands list, with a draft in progress. The banner has one action.
+
+**Fixed:** `b065983`. Added an inline "Discard" action next to "Continue building", with the same
+two-step confirm ("Discard it? Discard / Keep it") the builder's own *Discard draft* uses. Verified
+live: started a draft, confirmed the banner now reads "Continue building Discard", clicked Discard
+to see the confirm step, then clicked it again to clear the draft and watched the banner disappear.
 
 ### 52. The rare-item Buy button is disabled without saying why
 

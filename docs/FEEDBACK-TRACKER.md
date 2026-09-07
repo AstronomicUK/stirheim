@@ -1184,7 +1184,7 @@ Still open: routing a persona's injury roll through the hero D66 chart instead o
 
 ### 66. Exploration chart: the six-dice cap is applied to the wrong half of the sentence, plus five smaller gaps
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the exploration rules audit, reviewed by Tom, sent directly for the tracker
 
@@ -1197,6 +1197,10 @@ Still open: routing a persona's injury roll through the hero D66 chart instead o
 - **Half the reward items don't resolve** — 20 of 40 distinct item names in the chart fail `resolveEquipmentName` and land in the stash as untyped custom lines that can't be equipped, priced or sold. Most just need aliases (Suit of Light Armour, Suits of Heavy Armour, Brace of Pistols, Brace of Duelling Pistols, Double-handed Axes, Quiver of Hunting Arrows, Shields or Bucklers, Flasks of Superior Blackpowder); four more are the material-variant items the catalogue now generates that the alias table hasn't caught up with (Gromril Axe, Gromril Hammer, Double-handed Gromril Axe, Suit of Ithilmar Armour).
 - **The Jewelsmith's gems (and similarly the Alchemist's notebook and Training manual) arrive worthless** — Quartz stones (D6×5 gc), an Amethyst (20 gc), a Necklace (50 gc) and a Ruby (D6×15 gc) become unpriced custom stash lines, so the rulebook's real choice — sell them, or let a Hero keep one for +1 to rare-item rolls — is never offered even though `rareRollBonus` already exists in `campaignRules`.
 - **The Elf Ranger's exploration modifier is never granted** — the procedure's step 2 ("If your warband includes an Elf Ranger, you may modify one dice by +1 or -1") has exactly the right aid kind (`'modify'`) already built into `explorationAids`, but only a map district ever produces one; hired swords on the roster are never consulted. Same root cause as the hired-swords audit's data-completeness gaps (#61).
+
+**Fixed:** `fb02122`. The core bug (the wrong half of the sentence capped) is corrected: `explorationDiceAllowed` now returns the true, uncapped roll entitlement plus a separate `keep` count; the resolver only scores the kept subset; `ExplorationStep.tsx` gained a "Keep six" picker so a warband entitled to seven or more dice actually rolls all of them and chooses which six to keep, instead of never rolling past six. This also makes the Straggler's "roll one more, discard one" reward and aids-on-already-rolled-dice expressible going forward.
+
+Left open (the five further gaps above, none touched by this fix): the Catacombs permanent-reroll aid isn't recorded from a found location; the five warband-conditional location outcomes (Straggler, Prisoners, Returning a Favour, Catacombs, Entrance to the Catacombs) land as text only; roughly half the reward item names fail to resolve to real catalogue items; the Jewelsmith/Alchemist/Training-manual rewards arrive unpriced; and the Elf Ranger's dice-modify aid is never granted from the roster.
 
 ### 67. Trading post never checks a warrior's own equipment list or armour bans, and rare items aren't quantity-capped
 

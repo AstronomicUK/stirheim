@@ -1091,7 +1091,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 - **Dramatis Personae roll the henchman injury die (1-2 dead, 3-6 recovers) instead of the full Serious Injuries D66 chart** the same sentence calls for ("suffer serious injuries, just like Heroes"). Ordinary hired swords are correctly on the henchman die; the 30 personae should be on the Heroes chart and aren't.
 - **The single root cause of the three findings above: nothing distinguishes a Dramatis Persona from an ordinary hired sword at runtime.** The lookup deliberately merges the two lists and there's no `isDramatisPersona(id)` anywhere in the rules layer. None of the three can be fixed properly until this exists — described in the audit as "the single most useful change in this audit."
 - **Upkeep is never prompted after a battle.** The rule is explicit that upkeep is due "after each battle he fights, including the first." The seven-step post-battle wizard never mentions it — the word "upkeep" doesn't appear anywhere under `src/features/postBattle`. Paying is a manual action buried in the Recruitment page's own Hired Swords tab; a player who simply forgets keeps the hired sword for free indefinitely, with nothing in the app ever noticing.
-- **Hired swords advance on the Hero experience boxes (24/28/32...) rather than the Henchman ones (2/5/9/14...).** The rulebook's own wording is genuinely ambiguous here (they "gain experience in exactly the same way as Henchmen" but roll on the Heroes Advancement table) — flagged as a question for Tom rather than a certain bug, since reasonable groups read it either way, but the app's current reading is the less common one.
+~~Hired swords advance on the Hero experience boxes rather than the Henchman ones.~~ **Withdrawn by the auditor 2026-09-07:** already settled — `docs/PLANNING.md:361` records it under "Confirmed as-is": "hired swords roll D6 injuries and earn xp as heroes." The app does exactly what Tom decided; not a bug.
 
 ### 61. Hired swords and Dramatis Personae: entry data the app has but never reads (skills, kit, racial maxima, unusual fees)
 
@@ -1132,6 +1132,8 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 **Notes:** A contained fix — the roll-of-7 branch (`eligibleStatChoices`/`fallbackToAny`) is the working reference implementation; the three sub-roll branches (6, 8, 9) just need the same fallback wired in instead of defaulting straight to a skill.
 
 **Fixed:** The sub-roll branch (`model.ts`) now calls `eligibleStatChoices` on the pair exactly as the roll-of-7 branch already does, offering the eligible fallback characteristics (or a skill instead) via the same `draft.stat`/`draft.skillInstead` fields — only falling to the auto-substitute-the-other-stat path when just one of the pair is maxed, matching the rulebook's first sentence, and to the fallback choice only when both are. `AdvanceBody.tsx`'s sub-roll UI previously only ever rendered a skill picker and a re-roll button here; it now shows the same characteristic-or-skill picker the roll-of-7 branch uses when `fallbackToAny` is set. Updated the one existing test that had locked in the old forced-skill behavior; added assertions for the new fallback-pick and skill-instead paths. `tsc -b`, lint, and the full suite (1182 tests) all clean. Commit `944de41`.
+
+**⚠️ Flag for Tom on waking (raised by the auditor 2026-09-07, reviewing audit #16):** `docs/PLANNING.md:745` records an older spec of yours (2026-09-05) for this exact both-maxed case: "only when both are maxed does the player re-roll or take a skill" — no mention of the any-other-characteristic option this fix now offers. But this fix was built from *your own subsequent review* of audit #6 (`RULES-AUDIT-PLAN.md` marks it "reviewed, sent to Stirheim Developer 2026-09-07"), which explicitly quotes the rulebook's "any other characteristic" clause and states it's the only route to Movement for some races — so the two things you've said about this differ, and the auditor's read is that the older PLANNING.md note was written before that rulebook clause was in view, not a deliberate overrule. Built to the more recent, more rulebook-complete reading; flagging so you can confirm that's what you actually want rather than silently picking a side.
 
 ### 64. Experience and advances: smaller points worth a look
 
@@ -1207,6 +1209,83 @@ Equipment-list membership (the first bullet above) is left open — it needs a d
 - **Housekeeping**: two functions are both named `warbandRating` — `resolve/rating.ts`'s is the real one every screen and both API paths use; `data/campaign/trading.ts`'s only caller is its own test, dead code that could silently drift. Worth deleting or renaming.
 
 Also confirmed correct: voluntary rout is offered exactly when the rulebook allows it (only once a test is required), and nothing wrongly exempts psychology-immune warbands from rout tests (the Undead must test too, correctly).
+
+### 69. Combat engine: multi-wound weapons always inflict one wound, plus seven more untracked weapon rules
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the core combat engine rules audit; Tom was asleep and had pre-authorised the auditor to continue through the night, so this is the auditor's own verified-in-code finding, not yet personally reviewed by Tom
+
+> "No weapon in the app can cause more than one wound. The Weapon type has no wounds field. The Ball and Chain's Incredible Force — 'any hit that successfully wounds will do 1D3 wounds instead of 1' — is tagged `multipleWoundsD3OnHit` in `data/weapons/melee.ts` and read nowhere, so it inflicts one wound. This also makes the rulebook's tie-break inexpressible: 'If a critical hit causes more than 1 wound, and the weapon normally causes several wounds, use the one that causes the most damage.' The crit path already has `woundsCaused`, so the shape exists on that side." (`docs/COMBAT-ENGINE-RULES-GAPS.md`, finding 1)
+
+**Notes:** The headline of this audit is that no mistake was found in any chart or core rule — called "the strongest part of the codebase," not worth re-checking: both To Hit charts, all four shooting modifiers plus pavise-as-cover, the To Wound chart (with a correction the team already made against a rulebook-scan error in S8-S10), armour saves (shield/kite shield/no-save-at-7+, Strength erosion behind its toggle), ward saves in the right order and once per wound even through a crit, criticals (natural 6 only, never when a 6 was needed anyway, one per warrior per phase), the injury bands with their remaps, automatic hits on knocked-down and automatic out-of-action on stunned (#10), and parry in full including the twice-Strength-can't-parry clause. Remaining gaps:
+
+- **Seven more weapon rules are tagged in the data and read nowhere, with no typed field behind them**: Censer (Toughness test or the hit wounds automatically); Ostlander Double-barrelled Hunting Rifle (two hits per successful shot); double-barrelled pistols (optional second wound roll per hit); Slingshot (fire twice at -1 if stationary within half range); Swivel Gun shot types (each ammunition type single use per game); Pebble and Throwing Knife (cannot be used in close combat); pistols and the Sun Gauntlet usable in melee (already logged in #2).
+- **Important caveat so this isn't over-read**: only 13 of 123 distinct weapon "special" tags are read outside the data, but most of the unread ones sit beside a typed field the engine already reads (a label, not a gap) — `cuttingEdge` beside `saveModifier: 1`, `whipcrackBonusAttack` beside `chargeBonusAttacks: 1`, the gromril/ithilmar tags beside the variant generator's own modifiers. The bullet above is the auditor's verified list of genuinely unbacked tags; a full systematic sweep of the rest (mostly tabletop-only: random movement, reach, mounted-only, templates) wasn't done and is worth a pass but isn't expected to turn up much.
+
+### 70. Psychology traits are assigned in exactly one warband out of 73, and Fear's combat effect isn't modelled at all
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the psychology and traits rules audit; pre-authorised overnight, not yet personally reviewed by Tom
+
+> "`traitIds` on a unit template appears only in `data/warbandTemplates/variants.ts` — The Restless Dead (Variant) — whose units correctly carry `no_pain`, `immune_to_poison`, `immune_to_psychology` and `causes_fear`. Every other warband depends on `traitsFromRules()` in `features/match/fight/combatants.ts`, which matches special-rule NAMES against a ten-entry table (`TRAIT_BY_RULE_NAME`) that contains no psychology entries at all. Measured across every unit template in all 73 warbands: 60 unit templates whose rules say they cause fear → 0 get the `causes_fear` trait; 36 immune to psychology → 0 get it; 17 with stupidity → 0 get it; 2 immune to fear → 0 get it; 13 with Animosity → 0 (no trait exists at all). So the fight calculator never shows a Vampire, a Possessed, a Rat Ogre or a Troll as causing fear, nor the Undead as immune to psychology, though both traits exist in the catalogue and one warband already uses them correctly. The pattern was set once and never followed." (`docs/PSYCHOLOGY-RULES-GAPS.md`, finding 1)
+
+**Notes:** Wide-reaching (nearly every warband in the game is missing psychology traits the fight calculator could otherwise show), but the auditor flags a real trap for whoever fixes it: `traitsFromRules` matches on the rule's NAME only (deliberately, to avoid false positives from matching prose), so extending `TRAIT_BY_RULE_NAME` with the psychology headings needs checking against the actual rule headings in the warband data rather than assuming "Fear" is always the heading. Further findings, in order of consequence:
+
+- **Fear's combat effect isn't modelled, and it is combat maths, not flavour text**: a model that fails a Fear test "must roll 6s to score hits in that round of combat" — a to-hit threshold change squarely in the calculator's remit, with no `CombatContext` toggle for it. The `causes_fear` trait's own description claims "no Hit/Wound/Injury math effect for this tool," which the auditor says is inaccurate for this clause and worth correcting so it doesn't mislead the next person the way an old `injuries.ts` comment once did.
+- **Animosity has no structure anywhere.** 13 unit templates carry it — a D6 table with three outcomes rolled per Orc/Goblin henchman every turn — and the only trace in the app is an item note ("Ignore Animosity") and a skill that removes it, so two things in the app already switch off a rule the app doesn't have.
+- **All Alone's immunities can't be recorded** (fine that All Alone itself isn't modelled — it's positional) — Troll Slayers' Deathwish, Norse Explorers' Barbarian Courage, and Marauders' Heart of the Warrior all grant immunity to it, with no flag anywhere to hold that.
+- **Frenzy doesn't end on knock-down/stun** as the rulebook says it should — minor, since the player can just untick it.
+- **Stupidity's hand-to-hand lockout isn't modelled** (marked `modeled: false` already, no toggle) — a model that fails could be expressed as zero attacks in the calculator; noted for completeness rather than urgency.
+
+Confirmed correct, not worth re-checking: Frenzy's doubling (including the off-hand +1 being added after doubling, not doubled), Hatred's first-turn re-roll with its own toggle, and the four injury-derived flags (Madness, Hardened, Horrible Scars, Bitter Enmity) all correctly reaching the fight calculator.
+
+### 71. Optional rules inventory: three items already half-promised to the player with nothing behind them
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the optional-rules audit; pre-authorised overnight, not yet personally reviewed by Tom
+
+**Notes:** This audit is explicitly an inventory of 26 optional rulesets, not a backlog — "not implemented" is a scope decision for an optional rule, not a defect, and the auditor asks that the other ~24 not be read as outstanding work. Two are already fully built (the per-category Advanced Critical Hit Charts, verified in #69; Rewards of the Shadowlord). The one section worth acting on is where the app already half-promises something to the player it can't deliver:
+
+- **Pit Fights** — same item as #54: "Sold to the Pits" sets a flag and emits an event nothing consumes, and the Amphitheatre map district prints "A hero Sold to the Pits wins the fight" for a fight that can't be played.
+- **Blackpowder Misfires** — three weapons carry `blackpowderMisfireRulesAlwaysOn` and three more `experimentalBlackpowderRulesAlwaysOn`, but no misfire table exists anywhere in the app. The table is six D6 results, two of which change the roster (weapon destroyed; weapon jammed for the battle) — small and self-contained if ever picked up.
+- **Mounted Warriors / Blazing Saddles** — same item as #59 (missing cavalry skills) and #61 (hired swords/units pointing at a nonexistent Cavalry table); repeated here since this is its home ruleset.
+
+Five more (Sawbones, Power in the Stones, the two vampire skill-list rulesets, Subplots and Random Happenings, Encampments) are offered as candidates that would fit data the app already keeps, not defects — worth a look if the team ever wants to expand scope, not urgent. Eleven more are properly out of scope and shouldn't be re-audited, though Dark Rituals would touch the magic data if ever wanted and the Trade Wagon's rout-loss rule (already logged, #68) is the one place Vehicles matters today.
+
+### 72. Scenario experience awards and non-wyrdstone rewards are never applied, and the scraped "experience" field is unreliable
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the scenarios rules audit; pre-authorised overnight, not yet personally reviewed by Tom
+
+> "Scenario experience awards are never applied or even shown. The post-battle wizard applies the three standard awards and offers a free-text 'Add scenario experience' line, but never reads the scenario that was played — although the match record holds `scenario_rules_id` and every detail carries an `experience` field. Six scenarios deviate from the standard leader award (two give +2, one gives +5) plus many bespoke deeds." (`docs/SCENARIOS-RULES-GAPS.md`, findings 1-3; same item as #64's B4)
+
+**Notes:** Coverage and design here are otherwise called essentially complete and good — 101 index rows, 103 detail pages, every index row has a detail with its verbatim intro and every section in page order, and the KNOWN/unknown distinction in `scenarioObjectives` (a scenario that yields nothing is told apart from one the app has never parsed) is praised as genuinely good design. Three findings that are one piece of work, not three:
+
+- The `experience` field itself is unreliable, which is why the award above can't just be wired up blind: 9 of 103 details have a null `experience`, and 5 of those 9 *do* have an Experience section in the source (The Script of Sigmar, Encampment Raid, Romero's Pride, Scripts of Sigmar, The Battle At Koleshire Keep) — the heading level and casing varied across pages and the extractor only matched some of them. Recoverable without a rescrape, since `rulesMarkdown` keeps the whole page; re-run the extraction before building on this field.
+- **Non-wyrdstone scenario rewards aren't structured** — the objectives slice covers wyrdstone-during-battle and treasure counters, but scenarios also pay gold and items in prose (61 gold mentions across the file, e.g. "gain D6×15 gold crowns"), all currently left to the player typing a number by hand.
+- **Scenario eligibility isn't recorded** — four scenarios in the source restrict who may play them, `ScenarioSummary` has no field for it, so the scenario picker and roll-for-a-scenario feature can offer a warband a scenario its own rules exclude it from.
+
+Deployment, terrain, starting/ending the game, victory conditions and per-scenario special rules are all verbatim and correctly left to the table.
+
+### 73. Scrape markers show the reload rule for every blackpowder weapon is tagged and never enforced, plus a missing warband-max-size hook
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the scrape-uncertainty-markers audit; pre-authorised overnight, not yet personally reviewed by Tom
+
+> "The biggest cluster by far: 'takes a complete turn to reload,' 15 marked lines. Every black powder weapon carries it: Tufenk, blunderbuss, superior blunderbuss, handgun ×3 entries, pistol ×4, duelling pistol ×3, hand-held mortar, Hochland long rifle. The app tags these `prepareShotReloadEveryOtherTurn` (7 weapons) and `prepareShotReloadEveryOtherTurnUnlessBrace` (6), and neither tag is read anywhere. So the single most-flagged rule in the whole reference is a label that does nothing. The brace exception matters as well — firing both barrels before reloading is the entire reason to buy a brace." (`docs/SCRAPE-MARKERS-GAPS.md`, finding 1; same root list as #69's untracked weapon tags)
+
+**Notes:** The audit's real finding is the correlation itself: the 83 marked lines (53 question-marks, 41 pencils — a map of what the rulebook source itself was least sure about) cluster hard on exactly the mechanics the other audits already found unmodelled, rather than being an inventory of unrelated transcription doubts. Two smaller repeats and one new finding:
+
+- Pistols usable in hand-to-hand (6 marked lines, "+1 Attack, resolved at Strength 4, once per combat") — same item as #2 and #69.
+- Exploration die modifiers for the Elf Ranger, Kislev Ranger and Tomb Robber Seeker/Explorer rules (3 marked lines) — same item as #66's Elf Ranger bullet.
+- **New**: warband maximum-size modifiers have no hook anywhere. The Halfling Scout Cook rule ("+1 to max size") and a similarly-worded item both have nowhere to apply — the roster validator compares against a fixed `composition.maxModels` with only an `outsideMaxModels` exclusion for certain unit types, no "+1 to the maximum" mechanism at all. Connects to #68's Snotlings "Insignificant" rule, which needs the same kind of hook for its own max-size half.
+- Explicitly confirmed correctly modelled already, so nobody reopens them: gromril/ithilmar save and Initiative modifiers, the Sigmarite Warhammer's vs-Undead/Possessed wound bonus, the spear's off-hand restriction, the whipcrack bonus applying to only the first whip, Lucky Charm, Wyrdstone Pendulum, and Wardogs counting toward warband maximum size (animals already do).
+- Process note worth acting on separately: the scrape strips the uncertainty markers themselves during generation (three data file headers say so honestly), so a flagged rule like the reload cluster carries no sign in the app that its wording was ever in doubt. Cheapest fix: a boolean on the entry saying the source flagged it, surfaced quietly rather than showing the raw markers in the UI.
 
 <!--
 ### N. Short title

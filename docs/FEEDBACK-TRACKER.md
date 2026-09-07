@@ -873,7 +873,7 @@ specific triple would mean mutating a real warband's exploration state to test a
 
 ### 46. The match page says "No battle sheet opened yet" after a battle has actually been fought
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -886,6 +886,14 @@ after a full test battle: 1 row in `battle_events`, 0 rows in `battle_sessions`.
 **How to replicate:** Schedule a battle → Start battle → Open battle sheet → Melee Attack → *Roll it
 through* to a result → **Log to both sheets** (the Log tab now shows the entry) → *Battle over*. The
 match page shows "No battle sheet opened yet." under both warbands.
+
+**Fixed:** `372ca05`. Extracted the battle page's own `overlaySessions` (lays the shared log over a
+saved sheet, or builds one from the log alone when there is none) into `shared/helpers.ts` and wired
+the match page's tallies through it the same way. Verified live with the exact repro: The Argent
+Hammer vs Test Cult, a melee attack rolled through to Out of action and logged, battle over — the
+match page immediately showed Turn 1, Enemies OOA 1 / Own OOA 0 (and the mirror) with no saved
+session at all. Cancelled the test battle afterwards. Added regression tests for `overlaySessions`
+in `shared/helpers.test.ts`.
 
 ### 47. "1 warriors" and "1 items" — a few strings don't handle the singular
 

@@ -136,6 +136,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
                 {o.label}
                 {o.leader ? ' · leader' : ''}
                 {o.standing ? '' : ' · out of action'}
+                {o.mayLead ? '' : ' · may not lead a Rout test'}
               </option>
             ))}
           </SelectField>

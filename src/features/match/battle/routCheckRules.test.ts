@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
-import type { RosterHero, RosterWarband } from '../../../rules/types/roster'
+import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { leadershipOptions, suggestedLeadership } from './routCheckRules'
 import { toggleHeroOut } from './sheet'
 
@@ -33,5 +33,20 @@ describe('rout check leadership', () => {
     let sheet = emptyBattleLiveState()
     for (const id of ['cap', 'ch1', 'yb']) sheet = toggleHeroOut(sheet, id)
     expect(suggestedLeadership(leadershipOptions(roster, REIKLAND, sheet))?.id).toBe('cap')
+  })
+
+  it('never offers a hired sword as the suggestion, even with the highest Leadership standing (#60/#68)', () => {
+    const ogre: RosterHiredSword = {
+      id: 'hs', hiredSwordId: 'ogre_bodyguard', name: 'Grom', stats: { ...stats, Ld: 9 }, xp: 0, levelUps: 0, skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active',
+    }
+    const withOgre: RosterWarband = { ...roster, hiredSwords: [ogre] }
+    const options = leadershipOptions(withOgre, REIKLAND, emptyBattleLiveState())
+    const hsOption = options.find((o) => o.id === 'hs')!
+    expect(hsOption.mayLead).toBe(false)
+    expect(hsOption.ld).toBe(9) // higher than every hero, and still correctly excluded
+    expect(suggestedLeadership(options)?.id).toBe('cap') // the leader, not the higher-Ld hired sword
+    // Even once the leader is down, the suggestion falls to the next eligible hero, not the hired sword.
+    const sheet = toggleHeroOut(emptyBattleLiveState(), 'cap')
+    expect(suggestedLeadership(leadershipOptions(withOgre, REIKLAND, sheet))?.id).toBe('ch1')
   })
 })

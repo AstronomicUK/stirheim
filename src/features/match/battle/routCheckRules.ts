@@ -23,8 +23,10 @@ export function leadershipOptions(roster: RosterWarband, template: WarbandTempla
   const fighting = splitWarriors(roster, sheet).fighting
   const options = fighting.map(({ warrior }): LdOption => {
     const w = warrior as RosterHero | RosterHiredSword
-    const leader = 'unitTemplateId' in w && leaderUnit !== undefined && w.unitTemplateId === leaderUnit.id
-    const mayLead = !('unitTemplateId' in w) || !unitRules(w.unitTemplateId).neverLeads
+    const isHero = 'unitTemplateId' in w
+    const leader = isHero && leaderUnit !== undefined && w.unitTemplateId === leaderUnit.id
+    // "You may not use the Leadership of any of the Hired Swords for Rout tests" — only a hero may ever lead.
+    const mayLead = isHero && !unitRules(w.unitTemplateId).neverLeads
     const ld = leader && leaderLd.bonus ? w.stats.Ld + leaderLd.bonus : w.stats.Ld
     const label = leader && leaderLd.bonus ? `${w.name} (Ld ${w.stats.Ld} +${leaderLd.bonus} ${leaderLd.sources.join(', ')})` : `${w.name} (Ld ${w.stats.Ld})`
     return { id: w.id, label, ld, standing: !isHeroOut(sheet, w.id), leader, mayLead }

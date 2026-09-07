@@ -1142,6 +1142,16 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 - **A scenario's own bespoke experience award is never shown when awarding experience** — the three standard awards apply automatically and correctly, but anything a scenario adds (six scenarios deviate from the standard leader award, two giving +2 and one +5) has to be typed in by hand via "Add scenario experience" with nothing on screen reminding the player it applies. The match already knows which scenario was played and every scenario's `experience` text already exists in the data — just needs surfacing at the point of award.
 - `promoteHenchman` drops the group's `statIncreases` record on promotion — harmless today since a promoted hero is bound by racial maxima rather than the henchman +1 cap, but worth knowing the history doesn't carry across if that ever needs reconstructing.
 
+### 65. CI's e2e job silently red on main since 18:38, on every commit including unrelated docs
+
+**Status:** ✅ Fixed
+**Priority:** 🔴 High
+**Reported:** n/a — self-identified while watching CI for #55/#62; not from the rules audit
+
+> Every push to main since commit `04af6e2` ("Multi-attack UI: show the attack cap, and number every attack in sequence", 19:38) failed the e2e job on the same 60-second timeout in `e2e/04-match.spec.ts`, including commits that only touched `docs/FEEDBACK-TRACKER.md` — proof it was one specific regression, not a flake, since an unrelated docs commit can't cause a real UI timeout on its own. `04af6e2` changed the roll-through's to-hit step label from bare weapon names ("Sword", or "Sword 1"/"Sword 2" for repeats) to "First attack (Sword)", "Second attack (Dagger)" whenever a phase has more than one attack — a UI improvement Tom asked for, and its own unit tests (`rollThrough.test.ts`) were updated correctly in the same commit. But `e2e/04-match.spec.ts:74` still asked for the old exact button name `'Sword: to hit: 4'`, which no longer existed once the captain's phase had 2 attacks — so the die-roll click waited the full 60s and timed out, on `[mobile]` only (the only Playwright project configured), 12 other e2e tests still passing every run.
+
+**Notes:** The `test` job (lint, unit tests, `tsc -b` build) stayed green throughout — this is purely an e2e-vs-unit-test drift, and one that had been sitting unnoticed on main for roughly 13 commits (~70 minutes) since nothing else was watching the e2e job's actual conclusion, only the `test` job's. **Fixed:** updated the one affected line to `'First attack (Sword): to hit'`, matching the new label format exactly as `rollThrough.test.ts` already expects it for a 2-attack phase starting with the sword. Grepped every other e2e spec for the same pattern (`to hit`) — this was the only affected line. Commit `f3411e0`; CI run in progress at time of writing, will confirm green once it completes. Worth the team keeping an eye on the e2e job specifically after a fight/attack-calculator UI change, since the `test` job's green tick doesn't cover it.
+
 <!--
 ### N. Short title
 

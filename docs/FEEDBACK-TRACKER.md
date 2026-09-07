@@ -186,7 +186,9 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "I don't know if it's a problem across the board or just with the Sons of Hashut War band but they seem to have a lot of units starting at 1 XP. I believe most units, especially henchmen, start at 0 XP but I could be wrong."
 
-**Notes:**
+**Notes:** Investigated but **not reproduced from the rules data or creation code** — worth flagging rather than assuming fixed. Starting XP always comes from `UnitTemplate.startingExperience` (a required field, `src/rules/types/index.ts:233`), read at creation in `builder.ts:503/524/663/678` as `unit?.startingExperience ?? 0`, and the DB side (`create_warband` in `supabase/migrations/20260904000004_roster_functions.sql`) defaults to `0`, never `1`, if a value is missing. Checked Sons of Hashut's own data (`src/rules/data/warbandTemplates/grade-1c.ts`, warband at line 3113): all three henchmen types (Chaos Dwarf Warriors, Blunderbuss Chaos Dwarfs, Hobgoblins) are explicitly `startingExperience: 0`, structurally identical to Reikland Mercenaries' henchmen in `core-and-grade-1a.ts`, which Tom isn't reporting a problem with. No hardcoded `1` exists anywhere in the template data or creation path; no "0-1" unit-limit string is anywhere near the XP field.
+
+Given the data says this shouldn't be happening, the most likely explanations are outside what static reading can confirm: either the specific warband in question wasn't created through the normal builder (e.g. it came in through the CSV/tracker importer, which has its own, separately-coded XP handling — not checked here), or units gained XP after creation (a post-battle award, an import fix-up) that looks like "starting at 1" but isn't. Recommend checking the actual live warband's rows/history (or asking Tom exactly how that warband was created) before writing any fix, since there's currently no code path that would produce this on its own.
 
 ### 15. The Well exploration outcome doesn't ask which model missed the next game (and other outcomes probably have the same gap)
 
@@ -198,6 +200,18 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 **Notes:** Reported alongside #16 in the same paragraph — both quoted here in full since they came from the same report; see #16 for the treasure-prompt half.
 
+Confirmed, and it's wider than just Well. The Well's rule text (`src/rules/data/campaign/exploration.ts:41-42`) is: "Choose one of your Heroes and roll a D6. If the result is equal to or lower than his Toughness, he finds one shard of wyrdstone... If he fails, the Hero swallows tainted water and must miss the next game through sickness." That file's own header comment says plainly: "Nothing here is mechanically wired yet; the UI shows the text and the structured fields are for a future exploration roller." `ExplorationStep.tsx` (269 lines, read in full) has no hero/model picker anywhere — its only inputs are a dice-count stepper, per-die fields, a generic pass/fail toggle for `needsTest` (shared by Well's Toughness test and other Leadership tests), gold/shard number fields, a freeform items list and a notes box. A failed test only appends a **plain text note** (`exploration.ts` model, "`${stat} test failed: ${prompt}`") — no hero id is ever recorded, so nothing marks anyone as missing next game. The `missNextGames` mechanism this needs already exists and is used correctly elsewhere (Casualties/Injuries steps); it's just never invoked from here. The wizard also already has the *pattern* for per-subject selection — `ExperienceStep.tsx` keys XP-award cards by `subjectId` — it just isn't reused in this step.
+
+Other exploration outcomes with the same gap (all from `exploration.ts`, all currently resolved by the same generic pass/fail UI with no model picker):
+- **The Pit** (line 648) — a chosen Hero can be devoured (permanently removed) on a 1, or bring back D6+1 shards.
+- **Alchemist's Laboratory** (543) — a chosen Hero unlocks Academic skills.
+- **Jewelsmith** (558) — a chosen Hero gets +1 on rare-item rolls, permanently.
+- **Fighting Arena** (767) — a chosen Hero unlocks Combat skills and may raise WS by one.
+- **Merchant's House** (604) — on a double, a chosen Hero gains the Haggle skill.
+- **Straggler**, Possessed variant (124) — names the warband's leader specifically for +1 XP.
+
+Given the number and variety of these (a permanent stat/skill change, a permanent death, a recurring bonus, not just a missed game), this is a real structural gap rather than a one-off, and any fix should probably generalise to "this outcome affects a specific model" rather than patching Well alone.
+
 ### 16. The Well exploration outcome asks the user to input treasure found, when the app should already know the amount
 
 **Status:** 🔲 Open
@@ -207,6 +221,8 @@ Given all three sit in the same small file, a fix would likely address them toge
 > "The Well outcome in the exploration phase doesn't ask you to pick a unit, so it won't know who misses the next game if they fail. There are probably other exploration phase outcomes like this, where you have to select a unit. It also asks what treasure is found which is strange because the game already knows that they find 1 wyrdstone, so I'm unsure why the user is prompted to input additional treasure."
 
 **Notes:** Same report as #15 — see that entry for the missing-unit-picker half.
+
+Confirmed, and Well genuinely is the only outcome with this exact problem. Every gold/wyrdstone reward across `exploration.ts` is a dice expression ("D6", "2D6", "D6x10", "D6+1", etc.) except the Well's, which is a plain fixed `amount: 1` — the only such case in the whole file, so a manual-entry field is correctly used everywhere else. The model layer already treats it as known (`exploration.ts` model's `diceAmount()`: a reward with no dice expressions just becomes `value = fixed` automatically), but `ExplorationStep.tsx` (lines ~173-189) still renders the "Shards at the location" `NumberField` whenever `fixed > 0` — it's `disabled` (greyed out) rather than hidden or shown as plain text, so it still visually reads as "please enter this," pre-filled with the right answer. Small, contained fix: when there are no dice expressions at all, show the fixed amount as plain text instead of a disabled input.
 
 ### 17. Filing a report briefly flashes an "already filed" page before redirecting
 

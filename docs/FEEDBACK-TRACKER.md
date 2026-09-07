@@ -172,7 +172,12 @@ Also ties into #11 (the new turns feature and its "Recover Units" button) since 
 
 > "We will also need to build in a turns feature into the game for "App Calculates" games. This will mean that turn limit games can be accurately tracked, and when you are finished with your turn, the opponent gets a popup saying "Your turn!" With a "Recover Units" button, which turns friendly stunned units to knocked down, and knocked down to no status"
 
-**Notes:**
+**Notes:** This is a genuinely new feature rather than a bug fix, so this is a scoping note rather than a root-cause finding. Pieces that already exist and would likely be reused:
+- The shared turn counter itself already exists (`TopStrip.tsx`'s stepper, `setTurn(s, turn)` on the battle sheet) but it's a single shared number either player can bump — there's no concept of "whose turn it is" or a per-scenario turn limit anywhere in the scenario data (`src/rules/data/campaign/scenarios.ts` has no turn-limit field at all).
+- The "opponent gets a popup" half maps naturally onto the existing hand-off infrastructure built for parries/saves — `battle_prompts` (migration `20260906000026_battle_prompts.sql`) already delivers a targeted prompt to a specific warband's screen in near-real-time via Realtime; a "Your turn!" notification could plausibly ride the same mechanism rather than needing a new one.
+- "Recover Units" (stunned → knocked down → no status) is the natural companion to #10: once attacking a stunned/knocked-down target actually reads and updates status (via `conditionsFor()` in `sheet.ts`, currently display-only per #10's notes), a "Recover" action would need to write the *opposite* transition back onto the shared log/sheet. Worth designing #10 and this together rather than separately, since they're two directions of the same status-tracking gap.
+
+Given the size (new turn-ownership model, a new prompt type, and status-recovery logic all together), this is a multi-part build rather than a single contained fix — recommend confirming scope/order with Tom before starting rather than assuming the whole thing should land in one pass.
 
 ### 12. Crit table animation is still too fast to read; the settled (red) row and the spinning (yellow) row don't show the same information
 
@@ -288,7 +293,13 @@ Second half is more nuanced than it first looks — **most of what's being asked
 
 > "When you tap on a dice roll button more than once, this should show in the dice log along with each result. This prevents people cheating the system such as when they roll an advance and don't like the first outcome, they can quickly tap again before their friends see it."
 
-**Notes:**
+**Notes:** Confirmed as a real, structural gap, and it's actually wider than just "tap the roll button twice" — three distinct places currently discard a roll with zero trace once a later one replaces it:
+
+- **`DieField`** (`src/ui/DieField.tsx`), the numeric-keypad/Roll widget used throughout the post-battle wizard including Advances' D6 fields — Tom's own example. It's a bare controlled input: `roll()` calls `rollDie(sides)` and overwrites the field's value with no history kept anywhere. Tap "Roll," see a result you don't like, tap it again — the first result never existed as far as the app's concerned.
+- **`DicePicker`** (`src/ui/Dice.tsx`) with more than one die (e.g. a 2D6 roll) — `set(index, value)` updates one die's value immediately without calling `onComplete` until every die is filled, so a player can keep re-tapping one die's face as many times as they like before the second die locks the roll in; only the last face tapped is ever recorded.
+- **A full "Start again"** in the Fight tab's roll-through popup (`FightTab.tsx`) — `state.log` (every roll of the current attack) lives only in local component state until "Log to both sheets" is pressed. Hitting "Start again" resets `state` to `null` and re-runs the whole attack from scratch, discarding the entire previous sequence's rolls with no record at all — arguably the more consequential version of the same worry, since it can rewrite a whole attack's outcome (to hit, to wound, injury), not just one die.
+
+Any fix needs to decide where the retained history is meant to live (kept only for the current session so a GM can see it live, vs. actually persisted to the record) and whether "Start again" should still be allowed unrestricted once dice have been rolled — that's a product question worth settling with Tom before writing code here, since it changes how disruptive/costly the fix is.
 
 ### 21. Can't submit the second warband's post-battle report after submitting the first, when one player controls both sides of a match
 
@@ -350,7 +361,7 @@ Second half is more nuanced than it first looks — **most of what's being asked
 
 > "The dice icon for roll it out is crappy and needs something way cooler. Like a rotating dice animation or something like that?"
 
-**Notes:**
+**Notes:** Confirmed — `src/ui/icons.tsx:96`, the `dice` icon is a completely static square outline with 5 fixed pips (a plain "rolled a 5" face), no motion at all, used on the "Roll it through" button in `FightTab.tsx`. There's already an established pattern for small looping/ambient icon animation to follow: `.stirheim-glow` (`src/index.css`) pulses an icon's drop-shadow continuously, already used for the "Advancements" tile when advances are due, complete with a `prefers-reduced-motion` fallback. A rotating-die version (spinning the icon, or cycling between a couple of pip layouts) could reuse the same CSS-keyframe-plus-reduced-motion-guard structure rather than inventing a new animation approach.
 
 ### 26. Trading post icons/names: "Characters" should be "Dramatis Personae"; stash should look like a treasure chest; Buy/Sell icons should read as a matched pair
 

@@ -665,7 +665,7 @@ Verified live on local dev: New warband → Mercenaries (Reikland) → Start bui
 
 ### 36. The builder charges half price for armour but shows the full list price and never says why
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -679,6 +679,8 @@ minutes to rule out, and a player at the table has no way to tell it isn't one.
 
 **How to replicate:** New warband → any type → *Add equipment* on any warrior → step Heavy armour up
 to 10. Sheet says 50 gc each; card reads "50 gc · **250 gc**"; GOLD LEFT falls by 250, not 500.
+
+**Fixed:** Added `discountedCostText`, mirroring the trading post's own "25 gc (half price armour, from 50 gc)" text for a plain flat list price (dice, first-free and multiplier prices are left as written, same scope the trading post already uses), and wired it into both the Add-equipment sheet and the hero/group card's equipment rows. Verified live: a new Reikland Captain's Heavy Armour now reads "25 gc (half price armour, from 50 gc) · 25 gc" in both places, consistent with the already-correct 25 gc deducted from the treasury. Commit `6269d16`.
 
 ### 37. The Advances step labels an un-rolled advance "Done", and a half-rolled one "To do"
 

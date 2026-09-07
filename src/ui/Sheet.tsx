@@ -8,13 +8,15 @@ export interface SheetProps {
   children: ReactNode
   /** Actions pinned under the scrolling body. */
   footer?: ReactNode
+  /** 'full' fills nearly the whole phone screen (a busy step-by-step flow); default is the compact bottom sheet. */
+  size?: 'default' | 'full'
 }
 
 /**
  * Bottom sheet for phones: slides over the page, scrolls inside itself, closes on Escape, a backdrop
  * tap or the Close button. Content is only mounted while open.
  */
-export function Sheet({ open, onClose, title, description, children, footer }: SheetProps) {
+export function Sheet({ open, onClose, title, description, children, footer, size = 'default' }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   const titleId = useId()
@@ -49,7 +51,7 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className="relative mx-auto flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-xl border-t border-border bg-surface-low shadow-2xl focus:outline-none lg:max-w-lg lg:rounded-xl lg:border"
+        className={`relative mx-auto flex w-full max-w-md flex-col rounded-t-xl border-t border-border bg-surface-low shadow-2xl focus:outline-none lg:max-w-lg lg:rounded-xl lg:border ${size === 'full' ? 'h-[95dvh] lg:h-auto lg:max-h-[85dvh]' : 'max-h-[85dvh]'}`}
       >
         <header className="flex items-start justify-between gap-4 px-5 pb-2 pt-4">
           <div className="min-w-0">

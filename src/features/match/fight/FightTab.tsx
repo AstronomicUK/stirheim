@@ -19,7 +19,7 @@ import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFo
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
-import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollState } from './rollThrough'
+import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollKind, type RollState } from './rollThrough'
 import { CritWheel } from './CritWheel'
 import { critTableName } from '../../../rules/engine/crit'
 import { useEnemyRosters } from './useEnemyRosters'
@@ -173,7 +173,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   return (
     <>
       {/* Attacker and defender face each other, with the dice between them. */}
-      <div className="relative grid grid-cols-2 items-start gap-3 lg:gap-8">
+      <div className="relative grid grid-cols-2 items-stretch gap-3 lg:gap-8">
         <FightBox icon="battle" title="Attacker" tone="brass">
           <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => setAttackerId(e.target.value)}>
             {mine.map((c) => (
@@ -309,7 +309,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           disabled={!odds || !attacker || !defender || odds.attacks < 1}
           onClick={() => setRolling(true)}
           aria-label="Roll it through"
-          className="absolute left-1/2 top-8 z-10 flex size-12 -translate-x-1/2 items-center justify-center rounded-full border-2 border-brass bg-surface text-brass shadow-[0_2px_6px_rgba(36,31,26,0.18)] transition-colors hover:bg-brass/15 disabled:opacity-40"
+          className="absolute left-1/2 top-1/2 z-10 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-brass bg-brass text-surface-low shadow-[0_2px_6px_rgba(36,31,26,0.28)] transition-colors hover:bg-brass/85 disabled:opacity-40"
         >
           <Icon name="dice" size={24} />
         </button>
@@ -320,6 +320,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           <Sheet
             open={rolling}
             onClose={() => setRolling(false)}
+            size="full"
             title={`${attacker.name} attacks ${defender.name}`}
             description={`${odds.attacks === 1 ? '1 attack' : `${odds.attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
             footer={
@@ -656,8 +657,9 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
               ) : null}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-ink">{state.pending.label}</p>
-                  <p className="text-xs leading-relaxed text-ink-dim">{state.pending.detail}</p>
+                  <p className="font-headline text-2xl leading-tight text-ink">{ROLL_KIND_HEADING[state.pending.kind]}</p>
+                  <p className="text-sm text-ink-dim">{state.pending.label}</p>
+                  <p className="mt-1 text-base font-semibold text-ink">{state.pending.detail}</p>
                 </div>
                 <span className="shrink-0">
                   <Tag tone={state.pending.who === 'attacker' ? 'brass' : 'danger'}>{state.pending.who === 'attacker' ? attacker.name : defender.name}</Tag>
@@ -718,9 +720,9 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
           ) : null}
 
           {state.done ? (
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <p role="status" className="text-sm text-ink">
-                <span className="font-medium">Result: {state.worst ? OUTCOME_LABEL[state.worst] : 'Nothing happened'}.</span>{' '}
+            <div key={state.log.length} className={`flex flex-col gap-2 border-t border-border pt-3 ${state.worst ? (RESULT_ANIMATION_CLASS[state.worst] ?? '') : ''}`}>
+              <p role="status" className="text-base text-ink">
+                <span className="font-headline text-xl font-semibold">Result: {state.worst ? OUTCOME_LABEL[state.worst] : 'Nothing happened'}.</span>{' '}
                 <span className="text-ink-dim">
                   {state.worst === 'outOfAction'
                     ? `${defender.name} is out of action.`
@@ -770,6 +772,33 @@ function kitNames(c: Combatant): string {
 }
 
 /** One side of the fight: a headed box so the two read as facing each other on a phone. */
+/** The big heading for a roll step, read from across a table: the phase, not the weapon or the reroll count. */
+const ROLL_KIND_HEADING: Record<RollKind, string> = {
+  hit: 'To Hit',
+  hitReroll: 'To Hit',
+  luckyCharm: 'Lucky Charm',
+  parry: 'Parry',
+  parryReroll: 'Parry',
+  dodge: 'Dodge',
+  wound: 'To Wound',
+  woundReroll: 'To Wound',
+  critTable: 'Critical Hit',
+  save: 'Armour Save',
+  stepAside: 'Step Aside',
+  afterSave: 'Peg Leg',
+  ward: 'Ward Save',
+  injuryIgnore: 'Undead Construct',
+  injury: 'Injury',
+  stunSave: 'Helmet',
+}
+
+/** How the result lands: knocked down staggers, stunned wobbles, out of action is the hardest hit. */
+const RESULT_ANIMATION_CLASS: Partial<Record<Outcome, string>> = {
+  knockedDown: 'stirheim-knockdown',
+  stunned: 'stirheim-stunned',
+  outOfAction: 'stirheim-outofaction',
+}
+
 function FightBox({ icon, title, tone, children }: { icon: IconName; title: string; tone: 'brass' | 'accent'; children: ReactNode }) {
   return (
     <section className={`flex min-w-0 flex-col gap-2 rounded-md border bg-surface-low px-2.5 py-2.5 ${tone === 'brass' ? 'border-brass/50' : 'border-accent/50'}`}>

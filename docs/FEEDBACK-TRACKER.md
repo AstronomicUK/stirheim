@@ -954,7 +954,7 @@ Scenarios list pick up their static titles too.
 
 ### 50. Items with no numeric price sit in the Buy catalogue where they can never be bought
 
-**Status:** 🔲 Open
+**Status:** ✅ Confirmed working
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -967,6 +967,17 @@ exactly that for unpriced items ("No listed price · Name a price"), so the patt
 
 **How to replicate:** Trading post → Buy → search `armour` (Masterwork Heavy Armour — Not listed)
 and `obsidian` (Obsidian Weapon — 4 x Price).
+
+**Confirmed working:** the premise doesn't hold against the current build. Opening either item's
+sheet shows an "Agreed price (gc each)" field with the catalogue's own text as its hint ("Not
+listed", "4 x Price") — the same "name a price" pattern the Sell tab uses, already wired up on the
+Buy side too (`BuyTab.tsx`'s `item.price.base === null` branch). Verified live for both: Masterwork
+Heavy Armour accepts a named price and enables Buy immediately (it's Common); Obsidian Weapon, being
+Rare 12, shows the same field only after a successful rarity roll, same as any other rare item, and
+then accepts a named price too. Nothing to fix here — the QA sweep likely stopped at the catalogue
+list's raw price text ("Not listed") without opening the item. The list label itself could still be
+softened (e.g. "Name your own price" instead of "Not listed"), but that's cosmetic, not the "can
+never be bought" bug as reported, so left as-is.
 
 ### 51. The "Unfinished draft" banner on the warband list can't be dismissed from there
 
@@ -984,7 +995,7 @@ template's builder URL is guarded too, so this is only about the banner.
 
 ### 52. The rare-item Buy button is disabled without saying why
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -995,6 +1006,11 @@ search so the roll stands; the hero may not re-roll", with a *Record the failed 
 
 **How to replicate:** Trading post → Buy → any Rare item → the Buy button is greyed with no
 explanation until both rarity dice are entered.
+
+**Fixed:** `db41fa7`. Added "Roll the rarity dice first." above the Buy button for exactly this
+case. Verified live on Obsidian Weapon (Rare 12): the line shows before the dice are entered and the
+Price section (with its own "Agreed price" field) only appears once the roll succeeds, same flow
+confirmed while checking #50 above.
 
 ### 53. Removing a warrior or an item in the builder has no confirmation and no undo
 

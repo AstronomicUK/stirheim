@@ -15,6 +15,8 @@ export interface BattleNavProps {
   canCast: boolean
   /** On desktop my own warband is always on the left, so the slider has nothing to swap. */
   desktop: boolean
+  /** Opens the Attack tab already leaning towards a melee or a ranged weapon (the picker still offers both). */
+  onAttack: (kind: 'melee' | 'ranged') => void
 }
 
 /** Two halves that light up, so which roster you are looking at reads from across the table. */
@@ -59,7 +61,7 @@ function NavTile({ icon, label, detail, active, tone, onClick }: { icon: IconNam
   )
 }
 
-export function BattleNav({ tab, setTab, inApp, canCast, desktop }: BattleNavProps) {
+export function BattleNav({ tab, setTab, inApp, canCast, desktop, onAttack }: BattleNavProps) {
   const quick = inApp || canCast;
   return (
     <div className="flex flex-col gap-4">
@@ -82,8 +84,9 @@ export function BattleNav({ tab, setTab, inApp, canCast, desktop }: BattleNavPro
         <section className="flex flex-col gap-2">
           <h3 className="text-xs uppercase tracking-[0.2em] text-ink-dim">Quick actions</h3>
           <div className="flex gap-2">
-            {inApp ? <NavTile icon="battle" label="Attack" detail="Odds and dice, step by step" active={tab === 'fight'} tone="accent" onClick={() => setTab('fight')} /> : null}
-            {canCast ? <NavTile icon="cast" label="Cast" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} /> : null}
+            {inApp ? <NavTile icon="battle" label="Melee Attack" detail="Odds and dice, step by step" active={tab === 'fight'} tone="accent" onClick={() => onAttack('melee')} /> : null}
+            {inApp ? <NavTile icon="shooting" label="Ranged Attack" detail="Odds and dice, step by step" active={tab === 'fight'} tone="accent" onClick={() => onAttack('ranged')} /> : null}
+            {canCast ? <NavTile icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} /> : null}
           </div>
         </section>
       ) : null}

@@ -285,6 +285,8 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
   }, [others, enemyRosters.warbands, sessions])
   const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
   const sideTab: Tab = desktop && tab === 'mine' ? 'enemy' : tab
+  // Which quick action opened the Attack tab: only changes the weapon it starts on, the picker still offers both.
+  const [attackStartWith, setAttackStartWith] = useState<'melee' | 'ranged'>('melee')
 
   return (
     <>
@@ -325,13 +327,36 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
           </div>
         ) : null}
         <div className="flex flex-col gap-6">
-          <BattleNav tab={sideTab} setTab={setTab} inApp={inApp} canCast={canCast} desktop={desktop} />
+          <BattleNav
+            tab={sideTab}
+            setTab={setTab}
+            inApp={inApp}
+            canCast={canCast}
+            desktop={desktop}
+            onAttack={(kind) => {
+              setAttackStartWith(kind)
+              setTab('fight')
+            }}
+          />
 
           {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
           {sideTab === 'enemy' ? <EnemyView matchId={match.id} participants={others} sessions={sessions} events={events} turn={shown.turn} /> : null}
           {sideTab === 'cast' ? <CastTab roster={roster} template={template} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
           {sideTab === 'fight' && inApp ? (
-            <FightTab matchId={match.id} roster={roster} template={template} others={others} sessions={sessions} houseRules={houseRules} sheet={shown} readOnly={readOnly} onLogEvent={onLogEvent} edit={readOnly ? undefined : handle.edit} boosts={boosts} />
+            <FightTab
+              matchId={match.id}
+              roster={roster}
+              template={template}
+              others={others}
+              sessions={sessions}
+              houseRules={houseRules}
+              sheet={shown}
+              readOnly={readOnly}
+              onLogEvent={onLogEvent}
+              edit={readOnly ? undefined : handle.edit}
+              boosts={boosts}
+              startWith={attackStartWith}
+            />
           ) : null}
           {sideTab === 'log' && inApp ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} scenarioId={match.scenario_rules_id} custom={match.custom_scenario_name !== null} /> : null}

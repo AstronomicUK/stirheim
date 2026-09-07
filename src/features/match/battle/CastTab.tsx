@@ -21,7 +21,7 @@ import { castersOf } from './casters'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband } from '../../../rules/types/roster'
 import type { Spell } from '../../../rules/types/magic'
-import { Button, DicePicker, HoverCard, Icon, Notice, RollResult } from '../../../ui'
+import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 
 export interface CastTabProps {
@@ -38,6 +38,16 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
   const caster = casters.find((c) => c.heroId === casterId) ?? casters[0]
   const [state, setState] = useState<CastState | null>(null)
   const [spent, setSpent] = useState<Record<string, number>>({})
+  // Most spells target the enemy off-app; some need a friendly named instead (a heal, a blessing).
+  const [targetId, setTargetId] = useState<string | null>(null)
+  const targets = useMemo(
+    () => [
+      ...roster.heroes.filter((h) => h.status === 'active').map((h) => ({ id: h.id, name: h.name })),
+      ...roster.hiredSwords.filter((s) => s.status === 'active').map((s) => ({ id: s.id, name: s.name })),
+      ...roster.henchmenGroups.filter((g) => g.size > 0).map((g) => ({ id: g.id, name: g.name })),
+    ],
+    [roster],
+  )
   // The attempt is written to the sheet exactly once, whatever order the renders come in.
   const recorded = useRef<string | null>(null)
   const stateRef = useRef<CastState | null>(null)
@@ -84,6 +94,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
         total: finished.dice ? finished.dice[0] + finished.dice[1] + finished.bonus : null,
         difficulty: finished.difficulty,
         used: finished.used.filter((id) => !usedUp.includes(id)),
+        targetName: targetId ? (targets.find((t) => t.id === targetId)?.name ?? null) : null,
       }),
     )
   }
@@ -113,6 +124,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
                   stateRef.current = null
                   setState(null)
                   setSpent({})
+                  setTargetId(null)
                 }}
                 className={`min-h-11 rounded-full border px-4 text-sm transition-colors ${c.heroId === caster.heroId ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'}`}
               >
@@ -122,6 +134,17 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
           </div>
         ) : null}
 
+        {targets.length > 0 ? (
+          <SelectField label="Target (if this spell needs one)" value={targetId ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
+            <option value="">Off the sheet — no target on this warband</option>
+            {targets.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </SelectField>
+        ) : null}
+
         {caster.blocks.length > 0 ? (
           <Notice tone="error" title={`${caster.name} may not cast`}>
             {caster.blocks.join(' ')}
@@ -129,7 +152,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
         ) : null}
         {already.length > 0 ? (
           <Notice tone="warn" title={`Already cast this turn`}>
-            {already.map((c) => `${c.spellName} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
+            {already.map((c) => `${c.spellName}${c.targetName ? ` on ${c.targetName}` : ''} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
             {caster.secondSpell ? ' Magical Aptitude allows a second attempt after a Toughness test.' : ' A wizard may cast one spell per turn.'}
           </Notice>
         ) : null}
@@ -170,6 +193,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
             onAgain={() => {
               stateRef.current = null
               setState(null)
+              setTargetId(null)
             }}
             usedUp={usedUp}
           />

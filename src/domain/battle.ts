@@ -47,6 +47,8 @@ export const castRecordSchema = z.object({
   difficulty: z.number().int().nullable().default(null),
   /** Re-roll ids spent on this attempt (a Rat Familiar is once a game, a Familiar once a turn). */
   used: z.array(z.string()).default([]),
+  /** Who the spell was aimed at, when the caster named one: a spell may need a friendly target rather than an enemy. */
+  targetName: z.string().nullable().default(null),
 });
 export type CastRecord = z.infer<typeof castRecordSchema>;
 

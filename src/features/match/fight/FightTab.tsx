@@ -40,6 +40,8 @@ export interface FightTabProps {
   onLogEvent: (payload: AttackEventPayload) => Promise<void>
   /** Edit the player's own sheet (marking consumables used); absent when read only. */
   edit?: (fn: (state: BattleLiveState) => BattleLiveState) => void
+  /** Which quick action opened this tab: the weapon picker still offers both, this only sets the default. */
+  startWith?: 'melee' | 'ranged'
 }
 
 interface WeaponChoice {
@@ -61,7 +63,7 @@ interface TargetMemory {
   charmUsed?: boolean
 }
 
-export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent, edit, boosts }: FightTabProps) {
+export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
 
   const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), [roster, template, sheet, boosts])
@@ -94,6 +96,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
     ? choice && choice.attackerId === attacker.id && choice.primary < weapons.length
       ? choice
       : (() => {
+          const ranged = startWith === 'ranged' ? (attackerKit?.ranged ?? []) : []
+          if (ranged.length > 0) return { attackerId: attacker.id, primary: weapons.indexOf(ranged[0]), offHand: -1 }
           const primary = defaultPrimary(melee)
           const primaryIndex = Math.max(0, weapons.indexOf(primary))
           const off = defaultOffHand(melee, primary)

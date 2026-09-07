@@ -41,7 +41,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
       "Choose one of your Heroes and roll a D6. If the result is equal to or lower than his Toughness, he finds one shard of wyrdstone at the bottom of the well. If he fails, the Hero swallows tainted water and must miss the next game through sickness.",
     test: {
       stat: "T",
-      prompt: "Choose one of your Heroes and roll a D6. If the result is equal to or lower than his Toughness, he finds one shard of wyrdstone at the bottom of the well. If he fails, the Hero swallows tainted water and must miss the next game through sickness.",
+      prompt: "See above.",
       pickHero: true,
       failEffect: "missNextGame",
     },
@@ -73,7 +73,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "You find a still-warm corpse. A chipped dagger sticks out of his back. Surprisingly, his possessions have not been looted.",
     rules:
-      "To see what you find when you search the corpse, roll a D6:\n\n| D6 | Result |\n|---|---|\n| 1-2 | D6 gc |\n| 3 | Dagger |\n| 4 | Axe |\n| 5 | Sword |\n| 6 | Suit of light armour |",
+      "| D6 | Result |\n|---|---|\n| 1-2 | D6 gc |\n| 3 | Dagger |\n| 4 | Axe |\n| 5 | Sword |\n| 6 | Suit of light armour |",
     subRoll: {
       die: "D6",
       prompt: "To see what you find when you search the corpse, roll a D6:",
@@ -138,7 +138,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "Stuck in a ruined gateway is an overturned wagon – the covered type that nobles travel in from the city to their estates in the country. Since anyone important fled a long time ago, what is it doing here? The horses have broken their traces, or did someone cut them free?",
     rules:
-      "Roll a D6 to see what you find:\n\n| D6 | Result |\n|---|---|\n| 1-2 | Mordheim Map (see Equipment) |\n| 3-4 | A purse with 2D6 gc |\n| 5-6 | Jewelled sword and dagger. These can be kept or sold at twice the value of a normal sword and dagger, but note that the normal selling price is half the actual cost (see the Trading section for rules on selling items), so the jewelled sword will sell for 10gc, for instance. |",
+      "| D6 | Result |\n|---|---|\n| 1-2 | Mordheim Map (see Equipment) |\n| 3-4 | A purse with 2D6 gc |\n| 5-6 | Jewelled sword and dagger. These can be kept or sold at twice the value of a normal sword and dagger, but note that the normal selling price is half the actual cost (see the Trading section for rules on selling items), so the jewelled sword will sell for 10gc, for instance. |",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to see what you find:",
@@ -207,7 +207,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "The furnace and toppled anvil make it obvious what work was done here. Most of the iron and the tools have been looted long ago. Coal and slag litter the floor but there may still be weapons to be found among the debris.",
     rules:
-      "Roll a D6 to determine what you find inside:\n\n| D6 | Result |\n|---|---|\n| 1 | Sword |\n| 2 | Double-handed weapon |\n| 3 | Flail |\n| 4 | D3 Halberds |\n| 5 | Lance |\n| 6 | 2D6 gc worth of metal (add the value to your treasury). |",
+      "| D6 | Result |\n|---|---|\n| 1 | Sword |\n| 2 | Double-handed weapon |\n| 3 | Flail |\n| 4 | D3 Halberds |\n| 5 | Lance |\n| 6 | 2D6 gc worth of metal (add the value to your treasury). |",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to determine what you find inside:",
@@ -279,7 +279,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "This hovel was once the workshop of a fletcher – a maker of bows and arrows. There are bundles of yew staves and willow rods everywhere.",
     rules:
-      "Roll a D6 to see what you find:\n\n| D6 | Result |\n|---|---|\n| 1-2 | D3 Short Bows |\n| 3 | D3 Bows |\n| 4 | D3 Long Bows |\n| 5 | Quiver of Hunting Arrows |\n| 6 | D3 Crossbows |",
+      "| D6 | Result |\n|---|---|\n| 1-2 | D3 Short Bows |\n| 3 | D3 Bows |\n| 4 | D3 Long Bows |\n| 5 | Quiver of Hunting Arrows |\n| 6 | D3 Crossbows |",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to see what you find:",
@@ -360,7 +360,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "You find the workshop of a Dwarf gunsmith. Its doors have been broken down and the rooms raided, but some of the iron strongboxes have survived intact.",
     rules:
-      "Roll a D6 to see what you find:\n\n| D6 | Result |\n|---|---|\n| 1 | Blunderbuss |\n| 2 | Brace of Pistols |\n| 3 | Brace of Duelling Pistols |\n| 4 | D3 Handguns |\n| 5 | D3 Flasks of Superior Blackpowder |\n| 6 | Hochland Long Rifle |",
+      "| D6 | Result |\n|---|---|\n| 1 | Blunderbuss |\n| 2 | Brace of Pistols |\n| 3 | Brace of Duelling Pistols |\n| 4 | D3 Handguns |\n| 5 | D3 Flasks of Superior Blackpowder |\n| 6 | Hochland Long Rifle |",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to see what you find:",
@@ -449,7 +449,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "A breastplate hanging from a pole drew your attention to this place, obviously too high up to be easily looted. The workshop is ruined and the forge has been smashed. Rooting about in the soot, you find various half-finished items of armour.",
     rules:
-      "Roll a D6 to see what you find:\n\n| D6 | Result |\n|---|---|\n| 1-2 | D3 Shields or Bucklers (choose which) |\n| 3 | D3 Helmets |\n| 4 | D3 Suits of Light Armour |\n| 5 | D3 Suits of Heavy Armour |\n| 6 | Suit of Ithilmar Armour |",
+      "| D6 | Result |\n|---|---|\n| 1-2 | D3 Shields or Bucklers (choose which) |\n| 3 | D3 Helmets |\n| 4 | D3 Suits of Light Armour |\n| 5 | D3 Suits of Heavy Armour |\n| 6 | Suit of Ithilmar Armour |",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to see what you find:",
@@ -560,7 +560,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "The houses in the jewellers' quarter have all been well and truly looted long ago. Even the rubble has been picked over many times for fragments of gold and gems. But still, some small but valuable items may have been overlooked.",
     rules:
-      "Roll a D6 to see what you find:\n\n| D6 | Result |\n|---|---|\n| 1-2 | Quartz stones worth D6x5 gc |\n| 3-4 | Amethyst worth 20 gc |\n| 5 | Necklace worth 50 gc |\n| 6 | A ruby worth D6x15 gc |\n\nIf your warband does not sell the gems, one of your Heroes may keep them and displays them proudly. He will gain +1 to the rolls for locating rare items as merchants flock to such an obviously wealthy warrior.",
+      "| D6 | Result |\n|---|---|\n| 1-2 | Quartz stones worth D6x5 gc |\n| 3-4 | Amethyst worth 20 gc |\n| 5 | Necklace worth 50 gc |\n| 6 | A ruby worth D6x15 gc |\n\nIf your warband does not sell the gems, one of your Heroes may keep them and displays them proudly. He will gain +1 to the rolls for locating rare items as merchants flock to such an obviously wealthy warrior.",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to see what you find:",
@@ -650,7 +650,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "You have come within sight of the Pit, the huge crater created by the comet. A black cloud still rises from it but you can see glowing wyrdstone everywhere. This is the domain of the Shadow Lord, the lord of the Possessed, and no-one is welcome here – even his own followers!",
     rules:
-      "If you wish, you can send one of your Heroes to search for any wyrdstone hidden here. Roll a D6. On a roll of 1 the Hero is devoured by the guardians of the Pit and never seen again. On a roll of 2 or more he returns with D6+1 shards of wyrdstone.",
+      "On a roll of 1 the Hero is devoured by the guardians of the Pit and never seen again. On a roll of 2 or more he returns with D6+1 shards of wyrdstone.",
     subRoll: {
       die: "D6",
       prompt: "If you wish, you can send one of your Heroes to search for any wyrdstone hidden here. Roll a D6.",
@@ -694,7 +694,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "You find a solidly built stone workshop. A runic inscription indicates that this may have been a Dwarf smithy.",
     rules:
-      "Roll a D6 to see what you find:\n\n| D6 | Result |\n|---|---|\n| 1 | D3 Double-handed axes |\n| 2 | D3 Suits of Heavy Armour |\n| 3 | Gromril Axe |\n| 4 | Gromril Hammer |\n| 5 | Double-handed Gromril Axe |\n| 6 | Gromril Armour |",
+      "| D6 | Result |\n|---|---|\n| 1 | D3 Double-handed axes |\n| 2 | D3 Suits of Heavy Armour |\n| 3 | Gromril Axe |\n| 4 | Gromril Hammer |\n| 5 | Double-handed Gromril Axe |\n| 6 | Gromril Armour |",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6 to see what you find:",
@@ -783,7 +783,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     flavour:
       "You find a fine house which is partially ruined. It has been thoroughly ransacked and all the furniture has been stripped of its fine fabrics. Shards of broken pottery of the finest quality are scattered over the floor.",
     rules:
-      "Roll a D6. If you roll 1-2, you find D6x10 gc worth of items and money to add to your treasury. On a roll of 3-4, you find D6 vials of Crimson Shade. On a roll of 5-6 you find a hidden magical artefact carefully concealed in a hidden cellar or behind a secret door. Roll on the Magical Artefacts table.",
+      "If you roll 1-2, you find D6x10 gc worth of items and money to add to your treasury. On a roll of 3-4, you find D6 vials of Crimson Shade. On a roll of 5-6 you find a hidden magical artefact carefully concealed in a hidden cellar or behind a secret door. Roll on the Magical Artefacts table.",
     subRoll: {
       die: "D6",
       prompt: "Roll a D6.",

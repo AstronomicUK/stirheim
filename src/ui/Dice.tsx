@@ -85,8 +85,8 @@ export interface DicePickerProps {
   /** How many dice this roll wants: 1 for a D6, 2 for a 2D6. */
   count?: number
   sides?: number
-  /** Fires once every die has a face. */
-  onComplete: (values: number[]) => void
+  /** Fires once every die has a face. `manual` is false once any die in this roll used the Roll button. */
+  onComplete: (values: number[], manual: boolean) => void
   /** Screen-reader name for the whole group ("To hit", "Cast the spell"). */
   label: string
   disabled?: boolean
@@ -120,6 +120,8 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
   const timers = useRef<number[]>([])
   // Mirrors `values` so two taps landing in the same frame do not both read the pre-tap array.
   const latest = useRef<(number | null)[]>(Array<number | null>(count).fill(null))
+  // The Roll button overwrites every die at once, so one flag for the whole picker is enough.
+  const rolledViaButton = useRef(false)
 
   useEffect(() => {
     const held = timers
@@ -132,7 +134,7 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
   function settle(next: (number | null)[]) {
     latest.current = next
     setValues(next)
-    if (next.every((v) => v !== null)) onComplete(next as number[])
+    if (next.every((v) => v !== null)) onComplete(next as number[], !rolledViaButton.current)
   }
 
   function set(index: number, value: number) {
@@ -144,6 +146,7 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
 
   function rollAll() {
     if (disabled) return
+    rolledViaButton.current = true
     const result = Array.from({ length: count }, () => rollDie(sides))
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     if (reduced) {
@@ -222,13 +225,15 @@ export interface RollResultProps {
   headline: string
   detail?: string
   tone: 'good' | 'bad' | 'neutral'
+  /** Whether the app rolled this (the Roll button) or a face was tapped in by hand; omitted when unknown. */
+  manual?: boolean
 }
 
 /**
  * The confirmation after a roll: the faces themselves, large, with what they mean. Shown in place
  * of a line of log text so a result registers before the next step is asked for.
  */
-export function RollResult({ dice, headline, detail, tone }: RollResultProps) {
+export function RollResult({ dice, headline, detail, tone, manual }: RollResultProps) {
   const dieTone: DieTone = tone === 'good' ? 'good' : tone === 'bad' ? 'bad' : 'plain'
   const ring = tone === 'good' ? 'border-ok/60 bg-ok/5' : tone === 'bad' ? 'border-accent/60 bg-accent/5' : 'border-border bg-surface-low'
   return (
@@ -241,6 +246,7 @@ export function RollResult({ dice, headline, detail, tone }: RollResultProps) {
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-ink">{headline}</span>
         {detail ? <span className="block text-xs leading-relaxed text-ink-dim">{detail}</span> : null}
+        {manual !== undefined ? <span className="block text-[10px] uppercase tracking-wide text-ink-dim">{manual ? 'Entered by hand' : 'Rolled by the app'}</span> : null}
       </span>
     </div>
   )

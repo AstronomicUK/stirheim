@@ -31,6 +31,8 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
   const id = useId()
   const [text, setText] = useState(value === null ? '' : String(value))
   const [seen, setSeen] = useState(value)
+  // Which way the current value arrived, for the "app-rolled" / "entered" tag; unknown until typed or rolled here.
+  const [manual, setManual] = useState<boolean | null>(null)
 
   const valid = (n: number | null): n is number => n !== null && Number.isInteger(n) && n >= 1 && n <= sides
 
@@ -40,20 +42,25 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
     const parsed = parse(text)
     if (value === null) {
       if (valid(parsed)) setText('')
+      setManual(null)
     } else if (parsed !== value) {
+      // Arrived from outside (a parent rolling several dice at once, say): our own text/roll didn't produce it.
       setText(String(value))
+      setManual(null)
     }
   }
 
   function handle(next: string) {
     setText(next)
     const parsed = parse(next)
+    setManual(valid(parsed) ? true : null)
     onChange(valid(parsed) ? parsed : null)
   }
 
   function roll() {
     const result = rollDie(sides)
     setText(String(result))
+    setManual(false)
     onChange(result)
   }
 
@@ -97,6 +104,8 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
         <p id={`${id}-error`} className="text-xs text-accent-strong">
           1 to {sides}
         </p>
+      ) : manual !== null ? (
+        <p className="text-[10px] text-ink-dim">{manual ? 'Entered' : 'App-rolled'}</p>
       ) : null}
     </div>
   )

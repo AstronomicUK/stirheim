@@ -106,6 +106,8 @@ export interface NewMatchForm {
   notes: string
   /** Map campaigns: the district; null when the campaign is not on the map. */
   districtId?: string | null
+  /** The scenario came from "Roll for a scenario" rather than being picked by hand. */
+  randomlyChosen?: boolean
 }
 
 export interface NewMatchOptions {
@@ -149,6 +151,7 @@ export function validateNewMatch(form: NewMatchForm, options: NewMatchOptions): 
       scheduledFor,
       notes: form.notes.trim(),
       districtId: form.districtId ?? null,
+      scenarioRandomlyChosen: form.scenario.kind === 'none' ? false : (form.randomlyChosen ?? false),
     },
   }
 }

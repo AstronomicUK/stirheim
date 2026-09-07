@@ -58,6 +58,8 @@ export interface MatchSummary {
   district_id: string | null
   /** How that district was arrived at; null while it is still open. */
   district_decided_by: 'scheduled' | 'agreed' | 'roll_off' | null
+  /** The scenario came from "Roll for a scenario" rather than being picked by hand. */
+  scenario_randomly_chosen: boolean
   created_at: string
   updated_at: string
   participants: MatchParticipantView[]
@@ -126,6 +128,7 @@ function toSummary(row: MatchQueryRow, userId: string | undefined, aliases?: Ali
     notes: row.notes,
     district_id: row.district_id ?? null,
     district_decided_by: row.district_decided_by ?? null,
+    scenario_randomly_chosen: row.scenario_randomly_chosen,
     created_at: row.created_at,
     updated_at: row.updated_at,
     participants: row.match_participants
@@ -207,6 +210,8 @@ export interface ScheduleMatchInput {
   notes?: string
   /** Map campaigns: where the battle is fought. */
   districtId?: string | null
+  /** The scenario came from "Roll for a scenario" rather than being picked by hand. */
+  scenarioRandomlyChosen?: boolean
 }
 
 export async function scheduleMatch(input: ScheduleMatchInput): Promise<string> {
@@ -218,6 +223,7 @@ export async function scheduleMatch(input: ScheduleMatchInput): Promise<string> 
     p_scheduled_for: input.scheduledFor ?? undefined,
     p_notes: input.notes ?? '',
     p_district_id: input.districtId ?? undefined,
+    p_scenario_randomly_chosen: input.scenarioRandomlyChosen ?? false,
   })
   if (error) throw new Error(error.message)
   return data

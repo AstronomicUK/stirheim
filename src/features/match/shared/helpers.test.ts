@@ -55,6 +55,7 @@ function match(partial: Partial<MatchSummary>): MatchSummary {
     notes: '',
     district_id: null,
     district_decided_by: null,
+    scenario_randomly_chosen: false,
     created_at: `2026-09-0${(n % 9) + 1}T09:00:00.000Z`,
     updated_at: '2026-09-04T09:00:00.000Z',
     participants: [WATCH, ESHIN],
@@ -117,6 +118,12 @@ describe('labels', () => {
     expect(scenarioTitle(match({ custom_scenario_id: 'cs1', custom_scenario_name: 'The Bell Tower' }))).toBe('The Bell Tower')
     expect(scenarioTitle(match({ custom_scenario_id: 'cs1' }))).toBe('Custom scenario')
     expect(scenarioTitle(match({}))).toBe(SCENARIO_AT_THE_TABLE)
+  })
+
+  it('says when a scenario was randomly chosen, but not for "decide at the table"', () => {
+    expect(scenarioTitle(match({ scenario_rules_id: 'wyrdstone_hunt', scenario_randomly_chosen: true }))).toBe('Wyrdstone Hunt (randomly chosen)')
+    expect(scenarioTitle(match({ custom_scenario_id: 'cs1', custom_scenario_name: 'The Bell Tower', scenario_randomly_chosen: true }))).toBe('The Bell Tower (randomly chosen)')
+    expect(scenarioTitle(match({ scenario_randomly_chosen: true }))).toBe(SCENARIO_AT_THE_TABLE)
   })
 
   it('links to the scenario page that has the text', () => {

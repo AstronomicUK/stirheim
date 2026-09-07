@@ -98,8 +98,9 @@ export function BattlePage() {
 }
 
 function scenarioName(match: MatchSummary): string {
-  if (match.scenario_rules_id) return findScenario(match.scenario_rules_id)?.title ?? match.scenario_rules_id
-  return match.custom_scenario_name ?? 'Scenario to be decided'
+  const suffix = match.scenario_randomly_chosen ? ' (randomly chosen)' : ''
+  if (match.scenario_rules_id) return (findScenario(match.scenario_rules_id)?.title ?? match.scenario_rules_id) + suffix
+  return match.custom_scenario_name ? match.custom_scenario_name + suffix : 'Scenario to be decided'
 }
 
 function Battle({ match, sessions, events, userId }: { match: MatchSummary; sessions: BattleSessionView[]; events: BattleEventRow[]; userId: string | undefined }) {

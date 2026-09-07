@@ -75,6 +75,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   const [opponentIds, setOpponentIds] = useState<string[]>([])
   const [source, setSource] = useState<ScenarioSource>('core')
   const [scenario, setScenario] = useState<ScenarioPick>(NO_SCENARIO)
+  const [randomlyChosen, setRandomlyChosen] = useState(false)
   const [search, setSearch] = useState('')
   const [scheduledLocal, setScheduledLocal] = useState('')
   const [notes, setNotes] = useState('')
@@ -106,13 +107,14 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   }
 
   function choose(pick: ScenarioPick) {
+    setRandomlyChosen(false)
     setScenario((current) => (samePick(current, pick) ? NO_SCENARIO : pick))
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, scheduledLocal, notes, districtId }, { mode, myWarbandIds, requireDistrict: settings.mapCampaign && !decideLater })
+    const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, randomlyChosen, scheduledLocal, notes, districtId }, { mode, myWarbandIds, requireDistrict: settings.mapCampaign && !decideLater })
     if (!result.ok) {
       setError(result.error)
       return
@@ -236,6 +238,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
           }}
           onUseScenario={(id) => {
             setSource('core')
+            setRandomlyChosen(false)
             setScenario({ kind: 'builtin', id })
           }}
           currentScenarioId={scenario.kind === 'builtin' ? scenario.id : null}
@@ -255,6 +258,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
           disabled={schedule.isPending}
           onPick={(option) => {
             setSource(option.id.startsWith('custom:') ? 'custom' : 'core')
+            setRandomlyChosen(true)
             setScenario(option.id.startsWith('custom:') ? { kind: 'custom', id: option.id.slice('custom:'.length) } : { kind: 'builtin', id: option.id })
           }}
         />
@@ -317,10 +321,18 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
 
         <p className="text-sm text-ink-dim">
           Selected: <span className="text-ink">{selectedLabel}</span>
+          {scenario.kind !== 'none' && randomlyChosen ? <span className="text-ink-dim"> (randomly chosen)</span> : null}
           {scenario.kind !== 'none' ? (
             <>
               {' '}
-              <button type="button" onClick={() => setScenario(NO_SCENARIO)} className="text-brass underline-offset-4 hover:underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setRandomlyChosen(false)
+                  setScenario(NO_SCENARIO)
+                }}
+                className="text-brass underline-offset-4 hover:underline"
+              >
                 Clear
               </button>
             </>

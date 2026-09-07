@@ -586,7 +586,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll) => advance((s) => applyRoll(s, roll), { value: roll, label: 'Their roll' }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
-  const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral' } | null>(null)
+  const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral'; manual?: boolean } | null>(null)
   const stateRef = useRef<RollState | null>(null)
   const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
   const [logError, setLogError] = useState<string | null>(null)
@@ -630,14 +630,14 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function advance(step: (s: RollState) => RollState, rolled?: { value: number; label: string }) {
+  function advance(step: (s: RollState) => RollState, rolled?: { value: number; label: string; manual?: boolean }) {
     const current = stateRef.current
     if (!current) return
     const next = step(current)
     stateRef.current = next
     setState(next)
     const line = next.log.at(-1)
-    if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone })
+    if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone, manual: rolled.manual })
     else if (!rolled) setShown(null)
     if (next.done && !current.done) onFinished(next)
   }
@@ -648,7 +648,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
         <p className="text-sm text-ink-dim">Nothing to roll: this warrior has no attacks against that target.</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {shown ? <RollResult dice={[shown.value]} headline={shown.label} detail={shown.text} tone={shown.tone} /> : null}
+          {shown ? <RollResult dice={[shown.value]} headline={shown.label} detail={shown.text} tone={shown.tone} manual={shown.manual} /> : null}
           {state.pending ? (
             <div className={`flex flex-col gap-2 rounded-md border px-3 py-3 ${state.pending.who === 'defender' ? 'border-accent/60 bg-accent/5' : 'border-brass/50 bg-surface-low'}`}>
               {state.pending.who === 'defender' ? (
@@ -694,7 +694,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                   count={1}
                   label={state.pending.label}
                   resetKey={state.log.length}
-                  onComplete={(values) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label })}
+                  onComplete={(values, manual) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label, manual })}
                 />
               )}
               {state.pending.optional ? (

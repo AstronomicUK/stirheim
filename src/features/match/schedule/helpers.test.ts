@@ -62,7 +62,7 @@ describe('validateNewMatch', () => {
     const result = validateNewMatch({ ...base, scenario: { kind: 'builtin', id: 'skirmish' } }, { mode: 'gm', myWarbandIds: [] })
     expect(result).toEqual({
       ok: true,
-      input: { campaignId: 'c1', warbandIds: ['a', 'b'], scenarioRulesId: 'skirmish', customScenarioId: null, scheduledFor: null, notes: 'Friday at the club', districtId: null },
+      input: { campaignId: 'c1', warbandIds: ['a', 'b'], scenarioRulesId: 'skirmish', customScenarioId: null, scheduledFor: null, notes: 'Friday at the club', districtId: null, scenarioRandomlyChosen: false },
     })
   })
 

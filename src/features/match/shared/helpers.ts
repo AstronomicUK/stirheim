@@ -105,14 +105,15 @@ export function versusLabel(participants: Pick<MatchParticipantView, 'warband_na
   return participants.map((p) => p.warband_name).join(' vs ')
 }
 
-type Scenarioed = Pick<MatchSummary, 'scenario_rules_id' | 'custom_scenario_id' | 'custom_scenario_name'>
+type Scenarioed = Pick<MatchSummary, 'scenario_rules_id' | 'custom_scenario_id' | 'custom_scenario_name' | 'scenario_randomly_chosen'>
 
 export const SCENARIO_AT_THE_TABLE = 'Scenario decided at the table'
 
 /** Built-in title from the rules data, the custom scenario's name, or the "decide at the table" line. */
 export function scenarioTitle(m: Scenarioed): string {
-  if (m.scenario_rules_id) return findScenario(m.scenario_rules_id)?.title ?? m.scenario_rules_id.replace(/_/g, ' ')
-  if (m.custom_scenario_id) return m.custom_scenario_name ?? 'Custom scenario'
+  const suffix = m.scenario_randomly_chosen ? ' (randomly chosen)' : ''
+  if (m.scenario_rules_id) return (findScenario(m.scenario_rules_id)?.title ?? m.scenario_rules_id.replace(/_/g, ' ')) + suffix
+  if (m.custom_scenario_id) return (m.custom_scenario_name ?? 'Custom scenario') + suffix
   return SCENARIO_AT_THE_TABLE
 }
 

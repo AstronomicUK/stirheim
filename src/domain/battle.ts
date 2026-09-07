@@ -54,7 +54,8 @@ export type CastRecord = z.infer<typeof castRecordSchema>;
 
 export const battleLiveStateSchema = z.object({
   version: z.literal(BATTLE_LIVE_STATE_VERSION).default(BATTLE_LIVE_STATE_VERSION),
-  turn: z.number().int().min(0).default(0),
+  /** A game starts at turn 1; the min stays 0 so a GM can still correct it back down. */
+  turn: z.number().int().min(0).default(1),
   /** Whether this warband has voluntarily routed / failed a rout test. */
   routed: z.boolean().default(false),
   /** Wyrdstone shards picked up during the battle (scenario objectives). */

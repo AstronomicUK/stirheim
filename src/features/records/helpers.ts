@@ -63,6 +63,21 @@ export function resultLabel(result: RecordResult, state?: MatchState): string {
   return RESULT_LABELS[result]
 }
 
+/**
+ * Do the reports filed so far for one match actually agree? Each side files independently (nothing
+ * stops it), so this catches the shapes that can never both be true: two "won"s, a "draw" alongside
+ * a non-draw, or — once every side has reported — nobody having won or drawn at all.
+ */
+export function resultsConflict(reports: readonly ReportView[], participantCount: number): boolean {
+  if (reports.length < 2) return false
+  const wins = reports.filter((r) => r.result === 'won').length
+  const draws = reports.filter((r) => r.result === 'draw').length
+  if (draws > 0 && draws < reports.length) return true
+  if (wins > 1) return true
+  if (reports.length === participantCount && wins === 0 && draws === 0) return true
+  return false
+}
+
 /** The first line of the notes, cut to `max` characters with an ellipsis. */
 export function notesExcerpt(notes: string, max = 80): string {
   const first = notes.trim().split(/\r?\n/)[0] ?? ''

@@ -704,7 +704,7 @@ Verified live on local dev: fought a fresh Reikland Watch battle, reached the Ad
 
 ### 38. Both sides of a match can file contradictory results, and nothing flags it
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -724,6 +724,14 @@ to correct one side.
 
 **How to replicate:** Ruins of the Stir → **Battle records** → the Skirmish of Mon 7 Sept, 17:09.
 Reikland Watch shows *Draw*; The Argent Hammer shows *Lost*.
+
+**Fix:** built exactly the two-part approach the notes suggested — surface, don't block, since a GM may genuinely need to correct one side after the fact.
+
+- **On the Outcome step:** now reads the shared `match_reports` for the match (the same `useMatchReports` hook already used by the records page). If the other side has already filed, their result shows above the picker ("Reikland Watch already filed — won"); if the result being picked here is incompatible with theirs, a warning Notice explains exactly why, without blocking `Next` or filing — a GM correcting a report is a legitimate reason to knowingly override it. "Incompatible" is a plain pairwise rule: both sides can't have won, both can't have lost, and one side can't call it a draw while the other doesn't.
+- **On the Battle Records page:** each match card now runs the same conflict check against every report actually filed for that match (`record.reports`, not the page's own filtered/sorted row list — a warband or result filter must never hide a real conflict or manufacture a fake one) and shows "These reports don't agree" when the filed results can't all be true at once. Once every side for a match has reported, it also catches the case where nobody won or drew (everyone claims "lost") — a shape that's impossible without also saying who won.
+- Both surfaces share the same pairwise `resultsConflict`-style logic (records/helpers.ts's version takes the full report list plus how many participants there are, so it can also catch "everyone lost" once every side is in; the Outcome step's own smaller version just compares the one result being chosen against whatever's filed so far).
+
+Verified live on local dev: the seeded contradictory match (Reikland Watch "Draw" / The Argent Hammer "Lost") now shows "These reports don't agree" on Battle Records, and no other match does. Separately, opened an awaiting-reports match where Reikland Watch had already filed "Won" and started The Argent Hammer's own report: picking "Won" showed "This doesn't match what the other side filed"; picking "Lost" showed nothing, as expected. `tsc -b`, `oxlint` and the full `vitest run` suite (1181 passed, including 6 new tests for the conflict rule covering every combination) all clean.
 
 ### 39. The recruit screens show nine bare stat numbers with no M/WS/BS/S/T/W/I/A/Ld headings
 

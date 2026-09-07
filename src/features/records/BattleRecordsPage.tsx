@@ -22,6 +22,7 @@ import {
   recordRows,
   recordsFileName,
   resultLabel,
+  resultsConflict,
   warbandOptions,
   warbandTotals,
   type RecordFilters,
@@ -205,6 +206,9 @@ function RecordsView({ campaignId, campaignName, records }: { campaignId: string
 
 function RecordCard({ record, rows }: { record: BattleRecord; rows: RecordRow[] }) {
   const date = rows[0]?.date ?? null
+  // Checked against every report filed for the match, not just the rows this view happens to be
+  // showing — a warband/result filter must not hide a real conflict or invent one that isn't there.
+  const conflict = resultsConflict(record.reports, record.participants.length)
   return (
     <li>
       <Card className="flex flex-col">
@@ -218,6 +222,13 @@ function RecordCard({ record, rows }: { record: BattleRecord; rows: RecordRow[] 
             <MatchStateTag state={record.state} />
           </span>
         </Link>
+        {conflict ? (
+          <div className="px-4 pt-3">
+            <Notice tone="warn" title="These reports don't agree">
+              The results filed for this battle are inconsistent with each other — a GM should check them and correct whichever side is wrong.
+            </Notice>
+          </div>
+        ) : null}
         <ul className="flex flex-col divide-y divide-border/60 border-t border-border">
           {rows.map((row) => (
             <RecordLine key={row.warband_id} row={row} />

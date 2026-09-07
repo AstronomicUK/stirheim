@@ -3,6 +3,7 @@
 
 import { useState, type ReactNode } from 'react'
 import type { MatchParticipantView, MatchSummary } from '../../../api/matches'
+import type { ReportView } from '../../../api/reports'
 import { rollDie } from '../../../rules/resolve/dice'
 import { D66_SIDES } from '../../../rules/resolve/dice'
 import { Button, DieField } from '../../../ui'
@@ -16,6 +17,8 @@ export interface StepProps {
   match: MatchSummary
   mine: MatchParticipantView
   opponents: MatchParticipantView[]
+  /** Reports the other side(s) have already filed for this match, if any. */
+  opponentReports: ReportView[]
   /** Set when the GM is amending a filed report: the note is required and shown in the change log. */
   amend?: { note: string; onNote: (note: string) => void }
 }

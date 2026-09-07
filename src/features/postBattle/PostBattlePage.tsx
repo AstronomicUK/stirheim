@@ -9,7 +9,7 @@ import { useCampaign } from '../../api/campaigns'
 import { useBattleEvents, useBattleSessions, useMatch, useMatchRoster, type MatchParticipantView, type MatchSummary } from '../../api/matches'
 import { applyBattleEvents, emptyBattleLiveState } from '../../domain'
 import { advanceKeys } from '../../api/advances'
-import { useSubmitBattleReport } from '../../api/reports'
+import { useMatchReports, useSubmitBattleReport } from '../../api/reports'
 import { warbandKeys } from '../../api/warbands'
 import { applyWizardAdvances } from './applyAdvances'
 import { useSession } from '../../app/session'
@@ -187,6 +187,11 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   }, [draft, seed, rosterData.roster, liveState])
 
   const opponents = useMemo(() => match.participants.filter((p) => p.warband_id !== participant.warband_id), [match.participants, participant.warband_id])
+  const matchReports = useMatchReports(match.id)
+  const opponentReports = useMemo(
+    () => (matchReports.data ?? []).filter((r) => r.warband_id !== participant.warband_id),
+    [matchReports.data, participant.warband_id],
+  )
   const ctx = useMemo<ReportContext>(
     () => ({
       roster: rosterData.roster,
@@ -254,7 +259,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
     navigate(`/matches/${match.id}`, { replace: true })
   }
 
-  const stepProps = { draft, derived, ctx, update, match, mine: participant, opponents, amend: amending ? { note: amendNote, onNote: setAmendNote } : undefined }
+  const stepProps = { draft, derived, ctx, update, match, mine: participant, opponents, opponentReports, amend: amending ? { note: amendNote, onNote: setAmendNote } : undefined }
 
   return (
     <>

@@ -10,16 +10,37 @@ const RESULTS: { value: ReportResult; label: string }[] = [
   { value: 'draw', label: 'Draw' },
 ]
 
-export function OutcomeStep({ draft, derived, update, mine, opponents }: StepProps) {
+const RESULT_LABEL: Record<ReportResult, string> = { won: 'won', lost: 'lost', draw: 'drew' }
+
+/** Two sides can't both have won, both have lost, or have one call it a draw and the other not. */
+function conflicts(mine: ReportResult, theirs: ReportResult): boolean {
+  if (mine === 'draw' || theirs === 'draw') return mine !== theirs
+  return mine === theirs
+}
+
+export function OutcomeStep({ draft, derived, update, mine, opponents, opponentReports }: StepProps) {
   const highest = opponents.reduce<number | null>((best, o) => (best === null || o.rating > best ? o.rating : best), null)
   const bonus = derived.xp.underdogAvailable
+  const conflicting = draft.result ? opponentReports.filter((r) => conflicts(draft.result!, r.result)) : []
   return (
     <StepBody title="How did it go?">
       <Intro>Each side files its own report. Winning gives the leader +1 experience and one more exploration die.</Intro>
+      {opponentReports.length > 0 ? (
+        <Card className="px-4 py-2">
+          {opponentReports.map((r) => (
+            <Row key={r.warband_id} label={`${r.warband_name} already filed`} value={RESULT_LABEL[r.result]} dim />
+          ))}
+        </Card>
+      ) : null}
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink-dim">Result for {mine.warband_name}</span>
         <SegmentedControl options={RESULTS} value={draft.result ?? ('' as ReportResult)} onChange={(r) => update((d) => setResult(d, r))} label="Battle result" />
       </div>
+      {conflicting.length > 0 ? (
+        <Notice tone="warn" title="This doesn't match what the other side filed">
+          {conflicting.map((r) => `${r.warband_name} already filed that they ${RESULT_LABEL[r.result]}`).join('; ')}. One side has this wrong — a GM can amend either report from the match page.
+        </Notice>
+      ) : null}
       <SwitchRow
         label="The warband routed"
         description="Failed a rout test or withdrew voluntarily. Recorded for the record; it does not change the rules below."

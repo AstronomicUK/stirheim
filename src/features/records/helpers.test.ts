@@ -11,6 +11,7 @@ import {
   recordsFileName,
   reportSummary,
   resultLabel,
+  resultsConflict,
   summariseInjuries,
   warbandOptions,
   warbandTotals,
@@ -280,5 +281,32 @@ describe('recordsFileName', () => {
   })
   it('falls back when nothing survives', () => {
     expect(recordsFileName('***')).toBe('stirheim-campaign-battle-records.csv')
+  })
+})
+
+describe('resultsConflict', () => {
+  it('one report alone is never a conflict', () => {
+    expect(resultsConflict([report({ result: 'won' })], 2)).toBe(false)
+  })
+
+  it('one side drew and the other did not: a conflict, exactly the reported bug', () => {
+    expect(resultsConflict([report({ warband_id: 'watch', result: 'draw' }), report({ warband_id: 'hammer', result: 'lost' })], 2)).toBe(true)
+  })
+
+  it('a normal win/loss pair agrees', () => {
+    expect(resultsConflict([report({ warband_id: 'watch', result: 'won' }), report({ warband_id: 'hammer', result: 'lost' })], 2)).toBe(false)
+  })
+
+  it('both sides drawing agrees', () => {
+    expect(resultsConflict([report({ warband_id: 'watch', result: 'draw' }), report({ warband_id: 'hammer', result: 'draw' })], 2)).toBe(false)
+  })
+
+  it('two winners cannot both be right', () => {
+    expect(resultsConflict([report({ warband_id: 'watch', result: 'won' }), report({ warband_id: 'hammer', result: 'won' })], 2)).toBe(true)
+  })
+
+  it('everyone reporting a loss, with nobody left to have won, is a conflict once all sides are in', () => {
+    expect(resultsConflict([report({ warband_id: 'watch', result: 'lost' })], 2)).toBe(false) // the other side hasn't filed yet
+    expect(resultsConflict([report({ warband_id: 'watch', result: 'lost' }), report({ warband_id: 'hammer', result: 'lost' })], 2)).toBe(true)
   })
 })

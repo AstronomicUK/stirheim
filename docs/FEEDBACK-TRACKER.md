@@ -1005,13 +1005,15 @@ A reasonable fix would follow that same pattern: a persistent flag (`pitFightOwe
 
 ### 55. The battle page crashes for any warband holding a hired sword
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🔴 High
 **Reported:** n/a — found by the rules-audit session auditing magic and prayers, reviewed by Tom before being handed over; confirmed live
 
 > "The battle page throws as soon as the warband has any hired sword. `castersOf` builds its list as `[...roster.heroes, ...(roster.hiredSwords as unknown as RosterHero[])]`, but `RosterHiredSword` has no `spellIds` field — not in the type, not from `hireHiredSword`, and not from `toRosterHiredSword` when a roster is loaded from the database. `loreForCaster` then reads `hero.spellIds.length` and throws `TypeError: Cannot read properties of undefined (reading 'length')`. I confirmed it live: hiring a plain Pit Fighter, who casts nothing, is enough. `BattlePage.tsx:286` calls `castersOf` in an unguarded `useMemo` to decide whether to show the Cast tab, and `CastTab.tsx:36` calls it again. Adding `spellIds` to the hired sword type and both builders fixes it and unblocks finding 2. This is the most serious thing in this audit and is not really a magic gap at all — it breaks the battle page for any warband with a hired sword." (`docs/MAGIC-RULES-GAPS.md` A1, source: `src/features/match/battle/casters.ts`)
 
 **Notes:** This is a live crash, not a rules-fidelity gap — any warband that has ever hired a hired sword (of any kind, caster or not) cannot open its own battle page at all once that hired sword is on the roster. Given the severity, fixing this is the immediate next thing after logging it, ahead of the rest of this batch.
+
+**Fixed:** Added `spellIds: string[]` to `RosterHiredSword`, populated from `hero_row.spells` in `toRosterHiredSword` (same source `toRosterHero` already reads) and as `[]` in `hireHiredSword`. Verified live: hired a Human Scout onto Reikland Watch, started and opened a battle sheet — renders correctly under Heroes & Hired Swords with no crash. `tsc --noEmit` and the battle-feature test suite both pass; no other construction site for `RosterHiredSword` needed updating. Commit `9efcb74`.
 
 ### 56. No hired sword or Dramatis Persona can ever hold or cast a spell
 

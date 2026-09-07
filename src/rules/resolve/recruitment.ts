@@ -40,7 +40,7 @@ import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
 import { RulesError } from "./errors";
 import { freeDaggerLine } from "./freeDagger";
 import { unitRules } from "../data/campaignRules";
-import { unitStartingStats } from "./builder";
+import { startingLevelUps, unitStartingStats } from "./builder";
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
 
 /** RulesError code when a second hired sword of the same type is hired. */
@@ -142,7 +142,7 @@ export function recruitHero(
     unitTemplateId: unit.id,
     stats: unitStartingStats(unit),
     xp: unit.startingExperience,
-    levelUps: 0,
+    levelUps: startingLevelUps(unit, "hero"),
     skillTableIds: [...unit.skillTableIds],
     skillIds: [...(unitRules(unit.id).startingSkillIds ?? [])],
     spellIds: [],
@@ -280,7 +280,7 @@ export function recruitHenchmen(
       size,
       stats: unitStartingStats(unit),
       xp: unit.startingExperience,
-      levelUps: 0,
+      levelUps: startingLevelUps(unit, "henchman"),
       statIncreases: {},
       equipment: groupDagger ? [{ itemId: groupDagger.itemId, ...(groupDagger.itemId ? {} : { customName: groupDagger.name }), quantity: size }] : [],
     };

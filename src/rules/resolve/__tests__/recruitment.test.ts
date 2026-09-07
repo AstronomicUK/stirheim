@@ -92,7 +92,7 @@ describe("recruitHero", () => {
       name: "Hans",
       unitTemplateId: CAPTAIN,
       xp: 20,
-      levelUps: 0,
+      levelUps: 8, // thresholds 2,4,6,8,11,14,17,20 already crossed by his starting experience
       status: "active",
       // The list's free dagger comes with the hire.
       equipment: [{ itemId: "dagger", quantity: 1 }],

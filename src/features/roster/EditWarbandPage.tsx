@@ -15,6 +15,7 @@ import { GroupEditor } from './view/GroupEditor'
 import { HeroEditor } from './view/HeroEditor'
 import { ItemsEditor, type HolderOption } from './view/ItemsEditor'
 import { normaliseDraft, validateDraft, type DraftErrors } from './view/validate'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 /** Used only when a hired sword entry has no profile in the data; the player corrects it by hand. */
 const FALLBACK_STATS: Stats = { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
@@ -46,6 +47,7 @@ export function EditWarbandPage() {
 }
 
 function Editor({ detail }: { detail: WarbandDetail }) {
+  usePageTitle(`Edit · ${detail.warband.name}`)
   const navigate = useNavigate()
   const profile = useSession((s) => s.profile)
   const update = useUpdateRoster(detail.warband.id)

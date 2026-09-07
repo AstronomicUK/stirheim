@@ -26,6 +26,7 @@ import { ImportFixups } from './view/ImportFixups'
 import { ImportQuestions } from './view/ImportQuestions'
 import { GrimoireCard } from './view/GrimoireCard'
 import { PendingBattleCard } from './view/PendingBattleCard'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 
 export function WarbandPage() {
@@ -56,6 +57,7 @@ export function WarbandPage() {
 
 function WarbandView({ detail }: { detail: WarbandDetail }) {
   const { warband, heroes, groups, items, roster } = detail
+  usePageTitle(warband.name)
   const navigate = useNavigate()
   const user = useSession((s) => s.user)
   const update = useUpdateRoster(warband.id)

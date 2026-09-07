@@ -4,11 +4,13 @@ import { useCampaignPreview, useJoinCampaign, useMyCampaigns } from '../../api/c
 import { useMyWarbands, type WarbandSummary } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { Button, Notice, PageHeader, Spinner, TextField } from '../../ui'
 import { Card, Section, Tag, TextLink } from './bits'
 import { formatInviteCode, isCompleteInviteCode, normaliseInviteCode } from './inviteCode'
 
 export function JoinCampaignPage() {
+  usePageTitle('Join a campaign')
   const { code: prefill } = useParams<{ code: string }>()
   const navigate = useNavigate()
   const user = useSession((s) => s.user)

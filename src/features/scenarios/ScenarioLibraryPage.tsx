@@ -6,6 +6,7 @@ import type { ScenarioRow } from '../../domain'
 import { Notice, PageHeader, SegmentedControl, Spinner, TextField } from '../../ui'
 import { PrimaryLink, ScenarioRows, Section, Tag, type ScenarioRowItem } from './bits'
 import { ALL_SETTINGS, coreScenarios, filterScenarios, libraryScenarios, settingsPresent, type SettingFilter } from './helpers'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 const CORE = coreScenarios()
 const LIBRARY = libraryScenarios()
@@ -15,6 +16,7 @@ const SETTING_OPTIONS: { value: SettingFilter; label: string }[] = [
 ]
 
 export function ScenarioLibraryPage() {
+  usePageTitle('Scenarios')
   const user = useSession((s) => s.user)
   const custom = useCustomScenarios()
 

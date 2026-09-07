@@ -32,11 +32,13 @@ import {
   type RowProblem,
   type TargetField,
 } from './model'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export function ImportPage() {
   const { id } = useParams<{ id: string }>()
   const query = useCampaign(id)
   const user = useSession((s) => s.user)
+  usePageTitle(query.data ? `Import battle records · ${query.data.campaign.name}` : 'Import battle records')
 
   if (query.isPending) {
     return (

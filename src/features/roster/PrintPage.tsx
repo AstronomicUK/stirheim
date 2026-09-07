@@ -9,6 +9,7 @@ import { Notice, Spinner } from '../../ui'
 import { equipmentSummary, unitTypeName, warbandTypeName } from './shared/names'
 import { STAT_ORDER } from './shared/stats'
 import { flagTags, hiredSwordName, itemsByHolder, skillName, spellName, statusLabel } from './view/lookups'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 
 export function PrintPage() {
@@ -47,6 +48,7 @@ function warriorNotes(hero: HeroRow): string {
 
 function PrintSheet({ detail }: { detail: WarbandDetail }) {
   const { warband, heroes, groups, items, roster } = detail
+  usePageTitle(`Print · ${warband.name}`)
   const template = useMemo(() => findWarbandTemplate(warband.type_rules_id), [warband.type_rules_id])
   const rating = useMemo(() => warbandRating(roster, template), [roster, template])
   const byHolder = useMemo(() => itemsByHolder(items), [items])

@@ -18,6 +18,7 @@ import {
   type ScenarioFormErrors,
   type ScenarioFormValues,
 } from './helpers'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 type RulesView = 'write' | 'preview'
 
@@ -72,6 +73,7 @@ function EditLoader({ id }: { id: string }) {
 }
 
 function ScenarioForm({ existing }: { existing?: ScenarioRow }) {
+  usePageTitle(existing ? `Edit · ${existing.name}` : 'New scenario')
   const navigate = useNavigate()
   const user = useSession((s) => s.user)
   const campaigns = useMyCampaigns(user?.id)

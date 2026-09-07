@@ -19,6 +19,7 @@ import { Card, Section, Tag } from '../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant } from '../match/fight/combatants'
 import { combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, type FightOdds, type OddsSensitivity } from '../match/fight/odds'
 import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, pts, skillGains, statGains, unitsOf, type AnalyserInput, type SideSource, type TemplateSide } from './model'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 type Tab = 'odds' | 'stats' | 'skills'
 
@@ -45,6 +46,7 @@ interface FightChoices {
 const NO_CHOICES: FightChoices = { primaryId: null, offHandId: null, toggles: {} }
 
 export function SimulatorPage() {
+  usePageTitle('Simulator')
   const [tab, setTab] = useState<Tab>('odds')
   const [choices, setChoices] = useState<FightChoices>(NO_CHOICES)
   const [attacker, setAttacker] = useState<SideState>(initialSide)

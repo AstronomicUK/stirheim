@@ -9,6 +9,7 @@ import { useDraftStore } from './builder/draftStore'
 import { compositionSummary, filterTemplates, gradeLabel, gradesPresent, type GradeFilter } from './builder/helpers'
 import { SavedTemplates } from './SavedTemplates'
 import { warbandTypeName } from './shared/names'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 const GRADE_OPTIONS: { value: GradeFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -16,6 +17,7 @@ const GRADE_OPTIONS: { value: GradeFilter; label: string }[] = [
 ]
 
 export function NewWarbandPage() {
+  usePageTitle('Choose a warband')
   const [query, setQuery] = useState('')
   const [grade, setGrade] = useState<GradeFilter>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)

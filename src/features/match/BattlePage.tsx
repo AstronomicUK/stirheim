@@ -15,6 +15,7 @@ import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { RosterWarband } from '../../rules/types/roster'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { Button, Notice, Sheet, Spinner, useIsDesktop } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
 import { FightTab } from './fight/FightTab'
@@ -138,6 +139,7 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
   }
 
   const scenario = scenarioName(match)
+  usePageTitle(`Battle · ${scenario}`)
 
   const endSheet = (
     <Sheet

@@ -27,12 +27,14 @@ import { HeroCard } from './builder/HeroCard'
 import { ProblemsSection } from './builder/ProblemsSection'
 import { SummaryBar } from './builder/SummaryBar'
 import { warbandTypeName } from './shared/names'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export function BuilderPage() {
   const { templateId } = useParams()
   const template = templateId ? findWarbandTemplate(templateId) : undefined
   const draft = useDraftStore((s) => s.draft)
   const start = useDraftStore((s) => s.start)
+  usePageTitle(template ? `New ${template.name} warband` : 'New warband')
 
   if (!template) {
     return (

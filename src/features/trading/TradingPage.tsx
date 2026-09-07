@@ -21,6 +21,7 @@ import { useMatchReports, type ReportView } from '../../api/reports'
 import { phaseInfo, useTrade, type PhaseInfo } from './useTrade'
 import { useMapPerks } from '../map/useMapPerks'
 import { MapPerksCard } from '../map/MapPerksCard'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash' | 'characters'
 
@@ -84,6 +85,7 @@ export function TradingPage() {
 }
 
 function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campaign: WarbandCampaign | null; phase: PhaseInfo }) {
+  usePageTitle(`Trading post · ${detail.warband.name}`)
   const user = useSession((s) => s.user)
   const isOwner = user?.id === detail.warband.owner_id
   const houseRules = useMemo(() => applyHouseRuleDefaults(campaign?.settings.houseRules), [campaign])

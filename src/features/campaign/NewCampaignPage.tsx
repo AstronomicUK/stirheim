@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useCreateCampaign } from '../../api/campaigns'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { Button, Notice, PageHeader, TextField } from '../../ui'
 import { TextLink } from './bits'
 import { SettingsFields } from './SettingsFields'
 import { defaultSettingsForm, settingsFromForm, validateCampaignName, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
 export function NewCampaignPage() {
+  usePageTitle('Start a campaign')
   const navigate = useNavigate()
   const create = useCreateCampaign()
   const [name, setName] = useState('')

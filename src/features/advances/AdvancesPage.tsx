@@ -10,6 +10,7 @@ import { useWarbandCampaign } from '../../api/trading'
 import { useMapPerks } from '../map/useMapPerks'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { Button, Notice, PageHeader, Spinner } from '../../ui'
 import { unitTypeName } from '../roster/shared/names'
 import { Card, Section, Tag } from '../roster/view/bits'
@@ -72,6 +73,7 @@ interface AdvancesViewProps {
 
 function AdvancesView({ detail, pending, history, historyPending, historyError, back }: AdvancesViewProps) {
   const { warband, roster } = detail
+  usePageTitle(`Advancements · ${warband.name}`)
   const campaign = useWarbandCampaign(warband.id)
   const { perks } = useMapPerks(campaign.data?.campaignId, warband.id, Boolean(campaign.data?.settings.mapCampaign))
   const user = useSession((s) => s.user)

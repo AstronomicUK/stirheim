@@ -11,6 +11,7 @@ import {
 } from '../../api/campaigns'
 import { useSession } from '../../app/session'
 import { useTransferWarband } from '../../api/warbands'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { Button, Icon, Notice, SelectField, Sheet, Spinner, TextField } from '../../ui'
 import { Card, Section, TextLink } from './bits'
 import { formatInviteCode } from './inviteCode'
@@ -61,6 +62,7 @@ export function CampaignSettingsPage() {
 
 function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; saved: boolean; setSaved: (saved: boolean) => void }) {
   const { campaign, settings, members } = detail
+  usePageTitle(`${campaign.name}: settings`)
   const navigate = useNavigate()
   const update = useUpdateCampaign(campaign.id)
   const regenerate = useRegenerateInviteCode(campaign.id)

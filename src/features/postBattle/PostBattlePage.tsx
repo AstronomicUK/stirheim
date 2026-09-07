@@ -18,6 +18,7 @@ import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { Button, Notice, Sheet, Spinner } from '../../ui'
 import { buildReport, deriveReport, seedFromBattleSheet, setStep, STEP_IDS, type ReportContext, type ReportDraft } from './model'
 import { forgetReportStore, reportStore, useReportStore } from './store'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import { CasualtiesStep } from './wizard/CasualtiesStep'
 import { ExperienceStep } from './wizard/ExperienceStep'
 import { AdvancesStep } from './wizard/AdvancesStep'
@@ -123,6 +124,7 @@ interface GuardedProps {
 
 /** Owner or GM only: the roster query must succeed and the viewer must be allowed to edit the warband. */
 function Guarded({ match, participant, userId, liveState, amending, rotVictims }: GuardedProps) {
+  usePageTitle(`Post-battle · ${participant.warband_name}`)
   const campaign = useCampaign(match.campaign_id)
   const roster = useMatchRoster(match.id, participant.warband_id)
   const isGm = campaign.data?.campaign.gm_id === userId

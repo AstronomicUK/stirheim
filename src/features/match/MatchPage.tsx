@@ -31,6 +31,7 @@ import { ReportCard } from './shared/ReportCard'
 import { PostBattleSequence } from './battle/PostBattleSequence'
 import { underdogBonus } from '../../rules/data/campaign/experience'
 import { MatchDistrict } from './shared/MatchDistrict'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export function MatchPage() {
   const { id } = useParams<{ id: string }>()
@@ -57,6 +58,7 @@ export function MatchPage() {
 }
 
 function MatchView({ match, userId }: { match: MatchSummary; userId: string | undefined }) {
+  usePageTitle(scenarioTitle(match))
   const navigate = useNavigate()
   const campaign = useCampaign(match.campaign_id)
   const gmId = campaign.data?.campaign.gm_id

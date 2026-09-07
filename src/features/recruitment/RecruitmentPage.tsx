@@ -19,6 +19,7 @@ import { HenchmenTab } from './HenchmenTab'
 import { HeroesTab } from './HeroesTab'
 import { HiredSwordsTab } from './HiredSwordsTab'
 import type { Outcome } from './useCommit'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export function RecruitmentPage() {
   const { id } = useParams<{ id: string }>()
@@ -56,6 +57,7 @@ const TABS: IconTab<Tab>[] = [
 
 function RecruitView({ detail }: { detail: WarbandDetail }) {
   const { warband, roster } = detail
+  usePageTitle(`Recruit · ${warband.name}`)
   const user = useSession((s) => s.user)
   const campaign = useWarbandCampaign(warband.id)
   const bans = campaign.data?.settings.houseRules.bans

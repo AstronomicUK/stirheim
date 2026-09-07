@@ -10,6 +10,7 @@ import type { ScenarioDetail } from '../../rules/types/scenarioDetail'
 import { Button, Markdown, Notice, PageHeader, Sheet, Spinner } from '../../ui'
 import { SecondaryLink, Tag } from './bits'
 import { absoluteImageUrls, parseScenarioKind } from './helpers'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export function ScenarioPage() {
   const { kind: rawKind, id } = useParams<{ kind: string; id: string }>()
@@ -93,6 +94,7 @@ function useScenarioDetail(id: string): DetailState {
 }
 
 function BuiltinScenario({ summary }: { summary: ScenarioSummary }) {
+  usePageTitle(summary.title)
   const detail = useScenarioDetail(summary.id)
   const number = detail.status === 'ready' && detail.detail?.number != null ? detail.detail.number : null
 
@@ -176,6 +178,7 @@ function CustomScenario({ id }: { id: string }) {
 }
 
 function CustomScenarioView({ row }: { row: ScenarioRow }) {
+  usePageTitle(row.name)
   const user = useSession((s) => s.user)
   const navigate = useNavigate()
   const campaigns = useMyCampaigns(row.campaign_id ? user?.id : undefined)

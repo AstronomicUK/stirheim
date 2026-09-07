@@ -29,6 +29,7 @@ import {
   type RecordRow,
   type ResultFilter,
 } from './helpers'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export function BattleRecordsPage() {
   const { id } = useParams<{ id: string }>()
@@ -64,6 +65,7 @@ const RESULT_OPTIONS: { value: ResultFilter; label: string }[] = [
 ]
 
 function RecordsView({ campaignId, campaignName, records }: { campaignId: string; campaignName: string; records: BattleRecord[] }) {
+  usePageTitle(`Battle records · ${campaignName}`)
   const [filters, setFilters] = useState<RecordFilters>(NO_FILTERS)
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'manual'>('idle')
   const manualRef = useRef<HTMLPreElement>(null)

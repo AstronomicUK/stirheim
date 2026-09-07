@@ -15,6 +15,7 @@ import { deriveMapState } from '../../rules/resolve/mapCampaign'
 import { DistrictPicker } from '../map/DistrictPicker'
 import { coreScenarios, filterScenarios, libraryScenarios } from '../scenarios/helpers'
 import { RandomScenario } from './schedule/RandomScenario'
+import { usePageTitle } from '../onboarding/usePageTitle'
 import {
   customScenariosFor,
   NEW_MATCH_COPY,
@@ -67,6 +68,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
   const isGm = user?.id === campaign.gm_id
   const mode: NewMatchMode = isGm ? 'gm' : 'challenge'
   const copy = NEW_MATCH_COPY[mode]
+  usePageTitle(copy.title)
   const mine = useMemo(() => members.filter((m) => m.user_id === user?.id), [members, user?.id])
   const myWarbandIds = useMemo(() => mine.map((m) => m.warband_id), [mine])
 

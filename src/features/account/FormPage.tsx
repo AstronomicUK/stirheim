@@ -1,6 +1,7 @@
 import type { FormEvent, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Icon, type IconName } from '../../ui/icons'
+import { usePageTitle } from '../onboarding/usePageTitle'
 
 export interface FormPageProps {
   title: string
@@ -28,6 +29,7 @@ const PROMISES: { icon: IconName; title: string; text: string }[] = [
  * every width; the card simply gets more air on a desktop.
  */
 export function FormPage({ title, description, onSubmit, children, action, footer, promises = false }: FormPageProps) {
+  usePageTitle(title)
   return (
     <div className="flex flex-1 flex-col items-center gap-7 pt-4 md:pt-10">
       <Link to="/sign-in" className="block w-[min(100%,440px)] px-2 no-underline" aria-label="Stirheim">

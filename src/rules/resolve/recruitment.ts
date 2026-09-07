@@ -75,7 +75,7 @@ function recruitmentBlock(
   const maxModels = template.composition?.maxModels ?? null;
   const models = warbandModelCount(warband);
   if (maxModels !== null && models + count > maxModels) {
-    return `The warband has ${models} warriors; ${template.name} may have at most ${maxModels}`;
+    return `The warband has ${models} ${models === 1 ? "warrior" : "warriors"}; ${template.name} may have at most ${maxModels}`;
   }
   if (unit.role === "hero") {
     const capacity = heroCapacity(template);

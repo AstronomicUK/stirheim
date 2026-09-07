@@ -93,13 +93,14 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
 
   const searchesLeft = eligibleSearchers(detail.roster, phase.heroesSearched, phase.heroesOutOfAction).length
   const searchesUsed = phase.heroesSearched.length
+  const stashCount = detail.roster.stash.reduce((n, i) => n + i.quantity, 0)
 
   return (
     <>
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
         <KeyValue icon="gold" label="Gold" value={`${detail.warband.gold} gc`} />
         <KeyValue icon="wyrdstone" label="Wyrdstone" value={detail.warband.wyrdstone} />
-        <KeyValue icon="stash" label="Stash" value={detail.roster.stash.reduce((n, i) => n + i.quantity, 0)} />
+        <KeyValue icon="stash" label="Stash" value={stashCount} />
       </Card>
 
       {!isOwner ? (
@@ -129,7 +130,14 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
         label="Trading post section"
         tabs={TABS.map((t) => ({
           ...t,
-          detail: t.value === 'wyrdstone' ? `${detail.warband.wyrdstone} ${detail.warband.wyrdstone === 1 ? 'shard' : 'shards'}` : t.value === 'buy' ? `${detail.warband.gold} gc` : t.value === 'stash' ? `${detail.roster.stash.reduce((n, i) => n + i.quantity, 0)} items` : undefined,
+          detail:
+            t.value === 'wyrdstone'
+              ? `${detail.warband.wyrdstone} ${detail.warband.wyrdstone === 1 ? 'shard' : 'shards'}`
+              : t.value === 'buy'
+                ? `${detail.warband.gold} gc`
+                : t.value === 'stash'
+                  ? `${stashCount} ${stashCount === 1 ? 'item' : 'items'}`
+                  : undefined,
         }))}
         value={tab}
         onChange={(next) => {

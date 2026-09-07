@@ -176,14 +176,14 @@ export function validateRoster(
   if (maxModels !== null && models > maxModels) {
     problems.push({
       code: "roster.tooManyModels",
-      message: `${models} warriors but ${template.name} may have at most ${maxModels}`,
+      message: `${models} ${models === 1 ? "warrior" : "warriors"} but ${template.name} may have at most ${maxModels}`,
     });
   }
   const minModels = template.composition?.minModels ?? null;
   if (opts.atCreation && minModels !== null && models < minModels) {
     problems.push({
       code: "roster.tooFewModels",
-      message: `${models} warriors but a new ${template.name} warband needs at least ${minModels}`,
+      message: `${models} ${models === 1 ? "warrior" : "warriors"} but a new ${template.name} warband needs at least ${minModels}`,
     });
   }
 

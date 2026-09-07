@@ -188,6 +188,15 @@ describe("validateRoster", () => {
     expect(codes(wb, { atCreation: true })).toEqual(["roster.tooFewModels"]);
   });
 
+  it("uses the singular 'warrior' when the count is one", () => {
+    const wb = legalReikland({ heroes: [hero("captain", "mercenaries_reikland_captain")], henchmenGroups: [] });
+    const result = validateRoster(wb, REIKLAND, { atCreation: true });
+    expect(result.problems).toContainEqual({
+      code: "roster.tooFewModels",
+      message: "1 warrior but a new Mercenaries (Reikland) warband needs at least 3",
+    });
+  });
+
   it("flags negative gold, empty groups, unknown units and unknown items", () => {
     const wb = legalReikland({
       gold: -5,

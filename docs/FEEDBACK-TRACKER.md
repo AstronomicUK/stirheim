@@ -1123,13 +1123,15 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 63. Movement can never be increased by an advance, for anyone, ever
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the experience and advances rules audit, reviewed by Tom, sent directly for the tracker
 
 > "When a sub-roll's pair is fully maxed, the app takes a skill; the rulebook says take any other characteristic. The rule reads: 'If a characteristic is at its maximum, take the other option or roll again if you can only increase one characteristic. If both are already at their racial maximum, you may increase any other (that is not already at its racial maximum) by +1 instead. Note that this is the only way to gain the maximum Movement for some races.' `features/advances/model.ts:741` handles the both-maxed case by routing to a skill with a note that both are at the maximum. The any-other-characteristic option is never offered. This affects the three sub-roll results: 6 (Strength/Attacks), 8 (Initiative/Leadership) and 9 (Wounds/Toughness). The app already implements this fallback correctly one branch above, for the roll of 7 (`eligibleStatChoices`, with `fallbackToAny`), and offers a skill there only as an alternative. So the two halves of the same rule disagree with each other. Neither Advance table ever names Movement directly, so this fallback is the *only* route to it — which the rulebook says in as many words. With the fallback missing from the sub-rolls and available only on the roll of 7, Movement is reachable only if a hero happens to roll a 7 with both Weapon Skill and Ballistic Skill already maxed. In practice no warrior in this app will ever gain the Movement his racial maximum allows." (`docs/EXPERIENCE-RULES-GAPS.md` A2-A3)
 
 **Notes:** A contained fix — the roll-of-7 branch (`eligibleStatChoices`/`fallbackToAny`) is the working reference implementation; the three sub-roll branches (6, 8, 9) just need the same fallback wired in instead of defaulting straight to a skill.
+
+**Fixed:** The sub-roll branch (`model.ts`) now calls `eligibleStatChoices` on the pair exactly as the roll-of-7 branch already does, offering the eligible fallback characteristics (or a skill instead) via the same `draft.stat`/`draft.skillInstead` fields — only falling to the auto-substitute-the-other-stat path when just one of the pair is maxed, matching the rulebook's first sentence, and to the fallback choice only when both are. `AdvanceBody.tsx`'s sub-roll UI previously only ever rendered a skill picker and a re-roll button here; it now shows the same characteristic-or-skill picker the roll-of-7 branch uses when `fallbackToAny` is set. Updated the one existing test that had locked in the old forced-skill behavior; added assertions for the new fallback-pick and skill-instead paths. `tsc -b`, lint, and the full suite (1182 tests) all clean. Commit `944de41`.
 
 ### 64. Experience and advances: smaller points worth a look
 

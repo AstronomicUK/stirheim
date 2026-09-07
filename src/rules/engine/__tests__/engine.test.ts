@@ -874,3 +874,50 @@ describe("Undead traits (The Restless Dead variant)", () => {
     expect(attack.pWoundTriggerEligible).toBeCloseTo((1 / 2) * (2 / 6), 10);
   });
 });
+
+describe("Attacking stunned and knocked down warriors in hand-to-hand combat (01:947-959)", () => {
+  it("a knocked-down target: the attack hits automatically but still wounds and saves normally, and cannot be parried", () => {
+    const plain = buildAttackInput({ attacker: testCharacter(), weapon: testWeapon(), defender: testDefender({ parryWeaponCount: 1 }), context: testContext(), customSkills: [] });
+    expect(plain.autoHitKnockedDown).toBe(false);
+    expect(plain.parryEligible).toBe(true);
+
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: testWeapon(), defender: testDefender({ parryWeaponCount: 1 }), context: testContext({ targetKnockedDown: true }), customSkills: [] });
+    expect(input.autoHitKnockedDown).toBe(true);
+    expect(input.parryEligible).toBe(false); // "A knocked down model may not parry."
+    expect(input.woundThreshold).toBe(plain.woundThreshold); // wound/save untouched — only the hit roll is bypassed
+
+    const attack = resolveSingleAttack(input);
+    expect(attack.pHit).toBe(1);
+    expect(attack.pWound).toBeCloseTo(probabilityAtLeast(input.woundThreshold), 10);
+    expect(attack.guaranteedOutOfAction).toBeUndefined();
+  });
+
+  it("ranged attacks are unaffected: the rule is hand-to-hand only", () => {
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: W("bow"), defender: testDefender(), context: testContext({ targetKnockedDown: true, targetStunned: true }), customSkills: [] });
+    expect(input.autoHitKnockedDown).toBe(false);
+    expect(input.autoOutOfActionStunned).toBe(false);
+  });
+
+  it("a stunned target is taken out of action outright: no hit, wound, save or injury roll needed", () => {
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: testWeapon(), defender: testDefender(), context: testContext({ targetStunned: true }), customSkills: [] });
+    expect(input.autoOutOfActionStunned).toBe(true);
+
+    const attack = resolveSingleAttack(input);
+    expect(attack.guaranteedOutOfAction).toBe(true);
+    expect(attack.normalOutcome).toEqual({ none: 0, knockedDown: 0, stunned: 0, outOfAction: 1 });
+
+    const turn = resolveTurn([attack], 0, 4); // even a target with several Wounds left goes straight down
+    expect(turn.outOfActionProbability).toBe(1);
+    expect(turn.anyHitProbability).toBe(1);
+  });
+
+  it("a stunned target already at zero of the phase's parries/crit still goes to out of action, and further attacks in the phase change nothing", () => {
+    const stunnedInput = buildAttackInput({ attacker: testCharacter(), weapon: testWeapon(), defender: testDefender({ parryWeaponCount: 2 }), context: testContext({ targetStunned: true }), customSkills: [] });
+    const normalInput = buildAttackInput({ attacker: testCharacter(), weapon: testWeapon(), defender: testDefender({ parryWeaponCount: 2 }), context: testContext(), customSkills: [] });
+    const turn = resolveTurn([resolveSingleAttack(stunnedInput), resolveSingleAttack(normalInput)], 1, 1);
+    expect(turn.distribution.none).toBeCloseTo(0, 10);
+    expect(turn.distribution.knockedDown).toBeCloseTo(0, 10);
+    expect(turn.distribution.stunned).toBeCloseTo(0, 10);
+    expect(turn.distribution.outOfAction).toBeCloseTo(1, 10);
+  });
+});

@@ -316,8 +316,10 @@ export interface CombatContext {
   mounted?: boolean;
   /** The attacker wields the primary weapon in both hands: no off-hand weapon, shield or buckler (Ogre Club, Quarter Staff). Set by the caller from the loadout. */
   twoHanded?: boolean;
-  /** The target is knocked down (Misericordia). */
+  /** The target is knocked down (from before this phase): hand-to-hand attacks against it hit automatically and it may not parry (01:947-959); also drives the Misericordia's 2D6-to-wound. */
   targetKnockedDown?: boolean;
+  /** The target is stunned (from before this phase): the first hand-to-hand attack against it takes it out of action automatically (01:947-959). */
+  targetStunned?: boolean;
   /** The shooter uses the weapon's alternative fire mode (Weapon.altFire). */
   altFire?: boolean;
 }

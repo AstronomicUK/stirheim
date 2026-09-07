@@ -351,6 +351,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
               sessions={sessions}
               houseRules={houseRules}
               sheet={shown}
+              events={events}
               readOnly={readOnly}
               onLogEvent={onLogEvent}
               edit={readOnly ? undefined : handle.edit}

@@ -318,7 +318,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const masterOfBlades = defenderSkills.some((s) => s.id === "master_of_blades" && isActive(s, context));
   // The Ogre Club counts one Strength higher for the parry check when swung two-handed.
   const parryStrength = attackStrength + (weapon.id === "ogre_club" && context.twoHanded ? 1 : 0);
-  const parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S;
+  const parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S && !context.targetKnockedDown;
   const parrySuccessProbGivenAttempt = parryEligible
     ? defender.parryThreshold !== undefined
       ? probabilityAtLeastForParry(defender.parryThreshold, defender.parryReroll)
@@ -326,6 +326,12 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     : 0;
   // Misericordia against a knocked-down target: 2D6 to wound, keep the highest.
   const rerollToWound = Boolean(weapon.toWoundHighestOf2D6VsKnockedDown && context.targetKnockedDown);
+  // Attacking stunned and knocked down warriors in hand-to-hand combat (01:947-959): a knocked-down
+  // target is hit automatically (still wounded and saved against normally); a stunned target is
+  // taken out of action by the first hit, no rolls at all. Ranged attacks are unaffected — the rule
+  // only covers hand-to-hand.
+  const autoHitKnockedDown = weapon.type === "melee" && Boolean(context.targetKnockedDown);
+  const autoOutOfActionStunned = weapon.type === "melee" && Boolean(context.targetStunned);
   // Amulet of the Moon and the Shield of Sigmar: a special save against missiles, the better of it and any Ward.
   const missileWard = weapon.type === "ranged" ? defender.missileWardSaveThreshold ?? null : null;
   const wardCandidates = [defender.wardSaveThreshold, missileWard].filter((t): t is number => t !== null && t !== undefined);
@@ -355,6 +361,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     autoWoundOnNaturalSixToHit: autoWound,
     parryEligible,
     parrySuccessProbGivenAttempt,
+    autoHitKnockedDown,
+    autoOutOfActionStunned,
   };
 }
 

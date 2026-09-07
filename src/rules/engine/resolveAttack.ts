@@ -80,6 +80,10 @@ export interface AttackInput {
   parryEligible: boolean;
   /** Given a Parry attempt is actually spent on this attack (turnAggregate.ts decides that), probability it succeeds and the attack is discarded entirely. */
   parrySuccessProbGivenAttempt: number;
+  /** The target is already knocked down (hand-to-hand only): this attack hits automatically, no to-hit roll. */
+  autoHitKnockedDown?: boolean;
+  /** The target is already stunned (hand-to-hand only): this attack takes it out of action automatically, no rolls at all. */
+  autoOutOfActionStunned?: boolean;
 }
 
 /**
@@ -247,11 +251,34 @@ export interface SingleAttackBreakdown {
   parryEligible: boolean;
   /** Given a Parry attempt IS spent on this attack, probability it succeeds and the whole attack is discarded. */
   parrySuccessProbGivenAttempt: number;
+  /** The target is already stunned: this attack takes it out of action outright, independent of Wounds/Parry/injury (01:947-959) — turnAggregate.ts short-circuits its whole pipeline for it. */
+  guaranteedOutOfAction?: boolean;
 }
+
+const OUT_OF_ACTION_DIST: Severity4Distribution = { none: 0, knockedDown: 0, stunned: 0, outOfAction: 1 };
 
 /** Pure function: resolves everything about a single attack except which attack (if any) consumes the phase's one crit and how many Wounds the target has left — that's the aggregation step in turnAggregate.ts. */
 export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
-  const pHitBase = probabilityAtLeast(input.hitThreshold);
+  // A stunned target is taken out of action by the first hit in hand-to-hand combat, full stop —
+  // no to-hit, wound, save or injury roll, and independent of how many Wounds it has left, so this
+  // bypasses the wound/injury event model entirely rather than trying to express it as one.
+  if (input.autoOutOfActionStunned) {
+    return {
+      pHit: 1,
+      pWound: 1,
+      pWoundNormal: 0,
+      pWoundTriggerEligible: 0,
+      normalEvents: [],
+      critEvents: [],
+      normalOutcome: OUT_OF_ACTION_DIST,
+      critOutcome: OUT_OF_ACTION_DIST,
+      pRicochetGivenCritConsumedHere: 0,
+      parryEligible: false,
+      parrySuccessProbGivenAttempt: 0,
+      guaranteedOutOfAction: true,
+    };
+  }
+  const pHitBase = input.autoHitKnockedDown ? 1 : probabilityAtLeast(input.hitThreshold);
   const pWoundIfHitBase = probabilityAtLeast(input.woundThreshold);
   // Reroll a failure once (Expert Swordsman / Hatred): P(success on either roll) = 1 - P(fail)^2.
   const pHit = input.rerollToHit ? 1 - (1 - pHitBase) * (1 - pHitBase) : pHitBase;

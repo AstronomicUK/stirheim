@@ -146,7 +146,7 @@ Nothing found here reproduces a defect from static reading alone. Recommend aski
 
 ### 10. Attacking a stunned or knocked-down target doesn't apply the rulebook's automatic outcomes
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -165,6 +165,16 @@ Good news for the fix: the data needed already exists and is already computed, j
 Also ties into #11 (the new turns feature and its "Recover Units" button) since recovery is what clears a model's knocked-down/stunned status between turns, and into #9 (multi-attack UI) as Tom flagged.
 
 **Tom confirmed (2026-09-07):** "yes the rulebook reading is correct" — auto-hit (not auto-wound) for knocked down, unconditional auto-OOA for stunned, as quoted above. Ready to implement as read.
+
+**Fix:** Implemented exactly as scoped above — read from the shared log automatically, not a manual toggle, so this can't be forgotten:
+
+- `FightTab.tsx` now takes the shared `events` log and calls the existing `conditionsFor(events, defender.warbandId, sheet.turn)` for the currently-selected defender, same as `EnemyView` already did for its status badge. When that comes back "Knocked down" or "Stunned", the combat context is set accordingly for the whole phase — a fresh snapshot taken once per fight, never re-read mid-roll, which is exactly what makes the "same phase, same attacker" nuance fall out for free: a target this same attacker just knocked down moments ago in this same roll-through doesn't retroactively unlock the bonus for that attacker's own next attack, only for a *different* attacker's fight afterwards (or this same one, next phase, once logged).
+- `buildAttackInput.ts`: for melee weapons only (the rule is hand-to-hand-only, confirmed with Tom), a knocked-down target sets `autoHitKnockedDown` (skips the to-hit roll; wound and armour save still apply normally) and also disables `parryEligible` ("a knocked down model may not parry"). A stunned target sets `autoOutOfActionStunned`.
+- `resolveAttack.ts`/`turnAggregate.ts`: `resolveSingleAttack` short-circuits entirely for a stunned target into a new `guaranteedOutOfAction` result (100% out of action, independent of the target's remaining Wounds — stunned isn't a wound-tracking effect, so it doesn't fit the normal wound/injury event model and needed its own path), and `turnAggregate.ts`'s DP aggregation was taught to recognise that flag and move all probability mass straight to Out of Action for that attack. This keeps the pre-roll Odds panel numbers honest (100% to hit / to wound / out of action for a stunned target, 100% to hit only for a knocked-down one), not just the interactive roller.
+- `rollThrough.ts`: `beginAttack` checks the new flags first — a stunned target ends the attack immediately with no dice at all ("the target is stunned — automatically out of action"); a knocked-down target skips straight past the to-hit roll and the parry offer to the wound roll ("automatic hit — the target is knocked down"), continuing completely normally from there (wound, save, injury).
+- The Misericordia's existing "Target is knocked down" manual checkbox (added for its 2D6-to-wound rule) is gone — it read the identical `targetKnockedDown` context field, so it's now automatic too, and having a manual override next to an automatic one would just invite the exact bug being fixed here.
+
+Verified live end-to-end on local dev (fresh Reikland Watch vs Argent Hammer skirmish): knocked Siegmund the Hammer down, logged it, re-opened the attack against him with a fresh fight — Odds panel showed 100% to hit for both weapons and the note "Siegmund the Hammer is already knocked down: attacks hit automatically and it cannot parry"; the roll-through skipped straight from weapon selection to the wound roll ("Sword: automatic hit — the target is knocked down"). Rolled him to Stunned instead, logged it, attacked again with a different model — the Odds panel showed 100% out of action with no roll rows at all, and "Roll it through" resolved instantly to "Result: Out of action" without a single die. `tsc -b`, `oxlint` and the full `vitest run` suite (1169 passed, including 8 new tests added for this rule in `engine.test.ts` and `rollThrough.test.ts`) all clean.
 
 ### 11. New "turns" feature for App Calculates games: a turn popup and a Recover Units button
 

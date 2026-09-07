@@ -229,3 +229,40 @@ describe('targets with several Wounds and several attacks', () => {
     expect(applyRoll(s, 6).outcomes).toEqual(['outOfAction'])
   })
 })
+
+describe('attacking a stunned or knocked-down target (01:947-959)', () => {
+  it('a stunned target is taken out of action immediately, no rolls at all', () => {
+    const s = startPhase([plan('Sword', { autoOutOfActionStunned: true })], 1, 0)
+    expect(s.done).toBe(true)
+    expect(s.pending).toBeNull()
+    expect(s.outcomes).toEqual(['outOfAction'])
+    expect(s.worst).toBe('outOfAction')
+    expect(s.log.some((l) => /stunned/i.test(l.text))).toBe(true)
+  })
+
+  it('a stunned target ends the phase before any later attacks in the same sequence', () => {
+    const plans = [plan('Sword 1', { autoOutOfActionStunned: true }), plan('Sword 2')]
+    const s = startPhase(plans, 1, 0)
+    expect(s.done).toBe(true)
+    expect(s.outcomes).toEqual(['outOfAction'])
+  })
+
+  it('a knocked-down target hits automatically, but still wounds and saves normally', () => {
+    let s = startPhase([plan('Sword', { autoHitKnockedDown: true, parryEligible: true })], 1, 0, 0, false)
+    // No 'hit' step: straight to the wound roll, and no parry is offered either.
+    expect(s.pending).toMatchObject({ kind: 'wound' })
+    expect(s.log.at(-1)?.text).toMatch(/automatic hit/i)
+    s = applyRoll(s, 4) // wound roll: needs 4+
+    expect(s.pending).toMatchObject({ kind: 'save' })
+    s = applyRoll(s, 1)
+    expect(s.pending?.kind).toBe('injury')
+    s = applyRoll(s, 6)
+    expect(s.outcomes).toEqual(['outOfAction'])
+  })
+
+  it('a knocked-down target that fails to wound just stands: the auto-hit only replaced the to-hit roll', () => {
+    const s = applyRoll(startPhase([plan('Sword', { autoHitKnockedDown: true })], 1, 0), 1)
+    expect(s.outcomes).toEqual(['noWound'])
+    expect(s.done).toBe(true)
+  })
+})

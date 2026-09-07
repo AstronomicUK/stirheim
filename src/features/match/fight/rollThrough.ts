@@ -144,10 +144,18 @@ function attackName(state: RollState): string {
 
 function beginAttack(state: RollState): RollState {
   const plan = state.plans[state.index]
+  const fresh: RollState = { ...state, cur: freshCurrent() }
+  // A stunned target: taken out of action by the first hit in hand-to-hand combat, no rolls at all (01:947-959).
+  if (plan.input.autoOutOfActionStunned) {
+    return finishAttack(log(fresh, `${attackName(state)}: the target is stunned — automatically out of action.`, 'good'), 'outOfAction')
+  }
+  // A knocked-down target: hits automatically and may not parry, but still rolls to wound and save as normal.
+  if (plan.input.autoHitKnockedDown) {
+    return askWound(log(fresh, `${attackName(state)}: automatic hit — the target is knocked down.`, 'good'))
+  }
   const t = plan.input.hitThreshold
   return {
-    ...state,
-    cur: freshCurrent(),
+    ...fresh,
     pending: {
       kind: 'hit',
       who: 'attacker',

@@ -340,6 +340,8 @@ function adjustForCoatings(input: AttackInput, weapon: Weapon, phase: WeaponKind
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const notes: string[] = []
   const primary = weapons[0]
+  if (setup.context.targetStunned && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already stunned: the first hit takes it out of action automatically, no rolls needed.`)
+  else if (setup.context.targetKnockedDown && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already knocked down: attacks hit automatically and it cannot parry.`)
   if (primary && primary.attacks === 0) {
     notes.push(setup.primary.moveOrFire ? `${setup.primary.name} cannot fire in a turn the shooter moved.` : `${setup.primary.name} makes no attacks in this situation.`)
   }
@@ -413,7 +415,6 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })
     const firstTurnMatters = (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks
     if (firstTurnMatters) toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: primary.strengthBonusFirstTurnOnly ? `${primary.name} only gets its Strength bonus in the first turn.` : `${primary.name} gets its extra attacks in the first turn (charging or charged).` })
-    if (primary.toWoundHighestOf2D6VsKnockedDown || offHand?.toWoundHighestOf2D6VsKnockedDown) toggles.push({ field: 'targetKnockedDown', label: 'Target is knocked down', hint: 'Misericordia: 2D6 to wound, keep the highest.' })
     if (skills.some((s) => s.conditionField === 'fightingMultiple')) toggles.push({ field: 'fightingMultiple', label: 'Fighting two or more enemies' })
     if (skills.some((s) => s.conditionField === 'insideBuildings') || attacker.traitIds.includes('pit_fighter')) toggles.push({ field: 'insideBuildings', label: 'Inside a building or ruin' })
     if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: 'Hatred: reroll misses in the first turn against a hated enemy.' })

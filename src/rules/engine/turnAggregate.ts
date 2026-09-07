@@ -62,6 +62,21 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
     next[parriesUsed][critConsumed][Math.min(woundsTaken, maxWounds)][severity] += mass;
   };
 
+  // A stunned target: this attack takes it out of action outright, whatever state it was already
+  // in (Wounds taken, Parries used, worst so far can only go up) — no wound/injury pipeline at all.
+  if (attack.guaranteedOutOfAction) {
+    for (let parriesUsed = 0; parriesUsed <= maxParries; parriesUsed++) {
+      for (const critConsumed of [0, 1] as const) {
+        for (let woundsTaken = 0; woundsTaken <= maxWounds; woundsTaken++) {
+          const cell = state[parriesUsed][critConsumed][woundsTaken];
+          const mass = cell[0] + cell[1] + cell[2] + cell[3];
+          addMass(parriesUsed, critConsumed, woundsTaken, 3, mass);
+        }
+      }
+    }
+    return { next, ricochetDelta };
+  }
+
   // pWoundNormal/pWoundTriggerEligible are joint probabilities (already scaled by pHit); express
   // them as fractions of pHit so they can be reapplied to whatever "reaches the pipeline" mass
   // actually is once Parry has taken its cut.

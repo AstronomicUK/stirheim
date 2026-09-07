@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
-import type { AttackEventPayload, BattleLiveState } from '../../../domain'
+import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -17,7 +17,7 @@ import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, S
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
-import { itemsUsedBy, setItemUsed } from '../battle/sheet'
+import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollKind, type RollState } from './rollThrough'
 import { CritWheel } from './CritWheel'
@@ -33,6 +33,8 @@ export interface FightTabProps {
   houseRules: CampaignHouseRules
   /** The player's sheet with the shared log laid over it (read only here). */
   sheet: BattleLiveState
+  /** The shared combat log: read for whether the current defender is already knocked down or stunned. */
+  events: BattleEventRow[]
   readOnly: boolean
   /** Map campaigns: what the map adds to each warband this battle, by warband id. */
   boosts?: Record<string, BattleBoosts>
@@ -63,7 +65,7 @@ interface TargetMemory {
   charmUsed?: boolean
 }
 
-export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
+export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, events, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
 
   const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), [roster, template, sheet, boosts])
@@ -133,6 +135,13 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null) : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
+  // Already knocked down or stunned (from an earlier, already-logged phase this turn): hits it
+  // automatically in hand-to-hand, and a stunned target goes straight out of action (01:947-959).
+  // Read from the shared log, not a toggle — this is exactly the "the battle sheet doesn't do
+  // either of these" report, so it needs to just happen rather than rely on a checkbox.
+  const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn).get(defender.id) : undefined
+  if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
+  if (defenderCondition === 'Stunned') active.targetStunned = true
   const context = combatContextFor(houseRules, active)
 
   // Consumables the attacker has marked on the sheet (poisons, drugs, special ammunition) shape the odds and are used up by the report.

@@ -124,7 +124,13 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "I'm not sure parrying is working properly in roll it out. it should probably work similar to armour saves (where you can roll the parry yourself or ask the defender to roll and it sends it to their app), but obviously only when the defender has a weapon that they can parry with."
 
-**Notes:**
+**Notes:** Traced the whole path and, as written today, it looks structurally correct — worth flagging as inconclusive rather than confirmed, since Tom's own report is uncertain ("I'm not sure") rather than a specific broken step:
+
+- **Hand-off already exists for parry, same as armour saves.** In `FightTab.tsx`, the "Ask {defender}'s player to roll it" button is shown whenever `state.pending.who === 'defender'` — true for `save` (armour) and equally true for `parry`/`parryReroll` — there's no extra condition that excludes parry.
+- **The eligibility check Tom asked for already exists.** `buildAttackInput.ts:321`: `parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S` — a parry is only ever offered when the defender's own `parryWeaponCount` is above zero (i.e. they actually carry something that parries), matching "obviously only when the defender has a weapon that they can parry with."
+- **The question sent to the defender's phone carries the real numbers.** `useHandOff`'s `ask()` sends `step.label`/`step.detail` verbatim (e.g. "Must beat the 6 rolled to hit"), which is exactly what `parryDetail()` builds and what showed correctly in this session's own live test of the roll-through UI.
+
+Nothing found here reproduces a defect from static reading alone. Recommend asking Tom for the specific thing he saw go wrong (a screenshot, or "I clicked X and expected Y but got Z") before touching this — that would pin down whether the issue is real and where, versus this being general unease rather than an observed bug.
 
 ### 9. Better visual representation of multiple attacks — pick attack count up front, label "First attack" / "Second attack"; likely to merge with upcoming items about stunned/knocked-down targets
 
@@ -176,7 +182,9 @@ Also ties into #11 (the new turns feature and its "Recover Units" button) since 
 
 > "The Crit Table animations are still too fast. You can't read it. It's so fast I couldn't check but it looked like the table with the selection (with the red row) had something in lower case that the table still calculating (with the yellow row rotating through the options) doesn't."
 
-**Notes:**
+**Notes:** `src/features/match/fight/CritWheel.tsx`. The speed complaint is confirmed by the numbers: `spin()` (lines 49-75) paces each tick by `eased = TICK_START + (TICK_END - TICK_START) * (i / (steps - 1)) ** 2.4` with `TICK_START = 55`, `TICK_END = 300`. Because the exponent is 2.4, that curve stays near the 55ms floor for most of the sequence and only climbs toward 300ms in the last handful of ticks — for a 6-row table doing 2 full spins plus landing (`steps = rows.length * SPINS + target + 1`, i.e. ~13-18 ticks), the great majority of rows flash by at roughly 55-100ms each, genuinely too fast to read, only slowing down right at the very end.
+
+The content-mismatch half is very likely a perception effect **of** that speed, not a real asymmetry — checked the row markup (lines 90-107) and every row renders the same `row.result.label` (bold) plus `describeCrit(row.result)` (the lowercase description line) regardless of whether it's the currently-spinning (yellow, `bg-brass/25`) row or the settled (red/accent, `stirheim-land-row`) one — both show identical content, just different background colour. The one thing that's genuinely only shown after settling is a separate summary panel below the table (lines 109-118, with a `DieFace` and the same label/description repeated) — that's an intentional post-roll confirmation panel, not a hidden "lower case" line on the settled row itself. Recommend slowing the animation as the main fix; the reported content difference should resolve itself once the row can actually be read mid-spin, but worth confirming with Tom once it's slower in case something else is really there.
 
 ### 13. "Pick the skill later" in the post-battle report lands on a skill list, which is confusing given the point is to defer the choice
 
@@ -262,7 +270,15 @@ Confirmed, and Well genuinely is the only outcome with this exact problem. Every
 
 > "There are a lot of skills that require toggles. Firstly, the toggle text shouldn't be in the skill itself: that's a message for the engine itself. Secondly, why don't we have the toggles hidden (including the charging one that's currently in), and the toggle appears when you select a model that has a relevant skill? So if they have Pit Fighter, for example, the only toggle that will show is "Inside Building?""
 
-**Notes:**
+**Notes:** First half confirmed exactly — found it. Four skills in `src/rules/data/skills.ts` have a literal "(toggle: ...)" annotation baked into their player-facing `description` text:
+- `pit_fighter` (line 162): "+1 Weapon Skill and +1 Attack when fighting inside buildings or ruins **(toggle: inside buildings)**."
+- line 30: "+1 Attack when fighting two or more enemies **(toggle: fighting 2+ enemies)**."
+- line 58: "Reroll missed to-hit rolls in the turn he charges **(toggle: charging)**, with a normal sword or Weeping Blades only..."
+- line 199: "+1 WS on the charge **(toggle: charging)**."
+
+That parenthetical clearly reads as a leftover engine/dev note rather than rules text, and shows up wherever the skill's description is displayed (roster skill lists, hover cards, etc.) — a clean, contained fix: strip the "(toggle: ...)" clause from these four descriptions.
+
+Second half is more nuanced than it first looks — **most of what's being asked already exists**. `relevantToggles()` (`src/features/match/fight/odds.ts`) already computes the Situation toggles per attacker: "Fighting two or more enemies" only appears if the attacker has a skill with `conditionField: 'fightingMultiple'`, "Inside a building or ruin" only if they have `conditionField: 'insideBuildings'` (Pit Fighter) or the `pit_fighter` trait, "Hated enemy" only with the `hatred` trait, and so on — so for Pit Fighter specifically, today's behaviour already matches "the only toggle that will show is Inside Building?" *for the skill-gated toggles*. The one toggle that's genuinely unconditional is "Charging" itself — it's always offered for any melee attacker regardless of skills, because charging is a universal combat rule (many weapons have their own "+1S when charging" text unrelated to any skill), not something only certain skill-holders get. Tom naming Charging as one that should also be hidden-until-relevant is worth clarifying directly — either he wants it hidden too despite applying to everyone (a real, if unusual, product decision), or he assumed it was already skill-gated like the others and it isn't. Recommend asking before changing Charging's visibility, since removing it by default could hide something every melee attacker legitimately needs to declare.
 
 ### 20. Tapping a dice-roll button more than once should log every result, not just the last one, to stop re-rolling out of sight
 

@@ -1186,7 +1186,7 @@ Still open: routing a persona's injury roll through the hero D66 chart instead o
 
 ### 61. Hired swords and Dramatis Personae: entry data the app has but never reads (skills, kit, racial maxima, unusual fees)
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the same hired swords and Dramatis Personae rules audit as #60, reviewed by Tom
 
@@ -1199,6 +1199,23 @@ Still open: routing a persona's injury roll through the hero D66 chart instead o
 - **81 of 102 fall back correctly to Human racial maxima via a keyword match on the race in the name, but 11 clear misses cap non-humans at human maximums**: Runesmith Journeyman (Dwarf), Shadow Warrior (Elf), Aenur (Elf), Veskit (Skaven), Ulli & Marquand (Ulli is a Dwarf), Chaos Centaur, Ninja Gnoblar, Chaos Fury, Bone Goliath, Cursed Hillman, Khar-mel the Djinn.
 - **A handful of plain, resolvable items sit as unmatched custom kit lines**: Two Axes, three Torches, a cloak, Gromril Hammer, Hammer of Sigmar, Whip, Pickaxe, Mining Pick, Scimitar, Repeating Crossbow, Cavalry Spear, Rope, Hook, Two Daggers — worth adding as catalogue aliases. Six entries (Chameleon Skink, Snake Charmer, Ulli & Marquand, Dark Emissary, Truthsayer, Luthor Wolfenbaum) parse no kit at all.
 - **Fee/upkeep edge cases**: 9 entries can't be hired through the app at all because their fee isn't a plain gold number (the button is disabled with an honest message) — of these, four (Old Prospector, plus three others paid in wyrdstone or treasures) could actually be supported properly since wyrdstone is already tracked on the roster, rather than staying blocked. The Ninja's printed fee is "70 + 3D6" and the app silently charges a flat 70, dropping the dice half — the same `feeOverride` hook the map-advantage half-price perks already use would fix this cheaply.
+
+**Fixed:** `3909ba3`, the racial-maxima bullet only, 6 of the 11 named misses. Added an explicit
+`UNIT_RULES["hired_sword:<id>"]` override (the same mechanism ordinary warband units already use)
+for the entries whose race is unambiguous from their name or the finding's own text: Runesmith
+Journeyman (Dwarf), Shadow Warrior (Elf), Aenur (Elf), Veskit (Skaven), Ulli & Marquand (Dwarf, per
+the finding), Ninja Gnoblar (Goblin, same mapping the app already uses for Ogre Hunting Party's
+Gnoblar units). Along the way, found and fixed a second bug this one was hiding: `hiredSwordMaxima`
+only trusted a `matchedBy: "unitName"` result from the resolver and silently discarded any
+`"unitOverride"` match (including ones from existing, working overrides), so the new entries would
+have been thrown away in favour of Human anyway without this second fix. Added a regression test.
+
+**Left open**: the remaining 5 racial-maxima misses (Chaos Centaur, Chaos Fury, Bone Goliath,
+Cursed Hillman, Khar-mel the Djinn) have no confident match in `RACIAL_MAXIMUMS` — fixing them means
+either sourcing a new profile row from the relevant supplement (Border Town Burning, Fanatic Online,
+Town Cryer) or confirming with Tom that an existing profile applies; not guessed at here. The other
+five bullets (skill-table defaulting, unread starting skills, unread unique skill tables, the
+missing Cavalry table, unresolved kit items, and the fee/upkeep edge cases) are untouched.
 
 ### 62. Experience and advances: recruited heroes and henchmen are credited with advances they never earned
 

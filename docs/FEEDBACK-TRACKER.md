@@ -98,6 +98,18 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 **Notes:** [`docs/WARBAND-RULES-GAPS.md`](WARBAND-RULES-GAPS.md) and [`docs/WEAPONS-ARMOUR-RULES-GAPS.md`](WEAPONS-ARMOUR-RULES-GAPS.md) are dated 2026-09-05 audits of warband special rules and weapon/armour rules that are documented but not mechanically enforced (dozens of specific items each, e.g. per-warband exploration bonuses, income modifiers, units that never gain experience). Left as their own documents rather than duplicated in here item-by-item — this entry exists only so the tracker doesn't quietly forget they're there. Say the word if these should be folded into this tracker as individual entries instead.
 
+## Batch — 2026-09-07
+
+### 7. The map is buggy in a Map Campaign: phantom nodes, selection mostly doesn't work
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "the Map is buggy if you open it in the Map Campaign; it has nodes to tap on that don't exist, almost all selections don't work (they don't show you what the node is when you click or mouse over)"
+
+**Notes:**
+
 <!-- New batches go below this line, most recent last. Copy the entry template for each item. -->
 
 <!--

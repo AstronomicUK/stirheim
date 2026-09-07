@@ -506,6 +506,429 @@ The weapon-defaulting half (melee tile → melee weapon, ranged tile → ranged 
 
 <!-- New batches go below this line, most recent last. Copy the entry template for each item. -->
 
+## Batch — 2026-09-07 (QA sweep: full pass over every area of the app)
+
+A systematic sweep of the running app by the QA session (`claude-scripts-a1`), area by area, against
+the local dev server on the seeded database at 1280x720 and 375x812. Twenty items were found by
+testing and reported to Tom; he approved all twenty and added #34 himself off the back of #33.
+
+Everything below was reproduced live in the browser and then traced to the code. None of it
+duplicates entries 1-32; each was checked against them first. Entries carry a **How to replicate**
+line as well as the usual Notes, since these were found by testing rather than reported from play.
+
+Two entries fixed while the sweep was running (#7 map, #10 stunned/knocked-down) were re-tested and
+confirmed working — see the "verified correct" note at the end of the batch.
+
+### 33. Gromril and Ithilmar weapons bypass the base weapon's warband restriction
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `materialVariantItem` (`src/rules/data/items/materialVariants.ts:48-63`) rebuilds
+`availability` from scratch as `{ kind: "rare", rarity, text: "Rare N" }`, throwing away the base
+item's `restriction` string. It also mints a new id (`gromril_<base>` / `ithilmar_<base>`), which no
+longer matches anything in `ITEM_RESTRICTIONS` (`src/rules/data/itemRules/restrictions.ts`) — so the
+`onlyWarbands` / `notWarbands` guard never fires either. **Both halves of the protection are lost**,
+which is why there is no warning and no "Reason for buying anyway" box on the variant.
+
+The machinery itself works fine — the plain item shows "The rules say — X is for Chaos Dwarfs only"
+with an override-with-reason field, exactly as designed. The variants simply aren't wired into it.
+Confirmed on three separate items:
+
+| Base item | Base availability | Variant | Variant availability |
+|---|---|---|---|
+| Sons of Hashut Obsidian Weapon | Rare 10 · Chaos Dwarfs only | Gromril / Ithilmar | Rare 11 / Rare 9, no restriction |
+| Dragon Sword | Rare 10 · Battle Monks and Merchant Caravans only | Gromril / Ithilmar | Rare 11 / Rare 9, no restriction |
+| Dark Elf Blade | Rare 9 (Dark Elves only) | Gromril / Ithilmar | Rare 11 / Rare 9, no restriction |
+
+**How to replicate:** The Argent Hammer (Protectorate of Sigmar) → Trading post → **Buy** → search
+`Obsidian`. Open *Sons of Hashut Obsidian Weapon* — it correctly demands a reason. Open *Gromril
+Sons of Hashut Obsidian Weapon* — no restriction line, no reason box, straight to "Buy for 240 gc".
+Same with `Dragon Sword`.
+
+### 34. A weapon made of obsidian cannot also be made of gromril — material variants stack onto other materials, onto upgrades, and onto choice placeholders
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "You have mentioned an example of a Gromril Sons of Hashut obsidian weapon but a weapon made of obsidian cannot also be made of Gromril. I'm guessing that this problem persists in other places."
+
+**Notes:** Tom is right, and the guess is right too — it persists in three further places. `isMaterialVariantBase`
+(`src/rules/data/weapons/materialVariants.ts:25-30`) excludes paired, poisoned, magical and
+armour-ignoring weapons, but has no rule excluding a base that is **already a material**, or that is
+**an upgrade applied to another weapon** rather than a weapon in its own right. 47 priced base items
+feed the generator and produce 94 shop entries; four of those bases are wrong, giving 8 incoherent
+items, plus a further pair that exist in the combat engine but not the shop:
+
+1. **Material on material** — Tom's example. `sons_of_hashut_obsidian_weapon` → "Gromril / Ithilmar
+   Sons of Hashut Obsidian Weapon". Also `obsidian_weapon` → "Gromril / Ithilmar Obsidian Weapon" in
+   `MATERIAL_VARIANT_WEAPONS`; the plain Obsidian Weapon has no flat price ("4 x Price") so it never
+   reaches the shop, but the engine carries the weapon.
+2. **Material on an upgrade.** `Dark Elf Blade` carries the flag `upgradedSwordOrDagger` and is
+   priced **"+ 20 gc"** — it is a 20 gc upgrade you apply to a sword or dagger, not a weapon you
+   buy. The generator multiplies the increment, producing **"Gromril Dark Elf Blade — 80 gc
+   (4 x + 20 gc)"**: a material applied to an upgrade, at 4x an increment. The Sons of Hashut
+   Obsidian Weapon is the same shape (`restrictedToSwordAxeOrHammerForm`) — its own buy sheet asks
+   "**APPLIED TO WHICH WEAPON?** Sword / Axe / Hammer" — so it is both 1 and 2 at once.
+3. **Material on a choice placeholder.** `Club, Mace or Hammer` carries `genericBludgeonChoice`: the
+   line means "pick one of these three", not an object. "Gromril Club, Mace or Hammer" is not an item.
+4. **Material on the free dagger.** `Dagger` is priced `"1st free/2 gc"`, so the variant reads
+   **"Gromril Dagger — 8 gc (4 x 1st free/2 gc)"**, leaking the internal cost syntax into the shop.
+
+Fix shape: give `isMaterialVariantBase` two more exclusions — a base that is itself a material
+variant, and a base that is an upgrade rather than a weapon. Both are already detectable from data
+that exists: the `upgradedSwordOrDagger` / `restrictedToSwordAxeOrHammerForm` / `genericBludgeonChoice`
+flags, and a `price.text` that is an increment (`+ N gc`), a multiplier (`N x Price`) or a
+first-free line rather than a flat `N gc`. Worth doing together with #33, since both are one pass
+over the same generator. See also #44, which is the cosmetic remainder of the same generator.
+
+**How to replicate:** Campaign settings → *Banned in this campaign* → **Items** → search
+`obsidian` (shows "Gromril Sons of Hashut Obsidian Weapon"), then `dark elf blade` (shows
+"Gromril Dark Elf Blade — Rare 11 · 80 gc (4 x + 20 gc)"), then `gromril dagger` (shows
+"Rare 11 · 8 gc (4 x 1st free/2 gc)"). All three also appear in the trading post's Buy tab.
+
+### 35. A new warband's starting leader never gets its free dagger
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `newWarbandDraft` (`src/rules/resolve/builder.ts:129-141`) auto-adds the leader by calling
+`addDraftHero` directly. Every *other* unit is added through `BuilderPage.tsx:257`, which wraps the
+add in `withFreeDagger`. So the leader is the one model in a fresh warband that starts bare, and
+stays bare unless the player notices and buys one. This affects every warband ever created.
+
+Reads as an oversight rather than a decision: the Recruit screen's own copy promises "Heroes arrive
+with their starting experience **and the free dagger from their list**", `withFreeDagger`'s doc
+comment says it exists so "a fresh warrior is never bare by accident", and every seeded warband has
+a Dagger on every warrior.
+
+**How to replicate:** New warband → search "Reikland" → Mercenaries (Reikland) → name it → Start
+building. The Mercenary Captain card reads **"No equipment yet."** Now tap *Add hero* → Champions:
+that one arrives carrying "Dagger · 1st free/2 gc · **0 gc**".
+
+### 36. The builder charges half price for armour but shows the full list price and never says why
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `halfPriceArmour` defaults to **true** (`src/rules/types/roster.ts:190`), so the discount
+applies even to a warband with no campaign attached. The trading post handles this properly — a
+banner ("House rules from Ruins of the Stir: armour at half price (shields and helmets excepted)")
+and a per-item line reading "**25 gc (half price armour, from 50 gc)**". The builder does neither:
+the Add-equipment sheet says "Heavy armour — 50 gc", the hero card reads "50 gc · 250 gc" for ten of
+them, and the treasury drops by 250. It looks exactly like an arithmetic bug; it cost the sweep ten
+minutes to rule out, and a player at the table has no way to tell it isn't one.
+
+**How to replicate:** New warband → any type → *Add equipment* on any warrior → step Heavy armour up
+to 10. Sheet says 50 gc each; card reads "50 gc · **250 gc**"; GOLD LEFT falls by 250, not 500.
+
+### 37. The Advances step labels an un-rolled advance "Done", and a half-rolled one "To do"
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** In `src/features/postBattle/model/derive.ts:596-599` an untouched advance is deliberately
+marked `complete = true` ("left for Advancements") so the wizard isn't blocked — which is reasonable
+in itself. But `AdvancesStep.tsx:76` renders that state with the brass tag **"Done"**, identical to a
+genuinely resolved advance. The tag cannot distinguish `mode === 'now' && plan.total === null`
+(never rolled) from `mode === 'now' && plan.result !== null` (finished). The result is exactly
+backwards: the cards a player hasn't touched look finished, and the one they're mid-way through
+looks untouched. A player will file the report believing advances were applied when they were only
+deferred.
+
+**How to replicate:** File a post-battle report for a warband with two or more advances owed
+(Reikland Watch has three). On the Advances step, before touching anything, **every** card shows
+"Done". Roll one with *Roll for me* → that card flips to "**To do**" while the untouched ones still
+say "Done".
+
+### 38. Both sides of a match can file contradictory results, and nothing flags it
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `OutcomeStep.tsx` offers Won / Lost / Draw with no reference to what the opponent has
+already filed, there is no constraint on `match_reports.result`, and the battle records page renders
+the clash without comment. **This is already live in the seeded data**, so it isn't hypothetical:
+
+```
+match 98746846 (skirmish)   Reikland Watch      -> draw
+match 98746846 (skirmish)   The Argent Hammer   -> lost
+```
+
+The standings then count the same game as a draw for one warband and a loss for the other. Cheapest
+fix is probably to show the opponent's filed result on the Outcome step when there is one, and to
+flag a mismatch on the records page, rather than to block it outright — a GM may legitimately need
+to correct one side.
+
+**How to replicate:** Ruins of the Stir → **Battle records** → the Skirmish of Mon 7 Sept, 17:09.
+Reikland Watch shows *Draw*; The Argent Hammer shows *Lost*.
+
+### 39. The recruit screens show nine bare stat numbers with no M/WS/BS/S/T/W/I/A/Ld headings
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `StatLine`'s `compact` prop is documented as "a single row of nine figures with no labels
+(**the caller shows a StatHeader once**)" — and `StatHeader`, though exported from
+`src/features/roster/shared/StatLine.tsx:57`, is **used nowhere in the app**. All three `compact`
+callers omit it: `recruitment/UnitList.tsx:38` (which backs both the Heroes *and* Henchmen tabs),
+`recruitment/HiredSwordsTab.tsx:69`, and `roster/view/AddWarriorSheet.tsx:43`. Every other statline
+in the app — warband page, builder, battle sheet, hire sheet — is labelled, so this is an omission
+rather than a house style. It bites hardest on the recruit screen, which is precisely where you
+compare two profiles before spending gold, and worst of all on a phone.
+
+**How to replicate:** The Argent Hammer → *Recruit* → Heroes. Warrior Priest reads
+"4 4 3 4 3 1 4 1 8" and Templars "4 4 3 3 3 1 3 1 7", with no column headings anywhere on screen.
+
+### 40. The post-battle wizard's Back/Next bar floats 48px above the bottom of the window on desktop
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `WizardShell.tsx:64` uses `sticky bottom-[calc(3rem+env(safe-area-inset-bottom))]`. The
+3rem is there to clear the phone tab bar — but `BottomNav` is `lg:hidden`
+(`src/app/BottomNav.tsx:11`), so at 1024px and above there is no tab bar and the button bar hangs in
+mid-air with a strip of list content still visible underneath it. One-class fix: add `lg:bottom-0`.
+
+**How to replicate:** Any browser window 1024px wide or more → file a post-battle report → step 2
+(Casualties), or any step whose content is taller than the viewport. The Back / Continue later /
+Discard / Next bar sits about 48px up from the window bottom with the next warrior's card peeking
+out below it.
+
+### 41. No gold-remaining figure inside the builder's Add-equipment sheet
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** On a phone the sheet covers the screen, so the GOLD LEFT summary is hidden behind it and
+you shop blind. Nothing stops the steppers going past the budget either — a Mercenary Captain can be
+taken to -45 gc with no feedback at all until the sheet is closed and the Problems panel is read.
+A running "X gc left" in the sheet header, and greying the `+` once an item is unaffordable, would
+close both halves. The trading post's hire sheet already does the equivalent with its "TREASURY
+AFTER" line, so there is a pattern to follow.
+
+**How to replicate:** New warband → *Add equipment* → step Heavy armour up to 18. Nothing in the
+sheet reacts. Close it: the summary bar reads **-45** in red with 3 problems.
+
+### 42. 72 hired swords with no search or filter
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** The warband chooser (73 entries) has a search box plus grade filters, and the Buy
+catalogue has a search box. The Hired swords tab has **no input element at all** — 72 cards to
+scroll through to find one. Its existing eligibility tags (Named in the rules / Check restriction /
+Rules exclude this warband / Unavailable) would make good ready-made filters, and are already
+computed.
+
+**How to replicate:** Any warband → *Recruit* → **Hired swords**. Scroll.
+
+### 43. No change-password option on the Account page
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** The Account page offers only Edit display name, Help, version and Sign out. A signed-in
+user who wants to change their password has to sign out and go round the "forgot password" email
+loop. `updatePassword` already exists in `src/api/auth.ts:65` but is wired only to the
+reset-password screen, so this is a small job — a sheet on the Account page calling the existing
+wrapper.
+
+**How to replicate:** Account. There is no password control anywhere on the screen.
+
+### 44. Material variants are also generated onto bases where the result is legal but absurd
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** The cosmetic remainder of #34, split out because it needs a judgement call rather than a
+rule. Even after excluding the incoherent bases, the generator still offers gromril and ithilmar
+versions of improvised and ritual objects: **Gromril Ladle**, **Gromril Kitchen Knife**, **Gromril
+Censer**, **Gromril Brazier Iron**, **Gromril Boat Hook**, **Gromril Cat o' Nine Tails**, **Gromril
+Boss Pole**, and the ithilmar equivalents. Nothing in the rules forbids a gromril ladle, but 14
+entries of this kind pad a hand-to-hand list that is already 173 long. Worth deciding whether
+`isMaterialVariantBase` should also require the base to be a *forged weapon* (which is what the
+file's own comment says it is doing: "anything that strikes with the wielder's own Strength and is
+an ordinary forged weapon").
+
+**How to replicate:** Trading post → Buy → search `gromril`. Scroll the hand-to-hand section.
+
+### 45. Exploration locations print their roll instruction twice
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `ExplorationStep.tsx:132` renders `ex.location.subRoll.prompt` above the die field, but
+the location's `text`, rendered as markdown just above it, already opens with the same sentence.
+**10 of the 11** sub-roll prompts in `src/rules/data/campaign/exploration.ts` duplicate a line that
+is already in the location text; the Well's `test.prompt` duplicates its `rules` string in the same
+way. Either drop the standalone prompt line, or trim the duplicated sentence out of the chart text.
+
+Note for whoever picks this up: the exploration files were being actively edited for #15 and #16
+when this was found, and that work does not touch line 132 — but re-check before editing.
+
+**How to replicate:** File a report → Exploration → roll dice containing a triple (three 2s gives
+**Smithy**). "Roll a D6 to determine what you find inside:" appears once above the D6 chart and
+again immediately below it, above the die field.
+
+### 46. The match page says "No battle sheet opened yet" after a battle has actually been fought
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `MatchPage.tsx:501-511` keys the per-warband summary off a `battle_sessions` row, which is
+only written when a tally is *saved*. Attacks resolved through the roll-it-out calculator and
+committed with "Log to both sheets" land in `battle_events` and are ignored, so a GM looking at the
+match page cannot tell that a game was played through the app at all. Confirmed in the database
+after a full test battle: 1 row in `battle_events`, 0 rows in `battle_sessions`.
+
+**How to replicate:** Schedule a battle → Start battle → Open battle sheet → Melee Attack → *Roll it
+through* to a result → **Log to both sheets** (the Log tab now shows the entry) → *Battle over*. The
+match page shows "No battle sheet opened yet." under both warbands.
+
+### 47. "1 warriors" and "1 items" — a few strings don't handle the singular
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** `src/rules/resolve/roster.ts:179` and `:186`, and `recruitment.ts:78`, hard-code
+"warriors"; `TradingPage.tsx:132` hard-codes "items". Worth fixing mainly because the rest of the app
+is careful about it ("1 model" / "2 models", "shard" / "shards"), so these read as slips.
+
+**How to replicate:** Start a new warband and add nobody — the Problems panel reads "**1 warriors**
+but a new Mercenaries (Reikland) warband needs at least 3". The Argent Hammer's trading post Stash
+tile reads "**1 items**".
+
+### 48. The battle turn counter starts at 0, and the combat log records "Turn 0"
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** The TURN stepper on the battle sheet opens at 0 and nothing prompts you to set it, so any
+attack logged before someone thinks to touch it is filed as turn 0 — in the persisted combat log, in
+the enemy view's header, and in the `battle_events` payload. A game starts at turn 1, so this reads
+as an uninitialised value rather than a deliberate one. Either default to 1, or label 0 as
+"not started". Related to #11, which proposes a turns feature for App Calculates games.
+
+**How to replicate:** Start a battle → log any attack without touching TURN → the Log tab reads
+"**Turn 0:** Captain Ulrich Brandt knocked down Siegmund the Hammer."
+
+### 49. Most screens leave the browser tab reading "Stirheim - Campaign Ledger"
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** Only seven screens call `usePageTitle`: the warband list, campaign list, a campaign, the
+map, roster import, account and help. Every other screen — a warband, the builder, trading post,
+recruit, advancements, a match, the battle sheet, the post-battle wizard, battle records, the
+scenario library and scenario pages, the simulator, sign-in — falls back to the static `index.html`
+title. It matters for browser history, for telling two open tabs apart at the table, and for the
+PWA's window title. The hook already exists and is one line per page.
+
+**How to replicate:** Open any warband. The tab reads "Stirheim - Campaign Ledger", not the warband
+name.
+
+### 50. Items with no numeric price sit in the Buy catalogue where they can never be bought
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** Nine catalogue entries have `price.base === null`. Four show "**Not listed**" (Masterwork
+Heavy Armour, Bec de Corbin, Fist, Firepots Miragliano), four show a multiplier ("**4 x Price**",
+"3 x base weapon price") and one is a Reward of the Shadowlord. "Obsidian Weapon — 4 x Price" is
+meaningless at the table, and "Fist" arguably should not appear in a shop at all. Either hide them
+from Buy, or show them with an explanation and a "name a price" box — the Sell tab already does
+exactly that for unpriced items ("No listed price · Name a price"), so the pattern exists.
+
+**How to replicate:** Trading post → Buy → search `armour` (Masterwork Heavy Armour — Not listed)
+and `obsidian` (Obsidian Weapon — 4 x Price).
+
+### 51. The "Unfinished draft" banner on the warband list can't be dismissed from there
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** The banner offers only "Continue building"; to get rid of it you have to open the builder
+and find *Discard draft*. A "Discard" alongside "Continue building" would close it off. Noting for
+balance that the rest of the draft handling is well done — starting a *different* warband prompts
+"Replace your unfinished draft? … Replace and start / Keep it", and navigating straight to another
+template's builder URL is guarded too, so this is only about the banner.
+
+**How to replicate:** Warbands list, with a draft in progress. The banner has one action.
+
+### 52. The rare-item Buy button is disabled without saying why
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** For a Rare item, "Buy for N gc" is `disabled` until the rarity roll is entered, but nothing
+says so — it just looks greyed out. One line of helper text ("Roll the rarity dice first") would do
+it. Worth noting the failure path is excellent by contrast: "Not available this time. Record the
+search so the roll stands; the hero may not re-roll", with a *Record the failed search* button.
+
+**How to replicate:** Trading post → Buy → any Rare item → the Buy button is greyed with no
+explanation until both rarity dice are entered.
+
+### 53. Removing a warrior or an item in the builder has no confirmation and no undo
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the QA sweep, not reported from play
+
+**Notes:** *Remove* on a hero in the builder drops the warrior and every piece of kit bought for them
+in one tap, with nothing to bring it back. The rest of the app is careful here — Archive warband,
+Delete warband, Cancel battle, Battle over and Discard draft all confirm first — so this is the odd
+one out.
+
+**How to replicate:** New warband → add a hero → buy them several items → *Remove* on the hero card.
+Gone immediately, no prompt.
+
+---
+
+**Verified correct during this sweep** (recorded so the same ground isn't covered twice):
+
+- **#7 (campaign map)** — re-tested after the fix. All 30 district nodes fall inside the viewBox, the
+  map image and the SVG agree on aspect ratio to three decimals so nothing drifts, districts carry
+  `aria-label` and are keyboard-focusable, and selecting one correctly swaps the side panel. Holds.
+- **#10 (stunned / knocked-down)** — re-tested after the fix. A second attack in the *same* phase
+  still rolls to hit (correct — that is the rulebook's own exception, as the entry's notes spell
+  out), and once the knock-down is logged the next sequence opens with "Sword: automatic hit — the
+  target is knocked down." Exactly right.
+- **Combat maths.** Spot-checked the simulator and battle sheet against the rulebook: the
+  hand-to-hand to-hit bands, the to-wound table including the S4-vs-T7 6+ edge case, the dagger's +1
+  enemy armour save, the 1-2/3-4/5-6 injury split, the two-weapon +1 Attack, the bladed critical
+  table under the optional-criticals house rule, and the D66 Serious Injuries chart. All correct.
+- **Wyrdstone income** (4 shards at warband size 5 → 80 gc), **warband rating** (5 models + 49 xp →
+  74; a fresh Captain at 20 starting xp → 25), and **exploration dice** (correctly excluding the hero
+  who went out of action, per "who survives without going out of action"). All correct.
+- **Roster validation** (overspend and minimum-warriors both caught, Save blocked, errors shown by
+  the field with a summary notice), **hired sword eligibility** (Protectorate of Sigmar is in the
+  `priests` group with Sisters of Sigmar and Witch Hunters, so the Bard offer is right), and the
+  **roster importer** (the Witch Hunters fixture parsed cleanly, with two sensible "things to check").
+  All correct.
+
+
+
 <!--
 ### N. Short title
 

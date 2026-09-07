@@ -116,6 +116,26 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 Given all three sit in the same small file, a fix would likely address them together rather than one at a time. Left as Open per instruction — investigation only for now.
 
+### 8. Parrying may not be working properly in roll-it-out; wants the same hand-off armour saves get
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "I'm not sure parrying is working properly in roll it out. it should probably work similar to armour saves (where you can roll the parry yourself or ask the defender to roll and it sends it to their app), but obviously only when the defender has a weapon that they can parry with."
+
+**Notes:**
+
+### 9. Better visual representation of multiple attacks — pick attack count up front, label "First attack" / "Second attack"; likely to merge with upcoming items about stunned/knocked-down targets
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "then another one is better visual representation of multiple attacks. when you open the popup, it should give the option to select how many attacks, detailing the maximum for that character. then you should have "first attack", "second attack" etc. there are more bugs to come that link to this, so you might need to merge some. particularly related to attacking stunned or knocked down foes"
+
+**Notes:** Tom has flagged this as likely to need merging with further related reports about attacking a target that's already stunned or knocked down — holding off on investigation/fix until those arrive so the whole picture is in one place rather than half-solved here and revised later.
+
 <!-- New batches go below this line, most recent last. Copy the entry template for each item. -->
 
 <!--

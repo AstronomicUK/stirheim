@@ -1170,7 +1170,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 67. Trading post never checks a warrior's own equipment list or armour bans, and rare items aren't quantity-capped
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the income and trading rules audit, reviewed by Tom, sent directly for the tracker; includes a decided ruling from Tom
 
@@ -1178,8 +1178,33 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 **Notes:** Shorter audit than most because income and trading is largely right — praised as correct and not worth re-checking: the wyrdstone income chart (8 rows × 6 size bands), warband size counting active heroes plus henchmen and excluding hired swords, partial wyrdstone sales with the once-per-sequence limit, rare availability at 2D6 vs the rarity number (one roll per Hero, barred for anyone taken out of action), selling at half price (and half the basic cost only for dice-priced rare items), and the full veteran-recruit flow. Half-price rounding down (a 15 gc item sells for 7) is also now a **settled ruling** — Tom confirmed 2026-09-07 that flooring is his own instruction, not a scrape gap; nobody should reopen it. Two further wiring gaps, both "everything needed already exists, just not connected":
 
-- **Nothing in the shop checks whether an item is on the warband's own equipment list.** The rule ("your warriors lack the skill to use any weapons other than the ones listed in the Recruitment charts") is fully data-backed — every warband template carries its `equipmentLists` — but the only consumers are `builder.ts` (creation) and `freeDagger.ts`. After creation, any warrior can be sold anything in the catalogue with no warning: a Skaven with a halberd, a Sister of Sigmar with a bow. This is separate from the per-item `ITEM_RESTRICTIONS` gate ("Chaos Dwarfs only") that Phase 16 already built and which works well — list membership itself has no check anywhere.
+- **Nothing in the shop checks whether an item is on the warband's own equipment list.** The rule ("your warriors lack the skill to use any weapons other than the ones listed in the Recruitment charts") is fully data-backed — every warband template carries its `equipmentLists` — but the only consumers are `builder.ts` (creation) and `freeDagger.ts`. After creation, any warrior can be sold anything in the catalogue with no warning: a Skaven with a halberd, a Sister of Sigmar with a bow. This is separate from the per-item `ITEM_RESTRICTIONS` gate ("Chaos Dwarfs only") that Phase 16 already built and which works well — list membership itself has no check anywhere. **Left open**: which of a warband's (possibly several) equipment lists applies to a given unit is a real design question — not a one-line wiring fix like the ban gap below — worth Tom's steer on before building it.
 - **Category equipment bans never reach the shop.** `equipmentBanReason` (`resolve/roster.ts:297`) already knows a Troll Slayer may wear no armour, Flagellants use no missile weapons, and so on — but it's only called from `validateRoster`, which runs on the Warband page. `itemRestrictionWarnings`, which the Buy tab does call, never consults it. The shop sells a Slayer heavy armour without comment, and the problem only surfaces later on a different screen, after the gold is already spent.
+
+**Fixed:**
+- The rare-item cap is now enforced, not just shown as a warning: the quantity stepper caps at 1 (or 2 where the item's own price line defines a brace amount, charged at the brace price), and the buy button is gated on staying within that cap. Verified live: a plain rare item (Sword Breaker) caps at 1 with the rulebook note; a brace item (Double-barrelled Duelling Pistol, and plain Pistol, which also braces) caps at 2 with a brace-specific note; a common item (Dagger) is unaffected. Commit `9faf517`.
+- `equipmentBanReason` is now also called from `itemRestrictionWarnings`, so the shop shows the same category-ban warning the Warband page already did (still a warning, not a block, matching this module's own documented "everything here is a warning" pattern — unlike the rare-item cap above, which was a decided block). Added a regression test (a Dwarf Slayer Cult hero buying Heavy Armour) since `equipmentBanReason` had no test coverage at all before this, in either of its call sites. Commit `e8694b3`.
+
+Equipment-list membership (the first bullet above) is left open — it needs a design decision this fix didn't require.
+
+### 68. Rout checks: 15 warband skills that should help are invisible on the rout screen, plus per-warband model-counting exceptions
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the warband rating and rout rules audit, reviewed by Tom, sent directly for the tracker
+
+> "Fifteen warband skills re-roll or avoid a failed Rout test and NONE appears on the rout check screen, which is the one screen where they matter. From the data: Utter Determination (Sisters of Sigmar, and again Protectorate of Sigmar), Da Cunnin' Plan (Orc Mob, Black Orcs), Bellowing Roar (Beastmen Raiders, Maneaters, Ogre Hunting Party), Blood Oath (Ostlanders), Virtue of Discipline (Bretonnian Knights), Tyrant (Black Dwarfs), Questing Vow (Bretonnian Chapel Guard), Heart of the Warrior (Marauders of Chaos), Fanatical (Dreamwalkers), Songster (Dwarf Slayer Cult), plus the Merchant Caravans table. The skills are already on the hero's roster, so surfacing 'this hero may re-roll a failed Rout test' beside the roll in RoutCheck.tsx is a small change with real payoff." (`docs/RATING-ROUT-RULES-GAPS.md`, finding 1)
+
+**Notes:** The rating maths itself was praised as correct, including the parts needing a judgement call, and documented in the resolver's own header — not worth re-checking: 5 per warrior, 20 per large creature plus accumulated experience, dead/retired/captured heroes excluded, hired swords parsed from their own printed "Rating:" text across four phrasings, and the rout threshold (`Math.ceil(models / 4)`) matching the rulebook's worked example. Every remaining finding is at the rout *check* rather than the rating:
+
+- **Rout-counting exceptions exist for animals but not for warriors.** `countsForRout` lives on animal kinds only (a Wardog counts, a Gnoblar doesn't), so five warband-specific model-counting rules have nowhere to go: Snotlings' "Insignificant" (the whole mob counts as ONE model for rout, max warband size and income), Night Goblins' "Just Squigs" (Squigs count as HALF a model), Battle Monks' "Ignored" (Peasants out of action don't count at all), Ogre Hunting Party's "Ignored" (Sabretusks the same), Orc Mob's "Not Orcs" (Goblins/Cave Squigs going down doesn't unsettle the Orcs). The income half of the Snotling rule already exists (`groupIncomeCountsAs: 1` in `campaignRules`) — this needs a rout equivalent and a max-warband-size one, same shape.
+- **Hired swords are still offered as Rout-test Leadership.** Same finding as #60 (A1) — the auditor flagged it again here since rout is its home topic, not as a new item.
+- **The battle sheet has no "stunned" state, so half the leader-substitution rule can't be applied.** The rule: if the leader is out of action *or stunned*, use the highest Leadership among fighters who are neither. The sheet only ever records out-of-action per warrior; stunned and knocked-down exist nowhere but free-text notes, so `suggestedLeadership` can suggest a stunned leader with no way to warn. Defensible for a tracker that doesn't follow turns, but it's a rule the app silently gets wrong rather than declines to model.
+- **Merchant Caravans' Bribery has no flow**: "Whenever the warband has to take a Rout test... He may immediately pay 5 gc per non-Hero" to avoid it.
+- **Trade Wagon abandonment isn't modelled**: "If the warband fails its Rout test and no model is driving the Trade Wagon, then it is abandoned" to the winning warband — a failed rout just sets `routed` and ends the battle; the wagon stays on the roster.
+- **Housekeeping**: two functions are both named `warbandRating` — `resolve/rating.ts`'s is the real one every screen and both API paths use; `data/campaign/trading.ts`'s only caller is its own test, dead code that could silently drift. Worth deleting or renaming.
+
+Also confirmed correct: voluntary rout is offered exactly when the rulebook allows it (only once a test is required), and nothing wrongly exempts psychology-immune warbands from rout tests (the Undead must test too, correctly).
 
 <!--
 ### N. Short title

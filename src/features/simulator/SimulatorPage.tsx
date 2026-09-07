@@ -17,7 +17,7 @@ import type { CampaignHouseRules } from '../../rules/types/roster'
 import { Notice, PageHeader, SegmentedControl, SelectField, Spinner, TextField, TwoColumn } from '../../ui'
 import { Card, Section, Tag } from '../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant } from '../match/fight/combatants'
-import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds } from '../match/fight/odds'
+import { combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, type FightOdds, type OddsSensitivity } from '../match/fight/odds'
 import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, pts, skillGains, statGains, unitsOf, type AnalyserInput, type SideSource, type TemplateSide } from './model'
 
 type Tab = 'odds' | 'stats' | 'skills'
@@ -349,7 +349,9 @@ function Fight({
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = choices.toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)
-  const odds: FightOdds = computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules })
+  const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules }
+  const odds: FightOdds = computeOdds(fightSetup)
+  const sensitivity = computeOddsSensitivity(fightSetup)
   const phaseWeapons = offHand && offHandValid && phase === 'melee' ? [primary, offHand] : [primary]
   const input: AnalyserInput = { attacker, attackerKit, defender, defenderKit, phase, weapons: phaseWeapons, context, houseRules }
   const fallback = findWeapon(phase === 'melee' ? 'sword' : 'bow')!
@@ -396,7 +398,12 @@ function Fight({
         </Card>
       </Section>
 
-      {tab === 'odds' ? <OddsView odds={odds} attacker={attacker} defender={defender} /> : null}
+      {tab === 'odds' ? (
+        <>
+          <OddsView odds={odds} attacker={attacker} defender={defender} />
+          <OddsSensitivityView sensitivity={sensitivity} attacker={attacker} defender={defender} />
+        </>
+      ) : null}
       {tab === 'stats' ? <StatGainsView input={input} fallback={fallback} /> : null}
       {tab === 'skills' ? <SkillGainsView input={input} role={role} setRole={setRole} respectTables={respectTables} setRespectTables={setRespectTables} fallback={fallback} /> : null}
     </>
@@ -483,6 +490,117 @@ function OddsView({ odds, attacker, defender }: { odds: FightOdds; attacker: Com
             ))}
           </ul>
         ) : null}
+      </Card>
+    </Section>
+  )
+}
+
+/** One header row of opponent stat values 1-10, then labelled percentage rows; the real opponent's value picked out. */
+function RowTable({ columnsLabel, rows, highlight }: { columnsLabel: string; rows: { label: string; values: number[] }[]; highlight: number }) {
+  return (
+    <div className="-mx-1 overflow-x-auto px-1">
+      <table className="w-full min-w-[34rem] border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-border text-left">
+            <th scope="col" className="py-1.5 pr-3 text-left text-[10px] font-medium uppercase tracking-wider text-ink-dim">
+              {columnsLabel}
+            </th>
+            {STATS_1_TO_10.map((v) => (
+              <th key={v} scope="col" className={`py-1.5 pl-2 text-right font-medium ${v === highlight ? 'text-brass' : 'text-ink-dim'}`}>
+                {v}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label} className="border-b border-border/60 last:border-0">
+              <th scope="row" className="max-w-[13rem] py-1.5 pr-3 text-left text-sm font-normal text-ink">
+                {row.label}
+              </th>
+              {row.values.map((p, i) => (
+                <td key={i} className={`py-1.5 pl-2 text-right tabular-nums ${STATS_1_TO_10[i] === highlight ? 'bg-brass/10 font-semibold text-ink' : 'text-ink-dim'}`}>
+                  {percent(p)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/** Chance to take the defender out of action this phase, opponent Weapon Skill by Toughness, both 1-10; the real matchup picked out. */
+function OoaGrid({ grid, referenceWS, referenceT }: { grid: number[][]; referenceWS: number; referenceT: number }) {
+  return (
+    <div className="-mx-1 overflow-x-auto px-1">
+      <table className="w-full min-w-[34rem] border-collapse text-xs">
+        <thead>
+          <tr>
+            <th className="py-1 pr-2 text-left text-[10px] font-medium uppercase tracking-wider text-ink-dim" rowSpan={2}>
+              Opp. WS ↓
+            </th>
+            <th className="py-1 text-center text-[10px] font-medium uppercase tracking-wider text-ink-dim" colSpan={10}>
+              Opponent Toughness →
+            </th>
+          </tr>
+          <tr>
+            {STATS_1_TO_10.map((t) => (
+              <th key={t} className={`py-1 text-center font-medium ${t === referenceT ? 'text-brass' : 'text-ink-dim'}`}>
+                {t}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {STATS_1_TO_10.map((ws, r) => (
+            <tr key={ws}>
+              <th scope="row" className={`py-1 pr-2 text-left font-medium ${ws === referenceWS ? 'text-brass' : 'text-ink-dim'}`}>
+                {ws}
+              </th>
+              {STATS_1_TO_10.map((t, c) => (
+                <td
+                  key={t}
+                  className={`py-1 text-center tabular-nums ${ws === referenceWS && t === referenceT ? 'bg-brass/20 font-semibold text-ink' : 'text-ink-dim'}`}
+                >
+                  {percent(grid[r][c])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/**
+ * The same odds, but across the full range of an opponent's stats rather than only the one chosen
+ * above — how sensitive this matchup is, and where the real opponent sits in it.
+ */
+function OddsSensitivityView({ sensitivity, attacker, defender }: { sensitivity: OddsSensitivity; attacker: Combatant; defender: Combatant }) {
+  return (
+    <Section title="Against a range of opponents" aside={`${defender.name}'s own WS ${sensitivity.referenceWS}, T ${sensitivity.referenceT} highlighted`}>
+      <Card className="flex flex-col gap-4 px-4 py-4">
+        <p className="text-sm leading-relaxed text-ink-dim">
+          {attacker.name}&apos;s odds if {defender.name}&apos;s Weapon Skill or Toughness were different, with everything else — armour, skills, the
+          situation above — held as chosen. The highlighted row or column is {defender.name}&apos;s real value.
+        </p>
+        {sensitivity.hitRows ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to hit, against opponent Weapon Skill</p>
+            <RowTable columnsLabel="Opponent WS" rows={sensitivity.hitRows} highlight={sensitivity.referenceWS} />
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to hit and wound, against opponent Toughness</p>
+          <RowTable columnsLabel="Opponent T" rows={sensitivity.woundRows} highlight={sensitivity.referenceT} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to take {defender.name} out of action this phase</p>
+          <OoaGrid grid={sensitivity.ooaGrid} referenceWS={sensitivity.referenceWS} referenceT={sensitivity.referenceT} />
+        </div>
       </Card>
     </Section>
   )

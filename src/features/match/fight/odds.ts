@@ -227,6 +227,73 @@ export function computeOdds(setup: FightSetup): FightOdds {
   return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context }) }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Sensitivity: how the odds move across the full range of an opponent's stats, not just the one
+// chosen. The simulator's older sibling showed this as tables and a heat-mapped grid; this is the
+// same idea, built on the same engine calls as computeOdds above.
+// ---------------------------------------------------------------------------------------------
+
+export const STATS_1_TO_10 = Array.from({ length: 10 }, (_, i) => i + 1)
+
+export interface ValueRow {
+  label: string
+  values: number[]
+}
+
+export interface OddsSensitivity {
+  /** Chance to hit against opponent Weapon Skill 1-10; null for a ranged attack, which does not depend on it. */
+  hitRows: ValueRow[] | null
+  /** Chance to hit and wound against opponent Toughness 1-10 (hit chance held at the real opponent's Weapon Skill). */
+  woundRows: ValueRow[]
+  /** Chance to take the defender out of action this phase: opponent Weapon Skill (rows) by Toughness (columns), 1-10 each. */
+  ooaGrid: number[][]
+  /** The real defender's own Weapon Skill and Toughness, to highlight in the tables above. */
+  referenceWS: number
+  referenceT: number
+}
+
+export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
+  const dosed = applyPreBattle(setup.attacker, setup.attackerKit, setup.attackerPreBattle ?? [])
+  const targetDosed = applyPreBattle(setup.defender, setup.defenderKit, setup.defenderPreBattle ?? [])
+  const attacker = toCharacter(dosed.combatant, dosed.kit)
+  const baseDefender = toDefender(targetDosed.combatant, targetDosed.kit)
+  const phase: WeaponKind = setup.primary.type
+  const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => k.id === w.id) ?? w
+  const primary = pick(setup.primary)
+  const offHand = setup.offHand ? pick(setup.offHand) : null
+  const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
+  const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing }
+  const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
+
+  const perWeapon = weaponsForPhase(weapons, phase).map((weapon, index) => ({ weapon, count: computeAttackCount(attacker, weapon, index === 0, context) }))
+  const n = perWeapon.reduce((s, x) => s + x.count, 0)
+  const nLabel = `${n} attack${n === 1 ? '' : 's'}`
+
+  const hitAt = (defender: DefenderProfile, weapon: Weapon) => probabilityAtLeast(buildAttackInput({ attacker, weapon, defender, context, houseRules }).hitThreshold)
+  const woundAt = (defender: DefenderProfile, weapon: Weapon) => probabilityAtLeast(buildAttackInput({ attacker, weapon, defender, context, houseRules }).woundThreshold)
+  const anyOf = (p: (w: Weapon) => number) => 1 - perWeapon.reduce((acc, x) => acc * Math.pow(1 - p(x.weapon), x.count), 1)
+  const allOf = (p: (w: Weapon) => number) => perWeapon.reduce((acc, x) => acc * Math.pow(p(x.weapon), x.count), 1)
+
+  const hitRows: ValueRow[] | null =
+    phase === 'melee'
+      ? [
+          { label: `At least one hits (${nLabel})`, values: STATS_1_TO_10.map((ws) => anyOf((w) => hitAt({ ...baseDefender, WS: ws }, w))) },
+          { label: `All hit (${nLabel})`, values: STATS_1_TO_10.map((ws) => allOf((w) => hitAt({ ...baseDefender, WS: ws }, w))) },
+        ]
+      : null
+
+  // The hit chance is held at the real opponent's Weapon Skill; only the wound threshold moves with Toughness.
+  const hitAndWoundAt = (t: number, weapon: Weapon) => hitAt(baseDefender, weapon) * woundAt({ ...baseDefender, T: t }, weapon)
+  const woundRows: ValueRow[] = [
+    { label: `At least one hits and wounds (${nLabel})`, values: STATS_1_TO_10.map((t) => 1 - perWeapon.reduce((acc, x) => acc * Math.pow(1 - hitAndWoundAt(t, x.weapon), x.count), 1)) },
+    { label: `All hit and wound (${nLabel})`, values: STATS_1_TO_10.map((t) => perWeapon.reduce((acc, x) => acc * Math.pow(hitAndWoundAt(t, x.weapon), x.count), 1)) },
+  ]
+
+  const ooaGrid: number[][] = STATS_1_TO_10.map((ws) => STATS_1_TO_10.map((t) => phaseChain(attacker, weapons, { ...baseDefender, WS: ws, T: t }, context, [], houseRules, phase).outOfAction))
+
+  return { hitRows, woundRows, ooaGrid, referenceWS: baseDefender.WS, referenceT: baseDefender.T }
+}
+
 /**
  * Who strikes first in close combat (rulebook: chargers first, then Initiative order, ties roll off),
  * with the weapon rules that override it: Strike First weapons in the first turn or when charged,

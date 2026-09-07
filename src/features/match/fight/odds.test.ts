@@ -3,7 +3,7 @@ import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
 import { loadoutOf, type Combatant } from './combatants'
-import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, toDefender, type FightSetup } from './odds'
+import { combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
@@ -163,6 +163,40 @@ describe('toDefender', () => {
     expect(d.parryWeaponCount).toBe(2)
     expect(d.parryReroll).toBe(true)
     expect(d.W).toBe(1)
+  })
+})
+
+describe('computeOddsSensitivity', () => {
+  it('the highlighted column of each melee row matches computeOdds for the real opponent', () => {
+    const fixture = setup(captain, skaven, 'sword', 'dagger')
+    const odds = computeOdds(fixture)
+    const sensitivity = computeOddsSensitivity(fixture)
+    expect(sensitivity.referenceWS).toBe(skaven.stats.WS)
+    expect(sensitivity.referenceT).toBe(skaven.stats.T)
+    const wsIndex = STATS_1_TO_10.indexOf(skaven.stats.WS)
+    const tIndex = STATS_1_TO_10.indexOf(skaven.stats.T)
+    expect(sensitivity.hitRows![0].values[wsIndex]).toBeCloseTo(odds.chain.anyHit, 10)
+    expect(sensitivity.ooaGrid[wsIndex][tIndex]).toBeCloseTo(odds.chain.outOfAction, 10)
+  })
+
+  it('a higher opponent Weapon Skill only ever lowers the chance to hit, in melee', () => {
+    const sensitivity = computeOddsSensitivity(setup(captain, skaven, 'sword', 'dagger'))
+    const values = sensitivity.hitRows![0].values
+    for (let i = 1; i < values.length; i++) expect(values[i]).toBeLessThanOrEqual(values[i - 1] + 1e-9)
+  })
+
+  it('a higher opponent Toughness only ever lowers the chance to wound', () => {
+    const sensitivity = computeOddsSensitivity(setup(captain, skaven, 'sword', 'dagger'))
+    const values = sensitivity.woundRows[0].values
+    for (let i = 1; i < values.length; i++) expect(values[i]).toBeLessThanOrEqual(values[i - 1] + 1e-9)
+  })
+
+  it('ranged attacks have no hit-vs-Weapon-Skill row (Ballistic Skill does not care about it)', () => {
+    const sensitivity = computeOddsSensitivity(setup(marksman, skaven, 'bow', null))
+    expect(sensitivity.hitRows).toBeNull()
+    expect(sensitivity.woundRows).toHaveLength(2)
+    expect(sensitivity.ooaGrid).toHaveLength(10)
+    expect(sensitivity.ooaGrid[0]).toHaveLength(10)
   })
 })
 

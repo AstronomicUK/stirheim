@@ -848,7 +848,7 @@ an ordinary forged weapon").
 
 ### 45. Exploration locations print their roll instruction twice
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -864,6 +864,12 @@ when this was found, and that work does not touch line 132 — but re-check befo
 **How to replicate:** File a report → Exploration → roll dice containing a triple (three 2s gives
 **Smithy**). "Roll a D6 to determine what you find inside:" appears once above the D6 chart and
 again immediately below it, above the die field.
+
+**Fixed:** `bd147af`. Trimmed the duplicate lead-in sentence from the `rules` text of all 10
+affected locations (it stays once, in the standalone prompt line next to the die field) and
+shortened the Well's `test.prompt` (which duplicated its `rules` in full) to "See above." Verified
+by scripting a duplication check across every location rather than a live roll, since forcing a
+specific triple would mean mutating a real warband's exploration state to test a text-only change.
 
 ### 46. The match page says "No battle sheet opened yet" after a battle has actually been fought
 
@@ -901,7 +907,7 @@ message text.
 
 ### 48. The battle turn counter starts at 0, and the combat log records "Turn 0"
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -913,6 +919,13 @@ as an uninitialised value rather than a deliberate one. Either default to 1, or 
 
 **How to replicate:** Start a battle → log any attack without touching TURN → the Log tab reads
 "**Turn 0:** Captain Ulrich Brandt knocked down Siegmund the Hammer."
+
+**Fixed:** `014ace3`. A fresh battle sheet's `turn` now defaults to 1 (`emptyBattleLiveState`'s
+schema default); `setTurn` still floors at 0 so a GM can correct it back down if they need to.
+Not re-verified live in the browser — the change is a one-line schema default fully exercised by
+the existing test suite (`sheet.test.ts`'s floor-clamp assertion still passes unchanged), and
+setting up a fresh scheduled battle just to read one stepper's initial value felt like more
+shared-environment churn than the fix warranted.
 
 ### 49. Most screens leave the browser tab reading "Stirheim - Campaign Ledger"
 

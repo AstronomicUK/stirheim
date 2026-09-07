@@ -358,7 +358,7 @@ Any fix needs to decide where the retained history is meant to live (kept only f
 
 ### 21. Can't submit the second warband's post-battle report after submitting the first, when one player controls both sides of a match
 
-**Status:** 🔲 Open
+**Status:** ⛔ Blocked — needs Tom to reproduce it and capture the exact symptom (error banner, disabled button, redirect)
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 

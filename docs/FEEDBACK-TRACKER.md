@@ -1111,13 +1111,15 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 62. Experience and advances: recruited heroes and henchmen are credited with advances they never earned
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🔴 High
 **Reported:** n/a — found by the experience and advances rules audit, reviewed by Tom, sent directly for the tracker
 
 > "Heroes recruited mid-campaign are credited with advances they never earned. `builder.ts` computes `startingLevelUps` so a new warband's Captain owes nothing for his starting experience. `recruitment.ts` — the path used after a battle — sets `levelUps: 0` instead, at both `recruitment.ts:145` (heroes) and `:283` (henchman groups). `xpProgress` in `features/roster/view/lookups.ts:181` then reports `advancesOwed = boxes crossed - levelUps`, so every box the starting experience already crossed reads as an advance waiting to be rolled. 211 of the hero templates across the 49 warbands have starting experience, so this is close to universal rather than an edge case. A Mercenary Champion recruited at 8 experience shows four advances owed. The worst case found is the Lustrian Reavers Conqueror at 24 experience, who arrives owing nine. The fix is one line each: call `startingLevelUps` the way the builder and the importer already do." (`docs/EXPERIENCE-RULES-GAPS.md` A1)
 
 **Notes:** This is the same `startingLevelUps` helper #35 (the leader's free dagger) and the roster importer already call correctly — `recruitment.ts` is simply the one path that never adopted it. High priority given the reach (211 of the hero templates in the game) and how visibly wrong the result is (a freshly-hired Champion immediately showing multiple advances "owed" for experience nobody actually earned in play).
+
+**Fixed:** Both call sites now call `startingLevelUps(unit, "hero" | "henchman")` instead of hard-coding `0`. Verified live: hired a Templar (12 starting xp) onto The Argent Hammer — was showing phantom advances owed before the fix, now correctly reads "next advance at 14 (2 to go)" and "Nothing owed". Updated one pre-existing test (`recruitment.test.ts`) that had asserted the old buggy `levelUps: 0` value; full suite, lint and build all green. Commit `40608e4`.
 
 ### 63. Movement can never be increased by an advance, for anyone, ever
 

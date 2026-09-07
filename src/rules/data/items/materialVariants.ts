@@ -50,7 +50,7 @@ export function materialVariantItem(base: Item, material: Material): Item {
     name: `${material.label} ${base.name}`,
     category: "melee",
     price: { base: price, text: `${price} gc (${material.factor} x ${base.price.text})` },
-    availability: { kind: "rare", rarity: material.rarity, text: `Rare ${material.rarity}` },
+    availability: { kind: "rare", rarity: material.rarity, restriction: base.availability.restriction, text: `Rare ${material.rarity}${base.availability.restriction ? ` (${base.availability.restriction})` : ""}` },
     description: base.description,
     range: base.range,
     strength: base.strength,

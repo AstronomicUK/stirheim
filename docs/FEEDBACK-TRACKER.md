@@ -531,7 +531,7 @@ confirmed working — see the "verified correct" note at the end of the batch.
 
 ### 33. Gromril and Ithilmar weapons bypass the base weapon's warband restriction
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🔴 High
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -563,6 +563,10 @@ to the audit's owner.
 `Obsidian`. Open *Sons of Hashut Obsidian Weapon* — it correctly demands a reason. Open *Gromril
 Sons of Hashut Obsidian Weapon* — no restriction line, no reason box, straight to "Buy for 240 gc".
 Same with `Dragon Sword`.
+
+**Fix:** `itemRestriction(itemId)` (`src/rules/data/itemRules/index.ts`) now strips a leading `gromril_`/`ithilmar_` prefix and falls back to the base weapon's id when the variant's own id has no entry in `ITEM_RESTRICTIONS` — exact-match lookup first, so nothing changes for any id that genuinely does have its own entry. This restores the `onlyWarbands`/`notWarbands` guard (and everything else keyed by restriction — fused, unsellable, one-per-warband, and so on, if a base weapon ever carries one) for every gromril/ithilmar weapon in one place, rather than duplicating each of the ~90 base weapons' entries under a second id. Also restored the cosmetic half: `materialVariantItem` (`data/items/materialVariants.ts`) now carries the base item's `availability.restriction` into its own generated availability, so the shop line reads "Rare 11 (Chaos Dwarfs only)" again instead of just "Rare 11" — mirroring the exact pattern `itemPricing.ts` already uses when it rebuilds availability text elsewhere.
+
+Verified live on local dev with the QA sweep's own reproduction: The Argent Hammer → Trading post → Buy → search "Obsidian" now shows all three Sons of Hashut Obsidian Weapon entries (plain, Gromril, Ithilmar) with "Rare N · Chaos Dwarfs only"; opening the Gromril one shows "The rules say — Gromril Sons of Hashut Obsidian Weapon is for Chaos Dwarfs only" with the "Reason for buying anyway" box, exactly matching the plain item's behaviour. Added a unit test (`itemRules.test.ts`) covering both the restriction warning and the display text for this exact item, plus confirming a gromril weapon with no race-restricted base (a Gromril Sword) stays unrestricted. `tsc -b`, `oxlint` and the full `vitest run` suite (1172 passed) all clean.
 
 ### 34. A weapon made of obsidian cannot also be made of gromril — material variants stack onto other materials, onto upgrades, and onto choice placeholders
 

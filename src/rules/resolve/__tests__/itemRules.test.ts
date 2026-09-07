@@ -44,6 +44,17 @@ describe("item restrictions", () => {
     expect(itemRestrictionWarnings(elves, I("bugmans_ale"), { kind: "stash", equipment: [] })[0]).toMatch(/Elves/);
   });
 
+  it("a gromril or ithilmar weapon carries the same race-and-creed restriction as its base weapon", () => {
+    expect(itemRestrictionWarnings(reikland, I("gromril_sons_of_hashut_obsidian_weapon"), captain)[0]).toMatch(/for Chaos Dwarfs only/);
+    expect(itemRestrictionWarnings(reikland, I("ithilmar_sons_of_hashut_obsidian_weapon"), captain)[0]).toMatch(/for Chaos Dwarfs only/);
+    const hashut = warband("the_sons_of_hashut", [hero("k", "sons_of_hashut_apprentice_sorcerer")]);
+    expect(itemRestrictionWarnings(hashut, I("gromril_sons_of_hashut_obsidian_weapon"), { kind: "hero", id: "k", unitTemplateId: "sons_of_hashut_apprentice_sorcerer", equipment: [] })).toEqual([]);
+    // The display text carries the same "(X only)" note the base item has.
+    expect(I("gromril_sons_of_hashut_obsidian_weapon").availability.text).toBe("Rare 11 (Chaos Dwarfs only)");
+    // A plain gromril/ithilmar weapon with no race restriction on its base stays unrestricted.
+    expect(itemRestrictionWarnings(reikland, I("gromril_sword"), captain)).toEqual([]);
+  });
+
   it("arrows need a bow, and a second helmet of a kind is one per model", () => {
     expect(itemRestrictionWarnings(reikland, I("hunting_arrows"), captain)[0]).toMatch(/needs a bow/);
     const archer: ItemHolder = { ...captain, equipment: [item("bow")] };

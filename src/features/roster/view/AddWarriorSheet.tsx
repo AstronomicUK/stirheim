@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { HIRED_SWORDS } from '../../../rules/data/campaign/hiredSwords'
 import type { UnitTemplate, WarbandTemplate } from '../../../rules/types'
 import { Button, SelectField, Sheet } from '../../../ui'
-import { StatLine } from '../shared/StatLine'
+import { StatHeader, StatLine } from '../shared/StatLine'
 
 export type AddWarriorChoice =
   | { kind: 'hero'; unit: UnitTemplate }
@@ -52,10 +52,12 @@ export function AddWarriorSheet({ open, onClose, template, onAdd }: AddWarriorSh
           <>
             <section>
               <h3 className="text-xs uppercase tracking-[0.25em] text-ink-dim">Heroes</h3>
+              {template.heroTemplates.length > 0 ? <StatHeader /> : null}
               <ul className="divide-y divide-border">{template.heroTemplates.map((u) => unitButton(u, 'hero'))}</ul>
             </section>
             <section>
               <h3 className="text-xs uppercase tracking-[0.25em] text-ink-dim">Henchman groups</h3>
+              {template.henchmanTemplates.length > 0 ? <StatHeader /> : null}
               <ul className="divide-y divide-border">{template.henchmanTemplates.map((u) => unitButton(u, 'group'))}</ul>
             </section>
           </>

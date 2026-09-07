@@ -6,7 +6,7 @@ import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment,
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
 import { Button, Markdown, Notice, NumberField, Sheet, TextField, OverrideField } from '../../ui'
-import { StatLine } from '../roster/shared/StatLine'
+import { StatHeader, StatLine } from '../roster/shared/StatLine'
 import { Card, ItemLines, KeyValue, RuleList, Section, Tag } from '../roster/view/bits'
 import {
   findHiredSwordEntry,
@@ -51,37 +51,40 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
         {active.length === 0 ? (
           <p className="text-sm text-ink-dim">No hired swords at the moment.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {active.map((hs) => {
-              const entry = findHiredSwordEntry(hs.hiredSwordId)
-              return (
-                <li key={hs.id}>
-                  <Card className="flex flex-col gap-3 px-4 py-3">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-base text-ink">{hs.name}</p>
-                        <p className="text-xs text-ink-dim">{entry?.name ?? hs.hiredSwordId}</p>
+          <>
+            <StatHeader className="px-1" />
+            <ul className="flex flex-col gap-3">
+              {active.map((hs) => {
+                const entry = findHiredSwordEntry(hs.hiredSwordId)
+                return (
+                  <li key={hs.id}>
+                    <Card className="flex flex-col gap-3 px-4 py-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-base text-ink">{hs.name}</p>
+                          <p className="text-xs text-ink-dim">{entry?.name ?? hs.hiredSwordId}</p>
+                        </div>
+                        <span className="shrink-0 text-right text-xs text-ink-dim">
+                          Upkeep <span className="text-sm text-ink">{upkeepText(entry)}</span>
+                        </span>
                       </div>
-                      <span className="shrink-0 text-right text-xs text-ink-dim">
-                        Upkeep <span className="text-sm text-ink">{upkeepText(entry)}</span>
-                      </span>
-                    </div>
-                    <StatLine stats={hs.stats} compact className="text-xs" />
-                    {canEdit ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button variant="secondary" onClick={() => setPaying(hs)}>
-                          Pay upkeep
-                        </Button>
-                        <Button variant="danger" onClick={() => setDismissing(hs)}>
-                          Dismiss
-                        </Button>
-                      </div>
-                    ) : null}
-                  </Card>
-                </li>
-              )
-            })}
-          </ul>
+                      <StatLine stats={hs.stats} compact className="text-xs" />
+                      {canEdit ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button variant="secondary" onClick={() => setPaying(hs)}>
+                            Pay upkeep
+                          </Button>
+                          <Button variant="danger" onClick={() => setDismissing(hs)}>
+                            Dismiss
+                          </Button>
+                        </div>
+                      ) : null}
+                    </Card>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </Section>
 

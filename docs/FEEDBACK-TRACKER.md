@@ -680,7 +680,7 @@ to 10. Sheet says 50 gc each; card reads "50 gc · **250 gc**"; GOLD LEFT falls 
 
 ### 37. The Advances step labels an un-rolled advance "Done", and a half-rolled one "To do"
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -697,6 +697,10 @@ deferred.
 (Reikland Watch has three). On the Advances step, before touching anything, **every** card shows
 "Done". Roll one with *Roll for me* → that card flips to "**To do**" while the untouched ones still
 say "Done".
+
+**Fix:** deliberately left `derive.ts`'s `complete: true` alone for the untouched case — that flag also gates whether the wizard blocks submission, and an untouched advance genuinely shouldn't block filing (it's meant to be finished later from Advancements). The bug was only ever in `AdvancesStep.tsx` reusing that one boolean to pick the tag text, collapsing "deliberately deferred, needs no action here" and "actually finished" into the same "Done" label. Added a third rendering case, checked ahead of `item.complete`: when `mode === 'now'` and `plan.total === null` (nothing rolled yet), the tag now reads "Not rolled" instead of "Done". The genuinely-finished case still reads "Done", and a rolled-but-undecided advance still correctly reads "To do" (that part was never backwards — a card mid-roll needing a skill choice does need action).
+
+Verified live on local dev: fought a fresh Reikland Watch battle, reached the Advances step with one advance owed — the untouched card read "Not rolled"; rolling it (New Skill, rolled 5) flipped it to "To do"; picking a skill (Strike to Injure) flipped it to "Done". All three states read correctly for the first time. `tsc -b`, `oxlint` and the full `vitest run` suite clean (no test covered this UI-only label before).
 
 ### 38. Both sides of a match can file contradictory results, and nothing flags it
 

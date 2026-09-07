@@ -73,7 +73,19 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
             {kind} · earned at {item.request.threshold_xp} xp
           </p>
         </div>
-        {item.complete ? <Tag tone="brass">{mode === 'later' ? 'Later' : mode === 'pickLater' ? 'Pick later' : 'Done'}</Tag> : <Tag tone="warn">To do</Tag>}
+        {mode === 'later' ? (
+          <Tag tone="brass">Later</Tag>
+        ) : mode === 'pickLater' ? (
+          <Tag tone="brass">Pick later</Tag>
+        ) : plan.total === null ? (
+          // complete is true here too (so the wizard isn't blocked by an advance nobody has to roll here), but
+          // nothing has actually happened yet — showing "Done" would tell the player it's already been applied.
+          <Tag tone="warn">Not rolled</Tag>
+        ) : item.complete ? (
+          <Tag tone="brass">Done</Tag>
+        ) : (
+          <Tag tone="warn">To do</Tag>
+        )}
       </div>
       <SegmentedControl label={`${item.name}: when to roll`} options={MODE_OPTIONS} value={mode === 'pickLater' ? 'now' : mode} onChange={setMode} />
       {mode === 'later' ? (

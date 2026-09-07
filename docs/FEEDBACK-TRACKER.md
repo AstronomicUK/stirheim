@@ -322,7 +322,7 @@ Confirmed, and Well genuinely is the only outcome with this exact problem. Every
 
 ### 19. Skill toggles: the toggle wording belongs to the engine not the skill text, and toggles should only appear for a model that actually has the relevant skill
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -335,6 +335,10 @@ Confirmed, and Well genuinely is the only outcome with this exact problem. Every
 - line 199: "+1 WS on the charge **(toggle: charging)**."
 
 That parenthetical clearly reads as a leftover engine/dev note rather than rules text, and shows up wherever the skill's description is displayed (roster skill lists, hover cards, etc.) — a clean, contained fix: strip the "(toggle: ...)" clause from these four descriptions.
+
+**Fixed:** All five occurrences — the four in `skills.ts` plus a fifth found while checking for others, in `traits.ts` (Pit Fighter's own trait-level description carries the same annotation, separately from the skill). Commit `470cdeb`.
+
+Still open: hiding a skill's toggle until a model with that skill is selected, rather than showing every toggle to every model. A bigger change to the fight calculator's toggle rendering, not attempted here.
 
 Second half is more nuanced than it first looks — **most of what's being asked already exists**. `relevantToggles()` (`src/features/match/fight/odds.ts`) already computes the Situation toggles per attacker: "Fighting two or more enemies" only appears if the attacker has a skill with `conditionField: 'fightingMultiple'`, "Inside a building or ruin" only if they have `conditionField: 'insideBuildings'` (Pit Fighter) or the `pit_fighter` trait, "Hated enemy" only with the `hatred` trait, and so on — so for Pit Fighter specifically, today's behaviour already matches "the only toggle that will show is Inside Building?" *for the skill-gated toggles*. The one toggle that's genuinely unconditional is "Charging" itself — always offered for any melee attacker regardless of skills or weapon.
 

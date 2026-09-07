@@ -77,6 +77,7 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
         subject={subject}
         equipment={hero.equipment}
         options={options}
+        template={template}
       />
     </article>
   )

@@ -81,6 +81,7 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
         subject={subject}
         equipment={group.equipment}
         options={options}
+        template={template}
       />
     </article>
   )

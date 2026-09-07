@@ -1,14 +1,9 @@
-import {
-  addDraftEquipment,
-  removeDraftEquipment,
-  type DraftItem,
-  type DraftSubject,
-  type EquipmentOption,
-} from '../../../rules/resolve/builder'
+import { draftCosts, addDraftEquipment, removeDraftEquipment, type DraftItem, type DraftSubject, type EquipmentOption } from '../../../rules/resolve/builder'
+import type { WarbandTemplate } from '../../../rules/types'
 import { Button, Sheet, Stepper } from '../../../ui'
 import { useDraftStore } from './draftStore'
 import { PriceField } from './EquipmentRows'
-import { discountedCostText, groupEquipmentOptions, optionForItem, quantityOf } from './helpers'
+import { discountedCostText, formatAmount, groupEquipmentOptions, optionForItem, quantityOf } from './helpers'
 import { useBuilderRules } from './rulesContext'
 
 export interface EquipmentSheetProps {
@@ -19,20 +14,24 @@ export interface EquipmentSheetProps {
   subject: DraftSubject
   equipment: DraftItem[]
   options: EquipmentOption[]
+  /** So the sheet can show a running gold-left figure (#41) — the summary is otherwise hidden behind it on a phone. */
+  template: WarbandTemplate
 }
 
 /** The unit's equipment list as a shopping sheet: every line with its price text and a quantity stepper. */
-export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment, options }: EquipmentSheetProps) {
+export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment, options, template }: EquipmentSheetProps) {
   const update = useDraftStore((s) => s.update)
+  const draft = useDraftStore((s) => s.draft)
   const houseRules = useBuilderRules()
   const groups = groupEquipmentOptions(options)
+  const goldLeft = draft ? draftCosts(draft, template, houseRules).remaining : null
 
   return (
     <Sheet
       open={open}
       onClose={onClose}
       title="Add equipment"
-      description={subjectLabel}
+      description={`${subjectLabel} · ${formatAmount(goldLeft)} left`}
       footer={
         <Button block onClick={onClose}>
           Done

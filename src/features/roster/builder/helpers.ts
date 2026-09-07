@@ -181,10 +181,21 @@ export function itemCurrency(item: Pick<DraftItem, 'costText'>): EquipmentCurren
  */
 export function discountedCostText(costText: string, item: Item | undefined, houseRules: CampaignHouseRules | null | undefined): string {
   const cost = parseEquipmentCost(costText)
-  if (!houseRules?.halfPriceArmour || !item || cost.kind !== 'fixed' || cost.amount === null) return costText
-  if (!isHalfPriceEligible(item, houseRules)) return costText
-  const discounted = Math.floor(cost.amount / 2)
+  const discounted = discountedUnitCost(costText, item, houseRules)
+  if (discounted === null || cost.amount === null || discounted === cost.amount) return costText
   return `${discounted} ${cost.currency} (half price armour, from ${cost.amount} ${cost.currency})`
+}
+
+/**
+ * A plain flat list price (gc only — dice, first-free and multiplier prices aren't a single
+ * number), halved when the half-price-armour house rule applies to this item. Null when the price
+ * isn't a single known gc amount at all.
+ */
+export function discountedUnitCost(costText: string, item: Item | undefined, houseRules: CampaignHouseRules | null | undefined): number | null {
+  const cost = parseEquipmentCost(costText)
+  if (cost.kind !== 'fixed' || cost.amount === null || cost.currency !== 'gc') return null
+  if (!item || !houseRules?.halfPriceArmour || !isHalfPriceEligible(item, houseRules)) return cost.amount
+  return Math.floor(cost.amount / 2)
 }
 
 /** True when the list price cannot be known from the text ("3 times the cost") and the player must enter one. */

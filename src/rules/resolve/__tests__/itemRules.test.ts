@@ -52,14 +52,20 @@ describe("item restrictions", () => {
   });
 
   it("a gromril or ithilmar weapon carries the same race-and-creed restriction as its base weapon", () => {
-    expect(itemRestrictionWarnings(reikland, I("gromril_sons_of_hashut_obsidian_weapon"), captain)[0]).toMatch(/for Chaos Dwarfs only/);
-    expect(itemRestrictionWarnings(reikland, I("ithilmar_sons_of_hashut_obsidian_weapon"), captain)[0]).toMatch(/for Chaos Dwarfs only/);
-    const hashut = warband("the_sons_of_hashut", [hero("k", "sons_of_hashut_apprentice_sorcerer")]);
-    expect(itemRestrictionWarnings(hashut, I("gromril_sons_of_hashut_obsidian_weapon"), { kind: "hero", id: "k", unitTemplateId: "sons_of_hashut_apprentice_sorcerer", equipment: [] })).toEqual([]);
+    expect(itemRestrictionWarnings(reikland, I("gromril_sigmarite_warhammer"), captain)[0]).toMatch(/for Sisters of Sigmar only/);
+    expect(itemRestrictionWarnings(reikland, I("ithilmar_sigmarite_warhammer"), captain)[0]).toMatch(/for Sisters of Sigmar only/);
+    const sisters = warband("sisters_of_sigmar", [hero("m", "sisters_of_sigmar_matriarch")]);
+    expect(itemRestrictionWarnings(sisters, I("gromril_sigmarite_warhammer"), { kind: "hero", id: "m", unitTemplateId: "sisters_of_sigmar_matriarch", equipment: [] })).toEqual([]);
     // The display text carries the same "(X only)" note the base item has.
-    expect(I("gromril_sons_of_hashut_obsidian_weapon").availability.text).toBe("Rare 11 (Chaos Dwarfs only)");
+    expect(I("gromril_sigmarite_warhammer").availability.text).toBe("Rare 11 (Sisters of Sigmar only)");
     // A plain gromril/ithilmar weapon with no race restriction on its base stays unrestricted.
     expect(itemRestrictionWarnings(reikland, I("gromril_sword"), captain)).toEqual([]);
+    // A weapon that is itself already a material, an upgrade applied to another weapon, a "pick
+    // one of these" placeholder, or the free dagger never gets a gromril/ithilmar item at all (#34).
+    for (const id of ["obsidian_weapon", "sons_of_hashut_obsidian_weapon", "dark_elf_blade", "club_mace_or_hammer", "dagger"]) {
+      expect(findItem(`gromril_${id}`)).toBeUndefined();
+      expect(findItem(`ithilmar_${id}`)).toBeUndefined();
+    }
   });
 
   it("arrows need a bow, and a second helmet of a kind is one per model", () => {

@@ -14,7 +14,7 @@ import {
 } from "../items";
 import { MELEE_WEAPONS } from "../weapons/melee";
 import { RANGED_AND_CREATURE_WEAPONS } from "../weapons/ranged-and-creatures";
-import { MATERIAL_VARIANT_WEAPONS } from "../weapons/materialVariants";
+import { MATERIAL_VARIANT_WEAPONS, isMaterialVariantBase } from "../weapons/materialVariants";
 import { WARBAND_SPECIAL_WEAPONS } from "../weapons/warbandSpecial";
 import { WARBAND_SPECIAL_ITEMS } from "../items/warbandSpecial";
 import { MATERIAL_VARIANT_ITEMS } from "../items/materialVariants";
@@ -125,6 +125,17 @@ describe("item catalogue", () => {
     // Paired specials, fists and fixed-Strength weapons are not forged in gromril.
     expect(findItem("gromril_fighting_claws")).toBeUndefined();
     expect(findItem("gromril_fist")).toBeUndefined();
+    // Nor is a weapon that is itself already a material (#34: a Gromril Obsidian Weapon would be a
+    // weapon made of two materials), an upgrade applied to another weapon rather than a weapon in
+    // its own right (Dark Elf Blade, +20 gc; Sons of Hashut Obsidian Weapon, "applied to which
+    // weapon?"), a "pick one of these" placeholder (Club, Mace or Hammer), or the free dagger (its
+    // "1st free/2 gc" price text has no sane 4x/3x).
+    for (const id of ["obsidian_weapon", "sons_of_hashut_obsidian_weapon", "dark_elf_blade", "club_mace_or_hammer", "dagger"]) {
+      const weapon = MELEE_WEAPONS.find((w) => w.id === id)!;
+      expect(isMaterialVariantBase(weapon), `${id} should not be a material-variant base`).toBe(false);
+      expect(findItem(`gromril_${id}`), `gromril_${id} should not exist`).toBeUndefined();
+      expect(findItem(`ithilmar_${id}`), `ithilmar_${id} should not exist`).toBeUndefined();
+    }
     for (const item of MATERIAL_VARIANT_ITEMS) {
       expect(MATERIAL_VARIANT_WEAPONS.some((w) => w.id === item.weaponId), `${item.id}: no engine weapon ${item.weaponId}`).toBe(true);
     }

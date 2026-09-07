@@ -19,13 +19,19 @@ import { MELEE_WEAPONS } from "./melee";
  * Which hand-to-hand weapons can be had in gromril or ithilmar: anything that strikes with the
  * wielder's own Strength and is an ordinary forged weapon. Excluded: paired specials sold as a set
  * (Fighting Claws, Weeping Blades...), poisoned or magical blades, weapons that ignore armour
- * altogether, fists, and anything with a fixed Strength of its own.
+ * altogether, fists, anything with a fixed Strength of its own, a weapon that is itself already a
+ * material quality (an Obsidian Weapon can't also be forged in gromril), a priced upgrade applied
+ * to another weapon rather than a weapon in its own right (the Dark Elf Blade's +20 gc, the Sons of
+ * Hashut Obsidian Weapon's "applied to which weapon?" choice), a "pick one of these" placeholder
+ * (Club, Mace or Hammer), and the free dagger (its "1st free/2 gc" price text has no sane ×4/×3).
  */
 export function isMaterialVariantBase(weapon: Weapon): boolean {
   if (weapon.type !== "melee" || weapon.strength !== "user") return false;
   if (weapon.paired || weapon.autoWoundOnNaturalSixToHit || weapon.poisoned || weapon.ignoresArmourSave) return false;
   if (weapon.special.includes("magical") || weapon.special.includes("permanentPoison")) return false;
-  if (["unarmed", "zombie_claws", "wight_blade", "brass_knuckles", "iron_fist", "spiked_gauntlet", "katar"].includes(weapon.id)) return false;
+  if (weapon.special.includes("upgradedSwordOrDagger") || weapon.special.includes("restrictedToSwordAxeOrHammerForm")) return false;
+  if (weapon.special.includes("genericBludgeonChoice")) return false;
+  if (["unarmed", "zombie_claws", "wight_blade", "brass_knuckles", "iron_fist", "spiked_gauntlet", "katar", "obsidian_weapon", "dagger"].includes(weapon.id)) return false;
   return true;
 }
 

@@ -27,7 +27,7 @@ export const SKILLS: Skill[] = [
     effect: { type: "attackCountModifier", value: 1, appliesTo: "melee" },
     conditional: true,
     conditionField: "fightingMultiple",
-    description: "+1 Attack when fighting two or more enemies (toggle: fighting 2+ enemies).",
+    description: "+1 Attack when fighting two or more enemies.",
   },
   {
     id: "weapons_training",
@@ -55,7 +55,7 @@ export const SKILLS: Skill[] = [
     effect: { type: "rerollToHit", appliesTo: "melee" },
     conditional: true,
     conditionField: "charging",
-    description: "Reroll missed to-hit rolls in the turn he charges (toggle: charging), with a normal sword or Weeping Blades only — not double-handed weapons or other blades.",
+    description: "Reroll missed to-hit rolls in the turn he charges, with a normal sword or Weeping Blades only — not double-handed weapons or other blades.",
   },
   {
     id: "step_aside",
@@ -159,7 +159,7 @@ export const SKILLS: Skill[] = [
     effect: { type: "pitFighter", appliesTo: "melee" },
     conditional: true,
     conditionField: "insideBuildings",
-    description: "+1 Weapon Skill and +1 Attack when fighting inside buildings or ruins (toggle: inside buildings).",
+    description: "+1 Weapon Skill and +1 Attack when fighting inside buildings or ruins.",
   },
   {
     id: "resilient",
@@ -196,7 +196,7 @@ export const SKILLS: Skill[] = [
     effect: { type: "statModifier", stat: "WS", value: 1, appliesTo: "melee", appliesToParticipant: "self" },
     conditional: true,
     conditionField: "charging",
-    description: "+1 WS on the charge (toggle: charging).",
+    description: "+1 WS on the charge.",
   },
 
   // ---- Speed ----

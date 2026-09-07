@@ -65,7 +65,7 @@ export const TRAITS: Trait[] = [
     modeled: true,
     conditional: true,
     source: "mordheimer.net — Pit Fighters warband special rules (every member has the Pit Fighter skill)",
-    description: "+1 Weapon Skill and +1 Attack when fighting inside buildings or ruins (toggle: inside buildings). Same effect as the Strength skill of the same name — a model with both does not get it twice.",
+    description: "+1 Weapon Skill and +1 Attack when fighting inside buildings or ruins. Same effect as the Strength skill of the same name — a model with both does not get it twice.",
   },
   {
     id: "no_pain",

@@ -73,7 +73,7 @@ function reiklandBuild(): WarbandDraft {
   d = addDraftGroup(d, REIKLAND, WARRIORS, "warriors", 3, "The Lads");
   d = addDraftGroup(d, REIKLAND, MARKSMEN, "marksmen", 2, "The Eyes");
 
-  d = addDraftEquipment(d, hero("captain"), DAGGER);
+  // The captain's dagger is now the leader's free starting dagger (newWarbandDraft); only the sword is bought.
   d = addDraftEquipment(d, hero("captain"), SWORD);
   d = addDraftEquipment(d, hero("champ1"), SWORD);
   d = addDraftEquipment(d, hero("champ2"), SWORD);
@@ -95,7 +95,10 @@ describe("newWarbandDraft", () => {
     expect(d.warbandTemplateId).toBe("mercenaries_reikland");
     expect(d.startingGold).toBe(500);
     expect(d.heroes).toHaveLength(1);
-    expect(d.heroes[0]).toEqual({ id: "leader", name: "Mercenary Captain", unitTemplateId: CAPTAIN, equipment: [], spellIds: [] });
+    // The leader starts with the free dagger from its equipment list, same as any other unit added through the builder.
+    expect(d.heroes[0]).toMatchObject({ id: "leader", name: "Mercenary Captain", unitTemplateId: CAPTAIN, spellIds: [] });
+    expect(d.heroes[0].equipment).toMatchObject([{ itemId: DAGGER.item!.id, quantity: 1 }]);
+    expect(draftCosts(d, REIKLAND).equipment).toBe(0);
     expect(d.groups).toEqual([]);
     expect(d.notes).toBe("");
   });
@@ -177,18 +180,23 @@ describe("equipment", () => {
     let d = newWarbandDraft(REIKLAND, "Test");
     d = addDraftEquipment(d, hero("leader"), SWORD);
     d = addDraftEquipment(d, hero("leader"), SWORD);
-    expect(d.heroes[0].equipment).toEqual([{ itemId: "sword", customName: undefined, quantity: 2, unitCost: 10, costText: "10 gc" }]);
+    // The leader's free starting dagger (newWarbandDraft) sits alongside the swords bought here.
+    expect(d.heroes[0].equipment).toEqual([
+      { itemId: "dagger", customName: undefined, quantity: 1, unitCost: 2, costText: "1st free/2 gc" },
+      { itemId: "sword", customName: undefined, quantity: 2, unitCost: 10, costText: "10 gc" },
+    ])
     d = removeDraftEquipment(d, hero("leader"), SWORD);
-    expect(d.heroes[0].equipment[0].quantity).toBe(1);
+    expect(d.heroes[0].equipment.find((i) => i.itemId === "sword")?.quantity).toBe(1);
     d = removeDraftEquipment(d, hero("leader"), SWORD);
-    expect(d.heroes[0].equipment).toEqual([]);
+    expect(d.heroes[0].equipment).toEqual([{ itemId: "dagger", customName: undefined, quantity: 1, unitCost: 2, costText: "1st free/2 gc" }]);
     expect(() => removeDraftEquipment(d, hero("leader"), SWORD)).toThrow(RulesError);
   });
 
   it("keeps unresolved names as custom items with the list price", () => {
     const custom: EquipmentOption = { name: "Pry Bar", cost: parseEquipmentCost("10 gc"), item: undefined, section: "melee" };
     const d = addDraftEquipment(newWarbandDraft(REIKLAND, "Test"), hero("leader"), custom, 2);
-    expect(d.heroes[0].equipment).toEqual([{ itemId: null, customName: "Pry Bar", quantity: 2, unitCost: 10, costText: "10 gc" }]);
+    // The leader's free starting dagger (newWarbandDraft) sits alongside the custom item.
+    expect(d.heroes[0].equipment).toMatchObject([{ itemId: DAGGER.item!.id, quantity: 1 }, { itemId: null, customName: "Pry Bar", quantity: 2, unitCost: 10, costText: "10 gc" }]);
     expect(draftCosts(d, REIKLAND).equipment).toBe(20);
   });
 
@@ -223,7 +231,8 @@ describe("draftCosts", () => {
 
   it("charges a second dagger per warrior and a brace of pistols as a pair", () => {
     let d = newWarbandDraft(REIKLAND, "Test");
-    d = addDraftEquipment(d, hero("leader"), DAGGER, 2);
+    // The leader already has one free dagger (newWarbandDraft); one more makes two.
+    d = addDraftEquipment(d, hero("leader"), DAGGER, 1);
     d = addDraftEquipment(d, hero("leader"), PISTOL, 2);
     d = addDraftGroup(d, REIKLAND, WARRIORS, "w", 4);
     d = addDraftEquipment(d, group("w"), DAGGER, 2);
@@ -414,6 +423,7 @@ describe("draftToCreatePayload", () => {
     const custom: EquipmentOption = { name: "Pry Bar", cost: parseEquipmentCost("10 gc"), item: undefined, section: "melee" };
     const d = addDraftEquipment(newWarbandDraft(REIKLAND, "Test"), hero("leader"), custom);
     expect(draftToCreatePayload(d, REIKLAND).heroes[0].equipment).toEqual([
+      { item_rules_id: DAGGER.item!.id, custom_name: null, quantity: 1 },
       { item_rules_id: null, custom_name: "Pry Bar", quantity: 1 },
     ]);
   });

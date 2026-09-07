@@ -152,8 +152,9 @@ describe('unit counts and limits', () => {
 describe('costs', () => {
   it('prices a hero as hire plus equipment', () => {
     let d = newWarbandDraft(REIKLAND, 'Test')
+    // The leader already has one free dagger (newWarbandDraft); one more makes two (0 + 2 gc).
     d = addDraftEquipment(d, { kind: 'hero', id: 'leader' }, option('Sword'))
-    d = addDraftEquipment(d, { kind: 'hero', id: 'leader' }, option('Dagger'), 2)
+    d = addDraftEquipment(d, { kind: 'hero', id: 'leader' }, option('Dagger'), 1)
     expect(heroCost(d.heroes[0], REIKLAND)).toEqual({ hire: 60, equipment: 12, total: 72 })
   })
 
@@ -190,10 +191,12 @@ describe('equipment options', () => {
   it('finds the option a stack came from and its quantity', () => {
     let d = newWarbandDraft(REIKLAND, 'Test')
     d = addDraftEquipment(d, { kind: 'hero', id: 'leader' }, option('Sword'), 2)
-    const stack = d.heroes[0].equipment[0]
+    // index 0 is the leader's free starting dagger (newWarbandDraft); the sword stack is added after it.
+    const stack = d.heroes[0].equipment.find((i) => i.itemId === option('Sword').item?.id)!
     expect(optionForItem(OPTIONS, stack)?.name).toBe('Sword')
     expect(quantityOf(d.heroes[0].equipment, option('Sword'))).toBe(2)
-    expect(quantityOf(d.heroes[0].equipment, option('Dagger'))).toBe(0)
+    // 1, not 0: the leader's free starting dagger (newWarbandDraft).
+    expect(quantityOf(d.heroes[0].equipment, option('Dagger'))).toBe(1)
     expect(optionForItem(OPTIONS, { itemId: null, customName: 'Nothing' })).toBeUndefined()
   })
 })

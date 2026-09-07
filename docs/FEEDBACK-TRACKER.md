@@ -637,7 +637,7 @@ over the same generator. See also #44, which is the cosmetic remainder of the sa
 
 ### 35. A new warband's starting leader never gets its free dagger
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -654,6 +654,12 @@ a Dagger on every warrior.
 **How to replicate:** New warband → search "Reikland" → Mercenaries (Reikland) → name it → Start
 building. The Mercenary Captain card reads **"No equipment yet."** Now tap *Add hero* → Champions:
 that one arrives carrying "Dagger · 1st free/2 gc · **0 gc**".
+
+**Fix:** `newWarbandDraft` now wraps its `addDraftHero` call for the leader in `withFreeDagger`, the exact same call every other unit already goes through in `BuilderPage.tsx`. One-line change; the leader is no longer a special case.
+
+Six existing builder tests had baked the bug in as expected behaviour — each explicitly bought the leader's first dagger by hand (paying nothing, since it *was* genuinely the first one at the time), so with the leader now arriving with it for free, that same explicit purchase became a second, paid-for dagger, throwing off equipment counts and gold totals across `builder.test.ts` and `helpers.test.ts`. Updated each to account for the free dagger already being there rather than change the fix to work around them.
+
+Verified live on local dev: New warband → Mercenaries (Reikland) → Start building — the Mercenary Captain now reads "Dagger · 1st free/2 gc · 0 gc" immediately, matching every other unit. `tsc -b`, `oxlint` and the full `vitest run` suite (1175 passed) all clean.
 
 ### 36. The builder charges half price for armour but shows the full list price and never says why
 

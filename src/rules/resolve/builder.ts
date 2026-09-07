@@ -140,7 +140,8 @@ export function newWarbandDraft(template: WarbandTemplate, name: string, leaderI
     notes: "",
     campaignId,
   };
-  return leader ? addDraftHero(draft, template, leader.id, leaderId) : draft;
+  if (!leader) return draft;
+  return withFreeDagger(addDraftHero(draft, template, leader.id, leaderId), template, { kind: "hero", id: leaderId });
 }
 
 /** Add a hero of `unitTemplateId`; the name defaults to the unit name. Limits are checked by validateDraft, not here. */

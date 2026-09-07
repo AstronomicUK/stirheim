@@ -71,7 +71,7 @@ test.describe('match', () => {
     await expect(page.getByText('At least one hit').locator('xpath=following-sibling::span')).toHaveText('75%')
     // Rolling happens in a sheet the dice button opens, with the first step already waiting.
     await page.getByRole('button', { name: 'Roll it through' }).click()
-    await rollDie(page, 'Sword: to hit', 4)
+    await rollDie(page, 'First attack (Sword): to hit', 4)
     await page.getByRole('button', { name: 'No parry' }).click()
     await rollDie(page, 'To wound', 4)
     await rollDie(page, 'Injury roll', 5)

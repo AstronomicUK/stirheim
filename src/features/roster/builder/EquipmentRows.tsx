@@ -11,7 +11,7 @@ import {
 import { Stepper } from '../../../ui'
 import { itemName } from '../shared/names'
 import { useDraftStore } from './draftStore'
-import { formatAmount, itemCurrency, needsPrice, optionForItem } from './helpers'
+import { discountedCostText, formatAmount, itemCurrency, needsPrice, optionForItem } from './helpers'
 import { useBuilderRules } from './rulesContext'
 
 export interface EquipmentRowsProps {
@@ -43,7 +43,7 @@ export function EquipmentRows({ subject, equipment, options, models = 1 }: Equip
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm text-ink">{itemName(item)}</span>
                 <span className="text-xs tabular-nums text-ink-dim">
-                  {item.costText}
+                  {discountedCostText(item.costText, option?.item, houseRules)}
                   {each !== null && models > 1 ? ` · ${formatAmount(each * models, currency)} for ${models}` : ''}
                   {each !== null && models === 1 ? ` · ${formatAmount(each, currency)}` : ''}
                 </span>

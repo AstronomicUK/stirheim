@@ -15,7 +15,9 @@ import {
 } from '../../../rules/resolve/builder'
 import { parseEquipmentCost, type EquipmentCurrency } from '../../../rules/resolve/equipmentCost'
 import { parseRosterLimit, type RosterProblem } from '../../../rules/resolve/roster'
+import { isHalfPriceEligible } from '../../../rules/resolve/trading'
 import type { UnitTemplate, WarbandGrade, WarbandTemplate } from '../../../rules/types'
+import type { Item } from '../../../rules/types/items'
 
 // ---- Warband list ----
 
@@ -167,6 +169,22 @@ export function formatAmount(amount: number | null, currency: EquipmentCurrency 
 
 export function itemCurrency(item: Pick<DraftItem, 'costText'>): EquipmentCurrency {
   return parseEquipmentCost(item.costText).currency
+}
+
+/**
+ * The list's own cost text, halved when the half-price-armour house rule applies (#36): the
+ * trading post already shows "25 gc (half price armour, from 50 gc)" instead of the full list
+ * price; the builder's Add-equipment sheet and hero card showed the raw, undiscounted figure even
+ * though the gold actually charged (draftItemCost) was already correct. Only a plain flat price
+ * ("50 gc") can be halved this way — "1st free/2 gc", multipliers and dice amounts are left as
+ * written, same as the trading post's own scope for this rule.
+ */
+export function discountedCostText(costText: string, item: Item | undefined, houseRules: CampaignHouseRules | null | undefined): string {
+  const cost = parseEquipmentCost(costText)
+  if (!houseRules?.halfPriceArmour || !item || cost.kind !== 'fixed' || cost.amount === null) return costText
+  if (!isHalfPriceEligible(item, houseRules)) return costText
+  const discounted = Math.floor(cost.amount / 2)
+  return `${discounted} ${cost.currency} (half price armour, from ${cost.amount} ${cost.currency})`
 }
 
 /** True when the list price cannot be known from the text ("3 times the cost") and the player must enter one. */

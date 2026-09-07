@@ -10,9 +10,11 @@ import {
   type EquipmentOption,
 } from '../../../rules/resolve/builder'
 import type { RosterProblem } from '../../../rules/resolve/roster'
+import { defaultCampaignHouseRules } from '../../../rules/types/roster'
 import {
   groupByCampaign,
   compositionSummary,
+  discountedCostText,
   draftUnitCount,
   filterTemplates,
   formatAmount,
@@ -238,5 +240,26 @@ describe('groupByCampaign', () => {
   })
   it('shows no heading when nothing is in a campaign', () => {
     expect(groupByCampaign([w('a', null)]).map((g) => g.title)).toEqual([null])
+  })
+})
+
+describe('discountedCostText (#36)', () => {
+  const heavyArmour = option('Heavy armour')
+  const halfPrice = { ...defaultCampaignHouseRules(), halfPriceArmour: true }
+
+  it('halves a plain flat list price when the house rule applies, same text shape as the trading post', () => {
+    expect(discountedCostText(heavyArmour.cost.text, heavyArmour.item, halfPrice)).toBe('25 gc (half price armour, from 50 gc)')
+  })
+
+  it('leaves the list price alone when the house rule is off, or the item is not armour', () => {
+    expect(discountedCostText(heavyArmour.cost.text, heavyArmour.item, { ...halfPrice, halfPriceArmour: false })).toBe(heavyArmour.cost.text)
+    expect(discountedCostText(heavyArmour.cost.text, heavyArmour.item, null)).toBe(heavyArmour.cost.text)
+    const sword = option('Sword')
+    expect(discountedCostText(sword.cost.text, sword.item, halfPrice)).toBe(sword.cost.text)
+  })
+
+  it('leaves a non-flat price (first-free, multiplier) exactly as written', () => {
+    const dagger = option('Dagger')
+    expect(discountedCostText(dagger.cost.text, dagger.item, halfPrice)).toBe(dagger.cost.text)
   })
 })

@@ -8,7 +8,8 @@ import {
 import { Button, Sheet, Stepper } from '../../../ui'
 import { useDraftStore } from './draftStore'
 import { PriceField } from './EquipmentRows'
-import { groupEquipmentOptions, optionForItem, quantityOf } from './helpers'
+import { discountedCostText, groupEquipmentOptions, optionForItem, quantityOf } from './helpers'
+import { useBuilderRules } from './rulesContext'
 
 export interface EquipmentSheetProps {
   open: boolean
@@ -23,6 +24,7 @@ export interface EquipmentSheetProps {
 /** The unit's equipment list as a shopping sheet: every line with its price text and a quantity stepper. */
 export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment, options }: EquipmentSheetProps) {
   const update = useDraftStore((s) => s.update)
+  const houseRules = useBuilderRules()
   const groups = groupEquipmentOptions(options)
 
   return (
@@ -55,7 +57,7 @@ export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment
                       <div className="flex min-w-0 flex-col">
                         <span className={`truncate text-sm ${quantity > 0 ? 'text-ink' : 'text-ink-dim'}`}>{option.name}</span>
                         <span className="text-xs tabular-nums text-ink-dim">
-                          {option.cost.text}
+                          {discountedCostText(option.cost.text, option.item, houseRules)}
                           {unpriced ? ' · enter the price once taken' : ''}
                         </span>
                         {!option.item ? <span className="text-xs text-warn">Not in the item catalogue; saved by name.</span> : null}

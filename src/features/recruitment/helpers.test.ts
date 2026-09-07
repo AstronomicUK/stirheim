@@ -55,7 +55,7 @@ function group(id: string, unitTemplateId: string, size: number, xp = 0, name = 
 }
 
 function hiredSword(id: string, hiredSwordId: string, status: RosterHiredSword['status'] = 'active'): RosterHiredSword {
-  return { id, hiredSwordId, name: id, stats: { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }, xp: 0, levelUps: 0, skillIds: [], injuries: [], flags: {}, equipment: [], status }
+  return { id, hiredSwordId, name: id, stats: { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }, xp: 0, levelUps: 0, skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status }
 }
 
 function warband(over: Partial<RosterWarband> = {}): RosterWarband {

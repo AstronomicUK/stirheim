@@ -56,6 +56,7 @@ function makeSword(over: Partial<RosterHiredSword> = {}): RosterHiredSword {
     xp: 17,
     levelUps: 0,
     skillIds: [],
+    spellIds: [],
     injuries: [],
     flags: {},
     equipment: [],

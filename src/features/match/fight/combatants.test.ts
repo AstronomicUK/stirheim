@@ -35,7 +35,7 @@ function group(id: string, extra: Partial<RosterHenchmanGroup> = {}): RosterHenc
 }
 
 function hiredSword(id: string, extra: Partial<RosterHiredSword> = {}): RosterHiredSword {
-  return { id, hiredSwordId: 'troll_slayer', name: id, stats, xp: 0, levelUps: 0, skillIds: [], injuries: [], flags: {}, equipment: [item('dwarf_axe', 2)], status: 'active', ...extra }
+  return { id, hiredSwordId: 'troll_slayer', name: id, stats, xp: 0, levelUps: 0, skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [item('dwarf_axe', 2)], status: 'active', ...extra }
 }
 
 function warband(extra: Partial<RosterWarband> = {}): RosterWarband {

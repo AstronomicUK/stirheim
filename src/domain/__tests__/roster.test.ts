@@ -264,6 +264,7 @@ describe("patches from the roster model", () => {
       xp: 3,
       levelUps: 0,
       skillIds: [],
+      spellIds: [],
       injuries: [],
       flags: {},
       equipment: [],

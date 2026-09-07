@@ -140,6 +140,7 @@ describe("explorationDiceAllowed", () => {
           xp: 0,
           levelUps: 0,
           skillIds: [],
+          spellIds: [],
           injuries: [],
           flags: {},
           equipment: [],

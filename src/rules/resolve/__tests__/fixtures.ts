@@ -50,6 +50,7 @@ export function makeHiredSword(overrides: Partial<RosterHiredSword> = {}): Roste
     xp: 0,
     levelUps: 0,
     skillIds: [],
+    spellIds: [],
     injuries: [],
     flags: {},
     equipment: [],

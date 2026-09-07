@@ -56,7 +56,7 @@ function hero(id: string, extra: Partial<RosterHero> = {}): RosterHero {
 }
 
 function sword(id: string, extra: Partial<RosterHiredSword> = {}): RosterHiredSword {
-  return { id, hiredSwordId: 'ogre_bodyguard', name: id, stats, xp: 0, levelUps: 0, skillIds: [], injuries: [], flags: {}, equipment: [], status: 'active', ...extra }
+  return { id, hiredSwordId: 'ogre_bodyguard', name: id, stats, xp: 0, levelUps: 0, skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active', ...extra }
 }
 
 function group(id: string, size: number, xp = 0): RosterHenchmanGroup {

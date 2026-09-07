@@ -86,6 +86,7 @@ describe('findSubject', () => {
       xp: 2,
       levelUps: 0,
       skillIds: [],
+      spellIds: [],
       injuries: [],
       flags: {},
       equipment: [],

@@ -50,6 +50,7 @@ function hiredSword(id: string, hiredSwordId: string, xp: number, over: Partial<
     xp,
     levelUps: 0,
     skillIds: [],
+    spellIds: [],
     injuries: [],
     flags: {},
     equipment: [],

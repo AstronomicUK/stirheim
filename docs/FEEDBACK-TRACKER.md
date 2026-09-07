@@ -757,7 +757,7 @@ compare two profiles before spending gold, and worst of all on a phone.
 
 ### 40. The post-battle wizard's Back/Next bar floats 48px above the bottom of the window on desktop
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -770,6 +770,8 @@ mid-air with a strip of list content still visible underneath it. One-class fix:
 (Casualties), or any step whose content is taller than the viewport. The Back / Continue later /
 Discard / Next bar sits about 48px up from the window bottom with the next warrior's card peeking
 out below it.
+
+**Fixed:** Added `lg:bottom-0` as suggested. Verified live at desktop width on the Casualties step — the bar now sits flush with no gap. Commit `6dd8fc8`.
 
 ### 41. No gold-remaining figure inside the builder's Add-equipment sheet
 

@@ -8,10 +8,12 @@ import {
   canRecruit,
   dismissWarrior,
   hireHiredSword,
+  hiredSwordEquipment,
   payUpkeep,
   recruitHenchmen,
   recruitHero,
 } from "../recruitment";
+import { findHiredSword } from "../../data/campaign/hiredSwords";
 
 // TODO switch to ./fixtures makeWarband once the shared fixtures file lands.
 const BASE: Stats = { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 };
@@ -284,5 +286,25 @@ describe("hireHiredSword / payUpkeep", () => {
   it("supports an overridden fee (Troll Slayer with Elves pays 20)", () => {
     const wb = { ...hireHiredSword(makeWarband(), "dwarf_troll_slayer", "grim").value, gold: 20 };
     expect(payUpkeep(wb, "grim", { amountOverride: 20 }).value.warband.gold).toBe(0);
+  });
+});
+
+describe("hiredSwordEquipment (#74)", () => {
+  it("doesn't split on a comma inside a bracket (Imperial Tactician's 'plate armour (4+ save, -1M)')", () => {
+    const detail = findHiredSword("imperial_tactician")!.detail;
+    const kit = hiredSwordEquipment(detail);
+    const names = kit.map((i) => i.customName ?? i.itemId);
+    expect(names).not.toContain("-1M)");
+    expect(names.some((n) => n?.includes("-1M"))).toBe(true); // the bracketed detail travels with whichever piece it belongs to, not as its own item
+    expect(kit).toHaveLength(4); // Two-handed sword, plate armour (...), Helmet, Dagger
+  });
+
+  it("only reads kit from the first paragraph, not a later Skills/rules paragraph (Old Prospector)", () => {
+    const detail = findHiredSword("old_prospector")!.detail;
+    const kit = hiredSwordEquipment(detail);
+    const names = kit.map((i) => i.customName ?? i.itemId);
+    expect(names.some((n) => n?.toLowerCase().includes("resilient"))).toBe(false);
+    expect(names.some((n) => n?.toLowerCase().includes("skills"))).toBe(false);
+    expect(kit).toHaveLength(2); // Blunderbuss, Pick
   });
 });

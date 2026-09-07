@@ -402,34 +402,49 @@ const KIT_PROSE = /\b(?:counts as an|cannot|may not|if you are using|when mounte
 export function hiredSwordEquipment(detail: HiredSwordDetail | undefined): RosterItem[] {
   const text = detail?.weaponsArmour?.trim() || detail?.equipment?.trim() || "";
   const out: RosterItem[] = [];
-  for (const line of text.split(/\n+/)) {
+  // Only the first paragraph ever lists kit; a later paragraph is always prose about how it's used
+  // (a Skills note, a weapon restriction, a wolf-form clause) and would otherwise be shredded into
+  // nonsense "items" by the splitter below.
+  const [line] = text.split(/\n+/);
+  if (line) {
     // Only the first sentence lists kit; the rest explains it.
     const [first = "", ...rest] = line.split(/(?<=\.)\s+/);
     const listed = first.replace(KIT_PREAMBLE, "").replace(/\.$/, "").trim();
-    if (listed.length === 0) continue;
-    // A line offering a choice ("Two Axes or a Double-Handed Axe") is one decision, not a list:
-    // it stays as written, for the hiring player to settle.
-    if (/\b(?:either|or)\b/i.test(listed)) {
-      out.push({ itemId: null, customName: first.replace(KIT_PREAMBLE, "").trim(), quantity: 1 });
-    } else {
-      for (const piece of splitKit(listed)) {
-        const item = resolveEquipmentName(piece) ?? resolveEquipmentName(piece.replace(/\s*\([^)]*\)\s*$/, "").trim());
-        if (item) out.push({ itemId: item.id, quantity: 1 });
-        else out.push({ itemId: null, customName: piece, quantity: 1 });
+    if (listed.length > 0) {
+      // A line offering a choice ("Two Axes or a Double-Handed Axe") is one decision, not a list:
+      // it stays as written, for the hiring player to settle.
+      if (/\b(?:either|or)\b/i.test(listed)) {
+        out.push({ itemId: null, customName: first.replace(KIT_PREAMBLE, "").trim(), quantity: 1 });
+      } else {
+        for (const piece of splitKit(listed)) {
+          const item = resolveEquipmentName(piece) ?? resolveEquipmentName(piece.replace(/\s*\([^)]*\)\s*$/, "").trim());
+          if (item) out.push({ itemId: item.id, quantity: 1 });
+          else out.push({ itemId: null, customName: piece, quantity: 1 });
+        }
       }
+      // Keep the explanatory sentences as a note on the last item so the rules travel with the kit.
+      const note = rest.filter((sentence) => KIT_PROSE.test(sentence)).join(" ").trim();
+      if (note && out.length > 0) out[out.length - 1] = { ...out[out.length - 1], notes: note };
     }
-    // Keep the explanatory sentences as a note on the last item so the rules travel with the kit.
-    const note = rest.filter((sentence) => KIT_PROSE.test(sentence)).join(" ").trim();
-    if (note && out.length > 0) out[out.length - 1] = { ...out[out.length - 1], notes: note };
   }
   return out;
 }
 
-/** "Sword, Dagger, and an Elven Cloak" -> three names, without the articles or the Oxford "and". */
+/**
+ * "Sword, Dagger, and an Elven Cloak" -> three names, without the articles or the Oxford "and". A
+ * comma inside a parenthetical ("plate armour (4+ save, -1M)") is not a list separator, so it's
+ * masked before splitting and restored after — otherwise a bracketed aside splits into two items.
+ */
 function splitKit(listed: string): string[] {
-  return listed
+  let depth = 0;
+  const masked = listed.replace(/[(),]/g, (ch) => {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    return ch === "," && depth > 0 ? "\uE000" : ch;
+  });
+  return masked
     .split(/,\s*|\s+and\s+/i)
-    .map((piece) => piece.trim().replace(/^(?:and\s+)?(?:(?:a|an|the)\s+)?/i, "").trim())
+    .map((piece) => piece.replace(/\uE000/g, ",").trim().replace(/^(?:and\s+)?(?:(?:a|an|the)\s+)?/i, "").trim())
     .filter((piece) => piece.length > 0 && !/^\(/.test(piece));
 }
 

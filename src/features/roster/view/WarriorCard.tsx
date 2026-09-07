@@ -59,7 +59,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
       </button>
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
-        <ItemLines items={equipment} detailed={expanded} />
+        <ItemLines items={equipment} detailed={expanded} ownerRules={rules} />
 
         {hero.skills.length > 0 ? (
           <div className="flex flex-col gap-1">

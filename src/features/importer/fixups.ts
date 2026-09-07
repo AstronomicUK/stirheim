@@ -44,7 +44,13 @@ export interface HeroFixup {
  */
 function tidyInjury(injury: AppliedInjury, flags: WarriorFlags): AppliedInjury | null {
   const outcome = subOutcomeFor(injury, flags)
-  if (outcome?.name && injury.name !== outcome.name) return { ...injury, name: outcome.name, effect: describeInjuryOutcome(outcome) }
+  if (outcome) {
+    // Re-check both the name and the effect text: an injury renamed by an earlier version of this
+    // tidy-up (name already correct) must still pick up a later improvement to the rules text.
+    const properName = outcome.name ?? injury.name
+    const properEffect = describeInjuryOutcome(outcome)
+    if (injury.name !== properName || injury.effect !== properEffect) return { ...injury, name: properName, effect: properEffect }
+  }
   if (!/^Roll again:/i.test(injury.effect)) return null
   const again = matchInjury(injury.name).injury
   if (!again || (again.name === injury.name && again.effect === injury.effect)) return null

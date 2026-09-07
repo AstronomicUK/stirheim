@@ -9,6 +9,8 @@ import type { AdvanceRate } from '../../../rules/data/campaign/experience'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
 import { itemLineName, itemName, itemProfile } from '../shared/names'
+import { normaliseName } from '../../importer/rosterImport'
+import type { NamedRule } from '../../../rules/types'
 import { isPlainNote, xpNotches, xpProgress } from './lookups'
 import { useRosterView } from './context'
 import { Icon, type IconName } from '../../../ui/icons'
@@ -87,6 +89,13 @@ export interface ItemLinesProps {
   emptyText?: string
   /** Read-only text lines (printing): no tap targets. */
   plain?: boolean
+  /**
+   * The owner's own special rules (a hired sword's, mainly). Some entries write a special ability
+   * into the kit line rather than the item list — the Kislev Ranger's "Hunter's Cloak" is a rule,
+   * not a piece of armour, and the catalogue has nothing to say about it — so an item with no
+   * catalogue match is checked against these by name before giving up on a tooltip.
+   */
+  ownerRules?: NamedRule[]
 }
 
 /**
@@ -94,21 +103,29 @@ export interface ItemLinesProps {
  * rules, armour's save, anything else's catalogue text. Range and Strength also sit on the line
  * itself so a bow's reach is one glance away. `detailed` prints every entry open instead.
  */
-export function ItemLines({ items, detailed = false, emptyText = 'No equipment', plain = false }: ItemLinesProps) {
+export function ItemLines({ items, detailed = false, emptyText = 'No equipment', plain = false, ownerRules = [] }: ItemLinesProps) {
   if (items.length === 0) return <p className="text-sm text-ink-dim">{emptyText}</p>
   return (
     <ul className="flex flex-col gap-1 text-sm">
       {items.map((item, i) => (
-        <ItemLine key={`${item.itemId ?? item.customName}-${i}-${detailed ? 'd' : 'c'}`} item={item} companions={items} open={detailed} plain={plain} />
+        <ItemLine key={`${item.itemId ?? item.customName}-${i}-${detailed ? 'd' : 'c'}`} item={item} companions={items} open={detailed} plain={plain} ownerRules={ownerRules} />
       ))}
     </ul>
   )
 }
 
-function ItemLine({ item, companions, open, plain }: { item: RosterItem; companions: RosterItem[]; open: boolean; plain: boolean }) {
+/** A written-in kit line that is actually one of the owner's own named rules ("Hunter's Cloak"), not a catalogue item. */
+function ownerRuleFor(item: RosterItem, ownerRules: NamedRule[]): NamedRule | undefined {
+  if (item.itemId || !item.customName) return undefined
+  const wanted = normaliseName(item.customName)
+  return ownerRules.find((r) => normaliseName(r.name) === wanted)
+}
+
+function ItemLine({ item, companions, open, plain, ownerRules }: { item: RosterItem; companions: RosterItem[]; open: boolean; plain: boolean; ownerRules: NamedRule[] }) {
   const catalogue = item.itemId ? findItem(item.itemId) : undefined
+  const rule = catalogue ? undefined : ownerRuleFor(item, ownerRules)
   const profile = itemProfile(item, companions)
-  const hasDetail = Boolean(catalogue) || Boolean(item.notes)
+  const hasDetail = Boolean(catalogue) || Boolean(item.notes) || Boolean(rule)
   const line = itemLineName(item)
   const name = (
     <>
@@ -122,7 +139,7 @@ function ItemLine({ item, companions, open, plain }: { item: RosterItem; compani
         <span className="text-ink">
           {hasDetail && !plain && !open ? (
             <HoverCard label={name} title={itemName(item)}>
-              <ItemDetail item={item} catalogue={catalogue} />
+              {rule ? rule.text : <ItemDetail item={item} catalogue={catalogue} />}
             </HoverCard>
           ) : (
             name
@@ -132,7 +149,7 @@ function ItemLine({ item, companions, open, plain }: { item: RosterItem; compani
       </div>
       {open && hasDetail ? (
         <div className="flex flex-col gap-1 border-l border-border pl-3 text-xs leading-relaxed text-ink-dim">
-          <ItemDetail item={item} catalogue={catalogue} />
+          {rule ? <p>{rule.text}</p> : <ItemDetail item={item} catalogue={catalogue} />}
         </div>
       ) : null}
     </li>

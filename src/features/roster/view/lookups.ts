@@ -198,7 +198,12 @@ export function xpNotches(xp: number, role: CharacterRole, rate: AdvanceRate = '
   const { previous, next } = xpProgress(xp, 0, role, rate)
   if (next === null) return []
   const notches: XpNotch[] = []
-  for (let point = previous; point <= next; point++) notches.push({ point, earned: point <= xp })
+  for (let point = previous; point <= next; point++) {
+    // `previous` is only a real, already-earned checkpoint once a box has actually been crossed
+    // (previous > 0). At 0 xp there is no box behind him yet, so that first notch is not "his" —
+    // filling it would show progress he has not made.
+    notches.push({ point, earned: point <= xp && point > 0 })
+  }
   return notches
 }
 

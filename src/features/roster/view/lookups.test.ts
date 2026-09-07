@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flagTags, skillName, skillOptionsFor, skillTableName, spellName, statusLabel, xpProgress } from './lookups'
+import { flagTags, skillName, skillOptionsFor, skillTableName, spellName, statusLabel, xpNotches, xpProgress } from './lookups'
 
 describe('xpProgress', () => {
   it('reports the band a hero sits in and advances owed', () => {
@@ -24,6 +24,23 @@ describe('xpProgress', () => {
   it('starts at zero for a fresh recruit', () => {
     const p = xpProgress(0, 0, 'henchman')
     expect(p).toMatchObject({ previous: 0, next: 2, advancesOwed: 0, fraction: 0 })
+  })
+})
+
+describe('xpNotches', () => {
+  it('fills nothing at 0 xp: no box has been crossed yet, so there is no notch to credit him with', () => {
+    expect(xpNotches(0, 'hero').every((n) => !n.earned)).toBe(true)
+    expect(xpNotches(0, 'hero').map((n) => n.point)).toEqual([0, 1, 2])
+  })
+
+  it('fills the checkpoint itself once a real box has been crossed, same as every point after it', () => {
+    // Kaspar at 16: last box at 14 (a real advance), next at 17. 14 is credited same as 15 and 16.
+    const notches = xpNotches(16, 'hero')
+    expect(notches.filter((n) => n.earned).map((n) => n.point)).toEqual([14, 15, 16])
+  })
+
+  it('a single point of experience fills just that point, not the fictitious zero start', () => {
+    expect(xpNotches(1, 'hero').filter((n) => n.earned).map((n) => n.point)).toEqual([1])
   })
 })
 

@@ -44,6 +44,17 @@ describe('injuries recorded before the outcome was the thing recorded', () => {
     expect(stupid?.injuries?.[0]).toMatchObject({ name: 'Stupidity' })
   })
 
+  it('picks up a later improvement to the rules text even when the name was already fixed', () => {
+    // An earlier version of this tidy-up renamed the injury but left the old placeholder effect
+    // text in place; the name alone matching is not enough to call it settled.
+    const stale = { injuryCode: 'madness', name: 'Frenzy', rolled: { d66: 0 }, effect: 'The warrior suffers from frenzy from now on.' }
+    const plan = planHeroFixup(hurt([stale], { frenzy: true }))
+    expect(plan?.injuries?.[0]?.name).toBe('Frenzy')
+    expect(plan?.injuries?.[0]?.effect).toMatch(/double his Attacks in hand-to-hand/)
+    // And once it carries the current text, it is left alone.
+    expect(planHeroFixup(hurt([plan!.injuries![0]], { frenzy: true }))).toBeNull()
+  })
+
   it('reads an imported injury, which kept no dice, from the condition the importer set', () => {
     // Bill came in as "Madness" with frenzy already flagged: that is which way it fell.
     const bill = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 0 }, effect: 'Roll again: ...' }], { frenzy: true }))
@@ -55,8 +66,9 @@ describe('injuries recorded before the outcome was the thing recorded', () => {
     expect(unknown).toBeNull()
   })
 
-  it('leaves alone an injury already named for its outcome, or with nothing to correct', () => {
-    expect(planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Frenzy', rolled: { d66: 24, subRoll: 5 }, effect: 'x' }]))).toBeNull()
+  it('leaves alone an injury already carrying the right name and the current rules text', () => {
+    const settled = planHeroFixup(hurt([{ injuryCode: 'madness', name: 'Madness', rolled: { d66: 24, subRoll: 5 }, effect: 'x' }]))!.injuries![0]
+    expect(planHeroFixup(hurt([settled]))).toBeNull()
     expect(planHeroFixup(hurt([{ injuryCode: 'leg_wound', name: 'Leg Wound', rolled: { d66: 22 }, effect: '-1 Movement' }]))).toBeNull()
   })
 

@@ -377,7 +377,7 @@ function HiredSwordDetail({ entry }: { entry: HiredSwordSummary }) {
       ) : null}
       <div className="flex flex-col gap-1">
         <h3 className="text-xs uppercase tracking-[0.25em] text-ink-dim">Equipment</h3>
-        <ItemLines items={kit} emptyText="No equipment listed" />
+        <ItemLines items={kit} emptyText="No equipment listed" ownerRules={detail.specialRules} />
       </div>
       {detail.skills ? (
         <div className="flex flex-col gap-1 text-sm">

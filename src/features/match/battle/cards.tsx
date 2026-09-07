@@ -62,7 +62,7 @@ export function WarriorBody({ equipment, kitLabel, kitNote, skillIds = [], rules
     <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
       <div className="flex flex-col gap-1">
         {kitLabel ? <p className="text-[10px] uppercase tracking-wider text-ink-dim">{kitLabel}</p> : null}
-        <ItemLines items={equipment} detailed={expanded} />
+        <ItemLines items={equipment} detailed={expanded} ownerRules={rules} />
         {kitNote ? <p className="text-xs text-ink-dim">{kitNote}</p> : null}
       </div>
       {skillIds.length > 0 ? (

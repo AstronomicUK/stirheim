@@ -10,12 +10,13 @@ import { useBattleBoosts } from './battle/useBattleBoosts'
 import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
-import { applyBattleEvents, battleTotals, emptyBattleLiveState, routThreshold, type AttackEventPayload, type BattleEventRow } from '../../domain'
+import { applyBattleEvents, battleTotals, routThreshold, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { RosterWarband } from '../../rules/types/roster'
 import { usePageTitle } from '../onboarding/usePageTitle'
+import { overlaySessions } from './shared/helpers'
 import { Button, Notice, Sheet, Spinner, useIsDesktop } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
 import { FightTab } from './fight/FightTab'
@@ -35,21 +36,6 @@ import { TopStrip } from './battle/TopStrip'
 import { useBattleSheet } from './battle/useBattleSheet'
 
 type Tab = BattleTab
-
-/**
- * Every sheet at the table with the shared log laid over it. A warband that has not saved a sheet
- * of its own but appears in the log gets one made of the log alone, so its casualties still show.
- */
-function overlaySessions(sessions: BattleSessionView[], events: BattleEventRow[], participants: MatchSummary['participants']): BattleSessionView[] {
-  const live = events.filter((e) => e.reverted_at === null)
-  const out = sessions.map((s) => ({ ...s, live_state: applyBattleEvents(s.live_state, live, s.warband_id) }))
-  for (const p of participants) {
-    if (out.some((s) => s.warband_id === p.warband_id)) continue
-    const involved = live.some((e) => e.payload.attacker_warband_id === p.warband_id || e.payload.target_warband_id === p.warband_id)
-    if (involved) out.push({ warband_id: p.warband_id, live_state: applyBattleEvents(emptyBattleLiveState(), live, p.warband_id), updated_at: live[live.length - 1]?.at ?? '' })
-  }
-  return out
-}
 
 export function BattlePage() {
   const { id } = useParams<{ id: string }>()

@@ -3,10 +3,11 @@
 // appear without a refresh.
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
 import {
+  useBattleEvents,
   useBattleSessions,
   useCancelMatch,
   useEndMatch,
@@ -26,7 +27,7 @@ import { formatRelativeTime } from '../campaign/activity'
 import { COMBAT_MODE_OPTIONS, combatModeLabel } from '../campaign/settingsForm'
 import { Card, KeyValue, LinkButton, Section, Tag, TextLink } from '../campaign/bits'
 import { MatchStateTag, ParticipantCard } from './shared/bits'
-import { formatMatchTime, matchActions, pendingLabel, scenarioLink, scenarioTitle, versusLabel } from './shared/helpers'
+import { formatMatchTime, matchActions, overlaySessions, pendingLabel, scenarioLink, scenarioTitle, versusLabel } from './shared/helpers'
 import { ReportCard } from './shared/ReportCard'
 import { PostBattleSequence } from './battle/PostBattleSequence'
 import { underdogBonus } from '../../rules/data/campaign/experience'
@@ -64,6 +65,8 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   const gmId = campaign.data?.campaign.gm_id
   const showTallies = match.state === 'in_progress' || match.state === 'awaiting_reports'
   const sessions = useBattleSessions(showTallies ? match.id : undefined)
+  const events = useBattleEvents(showTallies ? match.id : undefined)
+  const shownSessions = useMemo(() => overlaySessions(sessions.data ?? [], events.data ?? [], match.participants), [sessions.data, events.data, match.participants])
 
   const isGm = Boolean(userId) && userId === gmId
   const showReports = match.state === 'awaiting_reports' || match.state === 'completed'
@@ -123,7 +126,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
     }
   }
 
-  const sessionFor = (warbandId: string): BattleSessionView | undefined => sessions.data?.find((s) => s.warband_id === warbandId)
+  const sessionFor = (warbandId: string): BattleSessionView | undefined => shownSessions.find((s) => s.warband_id === warbandId)
   const underdog = (() => {
     if (match.participants.length !== 2 || match.state === 'cancelled') return null
     const [a, b] = [...match.participants].sort((x, y) => x.rating - y.rating)
@@ -273,7 +276,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
                       </Button>
                     </div>
                   ) : null}
-                  {showTallies ? <Tallies session={sessionFor(p.warband_id)} loading={sessions.isPending} /> : null}
+                  {showTallies ? <Tallies session={sessionFor(p.warband_id)} loading={sessions.isPending || events.isPending} /> : null}
                   {showReports ? <ReportStatus reported={reported} report={reportFor(p.warband_id)} canFile={toFile.some((f) => f.warband_id === p.warband_id)} to={`/matches/${match.id}/report/${p.warband_id}`} /> : null}
                 </ParticipantCard>
               )

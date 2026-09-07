@@ -4,8 +4,8 @@
 // supabase/migrations/20260904000006_match_functions.sql so the UI only offers what the server
 // will accept.
 
-import type { MatchParticipantView, MatchSummary } from '../../../api/matches'
-import type { MatchState } from '../../../domain'
+import type { BattleSessionView, MatchParticipantView, MatchSummary } from '../../../api/matches'
+import { applyBattleEvents, emptyBattleLiveState, type BattleEventRow, type MatchState } from '../../../domain'
 import { findScenario } from '../../../rules/data/campaign/scenarios'
 
 // ---- State labels and grouping ----
@@ -195,4 +195,19 @@ export function matchActions(match: Actionable, userId: string | undefined, gmId
   const canOpenSheet = match.state === 'in_progress' && isParticipant
 
   return { respondFor, showStart, canStart, startBlocked, canEnd, canCancel, canOpenSheet }
+}
+
+/**
+ * Every sheet at the table with the shared log laid over it. A warband that has not saved a sheet
+ * of its own but appears in the log gets one made of the log alone, so its casualties still show.
+ */
+export function overlaySessions(sessions: BattleSessionView[], events: BattleEventRow[], participants: MatchSummary['participants']): BattleSessionView[] {
+  const live = events.filter((e) => e.reverted_at === null)
+  const out = sessions.map((s) => ({ ...s, live_state: applyBattleEvents(s.live_state, live, s.warband_id) }))
+  for (const p of participants) {
+    if (out.some((s) => s.warband_id === p.warband_id)) continue
+    const involved = live.some((e) => e.payload.attacker_warband_id === p.warband_id || e.payload.target_warband_id === p.warband_id)
+    if (involved) out.push({ warband_id: p.warband_id, live_state: applyBattleEvents(emptyBattleLiveState(), live, p.warband_id), updated_at: live[live.length - 1]?.at ?? '' })
+  }
+  return out
 }

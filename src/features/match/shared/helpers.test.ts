@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { MatchParticipantView, MatchSummary } from '../../../api/matches'
+import type { BattleSessionView, MatchParticipantView, MatchSummary } from '../../../api/matches'
+import { emptyBattleLiveState, type AttackEventPayload, type BattleEventRow } from '../../../domain'
 import {
   allAccepted,
   formatMatchTime,
@@ -7,6 +8,7 @@ import {
   matchActions,
   matchGroupKey,
   matchWhen,
+  overlaySessions,
   pendingLabel,
   SCENARIO_AT_THE_TABLE,
   scenarioLink,
@@ -214,5 +216,62 @@ describe('matchActions', () => {
       canCancel: false,
       canOpenSheet: false,
     })
+  })
+})
+
+function attackEvent(over: Partial<AttackEventPayload> = {}): BattleEventRow {
+  const payload: AttackEventPayload = {
+    attacker_warband_id: 'watch',
+    attacker_id: 'captain',
+    attacker_kind: 'hero',
+    attacker_name: 'Captain',
+    nurgles_rot: false,
+    target_warband_id: 'eshin',
+    target_id: 'skritch',
+    target_kind: 'hero',
+    target_name: 'Skritch',
+    target_size: 1,
+    wounds_lost: 1,
+    out_of_action: true,
+    kill: true,
+    outcome: 'Out of action',
+    turn: 2,
+    rolls: [],
+    ...over,
+  }
+  return {
+    id: crypto.randomUUID(),
+    match_id: 'match-1',
+    actor_id: 'user-1',
+    actor_warband_id: 'watch',
+    at: '2026-09-05T10:00:00.000Z',
+    kind: 'attack',
+    payload,
+    summary: 'Captain took Skritch out of action.',
+    reverted_at: null,
+    reverted_by: null,
+    revert_note: null,
+  }
+}
+
+describe('overlaySessions', () => {
+  it('lays live events over a saved sheet', () => {
+    const session: BattleSessionView = { warband_id: 'watch', live_state: emptyBattleLiveState(), updated_at: '2026-09-05T09:00:00.000Z' }
+    const out = overlaySessions([session], [attackEvent()], [WATCH, ESHIN])
+    const watch = out.find((s) => s.warband_id === 'watch')
+    expect(watch?.live_state.tallies).toEqual([{ id: 'captain', kind: 'hero', enemiesOutOfAction: 1, outOfAction: 0, woundsLost: 0, note: '' }])
+  })
+
+  it("builds a sheet from the log alone for a warband that never saved one — this is #46's fix", () => {
+    const out = overlaySessions([], [attackEvent()], [WATCH, ESHIN])
+    expect(out.map((s) => s.warband_id).sort()).toEqual(['eshin', 'watch'])
+    const eshin = out.find((s) => s.warband_id === 'eshin')
+    expect(eshin?.live_state.tallies).toEqual([{ id: 'skritch', kind: 'hero', enemiesOutOfAction: 0, outOfAction: 1, woundsLost: 1, note: '' }])
+  })
+
+  it('leaves an uninvolved warband with no session at all', () => {
+    const bystander: MatchParticipantView = { ...WATCH, warband_id: 'bystander', warband_name: 'Bystanders' }
+    const out = overlaySessions([], [attackEvent()], [WATCH, ESHIN, bystander])
+    expect(out.some((s) => s.warband_id === 'bystander')).toBe(false)
   })
 })

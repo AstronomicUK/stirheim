@@ -136,6 +136,252 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 **Notes:** Tom has flagged this as likely to need merging with further related reports about attacking a target that's already stunned or knocked down — holding off on investigation/fix until those arrive so the whole picture is in one place rather than half-solved here and revised later.
 
+## Batch — 2026-09-07 (large dump)
+
+### 10. Attacking a stunned or knocked-down target doesn't apply the rulebook's automatic outcomes
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "If you attack a stunned unit, it should immediately OOA. And if you attack a knocked down unit, it auto hits and I think the unit goes OOA if it wounds. At the moment the battle sheet doesn't do either of these."
+
+**Notes:** Related to #9 (multi-attack UI) — Tom flagged that item as likely needing to merge with reports "particularly related to attacking stunned or knocked down foes," and this is that report. Consider both together when this is picked up.
+
+### 11. New "turns" feature for App Calculates games: a turn popup and a Recover Units button
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "We will also need to build in a turns feature into the game for "App Calculates" games. This will mean that turn limit games can be accurately tracked, and when you are finished with your turn, the opponent gets a popup saying "Your turn!" With a "Recover Units" button, which turns friendly stunned units to knocked down, and knocked down to no status"
+
+**Notes:**
+
+### 12. Crit table animation is still too fast to read; the settled (red) row and the spinning (yellow) row don't show the same information
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "The Crit Table animations are still too fast. You can't read it. It's so fast I couldn't check but it looked like the table with the selection (with the red row) had something in lower case that the table still calculating (with the yellow row rotating through the options) doesn't."
+
+**Notes:**
+
+### 13. "Pick the skill later" in the post-battle report lands on a skill list, which is confusing given the point is to defer the choice
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "Pick the skill later" in a post battle report takes you to a list of skills which is a bit strange; the whole point is that you want to leave it to later. It should instead take you to a page that says something like, "Done! Click the advancements button on the warband page to pick this skill before your next battle.""
+
+**Notes:**
+
+### 14. Warband units — possibly Sons of Hashut specifically, possibly wider — start at 1 XP instead of 0
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "I don't know if it's a problem across the board or just with the Sons of Hashut War band but they seem to have a lot of units starting at 1 XP. I believe most units, especially henchmen, start at 0 XP but I could be wrong."
+
+**Notes:**
+
+### 15. The Well exploration outcome doesn't ask which model missed the next game (and other outcomes probably have the same gap)
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "The Well outcome in the exploration phase doesn't ask you to pick a unit, so it won't know who misses the next game if they fail. There are probably other exploration phase outcomes like this, where you have to select a unit. It also asks what treasure is found which is strange because the game already knows that they find 1 wyrdstone, so I'm unsure why the user is prompted to input additional treasure."
+
+**Notes:** Reported alongside #16 in the same paragraph — both quoted here in full since they came from the same report; see #16 for the treasure-prompt half.
+
+### 16. The Well exploration outcome asks the user to input treasure found, when the app should already know the amount
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "The Well outcome in the exploration phase doesn't ask you to pick a unit, so it won't know who misses the next game if they fail. There are probably other exploration phase outcomes like this, where you have to select a unit. It also asks what treasure is found which is strange because the game already knows that they find 1 wyrdstone, so I'm unsure why the user is prompted to input additional treasure."
+
+**Notes:** Same report as #15 — see that entry for the missing-unit-picker half.
+
+### 17. Filing a report briefly flashes an "already filed" page before redirecting
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-07
+
+> "When you file a report, for a brief second it comes up with a page that says something like "A report for this battle is already in,'" before redirecting to the main battle report page."
+
+**Notes:**
+
+### 18. Advancements' skill picker needs a skill-type filter, defaulting to "All Skills"
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-07
+
+> "When you select a skill in Advancements, the heading options of being able to select the skill type, with the default being "All Skills""
+
+**Notes:** Wording as sent — read as: add a skill-type filter/heading to the skill picker in Advancements, defaulting to "All Skills".
+
+### 19. Skill toggles: the toggle wording belongs to the engine not the skill text, and toggles should only appear for a model that actually has the relevant skill
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "There are a lot of skills that require toggles. Firstly, the toggle text shouldn't be in the skill itself: that's a message for the engine itself. Secondly, why don't we have the toggles hidden (including the charging one that's currently in), and the toggle appears when you select a model that has a relevant skill? So if they have Pit Fighter, for example, the only toggle that will show is "Inside Building?""
+
+**Notes:**
+
+### 20. Tapping a dice-roll button more than once should log every result, not just the last one, to stop re-rolling out of sight
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "When you tap on a dice roll button more than once, this should show in the dice log along with each result. This prevents people cheating the system such as when they roll an advance and don't like the first outcome, they can quickly tap again before their friends see it."
+
+**Notes:**
+
+### 21. Can't submit the second warband's post-battle report after submitting the first, when one player controls both sides of a match
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "I ran a test battle between two warbands that I control and then I submitted the battle report on one of the warbands. When I went to the second one, I was no longer able to submit their battle report. This seems like a bug as then they can't benefit from any of the XP or advancement rolls in the post-game sequence."
+
+**Notes:**
+
+### 22. Move "Transfer Warband to Another Player" and "Move to another Campaign" under the warband page's "More" button
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-07
+
+> "I think the "Transfer Warband to Another Player" and "Move to another Campaign" options can be moved to being under the "More" button at the bottom of the warband page"
+
+**Notes:**
+
+### 23. The audit log's "Details" expander reads like raw data (field names, ids) instead of English, and wants tooltips
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "The new "details" expander in the log is not user friendly: it has loads of unrelevant data and is written like it's something a computer should read, not a human. It seems like it shows field names rather than what we see Client-Side. Loads of fields are redundant to us as the user, like showing an assignment of a User ID, but more useful ones look awful, like in Call of the Grave:
+>
+> "Tom edited Kel'thuzad (The Call of the Grave) by hand
+> 20 h ago
+> Hide
+> skills:
+> the_restless_dead_skills_forbidden_rite
+> →
+> the_restless_dead_variant_undead_special_skills_dark_ritual"
+>
+> It should be in English, like "Changed the skill Forbidden Rite to the skill Dark Ritual". Both of these should have tooltips enabled."
+
+**Notes:** This is the expandable audit-diff feature built earlier this session (`activityFieldChanges` in `src/features/campaign/activity.ts`) — it was designed to be generic across every table rather than name specific fields nicely, which is exactly what's landed wrong here.
+
+### 24. Roll-it-out popup is full-screen with nothing filling the space; text should be bigger and more exciting; the weapon/toggle boxes should move into the popup itself (a previously-made point that wasn't acted on)
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "In the Roll it Out, you've made the popup full screen unnecessarily because you've done nothing to fill the space so it's just full of blank space. the text should be bigger and more engaging. Rolling dice should be exciting!but you've probably still made the popup too big: just make it as big as it needs to add the extra visualization.
+>
+> additionally you ignored my points about moving the weapon and toggle boxes. I think the best place for those is actually in the popup itself once you click on the dice."
+
+**Notes:** The "ignored my points about moving the weapon and toggle boxes" likely traces back to the original roll-it-out request's "(centre the item-selection/charging box above the dice icon...)" line, which was read at the time as a pure layout/alignment instruction (equal-height boxes, centred dice button) rather than "move the weapon-select and situation-toggle controls into the roll popup." Worth re-reading in that light when this is picked up.
+
+### 25. The roll-it-out dice icon needs a cooler animation (e.g. a rotating die)
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-07
+
+> "The dice icon for roll it out is crappy and needs something way cooler. Like a rotating dice animation or something like that?"
+
+**Notes:**
+
+### 26. Trading post icons/names: "Characters" should be "Dramatis Personae"; stash should look like a treasure chest; Buy/Sell icons should read as a matched pair
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-07
+
+> "The characters icon in the trading post is weird. It should also be called Dramatis Personae, not characters. Also can we make the stash icon a treasure chest, and make the Buy and Sell icons go well together like brother and sister icons?"
+
+**Notes:**
+
+### 27. Dramatis Personae list is inconsistent (some full descriptions, some just cost); wants a tap-to-read pop-up and a persistent bottom "Search" button
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "The Dramatis Personae list is inconsistent. Some have full descriptions and others just have cost. You should be able to tap on one to read more about them in a pop-up (their stats etc). Then there should be a "Search" button that is persistently at the bottom (in case of scrolled descriptions) and when you click Search, the current screen of "Who goes searching" appears."
+
+**Notes:**
+
+### 28. Creating a warband with a spellcaster never prompts a spell roll or pick — also needs a house rule for how the first spell is chosen
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** 2026-09-07
+
+> "Making a warband with a spellcaster in doesn't prompt you to roll or pick a spell at all. This also needs a house rule setting, as the RAW is that the first spell is picked randomly, but two house rules that are played are:
+> 1. First spell taken can be picked, not rolled
+> 2. Roll twice, pick 1 of them"
+
+**Notes:**
+
+### 29. Editing a spellcaster's spells lets you pick any spell in the game, not just ones from that unit's own lore/tree
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "Adding a spell to a spellcaster in "Edit" allows you to pick any spell, not just spell trees that that unit can learn from."
+
+**Notes:**
+
+### 30. Melee Attack and Ranged Attack quick actions share one highlight state and don't cleanly default to their own weapon type
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "The ranged attack and melee attack quick actions are both on the same screen so they are both highlighted when you select either of them. What should really happen is the melee attack should default to melee weapons and the ranged attack should default to a ranged weapon and they should be separate quick actions."
+
+**Notes:** The "both highlighted" part is a real bug in this session's own work: both `NavTile`s in `BattleNav.tsx` compute `active={tab === 'fight'}`, so whichever quick action is tapped, both light up since they share the same underlying tab value. The weapon-defaulting half was intentionally built (`FightTab`'s `startWith` prop) — worth checking whether it's not behaving as expected, or whether this report is purely about the shared highlight.
+
+### 31. "Cast a Spell" looks nothing like Melee/Ranged Attack — should reuse the same layout with "Spellcaster"/"Target" instead of "Attacker"/"Defender"
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "Additionally when you click "Cast a Spell," the visual is very different to the others. What it should be is that it should look like the melee attack and ranged attack but instead of "Attacker" it should say "Spellcaster" and instead of "Defender" it should say "Target.""
+
+**Notes:**
+
+### 32. Spell targeting should offer only friendly, only enemy, or both lists (grouped under headings) depending on what the spell allows
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-07
+
+> "If the spell should be cast on friendly units, it should only give the option of friendly units. If it should be cast on enemy units, it should cast on enemy units. If it can be cast on both, it should have both lists, with "Friendly Units" as a heading and "Enemy Units" as a heading."
+
+**Notes:** Extends the friendly-only Target picker added to `CastTab.tsx` earlier this session (currently always friendly-only, no enemy option, no per-spell targeting rule). Related to #29 and #31 — all three touch the Cast tab and the spell data model, and none of the spell data (`src/rules/types/magic.ts`) currently records who a spell can target, so this needs new per-spell data as well as UI work.
+
 <!-- New batches go below this line, most recent last. Copy the entry template for each item. -->
 
 <!--

@@ -176,7 +176,7 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "Pick the skill later" in a post battle report takes you to a list of skills which is a bit strange; the whole point is that you want to leave it to later. It should instead take you to a page that says something like, "Done! Click the advancements button on the warband page to pick this skill before your next battle.""
 
-**Notes:**
+**Notes:** Confirmed. There are two different "later" mechanisms in `AdvancesStep.tsx` that are easy to conflate: the whole-advance "Roll later" (`mode === 'later'`) correctly shows a plain "Left pending. Roll it from the roster page under Advancements." line and nothing else. But "Pick the skill later" — offered once an advance has already been rolled and turned out to be a skill choice (`canPickLater` at line 65: `subject.kind !== 'group' && plan.need === 'skill' && plan.roll !== null`) — sets `mode = 'pickLater'`, which does *not* match the `'later'` branch, so it falls into the `else` branch and renders `<AdvanceBody ... step={mode === 'pickLater' ? 'choose' : item.step} .../>` (line 83) — `step` is forced to `'choose'`, the full skill-selection list (`AdvanceBody.tsx`'s `choose` branch → `SkillPicker`). A small "Skill to be picked later" banner with a "Pick it now" button is added underneath it (lines 84-90), but the list itself stays visible and interactive underneath, which is exactly the confusing behaviour reported. Fix is contained to `AdvancesStep.tsx`: swap what renders for `mode === 'pickLater'` for a confirmation message like the plain `'later'` case, instead of forcing `AdvanceBody` into its choose step.
 
 ### 14. Warband units — possibly Sons of Hashut specifically, possibly wider — start at 1 XP instead of 0
 
@@ -226,7 +226,7 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "When you select a skill in Advancements, the heading options of being able to select the skill type, with the default being "All Skills""
 
-**Notes:** Wording as sent — read as: add a skill-type filter/heading to the skill picker in Advancements, defaulting to "All Skills".
+**Notes:** Wording as sent — read as: add a skill-type filter/heading to the skill picker in Advancements, defaulting to "All Skills". Confirmed there's no such filter today: `SkillPicker` in `src/features/advances/AdvanceBody.tsx` (~lines 500-545) takes `tables: AvailableSkillTable[]` (one per skill table the hero is entitled to — Combat/Shooting/Strength/Speed/Academic/Warband-unique, from `availableSkills()` in `src/rules/resolve/advances.ts`) and just stacks every table as its own heading + list, one after another. The only narrowing control is a free-text search box, and it only appears once the combined skill count exceeds 12 — there's no "All Skills / Combat / Shooting / ..." selector at all. This `SkillPicker` is shared by both the post-battle wizard's Advances step and the standalone Advancements screen, so a filter added here covers both places at once.
 
 ### 19. Skill toggles: the toggle wording belongs to the engine not the skill text, and toggles should only appear for a model that actually has the relevant skill
 
@@ -266,7 +266,7 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "I think the "Transfer Warband to Another Player" and "Move to another Campaign" options can be moved to being under the "More" button at the bottom of the warband page"
 
-**Notes:**
+**Notes:** Straightforward. Both currently render as their own always-visible header links in `WarbandPage.tsx` (`HandOver` component, lines 465-524, trigger at 484-488 "Transfer warband to another player"; `MoveCampaign` component, lines 415-462, trigger at 432-437 "Move to another campaign" / "Join a campaign"), inside a `<div className="flex flex-wrap gap-x-4 gap-y-1">` at lines 138-141 — not inside any menu today. The "More" button Tom means already exists on this exact page: `menuOpen` state (line 63), a desktop trigger at 171-173 and a mobile sticky-bar trigger at 268-270, both opening the same `Sheet` at lines 274-312 (titled "Warband"), which currently holds Archive/Unarchive, Save as template, and Delete warband. Moving the two options in means adding two more entries to that Sheet that open `HandOver`/`MoveCampaign`'s own sheets — both components currently manage their `open` state internally, so that state would need lifting up (or a shared open-trigger prop added) rather than just relocating the trigger buttons.
 
 ### 23. The audit log's "Details" expander reads like raw data (field names, ids) instead of English, and wants tooltips
 
@@ -318,7 +318,9 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "The characters icon in the trading post is weird. It should also be called Dramatis Personae, not characters. Also can we make the stash icon a treasure chest, and make the Buy and Sell icons go well together like brother and sister icons?"
 
-**Notes:**
+**Notes:** The "Characters" label is the `IconTab` at `TradingPage.tsx` lines 25-33 (`{ value: 'characters', label: 'Characters', icon: 'characters' }`), plus a second "Characters" section title inside `CharactersTab.tsx:49`. Renaming the label is a one-line change per site; whether to also rename the `IconName`/tab value itself (`'characters'` → something like `'dramatisPersonae'`) is a slightly bigger but still mechanical rename across `icons.tsx` and both usages.
+
+Checked the actual SVG path data in `src/ui/icons.tsx`: `characters` (line 87) is a head-and-shoulders person shape with two extra diagonal strokes flaring off the top of the head — reads as stray antenna lines, which is probably the "weird" look. `stash` (line 86) is a plain rectangular crate (body, sloped lid, centre seam, short handle) with none of the rounded-lid/clasp details that would read as a treasure chest. `buy` (line 84) is a sack/bag with a triangular peak and strap lines; `sell` (line 85) is an unrelated circle-with-up-arrow glyph — confirmed they don't currently share any visual language (different frame, different motif), so "brother and sister icons" is an accurate complaint, not a preference call. The file's own header comment says the icon set is meant to be "kept deliberately few" and consistent, so redesigning buy/sell as a matched pair fits the file's stated intent rather than fighting it.
 
 ### 27. Dramatis Personae list is inconsistent (some full descriptions, some just cost); wants a tap-to-read pop-up and a persistent bottom "Search" button
 
@@ -328,7 +330,13 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "The Dramatis Personae list is inconsistent. Some have full descriptions and others just have cost. You should be able to tap on one to read more about them in a pop-up (their stats etc). Then there should be a "Search" button that is persistently at the bottom (in case of scrolled descriptions) and when you click Search, the current screen of "Who goes searching" appears."
 
-**Notes:**
+**Notes:** This is the trading post's "Characters" tab, `src/features/trading/CharactersTab.tsx` — its own header comment already calls the feature "Dramatis Personae," confirming this is the same list as #26.
+
+Root cause of the inconsistency: every row's second line falls back through `persona.hireCost?.text ?? persona.detail?.hireFee ?? 'No plain fee'` (line ~66). Most personas have a short `hireCost.text` ("150 gc"), but four (Bertha Bestraufrung, Dark Emissary, Penthesilea, Truthsayer — `src/rules/data/campaign/dramatisPersonae.ts` lines 90, 485, 768, 823) have `hireCost: null`, and two of those fall through to a `hireFee` that is full multi-paragraph rules text (Bertha's and Penthesilea's each run into an embedded dice-roll table) — which then renders inline in the compact list row. That's exactly "some have full descriptions and others just have cost."
+
+Tapping a row today calls `setPicked(persona)` (line 56), which goes straight into the `SearchSheet` — there's no intermediate "read more" popup. All 30 personas do have a `detail` object with flavour text and a rating, but it only appears at the bottom of the already-open `SearchSheet` (lines 214-219), not as a preview before committing to search. The "who goes searching" screen exists inside that same sheet, headed "Who goes looking?" (line 176, close to but not exactly Tom's phrasing) with the usual checkbox-and-die-roll list; there's no persistent bottom "Search" button anywhere today — tapping a persona row is the only entry point.
+
+Two existing patterns could serve the "tap to read more" request: `src/ui/HoverCard.tsx` (already used for spell descriptions in `CastTab.tsx` and elsewhere) for a lightweight popover, or `HiredSwordsTab.tsx`'s `HiredSwordDetail` (lines 362-403, stats + equipment + skills + a collapsible flavour block) as the model for a fuller "stats etc." popup, which is closer to what Tom described.
 
 ### 28. Creating a warband with a spellcaster never prompts a spell roll or pick — also needs a house rule for how the first spell is chosen
 
@@ -340,7 +348,16 @@ Given all three sit in the same small file, a fix would likely address them toge
 > 1. First spell taken can be picked, not rolled
 > 2. Roll twice, pick 1 of them"
 
-**Notes:**
+**Notes:** Confirmed — the builder has no concept of spellcasters at all. `draftToRosterWarband()` in `src/rules/resolve/builder.ts:507` hard-codes `spellIds: []` for every hero unconditionally (same for henchmen hired later, `recruitment.ts:148`); there's no lookup of `WIZARD_ALLOCATIONS`/any lore anywhere in the builder, and a repo-wide check of `src/features/roster/builder/*` for "spell", "wizard", "caster" or "lore" turns up nothing.
+
+The pieces to build this from already exist and just aren't wired to warband creation:
+- `GrimoireCard.tsx`'s `ReadingSheet` (lines 169-200) is the existing "roll on the lore table" UI (resolves the hero's lore, shows a `DicePicker`, lists the lore's spells with the rolled one highlighted).
+- More directly relevant: `AdvanceBody.tsx`'s `SpellPicker` (~lines 547-600) already supports *both* rolling and choosing freely for a spell gained via advancement, gated by an optional `chooseFrom` prop tied to a map-campaign perk (Sage's Hall) — proof the roll-vs-pick UI already exists, just gated on the wrong condition for this use.
+- The lore-scoping logic itself is `loreForHero(hero, template)` + `unknownSpells(lore, hero, bans)` in `src/features/advances/model.ts:202-215`, currently only called from the advancement flow.
+
+For the house rule: `CampaignHouseRules` (`src/rules/types/roster.ts:170-191`) currently has seven fields, all plain booleans, surfaced via `HOUSE_RULE_SWITCHES` in `settingsForm.ts` as `ToggleRow` switches — there's no existing 3-way/enum house rule to copy. However `dicePolicy` (a sibling `SettingsForm` field, not inside `CampaignHouseRules`) IS a 3-option setting rendered with `SegmentedControl` (`settingsForm.ts:13`, `SettingsFields.tsx:22,70-77`) — that's the template to follow for a "RAW random / pick freely / roll twice, pick one" setting.
+
+Ties into #29 (spell-edit scoping) and #32 (spell targeting) — all three touch the same spell/lore data model and the Cast/Edit/Builder spell-picking surfaces.
 
 ### 29. Editing a spellcaster's spells lets you pick any spell in the game, not just ones from that unit's own lore/tree
 
@@ -350,7 +367,9 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 > "Adding a spell to a spellcaster in "Edit" allows you to pick any spell, not just spell trees that that unit can learn from."
 
-**Notes:**
+**Notes:** Confirmed. `HeroEditor.tsx`'s "Spells" field (lines 161-180) lists `allSpellOptions()` — every spell and prayer in the whole game (`lookups.ts:137-139`, `[...SPELL_INDEX.values()]`) — grouped into `<optgroup>`s by lore name for display only, with no filter against the hero's own lore at all. The asymmetry: the same component's *skills* field correctly calls `skillOptionsFor(skillTableIds, warbandTemplateId)`, which scopes to the hero's own assigned skill tables — spells just never got the equivalent treatment.
+
+The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, bans)` (`src/features/advances/model.ts:202-215`, same helpers noted under #28), but `HeroEditor`'s props currently only pass `warbandTemplateId: string`, not the resolved `WarbandTemplate` object `loreForHero` needs — so the fix also needs the full template threaded down, not just its id.
 
 ### 30. Melee Attack and Ranged Attack quick actions share one highlight state and don't cleanly default to their own weapon type
 

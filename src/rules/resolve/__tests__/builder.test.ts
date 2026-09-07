@@ -18,11 +18,13 @@ import {
   renameDraftHero,
   setDraftEquipmentCost,
   setDraftGroupSize,
+  setDraftHeroSpell,
   unitIsLarge,
   validateDraft,
   type EquipmentOption,
   type WarbandDraft,
 } from "../builder";
+import { loreForUnit } from "../../data/campaign/magic";
 import { parseEquipmentCost } from "../equipmentCost";
 import { RulesError } from "../errors";
 import { warbandRating } from "../rating";
@@ -93,7 +95,7 @@ describe("newWarbandDraft", () => {
     expect(d.warbandTemplateId).toBe("mercenaries_reikland");
     expect(d.startingGold).toBe(500);
     expect(d.heroes).toHaveLength(1);
-    expect(d.heroes[0]).toEqual({ id: "leader", name: "Mercenary Captain", unitTemplateId: CAPTAIN, equipment: [] });
+    expect(d.heroes[0]).toEqual({ id: "leader", name: "Mercenary Captain", unitTemplateId: CAPTAIN, equipment: [], spellIds: [] });
     expect(d.groups).toEqual([]);
     expect(d.notes).toBe("");
   });
@@ -470,5 +472,38 @@ describe("half-price armour at creation", () => {
     // 5 gc shield: 2 gc under the switch (rounded down), so 3 gc saved.
     expect(shieldFull.total - shieldHalf.total).toBe(3);
     expect(validateDraft(d, REIKLAND, undefined, defaultCampaignHouseRules()).map((p) => p.code)).not.toContain("builder.overspent");
+  });
+});
+
+describe("a spellcasting hero's first spell at creation", () => {
+  const POSSESSED = findWarbandTemplate("cult_of_the_possessed")!;
+  const MAGISTER = "cult_of_the_possessed_magister";
+
+  it("a non-caster gets no lore and no first-spell problem", () => {
+    expect(loreForUnit(CAPTAIN, REIKLAND)).toBeNull();
+    const d = newWarbandDraft(REIKLAND, "Test");
+    expect(validateDraft(d, REIKLAND).map((p) => p.code)).not.toContain("builder.noFirstSpell");
+  });
+
+  it("a Magister draws from Chaos Rituals and must have a first spell before the warband is ready", () => {
+    const lore = loreForUnit(MAGISTER, POSSESSED);
+    expect(lore?.id).toBe("chaos_rituals");
+
+    const d = newWarbandDraft(POSSESSED, "Test");
+    expect(d.heroes[0].spellIds).toEqual([]);
+    const problems = validateDraft(d, POSSESSED);
+    expect(problems.map((p) => p.code)).toContain("builder.noFirstSpell");
+    expect(problems.find((p) => p.code === "builder.noFirstSpell")?.subjectId).toBe(d.heroes[0].id);
+
+    const spellId = lore!.spells[0].id;
+    const picked = setDraftHeroSpell(d, d.heroes[0].id, spellId);
+    expect(picked.heroes[0].spellIds).toEqual([spellId]);
+    expect(validateDraft(picked, POSSESSED).map((p) => p.code)).not.toContain("builder.noFirstSpell");
+    expect(draftToRosterWarband(picked, POSSESSED).heroes[0].spellIds).toEqual([spellId]);
+
+    // Clearing it (null) puts the problem back.
+    const cleared = setDraftHeroSpell(picked, d.heroes[0].id, null);
+    expect(cleared.heroes[0].spellIds).toEqual([]);
+    expect(validateDraft(cleared, POSSESSED).map((p) => p.code)).toContain("builder.noFirstSpell");
   });
 });

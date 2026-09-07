@@ -13,7 +13,7 @@ describe('settings form mapping', () => {
     const settings = {
       startingGold: 600,
       maxRosters: 8,
-      houseRules: { strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] } },
+      houseRules: { strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: 'chooseFreely' as const, bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] } },
       dicePolicy: 'app_rolls' as const,
       combatMode: 'players' as const,
       lockCombatMode: true,

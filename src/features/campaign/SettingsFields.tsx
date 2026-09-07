@@ -6,7 +6,7 @@ import { Markdown, NumberField, SegmentedControl, TextArea } from '../../ui'
 import { Section, ToggleRow } from './bits'
 import { CampaignTypeChooser } from './CampaignTypeChooser'
 import { BansEditor } from './BansEditor'
-import { COMBAT_MODE_OPTIONS, DICE_POLICY_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
+import { COMBAT_MODE_OPTIONS, DICE_POLICY_OPTIONS, FIRST_SPELL_RULE_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
 export interface SettingsFieldsProps {
   form: SettingsForm
@@ -21,6 +21,7 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
   const [preview, setPreview] = useState(false)
   const dice = DICE_POLICY_OPTIONS.find((o) => o.value === form.dicePolicy)
   const combat = COMBAT_MODE_OPTIONS.find((o) => o.value === form.combatMode)
+  const firstSpell = FIRST_SPELL_RULE_OPTIONS.find((o) => o.value === form.houseRules.firstSpellRule)
 
   return (
     <>
@@ -61,6 +62,17 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
               />
             </div>
           ))}
+        </div>
+        <div className="flex flex-col gap-2">
+          <SegmentedControl
+            label="A spellcaster's first spell"
+            options={FIRST_SPELL_RULE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+            value={form.houseRules.firstSpellRule}
+            onChange={(firstSpellRule) => {
+              if (!disabled) onChange({ ...form, houseRules: { ...form.houseRules, firstSpellRule } })
+            }}
+          />
+          {firstSpell ? <p className="text-sm leading-relaxed text-ink-dim">{firstSpell.description}</p> : null}
         </div>
         <BansEditor bans={form.houseRules.bans} disabled={disabled} onChange={(bans) => onChange({ ...form, houseRules: { ...form.houseRules, bans } })} />
       </Section>

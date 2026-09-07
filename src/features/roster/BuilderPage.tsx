@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
-import { useCreateWarband } from '../../api/warbands'
+import { fetchWarband, updateRoster, useCreateWarband } from '../../api/warbands'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import {
   addDraftGroup,
@@ -114,6 +114,19 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
     setCreateError(null)
     try {
       const id = await create.mutateAsync(draftToCreatePayload(draft, template, houseRules))
+      // Spells picked at creation aren't part of create_warband's payload (the same shape the
+      // roster importer uses): match the new hero rows back by sort order, then patch them in.
+      const spellChanges = draft.heroes
+        .map((hero, sort_order) => ({ hero, sort_order }))
+        .filter(({ hero }) => hero.spellIds.length > 0)
+      if (spellChanges.length > 0) {
+        const detail = await fetchWarband(id)
+        const changes = spellChanges.flatMap(({ hero, sort_order }) => {
+          const row = detail.heroes.find((h) => h.sort_order === sort_order)
+          return row ? [{ table: 'heroes' as const, op: 'update' as const, id: row.id, data: { spells: hero.spellIds } }] : []
+        })
+        if (changes.length > 0) await updateRoster(id, 'creation', changes)
+      }
       clear()
       navigate(`/warbands/${id}`, { replace: true })
     } catch (err) {

@@ -1,8 +1,10 @@
 // Campaign house-rule switches: defaults, merging a partially specified set, and plain-English
 // descriptions for the campaign settings screen. Defaults are Tom's group's (docs/PLANNING.md).
 
-import type { CampaignBans, CampaignHouseRules } from "../types/roster";
+import type { CampaignBans, CampaignHouseRules, FirstSpellRule } from "../types/roster";
 import { defaultCampaignHouseRules, emptyCampaignBans } from "../types/roster";
+
+const FIRST_SPELL_RULES: readonly FirstSpellRule[] = ["random", "chooseFreely", "rollTwicePickOne"];
 
 export { defaultCampaignHouseRules, emptyCampaignBans };
 
@@ -11,10 +13,11 @@ export function applyHouseRuleDefaults(partial?: Partial<CampaignHouseRules> | n
   const rules = defaultCampaignHouseRules();
   if (!partial) return rules;
   for (const key of Object.keys(rules) as (keyof CampaignHouseRules)[]) {
-    if (key === "bans") continue;
+    if (key === "bans" || key === "firstSpellRule") continue;
     const v = partial[key];
     if (typeof v === "boolean") rules[key] = v;
   }
+  if (FIRST_SPELL_RULES.includes(partial.firstSpellRule as FirstSpellRule)) rules.firstSpellRule = partial.firstSpellRule as FirstSpellRule;
   const bans = partial.bans;
   if (bans && typeof bans === "object") {
     for (const key of Object.keys(rules.bans) as (keyof CampaignBans)[]) {
@@ -61,6 +64,11 @@ export function describeHouseRules(rules: CampaignHouseRules): string[] {
     rules.rewardsOfTheShadowlord
       ? "Rewards of the Shadowlord: a Possessed Magister or Mutant may roll on the Rewards table instead of taking a skill (rulebook optional rule)."
       : "Rewards of the Shadowlord not in use.",
+    rules.firstSpellRule === "chooseFreely"
+      ? "A spellcaster's first spell may be chosen freely rather than rolled (house rule)."
+      : rules.firstSpellRule === "rollTwicePickOne"
+        ? "A spellcaster's first spell is rolled twice, keeping either result (house rule)."
+        : "A spellcaster's first spell is rolled at random (rulebook).",
     bansCount(rules.bans) === 0
       ? "Nothing is banned: every item, spell, hired sword, character and skill in the rules is in play."
       : `Banned in this campaign: ${bansCount(rules.bans)} ${bansCount(rules.bans) === 1 ? "entry" : "entries"} (${[

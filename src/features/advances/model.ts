@@ -22,8 +22,8 @@
 import type { PendingAdvanceRow } from '../../domain'
 import { findHiredSword } from '../../rules/data/campaign/hiredSwords'
 import { findRacialMaximum } from '../../rules/data/campaign/experience'
-import { SPELL_LORES, WIZARD_ALLOCATIONS, findLore } from '../../rules/data/campaign/magic'
-import { findUnitTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
+import { SPELL_LORES, loreForUnit } from '../../rules/data/campaign/magic'
+import { heroCapacity } from '../../rules/data/warbandTemplates'
 import { rewardsEligible } from '../../rules/data/campaign/rewards'
 import { emptyRewardChoices, planReward, type RewardChoices, type RewardPlan } from '../../rules/resolve/rewards'
 import {
@@ -202,11 +202,7 @@ export function groupMaxima(group: RosterHenchmanGroup, warbandTemplateId: strin
 export function loreForHero(hero: RosterHero, template: WarbandTemplate | undefined): SpellLore | null {
   const known = SPELL_LORES.find((lore) => lore.spells.some((s) => hero.spellIds.includes(s.id)))
   if (known) return known
-  const unit = template ? findUnitTemplate(template, hero.unitTemplateId) : undefined
-  if (!unit) return null
-  const labels = [template ? `${template.name} ${unit.name}` : null, unit.name].filter((x): x is string => x !== null).map((x) => x.toLowerCase())
-  const row = WIZARD_ALLOCATIONS.find((a) => a.loreId !== null && labels.includes(a.wizard.toLowerCase()))
-  return row?.loreId ? (findLore(row.loreId) ?? null) : null
+  return template ? loreForUnit(hero.unitTemplateId, template) : null
 }
 
 /** Spells of the lore the hero does not know yet, in table order; banned spells are left out. */

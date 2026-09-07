@@ -3,7 +3,7 @@
 // that into a validated CampaignSettings or per-field messages.
 
 import { campaignSettingsSchema, type CampaignSettings, type CombatMode, type DicePolicy, defaultCampaignSettings } from '../../domain/settings'
-import type { CampaignHouseRules } from '../../rules/types/roster'
+import type { CampaignHouseRules, FirstSpellRule } from '../../rules/types/roster'
 
 export interface SettingsForm {
   /** NaN while the field is blank or not a number. */
@@ -76,6 +76,7 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.reportApproval === b.reportApproval &&
     a.mapCampaign === b.mapCampaign &&
     HOUSE_RULE_SWITCHES.every((s) => a.houseRules[s.key] === b.houseRules[s.key]) &&
+    a.houseRules.firstSpellRule === b.houseRules.firstSpellRule &&
     bansEqual(a.houseRules.bans, b.houseRules.bans)
   )
 }
@@ -93,7 +94,7 @@ export function validateCampaignName(name: string): string | undefined {
   return undefined
 }
 
-export type HouseRuleSwitchKey = Exclude<keyof CampaignHouseRules, 'bans'>
+export type HouseRuleSwitchKey = Exclude<keyof CampaignHouseRules, 'bans' | 'firstSpellRule'>
 
 export interface HouseRuleSwitch {
   key: HouseRuleSwitchKey
@@ -143,6 +144,34 @@ export const HOUSE_RULE_SWITCHES: HouseRuleSwitch[] = [
     description: "Rulebook optional rule: a Cult of the Possessed Magister or Mutant earning a New Skill may roll 2D6 on the Rewards table instead. Wrath on a 2, nothing on 3-6, a mutation on 7-8, Chaos Armour on 9-10, a Daemon Weapon on 11, Possessed on 12.",
   },
 ]
+
+export interface FirstSpellRuleOption {
+  value: FirstSpellRule
+  label: string
+  description: string
+}
+
+export const FIRST_SPELL_RULE_OPTIONS: FirstSpellRuleOption[] = [
+  {
+    value: 'random',
+    label: 'Rolled at random',
+    description: 'Rulebook: roll on the lore table for the first spell, same as any spell earned later.',
+  },
+  {
+    value: 'chooseFreely',
+    label: 'Chosen freely',
+    description: 'House rule: the first spell may be picked from the lore rather than rolled.',
+  },
+  {
+    value: 'rollTwicePickOne',
+    label: 'Roll twice, pick one',
+    description: 'House rule: roll on the lore table twice and keep either result.',
+  },
+]
+
+export function firstSpellRuleLabel(rule: FirstSpellRule): string {
+  return FIRST_SPELL_RULE_OPTIONS.find((o) => o.value === rule)?.label ?? rule
+}
 
 export interface DicePolicyOption {
   value: DicePolicy

@@ -15,6 +15,7 @@ describe("campaign settings", () => {
       halfPriceHelmets: false,
       rabbitsFootBattleOnly: true,
       rewardsOfTheShadowlord: false,
+      firstSpellRule: "random",
         bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
       dicePolicy: "players_roll",
@@ -66,6 +67,7 @@ describe("campaign settings", () => {
       halfPriceHelmets: false,
       rabbitsFootBattleOnly: true,
       rewardsOfTheShadowlord: false,
+      firstSpellRule: "random",
         bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
       dicePolicy: "players_roll",
@@ -85,6 +87,7 @@ describe("campaign settings", () => {
     halfPriceHelmets: false,
     rabbitsFootBattleOnly: true,
     rewardsOfTheShadowlord: false,
+    firstSpellRule: "random",
       bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
     });
     expect(campaignHouseRulesSchema.parse({ bans: { items: ["nurgles_rot"] } }).bans).toEqual({ items: ["nurgles_rot"], spells: [], hiredSwords: [], characters: [], skills: [] });

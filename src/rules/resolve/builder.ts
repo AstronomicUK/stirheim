@@ -34,6 +34,7 @@ import { isBanned } from "./houseRules";
 import { halfPriceIfEligible } from "./trading";
 import { freeDaggerLine } from "./freeDagger";
 import { unitRules, warbandRules } from "../data/campaignRules";
+import { loreForUnit } from "../data/campaign/magic";
 import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
 
 // ---- Draft model ----
@@ -54,6 +55,8 @@ export interface DraftHero {
   name: string;
   unitTemplateId: string;
   equipment: DraftItem[];
+  /** The first spell, for a hero who starts as a spellcaster (house rule: firstSpellRule). Empty until chosen. */
+  spellIds: string[];
 }
 
 export interface DraftGroup {
@@ -151,8 +154,14 @@ export function addDraftHero(
   const unit = requireUnit(template, unitTemplateId);
   if (unit.role !== "hero") throw new RulesError("builder.notAHero", `${unit.name} are henchmen; use addDraftGroup`);
   assertNewId(draft, id);
-  const hero: DraftHero = { id, name: name ?? unit.name, unitTemplateId: unit.id, equipment: [] };
+  const hero: DraftHero = { id, name: name ?? unit.name, unitTemplateId: unit.id, equipment: [], spellIds: [] };
   return { ...draft, heroes: [...draft.heroes, hero] };
+}
+
+/** Set (or clear, with null) the first spell a spellcasting hero starts with. */
+export function setDraftHeroSpell(draft: WarbandDraft, id: string, spellId: string | null): WarbandDraft {
+  requireHero(draft, id);
+  return { ...draft, heroes: draft.heroes.map((h) => (h.id === id ? { ...h, spellIds: spellId ? [spellId] : [] } : h)) };
 }
 
 export function removeDraftHero(draft: WarbandDraft, id: string): WarbandDraft {
@@ -504,7 +513,7 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       levelUps: startingLevelUps(unit, "hero"),
       skillTableIds: [...(unit?.skillTableIds ?? [])],
       skillIds: [],
-      spellIds: [],
+      spellIds: [...hero.spellIds],
       injuries: [],
       flags: {},
       equipment: hero.equipment.map((item) => toRosterItem(item, 1)),
@@ -567,6 +576,16 @@ export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, ba
       problems.push({
         code: "builder.unnamedWarrior",
         message: `The ${unit?.name ?? hero.unitTemplateId} needs a name`,
+        subjectId: hero.id,
+      });
+    }
+  }
+  for (const hero of draft.heroes) {
+    const lore = loreForUnit(hero.unitTemplateId, template);
+    if (lore && hero.spellIds.length === 0) {
+      problems.push({
+        code: "builder.noFirstSpell",
+        message: `${hero.name.trim() || findUnitTemplate(template, hero.unitTemplateId)?.name || hero.unitTemplateId}: choose a first spell (${lore.name})`,
         subjectId: hero.id,
       });
     }

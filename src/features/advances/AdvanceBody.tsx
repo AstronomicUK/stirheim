@@ -395,7 +395,14 @@ function SkillOrSpellPicker({ draft, tables, lore, spells, knownSpellIds, update
       {reward && draft.mode === 'reward' ? (
         <RewardPicker draft={draft} plan={reward.plan} hero={reward.hero} update={update} />
       ) : lore && draft.mode === 'spell' ? (
-        <SpellPicker lore={lore} spells={spells} knownSpellIds={knownSpellIds} selected={draft.spellId} onSelect={(id) => update((d) => setSpell(d, id))} chooseFrom={chooseSpell} />
+        <SpellPicker
+          lore={lore}
+          spells={spells}
+          knownSpellIds={knownSpellIds}
+          selected={draft.spellId}
+          onSelect={(id) => update((d) => setSpell(d, id))}
+          chooseFrom={chooseSpell ? { reason: `${chooseSpell.districtName} (map advantage)` } : null}
+        />
       ) : (
         <SkillPicker tables={tables} selected={draft.skillId} onSelect={(id) => update((d) => setSkill(d, id))} />
       )}
@@ -544,17 +551,17 @@ function SkillPicker({ tables, selected, onSelect }: { tables: AvailableSkillTab
   )
 }
 
-interface SpellPickerProps {
+export interface SpellPickerProps {
   lore: SpellLore
   spells: Spell[]
   knownSpellIds: readonly string[]
   selected: string | null
   onSelect: (id: string | null) => void
-  /** Map campaigns: the district that lets the spell be chosen rather than rolled. */
-  chooseFrom?: PerkSource | null
+  /** Lets the spell be chosen from the list rather than rolled, with the reason shown above the list (a map advantage, a house rule...). Null/undefined: roll on the lore table as usual. */
+  chooseFrom?: { reason: string } | null
 }
 
-function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect, chooseFrom = null }: SpellPickerProps) {
+export function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect, chooseFrom = null }: SpellPickerProps) {
   const [d6, setD6] = useState<number | null>(null)
   const rolledSpell = d6 !== null ? spellForRoll(lore, d6) : undefined
   const rolledKnown = rolledSpell !== undefined && knownSpellIds.includes(rolledSpell.id)
@@ -571,7 +578,7 @@ function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect, chooseFr
     <div className="flex flex-col gap-3">
       {chooseFrom ? (
         <p className="text-sm leading-relaxed text-ink-dim">
-          {chooseFrom.districtName} (map advantage): choose a spell from the {lore.name} table rather than rolling for it. Tap the one you want.
+          {chooseFrom.reason}: choose a spell from the {lore.name} table rather than rolling for it. Tap the one you want.
         </p>
       ) : (
         <>

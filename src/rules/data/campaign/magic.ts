@@ -1,8 +1,9 @@
 // GENERATED from reference/rules/03-campaigns-magic-optional-rules.md lines 1447-3501 (mordheimer.net Magic section).
 // Text is verbatim from the source. Do not hand-edit spell text; fix the reference file and regenerate.
 
-import type { NamedRule } from "../../types";
+import type { NamedRule, WarbandTemplate } from "../../types";
 import type { SpellLore, WizardAllocation } from "../../types/magic";
+import { findUnitTemplate } from "../warbandTemplates";
 
 /** General magic rules: casting, damage, and the allocated-spells preamble (03-campaigns-magic-optional-rules.md:1447-1514). */
 export const MAGIC_RULES: NamedRule[] = [
@@ -2186,4 +2187,13 @@ export function findLore(id: string): SpellLore | undefined {
 
 export function findSpell(loreId: string, spellId: string) {
   return findLore(loreId)?.spells.find((s) => s.id === spellId);
+}
+
+/** The lore a unit type draws spells from, by matching its name against the Wizard -> Type of Magic table; null when nothing matches (not a spellcaster). */
+export function loreForUnit(unitTemplateId: string, template: WarbandTemplate): SpellLore | null {
+  const unit = findUnitTemplate(template, unitTemplateId);
+  if (!unit) return null;
+  const labels = [`${template.name} ${unit.name}`.toLowerCase(), unit.name.toLowerCase()];
+  const row = WIZARD_ALLOCATIONS.find((a) => a.loreId !== null && labels.includes(a.wizard.toLowerCase()));
+  return row?.loreId ? findLore(row.loreId) ?? null : null;
 }

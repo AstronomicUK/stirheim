@@ -167,6 +167,9 @@ export function emptyCampaignBans(): CampaignBans {
   return { items: [], spells: [], hiredSwords: [], characters: [], skills: [] };
 }
 
+/** How a spellcaster's first spell is chosen at creation (03: RAW is a random roll on the lore table; two house rules seen at the table let the player pick instead). */
+export type FirstSpellRule = "random" | "chooseFreely" | "rollTwicePickOne";
+
 export interface CampaignHouseRules {
   /** Strength erodes armour saves (core chart). Off by house rule. */
   strengthArmourPiercing: boolean;
@@ -182,12 +185,24 @@ export interface CampaignHouseRules {
   rabbitsFootBattleOnly: boolean;
   /** Rewards of the Shadowlord (rulebook optional rule): a Possessed Magister or Mutant may roll on the Rewards table instead of taking a skill. */
   rewardsOfTheShadowlord: boolean;
+  /** How a spellcaster's first spell (at warband creation, or on gaining the ability to cast) is chosen. RAW is "random". */
+  firstSpellRule: FirstSpellRule;
   /** Content removed from the campaign. */
   bans: CampaignBans;
 }
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
-  return { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, bans: emptyCampaignBans() };
+  return {
+    strengthArmourPiercing: false,
+    optionalCriticalTables: true,
+    halfPriceArmour: true,
+    halfPriceShields: false,
+    halfPriceHelmets: false,
+    rabbitsFootBattleOnly: true,
+    rewardsOfTheShadowlord: false,
+    firstSpellRule: "random",
+    bans: emptyCampaignBans(),
+  };
 }
 
 /** Any change a resolver makes, so the UI can narrate it and the server can audit it. */

@@ -3,8 +3,11 @@
 // supabase/migrations/20260904000001_schema.sql must stay in step with defaultCampaignSettings().
 
 import { z } from "zod";
-import type { CampaignBans, CampaignHouseRules } from "../rules/types/roster";
+import type { CampaignBans, CampaignHouseRules, FirstSpellRule } from "../rules/types/roster";
 import { defaultCampaignHouseRules, emptyCampaignBans } from "../rules/types/roster";
+
+export const FIRST_SPELL_RULES = ["random", "chooseFreely", "rollTwicePickOne"] as const satisfies readonly FirstSpellRule[];
+export const firstSpellRuleSchema = z.enum(FIRST_SPELL_RULES);
 
 export const DICE_POLICIES = ["players_roll", "app_rolls"] as const;
 export const dicePolicySchema = z.enum(DICE_POLICIES);
@@ -32,6 +35,7 @@ export const campaignHouseRulesSchema = z.object({
   halfPriceHelmets: z.boolean().default(false),
   rabbitsFootBattleOnly: z.boolean().default(true),
   rewardsOfTheShadowlord: z.boolean().default(false),
+  firstSpellRule: firstSpellRuleSchema.default("random"),
   bans: campaignBansSchema.default(emptyCampaignBans),
 }) satisfies z.ZodType<CampaignHouseRules, unknown>;
 

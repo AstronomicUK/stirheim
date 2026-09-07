@@ -878,7 +878,7 @@ match page shows "No battle sheet opened yet." under both warbands.
 
 ### 47. "1 warriors" and "1 items" — a few strings don't handle the singular
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -889,6 +889,10 @@ is careful about it ("1 model" / "2 models", "shard" / "shards"), so these read 
 **How to replicate:** Start a new warband and add nobody — the Problems panel reads "**1 warriors**
 but a new Mercenaries (Reikland) warband needs at least 3". The Argent Hammer's trading post Stash
 tile reads "**1 items**".
+
+**Fixed:** `21113cf`. All three sites now pick the singular when the count is 1
+("1 warrior"/"1 item"). Added a regression test locking in the corrected roster-validation
+message text.
 
 ### 48. The battle turn counter starts at 0, and the combat log records "Turn 0"
 

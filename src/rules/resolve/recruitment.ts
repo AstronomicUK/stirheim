@@ -469,6 +469,7 @@ export function hireHiredSword(
     xp: 0,
     levelUps: 0,
     skillIds: [],
+    spellIds: [],
     injuries: [],
     flags: {},
     equipment: hiredSwordEquipment(entry.detail),

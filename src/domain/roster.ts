@@ -98,6 +98,7 @@ export function toRosterHiredSword(hero: HeroRow, equipment: RosterItem[]): Rost
     xp: hero.xp,
     levelUps: hero.level_ups,
     skillIds: hero.skills,
+    spellIds: hero.spells,
     injuries: hero.injuries,
     flags: hero.flags,
     equipment,

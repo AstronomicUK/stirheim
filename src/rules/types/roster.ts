@@ -121,6 +121,7 @@ export interface RosterHiredSword {
   xp: number;
   levelUps: number;
   skillIds: string[];
+  spellIds: string[];
   injuries: AppliedInjury[];
   flags: WarriorFlags;
   /** Equipment is fixed by the hired sword's entry and cannot be bought or sold. */

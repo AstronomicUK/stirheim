@@ -5,6 +5,7 @@ import { UNIT_RULES, WARBAND_RULES, unitGainsExperience, unitRules } from "../..
 import { advancesEarned, findRacialMaximum, nextThreshold, xpThresholds } from "../../data/campaign/experience";
 import { findUnitTemplate, findWarbandTemplate, heroCapacity, listedHeroSlots, WARBAND_TEMPLATES } from "../../data/warbandTemplates";
 import { HIRED_SWORDS } from "../../data/campaign/hiredSwords";
+import { DRAMATIS_PERSONAE } from "../../data/campaign/dramatisPersonae";
 import type { RosterHenchmanGroup, RosterHero, RosterWarband } from "../../types/roster";
 import { newWarbandDraft, unitIsLarge, unitStartingStats } from "../builder";
 import { explorationBonuses, explorationDiceAllowed } from "../exploration";
@@ -26,9 +27,13 @@ const warband = (templateId: string, heroes: RosterHero[], groups: RosterHenchma
 });
 
 describe("campaign rules data", () => {
-  it("only names units and warbands that exist in the templates", () => {
+  it("only names units, hired swords and warbands that exist in the templates", () => {
     const unitIds = new Set(WARBAND_TEMPLATES.flatMap((t) => [...t.heroTemplates, ...t.henchmanTemplates].map((u) => u.id)));
-    const missingUnits = Object.keys(UNIT_RULES).filter((id) => !unitIds.has(id));
+    const swordIds = new Set([...HIRED_SWORDS.map((h) => h.id), ...DRAMATIS_PERSONAE.map((d) => d.id)]);
+    // A "hired_sword:<id>" key overrides a hired sword's or Dramatis Persona's own campaign rules
+    // (e.g. a racial profile its entry name carries no keyword for); it is never a warband-template
+    // unit id — hiredSwordAsHero() builds that prefix for both catalogues alike.
+    const missingUnits = Object.keys(UNIT_RULES).filter((id) => (id.startsWith("hired_sword:") ? !swordIds.has(id.slice("hired_sword:".length)) : !unitIds.has(id)));
     expect(missingUnits).toEqual([]);
     const missingWarbands = Object.keys(WARBAND_RULES).filter((id) => !findWarbandTemplate(id));
     expect(missingWarbands).toEqual([]);

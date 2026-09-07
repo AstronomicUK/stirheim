@@ -180,11 +180,15 @@ export function heroMaxima(hero: RosterHero, warbandTemplateId: string): MaximaI
   return { maxima: match.value.maxima, profile: match.value.profile, note: warning ? warning.message : null }
 }
 
-/** Hired swords: a keyword match on the entry name ("Ogre Bodyguard" -> Ogre), otherwise Human. */
+/**
+ * Hired swords: an explicit override for an entry whose name carries no race keyword
+ * (UNIT_RULES["hired_sword:<id>"].racialProfile), then a keyword match on the entry name
+ * ("Ogre Bodyguard" -> Ogre), otherwise Human.
+ */
 export function hiredSwordMaxima(sword: RosterHiredSword, warbandTemplateId: string): MaximaInfo {
   const entryName = findHiredSword(sword.hiredSwordId)?.name ?? sword.name
   const match = resolveRacialProfile(hiredSwordAsHero(sword, entryName), warbandTemplateId)
-  if (match.value.matchedBy === 'unitName') {
+  if (match.value.matchedBy === 'unitOverride' || match.value.matchedBy === 'unitName') {
     return { maxima: match.value.maxima, profile: match.value.profile, note: `Racial maximums taken from the ${entryName} entry.` }
   }
   return { maxima: humanMaxima(), profile: 'Human', note: `Hired swords have no racial profile on the roster; ${entryName} is treated as Human.` }

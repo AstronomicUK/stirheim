@@ -344,6 +344,15 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   restless_dead_variant_skeletons: UNDEAD_HENCHMAN,
   restless_dead_variant_wights: { promotion: { tables: ["combat", "strength"], note: "A promoted Wight takes Combat and Strength skills only and may not search for rare items." }, racialProfile: "Grave Guard (Restless Dead)" },
   restless_dead_variant_bone_goliath: { ...NO_XP, large: true, promotion: { never: true, note: "A construct is never promoted." } },
+
+  // Hired swords and Dramatis Personae whose entry name carries no race keyword the
+  // resolveRacialProfile() guesser can match, so they default to Human maxima incorrectly.
+  "hired_sword:runesmith_journeyman": { racialProfile: "Dwarf" },
+  "hired_sword:shadow_warrior": { racialProfile: "Elf" },
+  "hired_sword:aenur_the_sword_of_twilight": { racialProfile: "Elf" },
+  "hired_sword:veskit_high_executioner_of_clan_eshin": { racialProfile: "Skaven" },
+  "hired_sword:ulli_and_marquand": { racialProfile: "Dwarf" },
+  "hired_sword:ninja_gnoblar": { racialProfile: "Goblin" },
 };
 
 // ---------------------------------------------------------------------------------------------

@@ -13,6 +13,7 @@ import {
   rolledFromDraft,
   findSubject,
   groupAdvancesBySubject,
+  hiredSwordMaxima,
   hiredSwordSkillTables,
   planGroup,
   planHero,
@@ -95,6 +96,30 @@ describe('findSubject', () => {
     const withSword = { ...roster, hiredSwords: [sword] }
     expect(findSubject(withSword, 'hero', NEW_ID)?.kind).toBe('hiredSword')
     expect(hiredSwordSkillTables(sword)).toEqual(['combat', 'strength'])
+  })
+
+  it("gives a racial-profile hired sword its own maxima instead of Human's — #61", () => {
+    const dwarfSword: RosterHiredSword = {
+      id: NEW_ID,
+      hiredSwordId: 'runesmith_journeyman',
+      name: 'Runesmith Journeyman',
+      stats: { M: 3, WS: 4, BS: 3, S: 3, T: 4, W: 1, I: 2, A: 1, Ld: 8 },
+      xp: 0,
+      levelUps: 0,
+      skillIds: [],
+      spellIds: [],
+      injuries: [],
+      flags: {},
+      equipment: [],
+      status: 'active',
+    }
+    const dwarf = hiredSwordMaxima(dwarfSword, reiklandWatch.type_rules_id)
+    expect(dwarf.profile).toBe('Dwarf')
+    expect(dwarf.maxima.WS).toBe(7)
+
+    const ogreSword: RosterHiredSword = { ...dwarfSword, hiredSwordId: 'ogre_bodyguard', name: 'Grumlok' }
+    const ogre = hiredSwordMaxima(ogreSword, reiklandWatch.type_rules_id)
+    expect(ogre.profile).toBe('Ogre')
   })
 })
 

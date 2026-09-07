@@ -1019,7 +1019,7 @@ confirmed while checking #50 above.
 
 ### 53. Removing a warrior or an item in the builder has no confirmation and no undo
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1030,6 +1030,15 @@ one out.
 
 **How to replicate:** New warband → add a hero → buy them several items → *Remove* on the hero card.
 Gone immediately, no prompt.
+
+**Fixed:** `7453a2d`, confirmation half only. Removing a hero or a henchman group now opens a confirm
+Sheet ("Remove this hero/group? Keep it / Remove"), matching the app's existing pattern (Archive
+warband, Delete warband, Cancel battle, Discard draft); removing one equipment line gets a lighter
+inline "Remove it? Remove / Keep it" swap, since it's a row in a list rather than a page-level
+action. Verified live: built a test draft, confirmed both Keep and Remove on an equipment row, a
+henchman group's own confirm Sheet, then discarded the test draft. **Left open**: undo (bringing a
+removed warrior/item back after the fact) is a bigger design question — what state to retain and for
+how long — not attempted here.
 
 ---
 

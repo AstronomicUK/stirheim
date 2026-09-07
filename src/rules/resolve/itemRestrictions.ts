@@ -12,6 +12,7 @@ import type { Item } from "../types/items";
 import type { CampaignBans, RosterItem, RosterWarband, WarriorFlags } from "../types/roster";
 import { POSSESSED_ALLOWED_ITEM_IDS } from "../data/campaign/rewards";
 import { isBanned } from "./houseRules";
+import { equipmentBanReason } from "./roster";
 
 export type HolderKind = "hero" | "henchmanGroup" | "hiredSword" | "stash";
 
@@ -81,6 +82,11 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
   const warbandId = warband.warbandTemplateId;
 
   if (opts.bans && isBanned(opts.bans, "items", item.id)) out.push(`${item.name} is banned in this campaign.`);
+
+  if (holder.kind === "hero" || holder.kind === "henchmanGroup") {
+    const banReason = equipmentBanReason(warbandId, holder.unitTemplateId ?? "", { itemId: item.id, quantity });
+    if (banReason) out.push(`${banReason}.`);
+  }
 
   if (holder.kind === "henchmanGroup" && rule.heroesOnly) out.push(`${item.name}: miscellaneous equipment is for Heroes only; henchmen may not carry it.`);
   if (holder.kind === "hiredSword" && rule.heroesOnly) out.push(`${item.name}: hired swords keep the kit they came with and buy nothing.`);

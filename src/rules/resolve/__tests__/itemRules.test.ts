@@ -44,6 +44,13 @@ describe("item restrictions", () => {
     expect(itemRestrictionWarnings(elves, I("bugmans_ale"), { kind: "stash", equipment: [] })[0]).toMatch(/Elves/);
   });
 
+  it("a warband's category equipment ban (#67) now reaches the shop, not just the roster page", () => {
+    const slayers = warband("dwarf_slayer_cult", [hero("d", "dwarf_slayer_cult_doomseeker_hero")]);
+    const slayer: ItemHolder = { kind: "hero", id: "d", unitTemplateId: "dwarf_slayer_cult_doomseeker_hero", equipment: [] };
+    expect(itemRestrictionWarnings(slayers, I("heavy_armour"), slayer)[0]).toMatch(/armour, which this warrior may not wear/);
+    expect(itemRestrictionWarnings(slayers, I("dagger"), slayer)).toEqual([]);
+  });
+
   it("a gromril or ithilmar weapon carries the same race-and-creed restriction as its base weapon", () => {
     expect(itemRestrictionWarnings(reikland, I("gromril_sons_of_hashut_obsidian_weapon"), captain)[0]).toMatch(/for Chaos Dwarfs only/);
     expect(itemRestrictionWarnings(reikland, I("ithilmar_sons_of_hashut_obsidian_weapon"), captain)[0]).toMatch(/for Chaos Dwarfs only/);

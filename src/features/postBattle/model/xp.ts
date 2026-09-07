@@ -23,6 +23,7 @@
 import type { XpLine } from '../../../domain'
 import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { underdogBonus, type AdvanceRate } from '../../../rules/data/campaign/experience'
+import { isDramatisPersona } from '../../../rules/data/campaign/hiredSwords'
 import { pendingAdvances } from '../../../rules/resolve/advances'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../../rules/types/roster'
@@ -90,6 +91,10 @@ export function warriorXpLine(
   if (!alive) return null
   const unitId = 'unitTemplateId' in before ? before.unitTemplateId : null
   if (!unitGainsExperience(unitId)) return null
+  // "Special characters do not earn Experience points, although they suffer serious injuries, just
+  // like Heroes" — a Dramatis Persona has no unitTemplateId either, so unitGainsExperience(null)
+  // can't catch this on its own; ordinary hired swords still earn as heroes (docs/PLANNING.md).
+  if ('hiredSwordId' in before && isDramatisPersona(before.hiredSwordId)) return null
   const awards: Award[] = [{ amount: 1, reason: 'survived the battle' }]
   if (ctx.won && ctx.leaderId === before.id) awards.push({ amount: 1, reason: 'winning leader' })
   const enemies = ctx.enemiesOut[before.id] ?? 0

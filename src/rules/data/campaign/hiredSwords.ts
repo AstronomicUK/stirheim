@@ -3573,3 +3573,13 @@ export function findHiredSword(id: string): HiredSwordSummary | undefined {
   if (!persona) return undefined;
   return { ...persona, hireCost: persona.hireCost ?? { base: null, text: persona.detail?.hireFee ?? "n/a" } };
 }
+
+/**
+ * A Dramatis Persona, as opposed to an ordinary Hired Sword — the two are administered identically
+ * (same roster shape, same hire/dismiss/upkeep flow) but the rulebook treats them differently in a
+ * few places: personae never earn Experience, and roll on the full Serious Injuries chart rather
+ * than the henchman injury die ("suffer serious injuries, just like Heroes").
+ */
+export function isDramatisPersona(hiredSwordId: string | null | undefined): boolean {
+  return hiredSwordId !== null && hiredSwordId !== undefined && DRAMATIS_PERSONAE.some((d) => d.id === hiredSwordId);
+}

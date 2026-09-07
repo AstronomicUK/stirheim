@@ -1025,7 +1025,7 @@ A reasonable fix would follow that same pattern: a persistent flag (`pitFightOwe
 
 ### 57. 19 wizard units get no starting spell and are never prompted — including two core/Grade 1a warbands
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the magic and prayers rules audit, reviewed by Tom; directly extends #28's own `loreForUnit` matching
 
@@ -1044,6 +1044,8 @@ A reasonable fix would follow that same pattern: a persistent flag (`pitFightOwe
 The Sisters of Sigmar and The Undead are core-rulebook warbands, among the most played in the game — this isn't an edge case. Nine more units have no Wizard-table row at all because the table itself stops at the source site's list (Court of the Profane Pleasures Priest of Obscene, Druchii Sorceress, Nipponese Vim-To Mage, Protectorate of Sigmar Warrior Priest, Snotlings Snotling Shaman, Survivors of Strigos Seer, Wood Elves of Athel Loren Forest Mage, the Restless Dead Variant's Liche and Necromancer), and the Sorcerous Society's Magus and Mages have a row but a null `loreId` since they choose one of four Elemental Lores with no UI to make that choice (see #59). At battle time the existing hero recovers fine once he knows any spell (`loreForCaster` looks the lore up from spells already known) — the damage is only at creation and on later advances, never mid-battle.
 
 Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all — the four rows are the only case where one unit maps to four different lores depending on a creation-time choice, and nothing on the roster records a Seer's Mark yet, so fixing the label match alone still leaves this one needing a real picker.
+
+**Fixed:** The six units with a genuine label mismatch (everything in the table above except the Marauders of Chaos Seer, which needs the Mark picker, not a label fix). Added an explicit `unitTemplateId -> loreId` override table checked before the label match, rather than trying to make the string-matcher itself cleverer — the same shape `skillRestrictions.ts`'s `SUBJECT_UNITS` already uses for its own name exceptions. Confirmed live in the sense that these are now exercised by a new regression test against the real warband/unit/lore data (`loreForUnit` had none before). Still open: the Marauders of Chaos Seer's Mark picker, and the 9 units with no Wizard-table row at all (need new table rows, not a code fix) plus the Sorcerous Society's Elemental Lore choice. Commit `c0c6327`.
 
 ### 58. Magic and prayers: smaller rules-fidelity gaps (rulebook clauses with no code effect)
 

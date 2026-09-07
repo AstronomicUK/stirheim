@@ -89,6 +89,23 @@ describe('one attack, start to finish', () => {
   })
 })
 
+describe('attack labels: numbered by place in the sequence, not by weapon', () => {
+  it('a single attack needs no numbering', () => {
+    const s = startPhase([plan('Sword')], 1, 0)
+    expect(s.pending?.label).toBe('Sword: to hit')
+  })
+
+  it('several attacks are "First attack (Weapon)", "Second attack (Weapon)"... even across different weapons', () => {
+    const plans = [plan('Sword'), plan('Sword'), plan('Dagger')]
+    let s = startPhase(plans, 1, 0)
+    expect(s.pending?.label).toBe('First attack (Sword): to hit')
+    s = rolls(s, 1) // miss, on to the next
+    expect(s.pending?.label).toBe('Second attack (Sword): to hit')
+    s = rolls(s, 1)
+    expect(s.pending?.label).toBe('Third attack (Dagger): to hit')
+  })
+})
+
 describe('rerolls, parry and dodge', () => {
   it('a missed to-hit may be rerolled once', () => {
     let s = applyRoll(startPhase([plan('Sword', { rerollToHit: true })], 1, 0), 2)
@@ -187,7 +204,7 @@ describe('targets with several Wounds and several attacks', () => {
     let s = rolls(startPhase(plans, 2, 0), 4, 4)
     expect(s.outcomes).toEqual(['wounded'])
     expect(s.woundsLost).toBe(1)
-    expect(s.pending).toMatchObject({ kind: 'hit', label: 'Dagger: to hit' })
+    expect(s.pending).toMatchObject({ kind: 'hit', label: 'Second attack (Dagger): to hit' })
     s = rolls(s, 4, 4)
     expect(s.pending?.kind).toBe('injury')
     s = applyRoll(s, 6)
@@ -203,9 +220,9 @@ describe('targets with several Wounds and several attacks', () => {
     expect(early.pending?.label).toBeUndefined()
 
     let s = startPhase(plans, 1, 0)
-    expect(s.pending?.label).toBe('Sword 1: to hit')
+    expect(s.pending?.label).toBe('First attack (Sword): to hit')
     s = rolls(s, 4, 4, 1) // knocked down
-    expect(s.pending?.label).toBe('Sword 2: to hit')
+    expect(s.pending?.label).toBe('Second attack (Sword): to hit')
     s = rolls(s, 4, 4, 3) // stunned
     s = rolls(s, 1) // dagger misses
     expect(s.done).toBe(true)

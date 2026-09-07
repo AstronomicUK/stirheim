@@ -136,13 +136,20 @@ Nothing found here reproduces a defect from static reading alone. Recommend aski
 
 ### 9. Better visual representation of multiple attacks — pick attack count up front, label "First attack" / "Second attack"; likely to merge with upcoming items about stunned/knocked-down targets
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
 > "then another one is better visual representation of multiple attacks. when you open the popup, it should give the option to select how many attacks, detailing the maximum for that character. then you should have "first attack", "second attack" etc. there are more bugs to come that link to this, so you might need to merge some. particularly related to attacking stunned or knocked down foes"
 
 **Notes:** Tom has flagged this as likely to need merging with further related reports about attacking a target that's already stunned or knocked down — holding off on investigation/fix until those arrive so the whole picture is in one place rather than half-solved here and revised later.
+
+**Fix:** the related reports arrived and landed as #10 (fixed above), so picked this back up. Two changes:
+
+- **"Detailing the maximum for that character"** — the "Attacks here" stepper (`FightTab.tsx`) already let the player pick how many of a warrior's attacks go at a given target, capped at the real maximum (`odds.fullAttacks`), but the cap itself was never shown — a player could only discover it by pressing "+" until it stopped responding. Now reads "Attacks here (of 4 max)" (whatever the true count is), so the ceiling is visible up front, matching the ask exactly.
+- **"First attack", "second attack" etc.** — `rollThrough.ts`'s `attackName()` used to label repeats of the *same* weapon by count ("Sword 1", "Sword 2") and leave attacks with different weapons unlabelled entirely (a Sword-then-Dagger phase just read "Sword: to hit" / "Dagger: to hit", with nothing marking it as a two-attack sequence at all). It now numbers every attack by its place in the whole sequence whenever there is more than one — "First attack (Sword): to hit", "Second attack (Dagger): to hit" — so the multi-attack nature is always visible regardless of what weapons are involved. A single attack still shows just the weapon name, unchanged.
+
+Verified live on local dev: Captain Ulrich Brandt (Sword + Dagger, 2 attacks) showed "Attacks here (of 2 max)" in the weapon picker, then "First attack (Sword): to hit" and "Second attack (Dagger): to hit" as the roll-through stepped through both. `tsc -b`, `oxlint` and the full `vitest run` suite (1174 passed, including new coverage for the numbering scheme) all clean.
 
 ## Batch — 2026-09-07 (large dump)
 

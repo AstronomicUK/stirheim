@@ -134,12 +134,18 @@ export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: n
   return state.done ? state : beginAttack(state)
 }
 
+const ORDINALS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth']
+
+/** "First", "Second"... "Eighth", then "9th", "10th" for anything past that (no character realistically has this many attacks). */
+function ordinal(n: number): string {
+  return ORDINALS[n - 1] ?? `${n}th`
+}
+
+/** A single attack needs no numbering; more than one is labelled by its place in the sequence, not by weapon, so a Sword-then-Dagger phase still reads "First attack" / "Second attack". */
 function attackName(state: RollState): string {
   const plan = state.plans[state.index]
-  const same = state.plans.filter((p) => p.weaponName === plan.weaponName)
-  if (same.length === 1) return plan.weaponName
-  const n = state.plans.slice(0, state.index + 1).filter((p) => p.weaponName === plan.weaponName).length
-  return `${plan.weaponName} ${n}`
+  if (state.plans.length === 1) return plan.weaponName
+  return `${ordinal(state.index + 1)} attack (${plan.weaponName})`
 }
 
 function beginAttack(state: RollState): RollState {

@@ -228,7 +228,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               ) : null}
               {odds && odds.fullAttacks > 1 ? (
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs text-ink-dim">Attacks here</span>
+                  <span className="text-xs text-ink-dim">Attacks here (of {odds.fullAttacks} max)</span>
                   <Stepper value={odds.attacks} onChange={(v) => setAttackLimitChoice({ key: attackKey, value: v })} label={`attacks at ${defender?.name ?? 'the target'}`} min={1} max={odds.fullAttacks} />
                 </div>
               ) : null}

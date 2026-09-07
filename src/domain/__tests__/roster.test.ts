@@ -183,6 +183,7 @@ describe("hired swords", () => {
         xp: 0,
         levelUps: 0,
         skillIds: [],
+        spellIds: [],
         injuries: [],
         flags: {},
         equipment: [{ itemId: "club", quantity: 1 }],

@@ -148,6 +148,16 @@ Given all three sit in the same small file, a fix would likely address them toge
 
 **Notes:** Related to #9 (multi-attack UI) — Tom flagged that item as likely needing to merge with reports "particularly related to attacking stunned or knocked down foes," and this is that report. Consider both together when this is picked up.
 
+Confirmed against the rulebook (`reference/rules/01-introduction-and-rules.md:947-959`, "attacking stunned and knocked down warriors in hand-to-hand combat"), quoted exactly:
+- "All attacks against a warrior who is knocked down hit automatically. If any of the attacks wound the knocked down model and he fails his armour save, he is automatically taken out of action... A knocked down model may not parry." — note this is auto-**hit**, not auto-wound: the wound roll and armour save still apply normally; Tom's "goes OOA if it wounds" slightly overstates it (a save can still stop it), worth confirming that reading with him rather than assuming.
+- "A stunned warrior... is automatically taken out of action if an enemy can attack him in hand-to-hand combat." — this one really is unconditional, matching Tom's report exactly.
+- Important nuance the rule states explicitly: "a model with multiple attacks may not stun/knock down and then automatically take a warrior out of action during the same hand-to-hand combat phase. The only way you can achieve this is to have more than one of your models attacking the same enemy." — i.e. a model's own earlier hit *this same phase* doesn't unlock the auto-hit/auto-OOA bonus for its own next attack; only a status the target already had *before this phase started* (an earlier turn, or a different attacker earlier in the same turn) counts. Also: "he cannot attack any other models that are stunned or knocked down" while still fighting an active enemy, and the section only covers hand-to-hand — nothing here says shooting at a downed model works any differently, so ranged is presumably unaffected (worth double-checking with Tom rather than assuming, since the rulebook text is silent rather than explicit).
+- Neither is implemented anywhere today: a grep across `resolveAttack.ts`/`buildAttackInput.ts`/`rollThrough.ts` finds `knockedDown`/`stunned` used only as *outcomes* of an injury roll, never as an input that changes how a fresh attack against an already-downed target resolves.
+
+Good news for the fix: the data needed already exists and is already computed, just not wired to combat. `conditionsFor(events, warbandId, turn)` in `src/features/match/battle/sheet.ts:332` reads the shared battle-event log and returns exactly "who on this warband is currently knocked-down or stunned this turn" — but it's only ever consumed by `EnemyView.tsx:34` to show a status badge, never passed into `FightTab.tsx`/`computeOdds`/`rollThrough.ts` to affect resolution. Reading it once when a phase starts (not per-attack within the phase) and feeding it into `startPhase`/`computeOdds` would naturally satisfy the "not the same phase's own earlier hit" nuance above for free, since a target's condition only updates once an attack is actually logged.
+
+Also ties into #11 (the new turns feature and its "Recover Units" button) since recovery is what clears a model's knocked-down/stunned status between turns, and into #9 (multi-attack UI) as Tom flagged.
+
 ### 11. New "turns" feature for App Calculates games: a turn popup and a Recover Units button
 
 **Status:** 🔲 Open
@@ -395,7 +405,9 @@ The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, b
 
 > "The ranged attack and melee attack quick actions are both on the same screen so they are both highlighted when you select either of them. What should really happen is the melee attack should default to melee weapons and the ranged attack should default to a ranged weapon and they should be separate quick actions."
 
-**Notes:** The "both highlighted" part is a real bug in this session's own work: both `NavTile`s in `BattleNav.tsx` compute `active={tab === 'fight'}`, so whichever quick action is tapped, both light up since they share the same underlying tab value. The weapon-defaulting half was intentionally built (`FightTab`'s `startWith` prop) — worth checking whether it's not behaving as expected, or whether this report is purely about the shared highlight.
+**Notes:** Confirmed, and the fix is small. `BattleNav.tsx` lines 87-88: both `NavTile`s compute `active={tab === 'fight'}` — since a single `BattleTab` value ('fight') backs both quick actions, tapping either one always lights up both. `BattlePage.tsx` already tracks `attackStartWith: 'melee' | 'ranged'` (set by `onAttack`) precisely to know which one was tapped — that state just isn't threaded back down into `BattleNav`'s `active` check yet. Fix: pass `attackStartWith` (or equivalent) into `BattleNav` and compute each tile's `active` as `tab === 'fight' && attackStartWith === 'melee'` / `'ranged'` respectively.
+
+The weapon-defaulting half (melee tile → melee weapon, ranged tile → ranged weapon) was verified working correctly earlier this session (tested live: a Marksman defaults to Bow under Ranged Attack, Dagger under Melee Attack) — so this report is specifically about the shared highlight, not the defaulting itself, unless something has changed since. Worth confirming with Tom whether the defaulting is now also misbehaving for him or whether it's purely the highlight.
 
 ### 31. "Cast a Spell" looks nothing like Melee/Ranged Attack — should reuse the same layout with "Spellcaster"/"Target" instead of "Attacker"/"Defender"
 
@@ -405,7 +417,7 @@ The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, b
 
 > "Additionally when you click "Cast a Spell," the visual is very different to the others. What it should be is that it should look like the melee attack and ranged attack but instead of "Attacker" it should say "Spellcaster" and instead of "Defender" it should say "Target.""
 
-**Notes:**
+**Notes:** Confirmed — `CastTab.tsx` is a single `<Section>` with everything (caster picker, the Target `<SelectField>` added earlier this session, the spell list) stacked in one column, nothing like `FightTab.tsx`'s two-box `FightBox` grid (`icon="battle" title="Attacker"` / `icon="shield" title="Defender"` side by side with the floating roll button between them). A faithful match would restyle Cast a Spell into the same two-`FightBox` grid, headed "Spellcaster" and "Target," with the spell picker/roll happening in a popup the same way the attack roll does — which would also naturally fold in the Target select from #32 rather than leaving it as a plain dropdown above the spell list. Worth doing together with #32 and #30 as one pass over the whole quick-actions/roll-it-out area, since they touch the same components.
 
 ### 32. Spell targeting should offer only friendly, only enemy, or both lists (grouped under headings) depending on what the spell allows
 
@@ -415,7 +427,7 @@ The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, b
 
 > "If the spell should be cast on friendly units, it should only give the option of friendly units. If it should be cast on enemy units, it should cast on enemy units. If it can be cast on both, it should have both lists, with "Friendly Units" as a heading and "Enemy Units" as a heading."
 
-**Notes:** Extends the friendly-only Target picker added to `CastTab.tsx` earlier this session (currently always friendly-only, no enemy option, no per-spell targeting rule). Related to #29 and #31 — all three touch the Cast tab and the spell data model, and none of the spell data (`src/rules/types/magic.ts`) currently records who a spell can target, so this needs new per-spell data as well as UI work.
+**Notes:** Extends the friendly-only Target picker added to `CastTab.tsx` earlier this session (currently always friendly-only, no enemy option, no per-spell targeting rule). Confirmed two things needed for this: (1) per-spell data — `Spell`/`SpellLore` (`src/rules/types/magic.ts`) has no target field at all today ("nothing here is mechanically modeled by the engine yet," per the file's own header), so every spell in the catalogue would need a `target: 'friendly' | 'enemy' | 'both' | 'none'`-style field added, likely by hand against each spell's rules text; (2) enemy roster access — `CastTab` currently only ever receives the caster's own `roster` (`BattlePage.tsx:344`: `<CastTab roster={roster} template={template} sheet={shown} .../>`, no `others`/`sessions`), unlike `FightTab` which already gets both sides. Wiring in an enemy-targeting option means threading the same `others`/`sessions` props `FightTab` already has into `CastTab` too. Related to #28, #29 and #31 — all touch the same spell data model and Cast tab surface, worth tackling as one body of work rather than four separate passes.
 
 <!-- New batches go below this line, most recent last. Copy the entry template for each item. -->
 

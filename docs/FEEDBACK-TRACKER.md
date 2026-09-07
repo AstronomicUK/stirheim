@@ -779,7 +779,7 @@ out below it.
 
 ### 41. No gold-remaining figure inside the builder's Add-equipment sheet
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -789,6 +789,8 @@ taken to -45 gc with no feedback at all until the sheet is closed and the Proble
 A running "X gc left" in the sheet header, and greying the `+` once an item is unaffordable, would
 close both halves. The trading post's hire sheet already does the equivalent with its "TREASURY
 AFTER" line, so there is a pattern to follow.
+
+**Fixed:** The sheet's description now reads "Hans (Mercenary Captain) · 415 gc left", computed live from `draftCosts` the same way the page header already does. Verified live. Left open: greying the "+" once an item would be unaffordable — that needs a henchman group's per-model list price multiplied by group size and the half-price discount both accounted for correctly per option, real additional surface area to get subtly wrong, so scoped out rather than risking a stepper that silently under- or over-caps what a player can afford. Commit `619e800`.
 
 **How to replicate:** New warband → *Add equipment* → step Heavy armour up to 18. Nothing in the
 sheet reacts. Close it: the summary bar reads **-45** in red with 3 problems.

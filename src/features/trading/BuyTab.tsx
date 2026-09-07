@@ -161,8 +161,11 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const isBrace = braceAmount !== null && quantity === 2 && priceOverride === null && computed !== null
   const total = priceReady ? (isBrace ? braceAmount : unitPrice * quantity) : null
   const affordable = total !== null && total <= roster.gold
+  // "You can only buy one rare item for each successful roll" — a brace of pistols is one purchase priced for two, so it keeps its own cap of 2.
+  const rareMaxQty = isRare ? (braceAmount !== null ? 2 : 1) : null
+  const withinRareCap = rareMaxQty === null || quantity <= rareMaxQty
 
-  const canBuy = canTrade && available && searcherOk && priceReady && affordable && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
+  const canBuy = canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -316,9 +319,11 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
           </SelectField>
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-ink">Quantity</span>
-            <Stepper label="quantity" value={quantity} min={1} onChange={setQuantity} />
+            <Stepper label="quantity" value={quantity} min={1} max={rareMaxQty} onChange={setQuantity} />
           </div>
-          {isRare && quantity > 1 ? <p className="text-xs text-warn">The rulebook allows one rare item per successful roll.</p> : null}
+          {isRare ? (
+            <p className="text-xs text-ink-dim">{rareMaxQty === 2 ? 'Two make a brace at the bracketed price; that is the most a single roll allows.' : 'The rulebook allows one rare item per successful roll.'}</p>
+          ) : null}
           {destinationKey.startsWith('henchmanGroup:') ? (
             <p className="text-xs text-ink-dim">Every member of a henchman group must be equipped alike, so buy one per model.</p>
           ) : null}

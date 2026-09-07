@@ -536,6 +536,13 @@ The machinery itself works fine — the plain item shows "The rules say — X is
 with an override-with-reason field, exactly as designed. The variants simply aren't wired into it.
 Confirmed on three separate items:
 
+**This is the surviving hole in Phase 16's work, not a fresh gap.** `docs/WEAPONS-ARMOUR-RULES-GAPS.md`
+A1 records that the "X only" clauses were "labels, never checks; the shop sells any item to any
+warband" — that audit was written 2026-09-05 and then "folded into the Phase 16 scope" (`be97ea4`),
+and Phase 16 built the checks (`9904647`, `b198a8c`). So **A1's first bullet is now stale for base
+items** and should be read as done; what is left is only the variant bypass described here. Flagged
+to the audit's owner.
+
 | Base item | Base availability | Variant | Variant availability |
 |---|---|---|---|
 | Sons of Hashut Obsidian Weapon | Rare 10 · Chaos Dwarfs only | Gromril / Ithilmar | Rare 11 / Rare 9, no restriction |
@@ -572,6 +579,15 @@ items, plus a further pair that exist in the combat engine but not the shop:
    (4 x + 20 gc)"**: a material applied to an upgrade, at 4x an increment. The Sons of Hashut
    Obsidian Weapon is the same shape (`restrictedToSwordAxeOrHammerForm`) — its own buy sheet asks
    "**APPLIED TO WHICH WEAPON?** Sword / Axe / Hammer" — so it is both 1 and 2 at once.
+
+   The premise here is already established independently: `docs/WEAPONS-ARMOUR-RULES-GAPS.md`
+   section C records that "**Dark Elf Blade** is sold as a standalone 20 gc weapon … the source is a
+   +20 gc upgrade that keeps the base weapon's rules", and that "**Sons of Hashut Obsidian Weapon**
+   drops the base weapon's rules". Cited rather than re-argued. This entry is the *downstream*
+   consequence that audit doesn't cover: because both are modelled as standalone weapons, the
+   material-variant generator accepts them as bases and mints gromril and ithilmar versions of them.
+   Fixing the modelling upstream (section C) would remove these two from the generator for free;
+   fixing the generator alone still leaves cases 3 and 4 below.
 3. **Material on a choice placeholder.** `Club, Mace or Hammer` carries `genericBludgeonChoice`: the
    line means "pick one of these three", not an object. "Gromril Club, Mace or Hammer" is not an item.
 4. **Material on the free dagger.** `Dagger` is priced `"1st free/2 gc"`, so the variant reads

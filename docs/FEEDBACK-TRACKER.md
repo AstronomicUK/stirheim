@@ -586,7 +586,7 @@ Verified live on local dev with the QA sweep's own reproduction: The Argent Hamm
 
 ### 34. A weapon made of obsidian cannot also be made of gromril — material variants stack onto other materials, onto upgrades, and onto choice placeholders
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -622,6 +622,8 @@ items, plus a further pair that exist in the combat engine but not the shop:
    line means "pick one of these three", not an object. "Gromril Club, Mace or Hammer" is not an item.
 4. **Material on the free dagger.** `Dagger` is priced `"1st free/2 gc"`, so the variant reads
    **"Gromril Dagger — 8 gc (4 x 1st free/2 gc)"**, leaking the internal cost syntax into the shop.
+
+**Fixed:** `isMaterialVariantBase` now excludes all four shapes at the shared root, so both the combat engine's weapon variants and the shop's priced items are corrected together: `obsidian_weapon` and `sons_of_hashut_obsidian_weapon` (already a material quality), `dark_elf_blade` and `sons_of_hashut_obsidian_weapon` again (an upgrade applied to a base weapon, via their existing `upgradedSwordOrDagger`/`restrictedToSwordAxeOrHammerForm` tags), `club_mace_or_hammer` (its existing `genericBludgeonChoice` tag), and `dagger` (id-excluded directly, since its free-pricing idiom isn't tagged at all). The #33 test that happened to use the now-removed Sons of Hashut Obsidian Weapon as its gromril-restriction fixture was updated to use the Sigmarite Warhammer instead; added direct regression coverage confirming none of the five bases produce a gromril/ithilmar item. Commit `0be02f7`.
 
 Fix shape: give `isMaterialVariantBase` two more exclusions — a base that is itself a material
 variant, and a base that is an upgrade rather than a weapon. Both are already detectable from data

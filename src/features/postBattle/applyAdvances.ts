@@ -1,8 +1,8 @@
 // After the report is filed, the advances the player rolled in the wizard are applied one by one
-// through the same functions the Bestow Advancements screen uses: resolve_pending_advance for a
+// through the same functions the Advancements screen uses: resolve_pending_advance for a
 // finished advance, or the roll kept on the row for "pick later". Each is recomputed against the
 // freshly loaded roster (the report has just changed it), so the diff is exact. A failure leaves
-// that advance pending, where the Bestow Advancements screen picks it up; nothing is lost.
+// that advance pending, where the Advancements screen picks it up; nothing is lost.
 
 import { fetchPendingAdvances, recordAdvanceRoll, resolvePendingAdvance, type PendingAdvanceRow } from '../../api/advances'
 import { fetchWarband } from '../../api/warbands'

@@ -467,7 +467,7 @@ describe('advances in the wizard', () => {
     expect(d.advances.items.every((i) => i.complete)).toBe(true)
     expect(d.problems.advances).toEqual([])
     expect(d.report).not.toBeNull()
-    expect(d.advances.items.find((i) => i.key === advanceKey('captain', 24))?.summary).toMatch(/left for Bestow advancements/)
+    expect(d.advances.items.find((i) => i.key === advanceKey('captain', 24))?.summary).toMatch(/left for Advancements/)
     // The roster the advances are planned against already carries the report's experience.
     expect(d.advances.rosterAfter.heroes.find((h) => h.id === 'captain')?.xp).toBe(24)
   })

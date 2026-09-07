@@ -15,8 +15,21 @@ import { animalFighters, isAnimalId, parseAnimalId, ANIMAL_KINDS, type AnimalFig
 /** A hero or hired sword as the sheet sees them: both are tallied per model. */
 export type SheetWarrior = { role: 'hero'; warrior: RosterHero } | { role: 'hiredSword'; warrior: RosterHiredSword }
 
-/** Why a warrior sits this one out, or null when they fight. */
-export function notFightingReason(warrior: RosterHero | RosterHiredSword): string | null {
+/**
+ * Warrior ids benched for this one battle by a failed Old Battle Wound roll — read from the
+ * pre-battle record, which is the only place that roll's outcome lives. Unlike `missNextGames`
+ * (a standing condition on the roster) this applies to this game alone and leaves no other trace.
+ */
+export function benchedByOldWound(sheet: BattleLiveState): Set<string> {
+  const ids = new Set<string>()
+  for (const [key, outcome] of Object.entries(sheet.preBattle)) {
+    if (key.startsWith('oldWound:') && outcome.startsWith('flares up')) ids.add(key.slice('oldWound:'.length))
+  }
+  return ids
+}
+
+/** Why a warrior sits this one out, or null when they fight. `benched` is this game's Old Battle Wound roll, if any. */
+export function notFightingReason(warrior: RosterHero | RosterHiredSword, benched = false): string | null {
   switch (warrior.status) {
     case 'dead':
       return 'Dead'
@@ -30,11 +43,12 @@ export function notFightingReason(warrior: RosterHero | RosterHiredSword): strin
       break
   }
   if ((warrior.flags.missNextGames ?? 0) > 0) return 'Misses this game'
+  if (benched) return 'Old battle wound flared up'
   return null
 }
 
-export function isFighting(warrior: RosterHero | RosterHiredSword): boolean {
-  return notFightingReason(warrior) === null
+export function isFighting(warrior: RosterHero | RosterHiredSword, benched = false): boolean {
+  return notFightingReason(warrior, benched) === null
 }
 
 export interface SheetWarriors {
@@ -42,15 +56,19 @@ export interface SheetWarriors {
   notFighting: { entry: SheetWarrior; reason: string }[]
 }
 
-/** Heroes first, then hired swords, each split into those on the table and those sitting out. */
-export function splitWarriors(roster: RosterWarband): SheetWarriors {
+/**
+ * Heroes first, then hired swords, each split into those on the table and those sitting out.
+ * `sheet`, when given, also benches anyone whose Old Battle Wound flared up before this battle.
+ */
+export function splitWarriors(roster: RosterWarband, sheet?: BattleLiveState): SheetWarriors {
   const entries: SheetWarrior[] = [
     ...roster.heroes.map((warrior): SheetWarrior => ({ role: 'hero', warrior })),
     ...roster.hiredSwords.map((warrior): SheetWarrior => ({ role: 'hiredSword', warrior })),
   ]
+  const benched = sheet ? benchedByOldWound(sheet) : undefined
   const out: SheetWarriors = { fighting: [], notFighting: [] }
   for (const entry of entries) {
-    const reason = notFightingReason(entry.warrior)
+    const reason = notFightingReason(entry.warrior, benched?.has(entry.warrior.id))
     if (reason === null) out.fighting.push(entry)
     else out.notFighting.push({ entry, reason })
   }
@@ -69,8 +87,8 @@ export function animalsFighting(roster: RosterWarband): AnimalFighter[] {
 }
 
 /** Models this warband put on the table: fighting heroes and hired swords plus every henchman, and the animals that count for rout tests. */
-export function startingModels(roster: RosterWarband): number {
-  const warriors = splitWarriors(roster).fighting.length
+export function startingModels(roster: RosterWarband, sheet?: BattleLiveState): number {
+  const warriors = splitWarriors(roster, sheet).fighting.length
   return warriors + fightingGroups(roster).reduce((n, g) => n + g.size, 0) + animalsFighting(roster).filter((a) => a.kind.countsForRout).length
 }
 
@@ -219,7 +237,7 @@ export interface SheetTotals {
 
 export function sheetTotals(state: BattleLiveState, roster: RosterWarband): SheetTotals {
   const totals = battleTotals(state)
-  const models = startingModels(roster)
+  const models = startingModels(roster, state)
   return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(models) }
 }
 

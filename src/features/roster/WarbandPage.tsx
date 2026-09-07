@@ -152,10 +152,11 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
                   <ActionTile
                     to={`/warbands/${warband.id}/advances`}
                     icon="advances"
-                    title="Bestow advancements"
+                    title="Advancements"
                     detail={advancesDue > 0 ? `${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} to roll` : 'Nothing owed'}
                     count={advancesDue}
                     highlight={advancesDue > 0}
+                    glow={advancesDue > 0}
                   />
                   <ActionTile to={`/warbands/${warband.id}/trade`} icon="trade" title="Trading post" detail={`${warband.gold} gc to spend`} />
                   <ActionTile to={`/warbands/${warband.id}/recruit`} icon="recruit" title="Recruit" detail="Heroes, henchmen, hired swords" />

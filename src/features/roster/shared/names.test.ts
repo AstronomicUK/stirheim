@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { equipmentSummary, isBraceable, itemLineName, itemProfile } from './names'
+import { equipmentSummary, isBraceable, itemLineName, itemProfile, modelLabel } from './names'
 
 describe('kit line names', () => {
   it('calls two pistols a brace and leaves everything else counted', () => {
@@ -21,5 +21,16 @@ describe('kit line profiles', () => {
     expect(itemProfile(kit[1], kit)).toBe('6+ save · 3+ with Gromril Armour')
     expect(itemProfile({ itemId: 'light_armour' }, [{ itemId: 'light_armour' }, { itemId: 'buckler' }])).toBe('6+ save')
     expect(itemProfile({ itemId: 'shield' }, [{ itemId: 'shield' }])).toBe('6+ save')
+  })
+})
+
+describe('modelLabel', () => {
+  it('gives a named slot its name, and an unnamed one "Model N"', () => {
+    expect(modelLabel(['Alice', '', 'Carl'], 0)).toBe('Alice')
+    expect(modelLabel(['Alice', '', 'Carl'], 1)).toBe('Model 2')
+    expect(modelLabel(['Alice', '', 'Carl'], 2)).toBe('Carl')
+    expect(modelLabel(undefined, 0)).toBe('Model 1')
+    expect(modelLabel(['  '], 0)).toBe('Model 1')
+    expect(modelLabel([], 4)).toBe('Model 5')
   })
 })

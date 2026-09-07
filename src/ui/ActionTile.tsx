@@ -12,6 +12,8 @@ export interface ActionTileProps {
   count?: number | null
   /** Brass border when the tile needs attention (something owed). */
   highlight?: boolean
+  /** A slow pulsing glow on the icon — something is waiting on the player, not just informational. */
+  glow?: boolean
 }
 
 /**
@@ -19,7 +21,7 @@ export interface ActionTileProps {
  * between-battles actions used to be, so the three things a player does after a game read as
  * destinations rather than form controls.
  */
-export function ActionTile({ to, icon, title, detail, count = null, highlight = false }: ActionTileProps) {
+export function ActionTile({ to, icon, title, detail, count = null, highlight = false, glow = false }: ActionTileProps) {
   return (
     <Link
       to={to}
@@ -27,7 +29,7 @@ export function ActionTile({ to, icon, title, detail, count = null, highlight = 
         highlight ? 'border-brass shadow-[inset_0_0_0_1px_var(--color-brass)]' : 'border-border'
       }`}
     >
-      <Icon name={icon} size={22} className="text-brass" />
+      <Icon name={icon} size={22} className={`text-brass ${glow ? 'stirheim-glow' : ''}`} />
       <span className="text-sm font-semibold leading-tight text-ink">{title}</span>
       {detail ? <span className="text-xs leading-snug text-ink-dim">{detail}</span> : null}
       {count !== null && count > 0 ? (

@@ -76,6 +76,18 @@ describe("item restrictions", () => {
     expect(itemRestrictionWarnings(reikland, I("mace"), trio, { quantity: 3 })[0]).toMatch(/each of Warriors would carry 3 hand weapons/);
   });
 
+  it("a Severe Arm Wound allows only a single one-handed weapon, no shield or buckler", () => {
+    const oneHanded: ItemHolder = { ...captain, equipment: [item("sword")], flags: { singleHandedWeaponsOnly: true } };
+    expect(itemRestrictionWarnings(reikland, I("axe"), oneHanded)[0]).toMatch(/severe arm wound allows only a single one-handed weapon/);
+    expect(itemRestrictionWarnings(reikland, I("dagger"), oneHanded)).toEqual([]);
+    expect(itemRestrictionWarnings(reikland, I("shield"), oneHanded)[0]).toMatch(/no shield or buckler/);
+    expect(itemRestrictionWarnings(reikland, I("buckler"), oneHanded)[0]).toMatch(/no shield or buckler/);
+    const fine: ItemHolder = { ...captain, equipment: [item("sword")] };
+    expect(itemRestrictionWarnings(reikland, I("axe"), fine)).toEqual([]);
+    const armed = warband("mercenaries_reikland", [hero("cap", "mercenaries_reikland_captain", [item("sword"), item("shield")], { flags: { singleHandedWeaponsOnly: true } })]);
+    expect(rosterItemWarnings(armed).map((w) => w.message).some((m) => /no shield or buckler/.test(m))).toBe(true);
+  });
+
   it("Toughened Leathers and a shield do not mix", () => {
     const leathered: ItemHolder = { ...captain, equipment: [item("toughened_leathers")] };
     expect(itemRestrictionWarnings(reikland, I("shield"), leathered)[0]).toMatch(/Toughened Leathers/);

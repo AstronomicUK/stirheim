@@ -166,7 +166,7 @@ export function HelpPage() {
         </P>
         <P>
           <B>Advances.</B> Any advance earned in the battle can be rolled right there in the wizard. If the roll is a new skill or spell and you want time to think,
-          tap <em>Pick the skill later</em>: the roll is kept and the choice waits under <em>Bestow advancements</em> on the roster page, highlighted until it is
+          tap <em>Pick the skill later</em>: the roll is kept and the choice waits under <em>Advancements</em> on the roster page, highlighted until it is
           made. Leave the whole advance for later if you prefer; nothing is forced.
         </P>
         <P>

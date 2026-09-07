@@ -275,7 +275,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
   // test. Read from their own sheets, so it counts everything that felled them, not only my kills.
   const enemy = useMemo(() => {
     if (others.length === 0 || enemyRosters.warbands.length !== others.length) return null
-    const models = enemyRosters.warbands.reduce((n, w) => n + startingModels(w.roster), 0)
+    const models = enemyRosters.warbands.reduce((n, w) => n + startingModels(w.roster, sessions.find((x) => x.warband_id === w.roster.id)?.live_state), 0)
     const out = others.reduce((n, p) => {
       const theirs = sessions.find((x) => x.warband_id === p.warband_id)
       return n + (theirs ? battleTotals(theirs.live_state).ownOutOfAction : 0)
@@ -308,10 +308,10 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
       ) : null}
       {rout === 'test' && !readOnly ? <RoutCheck roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
       {advancesDue > 0 && !readOnly ? (
-        <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still to bestow`}>
+        <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still owed`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}
           <Link to={`/warbands/${roster.id}/advances`} className="text-brass underline-offset-4 hover:underline">
-            Bestow advancements
+            Advancements
           </Link>
         </Notice>
       ) : null}

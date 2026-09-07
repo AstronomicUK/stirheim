@@ -8,6 +8,7 @@ import { STAT_ORDER } from '../shared/stats'
 import { Card, ItemLines, RuleList, Tag, XpBar } from './bits'
 import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { warriorSpecialRules } from './lookups'
+import { modelLabel } from '../shared/names'
 
 export interface GroupCardProps {
   group: HenchmanGroupRow
@@ -60,10 +61,12 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
           <p className="text-[10px] uppercase tracking-wider text-ink-dim">{kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'}</p>
           <ItemLines items={kit.items} detailed={expanded} />
         </div>
-        {(group.model_names ?? []).filter((n) => n.trim()).length > 0 ? (
+        {group.size > 0 ? (
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-wider text-ink-dim">Models</p>
-            <p className="text-sm text-ink">{(group.model_names ?? []).filter((n) => n.trim()).join(', ')}</p>
+            {/* Every slot, named or not — so the group reads as individuals rather than a stack,
+                and an unnamed slot ("Model 2") makes clear there is somewhere to name it. */}
+            <p className="text-sm text-ink">{Array.from({ length: group.size }, (_, i) => modelLabel(group.model_names, i)).join(', ')}</p>
           </div>
         ) : null}
         {group.notes ? <p className="whitespace-pre-line text-sm text-ink-dim">{group.notes}</p> : null}

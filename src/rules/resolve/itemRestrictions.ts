@@ -9,7 +9,7 @@ import { countsAsHandWeapon, countsAsMissileWeapon } from "../data/items/classif
 import { findItem } from "../data/items";
 import { describeWarbandRefs, itemRestriction, warbandInAny } from "../data/itemRules";
 import type { Item } from "../types/items";
-import type { CampaignBans, RosterItem, RosterWarband } from "../types/roster";
+import type { CampaignBans, RosterItem, RosterWarband, WarriorFlags } from "../types/roster";
 import { POSSESSED_ALLOWED_ITEM_IDS } from "../data/campaign/rewards";
 import { isBanned } from "./houseRules";
 
@@ -24,6 +24,8 @@ export interface ItemHolder {
   /** A henchman group's equipment is the group's total; its size turns that into one model's kit. */
   size?: number;
   equipment: readonly RosterItem[];
+  /** A hero's or hired sword's persistent conditions (Severe Arm Wound, Possessed, ...). */
+  flags?: WarriorFlags;
 }
 
 /** One model's share of a group's kit (a hero's kit is already one model's). */
@@ -109,12 +111,18 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
   if (rule.noShield && holder.kind !== "stash" && holder.equipment.some((e) => e.itemId === "shield" || e.itemId === "kite_shield")) out.push(`${item.name} cannot be combined with a shield.`);
   if ((item.id === "shield" || item.id === "kite_shield") && holder.kind !== "stash" && holder.equipment.some((e) => e.itemId === "toughened_leathers")) out.push(`A shield cannot be combined with Toughened Leathers.`);
 
+  if (holder.flags?.singleHandedWeaponsOnly && (item.id === "shield" || item.id === "kite_shield" || item.id === "buckler")) {
+    out.push(`${holder.name ?? "This warrior"}'s severe arm wound allows only a single one-handed weapon: no shield or buckler alongside it.`);
+  }
+
   // The rulebook caps, per model.
   if (holder.kind === "hero" || holder.kind === "henchmanGroup") {
     const each = holder.kind === "henchmanGroup" ? "each of" : "";
     if (countsAsHandWeapon(item.id)) {
       const after = handWeaponCount(kit) + addedPerModel;
-      if (after > MAX_HAND_WEAPONS) out.push(`${each ? `${each} ` : ""}${holder.name ?? "This warrior"} would carry ${after} hand weapons besides a dagger; the rules allow ${MAX_HAND_WEAPONS}.`);
+      const cap = holder.flags?.singleHandedWeaponsOnly ? 1 : MAX_HAND_WEAPONS;
+      if (after > cap && cap === 1) out.push(`${holder.name ?? "This warrior"}'s severe arm wound allows only a single one-handed weapon: no second weapon alongside it.`);
+      else if (after > cap) out.push(`${each ? `${each} ` : ""}${holder.name ?? "This warrior"} would carry ${after} hand weapons besides a dagger; the rules allow ${cap}.`);
     }
     if (countsAsMissileWeapon(item.id) && rule.countsAsMissile !== false) {
       const after = missileWeaponCount(opts.alreadyHeld ? kit : [...kit, { itemId: item.id, quantity: addedPerModel }]);
@@ -161,7 +169,7 @@ export function rosterItemWarnings(warband: RosterWarband, opts: Pick<Restrictio
   };
   for (const hero of warband.heroes) {
     if (hero.status !== "active") continue;
-    check({ kind: "hero", id: hero.id, name: hero.name, unitTemplateId: hero.unitTemplateId, equipment: hero.equipment });
+    check({ kind: "hero", id: hero.id, name: hero.name, unitTemplateId: hero.unitTemplateId, equipment: hero.equipment, flags: hero.flags });
     if (hero.flags.daemonPossessed) {
       const banned = hero.equipment.filter((e) => !e.itemId || !(POSSESSED_ALLOWED_ITEM_IDS as readonly string[]).includes(e.itemId));
       if (banned.length > 0) out.push({ subjectId: hero.id, message: `${hero.name} is Possessed by a Daemon and may use no weapons or armour except Chaos Armour and Daemon weapons: ${banned.map((e) => (e.itemId ? (findItem(e.itemId)?.name ?? e.itemId) : (e.customName ?? "item"))).join(", ")} should go to the stash.` });

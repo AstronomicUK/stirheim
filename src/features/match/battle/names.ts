@@ -2,7 +2,7 @@
 
 import type { NamedRule, WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../../rules/types/roster'
-import { unitTypeName } from '../../roster/shared/names'
+import { modelLabel, unitTypeName } from '../../roster/shared/names'
 import { flagTags, hiredSwordName, warriorSpecialRules } from '../../roster/view/lookups'
 import type { SheetWarrior } from './sheet'
 
@@ -36,3 +36,4 @@ export function groupRules(group: RosterHenchmanGroup, template: WarbandTemplate
   return warriorSpecialRules(template, group.unitTemplateId, null)
 }
 
+export { modelLabel }

@@ -238,7 +238,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       await submit.mutateAsync({ report, amendNote: amending ? amendNote.trim() : undefined })
       closing.current = true
       // The report is in. Now the advances rolled in the wizard, one at a time; anything that fails
-      // stays pending on the Bestow advancements screen.
+      // stays pending on the Advancements screen.
       const outcome = await applyWizardAdvances(participant.warband_id, derived?.advances.items ?? [], ctx.template, ctx.houseRules ?? null)
       await Promise.all([qc.invalidateQueries({ queryKey: advanceKeys.all }), qc.invalidateQueries({ queryKey: warbandKeys.all })])
       forgetReportStore(match.id, participant.warband_id)

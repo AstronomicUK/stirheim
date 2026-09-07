@@ -22,6 +22,7 @@ import {
 } from '../model'
 import { D66Entry, Intro, type StepProps } from './bits'
 import { warriorTypeLabel } from './names'
+import { modelLabel } from '../../roster/shared/names'
 import { StepBody } from './WizardShell'
 import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 
@@ -134,7 +135,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                 ) : null}
                 <div className="flex flex-wrap items-end gap-2">
                   {Array.from({ length: dice }, (_, i) => (
-                    <DieField key={i} label={`Model ${i + 1}`} sides={6} value={rolls[i] ?? null} onChange={(v) => update((d) => setGroupInjuryRoll(d, group.id, i, v))} />
+                    <DieField key={i} label={modelLabel(group.modelNames, i)} sides={6} value={rolls[i] ?? null} onChange={(v) => update((d) => setGroupInjuryRoll(d, group.id, i, v))} />
                   ))}
                   {dice > 0 ? (
                     <Button

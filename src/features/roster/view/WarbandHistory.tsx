@@ -4,8 +4,9 @@
 
 import { useMemo, useState } from 'react'
 import { useWarbandActivity } from '../../../api/campaigns'
-import { Icon, Notice, Spinner } from '../../../ui'
-import { activityLines, formatRelativeTime } from '../../campaign/activity'
+import { Notice, Spinner } from '../../../ui'
+import { activityLines } from '../../campaign/activity'
+import { ActivityList } from '../../campaign/ActivityList'
 import { Disclosure, Section } from '../../campaign/bits'
 
 export function WarbandHistory({ warbandId }: { warbandId: string }) {
@@ -25,19 +26,7 @@ export function WarbandHistory({ warbandId }: { warbandId: string }) {
       ) : lines.length === 0 ? (
         <p className="text-sm text-ink-dim">Nothing recorded yet.</p>
       ) : (
-        <ol className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
-          {shown.map((line) => (
-            <li key={line.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
-              <span className="flex min-w-0 items-start gap-2.5">
-                <Icon name={line.icon} size={18} className="mt-0.5 shrink-0 text-brass" />
-                <span className="text-sm leading-relaxed text-ink">{line.text}</span>
-              </span>
-              <time dateTime={line.at} className="shrink-0 text-xs text-ink-dim">
-                {formatRelativeTime(line.at)}
-              </time>
-            </li>
-          ))}
-        </ol>
+        <ActivityList lines={shown} />
       )}
       {lines.length > 8 ? <Disclosure open={showAll} onToggle={() => setShowAll((v) => !v)} label="older entries" count={lines.length - 8} /> : null}
     </Section>

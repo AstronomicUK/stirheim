@@ -597,7 +597,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     } else if (plan.total === null) {
       // Untouched: left pending, exactly as before the wizard could roll advances.
       complete = true
-      summary = `${name}: advance at ${request.threshold_xp} xp not rolled here; left for Bestow advancements.`
+      summary = `${name}: advance at ${request.threshold_xp} xp not rolled here; left for Advancements.`
     } else {
       complete = plan.result !== null
       summary = plan.result ? `${name}: ${plan.result.resolution.text}` : `${name}: rolled ${plan.total}, choice still to make.`

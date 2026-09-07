@@ -1,5 +1,5 @@
 // Advances earned this battle, rolled right here rather than in a separate visit afterwards.
-// Each card runs the same roll / choose flow as the Bestow Advancements screen. A skill or spell
+// Each card runs the same roll / choose flow as the Advancements screen. A skill or spell
 // choice can be left for later ("Pick later"), or the whole advance can wait.
 
 import { useEffect } from 'react'
@@ -34,7 +34,7 @@ export function AdvancesStep({ derived, update, ctx }: StepProps) {
       <Intro>
         {items.length === 0
           ? 'Nobody crossed an experience threshold this battle, so there is nothing to roll.'
-          : 'Roll each advance now, or leave it for the roster\'s Bestow advancements screen. A skill or spell can be picked later once the dice are in; the rulebook wants it chosen before the next battle.'}
+          : 'Roll each advance now, or leave it for the roster\'s Advancements screen. A skill or spell can be picked later once the dice are in; the rulebook wants it chosen before the next battle.'}
       </Intro>
       {items.length > 0 ? (
         <Section title="Earned this battle" aside={`${items.length} ${items.length === 1 ? 'advance' : 'advances'}`}>
@@ -77,7 +77,7 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
       </div>
       <SegmentedControl label={`${item.name}: when to roll`} options={MODE_OPTIONS} value={mode === 'pickLater' ? 'now' : mode} onChange={setMode} />
       {mode === 'later' ? (
-        <p className="text-sm text-ink-dim">Left pending. Roll it from the roster page under Bestow advancements.</p>
+        <p className="text-sm text-ink-dim">Left pending. Roll it from the roster page under Advancements.</p>
       ) : (
         <>
           <AdvanceBody draft={item.draft} plan={plan} subject={subject} step={mode === 'pickLater' ? 'choose' : item.step} update={editAdvance} hideRail chooseSpell={chooseSpell} />

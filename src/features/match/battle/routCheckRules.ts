@@ -20,7 +20,7 @@ export interface LdOption {
 /** Who may give their Leadership: the leader if standing, otherwise any standing hero or hired sword. */
 export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }): LdOption[] {
   const leaderUnit = template ? leaderTemplate(template) : undefined
-  const fighting = splitWarriors(roster).fighting
+  const fighting = splitWarriors(roster, sheet).fighting
   const options = fighting.map(({ warrior }): LdOption => {
     const w = warrior as RosterHero | RosterHiredSword
     const leader = 'unitTemplateId' in w && leaderUnit !== undefined && w.unitTemplateId === leaderUnit.id

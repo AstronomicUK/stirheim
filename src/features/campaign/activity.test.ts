@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CampaignActivity } from '../../api/campaigns'
-import { activityLines, describeActivity, describeWarbandChanges, formatRelativeTime } from './activity'
+import { activityFieldChanges, activityLines, describeActivity, describeWarbandChanges, formatRelativeTime } from './activity'
 
 const ANA = '11111111-1111-1111-1111-111111111111'
 const TOM = '22222222-2222-2222-2222-222222222222'
@@ -119,6 +119,8 @@ describe('activityLines', () => {
     expect(lines).toHaveLength(1)
     expect(lines[0].text).toBe('Ana visited the trading post with Claws of Eshin (gold 100 -> 80)')
     expect(lines[0].count).toBe(3)
+    expect(lines[0].entries).toHaveLength(3)
+    expect(lines[0].entries.map((e) => e.table_name)).toEqual(['items', 'items', 'warbands'])
   })
 
   it('drops the hero and item rows written while a warband is created', () => {
@@ -137,6 +139,58 @@ describe('activityLines', () => {
       entry({ reason: 'manual_edit', at: '2026-09-04T10:00:00.000Z', before: { name: 'Claws of Eshin', gold: 0 }, after: { name: 'Claws of Eshin', gold: 1 } }),
     ]
     expect(activityLines(rows)).toHaveLength(2)
+  })
+})
+
+describe('activityFieldChanges', () => {
+  it('lists only the columns that actually changed, by their plain-English label', () => {
+    const changes = activityFieldChanges(
+      entry({
+        reason: 'manual_edit',
+        before: { name: 'Claws of Eshin', gold: 25, wyrdstone: 3, archived: false, notes: '', sort_order: 2 },
+        after: { name: 'Claws of Eshin', gold: 30, wyrdstone: 3, archived: true, notes: '', sort_order: 2 },
+      }),
+    )
+    expect(changes).toEqual([
+      { label: 'archived', before: 'no', after: 'yes' },
+      { label: 'gold', before: '25', after: '30' },
+    ])
+  })
+
+  it('reads an insert as everything being set, and a delete as everything having been', () => {
+    const created = activityFieldChanges(entry({ action: 'insert', reason: 'create_warband', after: { name: 'Reikland Watch', gold: 500, notes: '' } }))
+    expect(created).toEqual([{ label: 'gold', before: '—', after: '500' }, { label: 'name', before: '—', after: 'Reikland Watch' }])
+    const deleted = activityFieldChanges(entry({ action: 'delete', before: { name: 'Reikland Watch', gold: 500, notes: '' } }))
+    expect(deleted).toEqual([{ label: 'gold', before: '500', after: '—' }, { label: 'name', before: 'Reikland Watch', after: '—' }])
+  })
+
+  it('reads a characteristics change as only the stats that moved', () => {
+    const base = { M: 4, WS: 2, BS: 2, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 6 }
+    const changes = activityFieldChanges(
+      entry({ table_name: 'heroes', reason: 'advancement', before: { stats: base }, after: { stats: { ...base, S: 4, A: 2 } } }),
+    )
+    expect(changes).toEqual([{ label: 'characteristics', before: 'S 3, A 1', after: 'S 4, A 2' }])
+  })
+
+  it('reads a full characteristics line on insert', () => {
+    const stats = { M: 4, WS: 2, BS: 2, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 6 }
+    const changes = activityFieldChanges(entry({ table_name: 'heroes', action: 'insert', after: { stats } }))
+    expect(changes).toEqual([{ label: 'characteristics', before: '—', after: 'M 4, WS 2, BS 2, S 3, T 3, W 1, I 3, A 1, Ld 6' }])
+  })
+
+  it('leaves out bookkeeping columns and formats arrays and empty values plainly', () => {
+    const changes = activityFieldChanges(
+      entry({
+        table_name: 'heroes',
+        reason: 'manual_edit',
+        before: { id: 'h1', warband_id: ESHIN, sort_order: 0, skills: [], notes: '' },
+        after: { id: 'h1', warband_id: ESHIN, sort_order: 0, skills: ['Sprint', 'Dodge Blow'], notes: 'A veteran now.' },
+      }),
+    )
+    expect(changes).toEqual([
+      { label: 'notes', before: 'none', after: 'A veteran now.' },
+      { label: 'skills', before: 'none', after: 'Sprint, Dodge Blow' },
+    ])
   })
 })
 

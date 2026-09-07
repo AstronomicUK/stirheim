@@ -32,7 +32,7 @@ export function AdvancesPage() {
   if (warband.isPending || pending.isPending) {
     return (
       <>
-        <PageHeader eyebrow="Between battles" title="Bestow advancements" aside={back} />
+        <PageHeader eyebrow="Between battles" title="Advancements" aside={back} />
         <div className="flex flex-1 items-center justify-center py-20">
           <Spinner label="Loading advances" />
         </div>
@@ -42,7 +42,7 @@ export function AdvancesPage() {
   if (warband.isError || pending.isError) {
     return (
       <>
-        <PageHeader eyebrow="Between battles" title="Bestow advancements" aside={back} />
+        <PageHeader eyebrow="Between battles" title="Advancements" aside={back} />
         <Notice tone="error" title="Could not load the advances">
           {warband.error?.message ?? pending.error?.message}
         </Notice>
@@ -88,7 +88,7 @@ function AdvancesView({ detail, pending, history, historyPending, historyError, 
     <>
       <PageHeader
         eyebrow="Between battles"
-        title="Bestow advancements"
+        title="Advancements"
         description={warband.name}
         aside={back}
       />

@@ -122,7 +122,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
   const leaderUnitId = template ? leaderTemplate(template)?.id : undefined
   const boostTraits = boosts.fearImmunity ? ['immune_to_fear'] : []
   const out: Combatant[] = []
-  const warriors = splitWarriors(roster)
+  const warriors = splitWarriors(roster, sheet)
   for (const entry of warriors.fighting) {
     if (entry.role === 'hero') {
       const { warrior } = entry

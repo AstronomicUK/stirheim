@@ -76,7 +76,7 @@ function EnemyWarband({
   const template = useMemo(() => (roster ? findWarbandTemplate(roster.warbandTemplateId) : undefined), [roster])
 
   const totals = session ? battleTotals(session.live_state) : null
-  const models = roster ? startingModels(roster) : null
+  const models = roster ? startingModels(roster, session?.live_state) : null
 
   return (
     <section className="flex flex-col gap-3">
@@ -124,7 +124,7 @@ function EnemyRoster({
   session: BattleSessionView | undefined
   conditions: Map<string, string>
 }) {
-  const warriors = splitWarriors(roster)
+  const warriors = splitWarriors(roster, session?.live_state)
   const groups = fightingGroups(roster)
   return (
     <>

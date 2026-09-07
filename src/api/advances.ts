@@ -64,7 +64,7 @@ export async function resolvePendingAdvance({ advanceId, resolution, changes }: 
   return data
 }
 
-/** "Pick later": keep the dice on the pending row so the choice can be made from the Bestow Advancements screen. */
+/** "Pick later": keep the dice on the pending row so the choice can be made from the Advancements screen. */
 export async function recordAdvanceRoll(advanceId: string, rolled: Record<string, unknown>): Promise<void> {
   const { error } = await supabase.from('pending_advances').update({ rolled: rolled as Json }).eq('id', advanceId).is('resolved_at', null)
   if (error) throw new Error(error.message)

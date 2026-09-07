@@ -221,3 +221,29 @@ body {
     animation: none;
   }
 }
+
+/*
+  A slow pulsing glow, for an icon that is waiting on the player rather than merely informing them
+  (an advance owed). Deliberately gentle and continuous — nothing else in the app moves on its own,
+  so this is reserved for the one thing that wants a second look.
+*/
+@keyframes stirheim-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: drop-shadow(0 0 6px var(--color-brass)) drop-shadow(0 0 2px var(--color-brass));
+  }
+}
+
+.stirheim-glow {
+  animation: stirheim-glow 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stirheim-glow {
+    animation: none;
+    filter: drop-shadow(0 0 3px var(--color-brass));
+  }
+}

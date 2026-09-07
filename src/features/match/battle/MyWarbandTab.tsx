@@ -6,7 +6,7 @@ import { Button, Stepper } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
 import { ExperienceReminders } from './ExperienceReminders'
-import { groupRules, groupTypeName, warriorRules, warriorTags, warriorTypeName, type CardTag } from './names'
+import { groupRules, groupTypeName, modelLabel, warriorRules, warriorTags, warriorTypeName, type CardTag } from './names'
 import { addEnemyOut, animalsFighting, fightingGroups, groupOut, isHeroOut, perModelKit, setGroupOut, setTakenOutBy, setWoundsLost, splitWarriors, takenOutBy, toggleHeroOut, woundsLost, type SheetWarrior } from './sheet'
 import { TakenOutBySheet } from './TakenOutBySheet'
 import { useEnemyRosters } from '../fight/useEnemyRosters'
@@ -35,7 +35,7 @@ interface Asking {
 }
 
 export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events = [], matchId, others = [] }: MyWarbandTabProps) {
-  const warriors = splitWarriors(roster)
+  const warriors = splitWarriors(roster, sheet)
   const groups = fightingGroups(roster)
   const animals = animalsFighting(roster)
   const enemies = useEnemyRosters(matchId ?? '', matchId ? others : [])
@@ -258,7 +258,7 @@ function MyGroupCard({ group, template, sheet, edit, readOnly, onAsk }: MyGroupC
           <ul className="flex flex-col gap-0.5 text-xs text-ink-dim">
             {by.map((b, i) => (
               <li key={i} className="flex items-center justify-between gap-2">
-                <span>Model {i + 1}: taken out by {b.name}</span>
+                <span>{modelLabel(group.modelNames, i)}: taken out by {b.name}</span>
                 {!readOnly ? (
                   <button type="button" onClick={() => onAsk(i)} className="text-brass underline-offset-4 hover:underline">
                     Change

@@ -10,6 +10,7 @@ import { GmChecklist } from '../onboarding/GmChecklist'
 import { MapSummary } from '../map/MapSummary'
 import { usePageTitle } from '../onboarding/usePageTitle'
 import { activityLines, formatRelativeTime } from './activity'
+import { ActivityList } from './ActivityList'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
 import { AliasField } from './AliasField'
 import { InviteCard } from './InviteCard'
@@ -178,25 +179,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         ) : lines.length === 0 ? (
           <p className="text-sm text-ink-dim">Nothing has happened yet.</p>
         ) : (
-          <ol className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
-            {lines.map((line) => (
-              <li key={line.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <span className="flex min-w-0 items-start gap-2.5">
-                  <Icon name={line.icon} size={18} className="mt-0.5 shrink-0 text-brass" />
-                  {line.to ? (
-                    <Link to={line.to} className="text-sm leading-relaxed text-ink underline-offset-4 hover:underline">
-                      {line.text}
-                    </Link>
-                  ) : (
-                    <span className="text-sm leading-relaxed text-ink">{line.text}</span>
-                  )}
-                </span>
-                <time dateTime={line.at} className="shrink-0 text-xs text-ink-dim">
-                  {formatRelativeTime(line.at)}
-                </time>
-              </li>
-            ))}
-          </ol>
+          <ActivityList lines={lines} linkable />
         )}
       </Section>
 

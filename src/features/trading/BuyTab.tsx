@@ -112,7 +112,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const holder: ItemHolder = useMemo(() => {
     if (destination.kind === 'hero') {
       const h = roster.heroes.find((x) => x.id === destination.id)
-      return { kind: 'hero', id: destination.id, name: h?.name, unitTemplateId: h?.unitTemplateId, equipment: h?.equipment ?? [] }
+      return { kind: 'hero', id: destination.id, name: h?.name, unitTemplateId: h?.unitTemplateId, equipment: h?.equipment ?? [], flags: h?.flags }
     }
     if (destination.kind === 'henchmanGroup') {
       const g = roster.henchmenGroups.find((x) => x.id === destination.id)

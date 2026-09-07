@@ -177,6 +177,114 @@ function singular(words: string): string {
   return words.endsWith('es') && !words.endsWith('ses') ? words.slice(0, -2) : words.endsWith('s') ? words.slice(0, -1) : words
 }
 
+// ---------------------------------------------------------------------------------------------
+// Field-level before/after, for the expanded view of one audit row.
+// ---------------------------------------------------------------------------------------------
+
+/** Columns that are bookkeeping rather than something a player would want to see change. */
+const BORING_FIELDS = new Set(['id', 'created_at', 'updated_at', 'sort_order', 'warband_id', 'campaign_id', 'owner_id', 'gm_id', 'invite_code', 'holder_id'])
+
+/** Human labels for columns worth naming specially; anything else falls back to "un snaked case". */
+const FIELD_LABELS: Record<string, string> = {
+  name: 'name',
+  gold: 'gold',
+  wyrdstone: 'wyrdstone',
+  veteran_pool: 'veteran pool',
+  archived: 'archived',
+  notes: 'notes',
+  status: 'status',
+  size: 'size',
+  xp: 'XP',
+  level_ups: 'advances taken',
+  skill_tables: 'skill tables',
+  skills: 'skills',
+  spells: 'spells',
+  injuries: 'injuries',
+  flags: 'conditions',
+  stats: 'characteristics',
+  stat_increases: 'stat increases',
+  is_large: 'large',
+  is_hired_sword: 'hired sword',
+  equipment_locked: 'equipment locked',
+  quantity: 'quantity',
+  item_rules_id: 'item',
+  custom_name: 'custom item name',
+  holder_type: 'held by',
+  settings: 'campaign settings',
+  rules_markdown: 'campaign rules',
+  left_at: 'left the campaign',
+  type_rules_id: 'warband type',
+  unit_type_rules_id: 'unit type',
+}
+
+function fieldLabel(key: string): string {
+  return FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+}
+
+/** A JSON value as something worth reading in a diff: "none" for empty, plain text otherwise. */
+function displayValue(value: Json | undefined): string {
+  if (value === undefined || value === null) return 'none'
+  if (typeof value === 'boolean') return value ? 'yes' : 'no'
+  if (typeof value === 'string') return value.trim() ? value : 'none'
+  if (typeof value === 'number') return String(value)
+  if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map((v) => displayValue(v)).join(', ')
+  if (Object.keys(value).length === 0) return 'none'
+  return JSON.stringify(value)
+}
+
+const STAT_ORDER = ['M', 'WS', 'BS', 'S', 'T', 'W', 'I', 'A', 'Ld'] as const
+
+/** A `heroes`/`henchman_groups` stats row: every characteristic present as a number. */
+function asStats(value: Json | undefined): Record<string, number> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const row = value as Record<string, Json>
+  return STAT_ORDER.every((k) => typeof row[k] === 'number') ? (row as Record<string, number>) : null
+}
+
+/** "M 4, WS 2, ..., Ld 6" — or just the characteristics that moved, when comparing two stat lines. */
+function statsLine(stats: Record<string, number>, onlyKeys?: readonly string[]): string {
+  const keys = onlyKeys ?? STAT_ORDER
+  return keys.map((k) => `${k} ${stats[k]}`).join(', ')
+}
+
+function sameValue(a: Json | undefined, b: Json | undefined): boolean {
+  if (a === b) return true
+  if ((a === undefined || a === null) && (b === undefined || b === null)) return true
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+export interface FieldChange {
+  label: string
+  before: string
+  after: string
+}
+
+/**
+ * Every column that changed on one audit row, in plain English. An insert reads as "set to X", a
+ * delete as "was X"; an update shows both sides. Bookkeeping columns (ids, timestamps) are left out.
+ */
+export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
+  const before = asRow(entry.before)
+  const after = asRow(entry.after)
+  const keys = new Set([...(before ? Object.keys(before) : []), ...(after ? Object.keys(after) : [])])
+  const out: FieldChange[] = []
+  for (const key of keys) {
+    if (BORING_FIELDS.has(key)) continue
+    const a = before?.[key]
+    const b = after?.[key]
+    if (before && after && sameValue(a, b)) continue
+    const statsA = key === 'stats' ? asStats(a) : null
+    const statsB = key === 'stats' ? asStats(b) : null
+    const changedStats = statsA && statsB ? STAT_ORDER.filter((k) => statsA[k] !== statsB[k]) : null
+    const beforeText = statsA ? statsLine(statsA, changedStats ?? undefined) : before ? displayValue(a) : '—'
+    const afterText = statsB ? statsLine(statsB, changedStats ?? undefined) : after ? displayValue(b) : '—'
+    // An insert or delete is only worth a line when the field actually held something.
+    if ((!before && afterText === 'none') || (!after && beforeText === 'none')) continue
+    out.push({ label: fieldLabel(key), before: beforeText, after: afterText })
+  }
+  return out.sort((x, y) => x.label.localeCompare(y.label))
+}
+
 export interface ActivityLine {
   /** Id of the headline entry. */
   id: number
@@ -188,6 +296,8 @@ export interface ActivityLine {
   icon: IconName
   /** Where the changed thing lives, when it has a page. */
   to: string | null
+  /** Every audit row this line stands for, newest first, for the expanded before/after view. */
+  entries: CampaignActivity[]
 }
 
 /** The icon for an audit entry: what was done first, then which table it touched. */
@@ -303,7 +413,7 @@ export function activityLines(entries: CampaignActivity[], windowMs = 3000): Act
   const flush = () => {
     if (!group.length) return
     const headline = [...group].sort((a, b) => headlineRank(a.table_name) - headlineRank(b.table_name))[0]
-    lines.push({ id: headline.id, at: group[0].at, text: describeActivity(headline), count: group.length, icon: activityIcon(headline), to: activityLink(headline) })
+    lines.push({ id: headline.id, at: group[0].at, text: describeActivity(headline), count: group.length, icon: activityIcon(headline), to: activityLink(headline), entries: group })
     group = []
   }
 

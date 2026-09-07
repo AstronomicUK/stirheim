@@ -66,3 +66,12 @@ export function itemProfile(item: Pick<RosterItem, 'itemId'>, companions: readon
   }
   return bits.length > 0 ? bits.join(' · ') : null
 }
+
+/**
+ * A name for one model in a henchman group's slot, falling back to "Model N" for a slot nobody
+ * named. A blank line in the list (a name cleared without shortening the list) counts as missing.
+ */
+export function modelLabel(modelNames: string[] | undefined, index: number): string {
+  const named = modelNames?.[index]?.trim()
+  return named ? named : `Model ${index + 1}`
+}

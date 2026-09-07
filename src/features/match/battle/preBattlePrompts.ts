@@ -33,6 +33,17 @@ export function prompts(roster: RosterWarband, template: WarbandTemplate | undef
     }
   }
   for (const warrior of [...roster.heroes.filter((h) => h.status === 'active'), ...roster.hiredSwords.filter((s) => s.status === 'active')]) {
+    if (!warrior.flags.oldBattleWound) continue
+    out.push({
+      key: `oldWound:${warrior.id}`,
+      title: `Old Battle Wound · ${warrior.name}`,
+      text: 'D6: on a 1 the wound flares up and he cannot fight this battle. Roll at the start of every battle from now on.',
+      hero: 'unitTemplateId' in warrior ? warrior : null,
+      test: 'D6',
+      target: null,
+    })
+  }
+  for (const warrior of [...roster.heroes.filter((h) => h.status === 'active'), ...roster.hiredSwords.filter((s) => s.status === 'active')]) {
     if (!warrior.flags.nurglesRot) continue
     out.push({
       key: `rot:${warrior.id}`,

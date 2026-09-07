@@ -7,6 +7,7 @@ import {
   woundsLost,
   addLoot,
   applyEdit,
+  benchedByOldWound,
   completeSave,
   fightingGroups,
   groupOut,
@@ -81,9 +82,27 @@ describe('who fights', () => {
     expect(split.fighting.find((e) => e.warrior.id === 'ogre')?.role).toBe('hiredSword')
   })
 
-  it('an old battle wound does not bench a warrior (the dice decide at the table)', () => {
+  it('an old battle wound does not bench a warrior until the pre-battle die actually fails', () => {
     expect(notFightingReason(hero('x', { flags: { oldBattleWound: true } }))).toBeNull()
+    expect(notFightingReason(hero('x', { flags: { oldBattleWound: true } }), true)).toBe('Old battle wound flared up')
     expect(notFightingReason(hero('x', { status: 'captured' }))).toBe('Captured')
+  })
+
+  it('benchedByOldWound reads a flared roll from the pre-battle record, and nothing else', () => {
+    const flared = { ...emptyBattleLiveState(), preBattle: { 'oldWound:scarred': 'flares up: cannot fight this battle', 'rot:ogre': 'passed' } }
+    expect(benchedByOldWound(flared)).toEqual(new Set(['scarred']))
+    const clean = { ...emptyBattleLiveState(), preBattle: { 'oldWound:scarred': 'fine' } }
+    expect(benchedByOldWound(clean)).toEqual(new Set())
+  })
+
+  it('a flared Old Battle Wound benches the warrior for this sheet, and drops him from the model count', () => {
+    const flared = { ...emptyBattleLiveState(), preBattle: { 'oldWound:scarred': 'flares up: cannot fight this battle' } }
+    const split = splitWarriors(roster, flared)
+    expect(split.fighting.map((e) => e.warrior.id)).toEqual(['captain', 'ogre'])
+    expect(split.notFighting.find((e) => e.entry.warrior.id === 'scarred')?.reason).toBe('Old battle wound flared up')
+    // Without the sheet (or before the roll), he still fights, same as today.
+    expect(splitWarriors(roster).fighting.map((e) => e.warrior.id)).toContain('scarred')
+    expect(startingModels(roster, flared)).toBe(2 + 3)
   })
 
   it('drops wiped-out groups and counts starting models', () => {

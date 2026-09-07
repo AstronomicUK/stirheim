@@ -1,5 +1,5 @@
 // The step content of one advance (roll, choose, review) and its pickers, shared by the bottom
-// sheet on the Bestow Advancements screen and by the Advances step of the post-battle wizard.
+// sheet on the Advancements screen and by the Advances step of the post-battle wizard.
 
 import { useState, type ReactNode } from 'react'
 import { rollDie } from '../../rules/resolve/dice'

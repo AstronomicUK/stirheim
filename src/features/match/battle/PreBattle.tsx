@@ -64,6 +64,9 @@ function PromptRow({ prompt, onRecord }: { prompt: Prompt; onRecord: (outcome: s
 
   function outcomeFor(values: number[]): string {
     const sum = values.reduce((n, d) => n + d, 0)
+    // Its own branch, not the target-test path below: there is no characteristic to test against,
+    // just a flat "1 fails". The wording ("flares up…") is what benchedByOldWound looks for.
+    if (prompt.key.startsWith('oldWound:')) return values[0] === 1 ? 'flares up: cannot fight this battle' : 'fine'
     if (prompt.test === 'D6' && prompt.outcomes) return prompt.outcomes[String(sum)] ?? `rolled ${sum}`
     if (prompt.test === '2D6' && prompt.outcomes) return prompt.outcomes[String(sum)] ?? `rolled ${sum}`
     if (prompt.target !== null) {

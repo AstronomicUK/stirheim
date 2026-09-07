@@ -54,7 +54,7 @@ export interface XpExtra {
 
 /**
  * What to do with an advance earned this battle: roll and choose in the wizard, roll now and pick
- * the skill or spell later (Bestow advancements screen), or leave the whole advance for later.
+ * the skill or spell later (the Advancements screen), or leave the whole advance for later.
  */
 export type AdvanceMode = 'now' | 'pickLater' | 'later'
 

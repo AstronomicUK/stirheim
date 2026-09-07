@@ -66,11 +66,13 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 3. Confirm the Cast tab's new friendly-target picker against a real spellcaster
 
-**Status:** 🔲 Open
+**Status:** ✅ Confirmed working
 **Priority:** 🟠 Medium
 **Reported:** n/a — self-identified gap, not something Tom flagged
 
 **Notes:** Added an optional "Target (if this spell needs one)" field to `CastTab.tsx` so a spell that needs a friendly target (a heal, a blessing) has somewhere to record one, per Tom's "spell casting sometimes needs friendly-only targeting." Implemented, typechecked and covered by the full test suite, but never exercised live — none of the seeded test warbands (`gm@stirheim.test` / `player@stirheim.test`) have a spellcaster. Worth a real check next time a warband with a wizard or priest is in play.
+
+**Confirmed live (2026-09-07):** #28's work happened to produce exactly the missing test data — a fresh Cult of the Possessed warband with a Magister who knows Lure of Chaos (Chaos Rituals). Scheduled a real match against Claws of Eshin and opened Cast a Spell: the target picker listed "Off the sheet — no target on this warband", "Magister" and "Brethren" (the warband's own roster) as expected; picked Magister, cast Lure of Chaos (rolled 5+3=8 against 9+, failed), and the sheet correctly recorded "Lure of Chaos on Magister — failed" — the target name reached the log exactly as designed. No code changes needed; closing this out as verified rather than leaving it as a standing "check this later" note.
 
 ### 4. Simulator's out-of-action grid only shows the attacking direction
 

@@ -2189,8 +2189,24 @@ export function findSpell(loreId: string, spellId: string) {
   return findLore(loreId)?.spells.find((s) => s.id === spellId);
 }
 
+/**
+ * Units whose Wizard -> Type of Magic row label doesn't match "<warband name> <unit name>" or
+ * "<unit name>" verbatim: a leading "The" on the warband name, a warband/unit name that's worded
+ * differently from the table's own label, or a unit name the table doesn't repeat in full.
+ */
+const LORE_OVERRIDES: Record<string, string> = {
+  sisters_of_sigmar_matriarch: "prayers_of_sigmar", // warband name carries a leading "The"
+  undead_necromancer: "necromancy", // warband name carries a leading "The"
+  skaven_eshin_sorcerer: "magic_of_the_horned_rat", // table row is "Skaven Sorcerer"
+  orc_mob_shaman: "waaaagh_magic", // unit is "Orc Shaman", table row is "Orc Mob Shaman"
+  ostlander_priest_of_taal: "prayers_of_taal", // warband is "Ostlander Mercenaries", table row says "Ostlanders"
+  skaven_pestilens_sorcerer: "magic_of_the_horned_rat", // table row is "Skaven of Clan Pestilens Sorcerer"
+};
+
 /** The lore a unit type draws spells from, by matching its name against the Wizard -> Type of Magic table; null when nothing matches (not a spellcaster). */
 export function loreForUnit(unitTemplateId: string, template: WarbandTemplate): SpellLore | null {
+  const override = LORE_OVERRIDES[unitTemplateId];
+  if (override) return findLore(override) ?? null;
   const unit = findUnitTemplate(template, unitTemplateId);
   if (!unit) return null;
   const labels = [`${template.name} ${unit.name}`.toLowerCase(), unit.name.toLowerCase()];

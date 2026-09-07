@@ -516,4 +516,19 @@ describe("a spellcasting hero's first spell at creation", () => {
     expect(cleared.heroes[0].spellIds).toEqual([]);
     expect(validateDraft(cleared, POSSESSED).map((p) => p.code)).toContain("builder.noFirstSpell");
   });
+
+  it("six units whose Wizard-table label doesn't match their template name now get their lore (#57)", () => {
+    const cases: [string, string, string][] = [
+      ["sisters_of_sigmar", "sisters_of_sigmar_matriarch", "prayers_of_sigmar"], // warband name carries a leading "The"
+      ["the_undead", "undead_necromancer", "necromancy"], // warband name carries a leading "The"
+      ["skaven_of_clan_eshin", "skaven_eshin_sorcerer", "magic_of_the_horned_rat"], // table row is "Skaven Sorcerer"
+      ["orc_mob", "orc_mob_shaman", "waaaagh_magic"], // unit is "Orc Shaman", table row is "Orc Mob Shaman"
+      ["ostlander_mercenaries", "ostlander_priest_of_taal", "prayers_of_taal"], // warband is "Ostlander Mercenaries", table row says "Ostlanders"
+      ["skaven_of_clan_pestilens", "skaven_pestilens_sorcerer", "magic_of_the_horned_rat"], // table row is "Skaven of Clan Pestilens Sorcerer"
+    ];
+    for (const [warbandId, unitId, loreId] of cases) {
+      const warband = findWarbandTemplate(warbandId)!;
+      expect(loreForUnit(unitId, warband)?.id).toBe(loreId);
+    }
+  });
 });

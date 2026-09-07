@@ -743,7 +743,7 @@ Verified live on local dev: the seeded contradictory match (Reikland Watch "Draw
 
 ### 39. The recruit screens show nine bare stat numbers with no M/WS/BS/S/T/W/I/A/Ld headings
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -758,6 +758,11 @@ compare two profiles before spending gold, and worst of all on a phone.
 
 **How to replicate:** The Argent Hammer → *Recruit* → Heroes. Warrior Priest reads
 "4 4 3 4 3 1 4 1 8" and Templars "4 4 3 3 3 1 3 1 7", with no column headings anywhere on screen.
+
+**Fixed:** `804817a`. Added the existing `StatHeader` above each of the three compact-`StatLine`
+lists (Heroes/Henchmen recruit tabs, hired swords' "Currently hired" list, and the Add-a-warrior
+sheet's Heroes/Henchman-group sections). Verified live: the Recruit → Heroes and Henchmen tabs and
+the Add-a-warrior sheet all now show the M/WS/BS/S/T/W/I/A/Ld row.
 
 ### 40. The post-battle wizard's Back/Next bar floats 48px above the bottom of the window on desktop
 

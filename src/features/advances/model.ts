@@ -202,8 +202,9 @@ export function groupMaxima(group: RosterHenchmanGroup, warbandTemplateId: strin
 // Spells
 // ---------------------------------------------------------------------------------------------
 
-/** The lore a hero draws new spells from, or null when the roster gives no sign he is a wizard. */
-export function loreForHero(hero: RosterHero, template: WarbandTemplate | undefined): SpellLore | null {
+/** The lore a hero draws new spells from, or null when the roster gives no sign he is a wizard.
+ * Only reads `spellIds`/`unitTemplateId`, so a differently-shaped draft can supply just those two. */
+export function loreForHero(hero: Pick<RosterHero, 'spellIds' | 'unitTemplateId'>, template: WarbandTemplate | undefined): SpellLore | null {
   const known = SPELL_LORES.find((lore) => lore.spells.some((s) => hero.spellIds.includes(s.id)))
   if (known) return known
   return template ? loreForUnit(hero.unitTemplateId, template) : null

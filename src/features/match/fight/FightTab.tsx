@@ -81,7 +81,11 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
 
   const [attackerId, setAttackerId] = useState<string | null>(null)
   const [defenderId, setDefenderId] = useState<string | null>(null)
-  const attacker = mine.find((c) => c.id === attackerId) ?? mine.find((c) => !c.out) ?? mine[0]
+  // Ranged Attack should open on a warrior who can actually shoot, not just the first one fit to
+  // fight — otherwise it silently falls back to a melee weapon default, defeating the point of
+  // having tapped Ranged specifically.
+  const rangedDefault = startWith === 'ranged' ? mine.find((c) => !c.out && loadoutFor(c).ranged.length > 0) : undefined
+  const attacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
   const defender = targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
   // Pin the defaults once chosen (state adjusted during render, the React way), so a logged kill that marks
   // the target out of action does not swap the fight under the player.
@@ -183,6 +187,9 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   }
 
   if (mine.length === 0) return <Notice tone="info" title="Nobody to attack with">None of your warriors are fit to fight this game.</Notice>
+  if (startWith === 'ranged' && !mine.some((c) => !c.out && loadoutFor(c).ranged.length > 0)) {
+    return <Notice tone="info" title="No eligible units in your warband">Nobody fit to fight is carrying a ranged weapon.</Notice>
+  }
 
   return (
     <>

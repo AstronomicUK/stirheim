@@ -724,7 +724,7 @@ Verified live on local dev: a fresh Cult of the Possessed warband showed a "Firs
 
 ### 29. Editing a spellcaster's spells lets you pick any spell in the game, not just ones from that unit's own lore/tree
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -733,6 +733,19 @@ Verified live on local dev: a fresh Cult of the Possessed warband showed a "Firs
 **Notes:** Confirmed. `HeroEditor.tsx`'s "Spells" field (lines 161-180) lists `allSpellOptions()` — every spell and prayer in the whole game (`lookups.ts:137-139`, `[...SPELL_INDEX.values()]`) — grouped into `<optgroup>`s by lore name for display only, with no filter against the hero's own lore at all. The asymmetry: the same component's *skills* field correctly calls `skillOptionsFor(skillTableIds, warbandTemplateId)`, which scopes to the hero's own assigned skill tables — spells just never got the equivalent treatment.
 
 The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, bans)` (`src/features/advances/model.ts:202-215`, same helpers noted under #28), but `HeroEditor`'s props currently only pass `warbandTemplateId: string`, not the resolved `WarbandTemplate` object `loreForHero` needs — so the fix also needs the full template threaded down, not just its id.
+
+**Fixed:** `HeroEditor.tsx` now resolves the template itself via `findWarbandTemplate(warbandTemplateId)`
+rather than needing it threaded through props, and calls `loreForHero` with a small shim object
+(`{ spellIds: hero.spells, unitTemplateId: hero.unit_type_rules_id ?? '' }`) instead of a full
+`RosterHero` — widened `loreForHero`'s parameter type to `Pick<RosterHero, 'spellIds' |
+'unitTemplateId'>` to allow this (its only other caller already passes a real `RosterHero`, which
+trivially satisfies the narrower type, so nothing else changes). The "Add a spell or prayer" dropdown
+now filters `allSpellOptions()` to the resolved lore's own name; falls back to the full catalogue
+when no lore can be pinned down (an unusual import, say), so an edge-case hero doesn't lose the
+ability to fix themselves up manually. Verified live: Siegmund the Hammer (Warrior Priest, already
+knows a Prayers of Sigmar spell) now shows exactly one optgroup, "Prayers of Sigmar," where it
+previously listed every lore in the game. `npx tsc -b`, `npm run lint`, `npm test -- --run` all
+clean.
 
 ### 30. Melee Attack and Ranged Attack quick actions share one highlight state and don't cleanly default to their own weapon type
 
@@ -1824,7 +1837,7 @@ designer session.
 
 ### 77. Ranged Attack should default to a model who actually has a ranged weapon, or say so when nobody does
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -1850,6 +1863,18 @@ existing "first not out" fallback; and a new empty state — "No eligible units 
 replacing the whole picker when that search comes up empty, distinct from the existing "Nobody to
 attack with" notice (`mine.length === 0`), which only covers everyone being out of action, not
 everyone lacking a ranged weapon specifically.
+
+**Fixed:** Added `rangedDefault` in `FightTab.tsx` — when `startWith === 'ranged'`, searches `mine`
+(already top-to-bottom) for the first `!c.out` combatant whose `loadoutFor(c).ranged.length > 0`,
+and slots it into the existing default chain ahead of the old "first not out" fallback. Added the
+new empty state right after the existing `mine.length === 0` check: if opened for Ranged Attack and
+nobody fit to fight has a ranged weapon at all, shows "No eligible units in your warband" instead of
+the picker. Verified live on The Argent Hammer (Siegmund out of action, Artur/Saleh melee-only ahead
+of Lutz in roster order, Lutz carrying the only Longbow): tapping Ranged Attack now opens directly on
+Lutz with the Longbow pre-selected and its own odds computed, not a melee weapon default. `npx tsc
+-b`, `npm run lint`, `npm test -- --run` all clean. Did not separately reproduce the empty-state
+message live (would need a warband with zero ranged weapons anywhere in it) — the check is a direct,
+symmetric `.some()` of the same `loadoutFor` call already proven correct above.
 
 ### 78. The My Warband / Enemy Warband toggle is broken on desktop, and the desktop battle sheet generally doesn't work as well as mobile
 

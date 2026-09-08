@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { WarriorStatus } from '../../../domain'
 import { Button, Icon, NumberField, SelectField, Sheet, TextArea, TextField, type IconName } from '../../../ui'
+import { loreForHero } from '../../advances/model'
+import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import { unitTypeName } from '../shared/names'
 import { Card, Tag } from './bits'
 import type { HeroDraft } from './diff'
@@ -66,7 +68,18 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
     return [...byName.values()]
   }, [skillOptions, hero.skill_tables, hero.skills, warbandTemplateId])
   const shownGroup = groups.some((g) => g.name === skillGroup) ? skillGroup : (groups[0]?.name ?? null)
-  const spellOptions = useMemo(() => allSpellOptions().sort((a, b) => a.lore.localeCompare(b.lore) || a.name.localeCompare(b.name)), [])
+  const template = useMemo(() => findWarbandTemplate(warbandTemplateId), [warbandTemplateId])
+  // Scoped to the hero's own lore, same as the skills field already scopes to his own tables — a
+  // hero with no lore we can pin down (an unusual import, say) still gets the full catalogue
+  // rather than being left with nothing to add.
+  const lore = useMemo(
+    () => loreForHero({ spellIds: hero.spells, unitTemplateId: hero.unit_type_rules_id ?? '' }, template),
+    [hero.spells, hero.unit_type_rules_id, template],
+  )
+  const spellOptions = useMemo(() => {
+    const all = allSpellOptions().sort((a, b) => a.lore.localeCompare(b.lore) || a.name.localeCompare(b.name))
+    return lore ? all.filter((s) => s.lore === lore.name) : all
+  }, [lore])
   const lores = useMemo(() => [...new Set(spellOptions.map((s) => s.lore))], [spellOptions])
 
   function toggleTable(id: string) {

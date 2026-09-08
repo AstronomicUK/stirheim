@@ -14,10 +14,17 @@ export interface ReportStoreState {
   draft: ReportDraft | null
   /** ISO time of the last edit, for "picked up where you left off" copy. */
   savedAt: string | null
+  /**
+   * True from the moment filing starts until it either fails or the page navigates away.
+   * Not persisted: it exists so the page-level "already filed" guard can tell a submission that
+   * has landed but not yet redirected apart from one filed in an earlier visit.
+   */
+  submitting: boolean
   /** Start from a seeded draft (only when there is none yet). */
   seed(draft: ReportDraft): void
   update(edit: (draft: ReportDraft) => ReportDraft): void
   discard(): void
+  setSubmitting(submitting: boolean): void
 }
 
 function createReportStore(key: string) {
@@ -26,6 +33,7 @@ function createReportStore(key: string) {
       (set, get) => ({
         draft: null,
         savedAt: null,
+        submitting: false,
         seed: (draft) => {
           if (get().draft) return
           set({ draft, savedAt: null })
@@ -38,6 +46,7 @@ function createReportStore(key: string) {
           set({ draft: next, savedAt: new Date().toISOString() })
         },
         discard: () => set({ draft: null, savedAt: null }),
+        setSubmitting: (submitting) => set({ submitting }),
       }),
       {
         name: key,

@@ -50,6 +50,10 @@ export function PostBattlePage() {
   const match = useMatch(id, user?.id)
   const sessions = useBattleSessions(id)
   const events = useBattleEvents(id)
+  // A submission for this warband already in flight (set by Wizard's file(), reset on failure)
+  // keeps the "Already filed" guard below from taking over between the report landing and the
+  // page navigating away: the match refetch that submitting triggers can otherwise resolve first.
+  const submitting = useReportStore(reportStore(id ?? '', warbandId ?? ''), (s) => s.submitting)
 
   // The wizard seeds itself once from the sheet with the shared log laid over it, so the log must be
   // in hand before rendering (on a slow connection it used to arrive a beat late and be missed).
@@ -94,7 +98,7 @@ export function PostBattlePage() {
     )
   }
   const filed = summary.reported_warband_ids.includes(participant.warband_id) || summary.pending_report_warband_ids.includes(participant.warband_id)
-  if (filed && !amending) {
+  if (filed && !amending && !submitting) {
     return (
       <>
         <Notice tone="info" title="Already filed">
@@ -239,6 +243,10 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
 
   async function file() {
     setFileError(null)
+    // Set before the submission lands: the match refetch it triggers can otherwise resolve while
+    // the advances below are still applying, and the page-level "already filed" guard would take
+    // over mid-wizard until navigate() below moves the page on anyway.
+    store.getState().setSubmitting(true)
     try {
       const report = buildReport(draft as ReportDraft, ctx)
       if (amending && amendNote.trim() === '') throw new Error('Say why the report is being amended; the note goes in the change log.')
@@ -248,9 +256,13 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       // stays pending on the Advancements screen.
       const outcome = await applyWizardAdvances(participant.warband_id, derived?.advances.items ?? [], ctx.template, ctx.houseRules ?? null)
       await Promise.all([qc.invalidateQueries({ queryKey: advanceKeys.all }), qc.invalidateQueries({ queryKey: warbandKeys.all })])
-      forgetReportStore(match.id, participant.warband_id)
+      // Navigate first: forgetReportStore drops this store from its module-level cache, and a
+      // fresh one defaults submitting back to false — reading that on one more render of this page
+      // before the route actually changes would flash the guard right back.
       navigate(`/matches/${match.id}`, { replace: true, state: outcome.failed.length > 0 ? { advancesFailed: outcome.failed } : undefined })
+      forgetReportStore(match.id, participant.warband_id)
     } catch (e) {
+      store.getState().setSubmitting(false)
       setFileError(e instanceof Error ? e.message : 'The report could not be filed.')
     }
   }

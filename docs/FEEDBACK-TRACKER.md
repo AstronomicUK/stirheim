@@ -148,7 +148,7 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 7. The map is buggy in a Map Campaign: phantom nodes, selection mostly doesn't work
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, the "Fixed" claim below was wrong in scope
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -161,6 +161,13 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 3. **No hover tooltip exists at all, so "mouse over doesn't show what the node is" is accurate as a description of current behaviour, not a regression.** Each district circle only carries an `aria-label` (screen-reader only, nothing visible) — there's no `title`, tooltip or on-hover label anywhere in `MapCanvas.tsx`. The only place a district's name and details show at all is the `DistrictPanel` in the sidebar once a *click* successfully selects it (which is broken per #2), so right now there's no way to identify a district without that click path working. **Fix:** added a small visible tooltip that follows the pointer, driven by the same `districtAt()` hit-test on `onPointerMove` whenever no pointer button is down — shows the district's name plus its controller when one exists. Verified live: hovering a circle shows the tooltip immediately, e.g. "Executioner's Square".
 
 Verification: `tsc -b`, `oxlint`, and the full `vitest run` suite (1161 passed) all clean; live-tested on local dev against the "Ruins of the Stir" campaign map.
+
+**Reopened 2026-09-08 — the fix above was real but too narrow, and a later QA re-test (see the "verified correct" note further down this file) only checked the same narrow thing and also missed it.** Tom reported the live site's map was still wrong after tonight's deploy. Investigated fresh, live, by rendering every one of the 30 stored district coordinates directly onto the actual poster image (`public/map/mordheim-campaign-map.jpg`, a script overlay, not eyeballing the app) — most of them land nowhere near the district they're named for, not just the four that were below the bottom edge:
+
+- **The whole coordinate set was measured against the wrong reference image, not just the four that fell off the bottom.** The file's own comment already said as much ("coordinates... measured against mordheim-map.com's own version of the map image, not Philip Spence's poster") but the original fix only acted on the one visible symptom that comment explained (four points off-canvas) rather than treating it as a sign the *entire* dataset needs re-deriving against the actual displayed poster. The two reference images apparently differ enough in framing/crop that a percentage-based coordinate translates to a substantially different spot depending how far a district sits from the centre — which is exactly why some districts (e.g. Rich Quarter, Middle Bridge) land close to correct while others (West Gate, Dwarven District, Artisan Quarters, The Gaol, Clock Tower, South Gate, and more) are wildly off, sometimes into a completely different part of the poster. All 30 need re-measuring against `public/map/mordheim-campaign-map.jpg` itself, not patched further.
+- **The zoom controls (+, −, Fit) don't respond to real clicks — same root cause as item 2 above, just never covered by that fix.** `MapCanvas.tsx`'s three zoom buttons (`aria-label="Zoom in"` etc., `:241-249`) are nested *inside* the same frame `<div>` (`:167-176`) whose `onPointerDown` unconditionally calls `setPointerCapture` on every pointer-down anywhere within it, buttons included. The district-selection fix worked around that by abandoning `e.target` entirely and hit-testing by coordinates instead (`districtAt()`) — but that only covers circle selection; these are ordinary `<button onClick>` elements relying on the browser's normal click dispatch, which is exactly what pointer capture retargeting breaks. Confirmed live: `zoomAt()`/`setT()` fire correctly and the transform state genuinely changes when triggered programmatically, but a real pointer click at the button's own screen position does nothing, because the frame captures the pointer before the click can land on the button. Needs the same fix philosophy as item 2 — most simply, skip `setPointerCapture` when the pointer-down's target is a descendant `<button>` rather than the map background itself.
+
+Both of these need real work, not a patch: re-measuring 30 coordinates against the actual poster, and reworking the frame's pointer-capture condition so it stops swallowing clicks meant for its own child controls. Good candidate for a big, self-contained project.
 
 ### 8. Parrying may not be working properly in roll-it-out; wants the same hand-off armour saves get
 
@@ -1103,9 +1110,15 @@ how long — not attempted here.
 
 **Verified correct during this sweep** (recorded so the same ground isn't covered twice):
 
-- **#7 (campaign map)** — re-tested after the fix. All 30 district nodes fall inside the viewBox, the
+- ~~**#7 (campaign map)** — re-tested after the fix. All 30 district nodes fall inside the viewBox, the
   map image and the SVG agree on aspect ratio to three decimals so nothing drifts, districts carry
-  `aria-label` and are keyboard-focusable, and selecting one correctly swaps the side panel. Holds.
+  `aria-label` and are keyboard-focusable, and selecting one correctly swaps the side panel. Holds.~~
+  **Wrong — see #7's reopened note above (2026-09-08).** This re-test checked that every coordinate
+  sits *inside the canvas* and that clicking one *works*, which is true, but never checked whether
+  each coordinate sits *on the district it's named for* — it doesn't, for most of them. "Falls inside
+  the viewBox" and "renders in the right place" are different claims; this recorded the first as if
+  it were the second. Worth remembering as a category of gap: a check can pass exactly as designed
+  and still miss the actual bug if it's not checking the right thing.
 - **#10 (stunned / knocked-down)** — re-tested after the fix. A second attack in the *same* phase
   still rolls to hit (correct — that is the rulebook's own exception, as the entry's notes spell
   out), and once the knock-down is logged the next sequence opens with "Sword: automatic hit — the

@@ -5,6 +5,9 @@
 import type { CampaignActivity } from '../../api/campaigns'
 import type { Json } from '../../api/database.types'
 import type { IconName } from '../../ui/icons'
+import { findItem } from '../../rules/data/items'
+import { warbandTypeName } from '../roster/shared/names'
+import { skillName, spellName } from '../roster/view/lookups'
 
 type Row = Record<string, Json | undefined>
 
@@ -182,7 +185,26 @@ function singular(words: string): string {
 // ---------------------------------------------------------------------------------------------
 
 /** Columns that are bookkeeping rather than something a player would want to see change. */
-const BORING_FIELDS = new Set(['id', 'created_at', 'updated_at', 'sort_order', 'warband_id', 'campaign_id', 'owner_id', 'gm_id', 'invite_code', 'holder_id'])
+const BORING_FIELDS = new Set([
+  'id',
+  'created_at',
+  'updated_at',
+  'sort_order',
+  'warband_id',
+  'campaign_id',
+  'owner_id',
+  'gm_id',
+  'invite_code',
+  'holder_id',
+  // Who made the change is already shown by the entry's own actor name — these are the same
+  // information as a raw id, never anything a reader needs to see spelled out again.
+  'user_id',
+  'created_by',
+  'submitted_by',
+  'replaced_by',
+  'actor_id',
+  'reverted_by',
+])
 
 /** Human labels for columns worth naming specially; anything else falls back to "un snaked case". */
 const FIELD_LABELS: Record<string, string> = {
@@ -221,13 +243,23 @@ function fieldLabel(key: string): string {
   return FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
 }
 
-/** A JSON value as something worth reading in a diff: "none" for empty, plain text otherwise. */
-function displayValue(value: Json | undefined): string {
+/** Rules-catalogue lookups for the handful of columns that store an id rather than plain text. */
+const ID_LOOKUPS: Partial<Record<string, (id: string) => string>> = {
+  skills: skillName,
+  spells: spellName,
+  item_rules_id: (id) => findItem(id)?.name ?? id,
+  type_rules_id: warbandTypeName,
+}
+
+/** A JSON value as something worth reading in a diff: "none" for empty, plain text otherwise.
+ * `key` looks the value up in the rules catalogue first, for the columns that store an id. */
+function displayValue(value: Json | undefined, key?: string): string {
   if (value === undefined || value === null) return 'none'
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
-  if (typeof value === 'string') return value.trim() ? value : 'none'
+  const lookup = key ? ID_LOOKUPS[key] : undefined
+  if (typeof value === 'string') return value.trim() ? (lookup ? lookup(value) : value) : 'none'
   if (typeof value === 'number') return String(value)
-  if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map((v) => displayValue(v)).join(', ')
+  if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map((v) => displayValue(v, key)).join(', ')
   if (Object.keys(value).length === 0) return 'none'
   return JSON.stringify(value)
 }
@@ -276,8 +308,8 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
     const statsA = key === 'stats' ? asStats(a) : null
     const statsB = key === 'stats' ? asStats(b) : null
     const changedStats = statsA && statsB ? STAT_ORDER.filter((k) => statsA[k] !== statsB[k]) : null
-    const beforeText = statsA ? statsLine(statsA, changedStats ?? undefined) : before ? displayValue(a) : '—'
-    const afterText = statsB ? statsLine(statsB, changedStats ?? undefined) : after ? displayValue(b) : '—'
+    const beforeText = statsA ? statsLine(statsA, changedStats ?? undefined) : before ? displayValue(a, key) : '—'
+    const afterText = statsB ? statsLine(statsB, changedStats ?? undefined) : after ? displayValue(b, key) : '—'
     // An insert or delete is only worth a line when the field actually held something.
     if ((!before && afterText === 'none') || (!after && beforeText === 'none')) continue
     out.push({ label: fieldLabel(key), before: beforeText, after: afterText })

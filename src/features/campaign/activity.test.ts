@@ -192,6 +192,18 @@ describe('activityFieldChanges', () => {
       { label: 'skills', before: 'none', after: 'Sprint, Dodge Blow' },
     ])
   })
+
+  it('reads skill, spell and item ids as their rulebook names, not the raw id', () => {
+    const changes = activityFieldChanges(
+      entry({
+        table_name: 'heroes',
+        reason: 'manual_edit',
+        before: { id: 'h1', warband_id: ESHIN, sort_order: 0, skills: ['the_restless_dead_skills_forbidden_rite'] },
+        after: { id: 'h1', warband_id: ESHIN, sort_order: 0, skills: ['the_restless_dead_variant_undead_special_skills_dark_ritual'] },
+      }),
+    )
+    expect(changes).toEqual([{ label: 'skills', before: 'Forbidden Rite', after: 'Dark Ritual' }])
+  })
 })
 
 describe('formatRelativeTime', () => {

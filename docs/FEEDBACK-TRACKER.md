@@ -556,7 +556,7 @@ all clean.
 
 ### 23. The audit log's "Details" expander reads like raw data (field names, ids) instead of English, and wants tooltips
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -573,6 +573,26 @@ all clean.
 > It should be in English, like "Changed the skill Forbidden Rite to the skill Dark Ritual". Both of these should have tooltips enabled."
 
 **Notes:** This is the expandable audit-diff feature built earlier this session (`activityFieldChanges` in `src/features/campaign/activity.ts`) — it was designed to be generic across every table rather than name specific fields nicely, which is exactly what's landed wrong here.
+
+**Fixed (id → English names half):** `displayValue` now takes the column's key and looks it up in a
+small `ID_LOOKUPS` table (`skills` → `skillName`, `spells` → `spellName`, `item_rules_id` →
+`findItem(id)?.name`, `type_rules_id` → `warbandTypeName`) before falling back to the raw string, so
+Tom's own example now reads exactly as reported: `skills: Forbidden Rite → Dark Ritual`, not the raw
+ids. Also added `user_id`, `created_by`, `submitted_by`, `replaced_by`, `actor_id`, `reverted_by` to
+`BORING_FIELDS` — every user-reference column in the schema that isn't already filtered, matching the
+"assignment of a User ID" complaint (who made the change is already shown by the entry's own actor
+name, so these were pure noise). New test reproduces Tom's exact quoted skill ids
+(`the_restless_dead_skills_forbidden_rite` → `...dark_ritual`) and asserts the English names. `npx
+tsc -b`, `npm run lint`, `npm test -- --run` (1204 passed, 69 skipped) all clean.
+
+**Not fixed — tooltips:** "Both of these should have tooltips enabled" is a separate, real ask:
+hovering a skill/spell/item name in the diff should show its rule text, the way `HoverCard` already
+does elsewhere in the app. That needs `FieldChange` extended to carry the rule text alongside the
+display name and `ActivityList.tsx`'s `ActivityDetail` wrapping each name in a `HoverCard` — a
+distinct, larger piece of work than the naming fix, not attempted here. `unit_type_rules_id` also
+still shows its raw id (needs the row's own `type_rules_id` alongside it to resolve via
+`unitTypeName`, which the current single-field lookup shape doesn't carry) — a smaller known gap in
+the same vein.
 
 ### 24. Roll-it-out popup is full-screen with nothing filling the space; text should be bigger and more exciting; the weapon/toggle boxes should move into the popup itself (a previously-made point that wasn't acted on)
 

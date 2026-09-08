@@ -206,7 +206,7 @@ Verified live on local dev: Captain Ulrich Brandt (Sword + Dagger, 2 attacks) sh
 
 ### 10. Attacking a stunned or knocked-down target doesn't apply the rulebook's automatic outcomes
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, knocked-down unsaved wounds still do not cause automatic out of action
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -235,6 +235,12 @@ Also ties into #11 (the new turns feature and its "Recover Units" button) since 
 - The Misericordia's existing "Target is knocked down" manual checkbox (added for its 2D6-to-wound rule) is gone — it read the identical `targetKnockedDown` context field, so it's now automatic too, and having a manual override next to an automatic one would just invite the exact bug being fixed here.
 
 Verified live end-to-end on local dev (fresh Reikland Watch vs Argent Hammer skirmish): knocked Siegmund the Hammer down, logged it, re-opened the attack against him with a fresh fight — Odds panel showed 100% to hit for both weapons and the note "Siegmund the Hammer is already knocked down: attacks hit automatically and it cannot parry"; the roll-through skipped straight from weapon selection to the wound roll ("Sword: automatic hit — the target is knocked down"). Rolled him to Stunned instead, logged it, attacked again with a different model — the Odds panel showed 100% out of action with no roll rows at all, and "Roll it through" resolved instantly to "Result: Out of action" without a single die. `tsc -b`, `oxlint` and the full `vitest run` suite (1169 passed, including 8 new tests added for this rule in `engine.test.ts` and `rollThrough.test.ts`) all clean.
+
+**Reopened 2026-09-08 — Astra claim-specific audit:** the original report explicitly requires both automatic hits **and automatic out of action after an unsaved wound** against an already knocked-down target. The source agrees (`reference/rules/01-introduction-and-rules.md`, “warriors knocked down”, line 951). Only the auto-hit/no-parry half was implemented; `rollThrough.ts` still routes an unsaved wound through ordinary injury rolls in `woundsThrough`, and the probability engine's `autoHitKnockedDown` flag only changes hit probability.
+
+Executed the actual `startPhase`/`applyRoll` functions with one Sword attack, a target already knocked down, wound threshold 4+, armour 6+, and one Wound: wound die **4**, armour die **1** leaves the sequence **unfinished, requesting an Injury roll**. Enumerating that unnecessary die gives **2/6 knocked down, 2/6 stunned, only 2/6 out of action**, where the rule requires **6/6 out of action** after that unsaved wound. This is a deterministic executable reproduction, not a browser check (this session cannot bind the local Vite port: `listen EPERM`).
+
+The existing regression test actually bakes in the error: `rollThrough.test.ts`'s “a knocked-down target hits automatically, but still wounds and saves normally” asserts that the next step is `injury`, then supplies a **6** and checks OOA. The original live check and the later QA note likewise stopped at automatic hits. Thus both verified an adjacent property and missed the second explicit clause of Tom's report. Stunned auto-OOA and knocked-down auto-hit/no-parry remain real fixes. Still needed: automatic OOA after an unsaved wound for an already knocked-down melee target in both the interactive roller and the odds engine, with tests asserting **no injury die** and preserving the same-attacker/same-phase exception. No implementation changed in this audit.
 
 ### 11. New "turns" feature for App Calculates games: a turn popup and a Recover Units button
 

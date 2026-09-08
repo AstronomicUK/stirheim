@@ -224,8 +224,9 @@ body {
 
 /*
   A slow pulsing glow, for an icon that is waiting on the player rather than merely informing them
-  (an advance owed). Deliberately gentle and continuous — nothing else in the app moves on its own,
-  so this is reserved for the one thing that wants a second look.
+  (an advance owed). Deliberately gentle and continuous, reserved for something that wants a
+  second look. The decorative Cast quick-action orbit below is an explicit exception requested
+  by Tom; it traces the edge instead of pulsing like an action owed.
 */
 @keyframes stirheim-glow {
   0%,
@@ -366,6 +367,46 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .stirheim-cast > svg,
   .stirheim-cast::after {
+    animation: none;
+  }
+}
+
+/* Idle magic on the Cast quick-action only: one quiet brass wisp circles the rounded edge.
+   Nine seconds per lap, independent of rolls/selection; no movement of the tile or its content. */
+.stirheim-cast-tile {
+  position: relative;
+}
+
+.stirheim-cast-orbit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--color-brass);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.65;
+}
+
+.stirheim-cast-orbit > rect {
+  /* Unitless lengths use the normalized perimeter, even when the tile wraps or stretches. */
+  stroke-dasharray: 8 92;
+  animation: stirheim-cast-orbit 9s linear infinite;
+}
+
+@keyframes stirheim-cast-orbit {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -100; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stirheim-cast-orbit {
+    display: none;
+  }
+  .stirheim-cast-orbit > rect {
     animation: none;
   }
 }

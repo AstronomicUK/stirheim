@@ -1921,7 +1921,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** 🟡 Round 2 implemented — awaiting browser / Tom review; icon not yet commented on
+**Status:** 🟡 Round 3 implemented — awaiting browser / Tom review; rounds 1–2 preserved
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2018,6 +2018,31 @@ you"), and everything else including rounds 1–2 here is a one-shot reaction to
 happened. A permanent decorative loop on a static button is new territory; flagging it, not blocking
 it — Tom's call, and he's asked for it twice now with increasing specificity. Handed to Astra as
 round 3.
+
+
+**Round 3 implementation / verification (Astra, 2026-09-08):** Added an opt-in
+`castCircle` prop to `BattleNav.tsx`'s `NavTile`, passed only by Cast a Spell.
+A 1.5px brass wisp (opacity .65, 8% of the rounded perimeter) travels around that tile
+continuously, one lap every nine seconds, whether selected or idle. An absolutely positioned
+decorative SVG follows the tile's width/height; its rounded rectangle uses `pathLength="100"`
+and a unitless 8/92 dash pattern, animated from offset 0 to -100 for a seamless lap.
+No timers, roll triggers, layout movement or remounts. The SVG is aria-hidden, unfocusable and
+pointer-events:none; the button retains its existing label, pressed state and click handler.
+Melee/Ranged Attack, Log and Notes do not opt in. Existing rounds 1–2 casting code, icon artwork
+and `stirheim-cast-icon` / `stirheim-cast-halo` rules are unchanged.
+
+Judgement call: this is a new decorative exception to the app's continuous-motion rule,
+explicitly requested by Tom. Chose a slow, fine edge trace instead of a pulse or large glow;
+updated the glow comment to acknowledge that exception without changing its behavior.
+Tom can ask for a bolder effect after seeing it. Reduced motion hides the orbit entirely and
+disables its animation, leaving the ordinary static tile (no frozen highlight suggesting selection).
+
+Verified CSS/DOM scoping, rounded responsive geometry, seamless dash timing, accessibility,
+pointer behavior and reduced-motion rules by code inspection. `npx tsc -b`, `npm run lint`
+and `npm test -- --run` passed cleanly (82 files / 1203 tests passed; 13 files / 69 tests skipped).
+No working browser in this sandbox: actual playback, responsive rendering and perceived
+subtlety have **not** been visually verified. Browser / Tom review remains needed.
+No deployment performed.
 
 ---
 

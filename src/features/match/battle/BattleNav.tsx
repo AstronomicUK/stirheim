@@ -51,11 +51,16 @@ function WarbandSlider({ tab, setTab }: Pick<BattleNavProps, 'tab' | 'setTab'>) 
   )
 }
 
-function NavTile({ icon, label, detail, active, tone, onClick }: { icon: IconName; label: string; detail?: string; active: boolean; tone: 'accent' | 'brass'; onClick: () => void }) {
+function NavTile({ icon, label, detail, active, tone, onClick, castCircle = false }: { icon: IconName; label: string; detail?: string; active: boolean; tone: 'accent' | 'brass'; onClick: () => void; castCircle?: boolean }) {
   const ring = active ? (tone === 'accent' ? 'border-accent bg-accent/10' : 'border-brass bg-brass/10') : 'border-border bg-surface-low hover:bg-surface-high'
   const ink = active ? (tone === 'accent' ? 'text-accent' : 'text-brass') : 'text-brass'
   return (
-    <button type="button" aria-pressed={active} onClick={onClick} className={`flex min-h-16 flex-1 flex-col items-start gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${ring}`}>
+    <button type="button" aria-pressed={active} onClick={onClick} className={`flex min-h-16 flex-1 flex-col items-start gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${ring} ${castCircle ? 'stirheim-cast-tile' : ''}`}>
+      {castCircle ? (
+        <svg className="stirheim-cast-orbit" aria-hidden="true" focusable="false">
+          <rect width="100%" height="100%" rx="6" pathLength="100" />
+        </svg>
+      ) : null}
       <Icon name={icon} size={20} className={ink} />
       <span className="text-sm font-semibold leading-tight text-ink">{label}</span>
       {detail ? <span className="text-xs leading-snug text-ink-dim">{detail}</span> : null}
@@ -88,7 +93,7 @@ export function BattleNav({ tab, setTab, inApp, canCast, desktop, attackStartWit
           <div className="flex gap-2">
             {inApp ? <NavTile icon="battle" label="Melee Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'melee'} tone="accent" onClick={() => onAttack('melee')} /> : null}
             {inApp ? <NavTile icon="shooting" label="Ranged Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'ranged'} tone="accent" onClick={() => onAttack('ranged')} /> : null}
-            {canCast ? <NavTile icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} /> : null}
+            {canCast ? <NavTile castCircle icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} /> : null}
           </div>
         </section>
       ) : null}

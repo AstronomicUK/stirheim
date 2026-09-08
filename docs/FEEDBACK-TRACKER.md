@@ -1579,6 +1579,138 @@ correct. Needs a screenshot at Tom's actual window size to tell which. Flagged f
 session either way, alongside the general note that the desktop layout for this screen hasn't had
 the same care mobile has.
 
+---
+
+## Batch — 2026-09-08 (new feature requests)
+
+### 79. House rule: parry as an opposed Weapon Skill roll instead of a flat threshold
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "Add a house rule that changes how parry is calculated. With the house rule, when you parry, you
+> [add] Weapon Skill to each combatant's parry result and then check to see if the parrier beats the
+> attack. So for example, if a WS 3 model attacks a WS 5 model and gets a 4 on the attack, but the
+> WS 5 model rolls a 3 on the parry roll, they successfully parry because (5+3) > (3+4)."
+
+**Notes:** Today's parry is a flat "beat or match a threshold" roll, not an opposed one: eligibility
+is `weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && ...`
+(`src/rules/engine/buildAttackInput.ts:321`), and the actual roll wiring in `FightTab.tsx:614` passes
+`beatsOrMatches` (true only for Master of Blades, `src/rules/types/index.ts:126-127`), an optional
+`reroll` and an optional `fixedThreshold` (Starblade's fixed 4+, `parryThreshold?: number` at
+`src/rules/types/index.ts:371`) — there's no path anywhere that compares the attacker's own to-hit
+roll (or WS) against the defender's parry roll. This house rule needs a genuinely different
+comparison shape (attacker's WS + to-hit roll vs. defender's WS + parry roll), not just a new flag on
+the existing threshold check.
+
+The plumbing for a new on/off house rule already has a clear template to follow: `CampaignHouseRules`
+(`src/rules/types/roster.ts:174-193`) and its defaults (`:195-207`), `applyHouseRuleDefaults`
+(`src/rules/resolve/houseRules.ts:12-29`, boolean-only switches, same shape as
+`strengthArmourPiercing`), `describeHouseRules` (`:50-84`) for the settings-screen sentence, and the
+`HOUSE_RULE_SWITCHES` list (`src/features/campaign/settingsForm.ts:108` on) for the toggle itself.
+The switch is easy; the new dice-comparison branch in the fight engine is the real work. Related to
+#8 (parrying may not be working properly today) — a different concern (a possible bug in the
+existing mechanic vs. a new house-rule variant of it), but touches the same code.
+
+### 80. Rename "Scenarios" to "Battles" in the nav, order by active/upcoming/past, and move scenario editing under Campaign Settings
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "Change the scenarios heading to Battles as that's more useful. Have active battles at the top,
+> then upcoming battles, then past battles. We need to find a new home to edit scenarios. Probably
+> within the campaign settings?"
+
+**Notes:** The top-level nav (`src/app/navTabs.ts:11-17`, rendered by `BottomNav.tsx` on phone and as
+the desktop rail) currently reads Warbands / Campaigns / **Scenarios** / Simulator / Account, with
+"Scenarios" going to `ScenarioLibraryPage` (browse core/library/custom scenarios) and scenario
+editing living at `scenarios/new` and `scenarios/custom/:id/edit` (`ScenarioFormPage`) — all
+independent of any campaign (`src/app/router.tsx:87-90`).
+
+Battles, today, are entirely per-campaign: `CampaignPage.tsx:170` renders `<CampaignBattles
+campaignId={...} />` (`src/features/match/shared/CampaignBattles.tsx`), which already groups matches
+`now_playing` → `awaiting_reports` → `scheduled` first, with a collapsed `finished` disclosure last
+(`:84-104`) — so the active-then-upcoming-then-past ordering Tom's asking for is largely already how
+each campaign's own Battles section behaves. What doesn't exist is a **top-level, cross-campaign**
+"Battles" destination — there's no route or component anywhere that aggregates battles across every
+campaign a player is in. Renaming the nav tab is only the label; making it actually useful as a
+top-level destination means deciding whether it shows all campaigns' battles at once or asks which
+campaign first, which is worth settling before building.
+
+Moving scenario editing under Campaign Settings is a reasonable new home — `ScenarioLibraryPage`
+already understands "Your group's" scenarios scoped to a campaign — but this is an IA change (not a
+relocation of one button) worth confirming scope on before starting.
+
+### 81. Quick Actions redesign: fold My/Enemy Warband into a new "View Rosters" quick action
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "My Warband and Enemy Warband should be under the quick actions, and they should disappear when
+> you're on a quick action. Add a new Quick Action called 'View Rosters' which takes you back to the
+> default screen with My Warband selected as default and the toggle to Enemy Warband."
+
+**Notes:** This is a concrete redesign direction for the same area #78 just flagged as broken on
+desktop — worth doing together as one pass rather than patching #78's desktop toggle first and
+redoing it here. Today, `BattleNav.tsx`'s Quick Actions section (`:85-94`) and the My/Enemy warband
+switcher (the mobile `WarbandSlider`, `:25-52`, or the desktop-only one-way "Enemy warband" button,
+`:71-83`) render **simultaneously, always** — there's no concept of the roster toggle disappearing
+while a quick action (Melee/Ranged/Cast) is open, and no unified "come back to rosters" tile. In
+`BattlePage.tsx`, `sideTab` (`:275`) already treats `'mine'`/`'enemy'` as tab values alongside
+`'fight'`/`'cast'`/`'log'`/`'notes'`, and desktop already special-cases `'mine'` by always showing it
+in its own column (`:311-316`) and redirecting a `'mine'` tab selection to `'enemy'` (`:275`) — so
+the underlying tab model already half-agrees with treating roster-viewing as its own mode; it just
+needs a proper "View Rosters" entry point and the quick-actions row hiding itself while another quick
+action is active, on both mobile and desktop.
+
+### 82. A matchup-maker tool: generate the next batch of games aiming for a round robin
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "Add in the functionality from the matchup maker tool that Claude built where you can generate the
+> next X matchups and it looks at historical match ups to try to create as close to a round robin as
+> possible."
+
+**Notes:** Searched this whole machine (`stirheim/`, `mordheim-simulator/`, `arboretum-pipeline/`) for
+any trace of a "matchup maker" tool, round-robin logic, or pairing/scheduler code — found nothing.
+The only "matchup" hits in the codebase are an unrelated stat comparison in the Simulator's Stat Gain
+Analyser, and the only scheduling code anywhere (`src/features/match/schedule/helpers.ts`) is a
+single match's own optional date/time field — there's no warband-pairing or tournament-bracket logic
+in the app at all today. **I don't know where the referenced tool actually lives** — it isn't in any
+repo on this machine, so either it was built in a different conversation/session I don't have access
+to, or it exists somewhere else entirely (a separate artifact link, another machine). Need a pointer
+to it — a link, a file, or a description of what it actually does — before this can be scoped
+properly; otherwise this gets built from scratch against just the description above (generate the
+next N matchups from campaign membership + match history, favouring pairs who've played each other
+least).
+
+### 83. A game-day scheduling tool on the Campaign page: GM proposes dates, players respond, GM finalises
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "Add in a tool to be able to arrange the next game day in the Campaign page? It could show the next
+> game day and then also the GM could propose dates that people can select from, and these can be
+> finalised by the GM. Like a straw poll where the GM can see who is available for which date."
+
+**Notes:** Nothing like this exists anywhere in the app today — no polling, voting or availability
+infrastructure at all (checked for any trace of "poll"/"vote"/"propose"/"availability" outside of the
+unrelated trading-post rare-item "availability" concept). The nearest relative is `NewMatchPage`'s
+own optional single datetime field for one already-scheduled match
+(`src/features/match/schedule/helpers.ts`) — nothing about multiple candidate dates or collecting
+responses from several members. This is a genuinely new feature needing its own data model (a
+proposal: campaign id, a set of candidate dates, one response per member per date, and a
+GM-finalised outcome) and new UI, most naturally a new `Section` on `CampaignPage.tsx` near the
+existing "Battles" (`:170`) or "Recent activity" (`:172`) sections. Worth confirming one thing before
+building: whether "the next game day" is meant as one date for the whole campaign's next session, or
+per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` already does.
+
 <!--
 ### N. Short title
 

@@ -188,7 +188,7 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 7. The map is buggy in a Map Campaign: phantom nodes, selection mostly doesn't work
 
-**Status:** 🟡 Partially fixed — reopened 2026-09-08, the "Fixed" claim below was wrong in scope
+**Status:** ✅ Fixed — remeasured and verified locally 2026-09-08; not deployed
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -208,6 +208,51 @@ Verification: `tsc -b`, `oxlint`, and the full `vitest run` suite (1161 passed) 
 - **The zoom controls (+, −, Fit) don't respond to real clicks — same root cause as item 2 above, just never covered by that fix.** `MapCanvas.tsx`'s three zoom buttons (`aria-label="Zoom in"` etc., `:241-249`) are nested *inside* the same frame `<div>` (`:167-176`) whose `onPointerDown` unconditionally calls `setPointerCapture` on every pointer-down anywhere within it, buttons included. The district-selection fix worked around that by abandoning `e.target` entirely and hit-testing by coordinates instead (`districtAt()`) — but that only covers circle selection; these are ordinary `<button onClick>` elements relying on the browser's normal click dispatch, which is exactly what pointer capture retargeting breaks. Confirmed live: `zoomAt()`/`setT()` fire correctly and the transform state genuinely changes when triggered programmatically, but a real pointer click at the button's own screen position does nothing, because the frame captures the pointer before the click can land on the button. Needs the same fix philosophy as item 2 — most simply, skip `setPointerCapture` when the pointer-down's target is a descendant `<button>` rather than the map background itself.
 
 Both of these need real work, not a patch: re-measuring 30 coordinates against the actual poster, and reworking the frame's pointer-capture condition so it stops swallowing clicks meant for its own child controls. Good candidate for a big, self-contained project.
+
+**Resolution 2026-09-08 (Astra):** Replaced all 30 x/y pairs using the centres of the named illustrations on the actual served `public/map/mordheim-campaign-map.jpg` (2400 × 1697). Removed the superseded four-district shift comment. All `scale`, `advantage`, `abundance`, `hard`, `gate` and `connections` values are unchanged (checked against Git HEAD by script).
+
+**Coordinate verification:** Before editing, generated a Pillow circle/name overlay using `(x/100 × 2400, y/100 × 1697)` and visually inspected it; confirmed the widespread misalignment. Inspected full-resolution western/eastern crops of the original poster and measured every centre against its own printed name and illustration. After editing, generated a fresh overlay with the actual application circle radii, inspected both full-resolution crops, and visually confirmed all 30 centres sit on their correct illustrations. Local review artifacts: `/tmp/stirheim-map-before-percent.png`, `/tmp/stirheim-map-after.png`, `/tmp/map-west-after.png`, `/tmp/map-east-after.png`. These are local throwaway PNGs, not deployed assets. The pixel measurements below preserve the grounding for every value; stored `x = pixelX/2400 × 100`, `y = pixelY/1697 × 100`, rounded to four decimals.
+
+Also corrected a separate unit mismatch in the rendering path: the interface says y is percent of image height, but the old SVG and hit-test used it directly as width-based viewBox units. `districtMapY()` now converts height-percent y for every district circle, link endpoint, selection/reach ring, foothold dot and pointer hit-test; `MAP_VIEW_HEIGHT` now derives from the served image's exact 1697/2400 aspect ratio.
+
+| District illustration | Measured centre (pixels from top-left) |
+| --- | --- |
+| Artisan Quarters | 705, 745 |
+| Count Steinhardt's Palace | 920, 705 |
+| Dwarven District | 570, 675 |
+| Executioner's Square | 875, 866 |
+| Memorial Gardens | 775, 585 |
+| Raven Barracks | 810, 375 |
+| Rich Quarter | 940, 510 |
+| Statue of Count Gotthard | 1088, 379 |
+| Temple of Morr | 864, 1070 |
+| The Cemetery | 770, 1060 |
+| The Gaol | 640, 876 |
+| Amphitheatre | 1300, 826 |
+| City Hall | 1668, 670 |
+| Clock Tower | 1665, 1020 |
+| Fence Alley | 1490, 535 |
+| Little Moot | 1828, 442 |
+| Merchants' Quarter | 1295, 644 |
+| Market Square | 1530, 690 |
+| Poor Quarter | 1450, 1060 |
+| Quayside | 1310, 470 |
+| Sage's Hall | 1775, 837 |
+| Temple of Sigmar | 1830, 638 |
+| The Great Library | 1635, 412 |
+| The Pit | 1525, 876 |
+| Middle Bridge | 1080, 683 |
+| The Rock | 1120, 946 |
+| River Gate | 1340, 340 |
+| East Gate | 1880, 833 |
+| South Gate | 1250, 1090 |
+| West Gate | 590, 532 |
+
+**Zoom-control fix and verification:** `onPointerDown` now returns before capture or gesture registration when `target.closest('button')` matches (including button descendants). `onPointerUp` ignores unregistered pointer ids, so a zoom button's bubbling pointer-up cannot select/deselect a district or terminate another pointer's gesture. Map-origin pointers still capture and use the existing drag/pinch logic. Three Node/Vitest component-handler regression tests in `src/features/map/MapCanvas.test.tsx` exercise the actual handlers with mocked React hooks: all three controls avoid capture and selection while their click handlers update zoom/fit state; every measured district centre hits its corresponding district (selected district toggles off); drag and pinch still update the transform, including when a separate control pointer is pressed/released during a map gesture.
+
+**Verification limits:** Attempted Playwright Chromium against the existing local Vite server on 5174 with an isolated component harness, but Chromium failed before any test ran: macOS `bootstrap_check_in ... Permission denied (1100)` inside this session's sandbox. No live-browser click dispatch, touch-device check, authenticated campaign-page check or deployed-site check is claimed. The coordinate visual verification was direct inspection of Pillow PNGs; zoom verification was precise event-flow review plus the passing component-handler tests, not a browser test.
+
+**Checks:** `npx tsc -b` and `npm run lint` passed; `npm test -- --run` passed (82 test files passed, 13 skipped; 1202 tests passed, 69 skipped). No deployment performed.
 
 ### 8. Parrying may not be working properly in roll-it-out; wants the same hand-off armour saves get
 

@@ -4,7 +4,7 @@
 // warband can reach are lit, the rest dimmed.
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
-import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, findDistrict, type MapDistrict } from '../../rules/data/map/districts'
+import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, districtMapY, findDistrict, type MapDistrict } from '../../rules/data/map/districts'
 import type { DistrictView } from './model'
 
 export const MAP_IMAGE_SRC = '/map/mordheim-campaign-map.jpg'
@@ -87,7 +87,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
     let best: { d: MapDistrict; dist: number } | null = null
     for (const d of MAP_DISTRICTS) {
       const r = BASE_RADIUS * d.scale
-      const dist = Math.hypot(svgX - d.x, svgY - d.y)
+      const dist = Math.hypot(svgX - d.x, svgY - districtMapY(d))
       if (dist <= r && (!best || dist < best.dist)) best = { d, dist }
     }
     return best?.d ?? null
@@ -100,6 +100,8 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
   }
 
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    // Controls need native clicks; never enroll their pointers in map gestures.
+    if ((e.target as Element).closest('button')) return
     frame.current?.setPointerCapture(e.pointerId)
     const p = local(e)
     pointers.current.set(e.pointerId, p)
@@ -145,6 +147,8 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
   }
 
   function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    // A control's pointerup bubbles here too, but must not select/deselect the map.
+    if (!pointers.current.has(e.pointerId)) return
     pointers.current.delete(e.pointerId)
     if (pointers.current.size < 2) pinch.current = null
     if (pointers.current.size === 0) {
@@ -181,7 +185,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
               const da = findDistrict(a)!
               const db = findDistrict(b)!
               const lit = reachable ? reachable.has(a) && reachable.has(b) : false
-              return <line key={`${a}-${b}`} x1={da.x} y1={da.y} x2={db.x} y2={db.y} stroke={lit ? highlightColour : '#241f1a'} strokeOpacity={lit ? 0.7 : 0.12} strokeWidth={lit ? 0.35 : 0.2} />
+              return <line key={`${a}-${b}`} x1={da.x} y1={districtMapY(da)} x2={db.x} y2={districtMapY(db)} stroke={lit ? highlightColour : '#241f1a'} strokeOpacity={lit ? 0.7 : 0.12} strokeWidth={lit ? 0.35 : 0.2} />
             })}
             {MAP_DISTRICTS.map((d) => {
               const v = views.get(d.id)
@@ -193,7 +197,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
                 <g key={d.id} role="listitem" opacity={dim(d.id) ? 0.35 : 1}>
                   <circle
                     cx={d.x}
-                    cy={d.y}
+                    cy={districtMapY(d)}
                     r={r}
                     fill={fill ?? '#f8f3e8'}
                     fillOpacity={fill ? 0.42 : 0.08}
@@ -211,10 +215,10 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
                       }
                     }}
                   />
-                  {reachable?.has(d.id) ? <circle cx={d.x} cy={d.y} r={r + 0.6} fill="none" stroke={highlightColour} strokeOpacity={0.9} strokeWidth={0.3} pointerEvents="none" /> : null}
+                  {reachable?.has(d.id) ? <circle cx={d.x} cy={districtMapY(d)} r={r + 0.6} fill="none" stroke={highlightColour} strokeOpacity={0.9} strokeWidth={0.3} pointerEvents="none" /> : null}
                   {(v?.footholds ?? []).map((w, i, all) => {
                     const angle = -Math.PI / 2 + (i / Math.max(all.length, 1)) * Math.PI * 2
-                    return <circle key={w.id} cx={d.x + Math.cos(angle) * (r - 0.7)} cy={d.y + Math.sin(angle) * (r - 0.7)} r={0.55} fill={w.colour} stroke="#f8f3e8" strokeWidth={0.15} pointerEvents="none" />
+                    return <circle key={w.id} cx={d.x + Math.cos(angle) * (r - 0.7)} cy={districtMapY(d) + Math.sin(angle) * (r - 0.7)} r={0.55} fill={w.colour} stroke="#f8f3e8" strokeWidth={0.15} pointerEvents="none" />
                   })}
                 </g>
               )

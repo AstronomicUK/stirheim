@@ -533,13 +533,26 @@ Given it's not reproducible from the description alone, the most useful next ste
 
 ### 22. Move "Transfer Warband to Another Player" and "Move to another Campaign" under the warband page's "More" button
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-07
 
 > "I think the "Transfer Warband to Another Player" and "Move to another Campaign" options can be moved to being under the "More" button at the bottom of the warband page"
 
 **Notes:** Straightforward. Both currently render as their own always-visible header links in `WarbandPage.tsx` (`HandOver` component, lines 465-524, trigger at 484-488 "Transfer warband to another player"; `MoveCampaign` component, lines 415-462, trigger at 432-437 "Move to another campaign" / "Join a campaign"), inside a `<div className="flex flex-wrap gap-x-4 gap-y-1">` at lines 138-141 — not inside any menu today. The "More" button Tom means already exists on this exact page: `menuOpen` state (line 63), a desktop trigger at 171-173 and a mobile sticky-bar trigger at 268-270, both opening the same `Sheet` at lines 274-312 (titled "Warband"), which currently holds Archive/Unarchive, Save as template, and Delete warband. Moving the two options in means adding two more entries to that Sheet that open `HandOver`/`MoveCampaign`'s own sheets — both components currently manage their `open` state internally, so that state would need lifting up (or a shared open-trigger prop added) rather than just relocating the trigger buttons.
+
+**Fixed:** Lifted `open` out of `HandOver` and `MoveCampaign` into `open`/`onOpenChange` props; both
+now render only their `Sheet` (no trigger button of their own). `WarbandView` holds `handOverOpen`/
+`moveCampaignOpen` state, removed the old always-visible header row, and added "Transfer to another
+player" and "Move to another campaign" (or "Join a campaign" if not currently in one) as two more
+entries in the existing "More" Sheet, right before "Delete warband" — each closes the More sheet and
+opens its own, matching the existing "Save as template" entry's pattern exactly. "Move to another
+campaign" stays owner-only, same visibility rule as before.
+
+Verified live on local dev: header no longer shows either link; More → "Transfer to another player"
+closes the More sheet and opens the transfer sheet with the real player list loaded ("Ana" listed as
+an eligible new owner). `npx tsc -b`, `npm run lint`, `npm test -- --run` (1203 passed, 69 skipped)
+all clean.
 
 ### 23. The audit log's "Details" expander reads like raw data (field names, ids) instead of English, and wants tooltips
 

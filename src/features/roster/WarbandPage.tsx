@@ -13,7 +13,7 @@ import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
 import { validateRoster, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
-import { ActionTile, Button, Icon, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
+import { ActionTile, Button, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
 import { BUTTON_BASE, BUTTON_VARIANTS } from '../../ui/buttonStyles'
 import { unitTypeName, warbandTypeName } from './shared/names'
 import { Card, ItemLines, KeyValue, Section, Tag } from './view/bits'
@@ -63,6 +63,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
   const update = useUpdateRoster(warband.id)
   const remove = useDeleteWarband()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [handOverOpen, setHandOverOpen] = useState(false)
+  const [moveCampaignOpen, setMoveCampaignOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [templateOpen, setTemplateOpen] = useState(false)
   const [templateName, setTemplateName] = useState('')
@@ -136,10 +138,6 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
             {warband.archived ? <Tag>Archived</Tag> : null}
             {!isOwner ? <Tag tone="brass">GM view</Tag> : null}
           </div>
-        </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <HandOver warbandId={warband.id} warbandName={warband.name} ownerId={warband.owner_id} viewerId={user?.id} onError={setActionError} />
-          {isOwner ? <MoveCampaign warbandId={warband.id} warbandName={warband.name} currentCampaign={campaign.data?.name ?? null} onError={setActionError} /> : null}
         </div>
       </header>
 
@@ -300,6 +298,28 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
             </>
           ) : null}
           <Button
+            variant="secondary"
+            block
+            onClick={() => {
+              setMenuOpen(false)
+              setHandOverOpen(true)
+            }}
+          >
+            Transfer to another player
+          </Button>
+          {isOwner ? (
+            <Button
+              variant="secondary"
+              block
+              onClick={() => {
+                setMenuOpen(false)
+                setMoveCampaignOpen(true)
+              }}
+            >
+              {campaign.data?.name ? 'Move to another campaign' : 'Join a campaign'}
+            </Button>
+          ) : null}
+          <Button
             variant="danger"
             block
             onClick={() => {
@@ -312,6 +332,26 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
           </Button>
         </div>
       </Sheet>
+
+      <HandOver
+        warbandId={warband.id}
+        warbandName={warband.name}
+        ownerId={warband.owner_id}
+        viewerId={user?.id}
+        onError={setActionError}
+        open={handOverOpen}
+        onOpenChange={setHandOverOpen}
+      />
+      {isOwner ? (
+        <MoveCampaign
+          warbandId={warband.id}
+          warbandName={warband.name}
+          currentCampaign={campaign.data?.name ?? null}
+          onError={setActionError}
+          open={moveCampaignOpen}
+          onOpenChange={setMoveCampaignOpen}
+        />
+      ) : null}
 
       <Sheet
         open={templateOpen}
@@ -414,8 +454,21 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
 }
 
 /** Owner: take the warband to another campaign with its invite code, in one step. */
-function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { warbandId: string; warbandName: string; currentCampaign: string | null; onError: (e: string | null) => void }) {
-  const [open, setOpen] = useState(false)
+function MoveCampaign({
+  warbandId,
+  warbandName,
+  currentCampaign,
+  onError,
+  open,
+  onOpenChange,
+}: {
+  warbandId: string
+  warbandName: string
+  currentCampaign: string | null
+  onError: (e: string | null) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const [code, setCode] = useState('')
   const move = useMoveWarbandCampaign()
 
@@ -424,7 +477,7 @@ function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { wa
     onError(null)
     try {
       await move.mutateAsync({ warbandId, code: code.trim() })
-      setOpen(false)
+      onOpenChange(false)
       setCode('')
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not move the warband.')
@@ -433,13 +486,9 @@ function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { wa
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 self-start text-xs text-brass underline-offset-4 hover:underline">
-        <Icon name={currentCampaign ? 'campaigns' : 'join'} size={14} />
-        {currentCampaign ? 'Move to another campaign' : 'Join a campaign'}
-      </button>
       <Sheet
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => onOpenChange(false)}
         title={currentCampaign ? 'Move to another campaign' : 'Join a campaign'}
         description={
           currentCampaign
@@ -448,7 +497,7 @@ function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { wa
         }
         footer={
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)} disabled={move.isPending}>
+            <Button variant="secondary" className="flex-1" onClick={() => onOpenChange(false)} disabled={move.isPending}>
               Cancel
             </Button>
             <Button className="flex-1" disabled={!code.trim()} pending={move.isPending} onClick={() => void confirm()}>
@@ -464,8 +513,23 @@ function MoveCampaign({ warbandId, warbandName, currentCampaign, onError }: { wa
 }
 
 /** Owner or GM: give the warband to another account (imported rosters start with the importer). */
-function HandOver({ warbandId, warbandName, ownerId, viewerId, onError }: { warbandId: string; warbandName: string; ownerId: string; viewerId: string | undefined; onError: (e: string | null) => void }) {
-  const [open, setOpen] = useState(false)
+function HandOver({
+  warbandId,
+  warbandName,
+  ownerId,
+  viewerId,
+  onError,
+  open,
+  onOpenChange,
+}: {
+  warbandId: string
+  warbandName: string
+  ownerId: string
+  viewerId: string | undefined
+  onError: (e: string | null) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const [target, setTarget] = useState('')
   const profiles = useProfiles(open)
   const transfer = useTransferWarband()
@@ -476,7 +540,7 @@ function HandOver({ warbandId, warbandName, ownerId, viewerId, onError }: { warb
     onError(null)
     try {
       await transfer.mutateAsync({ warbandId, newOwnerId: target })
-      setOpen(false)
+      onOpenChange(false)
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not hand the warband over.')
     }
@@ -484,18 +548,14 @@ function HandOver({ warbandId, warbandName, ownerId, viewerId, onError }: { warb
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 self-start text-xs text-brass underline-offset-4 hover:underline">
-        <Icon name="hired" size={14} />
-        Transfer warband to another player
-      </button>
       <Sheet
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => onOpenChange(false)}
         title="Transfer this warband"
         description={`${warbandName} moves to another player's account. They take over its roster, reports and advances; you keep nothing but the history.${owner && owner.user_id !== viewerId ? ` Current owner: ${owner.display_name}.` : ''}`}
         footer={
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)} disabled={transfer.isPending}>
+            <Button variant="secondary" className="flex-1" onClick={() => onOpenChange(false)} disabled={transfer.isPending}>
               Keep it
             </Button>
             <Button className="flex-1" disabled={!target || target === ownerId} pending={transfer.isPending} onClick={() => void confirm()}>

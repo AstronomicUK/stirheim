@@ -2463,6 +2463,26 @@ redesign shipped unilaterally — preparing 2-3 candidate paths (e.g. a single s
 sword-and-coin, a handshake-with-blade motif) to present next time rather than deploying a pick
 overnight.
 
+**Candidates prepared (Stirheim Developer, 2026-09-08) — not shipped, for Tom to choose from:**
+Rendered all three at 100px in the actual browser (not just reasoned about the path data blind) to
+confirm they read cleanly before proposing them; a fourth "sword and shield" idea was tried and
+dropped — the shield read as a circle/lollipop at this scale, not worth offering.
+
+- **C — Plain single sword.** Cleanest, most minimal; matches the file's own "kept deliberately few"
+  house style most closely. `M12 3L14.2 13H9.8zM8 13h8M12 13v6.5M9.8 19.5h4.4`
+- **A — Sword and coin.** The sword plus a small filled coin beside the hilt, reading as "a blade
+  for pay." Two-layer like `models`/`heroes` already are (`{ stroke, fill }`).
+  stroke: `M12 2l1.8 10.5h-3.6zM7.5 12.5h9M12 12.5v6.5M9.5 19h5`
+  fill: `M18.3 15.3a2.3 2.3 0 100-4.6 2.3 2.3 0 000 4.6z`
+- **D — Sword and notable-badge.** Same sword, with the small four-point sparkle badge from today's
+  `characters` (Dramatis Personae) redesign instead of a coin — reads as "a named, hireable
+  individual," and gives hired swords and Dramatis Personae a shared visual language since both are
+  named specialists you bring into the warband from outside it, not warband-grown warriors.
+  `M11 5L13 15h-4zM9 15h6M12 15v5M10 20h4M18 1l0.65 2.35L21 4l-2.35 0.65L18 7l-0.65-2.35L15 4l2.35-0.65z`
+
+No preference recorded here on purpose — genuinely Tom's call between "plain and minimal" (C),
+"paid mercenary" (A), or "matches Dramatis Personae" (D).
+
 ### 91. Remove the "gc" text from the Buy tab so it matches Sell's plain look
 
 **Status:** ✅ Fixed

@@ -1921,7 +1921,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** ✅ Implemented — Astra; live browser design review pending
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, animation needs round 2 (see below); icon not yet commented on
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -1957,6 +1957,58 @@ unused-variable warning in a peer's untracked `.ui-verify2.mjs:35`; its owner wa
 Live browser verification was **not possible** in this sandbox. CSS timing, geometry, reduced-motion
 fallback and trigger/reset paths were reviewed in code; browser review requested from Stirheim
 Developer before Tom sees the design. No deployment performed.
+
+**Live review (Stirheim Developer, 2026-09-08):** Deployed to production and verified against the
+live bundle directly (fetched the served CSS/JS and confirmed both the `stirheim-cast` keyframes and
+the new icon path are actually shipped, not just committed) — then drove a real failed and a real
+successful prayer through to resolution on a live match and confirmed the `.stirheim-cast` decoration
+appears only on success, scoped to the Spellcaster box, `aria-hidden`, `pointer-events:none`. No
+deploy or caching bug.
+
+**Reopened 2026-09-08 — Tom, after using it live:**
+
+> "I was more thinking of an animation around the cast a spell icon? i still can't really see much of
+> an animation on spell casting."
+
+Two distinct notes: (1) he pictured the animation on/around the small `cast` icon in the heading,
+not the outline of the whole Spellcaster box — a different target than what got built; (2) even
+knowing where to look, the effect (a 1px brass outline, opacity peaking at .65, gone within 1.2s) reads
+as too subtle to register as "an animation" at a glance. Handed back to Astra as round 2, with both
+notes verbatim, rather than reworked here.
+
+---
+
+### 86. Spellcasting always offers to "dispel" the spell, even when nobody on the table actually can
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "also the 'no dispel' button isn't clear that it's a button. it just looks like text. is it even
+> necessary? I didn't know there was a way of countering spells?"
+
+**Notes:** Tom's instinct is correct — there is no generic "any enemy may try to counter this cast"
+rule. The only dispel mechanics in `reference/rules/03-campaigns-magic-optional-rules.md` are all
+source-specific: **Elven Runestones** (`src/rules/data/items/misc.ts:260`, roll against the spell's
+own Difficulty, Sorcery doesn't help), **Blessed by Morr** (D6 4+, only vs. a spell aimed at that
+model, only vs. Undead casters), the Lady's Knight's innate purity (D6 4+ vs. any spell targeting
+him), a `dispel_magic`-bearing staff (D6 4+, one spell per turn), and the Seer's own **Dispel Magic**
+ritual (a spell *he* casts on *his* turn to end already-active enduring spells — not a reactive
+counter at all). None of these are a universal option every caster's opponent gets.
+
+`src/rules/resolve/casting.ts`'s `succeed()` (`:527`) offers the "Any dispel?" step after **every**
+successful cast unconditionally, hardcoded to 2D6 against the spell's own Difficulty — the Elven
+Runestones mechanic specifically, applied as if every enemy had Elven Runestones. `dispelsFor(hero)`
+(`:285`) already computes a hero's real dispel sources from their kit/skills, correctly gated — but
+it is never called anywhere (`grep` finds only its own definition). The gating data exists; it's just
+not wired up. Fix needs `startCast`/`CastState` to know about the *enemy* roster (currently `casting.ts`
+is deliberately pure and only sees the caster's own hero), check each of their models via `dispelsFor`,
+skip the step entirely when nobody has an eligible source, and describe/resolve whichever source(s)
+do exist correctly (dice count and threshold vary by source, not always 2D6 vs. Difficulty).
+
+Separately, real regardless of the above: `CastTab.tsx:361`'s "No dispel" control (and its "Skip"/
+"Stop here" siblings on the same line) render as plain text, not as something that reads as
+clickable — worth a proper button treatment either way.
 
 ---
 

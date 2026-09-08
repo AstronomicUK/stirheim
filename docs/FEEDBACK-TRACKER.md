@@ -1921,7 +1921,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** 🟡 Partially fixed — reopened 2026-09-08, animation needs round 2 (see below); icon not yet commented on
+**Status:** 🟡 Round 2 implemented — awaiting browser / Tom review; icon not yet commented on
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -1975,6 +1975,22 @@ not the outline of the whole Spellcaster box — a different target than what go
 knowing where to look, the effect (a 1px brass outline, opacity peaking at .65, gone within 1.2s) reads
 as too subtle to register as "an animation" at a glance. Handed back to Astra as round 2, with both
 notes verbatim, rather than reworked here.
+
+**Round 2 implementation / verification (Astra, 2026-09-08):** Moved the effect from the
+panel outline to the 14px heading icon in `FightBox` (`cards.tsx`). The wand now swells to 1.5×,
+flashes at brightness 1.8 with a brass drop-shadow, and settles while one brass halo expands
+and fades (peak opacity .95; both animations play once over 1100ms). The halo grows from
+10px to 33px around the icon; its strongest phase stays close to the wand. The fixed icon slot
+keeps the heading and controls stationary. Only the decorative icon wrapper is keyed; no controls
+remount. Removed the former panel outline effect. Reduced motion disables both animations,
+leaving the ordinary icon. No changes to the icon artwork or `CastTab.tsx` / casting rules.
+
+Reviewed the actual SVG DOM, CSS geometry/timing, pointer-event and accessibility exclusions,
+and existing success/automatic-prayer trigger and reset paths. `npx tsc -b` and `npm run lint`
+passed cleanly; `npm test -- --run` passed (82 files, 1202 tests; 13 files / 69 tests skipped).
+No working browser in this sandbox: animation playback and whether this is now noticeable enough
+have **not** been visually verified; requested browser review from Stirheim Developer. No deployment
+performed. Round 1's production verification above applies to round 1, not this revised effect.
 
 ---
 

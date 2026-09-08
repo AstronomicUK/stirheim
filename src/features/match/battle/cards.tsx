@@ -15,9 +15,10 @@ import type { CardTag } from './names'
 export function FightBox({ icon, title, tone, children, castingPulse = 0 }: { icon: IconName; title: string; tone: 'brass' | 'accent'; children: ReactNode; castingPulse?: number }) {
   return (
     <section className={`relative flex min-w-0 flex-col gap-2 rounded-md border bg-surface-low px-2.5 py-2.5 ${tone === 'brass' ? 'border-brass/50' : 'border-accent/50'}`}>
-      {castingPulse > 0 ? <span key={castingPulse} aria-hidden className="stirheim-cast pointer-events-none absolute rounded-[inherit]" /> : null}
       <h3 className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${tone === 'brass' ? 'text-brass' : 'text-accent'}`}>
-        <Icon name={icon} size={14} />
+        <span key={castingPulse} aria-hidden className={`relative inline-flex size-3.5 shrink-0 items-center justify-center pointer-events-none ${castingPulse > 0 ? 'stirheim-cast' : ''}`}>
+          <Icon name={icon} size={14} />
+        </span>
         {title}
       </h3>
       {children}

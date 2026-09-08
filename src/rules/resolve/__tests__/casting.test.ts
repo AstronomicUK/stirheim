@@ -56,26 +56,40 @@ describe("who can cast", () => {
 describe("rolling a cast", () => {
   const spellOf = (p: ReturnType<typeof profileOf>, name: string) => p.lore.spells.find((s) => s.name === name)!;
 
-  it("casts on 2D6 equal to or over the Difficulty, then offers the enemy a dispel", () => {
+  it("casts on 2D6 equal to or over the Difficulty, and resolves immediately when nobody can dispel", () => {
     const p = profileOf(hero());
     const spell = spellOf(p, "Vision of Torment");
     const start = startCast(p, spell);
     expect(start.pending?.kind).toBe("cast");
     expect(start.pending?.dice).toBe(2);
+    // No enemyDispel supplied: most tables have nobody with Elven Runestones or the like.
     const cast = applyCastRoll(start, [5, 5]);
     expect(cast.outcome).toBe("cast");
-    expect(cast.pending?.kind).toBe("dispel");
+    expect(cast.pending).toBeNull();
+    expect(cast.done).toBe(true);
     expect(describeCast(cast)).toBe("Vhorsk casts Vision of Torment.");
-    // Declining the dispel ends the attempt.
-    const done = declineCastStep(cast);
-    expect(done.done).toBe(true);
-    expect(done.outcome).toBe("cast");
+  });
+
+  it("offers a dispel roll only when the enemy actually has a source, using that source's own mechanic", () => {
+    const p = profileOf(hero());
+    const spell = spellOf(p, "Vision of Torment");
+    // Elven Runestones roll 2D6 against the spell's own Difficulty.
+    const runestones = applyCastRoll(startCast(p, spell, { enemyDispel: [{ id: "elven_runestones", name: "Elven Runestones", detail: "x", against: "difficulty" }] }), [5, 5]);
+    expect(runestones.pending).toEqual(expect.objectContaining({ kind: "dispel", dice: 2, dispelAgainst: "difficulty" }));
+    const declined = declineCastStep(runestones);
+    expect(declined.done).toBe(true);
+    expect(declined.outcome).toBe("cast");
+
+    // Blessed by Morr and the like are a flat D6 threshold, not 2D6 against the Difficulty.
+    const morr = applyCastRoll(startCast(p, spell, { enemyDispel: [{ id: "blessed_by_morr", name: "Blessed by Morr", detail: "x", against: { threshold: 4 } }] }), [5, 5]);
+    expect(morr.pending).toEqual(expect.objectContaining({ kind: "dispel", dice: 1, dispelAgainst: { threshold: 4 } }));
   });
 
   it("a successful dispel takes the spell away", () => {
     const p = profileOf(hero());
     const spell = spellOf(p, "Vision of Torment");
-    const cast = applyCastRoll(startCast(p, spell), [6, 6]);
+    const source = { id: "elven_runestones", name: "Elven Runestones", detail: "x", against: "difficulty" as const };
+    const cast = applyCastRoll(startCast(p, spell, { enemyDispel: [source] }), [6, 6]);
     const dispelled = applyCastRoll(cast, [6, 6]);
     expect(dispelled.outcome).toBe("dispelled");
     expect(describeCast(dispelled)).toMatch(/is dispelled/);
@@ -139,7 +153,8 @@ describe("rolling a cast", () => {
   it("Magical Aptitude offers a second spell on a Toughness test, and hurts him when it fails", () => {
     const p = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_magical_aptitude"] }));
     expect(p.secondSpell).toBe(true);
-    const cast = declineCastStep(applyCastRoll(startCast(p, p.lore.spells[0]), [6, 6]));
+    // No enemyDispel supplied, so nothing to decline first — straight to the Toughness offer.
+    const cast = applyCastRoll(startCast(p, p.lore.spells[0]), [6, 6]);
     expect(cast.pending?.kind).toBe("toughness");
     expect(applyCastRoll(cast, [2]).done).toBe(true);
     const wracked = applyCastRoll(cast, [5]);

@@ -12,6 +12,7 @@ import {
   CAST_OUTCOME_LABEL,
   declineCastStep,
   describeCast,
+  dispelsFor,
   spendReroll,
   startCast,
   type CasterProfile,
@@ -24,17 +25,28 @@ import type { Spell } from '../../../rules/types/magic'
 import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from './cards'
+import type { MatchParticipantView } from '../../../api/matches'
+import { useEnemyRosters } from '../fight/useEnemyRosters'
 
 export interface CastTabProps {
+  matchId: string
   roster: RosterWarband
   template: WarbandTemplate | undefined
+  others: MatchParticipantView[]
   sheet: BattleLiveState
   readOnly: boolean
   edit?: (fn: (state: BattleLiveState) => BattleLiveState) => void
 }
 
-export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProps) {
+export function CastTab({ matchId, roster, template, others, sheet, readOnly, edit }: CastTabProps) {
   const casters = useMemo(() => castersOf(roster, template), [roster, template])
+  const enemies = useEnemyRosters(matchId, others)
+  // Only heroes still in the fight can attempt to dispel — the same "active" scope the roster
+  // itself uses elsewhere; there's no reliable per-battle "already down" flag to check further.
+  const enemyDispel = useMemo(
+    () => enemies.warbands.flatMap((w) => w.roster.heroes.filter((h) => h.status === 'active').flatMap(dispelsFor)),
+    [enemies.warbands],
+  )
   const [casterId, setCasterId] = useState<string | null>(casters[0]?.heroId ?? null)
   const caster = casters.find((c) => c.heroId === casterId) ?? casters[0]
   const [state, setState] = useState<CastState | null>(null)
@@ -73,6 +85,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
     const started = startCast(caster!, spell, {
       modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
       alreadyUsed: usedUp,
+      enemyDispel,
     })
     setCastingPulse(0)
     recorded.current = null
@@ -357,7 +370,10 @@ function CastRun({ state, advance, usedUp }: { state: CastState; advance: (step:
                 />
                 {step.optional ? (
                   <div>
-                    <Button variant="ghost" onClick={() => advance(declineCastStep)}>
+                    {/* The dispel decline is the only control at this step, so it needs to read as
+                        a button on its own — ghost's plain-link styling works for "Skip"/"Stop
+                        here" because they sit next to other visible buttons, but not here. */}
+                    <Button variant={step.kind === 'dispel' ? 'secondary' : 'ghost'} onClick={() => advance(declineCastStep)}>
                       {step.kind === 'dispel' ? 'No dispel' : step.kind === 'toughness' ? 'Stop here' : 'Skip'}
                     </Button>
                   </div>

@@ -330,7 +330,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
 
           {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
           {sideTab === 'enemy' ? <EnemyView matchId={match.id} participants={others} sessions={sessions} events={events} turn={shown.turn} /> : null}
-          {sideTab === 'cast' ? <CastTab roster={roster} template={template} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
+          {sideTab === 'cast' ? <CastTab matchId={match.id} roster={roster} template={template} others={others} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
           {sideTab === 'fight' && inApp ? (
             <FightTab
               matchId={match.id}

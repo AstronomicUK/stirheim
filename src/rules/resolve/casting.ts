@@ -302,6 +302,8 @@ export interface CastStep {
   optional: boolean;
   /** Set on a re-roll step so the UI can name what is being spent. */
   rerollId?: string;
+  /** Set on a dispel step: what the roll needs to beat, so resolution reads it instead of re-deriving it from the label text. */
+  dispelAgainst?: DispelSource["against"];
 }
 
 export type CastOutcome = "automatic" | "cast" | "failed" | "dispelled";
@@ -327,6 +329,8 @@ export interface CastState {
   /** Magical Aptitude: the second attempt is offered once the first is resolved. */
   secondSpellOffered: boolean;
   done: boolean;
+  /** Dispel sources actually available to whoever is opposing this cast; empty means nobody can. */
+  enemyDispel: DispelSource[];
 }
 
 const CAST_STEP = (over: Partial<CastStep> & Pick<CastStep, "kind" | "label" | "detail">): CastStep => ({ dice: 2, optional: false, ...over });
@@ -340,6 +344,8 @@ export interface StartCastOptions {
   modifiers?: { id: string; amount?: number }[];
   /** Re-roll ids already used up earlier in the battle or this turn. */
   alreadyUsed?: string[];
+  /** Dispel sources the opposing side actually has on the table; omit or leave empty for none. */
+  enemyDispel?: DispelSource[];
 }
 
 export function startCast(profile: CasterProfile, spell: Spell, options: StartCastOptions = {}): CastState {
@@ -363,6 +369,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     outcome: null,
     secondSpellOffered: false,
     done: false,
+    enemyDispel: options.enemyDispel ?? [],
   };
 
   if (spell.difficulty === null) {
@@ -427,7 +434,7 @@ export function applyCastRoll(state: CastState, values: number[]): CastState {
     }
     case "dispel": {
       const sum = values.length > 1 ? values[0] + values[1] : values[0];
-      const target = step.detail.includes("Difficulty") ? (next.difficulty ?? 0) : 4;
+      const target = step.dispelAgainst === "difficulty" ? (next.difficulty ?? 0) : (step.dispelAgainst?.threshold ?? 0);
       const dispelled = sum >= target;
       next.log.push({ text: `Dispel attempt: rolled ${values.join(" + ")}${values.length > 1 ? ` = ${sum}` : ""} against ${target}+. ${dispelled ? "The spell fails to work." : "The spell works normally."}`, tone: dispelled ? "bad" : "good" });
       if (dispelled) next.outcome = "dispelled";
@@ -524,7 +531,21 @@ function succeed(state: CastState): CastState {
   const next: CastState = { ...state, log: [...state.log] };
   next.outcome = "cast";
   next.log.push({ text: `${next.spell.name} is cast.`, tone: "good" });
-  next.pending = CAST_STEP({ kind: "dispel", dice: 2, label: "Any dispel?", detail: `The enemy may try to dispel against the spell's Difficulty (${next.difficulty}+).`, optional: true });
+  // Only offer a dispel roll when someone on the table actually has a way to attempt one — most
+  // games have nobody with Elven Runestones, Blessed by Morr, or the like, and this used to ask
+  // regardless.
+  const source = next.enemyDispel[0];
+  if (!source) return afterCast(next);
+  const dice = source.against === "difficulty" ? 2 : 1;
+  const target = source.against === "difficulty" ? next.difficulty : source.against.threshold;
+  next.pending = CAST_STEP({
+    kind: "dispel",
+    dice,
+    label: `${source.name}: any dispel?`,
+    detail: `${source.detail} Needs ${target}+.`,
+    optional: true,
+    dispelAgainst: source.against,
+  });
   return next;
 }
 

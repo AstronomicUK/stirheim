@@ -1934,7 +1934,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** 🟡 Round 3 implemented — awaiting browser / Tom review; rounds 1–2 preserved
+**Status:** 🟡 Round 4 requested — rounds 1–3 deployed and confirmed working
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2056,6 +2056,28 @@ and `npm test -- --run` passed cleanly (82 files / 1203 tests passed; 13 files /
 No working browser in this sandbox: actual playback, responsive rendering and perceived
 subtlety have **not** been visually verified. Browser / Tom review remains needed.
 No deployment performed.
+
+**Round 3 live review (Stirheim Developer, 2026-09-08):** Scaled the tile 4× on local dev to inspect
+it closely; confirmed the wisp is visible, correctly scoped to only the Cast a Spell tile (Melee/
+Ranged Attack alongside it have plain borders), and genuinely animating — it moved from the
+bottom-left corner to the top edge over a 3-second wait, consistent with a real 9-second lap, not a
+static mark. Reduced-motion path confirmed by reading the CSS rather than a live toggle (no tool
+support for that here). Deployed to production with Tom's go-ahead.
+
+**Reopened 2026-09-08 — Tom, round 4:**
+
+> "can you add to Astra's list to change that Cast a Spell animation so there is another wisp exactly
+> opposite the existing one on the box (2 total, the glow colour changed from bronze to a really
+> like blue/White magical colour, and the animation is sped up 50%"
+
+Three concrete, precise changes to round 3's orbit specifically (the permanent tile wisp, not
+rounds 1–2's in-battle icon-burst, which stays as-is): a second wisp at a 180° offset from the
+first (2 total, evenly opposite); recolour from brass to a blue/white magical tone (a new CSS
+custom property rather than reusing `--color-brass`, so this doesn't quietly change any of the
+brass tone used elsewhere); and the lap duration cut by a third, from 9s to 6s (50% faster — a rate
+increase of 50% means completing the same lap in 1 / 1.5 = 2/3 of the time). Queued for Astra as
+round 4, running independently of its current #82 work (different files: `BattleNav.tsx`/
+`index.css` here vs. a new resolver + `CampaignPage.tsx` there).
 
 ---
 

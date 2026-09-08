@@ -1862,6 +1862,26 @@ existing "Battles" (`:170`) or "Recent activity" (`:172`) sections. Worth confir
 building: whether "the next game day" is meant as one date for the whole campaign's next session, or
 per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` already does.
 
+### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
+
+**Status:** 🔲 Open — assigned to Astra as a UI design test
+**Priority:** 🟢 Low (polish)
+**Reported:** 2026-09-08
+
+> "Yeah let's give Astra a UI project as a test and see what it comes up with. see if it can do a
+> nice spell animation around the box, and also improve the spell icon"
+
+**Notes:** Deliberately open-ended — a design test, not a fully-specified spec. "The box" is the
+Spellcaster `FightBox` in `src/features/match/battle/CastTab.tsx` (shared component defined in
+`src/features/match/battle/cards.tsx`); "the spell icon" is `cast` in `src/ui/icons.tsx`'s hand-drawn
+24-unit line-icon set (currently a wand-with-sparkle-bursts path). The app already has one
+established restrained-animation language in `src/index.css` (`stirheim-land`/`stirheim-land-row` for
+dice landing, `stirheim-glow` for "this is waiting on you") with its own comment explicitly noting
+"nothing else in the app moves on its own" — whatever Astra designs should read as part of that
+family, not a bolt-on. Given to Astra, not built here.
+
+---
+
 <!--
 ### N. Short title
 

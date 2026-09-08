@@ -371,8 +371,11 @@ body {
   }
 }
 
-/* Idle magic on the Cast quick-action only: one quiet brass wisp circles the rounded edge.
-   Nine seconds per lap, independent of rolls/selection; no movement of the tile or its content. */
+/* Idle magic on the Cast quick-action only: two quiet wisps, exactly opposite each other, circle
+   the rounded edge. Six seconds per lap, independent of rolls/selection; no movement of the tile
+   or its content. Blue/white rather than the ledger's brass, at Tom's request — a magical colour
+   the rest of the palette doesn't otherwise use, so it's inlined here rather than added as a
+   reusable design token. */
 .stirheim-cast-tile {
   position: relative;
 }
@@ -385,16 +388,18 @@ body {
   overflow: visible;
   pointer-events: none;
   fill: none;
-  stroke: var(--color-brass);
+  stroke: #dff3ff;
   stroke-width: 1.5;
   stroke-linecap: round;
-  opacity: 0.65;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 2px #4fc3f7);
 }
 
 .stirheim-cast-orbit > rect {
-  /* Unitless lengths use the normalized perimeter, even when the tile wraps or stretches. */
-  stroke-dasharray: 8 92;
-  animation: stirheim-cast-orbit 9s linear infinite;
+  /* Unitless lengths use the normalized perimeter, even when the tile wraps or stretches.
+     8 42 8 42 repeats to two 8-unit wisps 50 units apart — exactly opposite on a closed loop. */
+  stroke-dasharray: 8 42 8 42;
+  animation: stirheim-cast-orbit 6s linear infinite;
 }
 
 @keyframes stirheim-cast-orbit {

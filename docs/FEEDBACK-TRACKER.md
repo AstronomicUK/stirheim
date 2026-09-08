@@ -1934,7 +1934,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** 🟡 Round 4 requested — rounds 1–3 deployed and confirmed working
+**Status:** ✅ Fixed (round 4) — rounds 1–3 deployed and confirmed working
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2078,6 +2078,22 @@ brass tone used elsewhere); and the lap duration cut by a third, from 9s to 6s (
 increase of 50% means completing the same lap in 1 / 1.5 = 2/3 of the time). Queued for Astra as
 round 4, running independently of its current #82 work (different files: `BattleNav.tsx`/
 `index.css` here vs. a new resolver + `CampaignPage.tsx` there).
+
+**Fixed (Stirheim Developer, 2026-09-08), not Astra:** Astra's #82 run hit its own Codex usage quota
+partway through (before writing any code — nothing lost) and can't resume for a few hours; this
+change is small and precisely specified enough not to need Astra's independence, so built directly
+rather than wait. `src/index.css`'s `.stirheim-cast-orbit > rect` dasharray changed from `8 92` to `8 42 8 42` (dash,
+gap, dash, gap summing to the normalized 100-unit path, two 8-unit wisps 50 units apart, i.e.
+exactly opposite) — one `<rect>`, one animation, both wisps move together; no change to
+`BattleNav.tsx`. Colour changed from `var(--color-brass)` to an inlined
+`#dff3ff` stroke plus a `drop-shadow(0 0 2px #4fc3f7)` glow (pale blue-white core, saturated sky-blue
+halo) — inlined rather than added to the `@theme` token block since it's a one-off magical accent,
+not part of the ledger's reusable palette; opacity nudged from .65 to .8 so the paler colour still
+reads clearly against the warm tile background. Lap duration `9s` → `6s` (50% faster). Verified live
+on local dev: scaled the tile 4× and confirmed via computed styles — `stroke-dasharray: 8px, 42px,
+8px, 42px`, `animation-duration: 6s`, `stroke: rgb(223, 243, 255)`, `filter: drop-shadow(rgb(79, 195,
+247) 0px 0px 2px)` — matching the spec exactly, not just visually plausible. `npx tsc -b`, `npm run
+lint`, `npm test -- --run` (1203 passed, 69 skipped) all clean.
 
 ---
 

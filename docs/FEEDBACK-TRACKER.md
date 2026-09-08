@@ -976,7 +976,7 @@ Verified live on local dev: the seeded contradictory match (Reikland Watch "Draw
 
 ### 39. The recruit screens show nine bare stat numbers with no M/WS/BS/S/T/W/I/A/Ld headings
 
-**Status:** 🟡 Partially fixed — reopened 2026-09-08, the hired-swords header is 11.6px out of register with its numbers
+**Status:** ✅ Fixed — the 11.6px hired-swords misalignment fixed alongside #42, same day
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1080,7 +1080,7 @@ sheet reacts. Close it: the summary bar reads **-45** in red with 3 problems.
 
 ### 42. 72 hired swords with no search or filter
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1091,6 +1091,21 @@ Rules exclude this warband / Unavailable) would make good ready-made filters, an
 computed.
 
 **How to replicate:** Any warband → *Recruit* → **Hired swords**. Scroll.
+
+**Fixed:** Added a search box (name or rule text, same "search matches the reason text too" convention
+as the Advancements skill picker) and a "Show" filter over the same eligibility buckets the existing
+tags already compute: Available (`ok`/`allowed`), Needs a check (`check`/`restricted`), Unavailable
+(`blocked`). Also fixed #39's reopened finding in the same file while it was open: `StatHeader`'s
+`className="px-1"` (4px) didn't match the cards below it (`px-4`, 16px), the exact cause the UI
+Tester's audit named — changed to `px-4` so the header sits over the same columns as the figures.
+
+Verified live on local dev: searching "assassin" correctly returned Dark Elf Assassin, Imperial
+Assassin, *and* Shadow Warrior — surprising until checking the data: Shadow Warrior's own "may not be
+hired by a warband that includes an evil Hired Sword (eg Dark Elf Assassin)" restriction text
+genuinely contains the word, so the match is correct, not a bug. The "Unavailable" filter returned a
+different, smaller set (9 items) than the unfiltered list, confirming the eligibility split actually
+partitions the catalogue rather than being a no-op. `npx tsc -b`, `npm run lint`, `npm test -- --run`
+(1204 passed, 69 skipped) all clean.
 
 ### 43. No change-password option on the Account page
 

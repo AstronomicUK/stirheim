@@ -5,7 +5,7 @@ import { overrideNote, overrideReady, reasonWith, type Override } from '../../do
 import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, payHenchmanUpkeep, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
-import { Button, Markdown, Notice, NumberField, Sheet, TextField, OverrideField } from '../../ui'
+import { Button, Markdown, Notice, NumberField, Sheet, TextField, OverrideField, SelectField } from '../../ui'
 import { StatHeader, StatLine } from '../roster/shared/StatLine'
 import { Card, ItemLines, KeyValue, RuleList, Section, Tag } from '../roster/view/bits'
 import {
@@ -31,6 +31,18 @@ export interface HiredSwordsTabProps extends Omit<RecruitTabProps, 'template'> {
 export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks }: HiredSwordsTabProps) {
   const active = detail.roster.hiredSwords.filter((s) => s.status === 'active')
   const options = useMemo(() => hiredSwordOptions(detail.roster, template, bans), [detail.roster, template, bans])
+  const [search, setSearch] = useState('')
+  const [show, setShow] = useState<'all' | 'available' | 'check' | 'unavailable'>('all')
+  const shownOptions = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return options.filter((o) => {
+      if (q && !o.entry.name.toLowerCase().includes(q) && !(o.eligibility.reason ?? '').toLowerCase().includes(q)) return false
+      if (show === 'available' && !(o.eligibility.kind === 'ok' || o.eligibility.kind === 'allowed')) return false
+      if (show === 'check' && !(o.eligibility.kind === 'check' || o.eligibility.kind === 'restricted')) return false
+      if (show === 'unavailable' && o.eligibility.kind !== 'blocked') return false
+      return true
+    })
+  }, [options, search, show])
   const [paying, setPaying] = useState<RosterHiredSword | null>(null)
   const [dismissing, setDismissing] = useState<RosterHiredSword | null>(null)
   const [hiring, setHiring] = useState<HiredSwordOption | null>(null)
@@ -52,7 +64,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
           <p className="text-sm text-ink-dim">No hired swords at the moment.</p>
         ) : (
           <>
-            <StatHeader className="px-1" />
+            <StatHeader className="px-4" />
             <ul className="flex flex-col gap-3">
               {active.map((hs) => {
                 const entry = findHiredSwordEntry(hs.hiredSwordId)
@@ -120,8 +132,20 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
           Hired swords do not count against the warband&apos;s size or hero limit, keep their own equipment and want their upkeep after every
           battle. One of each type only.
         </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex-1">
+            <TextField label="Search hired swords" value={search} autoComplete="off" placeholder="Search by name" onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <SelectField label="Show" hideLabel value={show} onChange={(e) => setShow(e.target.value as typeof show)}>
+            <option value="all">All</option>
+            <option value="available">Available</option>
+            <option value="check">Needs a check</option>
+            <option value="unavailable">Unavailable</option>
+          </SelectField>
+        </div>
+        {shownOptions.length === 0 ? <p className="text-sm text-ink-dim">Nothing matches.</p> : null}
         <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
-          {options.map((option) => {
+          {shownOptions.map((option) => {
             const { entry, eligibility } = option
             const blocked = !canEdit || eligibility.kind === 'blocked'
             return (

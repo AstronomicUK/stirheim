@@ -2294,6 +2294,117 @@ targeting-rules items.
 
 ---
 
+## Batch — 2026-09-08 (Tom heading to bed, more items before he goes)
+
+### 87. Remove the "Roll advancements later" option; only deferring the skill choice after rolling should remain
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-08
+
+> "There shouldn't be an option to roll advancements later (only to select a skill later once it's
+> been rolled)"
+
+**Notes:** `AdvancesStep.tsx`'s `MODE_OPTIONS` offers "Roll now" / "Roll later" via a
+`SegmentedControl`; Tom wants "Roll later" removed entirely, leaving only "Roll now" (so the roll
+always happens immediately in the wizard) plus the existing separate "Pick the skill later" (offered
+post-roll, from within the choose step, once the roll turned out to need a skill pick — see #13,
+fixed earlier today). Checked `derive.ts`: there is a second, unrelated, forced use of `mode:
+'later'` for a subject no longer eligible this battle (dead/retired/out) — that path sets `plan:
+null` and takes `AdvanceCard`'s early-return branch (plain summary text, no `SegmentedControl`
+reached at all), so removing the player-facing "Roll later" choice doesn't touch that forced case.
+
+### 88. UI bug (see photo)
+
+**Status:** ⛔ Blocked — no photo actually attached to the message
+**Priority:** 🟡 Low
+**Reported:** 2026-09-08
+
+> "UI bug (see photo)"
+
+**Notes:** No image file came through with this message — cannot investigate or fix a bug I can't
+see. Needs Tom to resend the photo (or describe what it shows) next time he's at the computer.
+
+### 89. Recolour the Advancements button's glow to match Cast a Spell, and add the same two-wisp orbit
+
+**Status:** 🔲 Open
+**Priority:** 🟢 Low (polish)
+**Reported:** 2026-09-08
+
+> "Change the animation for the advancements button to the same colour as the animation for the Cast
+> a Spell button, and have the 2 wisps circling the button like the cast a spell button, changing the
+> glowing star to the same colour as well"
+
+**Notes:** The Advancements `ActionTile` (`WarbandPage.tsx`, `icon="advances" glow={advancesDue > 0}`)
+uses `stirheim-glow` (`src/index.css`), a brass drop-shadow pulse on the icon — the `advances` icon
+itself (`src/ui/icons.tsx`) is a five-pointed star path, which is "the glowing star" Tom means. #84
+round 4 already built the exact target look on the Cast a Spell quick-action tile: a blue/white glow
+(`#dff3ff` core, `#4fc3f7` halo) and a two-wisp `stirheim-cast-orbit` circling the tile border. This
+item asks to point that same established colour/orbit combination at the Advancements tile instead
+of (or alongside — wording doesn't say to remove the existing brass pulse, just to recolour it)
+building a new effect from scratch. Precisely specified enough to build directly rather than needing
+Astra's iterative back-and-forth.
+
+### 90. The hired swords icon is weird — brainstorm alternatives, don't just ship one
+
+**Status:** 🔲 Open — needs Tom's choice, not a unilateral fix
+**Priority:** 🟢 Low (polish)
+**Reported:** 2026-09-08
+
+> "The hired swords icon is really weird. Need to brainstorm alternative designs"
+
+**Notes:** `hired` in `src/ui/icons.tsx`: `'M4 20l7-7M9 8l7 7M14 4l6 6-3 3-6-6zM3 21l3-1-2-2z'` — two
+crossed diagonal strokes plus a small kite/blade shape and a separate mark, genuinely hard to read as
+anything in particular at 20px. Tom explicitly asked to brainstorm options rather than have one
+redesign shipped unilaterally — preparing 2-3 candidate paths (e.g. a single stylised sword, a
+sword-and-coin, a handshake-with-blade motif) to present next time rather than deploying a pick
+overnight.
+
+### 91. Remove the "gc" text from the Buy tab so it matches Sell's plain look
+
+**Status:** 🔲 Open
+**Priority:** 🟢 Low (polish)
+**Reported:** 2026-09-08
+
+> "The GC text needs removing from the buy button on the trading post so it matches the sell button"
+
+**Notes:** `TradingPage.tsx`'s `IconTabs` detail mapping: `t.value === 'buy' ? \`${detail.warband.gold} gc\` : ...`
+gives Buy a gold-amount subtitle while Sell (and every other tab except Wyrdstone/Stash) gets
+`undefined`. One-line fix: drop the `buy` case so it falls through to `undefined` like Sell.
+
+### 92. Let a GM pick one of their own campaigns instead of typing its invite code, when joining/moving a warband
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-08
+
+> "When adding warbands to a campaign or transferring warbands to a campaign, if you are the GM of
+> campaigns, can we have a selection box as an alternative option to putting the invite code in,
+> since it's our own campaign?"
+
+**Notes:** `MoveCampaign` (`WarbandPage.tsx`, just lifted out of the header into the More sheet for
+#22) only offers a free-text invite-code field. `useMyCampaigns(userId)` already returns each
+campaign's own `invite_code` alongside `gm_id` — for campaigns where `gm_id === user.id`, the code
+never needs to be typed at all; a `SelectField` populated from that filtered list can just supply
+`c.invite_code` straight into the existing `useMoveWarbandCampaign` mutation, no new backend
+plumbing. Show it as an alternative to the code field only when the viewer actually GMs at least one
+campaign.
+
+### 93. Search and filter for the Dramatis Personae list, matching the hired swords treatment
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** 2026-09-08
+
+> "Search and filter list for Dramatis Personae, similar to hired swords"
+
+**Notes:** Same shape as #42 (fixed earlier today), applied to `CharactersTab.tsx`'s `rows` list
+instead of `HiredSwordsTab.tsx`'s `options` — search by name (and `readRestriction`'s eligibility
+reason text, same convention), plus a filter over whatever eligibility buckets `readRestriction`
+actually produces here (confirmed it returns the same `Eligibility` shape as hired swords).
+
+---
+
 ### N. Short title
 
 **Status:** 🔲 Open

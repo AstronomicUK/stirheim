@@ -2331,7 +2331,7 @@ Recite → Roll → resolve flow, not just reading the code.
 <!--
 ### 85. Cast a Spell now matches the attack layout, but the two boxes still carry very different content — and the Target select clips its own text
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed — item 1 (clipped text) done; items 2-4 (layout parity) still open
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the UI sweep while verifying #31, not reported from play
 
@@ -2359,6 +2359,18 @@ position the attack screens use.
 *Cast a Spell*, then *Melee Attack*, and compare.
 
 **Evidence (local, not committed):** `.sessions/handoffs/shots-round3/verify-20260908/31-cast.png` beside `.sessions/handoffs/shots-round3/verify-20260908/31-melee.png`.
+
+**Fixed (item 1 only):** Added `overflow-hidden text-ellipsis whitespace-nowrap` to the shared
+`SelectField`'s `<select>` — this was a general gap (any long option text in any select field would
+clip mid-word with no ellipsis, not just this one spot), so fixed at the component level rather than
+patching just the Target select. `overflow: hidden` doesn't survive to `getComputedStyle` on a native
+`<select>` (a known cross-browser quirk — Chromium reports the box's own `overflow` as `visible`
+regardless), so checked the actual rendering instead of trusting the computed style: scaled the
+Target select 2.5x live and confirmed it now reads "Off the sheet — ..." with a real ellipsis, not
+the old hard mid-word cut. Items 2-4 (empty Target box, missing Spellcaster profile line, roll-button
+placement) are a real layout pass, not a one-line fix — left open, best tackled together with #32/#76
+as the original note suggested rather than patched piecemeal. `npx tsc -b`, `npm run lint`, `npm test
+-- --run` all clean.
 
 Related: #84 (casting animation and spell icon) touches the same box; #32 and #76 are the separate
 targeting-rules items.

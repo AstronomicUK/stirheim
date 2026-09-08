@@ -21,7 +21,7 @@ export function SelectField({ label, hint, error, hideLabel = false, className =
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={`min-h-12 w-full min-w-0 appearance-none rounded-md border bg-surface-low px-3.5 text-base text-ink focus:border-brass focus:outline-none ${
+        className={`min-h-12 w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap appearance-none rounded-md border bg-surface-low px-3.5 text-base text-ink focus:border-brass focus:outline-none ${
           error ? 'border-accent-strong' : 'border-border'
         } ${className}`}
         {...rest}

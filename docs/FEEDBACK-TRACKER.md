@@ -1043,7 +1043,7 @@ computed.
 
 ### 43. No change-password option on the Account page
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1054,6 +1054,20 @@ reset-password screen, so this is a small job — a sheet on the Account page ca
 wrapper.
 
 **How to replicate:** Account. There is no password control anywhere on the screen.
+
+**Fixed:** Added a "Password" row to `AccountPage.tsx`, styled and behaving exactly like the existing
+Display name row (masked "••••••••" value, "Change" button, inline expand to a form, "Save"/"Cancel").
+Reuses `resetPasswordSchema`/`PASSWORD_MIN`/`validate` from `./schemas` (the same validation
+`ResetPasswordPage.tsx` already uses) and calls the existing `updatePassword` wrapper directly — no
+new API surface. On success shows "Password changed." via the page's existing message banner.
+
+Verified live on local dev: opened the form, submitted a too-short password with a mismatched
+confirmation, and got both client-side errors ("Use at least 8 characters." and "The two passwords
+do not match.") with no network request to Supabase auth — confirmed via the request log that
+validation blocks submission before any call goes out. Did not exercise an actual successful
+password change against the shared local dev account, since other sessions' integration tests
+depend on its known password staying `stirheim-dev`. `npx tsc -b`, `npm run lint`, `npm test -- --run`
+(1203 passed, 69 skipped) all clean.
 
 ### 44. Material variants are also generated onto bases where the result is legal but absurd
 

@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { signOut, updateDisplayName } from '../../api/auth'
+import { signOut, updateDisplayName, updatePassword } from '../../api/auth'
 import { queryClient } from '../../app/queryClient'
 import { useSession } from '../../app/session'
 import { Button, Notice, PageHeader, TextField } from '../../ui'
 import { usePageTitle } from '../onboarding/usePageTitle'
-import { DISPLAY_NAME_MAX, displayNameFormSchema, validate } from './schemas'
+import { DISPLAY_NAME_MAX, PASSWORD_MIN, displayNameFormSchema, resetPasswordSchema, validate, type FieldErrors } from './schemas'
+
+type PasswordValues = { password: string; confirm: string }
+const emptyPasswordValues: PasswordValues = { password: '', confirm: '' }
 
 const APP_VERSION: string = import.meta.env.VITE_APP_VERSION ?? 'dev'
 
@@ -18,8 +21,11 @@ export function AccountPage() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [fieldError, setFieldError] = useState<string | undefined>()
+  const [passwordEditing, setPasswordEditing] = useState(false)
+  const [passwordValues, setPasswordValues] = useState<PasswordValues>(emptyPasswordValues)
+  const [passwordErrors, setPasswordErrors] = useState<FieldErrors<PasswordValues>>({})
   const [message, setMessage] = useState<{ tone: 'error' | 'success'; text: string } | null>(null)
-  const [pending, setPending] = useState<'name' | 'signout' | null>(null)
+  const [pending, setPending] = useState<'name' | 'password' | 'signout' | null>(null)
 
   const displayName = profile?.display_name ?? ''
 
@@ -43,6 +49,27 @@ export function AccountPage() {
     setProfile(result.data)
     setEditing(false)
     setMessage({ tone: 'success', text: 'Display name saved.' })
+  }
+
+  function startEditingPassword() {
+    setPasswordValues(emptyPasswordValues)
+    setPasswordErrors({})
+    setMessage(null)
+    setPasswordEditing(true)
+  }
+
+  async function savePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const check = validate(resetPasswordSchema, passwordValues)
+    if (!check.ok) return setPasswordErrors(check.errors)
+    setPasswordErrors({})
+    setPending('password')
+    const result = await updatePassword(check.data.password)
+    setPending(null)
+    if (!result.ok) return setMessage({ tone: 'error', text: result.error })
+    setPasswordEditing(false)
+    setPasswordValues(emptyPasswordValues)
+    setMessage({ tone: 'success', text: 'Password changed.' })
   }
 
   async function onSignOut() {
@@ -94,6 +121,49 @@ export function AccountPage() {
             </div>
             <Button variant="secondary" onClick={startEditing} disabled={!profile}>
               Edit
+            </Button>
+          </div>
+        )}
+
+        {passwordEditing ? (
+          <form onSubmit={savePassword} noValidate className="flex flex-col gap-3 px-4 py-4">
+            <TextField
+              label="New password"
+              type="password"
+              name="password"
+              autoComplete="new-password"
+              autoFocus
+              value={passwordValues.password}
+              onChange={(e) => setPasswordValues({ ...passwordValues, password: e.target.value })}
+              error={passwordErrors.password}
+              hint={`At least ${PASSWORD_MIN} characters.`}
+            />
+            <TextField
+              label="Confirm new password"
+              type="password"
+              name="confirm"
+              autoComplete="new-password"
+              value={passwordValues.confirm}
+              onChange={(e) => setPasswordValues({ ...passwordValues, confirm: e.target.value })}
+              error={passwordErrors.confirm}
+            />
+            <div className="flex gap-3">
+              <Button type="submit" pending={pending === 'password'} className="flex-1">
+                Save
+              </Button>
+              <Button variant="secondary" onClick={() => setPasswordEditing(false)} disabled={pending === 'password'} className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-xs uppercase tracking-wider text-ink-dim">Password</span>
+              <span className="text-ink">••••••••</span>
+            </div>
+            <Button variant="secondary" onClick={startEditingPassword}>
+              Change
             </Button>
           </div>
         )}

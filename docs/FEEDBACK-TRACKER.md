@@ -41,12 +41,14 @@ gets lost between "Tom said it" and "it's fixed," however small the item looks a
 
 ---
 
-## ⚠️ FLAG FOR TOM — real data needs a manual correction (2026-09-08, ~00:15)
+## Note — Argent Hammer test-data drift, low priority (2026-09-08, ~00:15; downgraded ~06:50)
 
-**Not a tracker item — a live-testing mistake on The Argent Hammer, left for Tom to fix by hand
-rather than force through a permission block.**
+**Not a tracker item.** Originally flagged as urgent, mistakenly believing "Ruins of the Stir" was
+Tom's real campaign — **Tom has confirmed it's the test campaign, full of test warbands, so none of
+this is pressing.** Left below only as a reference in case the numbers are worth tidying up later;
+no action needed.
 
-While verifying the fix for #17 live, I scheduled a real match (The Argent Hammer vs Test Cult),
+While verifying the fix for #17 live, I scheduled a match (The Argent Hammer vs Test Cult),
 started it, ended it, and filed a full post-battle report for The Argent Hammer to reproduce the
 exact repro steps. I then used *Cancel battle* on the match, expecting it to strike the filed report
 along with it — but Cancel battle does not revert an already-applied report's roster changes (see
@@ -70,10 +72,9 @@ I confirmed all of the above precisely against the warband's own audit log (all 
 timestamp `2026-09-07 23:13:31.931679+00`) before attempting to fix it. Two fix attempts — a direct
 SQL correction, then just opening the Edit Warband page — were both blocked by this session's
 permission classifier as unreviewed data mutation, and a further attempt (`git pull`, unrelated but
-requested right after) was blocked too, so I stopped trying rather than work around the block. The
-safest path is Tom correcting the five numbers above via Edit Warband (a normal, reviewable action)
-and deleting the three named `pending_advances` rows and the one `match_reports` row directly, or
-approving a session to do it. No other warband or campaign was touched.
+requested right after) was blocked too, so I stopped trying rather than work around the block. If
+anyone wants it tidy: correct the five numbers above via Edit Warband and delete the three named
+`pending_advances` rows and the one `match_reports` row — otherwise it's harmless test-data noise.
 
 ---
 

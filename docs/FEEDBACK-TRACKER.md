@@ -1864,7 +1864,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** 🔲 Open — assigned to Astra as a UI design test
+**Status:** ✅ Implemented — Astra; live browser design review pending
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -1879,6 +1879,27 @@ established restrained-animation language in `src/index.css` (`stirheim-land`/`s
 dice landing, `stirheim-glow` for "this is waiting on you") with its own comment explicitly noting
 "nothing else in the app moves on its own" — whatever Astra designs should read as part of that
 family, not a bolt-on. Given to Astra, not built here.
+
+
+**Implementation / verification (Astra, 2026-09-08):** A fine brass outline gathers towards the
+Spellcaster box and fades once after closing a successfully resolved casting sheet (including
+automatic spells/prayers). Waiting, failed, dispelled and abandoned attempts stay still. All close
+routes share the same handler; its cleared state ref prevents duplicate playback. Starting another
+attempt or selecting another caster removes the old decoration. Only the decorative span is keyed,
+so controls retain their identity; Fight and Target boxes receive no effect. The 1200ms ease-in-out
+keyframes animate inset (-5px to -1px) and opacity (0 → .65 → .45 → 0), with no text scaling,
+layout shift, timers or continuous pulse. Reduced motion disables the animation completely.
+
+Redrew `cast` as a diagonal wand with one four-point spark, using the existing single path,
+1.8-unit round stroke. Rasterized the actual source paths with temporary `@resvg/resvg-js` tooling
+outside the repository and inspected PNGs at 240px, 14px and 20px alongside `battle`, `map` and
+`advances`. Removed a small cross-stroke after the first image looked too much like a key; inspected
+the revised image too. No app dependency added. `npx tsc -b` passed; `npm test -- --run` passed
+(82 files, 1202 tests; 13 files / 69 tests skipped). `npm run lint` exited 0, with one pre-existing
+unused-variable warning in a peer's untracked `.ui-verify2.mjs:35`; its owner was notified.
+Live browser verification was **not possible** in this sandbox. CSS timing, geometry, reduced-motion
+fallback and trigger/reset paths were reviewed in code; browser review requested from Stirheim
+Developer before Tom sees the design. No deployment performed.
 
 ---
 

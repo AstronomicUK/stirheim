@@ -38,6 +38,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
   const [casterId, setCasterId] = useState<string | null>(casters[0]?.heroId ?? null)
   const caster = casters.find((c) => c.heroId === casterId) ?? casters[0]
   const [state, setState] = useState<CastState | null>(null)
+  const [castingPulse, setCastingPulse] = useState(0)
   const [spent, setSpent] = useState<Record<string, number>>({})
   // Most spells target the enemy off-app; some need a friendly named instead (a heal, a blessing).
   const [targetId, setTargetId] = useState<string | null>(null)
@@ -73,11 +74,24 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
       modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
       alreadyUsed: usedUp,
     })
+    setCastingPulse(0)
     recorded.current = null
     stateRef.current = started
     setState(started)
     // A spell that needs no roll is finished the moment it starts.
     if (started.done) record(started)
+  }
+
+  // Celebrate only the final outcome, once the covering sheet has gone. A keyed decoration
+  // replays without remounting the panel's controls or depending on animation-end events.
+  function closeCast() {
+    const finished = stateRef.current
+    if (finished?.done && (finished.outcome === 'cast' || finished.outcome === 'automatic')) {
+      setCastingPulse((pulse) => pulse + 1)
+    }
+    stateRef.current = null
+    setState(null)
+    setTargetId(null)
   }
 
   function record(finished: CastState) {
@@ -113,7 +127,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
     <>
       {/* Spellcaster and target face each other, the same layout Melee/Ranged Attack use. */}
       <div className="grid grid-cols-2 items-stretch gap-3 lg:gap-8">
-        <FightBox icon="cast" title="Spellcaster" tone="brass">
+        <FightBox icon="cast" title="Spellcaster" tone="brass" castingPulse={castingPulse}>
           {casters.length > 1 ? (
             <div role="radiogroup" aria-label="Which caster" className="flex flex-wrap gap-1.5">
               {casters.map((c) => (
@@ -123,6 +137,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
                   role="radio"
                   aria-checked={c.heroId === caster.heroId}
                   onClick={() => {
+                    setCastingPulse(0)
                     setCasterId(c.heroId)
                     stateRef.current = null
                     setState(null)
@@ -202,11 +217,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
 
       <Sheet
         open={state !== null}
-        onClose={() => {
-          stateRef.current = null
-          setState(null)
-          setTargetId(null)
-        }}
+        onClose={closeCast}
         size="full"
         title={state ? `${caster.name} ${caster.kind === 'prayer' ? 'recites' : 'casts'} ${state.spell.name}` : ''}
         description="Roll your dice one step at a time, or tap Roll."
@@ -214,11 +225,7 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
           <Button
             variant="secondary"
             block
-            onClick={() => {
-              stateRef.current = null
-              setState(null)
-              setTargetId(null)
-            }}
+            onClick={closeCast}
           >
             Close
           </Button>

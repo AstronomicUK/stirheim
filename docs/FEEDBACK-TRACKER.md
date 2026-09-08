@@ -187,7 +187,7 @@ Nothing found here reproduces a defect from static reading alone. Recommend aski
 
 ### 9. Better visual representation of multiple attacks — pick attack count up front, label "First attack" / "Second attack"; likely to merge with upcoming items about stunned/knocked-down targets
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, popup attack-count selection is still missing
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -203,6 +203,8 @@ Nothing found here reproduces a defect from static reading alone. Recommend aski
 Verified live on local dev: Captain Ulrich Brandt (Sword + Dagger, 2 attacks) showed "Attacks here (of 2 max)" in the weapon picker, then "First attack (Sword): to hit" and "Second attack (Dagger): to hit" as the roll-through stepped through both. `tsc -b`, `oxlint` and the full `vitest run` suite (1174 passed, including new coverage for the numbering scheme) all clean.
 
 ## Batch — 2026-09-07 (large dump)
+
+**Reopened 2026-09-08 — Astra claim-specific audit:** Tom asked for the attack-count choice **“when you open the popup”**, as well as the maximum and ordinal attack labels. The maximum and labels are implemented, but the only attack-count `Stepper` remains in the outer attacker/weapon box (`FightTab.tsx`, around line 232), outside the roll-through `Sheet` (around line 334). The popup receives an already chosen count and immediately renders `RollSection`; it contains no count picker. The original verification checked the maximum in the **weapon picker**, then the labels in the popup, silently replacing the requested location/workflow with an adjacent one. This is a direct component-tree finding, not a fresh live-browser check; local Vite/Chromium are unavailable in this sandbox. Keep the real maximum/label work; still provide the count selection when opening the popup, coordinated with #24. No implementation changed.
 
 ### 10. Attacking a stunned or knocked-down target doesn't apply the rulebook's automatic outcomes
 
@@ -306,7 +308,7 @@ So every code path that can ever set `henchman_groups.xp` — the rules data, th
 
 ### 15. The Well exploration outcome doesn't ask which model missed the next game (and other outcomes probably have the same gap)
 
-**Status:** ✅ Fixed (Well only — see the scope note below)
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, Well is wired, but the reported wider model-selection gap remains
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -335,6 +337,8 @@ Given the number and variety of these (a permanent stat/skill change, a permanen
 - `REPORT_DRAFT_VERSION` bumped 5 → 6 (a new required draft field) so an in-flight report started before this deploy is dropped rather than read with a missing field, matching this store's own stated policy ("a draft from an older shape is dropped rather than guessed at").
 
 Verified live end-to-end on local dev: fought a battle, rolled exploration dice to a Well result, the Hero picker appeared with a validation message until a Hero was chosen, picked Pieter and marked the test Failed — the step showed "Pieter swallows tainted water and misses the next game through sickness," the Review step named him again, and after filing the report the database showed `heroes.flags = {"missNextGames": 1}` on Pieter's row. `tsc -b`, `oxlint`, and the full `vitest run` suite (1169 passed, including an updated/extended test in `model.test.ts`) all clean.
+
+**Reopened 2026-09-08 — Astra claim-specific audit:** The verbatim report explicitly includes **“There are probably other exploration phase outcomes like this, where you have to select a unit.”** The original investigation confirmed those cases, then called them outside the report and closed the parent as Fixed after testing only Well. That is a scope mismatch. Current `locationOutcome`/`deriveExploration` support a chosen test subject only via `test.pickHero`; only Well sets that metadata and a model consequence. The Pit's chosen Hero/death, Alchemist's Laboratory's Academic access, Jewelsmith's Hero benefit, and Fighting Arena's chosen Hero training remain prose without equivalent subject/effect resolution (`src/rules/data/campaign/exploration.ts` contains the actual rules; #66 also tracks related rewards). The Well end-to-end evidence is specific and useful, and its missed-game fix remains accepted; it cannot close the wider clause of this report. Marked partially fixed so that scope remains visible. No implementation changed; this audit has not re-run the Well database flow because local browser/server execution is blocked.
 
 ### 16. The Well exploration outcome asks the user to input treasure found, when the app should already know the amount
 
@@ -511,7 +515,7 @@ Two existing patterns could serve the "tap to read more" request: `src/ui/HoverC
 
 ### 28. Creating a warband with a spellcaster never prompts a spell roll or pick — also needs a house rule for how the first spell is chosen
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, spellcaster detection still silently misses supported units; see #57
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -540,6 +544,8 @@ Ties into #29 (spell-edit scoping) and #32 (spell targeting) — all three touch
 
 Verified live on local dev: a fresh Cult of the Possessed warband showed a "First spell — Chaos Rituals" card under the Magister with the six-spell roll UI; "Create warband" stayed disabled with "Magister: choose a first spell (Chaos Rituals)" listed as the one remaining problem until a D6 was rolled (Lure of Chaos, in this run); after creating, the roster page showed "SPELLS: Lure of Chaos" and the database's `heroes.spells` column read `{lure_of_chaos}`. Also flipped the campaign's new "A spellcaster's first spell" setting to "Chosen freely" and confirmed it round-trips through Settings → save → the database's `houseRules.firstSpellRule` correctly (then reverted it back to the default for the dev campaign). `tsc -b`, `oxlint` and the full `vitest run` suite (1171 passed, including new coverage for `loreForUnit`, the builder's spell validation/setter, and the house-rule plumbing) all clean.
 
+**Reopened 2026-09-08 — Astra claim-specific audit:** The report says **“Making a warband with a spellcaster in”**, not only the Cult of the Possessed. The original live verification created a Magister, proving the picker and persistence for one recognised unit; it never established that the detection reaches the other spellcasters. Executed the actual `loreForUnit` against the current template catalogue: Protectorate of Sigmar's `warrior_priest`, Court of the Profane Pleasures' `court_of_pleasures_priest_of_obscene`, Nipponese Expedition's `nipponese_vim_to_mage`, Wood Elves' `forest_mage`, and Sorcerous Society's `magus` all return **null**. In particular, the actual reference expressly says the Protectorate Warrior Priest begins with one randomly generated prayer (`reference/rules/warbands/grade-2a-part2.md:581`), while the builder's lore-gated card and validation treat him as a non-caster. #57 already documents these remaining detection/lore-choice failures; its six overrides do not close this parent request. The three-mode house-rule/picker implementation remains real. Parent reopened as partial and linked to #57 rather than duplicating implementation work. This was an executable catalogue/source comparison, not a live-browser check; no implementation changed.
+
 ### 29. Editing a spellcaster's spells lets you pick any spell in the game, not just ones from that unit's own lore/tree
 
 **Status:** 🔲 Open
@@ -554,7 +560,7 @@ The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, b
 
 ### 30. Melee Attack and Ranged Attack quick actions share one highlight state and don't cleanly default to their own weapon type
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, highlight is fixed; ranged default still fails for a melee-only first model, as #77 records
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -568,6 +574,8 @@ The weapon-defaulting half (melee tile → melee weapon, ranged tile → ranged 
 now reads `tab === 'fight' && attackStartWith === 'melee'` (or `'ranged'`) instead of both keying off
 the same `tab === 'fight'`. Verified live: opened Melee Attack (only that tile lit), then Ranged
 Attack (only that one), confirmed via `aria-pressed` on both.
+
+**Reopened 2026-09-08 — Astra claim-specific audit:** The original quote explicitly asks that Ranged Attack **“should default to a ranged weapon”**. The fix note narrows this to “specifically about the shared highlight” based on a Marksman test. Current `FightTab` picks the first fit model without checking its kit (around line 84); if that model has no ranged weapon, the `startWith === 'ranged'` branch (around line 102) falls through to `defaultPrimary(melee)`. Thus an available Marksman later in the roster does not prevent Ranged Attack opening on a melee weapon. The existing #77 records Tom encountering precisely this omitted case, and owns the requested attacker search/empty-state follow-up. The original Marksman test was conditional on manually having a suitable attacker; the `aria-pressed` re-check only proves the independent highlight fix. Marked partial to reflect the original request accurately; no implementation changed. Current code corroborates #77, but local browser reproduction is blocked in this session.
 
 ### 31. "Cast a Spell" looks nothing like Melee/Ranged Attack — should reuse the same layout with "Spellcaster"/"Target" instead of "Attacker"/"Defender"
 

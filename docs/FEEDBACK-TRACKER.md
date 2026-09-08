@@ -2034,7 +2034,7 @@ action is active, on both mobile and desktop.
 
 ### 82. A matchup-maker tool: generate the next batch of games aiming for a round robin
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed — deployment and live UI pass pending (Astra, 2026-09-08)
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2078,6 +2078,46 @@ naturally on `CampaignPage.tsx` near "Battles," per #80/#83 above) to pick atten
 show the generated pairings; and reusing `NewMatchPage`'s existing scheduling flow to actually save
 each agreed pairing as a real match, rather than a separate chronicle. Worth building together with
 #83 (game-day scheduling) since "who's attending" is exactly the input both need.
+
+**Implementation (Astra, 2026-09-08; `b1b469e`):** GM-only Matchup maker beside Battles, with a player
+checklist, date and exact matchup count (1–50). Includes every active enrolled warband of the
+selected owners, with no fixed roster count. Exhaustive round matching excludes same-owner pairs,
+minimises the total historical pair count, then favours the longest combined time since meeting
+(100000-day bonus for never-met pairs). Odd pools select a feasible bye by fewest prior byes,
+then most recorded games, then random; impossible owner splits give an actionable message. Later
+proposed rounds include earlier proposals in their scoring and bye counts. Partial final rounds
+are labelled; proposals are temporary and only individually scheduled games are persisted.
+Exhaustive generation is capped at 14 active warbands to avoid freezing the browser.
+
+History is a paginated direct query of real `matches` / `match_participants`, including scheduled
+and imported matches, excluding cancelled matches. Multiplayer battles count once per distinct
+pair. Uses started date, scheduled date, then creation date; future games have zero elapsed-day
+bonus. Each pairing opens the **same `NewMatchForm`** with the pair and date prefilled and the pair
+fixed, retaining the native scenario library/random picker, districts, validation and scheduling
+RPC. Saving returns to the batch with a link to the real match; failures keep the form retryable.
+
+**Database:** `20260909000001_matchmaking.sql` adds nullable round/bye metadata to `matches` and
+extends the existing `schedule_match` RPC with optional arguments. No second match ledger. A bye
+counts once per saved round even when several games are saved, and stops counting if all those
+games are cancelled. Old matches have no recorded bye and contribute none; historical byes cannot
+be reconstructed from non-attendance. The RPC validates GM access, active/different-owner pairs,
+enrolled non-participant byes, round consistency and concurrent/retried overlapping saves. Existing
+ordinary scheduling/challenge calls remain compatible. **Apply this migration before deploying
+the frontend.** Applied and recorded on local Supabase only; no production migration or deployment
+performed by Astra.
+
+**Verification:** `npx tsc -b`, `npm run lint`, `npm test -- --run`, and `npm run build` passed.
+Full suite: **1228 passed, 74 skipped** (84 passing files, 14 skipped integration files). Includes
+21 new pure-resolver tests covering repeat priority, recency, never-met bonus, future/undated games,
+multiplayer history, varied/archived/absent rosters, owner exclusion, bye ordering/random ties,
+infeasible preferred byes, impossible/oversized pools, batch rotation, exact counts and immutability.
+Separately, **11 local integration tests passed** with `SUPABASE_LOCAL=1`: 5 new matchup API/RPC
+tests plus the 6 existing match lifecycle tests. The new suite creates and cleans up its own
+campaign/warbands and exercises real-history generation → existing form validation → scheduling →
+history/bye reads, duplicate rejection, GM/owner/bye checks, cancellation and legacy challenges.
+Build retains the existing large-chunk warning. No browser available in Astra's sandbox: visual
+layout, checklist clicks, embedded-form navigation and live production behaviour remain for the
+Stirheim Developer handoff; API integration is not claimed as browser E2E verification.
 
 ### 83. A game-day scheduling tool on the Campaign page: GM proposes dates, players respond, GM finalises
 

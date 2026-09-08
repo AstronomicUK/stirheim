@@ -202,6 +202,8 @@ export async function fetchMatchRoster(warbandId: string): Promise<{ warband: Wa
 // ---- transitions ----
 
 export interface ScheduleMatchInput {
+  matchmakingRoundId?: string
+  matchmakingByeWarbandId?: string | null
   campaignId: string
   warbandIds: string[]
   scenarioRulesId?: string | null
@@ -216,6 +218,8 @@ export interface ScheduleMatchInput {
 
 export async function scheduleMatch(input: ScheduleMatchInput): Promise<string> {
   const { data, error } = await supabase.rpc('schedule_match', {
+    p_matchmaking_round_id: input.matchmakingRoundId,
+    p_matchmaking_bye_warband_id: input.matchmakingByeWarbandId ?? undefined,
     p_campaign_id: input.campaignId,
     p_warband_ids: input.warbandIds,
     p_scenario_rules_id: input.scenarioRulesId ?? undefined,

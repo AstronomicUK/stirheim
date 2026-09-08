@@ -14,6 +14,7 @@ import { ActivityList } from './ActivityList'
 import { Card, Disclosure, Section, Tag, TextLink } from './bits'
 import { AliasField } from './AliasField'
 import { InviteCard } from './InviteCard'
+import { MatchupMaker } from './MatchupMaker'
 import { usePendingAdvanceCounts } from '../../api/advances'
 import { combatModeLabel, dicePolicyLabel } from './settingsForm'
 
@@ -168,6 +169,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
       {settings.mapCampaign ? <MapSummary campaignId={campaign.id} members={members} former={former_members} /> : null}
 
       <CampaignBattles campaignId={campaign.id} userId={user?.id} isGm={isGm} isMember={mine.length > 0} archived={campaign.archived} />
+
+      {isGm && !campaign.archived ? <MatchupMaker key={campaign.id} detail={detail} /> : null}
 
       <Section title="Recent activity">
         {activity.isPending ? (

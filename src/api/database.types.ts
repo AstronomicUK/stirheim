@@ -845,6 +845,8 @@ export type Database = {
           district_decided_by: string | null
           district_id: string | null
           id: string
+          matchmaking_round_id: string | null
+          matchmaking_bye_warband_id: string | null
           notes: string
           scenario_rules_id: string | null
           scheduled_for: string | null
@@ -863,6 +865,8 @@ export type Database = {
           district_decided_by?: string | null
           district_id?: string | null
           id?: string
+          matchmaking_round_id?: string | null
+          matchmaking_bye_warband_id?: string | null
           notes?: string
           scenario_rules_id?: string | null
           scheduled_for?: string | null
@@ -881,6 +885,8 @@ export type Database = {
           district_decided_by?: string | null
           district_id?: string | null
           id?: string
+          matchmaking_round_id?: string | null
+          matchmaking_bye_warband_id?: string | null
           notes?: string
           scenario_rules_id?: string | null
           scheduled_for?: string | null
@@ -889,6 +895,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "matches_matchmaking_bye_warband_id_fkey"
+            columns: ["matchmaking_bye_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "matches_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -1417,6 +1430,8 @@ export type Database = {
       }
       schedule_match: {
         Args: {
+          p_matchmaking_round_id?: string
+          p_matchmaking_bye_warband_id?: string
           p_campaign_id: string
           p_custom_scenario_id?: string
           p_district_id?: string

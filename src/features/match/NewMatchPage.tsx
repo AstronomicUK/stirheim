@@ -6,7 +6,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCampaign, type CampaignDetail, type CampaignMemberView } from '../../api/campaigns'
 import { useMapEvents } from '../../api/map'
-import { useScheduleMatch } from '../../api/matches'
+import { useScheduleMatch, type ScheduleMatchInput } from '../../api/matches'
 import { useCustomScenarios } from '../../api/scenarios'
 import { useSession } from '../../app/session'
 import { Button, Notice, PageHeader, SegmentedControl, SelectField, Spinner, TextArea, TextField } from '../../ui'
@@ -57,7 +57,17 @@ export function NewMatchPage() {
   return <NewMatchForm detail={query.data} />
 }
 
-function NewMatchForm({ detail }: { detail: CampaignDetail }) {
+export interface MatchupSchedule {
+  warbandIds: string[]
+  date: string
+  roundId: string
+  byeWarbandId: string | null
+  onSaved: (matchId: string) => void
+  onCancel: () => void
+}
+
+/** The campaign matchup maker embeds this same form; normal scheduling still uses the page. */
+export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matchup?: MatchupSchedule }) {
   const { campaign, members, settings } = detail
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -74,12 +84,12 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
 
   // The challenger's own warband is fixed once they have only one; with several they pick which.
   const [challengerId, setChallengerId] = useState<string>(mine[0]?.warband_id ?? '')
-  const [opponentIds, setOpponentIds] = useState<string[]>([])
+  const [opponentIds, setOpponentIds] = useState<string[]>(matchup?.warbandIds ?? [])
   const [source, setSource] = useState<ScenarioSource>('core')
   const [scenario, setScenario] = useState<ScenarioPick>(NO_SCENARIO)
   const [randomlyChosen, setRandomlyChosen] = useState(false)
   const [search, setSearch] = useState('')
-  const [scheduledLocal, setScheduledLocal] = useState('')
+  const [scheduledLocal, setScheduledLocal] = useState(matchup?.date ?? '')
   const [notes, setNotes] = useState('')
   const [districtId, setDistrictId] = useState<string | null>(params.get('district'))
   // Map campaigns may book a battle with the district still to be settled between the players.
@@ -100,7 +110,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
     [customRows],
   )
 
-  const pickable: CampaignMemberView[] = mode === 'gm' ? members : members.filter((m) => m.user_id !== user?.id)
+  const pickable: CampaignMemberView[] = matchup ? members.filter((m) => matchup.warbandIds.includes(m.warband_id)) : mode === 'gm' ? members : members.filter((m) => m.user_id !== user?.id)
   const warbandIds = mode === 'gm' ? opponentIds : challengerId ? [challengerId, ...opponentIds] : opponentIds
 
   function toggle(warbandId: string) {
@@ -122,14 +132,25 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
       return
     }
     try {
-      const matchId = await schedule.mutateAsync(result.input)
-      navigate(`/matches/${matchId}`, { replace: true })
+      const input: ScheduleMatchInput = matchup
+        ? { ...result.input, matchmakingRoundId: matchup.roundId, matchmakingByeWarbandId: matchup.byeWarbandId }
+        : result.input
+      // Attendance can change while the form is open; do not save an obsolete generated pair.
+      if (matchup && (!isGm || warbandIds.some((id) => !members.some((m) => m.warband_id === id && !m.warband.archived)))) {
+        setError('This pairing is no longer available. Return to the matchups and generate again.')
+        return
+      }
+      const matchId = await schedule.mutateAsync(input)
+      if (matchup) matchup.onSaved(matchId)
+      else navigate(`/matches/${matchId}`, { replace: true })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not book the battle.')
     }
   }
 
-  const back = <TextLink to={`/campaigns/${campaign.id}`}>Cancel</TextLink>
+  const back = matchup
+    ? <Button variant="secondary" onClick={matchup.onCancel} disabled={schedule.isPending}>Back to matchups</Button>
+    : <TextLink to={`/campaigns/${campaign.id}`}>Cancel</TextLink>
 
   if (campaign.archived) {
     return (
@@ -192,7 +213,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
       <fieldset className="flex min-w-0 flex-col gap-2">
         <legend className="mb-2 text-sm font-medium text-ink-dim">
           {copy.warbands}
-          <span className="ml-2 font-normal">{mode === 'gm' ? 'Pick two or more' : 'Pick one or more'}</span>
+          <span className="ml-2 font-normal">{matchup ? 'Generated pairing' : mode === 'gm' ? 'Pick two or more' : 'Pick one or more'}</span>
         </legend>
         {pickable.length === 0 ? (
           <Card className="px-4 py-4">
@@ -207,7 +228,7 @@ function NewMatchForm({ detail }: { detail: CampaignDetail }) {
               return (
                 <li key={m.warband_id}>
                   <label className={`flex min-h-11 cursor-pointer items-center gap-3 px-4 py-3 ${on ? 'bg-surface-high' : 'hover:bg-surface-high'}`}>
-                    <input type="checkbox" className="h-5 w-5 shrink-0 accent-brass" checked={on} disabled={schedule.isPending} onChange={() => toggle(m.warband_id)} />
+                    <input type="checkbox" className="h-5 w-5 shrink-0 accent-brass" checked={on} disabled={schedule.isPending || Boolean(matchup)} onChange={() => toggle(m.warband_id)} />
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="flex items-center gap-2">
                         <span className="truncate font-medium text-ink">{m.warband.name}</span>

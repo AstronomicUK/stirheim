@@ -61,7 +61,9 @@ describe("item catalogue", () => {
     expect(ARMOUR_ITEMS.length).toBe(18);
     expect(MISC_ITEMS.length).toBe(110);
     expect(ANIMAL_ITEMS.length).toBe(14);
-    expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(80);
+    // 72 after #44 excluded 14 improvised/ritual objects (a Gromril Ladle and its kin) from the
+    // material-variant generator; the floor here is a loose sanity check, not an exact count.
+    expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(65);
     expect(WARBAND_SPECIAL_ITEMS.length).toBe(40);
     expect(ITEMS.length).toBe(246 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
     for (const category of CATEGORIES) {
@@ -128,9 +130,23 @@ describe("item catalogue", () => {
     // Nor is a weapon that is itself already a material (#34: a Gromril Obsidian Weapon would be a
     // weapon made of two materials), an upgrade applied to another weapon rather than a weapon in
     // its own right (Dark Elf Blade, +20 gc; Sons of Hashut Obsidian Weapon, "applied to which
-    // weapon?"), a "pick one of these" placeholder (Club, Mace or Hammer), or the free dagger (its
-    // "1st free/2 gc" price text has no sane 4x/3x).
-    for (const id of ["obsidian_weapon", "sons_of_hashut_obsidian_weapon", "dark_elf_blade", "club_mace_or_hammer", "dagger"]) {
+    // weapon?"), a "pick one of these" placeholder (Club, Mace or Hammer), the free dagger (its
+    // "1st free/2 gc" price text has no sane 4x/3x), or an improvised/ritual object rather than a
+    // forged weapon (#44: a Gromril Ladle is legal by the letter of the rule and absurd in practice).
+    for (const id of [
+      "obsidian_weapon",
+      "sons_of_hashut_obsidian_weapon",
+      "dark_elf_blade",
+      "club_mace_or_hammer",
+      "dagger",
+      "ladle",
+      "kitchen_knife",
+      "censer",
+      "brazier_iron",
+      "boat_hook",
+      "cat_o_nine_tails",
+      "boss_pole",
+    ]) {
       const weapon = MELEE_WEAPONS.find((w) => w.id === id)!;
       expect(isMaterialVariantBase(weapon), `${id} should not be a material-variant base`).toBe(false);
       expect(findItem(`gromril_${id}`), `gromril_${id} should not exist`).toBeUndefined();

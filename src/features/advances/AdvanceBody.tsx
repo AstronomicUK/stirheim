@@ -13,7 +13,7 @@ import type { RewardPlan } from '../../rules/resolve/rewards'
 import { skillName } from '../roster/view/lookups'
 import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import type { AvailableSkillTable } from '../../rules/resolve/advances'
-import { Button, DieField, Notice, SegmentedControl, TextField } from '../../ui'
+import { Button, DieField, Notice, SegmentedControl, SelectField, TextField } from '../../ui'
 import { Card, Tag } from '../roster/view/bits'
 import {
   ADVANCE_STEPS,
@@ -533,14 +533,26 @@ function RewardPicker({ draft, plan, hero, update }: { draft: AdvanceDraft; plan
 
 function SkillPicker({ tables, selected, onSelect }: { tables: AvailableSkillTable[]; selected: string | null; onSelect: (id: string) => void }) {
   const [search, setSearch] = useState('')
+  const [type, setType] = useState('')
   const total = tables.reduce((n, t) => n + t.skills.length, 0)
   const q = search.trim().toLowerCase()
   const shown = tables
+    .filter((t) => !type || t.tableName === type)
     .map((t) => ({ ...t, skills: q ? t.skills.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)) : t.skills }))
     .filter((t) => t.skills.length > 0)
   if (total === 0) return <Notice tone="warn">No skills are left to learn on this warrior's tables.</Notice>
   return (
     <div className="flex flex-col gap-3">
+      {tables.length > 1 ? (
+        <SelectField label="Skill type" value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="">All Skills</option>
+          {tables.map((t) => (
+            <option key={t.tableId} value={t.tableName}>
+              {t.tableName}
+            </option>
+          ))}
+        </SelectField>
+      ) : null}
       {total > 12 ? <TextField label="Search skills" value={search} autoComplete="off" placeholder="Name or rule text" onChange={(e) => setSearch(e.target.value)} /> : null}
       {shown.length === 0 ? <p className="text-sm text-ink-dim">Nothing matches.</p> : null}
       {shown.map((t) => (

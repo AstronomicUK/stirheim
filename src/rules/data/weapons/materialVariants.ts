@@ -23,14 +23,21 @@ import { MELEE_WEAPONS } from "./melee";
  * material quality (an Obsidian Weapon can't also be forged in gromril), a priced upgrade applied
  * to another weapon rather than a weapon in its own right (the Dark Elf Blade's +20 gc, the Sons of
  * Hashut Obsidian Weapon's "applied to which weapon?" choice), a "pick one of these" placeholder
- * (Club, Mace or Hammer), and the free dagger (its "1st free/2 gc" price text has no sane ×4/×3).
+ * (Club, Mace or Hammer), the free dagger (its "1st free/2 gc" price text has no sane ×4/×3), and
+ * improvised or ritual objects rather than forged weapons (a Ladle, Kitchen Knife, Censer, Brazier
+ * Iron, Boat Hook, Cat o' Nine Tails, Boss Pole) — legal by this function's own stated rule but
+ * absurd in practice, and 14 entries' worth of clutter (both material qualities) in an already
+ * 173-long hand-to-hand list.
  */
+const IMPROVISED_IDS = new Set(["ladle", "kitchen_knife", "censer", "brazier_iron", "boat_hook", "cat_o_nine_tails", "boss_pole"]);
+
 export function isMaterialVariantBase(weapon: Weapon): boolean {
   if (weapon.type !== "melee" || weapon.strength !== "user") return false;
   if (weapon.paired || weapon.autoWoundOnNaturalSixToHit || weapon.poisoned || weapon.ignoresArmourSave) return false;
   if (weapon.special.includes("magical") || weapon.special.includes("permanentPoison")) return false;
   if (weapon.special.includes("upgradedSwordOrDagger") || weapon.special.includes("restrictedToSwordAxeOrHammerForm")) return false;
   if (weapon.special.includes("genericBludgeonChoice")) return false;
+  if (IMPROVISED_IDS.has(weapon.id)) return false;
   if (["unarmed", "zombie_claws", "wight_blade", "brass_knuckles", "iron_fist", "spiked_gauntlet", "katar", "obsidian_weapon", "dagger"].includes(weapon.id)) return false;
   return true;
 }

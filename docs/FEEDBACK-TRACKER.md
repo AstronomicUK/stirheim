@@ -491,13 +491,23 @@ re-doing the work.
 
 ### 18. Advancements' skill picker needs a skill-type filter, defaulting to "All Skills"
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-07
 
 > "When you select a skill in Advancements, the heading options of being able to select the skill type, with the default being "All Skills""
 
 **Notes:** Wording as sent — read as: add a skill-type filter/heading to the skill picker in Advancements, defaulting to "All Skills". Confirmed there's no such filter today: `SkillPicker` in `src/features/advances/AdvanceBody.tsx` (~lines 500-545) takes `tables: AvailableSkillTable[]` (one per skill table the hero is entitled to — Combat/Shooting/Strength/Speed/Academic/Warband-unique, from `availableSkills()` in `src/rules/resolve/advances.ts`) and just stacks every table as its own heading + list, one after another. The only narrowing control is a free-text search box, and it only appears once the combined skill count exceeds 12 — there's no "All Skills / Combat / Shooting / ..." selector at all. This `SkillPicker` is shared by both the post-battle wizard's Advances step and the standalone Advancements screen, so a filter added here covers both places at once.
+
+**Fixed:** Added a `SelectField` "Skill type" above the search box (only when a hero has more than
+one table, matching the search box's own "only show a control when it's actually useful" pattern),
+defaulting to "All Skills" and listing each of the hero's table names as its own option; selecting
+one filters `shown` down to just that table before the existing search/rendering logic runs.
+Verified live: rolled a hero through to a "New Skill" result, confirmed the dropdown reads exactly
+"All Skills, Combat Skills, Strength Skills, Speed Skills, Special Skills" for this hero's tables,
+and that picking "Combat Skills" narrowed the visible list from 24 skills across all tables down to
+6, showing only the Combat Skills heading. `npx tsc -b`, `npm run lint`, `npm test -- --run` all
+clean.
 
 ### 19. Skill toggles: the toggle wording belongs to the engine not the skill text, and toggles should only appear for a model that actually has the relevant skill
 
@@ -1177,7 +1187,7 @@ depend on its known password staying `stirheim-dev`. `npx tsc -b`, `npm run lint
 
 ### 44. Material variants are also generated onto bases where the result is legal but absurd
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1190,6 +1200,16 @@ entries of this kind pad a hand-to-hand list that is already 173 long. Worth dec
 `isMaterialVariantBase` should also require the base to be a *forged weapon* (which is what the
 file's own comment says it is doing: "anything that strikes with the wielder's own Strength and is
 an ordinary forged weapon").
+
+**Fixed:** Added the 7 named ids (`ladle`, `kitchen_knife`, `censer`, `brazier_iron`, `boat_hook`,
+`cat_o_nine_tails`, `boss_pole`) to `isMaterialVariantBase`'s exclusions, matching the file's own
+existing pattern of a hardcoded id list for one-off cases, and updated its doc comment to name the
+new category. `MATERIAL_VARIANT_ITEMS.length` dropped from 86 to 72 (14 fewer entries, both
+materials of all 7) — updated the one test that asserted a numeric floor on that count (`> 80` →
+`> 65`, itself just a loose sanity check, not an exact count) and extended the existing
+exclusion-verification loop in `items.test.ts` to cover all 7 new ids the same way it already covers
+`obsidian_weapon`/`dark_elf_blade`/etc. `npx tsc -b`, `npm run lint`, `npm test -- --run` (1207
+passed, 69 skipped) all clean.
 
 **How to replicate:** Trading post → Buy → search `gromril`. Scroll the hand-to-hand section.
 

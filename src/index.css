@@ -225,8 +225,10 @@ body {
 /*
   A slow pulsing glow, for an icon that is waiting on the player rather than merely informing them
   (an advance owed). Deliberately gentle and continuous, reserved for something that wants a
-  second look. The decorative Cast quick-action orbit below is an explicit exception requested
-  by Tom; it traces the edge instead of pulsing like an action owed.
+  second look. Blue/white rather than the ledger's brass, at Tom's request, to match the Cast a
+  Spell tile's own magical colour (see .stirheim-cast-orbit below) — inlined for the same reason
+  that one is. The decorative Cast quick-action orbit is an explicit exception to "nothing else
+  moves on its own"; this glow was already a second, earlier exception, now sharing its colour.
 */
 @keyframes stirheim-glow {
   0%,
@@ -234,7 +236,7 @@ body {
     filter: drop-shadow(0 0 0 transparent);
   }
   50% {
-    filter: drop-shadow(0 0 6px var(--color-brass)) drop-shadow(0 0 2px var(--color-brass));
+    filter: drop-shadow(0 0 6px #4fc3f7) drop-shadow(0 0 2px #4fc3f7);
   }
 }
 
@@ -245,7 +247,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .stirheim-glow {
     animation: none;
-    filter: drop-shadow(0 0 3px var(--color-brass));
+    filter: drop-shadow(0 0 3px #4fc3f7);
   }
 }
 
@@ -371,11 +373,13 @@ body {
   }
 }
 
-/* Idle magic on the Cast quick-action only: two quiet wisps, exactly opposite each other, circle
-   the rounded edge. Six seconds per lap, independent of rolls/selection; no movement of the tile
-   or its content. Blue/white rather than the ledger's brass, at Tom's request — a magical colour
-   the rest of the palette doesn't otherwise use, so it's inlined here rather than added as a
-   reusable design token. */
+/* Idle magic, shared by the Cast quick-action and the Advancements tile (when something's owed):
+   two quiet wisps, exactly opposite each other, circle the rounded edge. Six seconds per lap,
+   independent of rolls/selection; no movement of the tile or its content. Blue/white rather than
+   the ledger's brass, at Tom's request — a magical colour the rest of the palette doesn't
+   otherwise use, so it's inlined here rather than added as a reusable design token. Class names
+   still say "cast" since that's where it started; apply them to any tile that wants this look,
+   not just casting. */
 .stirheim-cast-tile {
   position: relative;
 }

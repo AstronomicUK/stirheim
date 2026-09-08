@@ -2348,7 +2348,7 @@ activates when content doesn't fit.
 
 ### 89. Recolour the Advancements button's glow to match Cast a Spell, and add the same two-wisp orbit
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2365,6 +2365,17 @@ item asks to point that same established colour/orbit combination at the Advance
 of (or alongside — wording doesn't say to remove the existing brass pulse, just to recolour it)
 building a new effect from scratch. Precisely specified enough to build directly rather than needing
 Astra's iterative back-and-forth.
+
+**Fixed:** `.stirheim-glow` (only ever used on the Advancements icon — confirmed nothing else
+references it) now pulses `#4fc3f7` instead of `var(--color-brass)`, in both the animated and
+reduced-motion states. `ActionTile` gained the same `stirheim-cast-tile`/`stirheim-cast-orbit`
+markup `NavTile` uses for Cast a Spell, wired to the existing `glow` prop rather than a new one —
+these classes were already fully generic (nothing cast-specific in the CSS itself, just the name),
+so this reuses them directly instead of duplicating the rules, with a comment now noting they're
+shared. Verified live: scaled the Advancements tile 4× and confirmed via computed styles the orbit's
+`stroke` is `rgb(223, 243, 255)` (`#dff3ff`) and its `filter` is `drop-shadow(rgb(79, 195, 247)...)`
+(`#4fc3f7`) — the exact Cast a Spell colours, not brass. `npx tsc -b`, `npm run lint`, `npm test --
+run` all clean.
 
 ### 90. The hired swords icon is weird — brainstorm alternatives, don't just ship one
 

@@ -12,7 +12,8 @@ export interface ActionTileProps {
   count?: number | null
   /** Brass border when the tile needs attention (something owed). */
   highlight?: boolean
-  /** A slow pulsing glow on the icon — something is waiting on the player, not just informational. */
+  /** A slow pulsing glow on the icon plus a circling wisp on the border — something is waiting on
+   * the player, not just informational. */
   glow?: boolean
 }
 
@@ -27,8 +28,13 @@ export function ActionTile({ to, icon, title, detail, count = null, highlight = 
       to={to}
       className={`relative flex min-h-20 flex-col gap-1.5 rounded-md border bg-surface-low px-3 pb-2.5 pt-3 no-underline transition-colors hover:bg-surface-high ${
         highlight ? 'border-brass shadow-[inset_0_0_0_1px_var(--color-brass)]' : 'border-border'
-      }`}
+      } ${glow ? 'stirheim-cast-tile' : ''}`}
     >
+      {glow ? (
+        <svg className="stirheim-cast-orbit" aria-hidden="true" focusable="false">
+          <rect width="100%" height="100%" rx="6" pathLength="100" />
+        </svg>
+      ) : null}
       <Icon name={icon} size={22} className={`text-brass ${glow ? 'stirheim-glow' : ''}`} />
       <span className="text-sm font-semibold leading-tight text-ink">{title}</span>
       {detail ? <span className="text-xs leading-snug text-ink-dim">{detail}</span> : null}

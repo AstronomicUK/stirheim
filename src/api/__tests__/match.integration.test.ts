@@ -118,6 +118,35 @@ describe.skipIf(!enabled)('match lifecycle', () => {
     expect(gmCancel.data).toBe('cancelled')
   })
 
+  it('cancelling a match reverts any report already applied against it (#75)', async () => {
+    const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN], p_scenario_rules_id: 'skirmish' })
+    expect(m.error).toBeNull()
+    const id = m.data as string
+    matches.push(id)
+    await gm.rpc('start_match', { p_match_id: id })
+    await gm.rpc('end_match', { p_match_id: id })
+
+    const before = await admin.from('warbands').select('gold, wyrdstone').eq('id', CLAWS_OF_ESHIN).single()
+
+    const filed = await player.rpc('submit_battle_report', {
+      p_match_id: id,
+      p_warband_id: CLAWS_OF_ESHIN,
+      p_report: { won: true, result: 'won', routed: false, applied: { warband: { gold_delta: 15, wyrdstone_delta: 2 } } },
+    })
+    expect(filed.error).toBeNull() // Only one of two warbands reports: match stays 'awaiting_reports'.
+
+    const applied = await admin.from('warbands').select('gold, wyrdstone').eq('id', CLAWS_OF_ESHIN).single()
+    expect(applied.data).toEqual({ gold: before.data!.gold + 15, wyrdstone: before.data!.wyrdstone + 2 })
+
+    const cancel = await gm.rpc('cancel_match', { p_match_id: id })
+    expect(cancel.data).toBe('cancelled')
+
+    const after = await admin.from('warbands').select('gold, wyrdstone').eq('id', CLAWS_OF_ESHIN).single()
+    expect(after.data).toEqual(before.data)
+    const report = await admin.from('match_reports').select('id').eq('match_id', id)
+    expect(report.data).toEqual([])
+  })
+
   it('the shared combat log: participants append while the battle runs; anyone at the table may revert once', async () => {
     const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN] })
     matches.push(m.data as string)

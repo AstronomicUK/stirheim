@@ -540,7 +540,7 @@ The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, b
 
 ### 30. Melee Attack and Ranged Attack quick actions share one highlight state and don't cleanly default to their own weapon type
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -550,15 +550,29 @@ The fix would reuse `loreForHero(hero, template)` + `unknownSpells(lore, hero, b
 
 The weapon-defaulting half (melee tile → melee weapon, ranged tile → ranged weapon) was verified working correctly earlier this session (tested live: a Marksman defaults to Bow under Ranged Attack, Dagger under Melee Attack) — so this report is specifically about the shared highlight, not the defaulting itself, unless something has changed since. Worth confirming with Tom whether the defaulting is now also misbehaving for him or whether it's purely the highlight.
 
+**Fixed:** `d293872`. Threaded `attackStartWith` into `BattleNav`'s tiles, so each one's `active` check
+now reads `tab === 'fight' && attackStartWith === 'melee'` (or `'ranged'`) instead of both keying off
+the same `tab === 'fight'`. Verified live: opened Melee Attack (only that tile lit), then Ranged
+Attack (only that one), confirmed via `aria-pressed` on both.
+
 ### 31. "Cast a Spell" looks nothing like Melee/Ranged Attack — should reuse the same layout with "Spellcaster"/"Target" instead of "Attacker"/"Defender"
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
 > "Additionally when you click "Cast a Spell," the visual is very different to the others. What it should be is that it should look like the melee attack and ranged attack but instead of "Attacker" it should say "Spellcaster" and instead of "Defender" it should say "Target.""
 
 **Notes:** Confirmed — `CastTab.tsx` is a single `<Section>` with everything (caster picker, the Target `<SelectField>` added earlier this session, the spell list) stacked in one column, nothing like `FightTab.tsx`'s two-box `FightBox` grid (`icon="battle" title="Attacker"` / `icon="shield" title="Defender"` side by side with the floating roll button between them). A faithful match would restyle Cast a Spell into the same two-`FightBox` grid, headed "Spellcaster" and "Target," with the spell picker/roll happening in a popup the same way the attack roll does — which would also naturally fold in the Target select from #32 rather than leaving it as a plain dropdown above the spell list. Worth doing together with #32 and #30 as one pass over the whole quick-actions/roll-it-out area, since they touch the same components.
+
+**Fixed:** `d293872`. Extracted `FightTab`'s `FightBox` into `battle/cards.tsx` so both screens share
+one component, then restyled `CastTab` into the same two-box grid: a "Spellcaster" box (caster
+picker, spell list, the cast-blocked and already-cast notices) beside a "Target" box, with the roll
+walkthrough moved into a full-screen `Sheet` popup the same way Melee/Ranged Attack already work,
+instead of replacing the spell list inline. The Target select from #32 already lived in its own box
+as a side effect — #32 itself (friendly/enemy list split by what the spell allows) is still open.
+Verified live: opened Cast a Spell to see the Spellcaster/Target boxes side by side, then opened (and
+closed without rolling, to avoid writing a cast record) the new popup for a real prayer.
 
 ### 32. Spell targeting should offer only friendly, only enemy, or both lists (grouped under headings) depending on what the spell allows
 

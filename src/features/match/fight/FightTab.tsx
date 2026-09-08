@@ -2,7 +2,7 @@
 // this phase of attacks, then (optionally) walk real dice through it step by step. An out of
 // action result can be logged straight to the attacker's "Enemies out" tally.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
@@ -13,8 +13,9 @@ import { findItem } from '../../../rules/data/items'
 import { findWarbandSkill } from '../../../rules/data/campaign/warbandSkills'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet, Spinner, Stepper, type IconName } from '../../../ui'
+import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
+import { FightBox } from '../battle/cards'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
@@ -810,18 +811,6 @@ const RESULT_ANIMATION_CLASS: Partial<Record<Outcome, string>> = {
   knockedDown: 'stirheim-knockdown',
   stunned: 'stirheim-stunned',
   outOfAction: 'stirheim-outofaction',
-}
-
-function FightBox({ icon, title, tone, children }: { icon: IconName; title: string; tone: 'brass' | 'accent'; children: ReactNode }) {
-  return (
-    <section className={`flex min-w-0 flex-col gap-2 rounded-md border bg-surface-low px-2.5 py-2.5 ${tone === 'brass' ? 'border-brass/50' : 'border-accent/50'}`}>
-      <h3 className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${tone === 'brass' ? 'text-brass' : 'text-accent'}`}>
-        <Icon name={icon} size={14} />
-        {title}
-      </h3>
-      {children}
-    </section>
-  )
 }
 
 /** A last resort when the catalogue has no entry: "fear_5plus" -> "Fear 5+". */

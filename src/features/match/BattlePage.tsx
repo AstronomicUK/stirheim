@@ -321,6 +321,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
             inApp={inApp}
             canCast={canCast}
             desktop={desktop}
+            attackStartWith={attackStartWith}
             onAttack={(kind) => {
               setAttackStartWith(kind)
               setTab('fight')

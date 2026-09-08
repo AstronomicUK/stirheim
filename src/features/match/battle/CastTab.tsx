@@ -21,8 +21,9 @@ import { castersOf } from './casters'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband } from '../../../rules/types/roster'
 import type { Spell } from '../../../rules/types/magic'
-import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField } from '../../../ui'
+import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
+import { FightBox } from './cards'
 
 export interface CastTabProps {
   roster: RosterWarband
@@ -109,74 +110,69 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
   }
 
   return (
-    <Section title={caster.kind === 'prayer' ? 'Prayers' : 'Cast a spell'} aside={caster.lore.name}>
-      <div className="flex flex-col gap-4">
-        {casters.length > 1 ? (
-          <div role="radiogroup" aria-label="Which caster" className="flex flex-wrap gap-1.5">
-            {casters.map((c) => (
-              <button
-                key={c.heroId}
-                type="button"
-                role="radio"
-                aria-checked={c.heroId === caster.heroId}
-                onClick={() => {
-                  setCasterId(c.heroId)
-                  stateRef.current = null
-                  setState(null)
-                  setSpent({})
-                  setTargetId(null)
-                }}
-                className={`min-h-11 rounded-full border px-4 text-sm transition-colors ${c.heroId === caster.heroId ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'}`}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {targets.length > 0 ? (
-          <SelectField label="Target (if this spell needs one)" value={targetId ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
-            <option value="">Off the sheet — no target on this warband</option>
-            {targets.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </SelectField>
-        ) : null}
-
-        {caster.blocks.length > 0 ? (
-          <Notice tone="error" title={`${caster.name} may not cast`}>
-            {caster.blocks.join(' ')}
-          </Notice>
-        ) : null}
-        {already.length > 0 ? (
-          <Notice tone="warn" title={`Already cast this turn`}>
-            {already.map((c) => `${c.spellName}${c.targetName ? ` on ${c.targetName}` : ''} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
-            {caster.secondSpell ? ' Magical Aptitude allows a second attempt after a Toughness test.' : ' A wizard may cast one spell per turn.'}
-          </Notice>
-        ) : null}
-
-        {state === null ? (
-          <>
-            {caster.modifiers.length > 0 ? <ModifierBar caster={caster} spent={spent} setSpent={setSpent} /> : null}
-            <div className="flex flex-col gap-2">
-              {caster.spells.map(({ spell, difficulty }) => (
-                <Card key={spell.id} className="flex flex-col gap-2 px-3 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <HoverCard title={spell.name} label={<span className="text-sm font-semibold text-ink">{spell.name}</span>}>
-                        {spell.text}
-                      </HoverCard>
-                      <p className="text-xs text-ink-dim">{difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
-                    </div>
-                    <Button variant="secondary" disabled={caster.blocks.length > 0} onClick={() => begin(spell)}>
-                      {caster.kind === 'prayer' ? 'Recite' : 'Cast'}
-                    </Button>
-                  </div>
-                </Card>
+    <>
+      {/* Spellcaster and target face each other, the same layout Melee/Ranged Attack use. */}
+      <div className="grid grid-cols-2 items-stretch gap-3 lg:gap-8">
+        <FightBox icon="cast" title="Spellcaster" tone="brass">
+          {casters.length > 1 ? (
+            <div role="radiogroup" aria-label="Which caster" className="flex flex-wrap gap-1.5">
+              {casters.map((c) => (
+                <button
+                  key={c.heroId}
+                  type="button"
+                  role="radio"
+                  aria-checked={c.heroId === caster.heroId}
+                  onClick={() => {
+                    setCasterId(c.heroId)
+                    stateRef.current = null
+                    setState(null)
+                    setSpent({})
+                    setTargetId(null)
+                  }}
+                  className={`min-h-11 rounded-full border px-4 text-sm transition-colors ${c.heroId === caster.heroId ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'}`}
+                >
+                  {c.name}
+                </button>
               ))}
             </div>
+          ) : (
+            <p className="text-sm font-semibold text-ink">{caster.name}</p>
+          )}
+          <p className="text-xs text-ink-dim">{caster.kind === 'prayer' ? 'Prayers' : 'Spells'} · {caster.lore.name}</p>
+
+          {caster.blocks.length > 0 ? (
+            <Notice tone="error" title={`${caster.name} may not cast`}>
+              {caster.blocks.join(' ')}
+            </Notice>
+          ) : null}
+          {already.length > 0 ? (
+            <Notice tone="warn" title="Already cast this turn">
+              {already.map((c) => `${c.spellName}${c.targetName ? ` on ${c.targetName}` : ''} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
+              {caster.secondSpell ? ' Magical Aptitude allows a second attempt after a Toughness test.' : ' A wizard may cast one spell per turn.'}
+            </Notice>
+          ) : null}
+
+          {caster.modifiers.length > 0 ? <ModifierBar caster={caster} spent={spent} setSpent={setSpent} /> : null}
+
+          <div className="flex flex-col gap-2">
+            {caster.spells.map(({ spell, difficulty }) => (
+              <Card key={spell.id} className="flex flex-col gap-2 px-3 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <HoverCard title={spell.name} label={<span className="text-sm font-semibold text-ink">{spell.name}</span>}>
+                      {spell.text}
+                    </HoverCard>
+                    <p className="text-xs text-ink-dim">{difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
+                  </div>
+                  <Button variant="secondary" disabled={caster.blocks.length > 0} onClick={() => begin(spell)}>
+                    {caster.kind === 'prayer' ? 'Recite' : 'Cast'}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {caster.reminders.length > 0 ? (
             <ul className="flex flex-col gap-1 text-xs leading-relaxed text-ink-dim">
               {caster.reminders.map((line) => (
                 <li key={line} className="flex gap-1.5">
@@ -185,21 +181,52 @@ export function CastTab({ roster, template, sheet, readOnly, edit }: CastTabProp
                 </li>
               ))}
             </ul>
-          </>
-        ) : (
-          <CastRun
-            state={state}
-            advance={advance}
-            onAgain={() => {
+          ) : null}
+        </FightBox>
+
+        <FightBox icon="shield" title="Target" tone="accent">
+          {targets.length > 0 ? (
+            <SelectField label="Target (if this spell needs one)" hideLabel value={targetId ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
+              <option value="">Off the sheet — no target on this warband</option>
+              {targets.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </SelectField>
+          ) : (
+            <p className="text-xs text-ink-dim">No target needed on this warband — most spells are aimed at the enemy off-app.</p>
+          )}
+        </FightBox>
+      </div>
+
+      <Sheet
+        open={state !== null}
+        onClose={() => {
+          stateRef.current = null
+          setState(null)
+          setTargetId(null)
+        }}
+        size="full"
+        title={state ? `${caster.name} ${caster.kind === 'prayer' ? 'recites' : 'casts'} ${state.spell.name}` : ''}
+        description="Roll your dice one step at a time, or tap Roll."
+        footer={
+          <Button
+            variant="secondary"
+            block
+            onClick={() => {
               stateRef.current = null
               setState(null)
               setTargetId(null)
             }}
-            usedUp={usedUp}
-          />
-        )}
-      </div>
-    </Section>
+          >
+            Close
+          </Button>
+        }
+      >
+        {state ? <CastRun state={state} advance={advance} usedUp={usedUp} /> : null}
+      </Sheet>
+    </>
   )
 }
 
@@ -262,7 +289,7 @@ function ModifierBar({ caster, spent, setSpent }: { caster: CasterProfile; spent
   )
 }
 
-function CastRun({ state, advance, onAgain, usedUp }: { state: CastState; advance: (step: (s: CastState) => CastState) => void; onAgain: () => void; usedUp: string[] }) {
+function CastRun({ state, advance, usedUp }: { state: CastState; advance: (step: (s: CastState) => CastState) => void; usedUp: string[] }) {
   const step = state.pending
   const last = state.log.at(-1)
   const dice = state.dice
@@ -351,15 +378,8 @@ function CastRun({ state, advance, onAgain, usedUp }: { state: CastState; advanc
               <span className="text-ink-dim">{describeCast(state)}</span>
             </p>
             {usedUp.length > 0 || state.used.length > 0 ? <p className="text-xs text-ink-dim">Spent so far: {[...new Set([...usedUp, ...state.used])].join(', ') || 'nothing'}.</p> : null}
-            <Button variant="ghost" block onClick={onAgain}>
-              Back to the spells
-            </Button>
           </div>
-        ) : (
-          <Button variant="ghost" block onClick={onAgain}>
-            Abandon this cast
-          </Button>
-        )}
+        ) : null}
       </Card>
     </div>
   )

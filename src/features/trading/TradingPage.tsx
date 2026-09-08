@@ -135,11 +135,9 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
           detail:
             t.value === 'wyrdstone'
               ? `${detail.warband.wyrdstone} ${detail.warband.wyrdstone === 1 ? 'shard' : 'shards'}`
-              : t.value === 'buy'
-                ? `${detail.warband.gold} gc`
-                : t.value === 'stash'
-                  ? `${stashCount} ${stashCount === 1 ? 'item' : 'items'}`
-                  : undefined,
+              : t.value === 'stash'
+                ? `${stashCount} ${stashCount === 1 ? 'item' : 'items'}`
+                : undefined,
         }))}
         value={tab}
         onChange={(next) => {

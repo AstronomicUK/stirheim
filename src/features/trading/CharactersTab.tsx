@@ -15,7 +15,7 @@ import { actionsFor, performAction, type BetweenBattleAction } from '../../rules
 import { findItem } from '../../rules/data/items'
 import type { RosterHero } from '../../rules/types/roster'
 import type { DramatisPersonaSummary } from '../../rules/types/campaignContent'
-import { Button, DieField, Notice, Sheet } from '../../ui'
+import { Button, DieField, Notice, SelectField, Sheet, TextField } from '../../ui'
 import { readRestriction, type Eligibility } from '../recruitment/helpers'
 import { Card, KeyValue, Section, Tag } from '../roster/view/bits'
 import type { TradeContext } from './useTrade'
@@ -35,6 +35,18 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
         .map((p) => ({ persona: p, eligibility: readRestriction(p.detail?.mayBeHired, template, p.name) })),
     [template, trade.houseRules.bans],
   )
+  const [search, setSearch] = useState('')
+  const [show, setShow] = useState<'all' | 'available' | 'check' | 'restricted'>('all')
+  const shownRows = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return rows.filter(({ persona, eligibility }) => {
+      if (q && !persona.name.toLowerCase().includes(q) && !(eligibility.reason ?? '').toLowerCase().includes(q)) return false
+      if (show === 'available' && !(eligibility.kind === 'ok' || eligibility.kind === 'allowed')) return false
+      if (show === 'check' && eligibility.kind !== 'check') return false
+      if (show === 'restricted' && eligibility.kind !== 'restricted') return false
+      return true
+    })
+  }, [rows, search, show])
 
   return (
     <div className="flex flex-col gap-4">
@@ -47,8 +59,20 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
       </p>
       <ActionsSection trade={trade} searchers={searchers} />
       <Section title="Dramatis Personae" aside={`${rows.length}`}>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex-1">
+            <TextField label="Search Dramatis Personae" value={search} autoComplete="off" placeholder="Search by name" onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <SelectField label="Show" value={show} onChange={(e) => setShow(e.target.value as typeof show)}>
+            <option value="all">All</option>
+            <option value="available">Available</option>
+            <option value="check">Needs a check</option>
+            <option value="restricted">Restricted</option>
+          </SelectField>
+        </div>
+        {shownRows.length === 0 ? <p className="text-sm text-ink-dim">Nothing matches.</p> : null}
         <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
-          {rows.map(({ persona, eligibility }) => (
+          {shownRows.map(({ persona, eligibility }) => (
             <li key={persona.id}>
               <button
                 type="button"

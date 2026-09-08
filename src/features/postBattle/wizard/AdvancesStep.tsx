@@ -1,9 +1,9 @@
 // Advances earned this battle, rolled right here rather than in a separate visit afterwards.
-// Each card runs the same roll / choose flow as the Advancements screen. A skill or spell
-// choice can be left for later ("Pick later"), or the whole advance can wait.
+// Each card runs the same roll / choose flow as the Advancements screen. The roll itself always
+// happens now; only a resulting skill or spell choice can be left for later ("Pick later").
 
 import { useEffect } from 'react'
-import { Button, SegmentedControl } from '../../../ui'
+import { Button } from '../../../ui'
 import { AdvanceBody } from '../../advances/AdvanceBody'
 import type { PerkSource } from '../../../rules/resolve/mapAdvantages'
 import { defaultPromotedName, emptyDraft as emptyAdvanceDraft, setStep as setAdvanceStep } from '../../advances/model'
@@ -11,11 +11,6 @@ import { Card, Section, Tag } from '../../roster/view/bits'
 import { seedAdvance, setAdvanceMode, updateAdvance, type AdvanceMode, type WizardAdvance } from '../model'
 import { Intro, type StepProps } from './bits'
 import { StepBody } from './WizardShell'
-
-const MODE_OPTIONS: { value: AdvanceMode; label: string }[] = [
-  { value: 'now', label: 'Roll now' },
-  { value: 'later', label: 'Roll later' },
-]
 
 export function AdvancesStep({ derived, update, ctx }: StepProps) {
   const { items, rosterAfter } = derived.advances
@@ -34,7 +29,7 @@ export function AdvancesStep({ derived, update, ctx }: StepProps) {
       <Intro>
         {items.length === 0
           ? 'Nobody crossed an experience threshold this battle, so there is nothing to roll.'
-          : 'Roll each advance now, or leave it for the roster\'s Advancements screen. A skill or spell can be picked later once the dice are in; the rulebook wants it chosen before the next battle.'}
+          : 'Roll each advance now. A skill or spell can be picked later once the dice are in; the rulebook wants it chosen before the next battle.'}
       </Intro>
       {items.length > 0 ? (
         <Section title="Earned this battle" aside={`${items.length} ${items.length === 1 ? 'advance' : 'advances'}`}>
@@ -73,9 +68,7 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
             {kind} · earned at {item.request.threshold_xp} xp
           </p>
         </div>
-        {mode === 'later' ? (
-          <Tag tone="brass">Later</Tag>
-        ) : mode === 'pickLater' ? (
+        {mode === 'pickLater' ? (
           <Tag tone="brass">Pick later</Tag>
         ) : plan.total === null ? (
           // complete is true here too (so the wizard isn't blocked by an advance nobody has to roll here), but
@@ -87,10 +80,7 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
           <Tag tone="warn">To do</Tag>
         )}
       </div>
-      <SegmentedControl label={`${item.name}: when to roll`} options={MODE_OPTIONS} value={mode === 'pickLater' ? 'now' : mode} onChange={setMode} />
-      {mode === 'later' ? (
-        <p className="text-sm text-ink-dim">Left pending. Roll it from the roster page under Advancements.</p>
-      ) : mode === 'pickLater' ? (
+      {mode === 'pickLater' ? (
         <div className="flex items-center justify-between gap-3 rounded-md border border-brass/50 bg-surface-low px-3 py-2 text-sm">
           <span className="text-ink">Skill left pending. Choose it from the roster page under Advancements before the next battle.</span>
           <Button variant="ghost" onClick={() => setMode('now')}>

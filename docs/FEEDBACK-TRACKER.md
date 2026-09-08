@@ -2298,7 +2298,7 @@ targeting-rules items.
 
 ### 87. Remove the "Roll advancements later" option; only deferring the skill choice after rolling should remain
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-08
 
@@ -2314,16 +2314,37 @@ fixed earlier today). Checked `derive.ts`: there is a second, unrelated, forced 
 null` and takes `AdvanceCard`'s early-return branch (plain summary text, no `SegmentedControl`
 reached at all), so removing the player-facing "Roll later" choice doesn't touch that forced case.
 
-### 88. UI bug (see photo)
+**Fixed:** Removed `MODE_OPTIONS` and the `SegmentedControl` entirely from `AdvancesStep.tsx`, and the
+`mode === 'later'` branches in `AdvanceCard`'s Tag and body ternaries (unreachable now that nothing
+sets it from this screen). Updated the intro copy, which used to describe the removed option. Left
+`derive.ts` and the `AdvanceMode` type untouched — `'later'` is still genuinely produced for a
+subject no longer eligible this battle, a different, unrelated code path. `npx tsc -b`, `npm run
+lint`, `npm test -- --run` all clean.
 
-**Status:** ⛔ Blocked — no photo actually attached to the message
+### 88. UI bug: the "Out of action · by X" badge overlaps the warrior's name
+
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-08
 
-> "UI bug (see photo)"
+> "UI bug (see photo)" — followed up with a screenshot and: "When you Mark a model OOA and select
+> who took them out, the text cuts across the unit's name"
 
-**Notes:** No image file came through with this message — cannot investigate or fix a bug I can't
-see. Needs Tom to resend the photo (or describe what it shows) next time he's at the computer.
+**Notes:** Screenshot showed "Dwarf Noble" with a red "Out of action · by Siegmund the Hammer
+(Argent Hammer Test)" pill drawn directly over the name text. Root cause in `cards.tsx`'s
+`WarriorHead`: the header row (`flex items-start justify-between gap-3`) has the name in a
+`min-w-0` div (free to shrink) beside the tags in a `shrink-0` div (never shrinks) with no
+`flex-wrap` on the row itself — when a tag's own text is long enough that name + tag can't fit
+side by side, the `shrink-0` tag doesn't yield and the row has nowhere to send the overflow but on
+top of itself.
+
+**Fixed:** Added `flex-wrap` to the header row so an over-wide tag drops to its own line below the
+name/type block instead of overlapping it, rather than trying to compress into a fixed-width
+slot it refuses to shrink from. Reproduced the exact scenario live (mobile viewport, a hero marked
+out of action by an enemy with a comparably long name/warband string) — the badge now sits cleanly
+on its own line under the name, nothing overlapping. `npx tsc -b`, `npm run lint`, `npm test --
+run` all clean; every other caller of `WarriorHead` is unaffected since the wrap only ever
+activates when content doesn't fit.
 
 ### 89. Recolour the Advancements button's glow to match Cast a Spell, and add the same two-wisp orbit
 
@@ -2362,7 +2383,7 @@ overnight.
 
 ### 91. Remove the "gc" text from the Buy tab so it matches Sell's plain look
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2372,9 +2393,12 @@ overnight.
 gives Buy a gold-amount subtitle while Sell (and every other tab except Wyrdstone/Stash) gets
 `undefined`. One-line fix: drop the `buy` case so it falls through to `undefined` like Sell.
 
+**Fixed:** Removed the `buy` branch; Buy now falls through to `undefined` exactly like Sell. `npx tsc
+-b`, `npm run lint`, `npm test -- --run` all clean.
+
 ### 92. Let a GM pick one of their own campaigns instead of typing its invite code, when joining/moving a warband
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-08
 
@@ -2390,9 +2414,24 @@ never needs to be typed at all; a `SelectField` populated from that filtered lis
 plumbing. Show it as an alternative to the code field only when the viewer actually GMs at least one
 campaign.
 
+**Fixed:** `MoveCampaign` now takes `currentCampaignId` (from `campaign.data?.campaignId`, already
+fetched by the page) and computes `gmCampaigns` from `useMyCampaigns(userId)` filtered to
+`gm_id === userId`, excluding the warband's current campaign and any archived ones. When any exist, a
+`SelectField` appears above the invite-code field; picking one disables the code field and supplies
+its `invite_code` straight to the existing move mutation. When the viewer GMs no other campaign, the
+picker doesn't render at all — just the plain code field as before.
+
+Verified live: with only one campaign (the warband's own), the picker correctly stayed hidden.
+Created a second real campaign via the UI, confirmed it then appeared in the dropdown; selecting it
+disabled the invite-code input and enabled the Move button (checked both via the DOM directly, not
+just visually). Did not actually complete a move, to avoid disrupting the in-progress test battle
+this warband is part of — the throwaway "Test GM Picker Campaign" this created is still sitting in
+the local campaign list, harmless, delete whenever. `npx tsc -b`, `npm run lint`, `npm test -- --run`
+all clean.
+
 ### 93. Search and filter for the Dramatis Personae list, matching the hired swords treatment
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-08
 
@@ -2402,6 +2441,13 @@ campaign.
 instead of `HiredSwordsTab.tsx`'s `options` — search by name (and `readRestriction`'s eligibility
 reason text, same convention), plus a filter over whatever eligibility buckets `readRestriction`
 actually produces here (confirmed it returns the same `Eligibility` shape as hired swords).
+
+**Fixed:** Added the same search box (name or eligibility reason text) and a "Show" filter
+(All/Available/Needs a check/Restricted, the three kinds `readRestriction` actually returns here)
+to `CharactersTab.tsx`, mirroring #42 exactly. Verified live: searching "wolf" correctly narrowed 30
+entries down to just Luthor Wolfenbaum; the "Restricted" filter returned a distinct 11-entry subset,
+confirming it genuinely partitions the list rather than being a no-op. `npx tsc -b`, `npm run lint`,
+`npm test -- --run` all clean.
 
 ---
 

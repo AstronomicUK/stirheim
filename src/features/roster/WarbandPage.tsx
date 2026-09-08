@@ -4,7 +4,7 @@ import { usePendingAdvances } from '../../api/advances'
 import { useSaveTemplate } from '../../api/templates'
 import { useDeleteWarband, useProfiles, useTransferWarband, useUpdateRoster, useWarband, type WarbandDetail } from '../../api/warbands'
 import { useWarbandCampaign } from '../../api/trading'
-import { useMoveWarbandCampaign } from '../../api/campaigns'
+import { useMoveWarbandCampaign, useMyCampaigns } from '../../api/campaigns'
 import { rosterToTemplatePayload } from '../../rules/resolve/warbandTemplates'
 import { appointLeader, successionOptions } from '../../rules/resolve/succession'
 import { diffRoster } from '../../domain/rosterDiff'
@@ -347,6 +347,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
           warbandId={warband.id}
           warbandName={warband.name}
           currentCampaign={campaign.data?.name ?? null}
+          currentCampaignId={campaign.data?.campaignId}
           onError={setActionError}
           open={moveCampaignOpen}
           onOpenChange={setMoveCampaignOpen}
@@ -453,11 +454,13 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
   )
 }
 
-/** Owner: take the warband to another campaign with its invite code, in one step. */
+/** Owner: take the warband to another campaign with its invite code, in one step. GMs of their own
+ * campaigns can pick one directly instead — no reason to make them look up their own invite code. */
 function MoveCampaign({
   warbandId,
   warbandName,
   currentCampaign,
+  currentCampaignId,
   onError,
   open,
   onOpenChange,
@@ -465,19 +468,27 @@ function MoveCampaign({
   warbandId: string
   warbandName: string
   currentCampaign: string | null
+  currentCampaignId: string | undefined
   onError: (e: string | null) => void
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const userId = useSession((s) => s.user?.id)
+  const myCampaigns = useMyCampaigns(userId)
+  const gmCampaigns = (myCampaigns.data ?? []).filter((c) => c.gm_id === userId && c.id !== currentCampaignId && !c.archived)
+  const [selectedId, setSelectedId] = useState('')
   const [code, setCode] = useState('')
   const move = useMoveWarbandCampaign()
+  const selected = gmCampaigns.find((c) => c.id === selectedId)
+  const effectiveCode = selected?.invite_code ?? code.trim()
 
   async function confirm() {
-    if (!code.trim()) return
+    if (!effectiveCode) return
     onError(null)
     try {
-      await move.mutateAsync({ warbandId, code: code.trim() })
+      await move.mutateAsync({ warbandId, code: effectiveCode })
       onOpenChange(false)
+      setSelectedId('')
       setCode('')
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not move the warband.')
@@ -492,21 +503,51 @@ function MoveCampaign({
         title={currentCampaign ? 'Move to another campaign' : 'Join a campaign'}
         description={
           currentCampaign
-            ? `${warbandName} leaves ${currentCampaign} and joins the campaign whose invite code you enter. The roster comes with it; the battles it fought stay in ${currentCampaign}'s records.`
-            : `${warbandName} joins the campaign whose invite code you enter.`
+            ? `${warbandName} leaves ${currentCampaign} and joins the campaign you pick or enter below. The roster comes with it; the battles it fought stay in ${currentCampaign}'s records.`
+            : `${warbandName} joins the campaign you pick or enter below.`
         }
         footer={
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => onOpenChange(false)} disabled={move.isPending}>
               Cancel
             </Button>
-            <Button className="flex-1" disabled={!code.trim()} pending={move.isPending} onClick={() => void confirm()}>
+            <Button className="flex-1" disabled={!effectiveCode} pending={move.isPending} onClick={() => void confirm()}>
               {currentCampaign ? 'Move' : 'Join'}
             </Button>
           </div>
         }
       >
-        <TextField label="Invite code" value={code} autoComplete="off" placeholder="e.g. uz8k-hxtx" hint="The GM of the campaign you are joining shares this." onChange={(e) => setCode(e.target.value)} />
+        <div className="flex flex-col gap-3">
+          {gmCampaigns.length > 0 ? (
+            <>
+              <SelectField
+                label="One of your own campaigns"
+                value={selectedId}
+                onChange={(e) => {
+                  setSelectedId(e.target.value)
+                  setCode('')
+                }}
+              >
+                <option value="">Not one of these — enter a code below</option>
+                {gmCampaigns.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </SelectField>
+              <p className="text-center text-xs text-ink-dim">or</p>
+            </>
+          ) : null}
+          <TextField
+            label="Invite code"
+            value={code}
+            autoComplete="off"
+            placeholder="e.g. uz8k-hxtx"
+            hint="The GM of the campaign you are joining shares this."
+            disabled={selectedId !== ''}
+            onChange={(e) => setCode(e.target.value)}
+          />
+        </div>
       </Sheet>
     </>
   )

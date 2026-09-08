@@ -59,13 +59,15 @@ describe("item catalogue", () => {
     expect(MISSILE_ITEMS.length).toBe(22);
     expect(BLACKPOWDER_ITEMS.length).toBe(17);
     expect(ARMOUR_ITEMS.length).toBe(18);
-    expect(MISC_ITEMS.length).toBe(110);
+    // 116 after #66 added the Jewelsmith's four gems plus the Alchemist's Notebook and Training
+    // Manual — exploration-chart treasures that used to land as untyped, unpriced stash lines.
+    expect(MISC_ITEMS.length).toBe(116);
     expect(ANIMAL_ITEMS.length).toBe(14);
     // 72 after #44 excluded 14 improvised/ritual objects (a Gromril Ladle and its kin) from the
     // material-variant generator; the floor here is a loose sanity check, not an exact count.
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(65);
     expect(WARBAND_SPECIAL_ITEMS.length).toBe(40);
-    expect(ITEMS.length).toBe(246 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
+    expect(ITEMS.length).toBe(252 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);
     }

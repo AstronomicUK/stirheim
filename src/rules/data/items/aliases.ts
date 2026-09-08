@@ -107,6 +107,31 @@ export const EQUIPMENT_ALIASES: Record<string, string> = {
   "Slaaneshi Man-Catcher (Whipmaster only)": "slaaneshi_man_catcher",
   "Shield of Sigmar (Heroes only)": "shield_of_sigmar",
   "Pebble (fixed, x1, included)": "pebble",
+  // #66: exploration-chart reward names phrased as "a suit/brace/quiver of X", which never
+  // normalised-match the catalogue's own singular item names.
+  "Suit of Light Armour": "light_armour",
+  "Suits of Light Armour": "light_armour",
+  "Suit of Heavy Armour": "heavy_armour",
+  "Suits of Heavy Armour": "heavy_armour",
+  "Suit of Ithilmar Armour": "ithilmar_armour",
+  "Brace of Pistols": "pistol",
+  "Brace of Duelling Pistols": "duelling_pistol",
+  "Flasks of Superior Blackpowder": "superior_blackpowder",
+  "Quiver of Hunting Arrows": "hunting_arrows",
+  // Same "take the plain option" reading already used for "Shield/Buckler" above.
+  "Shields or Bucklers (choose which)": "shield",
+  "Double-handed axes": "double_handed_weapon",
+  "Gromril Axe": "gromril_axe",
+  "Gromril Hammer": "gromril_hammer",
+  "Double-handed Gromril Axe": "gromril_great_axe",
+  // #66: the Jewelsmith/Alchemist's Laboratory/Fighting Arena treasures now have real (if some
+  // unpriced) catalogue entries — see the bottom of data/items/misc.ts.
+  "Quartz stones": "quartz_stones",
+  "Amethyst": "amethyst",
+  "Necklace": "jewelsmith_necklace",
+  "Ruby": "ruby",
+  "Alchemist's notebook": "alchemists_notebook",
+  "Training manual": "training_manual",
 };
 
 /**

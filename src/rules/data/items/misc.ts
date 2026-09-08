@@ -1359,4 +1359,82 @@ export const MISC_ITEMS: Item[] = [
     ],
     source: { publication: "Opulent Goods, Mordheim Annual 2002 (1a)", file: "02-weapons-armour-equipment.md:2475-2481" },
   },
+  // #66: exploration-chart treasures that used to land as untyped, unpriced custom stash lines
+  // with none of their rules text carried across. Found only (Exploration), never bought, hence
+  // availability "special" rather than a rarity number. The "keep instead of selling" bonuses
+  // described below (rare-item search bonus; extra skill lists; a racial-maximum WS override) have
+  // no mechanical hook anywhere in the app yet — same open-ended category as the Sorcerous
+  // Society's Elemental Lores in #58 — so these are priced and sellable, not yet wired to a choice.
+  {
+    id: "quartz_stones",
+    name: "Quartz Stones",
+    category: "misc",
+    price: { base: null, text: "D6x5 gc" },
+    availability: { kind: "special", text: "Found only — Exploration, Jewelsmith (3 3 3 3 3)" },
+    description: "Small but valuable stones overlooked by earlier looters of Mordheim's jewellers' quarter.",
+    specialRules: [
+      { name: "Note", text: "If your warband does not sell the gems, one of your Heroes may keep them and display them proudly; he gains +1 to the rolls for locating rare items as merchants flock to such an obviously wealthy warrior." },
+    ],
+    source: { publication: "Mordheim Rulebook (core)", file: "03-campaigns-magic-optional-rules.md:877-880" },
+  },
+  {
+    id: "amethyst",
+    name: "Amethyst",
+    category: "misc",
+    price: { base: 20, text: "20 gc" },
+    availability: { kind: "special", text: "Found only — Exploration, Jewelsmith (3 3 3 3 3)" },
+    description: "A polished gemstone overlooked by earlier looters of Mordheim's jewellers' quarter.",
+    specialRules: [
+      { name: "Note", text: "If your warband does not sell the gem, one of your Heroes may keep it and display it proudly; he gains +1 to the rolls for locating rare items as merchants flock to such an obviously wealthy warrior." },
+    ],
+    source: { publication: "Mordheim Rulebook (core)", file: "03-campaigns-magic-optional-rules.md:877-880" },
+  },
+  {
+    id: "jewelsmith_necklace",
+    name: "Necklace",
+    category: "misc",
+    price: { base: 50, text: "50 gc" },
+    availability: { kind: "special", text: "Found only — Exploration, Jewelsmith (3 3 3 3 3)" },
+    description: "A fine necklace overlooked by earlier looters of Mordheim's jewellers' quarter.",
+    specialRules: [
+      { name: "Note", text: "If your warband does not sell the necklace, one of your Heroes may keep it and display it proudly; he gains +1 to the rolls for locating rare items as merchants flock to such an obviously wealthy warrior." },
+    ],
+    source: { publication: "Mordheim Rulebook (core)", file: "03-campaigns-magic-optional-rules.md:877-880" },
+  },
+  {
+    id: "ruby",
+    name: "Ruby",
+    category: "misc",
+    price: { base: null, text: "D6x15 gc" },
+    availability: { kind: "special", text: "Found only — Exploration, Jewelsmith (3 3 3 3 3)" },
+    description: "A brilliant-cut ruby overlooked by earlier looters of Mordheim's jewellers' quarter.",
+    specialRules: [
+      { name: "Note", text: "If your warband does not sell the gem, one of your Heroes may keep it and display it proudly; he gains +1 to the rolls for locating rare items as merchants flock to such an obviously wealthy warrior." },
+    ],
+    source: { publication: "Mordheim Rulebook (core)", file: "03-campaigns-magic-optional-rules.md:877-880" },
+  },
+  {
+    id: "alchemists_notebook",
+    name: "Alchemist's Notebook",
+    category: "misc",
+    price: { base: null, text: "Not listed" },
+    availability: { kind: "special", text: "Found only — Exploration, Alchemist's Laboratory (2 2 2 2 2)" },
+    description: "A battered old notebook found in the ruins of an alchemist's workshop.",
+    specialRules: [
+      { name: "Note", text: "One of your Heroes may study the notebook; the extra wisdom he gains lets him choose from Academic skills whenever he gains a new skill, in addition to the skills normally available to him." },
+    ],
+    source: { publication: "Mordheim Rulebook (core)", file: "03-campaigns-magic-optional-rules.md:865-867" },
+  },
+  {
+    id: "training_manual",
+    name: "Training Manual",
+    category: "misc",
+    price: { base: 100, text: "100 gc" },
+    availability: { kind: "special", text: "Found only — Exploration, Fighting Arena (six of a kind, 5)" },
+    description: "A training manual found in a ruined arena once used to train duellists and pit fighters.",
+    specialRules: [
+      { name: "Note", text: "You can either sell the manual for 100 gc or let one of your Heroes read it. The extra knowledge he gleans lets him choose from Combat skills whenever he gains a new skill, and his Weapon Skill may be increased by an extra point above his normal racial maximum." },
+    ],
+    source: { publication: "Mordheim Rulebook (core)", file: "03-campaigns-magic-optional-rules.md:961-965" },
+  },
 ];

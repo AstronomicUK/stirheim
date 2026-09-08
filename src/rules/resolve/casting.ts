@@ -19,8 +19,10 @@ import type { RosterHero } from "../types/roster";
 /** Prayers follow the same dice but ignore the armour prohibition, and take different kit. */
 export type CasterKind = "spell" | "prayer";
 
-/** Lores that are prayers rather than sorcery: their users may wear armour, and use prayer kit. */
-export const PRAYER_LORE_IDS = ["prayers_of_sigmar", "prayers_of_taal", "ladys_prayers", "prayers_of_myrmidia", "prayers_of_ulric"] as const;
+/** Lores that are prayers rather than sorcery: their users may wear armour, and use prayer kit.
+ * The rulebook names only Prayers of Sigmar for the armour exception (#58); Taal/Lady's/Ulric are
+ * included here too as the reading most tables actually use, left for Tom to settle either way. */
+export const PRAYER_LORE_IDS = ["prayers_of_sigmar", "prayers_of_taal", "ladys_prayers", "prayers_of_ulric"] as const;
 
 /**
  * Armour a caster may keep on: helmets are not "armour" for this rule, Chaos Armour is explicitly

@@ -1503,7 +1503,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 58. Magic and prayers: smaller rules-fidelity gaps (rulebook clauses with no code effect)
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed — dead id removed; the real armour-exception question still needs Tom
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the magic and prayers rules audit, reviewed by Tom
 
@@ -1512,7 +1512,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 - **A duplicate spell can't be recorded at reduced difficulty.** The advance screen tells the player to "roll again, or lower its difficulty by 1 by hand" but there's nowhere on the roster to put a per-spell difficulty modifier, so the casting screen always shows the printed number regardless. Rolling again works fine; the other half of the rulebook's own offered choice doesn't.
 - **Warrior Wizard doesn't lift the armour-casting ban** (carried over from the skills audit, #59 below — the skill itself has no effect anywhere).
 - **The prayer armour exception covers four lores where the rulebook names only one** ("The only exception is the Prayers of Sigmar. Sisters of Sigmar and Warrior Priests may wear armour and use their prayers.") `PRAYER_LORE_IDS` also exempts Prayers of Taal, Prayers of Ulric and the Lady's Prayers — probably the reading most groups actually use, but applied inconsistently: Funerary Rites and Mortuary Cult Scrolls read as prayers too and are *not* exempted, so a Priest of Morr is blocked by armour while a Priest of Taal isn't. Worth Tom settling one way or the other rather than leaving the inconsistency.
-- `prayers_of_myrmidia` is a dead id sitting in `PRAYER_LORE_IDS` with no such lore anywhere in the data or the rules reference — harmless, but it's how the inconsistency above crept in (the list was written from memory, not from the lore table).
+- ~~`prayers_of_myrmidia` is a dead id sitting in `PRAYER_LORE_IDS` with no such lore anywhere in the data or the rules reference — harmless, but it's how the inconsistency above crept in (the list was written from memory, not from the lore table).~~ **Fixed:** confirmed zero matches anywhere in `src/rules/data/` and removed it from the array; zero behaviour change since nothing ever matched it. The actual policy question above (which lores get the armour exception) is untouched — still Tom's call.
 - **Spell damage isn't modelled** (no critical hits from spells, armour saves always apply) — reasonable scope, since the fight calculator has no spell-damage path at all, only melee/missile duels.
 - **The Sorcerous Society's four Elemental Lores have no picker anywhere** — 24 complete spells with no route to them, the same "scraped in faithfully, never wired to a unit" shape as the orphaned skill tables in #59/#60.
 - A hero with two lores' spells gets his "home" lore reported as whichever lore happens to come first in the data order, if that differs from the one he actually started with — cosmetic (the spell list itself is always correct), only the heading is affected.

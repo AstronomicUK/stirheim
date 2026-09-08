@@ -12,9 +12,10 @@ import type { CardTag } from './names'
 
 /** One half of a face-off pane (Attacker/Defender, Spellcaster/Target): a labelled box the quick
  * actions share, so every "who, then what" screen reads the same way. */
-export function FightBox({ icon, title, tone, children }: { icon: IconName; title: string; tone: 'brass' | 'accent'; children: ReactNode }) {
+export function FightBox({ icon, title, tone, children, castingPulse = 0 }: { icon: IconName; title: string; tone: 'brass' | 'accent'; children: ReactNode; castingPulse?: number }) {
   return (
-    <section className={`flex min-w-0 flex-col gap-2 rounded-md border bg-surface-low px-2.5 py-2.5 ${tone === 'brass' ? 'border-brass/50' : 'border-accent/50'}`}>
+    <section className={`relative flex min-w-0 flex-col gap-2 rounded-md border bg-surface-low px-2.5 py-2.5 ${tone === 'brass' ? 'border-brass/50' : 'border-accent/50'}`}>
+      {castingPulse > 0 ? <span key={castingPulse} aria-hidden className="stirheim-cast pointer-events-none absolute rounded-[inherit]" /> : null}
       <h3 className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${tone === 'brass' ? 'text-brass' : 'text-accent'}`}>
         <Icon name={icon} size={14} />
         {title}

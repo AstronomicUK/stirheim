@@ -46,7 +46,7 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
           : 'No post-battle sequence is in progress, so a search here is not counted against a hero.'}
       </p>
       <ActionsSection trade={trade} searchers={searchers} />
-      <Section title="Characters" aside={`${rows.length}`}>
+      <Section title="Dramatis Personae" aside={`${rows.length}`}>
         <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
           {rows.map(({ persona, eligibility }) => (
             <li key={persona.id}>

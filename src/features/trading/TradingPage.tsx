@@ -30,7 +30,7 @@ const TABS: IconTab<Tab>[] = [
   { value: 'buy', label: 'Buy', icon: 'buy' },
   { value: 'sell', label: 'Sell', icon: 'sell' },
   { value: 'stash', label: 'Stash', icon: 'stash' },
-  { value: 'characters', label: 'Characters', icon: 'characters' },
+  { value: 'characters', label: 'Dramatis Personae', icon: 'characters' },
 ]
 
 export function TradingPage() {

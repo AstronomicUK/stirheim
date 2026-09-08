@@ -598,7 +598,7 @@ all clean.
 
 ### 26. Trading post icons/names: "Characters" should be "Dramatis Personae"; stash should look like a treasure chest; Buy/Sell icons should read as a matched pair
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-07
 
@@ -607,6 +607,24 @@ all clean.
 **Notes:** The "Characters" label is the `IconTab` at `TradingPage.tsx` lines 25-33 (`{ value: 'characters', label: 'Characters', icon: 'characters' }`), plus a second "Characters" section title inside `CharactersTab.tsx:49`. Renaming the label is a one-line change per site; whether to also rename the `IconName`/tab value itself (`'characters'` → something like `'dramatisPersonae'`) is a slightly bigger but still mechanical rename across `icons.tsx` and both usages.
 
 Checked the actual SVG path data in `src/ui/icons.tsx`: `characters` (line 87) is a head-and-shoulders person shape with two extra diagonal strokes flaring off the top of the head — reads as stray antenna lines, which is probably the "weird" look. `stash` (line 86) is a plain rectangular crate (body, sloped lid, centre seam, short handle) with none of the rounded-lid/clasp details that would read as a treasure chest. `buy` (line 84) is a sack/bag with a triangular peak and strap lines; `sell` (line 85) is an unrelated circle-with-up-arrow glyph — confirmed they don't currently share any visual language (different frame, different motif), so "brother and sister icons" is an accurate complaint, not a preference call. The file's own header comment says the icon set is meant to be "kept deliberately few" and consistent, so redesigning buy/sell as a matched pair fits the file's stated intent rather than fighting it.
+
+**Fixed:** Renamed the label at both sites (`TradingPage.tsx`'s tab and `CharactersTab.tsx`'s section
+title) to "Dramatis Personae"; left the internal `'characters'` tab value and `IconName` unchanged
+(purely a display-text change, not worth the wider rename). Redrew all three icons in `icons.tsx`:
+`stash` now has a straight body, a curved dome lid (cubic bezier, not a straight slope) and a small
+diamond clasp where the lid meets the body — reads as a chest, not a crate. `buy`/`sell` now share
+one basket/bag silhouette with a mirrored arrow: `buy`'s points down into the basket, `sell`'s points
+up out of it — same shape, opposite direction, a genuine matched pair rather than unrelated glyphs.
+`characters` keeps its existing head-and-shoulders body but the two stray diagonal "antenna" strokes
+are replaced with a small four-point sparkle badge near the head (the same kite-shaped spark motif as
+the `cast` icon, scaled down) — addresses the "weird" complaint directly and also avoids what the old
+antenna-free shape would have been: pixel-identical to the unrelated `account` icon.
+
+Verified live on local dev: scaled each tile 3-5× in the actual rendered Trading post page (not just
+reading the path data) — the chest reads clearly as a chest, Buy and Sell visibly mirror each other
+(same basket, arrow direction flipped), and the sparkle badge sits cleanly at the head's corner
+without looking like clutter. `npx tsc -b`, `npm run lint`, `npm test -- --run` (1203 passed, 69
+skipped) all clean.
 
 ### 27. Dramatis Personae list is inconsistent (some full descriptions, some just cost); wants a tap-to-read pop-up and a persistent bottom "Search" button
 

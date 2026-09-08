@@ -1928,6 +1928,21 @@ correct. Needs a screenshot at Tom's actual window size to tell which. Flagged f
 session either way, alongside the general note that the desktop layout for this screen hasn't had
 the same care mobile has.
 
+**Live check (Stirheim Developer, 2026-09-08), not a fix:** Tested at a real desktop width (1280px,
+above the `lg` 1024px breakpoint — the Browser pane's own "desktop" preset turns out to just clear
+size emulation back to the pane's own narrower natural width, not actually set 1024px+, so an
+earlier check at that preset would have silently still been testing mobile layout). At genuine
+desktop width, "My warband" and its full hero list are visible in the left column exactly as coded,
+and tapping "Enemy warband" does reveal the enemy roster in the right column without "my warband"
+disappearing — so the layout itself isn't broken in the way "you can only see the Enemy Warband
+icon" would suggest. What's real: the desktop button is styled as a solid, permanently-filled accent
+pill that reads like an already-active toggle rather than a plain reveal action, and it's one-way
+only (no equivalent control to hide the enemy roster again) where mobile's pair of tabs makes both
+directions obvious. That's a genuine affordance gap even though nothing is actually hidden or
+crashed — leaving this for the UI designer session as originally flagged rather than redesigning it
+without that judgement call, but narrowing the "which is it" question the original note raised: it's
+confusing styling, not a rendering bug.
+
 ---
 
 ## Batch — 2026-09-08 (new feature requests)

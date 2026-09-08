@@ -1536,7 +1536,7 @@ Still open: the 104 unresolved hired-sword kit names (aliases + parser-failure s
 
 ### 75. Cancel battle does not revert an already-filed report's roster changes
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** n/a — found live while verifying #17's fix, not from an audit or play
 
@@ -1553,6 +1553,21 @@ same way withdraw does.
 **How to replicate:** Schedule and start a battle, end it, file a post-battle report for one side,
 then Cancel battle from the match page. The filed warband keeps the wyrdstone/XP/advances the report
 granted; the match record itself is gone.
+
+Went with the second option: `cancel_match` (`supabase/migrations/20260908000028_cancel_match_reverts_reports.sql`)
+now loops every `applied` report on the match and calls the existing `revert_battle_report` primitive
+on each (the same undo path `withdraw_battle_report` already uses) before flipping the match to
+`cancelled`, then deletes the now-reverted report rows so none survive orphaned.
+
+Verified against local Supabase with a new integration test (`src/api/__tests__/match.integration.test.ts`,
+"cancelling a match reverts any report already applied against it (#75)"): scheduled a fresh match,
+started and ended it, filed a report for one warband with a gold/wyrdstone delta, confirmed the
+delta actually landed on the warband row, called `cancel_match` as the GM, then asserted the
+warband's gold/wyrdstone were back to their pre-report values and the `match_reports` row for that
+match was gone. `npx tsc -b`, `npm run lint`, `npm test -- --run` (1199 passed, 69 skipped — this
+new test included, gated behind `SUPABASE_LOCAL=1`) and `npm run build` all clean; the new test
+itself passed running live against local Supabase (`SUPABASE_LOCAL=1 npx vitest run
+src/api/__tests__/match.integration.test.ts` — 6 passed).
 
 ---
 

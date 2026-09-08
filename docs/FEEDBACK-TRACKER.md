@@ -1487,6 +1487,98 @@ same way withdraw does.
 then Cancel battle from the match page. The filed warband keeps the wyrdstone/XP/advances the report
 granted; the match record itself is gone.
 
+---
+
+## Batch — 2026-09-08 (Tom testing tonight's Quick Actions fix, #30/#31)
+
+### 76. Cast a Spell's Target box: odd default, and always shown in red regardless of whether the spell is friendly
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "You have now implemented the UI standardisation for the cast-a-spell feature, but one of the
+> dropdowns for the target is off the sheet: no target on this warband. That's also the default,
+> which just seems a bit strange. Additionally, the target is in red, even if the spell being cast
+> is a friendly spell, so I think you need to work with the UI designer agent on this."
+
+**Notes:** Confirmed, both halves. `CastTab.tsx`'s Target box is `<FightBox icon="shield"
+title="Target" tone="accent">` — hardcoded to the same red/accent tone `Defender` uses in
+Melee/Ranged Attack, with no awareness of whether the spell being cast is actually aimed at an enemy
+or a friendly model. The `targetId` state also starts `null`, which renders as the first (and
+therefore pre-selected) option, "Off the sheet — no target on this warband" — a reasonable *value*
+for a spell with no target, but a strange thing to land on by default for every spell, friendly ones
+included.
+
+Both are downstream of the same gap #32 already named: `Spell`/`SpellLore` has no field recording
+whether a spell targets a friendly model, an enemy, both or neither — "nothing here is mechanically
+modeled by the engine yet," per that file's own header. Once a spell carries that, the Target box's
+tone and default could both follow it (friendly spell → brass tone, defaulting to "no target" only
+when the spell doesn't need one; enemy spell → accent tone). Worth doing together with #32 rather
+than patching the tone/default without the data to back it. Tom's flagged this one for the UI
+designer session.
+
+### 77. Ranged Attack should default to a model who actually has a ranged weapon, or say so when nobody does
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "The ranged attack is a bit clunky because it allows you to select any model. I think it would be
+> better if, when you went on ranged attack, the default attacker is probably, from top to bottom of
+> the warband roster, finding the first model that has a ranged weapon. If no models with ranged
+> weapons are found, this whole interface is replaced by a message that just says, 'No eligible
+> units in your warband.'"
+
+**Notes:** Confirmed, and it's a real gap the earlier #30 fix didn't reach. `FightTab.tsx`'s
+attacker default — `mine.find((c) => c.id === attackerId) ?? mine.find((c) => !c.out) ?? mine[0]` —
+picks the first fit-to-fight model in roster order with no regard for weapon type at all, whether
+opened from Melee or Ranged Attack. The *weapon* default already does the right thing once an
+attacker is chosen (`current`'s branch for `startWith === 'ranged'` picks `attackerKit.ranged[0]`
+when the attacker has one) — that's what made #30's "Marksman defaults to Bow" test look complete;
+it just never exercised a roster whose first-in-order fighter has no ranged weapon at all, in which
+case Ranged Attack quietly falls back to a melee weapon default instead, defeating the point of
+having tapped it.
+
+Two changes needed: the attacker default for Ranged Attack should search `mine` (already ordered top
+to bottom) for the first combatant whose `loadoutFor(c).ranged` is non-empty, same shape as the
+existing "first not out" fallback; and a new empty state — "No eligible units in your warband" —
+replacing the whole picker when that search comes up empty, distinct from the existing "Nobody to
+attack with" notice (`mine.length === 0`), which only covers everyone being out of action, not
+everyone lacking a ranged weapon specifically.
+
+### 78. The My Warband / Enemy Warband toggle is broken on desktop, and the desktop battle sheet generally doesn't work as well as mobile
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-08
+
+> "It doesn't look like the My Warband and Enemy Warband toggle button is displaying correctly on
+> desktop. You can only see the Enemy Warband icon, and there doesn't seem to be any way to toggle
+> to Friendly Warband. I think this is because, on desktop, My Warband is always able to be viewed,
+> but generally this UI doesn't work very well on desktop, whereas the mobile one is really well
+> done."
+
+**Notes:** Partially confirmed from the code; the rest needs eyes on Tom's actual screen. On desktop
+(`useIsDesktop()`, matching Tailwind's `lg` / 1024px breakpoint), `BattleNav.tsx` deliberately skips
+the mobile `WarbandSlider` two-way toggle and renders a single button instead — `onClick={() =>
+setTab('enemy')}` — that only ever turns the enemy view *on*; there is no button that sets the tab
+back to `'mine'`. By design this is meant to be harmless, because `BattlePage.tsx`'s desktop layout
+puts "My warband" in its own permanently-visible left column (`<div>My warband<MyWarbandTab
+.../></div>`) regardless of `sideTab`, with the right column (nav + conditionally `EnemyView`)
+alongside it — so the single button's job is only to reveal the enemy roster in the right column, not
+to hide "my warband," which is never supposed to disappear on desktop in the first place.
+
+That doesn't match what Tom's describing (only the Enemy Warband icon visible, no sign of "my
+warband" at all), so either the left column genuinely isn't rendering or is being hidden/overlapped
+at the width he's on — plausible given the app's own left sidebar nav (Warbands/Campaigns/Scenarios/
+Simulator/Account) shares the same viewport and the grid is a flat two-`fr` split with no minimum
+column width — or the single one-way button is confusing enough on its own (no visible "my warband"
+button at all, unlike mobile's clear pair) to read as broken even where the layout is technically
+correct. Needs a screenshot at Tom's actual window size to tell which. Flagged for the UI designer
+session either way, alongside the general note that the desktop layout for this screen hasn't had
+the same care mobile has.
+
 <!--
 ### N. Short title
 

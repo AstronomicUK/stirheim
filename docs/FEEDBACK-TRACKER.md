@@ -56,15 +56,15 @@ Reviewed the original report and fix evidence for **all 27 entries marked ✅ Fi
 | #16 | Fixed-only rewards render `Row`, not `NumberField`; Well's fixed shard remains 1. Prior live evidence exercises exactly that displayed prompt, and the model tests passed. No mismatch found. |
 | #28 | Reopened: executable current-catalogue lookup returns null for five explicitly named spellcasters; Protectorate Warrior Priest compared directly with the reference's starting-prayer rule. See #57. |
 | #30 | Reopened: first-attacker fallback ignores ranged kit; the melee fallback contradicts the original ranged-default request, corroborating #77. |
-| #31 | Shared `FightBox`, Spellcaster/Target headings and popup exist. **Fresh side-by-side visual comparison remains pending**; #76/#32 are separate targeting issues, not evidence that the requested layout itself failed. |
+| #31 | Shared `FightBox`, Spellcaster/Target headings and popup exist. **Side-by-side comparison run 2026-09-08 (claude-scripts-29): layout confirmed** — two equal-height boxes, SPELLCASTER/TARGET against ATTACKER/DEFENDER, same position and heading treatment, roll in a popup. Residual differences in what the boxes *contain* split out as #85. |
 | #33 | Executed every current generated item: **86 variants, zero mismatches** in base restriction lookup or displayed restriction metadata. Existing restriction-warning regression passed. |
 | #34 | Executed current variant catalogue: zero obsidian, Dark Elf Blade, generic bludgeon-choice or free-dagger generated items. Shared generator drives both item and weapon catalogues; its regressions passed. Cosmetic candidates remain #44. |
 | #35 | Executed `newWarbandDraft` across the catalogue: **71 starting leaders, 66 eligible free-dagger lines, zero missing daggers** among those eligible. Existing builder cost/count tests passed. |
 | #36 | Executed Heavy Armour display helper: **25 gc (half price armour, from 50 gc)**. Both equipment sheet and equipment rows consume it through the same builder house-rule context as costs; on/off and non-armour tests passed. |
 | #37 | Inspected distinct Not rolled / To do / Done branches against the untouched/partial/resolved cases. Prior live evidence explicitly exercised all three states; no narrower-property substitution found. |
 | #38 | Executed **all nine two-player Won/Lost/Draw combinations**: only won/lost, lost/won and draw/draw are compatible. Both report surfaces are wired; tests include full match data rather than filtered rows. No mismatch for the reported two-side scenario. |
-| #39 | Header components exist at all three compact-stat callers. **Actual header-to-number alignment remains pending**, especially the hired-sword list where header and card padding differ; presence of M/WS/etc. alone is not a quantitative alignment check. No additional defect asserted without that check. |
-| #40 | `lg:bottom-0` exists alongside the mobile inset. **Actual bottom-edge measurement on a tall desktop wizard step remains pending**; a CSS class by itself is not a layout measurement. |
+| #39 | Header components exist at all three compact-stat callers. **Alignment measured 2026-09-08 (claude-scripts-29): 3 of 4 lists aligned (≤0.9px), the hired-swords list is 11.6px out.** The padding mismatch this row predicted is real — `px-1` header against `px-4` cards. Entry reopened. |
+| #40 | `lg:bottom-0` exists alongside the mobile inset. **Bottom edge measured 2026-09-08 (claude-scripts-29): gap = 0px, flush, at 1024x700, 1280x800 and 1440x1200 on overflowing steps.** Confirmed fixed; a 24px strip on short non-scrolling steps noted on the entry as cosmetic. |
 | #45 | Executed exact prompt-duplication scan across all **10 current locations with sub-roll metadata: zero exact duplicates** in `rules`; Well uses the shortened test prompt. The original text-only verification targets the reported duplicate directly. |
 | #46 | `MatchPage` calls `overlaySessions`; passing regression starts with **zero saved sessions and a logged attack**, then checks both sides' resulting tallies. This exercises the actual missing-session report, not merely rendering a saved sheet. |
 | #47 | Both roster count messages, recruitment limit message, and stash count select singular for 1; the actual reported validation-text regression passed. No mismatch found. |
@@ -681,6 +681,18 @@ as a side effect — #32 itself (friendly/enemy list split by what the spell all
 Verified live: opened Cast a Spell to see the Spellcaster/Target boxes side by side, then opened (and
 closed without rolling, to avoid writing a cast record) the new popup for a real prayer.
 
+**Verified 2026-09-08 — UI-tester side-by-side comparison (claude-scripts-29):** opened *Melee Attack* and
+*Cast a Spell* back to back on a live match with a real spellcaster (The Argent Hammer's Warrior Priest,
+Siegmund the Hammer) at 1440x1000 and captured both. The requested layout is there: two equal-height boxes
+side by side, headed **SPELLCASTER** and **TARGET** against Melee's **ATTACKER** and **DEFENDER**, in the
+same position, with the same icon-and-caps heading treatment, and the roll in a popup. Tom's original ask
+is satisfied — **confirmed fixed.**
+
+The two screens are still visibly unalike in ways that are a fresh, narrower problem rather than a failure
+of this entry, so they are logged separately as **#85** rather than reopening this one.
+
+**Evidence (local, not committed):** `.sessions/handoffs/shots-round3/verify-20260908/31-melee.png` and `.sessions/handoffs/shots-round3/verify-20260908/31-cast.png`.
+
 ### 32. Spell targeting should offer only friendly, only enemy, or both lists (grouped under headings) depending on what the spell allows
 
 **Status:** 🔲 Open
@@ -900,7 +912,7 @@ Verified live on local dev: the seeded contradictory match (Reikland Watch "Draw
 
 ### 39. The recruit screens show nine bare stat numbers with no M/WS/BS/S/T/W/I/A/Ld headings
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Partially fixed — reopened 2026-09-08, the hired-swords header is 11.6px out of register with its numbers
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -921,6 +933,38 @@ lists (Heroes/Henchmen recruit tabs, hired swords' "Currently hired" list, and t
 sheet's Heroes/Henchman-group sections). Verified live: the Recruit → Heroes and Henchmen tabs and
 the Add-a-warrior sheet all now show the M/WS/BS/S/T/W/I/A/Ld row.
 
+**Reopened 2026-09-08 — UI-tester live measurement (claude-scripts-29):** ran the alignment check the
+audit could not. Measured every column's centre in the header against the same column's centre in the
+compact `StatLine` beneath it, at 1440x1000 and at 390x844.
+
+| Caller | Max column-centre offset | Verdict |
+|---|---|---|
+| `recruitment/UnitList.tsx` — Recruit → Heroes | 0.9px | ✅ aligned |
+| `recruitment/UnitList.tsx` — Recruit → Henchmen | 0.9px | ✅ aligned |
+| `roster/view/AddWarriorSheet.tsx` — Add a warrior | 0.0px | ✅ aligned |
+| `recruitment/HiredSwordsTab.tsx` — "Currently hired" | **11.6px** | ❌ misaligned |
+
+The hired-swords list is the one the audit singled out, and it is the one that fails. The `M` heading
+sits 11.6px to the **left** of the `4` beneath it and `Ld` sits 11.5px to the **right** of its figure,
+so the row reads as two unrelated rows rather than a labelled table. Cause is the padding mismatch the
+audit predicted: `HiredSwordsTab.tsx:55` renders `<StatHeader className="px-1" />` (4px each side) as a
+sibling of a `<ul>` whose cards are `<Card className="... px-4 py-3">` (16px each side, plus the card's
+1px border) — a ~13px inset difference per side, which spreads across the nine columns as up to ±12px of
+drift. `UnitList.tsx:15` gets this right (`px-4 pb-1` against a `px-4` button, hence the 0.9px residual
+from the list border alone); `AddWarriorSheet.tsx` gets it right with no padding on either side.
+
+There is a second, plainer problem visible in the same screenshot: because the header sits outside the
+`Card` while the figures sit inside it, the header does not read as belonging to the row at all. Matching
+the padding fixes the register; moving the header inside the card (or giving the list the same
+header-above-bordered-list shape `UnitList` uses) fixes both.
+
+**How to replicate:** any warband with at least one hired sword → *Recruit* → *Hired swords* → the
+"Currently hired" list. Test Cult on the local seed has a Beggar hired for exactly this purpose.
+
+**Evidence (local, not committed):** `.sessions/handoffs/shots-round3/verify-20260908/39-hired-swords-currently-hired.png` (the failing case),
+`.sessions/handoffs/shots-round3/verify-20260908/39-desktop-heroes.png` and `.sessions/handoffs/shots-round3/verify-20260908/39-addwarrior-sheet.png` (the two that pass).
+No implementation changed.
+
 ### 40. The post-battle wizard's Back/Next bar floats 48px above the bottom of the window on desktop
 
 **Status:** ✅ Fixed
@@ -938,6 +982,19 @@ Discard / Next bar sits about 48px up from the window bottom with the next warri
 out below it.
 
 **Fixed:** Added `lg:bottom-0` as suggested. Verified live at desktop width on the Casualties step — the bar now sits flush with no gap. Commit `6dd8fc8`.
+
+**Verified 2026-09-08 — UI-tester live measurement (claude-scripts-29):** measured the bar's bottom edge
+against `window.innerHeight` on a step whose content overflows the viewport. **Gap = 0px, flush, at
+1024x700, 1280x800 and 1440x1200** (all three scrollable, `scrollHeight` 1381–1396). The reported defect —
+a strip of the next warrior's card visible under the bar — is gone. Confirmed fixed.
+
+One cosmetic residual, not the reported bug and not reopened: on a *short* step that doesn't scroll (e.g.
+step 3, "Serious injuries", with no casualties) the bar sits 24px above the window bottom with an empty
+strip of ground beneath it. Nothing peeks out, because there is nothing to peek — the page is exactly
+viewport height. Worth tidying whenever `WizardShell` is next touched.
+
+**Evidence (local, not committed):** `.sessions/handoffs/shots-round3/verify-20260908/40-1024x700.png`, `.sessions/handoffs/shots-round3/verify-20260908/40-1280x800.png`, `.sessions/handoffs/shots-round3/verify-20260908/40-desktop-1200.png`,
+and `.sessions/handoffs/shots-round3/verify-20260908/40-1440x700.png` for the short-step residual.
 
 ### 41. No gold-remaining figure inside the builder's Add-equipment sheet
 
@@ -1864,7 +1921,7 @@ per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` alrea
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
-**Status:** 🔲 Open — assigned to Astra as a UI design test
+**Status:** ✅ Implemented — Astra; live browser design review pending
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -1880,9 +1937,66 @@ dice landing, `stirheim-glow` for "this is waiting on you") with its own comment
 "nothing else in the app moves on its own" — whatever Astra designs should read as part of that
 family, not a bolt-on. Given to Astra, not built here.
 
+
+**Implementation / verification (Astra, 2026-09-08):** A fine brass outline gathers towards the
+Spellcaster box and fades once after closing a successfully resolved casting sheet (including
+automatic spells/prayers). Waiting, failed, dispelled and abandoned attempts stay still. All close
+routes share the same handler; its cleared state ref prevents duplicate playback. Starting another
+attempt or selecting another caster removes the old decoration. Only the decorative span is keyed,
+so controls retain their identity; Fight and Target boxes receive no effect. The 1200ms ease-in-out
+keyframes animate inset (-5px to -1px) and opacity (0 → .65 → .45 → 0), with no text scaling,
+layout shift, timers or continuous pulse. Reduced motion disables the animation completely.
+
+Redrew `cast` as a diagonal wand with one four-point spark, using the existing single path,
+1.8-unit round stroke. Rasterized the actual source paths with temporary `@resvg/resvg-js` tooling
+outside the repository and inspected PNGs at 240px, 14px and 20px alongside `battle`, `map` and
+`advances`. Removed a small cross-stroke after the first image looked too much like a key; inspected
+the revised image too. No app dependency added. `npx tsc -b` passed; `npm test -- --run` passed
+(82 files, 1202 tests; 13 files / 69 tests skipped). `npm run lint` exited 0, with one pre-existing
+unused-variable warning in a peer's untracked `.ui-verify2.mjs:35`; its owner was notified.
+Live browser verification was **not possible** in this sandbox. CSS timing, geometry, reduced-motion
+fallback and trigger/reset paths were reviewed in code; browser review requested from Stirheim
+Developer before Tom sees the design. No deployment performed.
+
 ---
 
 <!--
+### 85. Cast a Spell now matches the attack layout, but the two boxes still carry very different content — and the Target select clips its own text
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the UI sweep while verifying #31, not reported from play
+
+**Notes:** #31 is genuinely fixed — the two-box SPELLCASTER/TARGET grid is there and sits exactly where
+ATTACKER/DEFENDER sits. Putting the two screens side by side at 1440x1000 shows three residual
+differences that stop them reading as the same tool:
+
+1. **The Target select clips its own text.** With no enemy chosen it reads `Off the sheet — no target on t`
+   — cut off mid-word at the box edge, no ellipsis. Whatever the full string is ("…on the sheet"?), the
+   control is too narrow for its own default option.
+2. **The Target box is almost entirely empty.** Defender carries a name, a profile line (`WS 4 · T 3 · W 1`),
+   kit, armour and the *Parry used this turn* control. Target carries one select and ~180px of nothing.
+3. **The Spellcaster box has no profile line**, where Attacker shows `Warrior Priest · WS 4 · BS 3 · S 4 · A 1`
+   plus weapon and armour. Spellcaster shows only `Prayers · Prayers of Sigmar`, then the spell card.
+4. **The roll entry point is in a different place and shape.** Melee/Ranged put a floating brass dice button
+   *between* the two boxes; Cast puts a rectangular **Recite** button *inside* the Spellcaster box, next to a
+   spell name that wraps mid-phrase ("The Hammer of / Sigmar") in a cramped inner card.
+
+None of this breaks anything — it is why the screen still feels unlike the attack screens even though the
+frame now matches. Closest fix is to give Spellcaster and Target the same profile/kit block the attack
+boxes use, widen or truncate-with-ellipsis the target select, and move the roll trigger to the floating
+position the attack screens use.
+
+**How to replicate:** live match with a spellcaster (The Argent Hammer's Warrior Priest) → battle sheet →
+*Cast a Spell*, then *Melee Attack*, and compare.
+
+**Evidence (local, not committed):** `.sessions/handoffs/shots-round3/verify-20260908/31-cast.png` beside `.sessions/handoffs/shots-round3/verify-20260908/31-melee.png`.
+
+Related: #84 (casting animation and spell icon) touches the same box; #32 and #76 are the separate
+targeting-rules items.
+
+---
+
 ### N. Short title
 
 **Status:** 🔲 Open

@@ -41,6 +41,42 @@ gets lost between "Tom said it" and "it's fixed," however small the item looks a
 
 ---
 
+## ⚠️ FLAG FOR TOM — real data needs a manual correction (2026-09-08, ~00:15)
+
+**Not a tracker item — a live-testing mistake on The Argent Hammer, left for Tom to fix by hand
+rather than force through a permission block.**
+
+While verifying the fix for #17 live, I scheduled a real match (The Argent Hammer vs Test Cult),
+started it, ended it, and filed a full post-battle report for The Argent Hammer to reproduce the
+exact repro steps. I then used *Cancel battle* on the match, expecting it to strike the filed report
+along with it — but Cancel battle does not revert an already-applied report's roster changes (see
+new entry #75 below), so The Argent Hammer was left with the test report's effects still applied:
+
+- **Wyrdstone: currently 9, should be 4** (the test report's exploration roll added 5 shards).
+- **Five heroes' XP is inflated by the test's combat/exploration awards** — current → correct:
+  - Siegmund the Hammer (`44601bab-7012-48b9-972d-b1cc097ad4df`): 23 → **21**
+  - Artur (`e8f96a81-7191-467c-8ddc-97a76e40d800`): 4 → **3**
+  - Saleh (`339866f7-2a8e-4f72-90ca-aefda9a5c96c`): 4 → **3**
+  - Lutz (`97b4a3d0-2777-4dde-b565-034abff4cf60`): 10 → **9**
+  - Friedrik (`04431672-7f69-4c86-a8ee-2d21ef2a8879`): 14 → **13**
+- **Three phantom "advance owed" flags** on Artur, Saleh and Friedrik, from pending-advance rows the
+  test's XP gains created (`pending_advances` ids `b62fac2a-5726-40a2-a6ec-e1630c8558fe`,
+  `351d0986-db0d-40fa-a266-862aee8bd522`, `f80fb2aa-f869-477c-85c0-9994856aaace`) — these should not
+  exist once the XP above is reverted.
+- The cancelled match's `match_reports` row (id `944fbbc1-9116-46b4-9667-cf86f4ffa709`) also still
+  exists with `status: applied`, orphaned under a cancelled match.
+
+I confirmed all of the above precisely against the warband's own audit log (all ten changes share
+timestamp `2026-09-07 23:13:31.931679+00`) before attempting to fix it. Two fix attempts — a direct
+SQL correction, then just opening the Edit Warband page — were both blocked by this session's
+permission classifier as unreviewed data mutation, and a further attempt (`git pull`, unrelated but
+requested right after) was blocked too, so I stopped trying rather than work around the block. The
+safest path is Tom correcting the five numbers above via Edit Warband (a normal, reviewable action)
+and deleting the three named `pending_advances` rows and the one `match_reports` row directly, or
+approving a session to do it. No other warband or campaign was touched.
+
+---
+
 ## Batch — 2026-09-07 (outstanding work logged retroactively)
 
 Nothing below was reported as a fresh bug on this date — these are loose ends already known from
@@ -1415,6 +1451,26 @@ Deployment, terrain, starting/ending the game, victory conditions and per-scenar
 **Fixed:** Both parse artefacts, and their real root cause rather than just the two named symptoms. `splitKit` now masks commas inside a bracketed aside before splitting on commas, so "plate armour (4+ save, -1M)" survives as one item instead of splitting into "plate armour (4+ save" and "-1M)". Separately, `hiredSwordEquipment` was iterating every newline-separated paragraph of an entry's Weapons/Armour text as more kit; a second paragraph is always prose about how the kit is used (a Skills note, a weapon restriction, a wolf-form clause), so it was being shredded into nonsense items too — the Old Prospector's "Skills: ... Resilient skills" was one instance of a bug that also affects the Wolf Priest of Ulric and the Hillman/Werewolf entries. Now only the first paragraph is ever read as kit. Added regression tests against the real catalogue entries, since this function had no test coverage at all before. Commit `bc10b4c`.
 
 Still open: the 104 unresolved hired-sword kit names (aliases + parser-failure sentences) and the 3 skill names the over-matching restriction regex invents from prose (shares its fix with #59).
+
+### 75. Cancel battle does not revert an already-filed report's roster changes
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found live while verifying #17's fix, not from an audit or play
+
+**Notes:** *Cancel battle*'s own confirmation text promises "no reports, no experience, no injuries"
+— true for a match nobody has reported on yet, but if one warband has already filed (match state
+`awaiting_reports`, one side in) and the GM cancels anyway, that warband's roster changes (gold,
+wyrdstone, hero XP, pending advances, stash) stay applied. The match itself disappears from the
+campaign's active list, but the `match_reports` row survives with `status: applied`, orphaned under
+a cancelled match, and nothing offers to undo what it already did. Either Cancel battle should
+reject cancelling once any report is `applied` (point the GM at *withdraw report* first, which
+already exists and does the undo correctly), or it should itself walk back every applied report the
+same way withdraw does.
+
+**How to replicate:** Schedule and start a battle, end it, file a post-battle report for one side,
+then Cancel battle from the match page. The filed warband keeps the wyrdstone/XP/advances the report
+granted; the match record itself is gone.
 
 <!--
 ### N. Short title

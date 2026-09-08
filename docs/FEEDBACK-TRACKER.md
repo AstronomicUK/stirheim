@@ -1676,18 +1676,42 @@ action is active, on both mobile and desktop.
 > next X matchups and it looks at historical match ups to try to create as close to a round robin as
 > possible."
 
-**Notes:** Searched this whole machine (`stirheim/`, `mordheim-simulator/`, `arboretum-pipeline/`) for
-any trace of a "matchup maker" tool, round-robin logic, or pairing/scheduler code — found nothing.
-The only "matchup" hits in the codebase are an unrelated stat comparison in the Simulator's Stat Gain
-Analyser, and the only scheduling code anywhere (`src/features/match/schedule/helpers.ts`) is a
-single match's own optional date/time field — there's no warband-pairing or tournament-bracket logic
-in the app at all today. **I don't know where the referenced tool actually lives** — it isn't in any
-repo on this machine, so either it was built in a different conversation/session I don't have access
-to, or it exists somewhere else entirely (a separate artifact link, another machine). Need a pointer
-to it — a link, a file, or a description of what it actually does — before this can be scoped
-properly; otherwise this gets built from scratch against just the description above (generate the
-next N matchups from campaign membership + match history, favouring pairs who've played each other
-least).
+**Notes:** Found — `/Users/tombrookes/Documents/Claude Folder/mordheim-round-robin.html`, a
+standalone, self-contained HTML/JS tool (not part of this repo), data kept in the browser's own
+`localStorage`. Read it in full; the pairing engine is the one piece worth porting, the rest
+duplicates things Stirheim already does natively.
+
+**The algorithm** (`computeRound(attendingPlayerIds, refDate)`): every attending player enters
+*both* their warbands into the pool (this tool assumes exactly two warbands per player — Stirheim
+doesn't have that constraint, so the port needs to key off "this player's active warbands," not a
+fixed count of two). If the pool is odd, a bye is assigned to whoever has had the fewest byes so far
+(tie-broken by most games played, then at random) — `getByeCount`/`getGamesPlayed`. The remaining
+warbands are matched by `enumerateMatchings`, which recursively generates *every* valid perfect
+matching that never pairs two warbands under the same owner, then `scoreMatching` picks the best one:
+lowest total historical head-to-head count first (`getPairStats`, counting every match on record,
+manual or generated), ties broken by the largest combined "days since last met" — pairs who've never
+met score an arbitrarily large recency bonus (100000) so brand-new match-ups are always favoured over
+repeats. This is a genuinely correct answer to "as close to a round robin as possible" for a small
+warband pool; exhaustive enumeration of perfect matchings is fine at campaign scale (a handful of
+attendees) but would need a real matching algorithm (e.g. blossom/greedy) if ever run against a much
+larger roster.
+
+**What doesn't need porting** — the tool re-implements things Stirheim already has properly wired to
+real data: a scenario pool with source/player-count filters and a "Wheel of Fate" random-roll
+(Stirheim already has `RandomScenario.tsx` and the full scenario library); map locations with their
+special rules (Stirheim already has real map districts, `findDistrict`); and its own match ledger
+(Stirheim's match history is real, in Supabase, via `battle_records`/`match_reports`, not a
+second local ledger to keep in sync). Porting the *ledger* concept would mean either querying real
+match history for pair-stats directly, or building a redundant shadow copy — should be the former.
+
+**What integrating this for real means:** porting `computeRound`/`enumerateMatchings`/`scoreMatching`
+/`getPairStats` as a pure resolver (likely `src/rules/resolve/` or a new campaign-scheduling module),
+fed by each attending member's actual roster of warbands and the campaign's real match history
+instead of this tool's synthetic two-per-player model and local ledger; a new UI section (most
+naturally on `CampaignPage.tsx` near "Battles," per #80/#83 above) to pick attendees and a date and
+show the generated pairings; and reusing `NewMatchPage`'s existing scheduling flow to actually save
+each agreed pairing as a real match, rather than a separate chronicle. Worth building together with
+#83 (game-day scheduling) since "who's attending" is exactly the input both need.
 
 ### 83. A game-day scheduling tool on the Campaign page: GM proposes dates, players respond, GM finalises
 

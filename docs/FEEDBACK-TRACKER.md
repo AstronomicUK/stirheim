@@ -41,6 +41,46 @@ gets lost between "Tom said it" and "it's fixed," however small the item looks a
 
 ---
 
+## Astra audit of Fixed claims — 2026-09-08 (live checks blocked; not a completion sign-off)
+
+Reviewed the original report and fix evidence for **all 27 entries marked ✅ Fixed at the start of this pass**, including #5 and excluding #7. Entries originating in QA often have no verbatim Tom quote; for those, used their original reported symptom and reproduction, not the later fix summary. Read the remaining tracker entries for overlapping/open scope. No audit finding was implemented.
+
+**Five entries reopened as partially fixed:** #9 (count picker is outside the requested popup), #10 (knocked-down unsaved wound still rolls injury instead of automatic OOA), #15 (only Well, despite the explicit wider model-selection report), #28 (unrecognised spellcasters still get no first spell, already tracked in #57), and #30 (ranged default only tested after choosing a suitably armed model; #77 owns the remaining fix). Detailed evidence and the verification category error are recorded on each entry.
+
+| Entry | Claim-specific review / evidence in this pass |
+|---|---|
+| #5 | Injury flags `stupidity` / `immuneToFear` / `causesFear` reach their respective combat traits; the regression exercises those exact flags and passed. Sold to the Pits is explicitly split into open #54; wider psychology mechanics remain in #70. No new defect established here. |
+| #9 | Reopened: maximum and ordinal labels work, but the requested popup count picker is absent. |
+| #10 | Reopened: actual roller execution with wound 4 and failed armour 1 requests another injury die; enumerating it yields only 2/6 OOA instead of automatic OOA. The existing passing test asserts the wrong intermediate step. |
+| #15 | Reopened: only Well has `pickHero` and a chosen-model consequence; the quoted wider exploration clause remains unresolved. |
+| #16 | Fixed-only rewards render `Row`, not `NumberField`; Well's fixed shard remains 1. Prior live evidence exercises exactly that displayed prompt, and the model tests passed. No mismatch found. |
+| #28 | Reopened: executable current-catalogue lookup returns null for five explicitly named spellcasters; Protectorate Warrior Priest compared directly with the reference's starting-prayer rule. See #57. |
+| #30 | Reopened: first-attacker fallback ignores ranged kit; the melee fallback contradicts the original ranged-default request, corroborating #77. |
+| #31 | Shared `FightBox`, Spellcaster/Target headings and popup exist. **Fresh side-by-side visual comparison remains pending**; #76/#32 are separate targeting issues, not evidence that the requested layout itself failed. |
+| #33 | Executed every current generated item: **86 variants, zero mismatches** in base restriction lookup or displayed restriction metadata. Existing restriction-warning regression passed. |
+| #34 | Executed current variant catalogue: zero obsidian, Dark Elf Blade, generic bludgeon-choice or free-dagger generated items. Shared generator drives both item and weapon catalogues; its regressions passed. Cosmetic candidates remain #44. |
+| #35 | Executed `newWarbandDraft` across the catalogue: **71 starting leaders, 66 eligible free-dagger lines, zero missing daggers** among those eligible. Existing builder cost/count tests passed. |
+| #36 | Executed Heavy Armour display helper: **25 gc (half price armour, from 50 gc)**. Both equipment sheet and equipment rows consume it through the same builder house-rule context as costs; on/off and non-armour tests passed. |
+| #37 | Inspected distinct Not rolled / To do / Done branches against the untouched/partial/resolved cases. Prior live evidence explicitly exercised all three states; no narrower-property substitution found. |
+| #38 | Executed **all nine two-player Won/Lost/Draw combinations**: only won/lost, lost/won and draw/draw are compatible. Both report surfaces are wired; tests include full match data rather than filtered rows. No mismatch for the reported two-side scenario. |
+| #39 | Header components exist at all three compact-stat callers. **Actual header-to-number alignment remains pending**, especially the hired-sword list where header and card padding differ; presence of M/WS/etc. alone is not a quantitative alignment check. No additional defect asserted without that check. |
+| #40 | `lg:bottom-0` exists alongside the mobile inset. **Actual bottom-edge measurement on a tall desktop wizard step remains pending**; a CSS class by itself is not a layout measurement. |
+| #45 | Executed exact prompt-duplication scan across all **10 current locations with sub-roll metadata: zero exact duplicates** in `rules`; Well uses the shortened test prompt. The original text-only verification targets the reported duplicate directly. |
+| #46 | `MatchPage` calls `overlaySessions`; passing regression starts with **zero saved sessions and a logged attack**, then checks both sides' resulting tallies. This exercises the actual missing-session report, not merely rendering a saved sheet. |
+| #47 | Both roster count messages, recruitment limit message, and stash count select singular for 1; the actual reported validation-text regression passed. No mismatch found. |
+| #48 | Executed `emptyBattleLiveState()`: **turn 1**. The earlier floor-clamp assertion alone would not establish this; this pass checks the actual initializer. |
+| #49 | Checked title hooks across the named screens and the shared auth `FormPage`; existing live examples cover named dynamic pages as well as static titles. No missing named call site found; not a fresh browser-history or navigation test. |
+| #51 | The list's inline confirmation invokes the draft store's `clear`, which is the state driving the banner. Prior live evidence tests confirmation and disappearance, matching the request. |
+| #52 | Rarity-roll helper text is in the buy footer for `isRare && searchTotal === null`; prior live evidence opens the named rare item before rolling, exactly the reported case. |
+| #55 | Executed hiring a non-casting Pit Fighter and then `castersOf` on that roster: `spellIds: []`, zero casters, **no exception**. Mapper and hire constructor both populate the field. Actual full browser page not rerun; missing hired-caster spells remain #56. |
+| #62 | Executed `recruitHero` for **249 hero templates**, then the displayed `xpProgress`: **zero phantom advances owed, zero skipped cases**. Henchman constructor uses the matching helper and its regression suite passed. |
+| #63 | Executed **each of totals 6, 8, 9** with the corresponding stat pair maxed and Movement below its maximum: M is eligible and the actual resolution raises **M3 → M4** in every case. Compared with the quoted reference rule; existing tests also cover substituting the other non-maxed stat. |
+| #65 | Current e2e selector matches the numbered attack label. Original evidence includes the specific completed green **e2e job**, not just unit/build status. This session cannot independently fetch CI or rerun browser e2e. |
+
+**Validation boundary:** `npx vitest run` passed **1199 tests in 81 files**; **68 tests in 13 files were skipped**, including unavailable integration coverage. This run used the shared working tree, which already contained a peer's uncommitted `injuries.ts` change; it is not represented as a clean-commit CI result. No database reset or production mutation was performed. Local Vite fails to bind port 5174 with `listen EPERM`; Playwright Chromium also fails to launch. Therefore the live visual checks above remain unfinished, and this is **not** a fresh “everything verified correct” stamp. GitHub push fails with DNS resolution of `github.com`; audit commits remain local until network access is available. #7 has deliberately not been re-investigated or implemented while this audit remains incomplete.
+
+---
+
 ## Note — Argent Hammer test-data drift, low priority (2026-09-08, ~00:15; downgraded ~06:50)
 
 **Not a tracker item.** Originally flagged as urgent, mistakenly believing "Ruins of the Stir" was

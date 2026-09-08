@@ -1992,6 +1992,33 @@ No working browser in this sandbox: animation playback and whether this is now n
 have **not** been visually verified; requested browser review from Stirheim Developer. No deployment
 performed. Round 1's production verification above applies to round 1, not this revised effect.
 
+**Round 2 live review (Stirheim Developer, 2026-09-08):** Confirmed `.stirheim-cast` now wraps the
+icon's own `<span>` (not the panel), `key={castingPulse}` correctly forces a fresh element on every
+successful cast so the animation restarts each time (not just once), and every ancestor up to the
+`FightBox` section is `overflow: visible` so the halo isn't clipped. Deployed and confirmed the
+`stirheim-cast-icon`/`stirheim-cast-halo` keyframes are in the live bundle. Tom initially still
+couldn't see it live — root cause was his OS/browser's Reduce Motion setting, which the code
+correctly (and intentionally) disables the effect for; once off, confirmed visible. Not a bug in
+either round.
+
+**Reopened 2026-09-08 — Tom, round 3, additive not a replacement:**
+
+> "Okay yes I see it now. But I was wanting a permanent animation around the 'Cast a Spell' quick
+> action, like a magic spell circling around the button? ... Happy to leave the existing animation
+> as well."
+
+A third, distinct request: a **permanent/idle** effect on the **"Cast a Spell" quick-action tile**
+itself (`NavTile` in `src/features/match/battle/BattleNav.tsx:91`, the button you tap to open the
+Cast panel — before any roll happens), on top of (not instead of) the existing one-shot icon-burst
+on a successful cast. This is a different component from everything built in rounds 1–2 (those are
+both inside `CastTab.tsx`'s `FightBox`, during an active cast; this is the always-visible entry tile).
+Worth naming plainly: this is also a different *category* of motion than anything else in the app —
+`src/index.css`'s own comment reserves continuous animation for `stirheim-glow` ("this is waiting on
+you"), and everything else including rounds 1–2 here is a one-shot reaction to something that just
+happened. A permanent decorative loop on a static button is new territory; flagging it, not blocking
+it — Tom's call, and he's asked for it twice now with increasing specificity. Handed to Astra as
+round 3.
+
 ---
 
 ### 86. Spellcasting always offers to "dispel" the spell, even when nobody on the table actually can

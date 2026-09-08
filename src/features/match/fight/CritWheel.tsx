@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { critRows, describeCrit, type CritTableKey } from '../../../rules/engine/crit'
 import { rollDie } from '../../../rules/resolve/dice'
 import { Button, DieFace } from '../../../ui'
+import { tickDelay } from './critWheelTiming'
 
 export interface CritWheelProps {
   table: CritTableKey
@@ -19,8 +20,6 @@ export interface CritWheelProps {
 }
 
 const SPINS = 2
-const TICK_START = 55
-const TICK_END = 300
 /** The landed row is held and flashed before the step moves on, so the result is read. */
 const SETTLE_MS = 1100
 
@@ -59,7 +58,7 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
     const steps = rows.length * SPINS + target + 1
     let at = 0
     for (let i = 0; i < steps; i++) {
-      const eased = TICK_START + (TICK_END - TICK_START) * (i / (steps - 1)) ** 2.4
+      const eased = tickDelay(i, steps)
       at += eased
       const index = i % rows.length
       const last = i === steps - 1

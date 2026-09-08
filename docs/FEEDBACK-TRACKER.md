@@ -346,7 +346,7 @@ Given the size (new turn-ownership model, a new prompt type, and status-recovery
 
 ### 12. Crit table animation is still too fast to read; the settled (red) row and the spinning (yellow) row don't show the same information
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -355,6 +355,22 @@ Given the size (new turn-ownership model, a new prompt type, and status-recovery
 **Notes:** `src/features/match/fight/CritWheel.tsx`. The speed complaint is confirmed by the numbers: `spin()` (lines 49-75) paces each tick by `eased = TICK_START + (TICK_END - TICK_START) * (i / (steps - 1)) ** 2.4` with `TICK_START = 55`, `TICK_END = 300`. Because the exponent is 2.4, that curve stays near the 55ms floor for most of the sequence and only climbs toward 300ms in the last handful of ticks — for a 6-row table doing 2 full spins plus landing (`steps = rows.length * SPINS + target + 1`, i.e. ~13-18 ticks), the great majority of rows flash by at roughly 55-100ms each, genuinely too fast to read, only slowing down right at the very end.
 
 The content-mismatch half is very likely a perception effect **of** that speed, not a real asymmetry — checked the row markup (lines 90-107) and every row renders the same `row.result.label` (bold) plus `describeCrit(row.result)` (the lowercase description line) regardless of whether it's the currently-spinning (yellow, `bg-brass/25`) row or the settled (red/accent, `stirheim-land-row`) one — both show identical content, just different background colour. The one thing that's genuinely only shown after settling is a separate summary panel below the table (lines 109-118, with a `DieFace` and the same label/description repeated) — that's an intentional post-roll confirmation panel, not a hidden "lower case" line on the settled row itself. Recommend slowing the animation as the main fix; the reported content difference should resolve itself once the row can actually be read mid-spin, but worth confirming with Tom once it's slower in case something else is really there.
+
+**Fixed:** Extracted the per-tick timing into a pure `tickDelay(i, steps)` function
+(`critWheelTiming.ts`, so it's actually unit-testable rather than buried in a `setTimeout` loop) and
+changed the curve from `TICK_START=55, TICK_END=300, exponent 2.4` to `TICK_START=90, TICK_END=380,
+exponent 1.4`. Computed the actual tick-by-tick numbers for a representative 6-row/2-spin/15-step
+roll: old curve spent its first ~10 of 15 ticks under 150ms (several under 75ms); new curve never
+drops below 90ms and spends the majority of ticks above 150ms, only reaching the full 380ms right at
+landing — genuinely readable throughout rather than only legible for the last couple of rows. Total
+spin time rises from roughly 1.9s to roughly 3.4s (plus the unchanged 1.1s settle hold) — noticeably
+slower, not dramatically so. New test (`critWheelTiming.test.ts`) asserts the floor, that most ticks
+clear a readable threshold, and the exact start/end values, rather than relying on eyeballing a
+`setTimeout` sequence. Left the content-parity code exactly as found per the diagnosis above — no
+bug there to fix, just confirmed both rows already render identical content. `npx tsc -b`, `npm run
+lint` (the extraction also cleared a fast-refresh lint warning the inline version had), `npm test --
+run` (1207 passed, 69 skipped) all clean. Not re-verified by actually watching a live roll animate —
+the fix is a tested pure function plus a mechanical wiring change, not new behaviour to observe.
 
 ### 13. "Pick the skill later" in the post-battle report lands on a skill list, which is confusing given the point is to defer the choice
 

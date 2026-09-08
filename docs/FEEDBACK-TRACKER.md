@@ -1996,7 +1996,7 @@ performed. Round 1's production verification above applies to round 1, not this 
 
 ### 86. Spellcasting always offers to "dispel" the spell, even when nobody on the table actually can
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2025,6 +2025,36 @@ do exist correctly (dice count and threshold vary by source, not always 2D6 vs. 
 Separately, real regardless of the above: `CastTab.tsx:361`'s "No dispel" control (and its "Skip"/
 "Stop here" siblings on the same line) render as plain text, not as something that reads as
 clickable — worth a proper button treatment either way.
+
+**Fixed:** `0874b44`. `CastTab.tsx` now calls the same `useEnemyRosters(matchId, others)` hook
+`FightTab` already uses (added `matchId`/`others` props, wired from `BattlePage.tsx` exactly like
+`FightTab`'s own call one line below), collects `dispelsFor(hero)` across every `status: "active"`
+hero on the opposing roster(s), and passes that list into `startCast`. `succeed()` in `casting.ts`
+now skips straight to `afterCast` when that list is empty (the common case), and when it isn't,
+builds the dispel step from the actual source found — `against: "difficulty"` sources roll 2D6
+against the spell's own Difficulty as before, `against: { threshold }` sources (Blessed by Morr, the
+Knight's purity, a dispel-capable staff) now correctly roll a single D6 against their own flat
+threshold instead of being silently coerced into the Elven Runestones mechanic. The step's
+resolution reads a new structured `dispelAgainst` field on the step itself rather than
+string-sniffing `step.detail.includes("Difficulty")`, which is what made the two mechanics
+indistinguishable before. "No dispel" is now `variant="secondary"` (a bordered button) instead of
+`ghost` (plain link-styled text), since — unlike "Skip"/"Stop here" — it's the only control on
+screen at that step.
+
+Known limitation, not fixed here: Blessed by Morr's "only vs. Undead casters" and the Knight's
+"only if the spell targets him specifically" conditions aren't checked — the fix gates on "does the
+enemy have the source at all," not each source's finer eligibility text, since the app doesn't
+reliably track per-spell targets (see #85) to check the latter. In practice this only matters for
+the rare case where an enemy has Blessed by Morr *and* the caster isn't Undead, or has Knight's
+purity *and* wasn't the one targeted — both edge cases were already impossible to get right before
+this fix and aren't worse now.
+
+Verified: `npx tsc -b`, `npm run lint`, `npm test -- --run` (1203 passed, 69 skipped — three casting
+tests rewritten to cover no-source/difficulty-source/threshold-source, one pre-existing test fixed
+where it had been relying on the old unconditional dispel step to reach a later step) all clean.
+Live on local dev: reciting a prayer on a match where neither warband has a dispel source now
+resolves straight from the roll to "is cast," no phantom "Any dispel?" step — confirmed via a real
+Recite → Roll → resolve flow, not just reading the code.
 
 ---
 

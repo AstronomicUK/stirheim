@@ -470,13 +470,24 @@ Confirmed, and Well genuinely is the only outcome with this exact problem. Every
 
 ### 17. Filing a report briefly flashes an "already filed" page before redirecting
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed — tracker corrected 2026-09-08, this was already shipped and just never marked
 **Priority:** 🟡 Low
 **Reported:** 2026-09-07
 
 > "When you file a report, for a brief second it comes up with a page that says something like "A report for this battle is already in,'" before redirecting to the main battle report page."
 
 **Notes:** Confirmed as a genuine render race, not a display bug — the "Already filed" check itself is correct, it's just seeing a true fact slightly before the page moves away. `PostBattlePage.tsx`'s `file()` (lines ~233-249): `await submit.mutateAsync(...)` (238) resolves once the RPC succeeds *and* its own `onSuccess: invalidate` (`useSubmitBattleReport` in `src/api/reports.ts`, which invalidates `matchKeys.all`) has run — that invalidation kicks off a background refetch of the still-mounted `useMatch(id, ...)` query that drives this same page's `filed` check. Execution then continues past that line into `closing.current = true` and `await applyWizardAdvances(...)` (242) — a further async step (rolling/applying each pending advance) that takes real time. If the match refetch from the invalidation resolves during that gap, the outer `PostBattlePage()` function — which owns the `useMatch` call and the "Already filed" check, and renders it *instead of* `<Guarded>`/`<Wizard>` when `filed` is true — re-renders with `reported_warband_ids` now including this warband, so the guard briefly takes over and the `Wizard` (mid-`applyWizardAdvances`) gets unmounted under it, until `file()` finishes and `navigate(...)` moves the page on anyway. `closing.current` already exists for a related purpose but lives inside `Wizard`, one level below where the guard is checked — it can't gate the guard as-is. A fix needs some "a submission for this warband is in flight" signal visible to the *outer* component (lifted state, a ref shared via context, or a transient flag in the report draft store) rather than a one-line change to the existing ref.
+
+**Found already fixed (Stirheim Developer, 2026-09-08):** Picked this up planning to implement the
+fix above, and found it already done — commit `c185adc` ("Stop the post-battle 'Already filed'
+flash on filing (#17)"), from earlier in tonight's session before this context window's summary was
+written, already on `origin/main`. `PostBattlePage.tsx`'s guard now reads a shared `submitting` flag
+from a per-match/warband `reportStore` (`store.ts`), set `true` right before the submit mutation and
+only cleared on failure; on success, `navigate()` runs before `forgetReportStore()` specifically so
+the store never resets back to a fresh (submitting: false) instance while this page is still
+mounted. Exactly the "signal visible to the outer component" this note called for. Only the tracker
+was stale — the code, and its own deploy, were already real; correcting the record rather than
+re-doing the work.
 
 ### 18. Advancements' skill picker needs a skill-type filter, defaulting to "All Skills"
 

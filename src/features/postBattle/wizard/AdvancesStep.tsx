@@ -90,45 +90,43 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
       <SegmentedControl label={`${item.name}: when to roll`} options={MODE_OPTIONS} value={mode === 'pickLater' ? 'now' : mode} onChange={setMode} />
       {mode === 'later' ? (
         <p className="text-sm text-ink-dim">Left pending. Roll it from the roster page under Advancements.</p>
+      ) : mode === 'pickLater' ? (
+        <div className="flex items-center justify-between gap-3 rounded-md border border-brass/50 bg-surface-low px-3 py-2 text-sm">
+          <span className="text-ink">Skill left pending. Choose it from the roster page under Advancements before the next battle.</span>
+          <Button variant="ghost" onClick={() => setMode('now')}>
+            Pick it now
+          </Button>
+        </div>
       ) : (
         <>
-          <AdvanceBody draft={item.draft} plan={plan} subject={subject} step={mode === 'pickLater' ? 'choose' : item.step} update={editAdvance} hideRail chooseSpell={chooseSpell} />
-          {mode === 'pickLater' ? (
-            <div className="flex items-center justify-between gap-3 rounded-md border border-brass/50 bg-surface-low px-3 py-2 text-sm">
-              <span className="text-ink">Skill to be picked later.</span>
-              <Button variant="ghost" onClick={() => setMode('now')}>
-                Pick it now
+          <AdvanceBody draft={item.draft} plan={plan} subject={subject} step={item.step} update={editAdvance} hideRail chooseSpell={chooseSpell} />
+          <div className="flex flex-wrap gap-2">
+            {item.step === 'roll' && plan.total !== null && plan.need !== 'reroll' && plan.error === null ? (
+              <Button variant="secondary" onClick={() => editAdvance((d) => setAdvanceStep(d, plan.result && subject.kind === 'group' && plan.roll?.kind === 'statIncrease' ? 'review' : 'choose'))}>
+                Continue
               </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {item.step === 'roll' && plan.total !== null && plan.need !== 'reroll' && plan.error === null ? (
-                <Button variant="secondary" onClick={() => editAdvance((d) => setAdvanceStep(d, plan.result && subject.kind === 'group' && plan.roll?.kind === 'statIncrease' ? 'review' : 'choose'))}>
-                  Continue
-                </Button>
-              ) : null}
-              {item.step === 'choose' ? (
-                <Button variant="ghost" onClick={() => editAdvance((d) => setAdvanceStep(d, 'roll'))}>
-                  Change the roll
-                </Button>
-              ) : null}
-              {item.step === 'choose' && plan.result ? (
-                <Button variant="secondary" onClick={() => editAdvance((d) => setAdvanceStep(d, 'review'))}>
-                  Confirm choice
-                </Button>
-              ) : null}
-              {item.step === 'review' ? (
-                <Button variant="ghost" onClick={() => editAdvance((d) => setAdvanceStep(d, 'choose'))}>
-                  Change the choice
-                </Button>
-              ) : null}
-              {canPickLater ? (
-                <Button variant="ghost" onClick={() => setMode('pickLater')}>
-                  Pick the skill later
-                </Button>
-              ) : null}
-            </div>
-          )}
+            ) : null}
+            {item.step === 'choose' ? (
+              <Button variant="ghost" onClick={() => editAdvance((d) => setAdvanceStep(d, 'roll'))}>
+                Change the roll
+              </Button>
+            ) : null}
+            {item.step === 'choose' && plan.result ? (
+              <Button variant="secondary" onClick={() => editAdvance((d) => setAdvanceStep(d, 'review'))}>
+                Confirm choice
+              </Button>
+            ) : null}
+            {item.step === 'review' ? (
+              <Button variant="ghost" onClick={() => editAdvance((d) => setAdvanceStep(d, 'choose'))}>
+                Change the choice
+              </Button>
+            ) : null}
+            {canPickLater ? (
+              <Button variant="ghost" onClick={() => setMode('pickLater')}>
+                Pick the skill later
+              </Button>
+            ) : null}
+          </div>
         </>
       )}
     </Card>

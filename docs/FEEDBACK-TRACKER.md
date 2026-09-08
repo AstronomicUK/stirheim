@@ -358,13 +358,26 @@ The content-mismatch half is very likely a perception effect **of** that speed, 
 
 ### 13. "Pick the skill later" in the post-battle report lands on a skill list, which is confusing given the point is to defer the choice
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
 > "Pick the skill later" in a post battle report takes you to a list of skills which is a bit strange; the whole point is that you want to leave it to later. It should instead take you to a page that says something like, "Done! Click the advancements button on the warband page to pick this skill before your next battle.""
 
 **Notes:** Confirmed. There are two different "later" mechanisms in `AdvancesStep.tsx` that are easy to conflate: the whole-advance "Roll later" (`mode === 'later'`) correctly shows a plain "Left pending. Roll it from the roster page under Advancements." line and nothing else. But "Pick the skill later" — offered once an advance has already been rolled and turned out to be a skill choice (`canPickLater` at line 65: `subject.kind !== 'group' && plan.need === 'skill' && plan.roll !== null`) — sets `mode = 'pickLater'`, which does *not* match the `'later'` branch, so it falls into the `else` branch and renders `<AdvanceBody ... step={mode === 'pickLater' ? 'choose' : item.step} .../>` (line 83) — `step` is forced to `'choose'`, the full skill-selection list (`AdvanceBody.tsx`'s `choose` branch → `SkillPicker`). A small "Skill to be picked later" banner with a "Pick it now" button is added underneath it (lines 84-90), but the list itself stays visible and interactive underneath, which is exactly the confusing behaviour reported. Fix is contained to `AdvancesStep.tsx`: swap what renders for `mode === 'pickLater'` for a confirmation message like the plain `'later'` case, instead of forcing `AdvanceBody` into its choose step.
+
+**Fixed:** `mode === 'pickLater'` is now its own branch alongside `'later'`, showing only "Skill left
+pending. Choose it from the roster page under Advancements before the next battle." plus the
+existing "Pick it now" button — `AdvanceBody`/the skill list no longer renders at all while a skill
+is deferred. "Pick it now" calls `setMode('now')`; traced that `item.step` is already `'choose'` by
+the time `pickLater` can be reached (its only trigger, the "Pick the skill later" button, lives in
+the choose step's own action row), so dropping the old `mode === 'pickLater' ? 'choose' : item.step`
+forcing hack doesn't change what "Pick it now" shows — it was redundant, not load-bearing. `npx tsc
+-b`, `npm run lint`, and the full `npm test -- --run` (unchanged pass count) are clean. Not given a
+fresh live click-through in a browser — manufacturing a real post-battle-wizard state with an
+in-progress skill advance was judged not worth the setup time for a JSX-only restructuring with no
+behaviour change traced through the actual state machine; flagging that honestly rather than
+claiming a check that didn't happen.
 
 ### 14. Warband units — possibly Sons of Hashut specifically, possibly wider — start at 1 XP instead of 0
 

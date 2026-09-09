@@ -4,9 +4,14 @@ import { incomeSize, sellWyrdstone, wyrdstoneQuote } from '../../rules/resolve/i
 import { Button, Notice, Stepper } from '../../ui'
 import { Card, KeyValue } from '../roster/view/bits'
 import type { TradeContext } from './useTrade'
+import { useMatch } from '../../api/matches'
+import { useSession } from '../../app/session'
 
 export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
   const { roster, phase, canTrade, pending, run } = trade
+  const user = useSession(s => s.user)
+  const lastMatch = useMatch(phase.matchId ?? undefined, user?.id)
+  const burning = lastMatch.data?.scenario_rules_id === 'mordheim_s_burning'
   const shards = roster.wyrdstone
   const [count, setCount] = useState(shards)
   const [seenShards, setSeenShards] = useState(shards)
@@ -20,11 +25,11 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
   const sizing = incomeSize(roster)
   const size = sizing.size
   const bandIndex = Math.max(0, Math.min(WARBAND_SIZE_BANDS.length - 1, warbandSizeBandIndex(size) + sizing.bandShift))
-  const saleOpts = trade.perks?.wyrdstoneSaleBonus ? { bonusRate: trade.perks.wyrdstoneSaleBonus, bonusSource: trade.perks.wyrdstoneSaleSource?.districtName } : {}
+  const saleOpts = { ...(trade.perks?.wyrdstoneSaleBonus ? { bonusRate: trade.perks.wyrdstoneSaleBonus, bonusSource: trade.perks.wyrdstoneSaleSource?.districtName } : {}), scenarioMultiplier: burning ? 3 as const : undefined }
   const income = wyrdstoneQuote(roster, selling, saleOpts)
   const activeHiredSwords = roster.hiredSwords.filter((s) => s.status === 'active').length
   const soldAlready = phase.wyrdstoneSold
-  const disabled = !canTrade || soldAlready || shards === 0 || selling < 1
+  const disabled = !canTrade || soldAlready || shards === 0 || selling < 1 || Boolean(phase.matchId && (lastMatch.isPending || lastMatch.error))
 
   async function confirm() {
     await run(() => sellWyrdstone(roster, selling, saleOpts).value, { wyrdstoneSold: true })
@@ -32,6 +37,8 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {lastMatch.error ? <Notice tone="error">Could not check the last scenario’s income rules. {lastMatch.error.message}</Notice> : null}
+      {burning ? <Notice title="Mordheim’s Burning">This post-battle sequence pays triple wyrdstone income. The quote below includes it.</Notice> : null}
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
         <KeyValue label="Shards held" value={shards} />
         <KeyValue label="Warband size" value={size} />

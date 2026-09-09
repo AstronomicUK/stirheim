@@ -588,6 +588,49 @@ describe('suggested exploration dice', () => {
   })
 })
 
+describe('scenario aftermath', () => {
+  it('Burning replaces injuries and XP, removes dead heroes’ equipment, and awards recovery XP once per group', () => {
+    let draft = setGroupOut(setHeroOut(setHeroOut(setResult(emptyDraft(), 'lost'), 'captain', true), 'champion', true), 'watch', 2, 3)
+    draft = { ...draft, scenarioInjuryDice: { captain: 5, champion: 6 }, groupInjuries: { watch: [1, 6] } }
+    const c = ctx({ scenarioId: 'mordheim_s_burning' })
+    let d = deriveReport(draft, c)
+    expect(d.injuries.heroes.map(h => h.resolution.outcome)).toEqual(['dead', 'recovered'])
+    expect(d.xp.lines.find(x => x.subjectId === 'captain')).toBeUndefined()
+    expect(d.xp.lines.find(x => x.subjectId === 'champion')?.amount).toBe(6)
+    expect(d.xp.lines.find(x => x.subjectId === 'watch')?.amount).toBe(6)
+    expect(d.exploration.record).toBeNull()
+    for (const advance of d.advances.items) draft = setAdvanceMode(draft, advance.key, 'later')
+    d = deriveReport(draft, c)
+    expect(d.report?.applied.remove_item_ids).toContain('item-captain-sword')
+    expect(d.report?.applied.groups.find(g => g.id === 'watch')?.patch).toMatchObject({ size: 2, xp: 7 })
+  })
+
+  it('uses scenario exploration counts without removing reasoned player adjustments', () => {
+    const won = setResult(emptyDraft(), 'won')
+    expect(deriveReport(won, ctx({ scenarioId: 'mordheim_s_burning' })).exploration.suggested?.count).toBe(3)
+    expect(deriveReport(won, ctx({ scenarioId: 'a_stroll_in_the_garden' })).exploration.suggested?.count).toBe(5)
+    const override = setExplorationDiceOverride(setResult(emptyDraft(), 'lost'), { count: 2, reason: 'Agreed scenario adaptation' })
+    expect(deriveReport(override, ctx({ scenarioId: 'mordheim_s_burning' })).exploration.allowed?.count).toBe(2)
+  })
+
+  it('Herald non-campaign mode applies only the explicitly recorded object rewards', () => {
+    const draft = { ...setGroupOut(setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true), 'watch', 2, 3), scenarioNonCampaign: true, battleGold: 30, battleWyrdstone: 2, scenarioItems: [{ item_rules_id: 'sword', custom_name: null, quantity: 1 }] }
+    const d = deriveReport(draft, ctx({ scenarioId: 'the_sword_of_the_herald', itemsUsed: { captain: ['sword'] } }))
+    expect(d.problems).toEqual({ outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] })
+    expect(d.report?.applied).toEqual({ heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems, warband: { gold_delta: 30, wyrdstone_delta: 2, veteran_pool: null } })
+    expect(d.report?.xp_log).toEqual([])
+    expect(d.report?.injuries).toEqual([])
+    expect(d.report?.exploration).toBeNull()
+    expect(battleReportSchema.safeParse(d.report).success).toBe(true)
+  })
+
+  it('Herald caps only Zombie kills, retaining normal enemy awards', () => {
+    const draft = { ...setEnemiesOut(setResult(emptyDraft(), 'lost'), 'captain', 5), scenarioZombieKills: { captain: 3 } }
+    const d = deriveReport(draft, ctx({ scenarioId: 'the_sword_of_the_herald' }))
+    expect(d.xp.lines.find(x => x.subjectId === 'captain')?.amount).toBe(4)
+  })
+})
+
 describe('injury overrides', () => {
   it('waiving a hero roll counts as a recovery, needs a reason, and is logged as an adjustment', () => {
     let draft = setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true)

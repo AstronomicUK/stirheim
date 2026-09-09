@@ -24,6 +24,15 @@ describe("effectiveWarbandSize", () => {
 });
 
 describe("sellWyrdstone", () => {
+  it("triples Burning income in both the quote and the saved sale", () => {
+    const wb = makeWarband({ henchmenGroups: [makeHenchmanGroup({ size: 6 })], wyrdstone: 3, gold: 10 });
+    expect(wyrdstoneQuote(wb, 3)).toBe(65);
+    expect(wyrdstoneQuote(wb, 3, { scenarioMultiplier: 3 })).toBe(195);
+    const result = sellWyrdstone(wb, 3, { scenarioMultiplier: 3 });
+    expect(result.value.gold).toBe(205);
+    expect(result.value.wyrdstone).toBe(0);
+    expect(result.events[0].message).toContain('×3 for Mordheim’s Burning');
+  });
   it("2 shards with 5 models -> 55 gc", () => {
     const wb = makeWarband({ henchmenGroups: [makeHenchmanGroup({ size: 3 })], wyrdstone: 3, gold: 10 });
     expect(effectiveWarbandSize(wb)).toBe(5);

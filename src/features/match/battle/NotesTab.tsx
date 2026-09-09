@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { BattleLiveState } from '../../../domain'
 import { Button, Stepper, TextArea, TextField } from '../../../ui'
 import { Card, Section } from '../../roster/view/bits'
-import { scenarioIsKnown, scenarioObjectives } from '../../../rules/data/campaign/scenarioObjectives'
+import { scenarioObjectives } from '../../../rules/data/campaign/scenarioObjectives'
 import { addLoot, removeLoot, setNotes, setWyrdstoneFound } from './sheet'
 
 export interface NotesTabProps {
@@ -15,13 +15,14 @@ export interface NotesTabProps {
   custom?: boolean
 }
 
-export function NotesTab({ sheet, edit, readOnly, scenarioId, custom = false }: NotesTabProps) {
+export function NotesTab({ sheet, edit, readOnly, scenarioId }: NotesTabProps) {
   const [lootDraft, setLootDraft] = useState('')
   const objectives = scenarioObjectives(scenarioId)
   // A custom scenario, or one the catalogue does not carry, gets both: better to offer than to hide.
-  const unknown = custom || (Boolean(scenarioId) && !scenarioIsKnown(scenarioId))
-  const showWyrdstone = unknown || objectives.wyrdstone !== null || sheet.wyrdstoneFound > 0
-  const showLoot = unknown || objectives.treasure || sheet.loot.length > 0
+  // An absent extracted heading is not evidence that the scenario has no objectives.
+  // Always keep manual recording available for rules in prose and agreed adaptations.
+  const showWyrdstone = true
+  const showLoot = true
 
   function submitLoot() {
     const line = lootDraft.trim()
@@ -89,12 +90,6 @@ export function NotesTab({ sheet, edit, readOnly, scenarioId, custom = false }: 
           </form>
         ) : null}
       </Section>
-      ) : null}
-
-      {!showWyrdstone && !showLoot ? (
-        <p className="text-sm leading-relaxed text-ink-dim">
-          This scenario places no wyrdstone or treasure on the table. Anything found comes out of the exploration phase after the game.
-        </p>
       ) : null}
 
       <Section title="Notes">

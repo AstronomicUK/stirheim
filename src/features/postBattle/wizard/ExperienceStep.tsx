@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import type { XpLine } from '../../../domain'
 import { nextAdvanceAt } from '../../../rules/resolve/advances'
-import { Button, Markdown, NumberField, Notice, TextField } from '../../../ui'
+import { Button, Markdown, NumberField, Notice, TextField, SelectField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { addXpExtra, removeXpExtra, setUnderdog, type XpExtra } from '../model'
 import { Intro, SwitchRow, type StepProps } from './bits'
 import { StepBody } from './WizardShell'
 import { unitGainsExperience } from '../../../rules/data/campaignRules'
-import { scenarioDetail } from '../../../rules/data/campaign/scenarioDetails'
+import { scenarioAftermath, type ScenarioAward } from '../../../rules/data/campaign/scenarioAftermath'
 import { findScenario } from '../../../rules/data/campaign/scenarios'
 
 export function ExperienceStep({ draft, derived, update, match }: StepProps) {
   const { lines, underdogAvailable } = derived.xp
   const byId = new Map(lines.map((l) => [l.subjectId, l]))
   const { participants } = derived
-  const scenarioExperience = match.scenario_rules_id ? scenarioDetail(match.scenario_rules_id)?.experience : undefined
+  const scenario = scenarioAftermath(match.scenario_rules_id, draft.scenarioMission, draft.scenarioUseBody)
+  const scenarioExperience = scenario.selected?.text
   const scenarioTitle = match.scenario_rules_id ? findScenario(match.scenario_rules_id)?.title : undefined
   const noXp = (id: string) => !byId.has(id)
   const byRule = [
@@ -30,11 +31,18 @@ export function ExperienceStep({ draft, derived, update, match }: StepProps) {
 
   return (
     <StepBody title="Experience">
-      <Intro>+1 for surviving, +1 to the leader for a win, +1 per enemy a hero put out of action. Add anything the scenario awards as an extra line with a reason.</Intro>
+      <Intro>+{scenario.defaults.survival} for surviving, +{scenario.defaults.leader} to the leader for a win, +{scenario.defaults.kill} per enemy a hero put out of action. These use the selected scenario’s awards. Add objective awards or corrections below with a reason.</Intro>
+      {scenario.options.length > 1 ? <SelectField label="Mission played" value={draft.scenarioMission ?? ''} onChange={e => update(d => ({ ...d, scenarioMission: e.target.value }))}><option value="">Choose the mission</option>{scenario.options.map(o => <option key={o.name} value={o.name}>{o.name}</option>)}</SelectField> : null}
+      {scenario.conflict ? <Notice tone="warn" title="Conflicting printed awards">
+        <p>{scenario.conflict} Choose the interpretation agreed at the table; it will be recorded in the report.</p>
+        <SelectField label="Award interpretation" value={draft.scenarioUseBody === undefined ? '' : String(draft.scenarioUseBody)} onChange={e => update(d => ({ ...d, scenarioUseBody: e.target.value === '' ? undefined : e.target.value === 'true' }))}>
+          <option value="">Choose the agreed reading</option><option value="false">Use the heading value</option><option value="true">Use the explanatory text</option>
+        </SelectField>
+      </Notice> : null}
       {scenarioExperience ? (
         <Notice tone="info" title={`${scenarioTitle ?? 'This scenario'}'s own experience rules`}>
           <Markdown source={scenarioExperience} className="text-sm" />
-          <p className="mt-2 text-xs text-ink-dim">The three standard awards above are already applied automatically — add anything beyond them as a line below.</p>
+          <p className="mt-2 text-xs text-ink-dim">Survival, winning-leader and ordinary kill awards shown above are already applied. Choose any additional objective awards on the relevant warrior’s card; adjust the amount for repeated deeds.</p>
         </Notice>
       ) : null}
       {underdogAvailable > 0 ? (
@@ -45,10 +53,14 @@ export function ExperienceStep({ draft, derived, update, match }: StepProps) {
           onChange={(v) => update((d) => setUnderdog(d, v))}
         />
       ) : null}
+      {match.scenario_rules_id === 'the_sword_of_the_herald' && !draft.scenarioNonCampaign ? <Section title="Zombie kills">
+        <p className="text-sm text-ink-dim">Each hero earns at most +1 XP for all Zombies taken out. Record how many of their total kills were Zombies.</p>
+        {participants.heroes.filter(h => (draft.enemiesOut[h.id] ?? 0) > 0).map(h => <NumberField key={h.id} label={`${h.name}: Zombie kills`} value={draft.scenarioZombieKills?.[h.id] ?? 0} onChange={v => update(d => ({ ...d, scenarioZombieKills: { ...d.scenarioZombieKills, [h.id]: Math.min(d.enemiesOut[h.id] ?? 0, Math.max(0, Math.trunc(v ?? 0))) } }))} />)}
+      </Section> : null}
       <Section title="Awards" aside={owed > 0 ? `${owed} ${owed === 1 ? 'advance' : 'advances'} owed` : undefined}>
         {lines.length === 0 ? <p className="text-sm text-ink-dim">Nobody earns experience this time.</p> : null}
         {lines.map((line) => (
-          <XpCard key={line.subjectId} line={line} extras={draft.xpExtras[line.subjectId] ?? []} onAdd={(x) => update((d) => addXpExtra(d, line.subjectId, x))} onRemove={(i) => update((d) => removeXpExtra(d, line.subjectId, i))} />
+          <XpCard key={line.subjectId} line={line} suggestions={scenario.bonuses} extras={draft.xpExtras[line.subjectId] ?? []} onAdd={(x) => update((d) => addXpExtra(d, line.subjectId, x))} onRemove={(i) => update((d) => removeXpExtra(d, line.subjectId, i))} />
         ))}
       </Section>
       {earnedNothing.length > 0 ? (
@@ -60,13 +72,14 @@ export function ExperienceStep({ draft, derived, update, match }: StepProps) {
 }
 
 interface XpCardProps {
+  suggestions: ScenarioAward[]
   line: XpLine
   extras: XpExtra[]
   onAdd: (extra: XpExtra) => void
   onRemove: (index: number) => void
 }
 
-function XpCard({ line, extras, onAdd, onRemove }: XpCardProps) {
+function XpCard({ line, extras, onAdd, onRemove, suggestions }: XpCardProps) {
   const [adding, setAdding] = useState(false)
   const [amount, setAmount] = useState<number | null>(1)
   const [reason, setReason] = useState('')
@@ -114,6 +127,9 @@ function XpCard({ line, extras, onAdd, onRemove }: XpCardProps) {
       </ul>
       {adding ? (
         <div className="flex flex-col gap-2 border-t border-border pt-3">
+          {suggestions.length > 0 ? <SelectField label="Scenario award" value="" onChange={e => { const a = suggestions[Number(e.target.value)]; if (a) { setAmount(a.amount); setReason(`${a.label}: ${a.text}`) } }}>
+            <option value="">Choose an award, or enter your own below</option>{suggestions.map((a, i) => <option key={i} value={i}>+{a.amount} {a.label}</option>)}
+          </SelectField> : null}
           <div className="grid grid-cols-[5rem_1fr] gap-2">
             <NumberField label="Amount" value={amount} onChange={setAmount} compact />
             <TextField label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="carried the shard off the table" />

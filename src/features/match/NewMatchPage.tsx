@@ -16,6 +16,7 @@ import { DistrictPicker } from '../map/DistrictPicker'
 import { coreScenarios, filterScenarios, libraryScenarios } from '../scenarios/helpers'
 import { RandomScenario } from './schedule/RandomScenario'
 import { usePageTitle } from '../onboarding/usePageTitle'
+import { SCENARIO_ELIGIBILITY } from '../../rules/data/campaign/scenarioEligibility'
 import {
   customScenariosFor,
   NEW_MATCH_COPY,
@@ -324,7 +325,7 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
           ) : customRows.length === 0 ? (
             <Card className="flex flex-col gap-2 px-4 py-4">
               <p className="text-sm leading-relaxed text-ink-dim">Nobody has written a scenario for this group yet.</p>
-              <TextLink to="/scenarios/new">Write one in the scenario library</TextLink>
+              <TextLink to={`/campaigns/${campaign.id}/settings/scenarios/new`}>Write a scenario in Campaign Settings</TextLink>
             </Card>
           ) : (
             <PickList
@@ -361,6 +362,7 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
             </>
           ) : null}
         </p>
+        {scenario.kind === 'builtin' && SCENARIO_ELIGIBILITY[scenario.id] ? <Notice tone="info" title="Before playing this scenario">{SCENARIO_ELIGIBILITY[scenario.id]} <span>Record any agreed adaptation in the notes below.</span></Notice> : null}
       </fieldset>
 
       <TextField

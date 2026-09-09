@@ -94,6 +94,14 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  scenarioMission?: string
+  scenarioGardenRerolled?: boolean
+  /** Explicit per-report resolution of contradictory printed award values. */
+  scenarioUseBody?: boolean
+  scenarioItems?: FoundItem[]
+  scenarioInjuryDice?: Record<string, number | null>
+  scenarioNonCampaign?: boolean
+  scenarioZombieKills?: Record<string, number>
   version: typeof REPORT_DRAFT_VERSION
   /** Index into STEP_IDS. */
   step: number

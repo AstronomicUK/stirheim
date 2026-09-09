@@ -30,6 +30,8 @@ import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../..
 import type { XpExtra } from './state'
 
 export interface XpContext {
+  scenarioAwards?: { survival: number; leader: number; kill: number }
+  zombieKills?: Record<string, number>
   won: boolean
   leaderId: string | null
   /** Extra experience per surviving warrior (0 when not the underdog or the toggle is off). */
@@ -95,10 +97,12 @@ export function warriorXpLine(
   // like Heroes" — a Dramatis Persona has no unitTemplateId either, so unitGainsExperience(null)
   // can't catch this on its own; ordinary hired swords still earn as heroes (docs/PLANNING.md).
   if ('hiredSwordId' in before && isDramatisPersona(before.hiredSwordId)) return null
-  const awards: Award[] = [{ amount: 1, reason: 'survived the battle' }]
-  if (ctx.won && ctx.leaderId === before.id) awards.push({ amount: 1, reason: 'winning leader' })
-  const enemies = ctx.enemiesOut[before.id] ?? 0
-  if (enemies > 0) awards.push({ amount: enemies, reason: `${enemies === 1 ? 'enemy' : 'enemies'} out of action` })
+  const awards: Award[] = [{ amount: ctx.scenarioAwards?.survival ?? 1, reason: 'survived the battle' }]
+  if (ctx.won && ctx.leaderId === before.id) awards.push({ amount: ctx.scenarioAwards?.leader ?? 1, reason: 'winning leader' })
+  const kills = ctx.enemiesOut[before.id] ?? 0
+  const zombies = Math.min(kills, Math.max(0, ctx.zombieKills?.[before.id] ?? 0))
+  const enemies = kills - zombies + Math.min(1, zombies)
+  if (enemies > 0) awards.push({ amount: enemies * (ctx.scenarioAwards?.kill ?? 1), reason: `${enemies === 1 ? 'enemy' : 'enemies'} out of action` })
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   const injuryXp = after.xp - before.xp
   if (injuryXp !== 0) awards.push({ amount: injuryXp, reason: 'from the Serious Injuries chart' })
@@ -110,7 +114,8 @@ export function warriorXpLine(
 export function groupXpLine(before: RosterHenchmanGroup, after: RosterHenchmanGroup, ctx: XpContext): XpLine | null {
   if (after.size <= 0) return null
   if (!unitGainsExperience(before.unitTemplateId)) return null
-  const awards: Award[] = [{ amount: 1, reason: 'survived the battle' }]
+  const awards: Award[] = [{ amount: ctx.scenarioAwards?.survival ?? 1, reason: 'survived the battle' }]
+  if (after.xp !== before.xp) awards.push({ amount: after.xp - before.xp, reason: 'from the scenario injury result' })
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   for (const extra of ctx.extras[before.id] ?? []) awards.push({ amount: extra.amount, reason: extra.reason })
   return toLine('group', before, 'henchman', awards, unitRules(before.unitTemplateId).advanceRate ?? 'normal')

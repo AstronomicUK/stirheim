@@ -14,6 +14,8 @@ export interface SellWyrdstoneOptions {
   sizeOverride?: number;
   /** Map campaigns: extra gold as a fraction of the chart income, rounded down (The Rock: 0.2). */
   bonusRate?: number;
+  /** Mordheim's Burning triples the income after this scenario. */
+  scenarioMultiplier?: 3;
   /** Where the bonus comes from, for the record. */
   bonusSource?: string;
 }
@@ -99,7 +101,7 @@ function assertSellable(warband: RosterWarband, shards: number): void {
 export function wyrdstoneQuote(warband: RosterWarband, shards: number, opts: SellWyrdstoneOptions = {}): number {
   if (!Number.isInteger(shards) || shards < 1) return 0;
   const info = incomeSize(warband);
-  return withSaleBonus(wyrdstoneIncome(shards, opts.sizeOverride ?? info.size, opts.sizeOverride !== undefined ? 0 : info.bandShift), opts.bonusRate);
+  return withSaleBonus(wyrdstoneIncome(shards, opts.sizeOverride ?? info.size, opts.sizeOverride !== undefined ? 0 : info.bandShift), opts.bonusRate) * (opts.scenarioMultiplier ?? 1);
 }
 
 /** Sell wyrdstone: adds the chart income to gold and removes the shards. Once per post-battle sequence (see trading.TradePhaseState). */
@@ -113,13 +115,13 @@ export function sellWyrdstone(
   const size = opts.sizeOverride ?? info.size;
   const shift = opts.sizeOverride !== undefined ? 0 : info.bandShift;
   const chart = wyrdstoneIncome(shards, size, shift);
-  const gold = withSaleBonus(chart, opts.bonusRate);
+  const gold = withSaleBonus(chart, opts.bonusRate) * (opts.scenarioMultiplier ?? 1);
   return {
     value: { ...warband, gold: warband.gold + gold, wyrdstone: warband.wyrdstone - shards },
     events: [
       {
         kind: "wyrdstone.sold",
-        message: `Sold ${shards} wyrdstone for ${gold} gc (warband size ${size}${shift ? `, band ${shift > 0 ? "+" : ""}${shift}` : ""}${gold !== chart ? `; ${chart} gc on the chart +${Math.round((opts.bonusRate ?? 0) * 100)}% from ${opts.bonusSource ?? "the map"}` : ""})`,
+        message: `Sold ${shards} wyrdstone for ${gold} gc (warband size ${size}${shift ? `, band ${shift > 0 ? "+" : ""}${shift}` : ""}${opts.bonusRate ? `; ${chart} gc on the chart +${Math.round((opts.bonusRate ?? 0) * 100)}% from ${opts.bonusSource ?? "the map"}` : ""}${opts.scenarioMultiplier ? "; ×3 for Mordheim’s Burning" : ""})`,
         data: { shards, gold, warbandSize: size },
       },
     ],

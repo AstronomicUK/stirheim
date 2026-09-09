@@ -29,6 +29,8 @@ import { isDie, type ExplorationDraft, type FoundItem } from './state'
 import { minMax } from '../../../rules/resolve/dice'
 
 export interface ExplorationInput {
+  scenarioId?: string | null
+  disabledReason?: string
   won: boolean
   /** Fighting heroes who were not taken out of action. */
   eligibleHeroes: RosterHero[]
@@ -146,11 +148,15 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     record: null,
   }
   const rules = warbandRules(roster.warbandTemplateId).exploration
+  if (input.disabledReason) return { ...base, skippedReason: input.disabledReason }
   if (input.eligibleHeroes.length === 0 && !rules?.extraDiceWithoutHeroes) return { ...base, skippedReason: NO_HEROES }
 
   const eligible = new Set(input.eligibleHeroes.map((h) => h.id))
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
-  const suggested = explorationDiceAllowed(roster, { won: input.won, heroesOutOfAction, extraDice: input.extraDice ?? 0, extraDiceNote: input.extraDiceNote })
+  const burning = input.scenarioId === 'mordheim_s_burning'
+  const garden = input.scenarioId === 'a_stroll_in_the_garden'
+  let suggested = explorationDiceAllowed(roster, { won: input.won && !burning, heroesOutOfAction, extraDice: (input.extraDice ?? 0) + (garden ? 1 : 0), extraDiceNote: [input.extraDiceNote, garden ? 'A Stroll in the Garden: one additional die; may reroll the entire pool once' : '', burning ? 'Mordheim’s Burning: no winner’s extra die' : ''].filter(Boolean).join('; ') })
+  if (burning && !input.won) suggested = { count: 0, keep: 0, capped: false, reason: 'Mordheim’s Burning: only the winning warband may explore.' }
   const override = draft.diceOverride
   const allowed: ExplorationDiceAllowed = override
     ? {
@@ -164,7 +170,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     override && override.count !== suggested.count
       ? { label: 'Exploration dice', suggested: `${suggested.count} (${suggested.reason})`, used: String(override.count), reason: override.reason.trim() }
       : null
-  if (allowed.count <= 0) return { ...base, allowed, suggested, skippedReason: NO_HEROES }
+  if (allowed.count <= 0) return { ...base, allowed, suggested, skippedReason: burning ? suggested.reason : NO_HEROES }
 
   const rolls: (number | null)[] = []
   for (let i = 0; i < allowed.count; i++) {

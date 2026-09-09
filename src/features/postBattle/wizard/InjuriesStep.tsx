@@ -35,14 +35,14 @@ const OUTCOME_TAG: Record<InjuryOutcome, { label: string; tone: 'neutral' | 'war
 }
 
 export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
+  const burning = ctx.scenarioId === 'mordheim_s_burning'
   const { heroes, hiredSwords, groups, animals, summary } = derived.injuries
   const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0 && animals.length === 0
   const kit = derived.kit.prompts
   return (
     <StepBody title="Serious injuries">
       <Intro>
-        Roll for every warrior taken out of action, with both players watching. Heroes roll a D66; hired swords and henchmen a D6 each. If a skill, an item or a
-        house rule means no roll is needed, say so and it is logged on the report.
+        {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes roll D66; hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
       </Intro>
       {nothing ? (
         <Card className="px-4 py-3">
@@ -50,9 +50,14 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         </Card>
       ) : null}
       {heroes.length > 0 ? (
-        <Section title="Heroes (D66)">
+        <Section title={burning ? 'Heroes (D6)' : 'Heroes (D66)'}>
           {heroes.map(({ hero, resolution }) => (
-            <HeroInjuryCard
+            burning ? <Card key={hero.id} className="flex flex-col gap-3 px-4 py-3">
+              <p>{hero.name}</p>
+              {draft.injurySkips[hero.id] === undefined ? <DieField label={`${hero.name} injury D6`} sides={6} value={draft.scenarioInjuryDice?.[hero.id] ?? null} onChange={v => update(d => ({ ...d, scenarioInjuryDice: { ...d.scenarioInjuryDice, [hero.id]: v } }))} rollable /> : null}
+              <SkipRow skip={draft.injurySkips[hero.id]} onSkip={reason => update(d => setInjurySkip(d, hero.id, reason))} />
+              {resolution.line ? <p className="text-sm">{resolution.line.effect}</p> : null}
+            </Card> : <HeroInjuryCard
               key={hero.id}
               name={hero.name}
               type={warriorTypeLabel(ctx, hero)}
@@ -75,7 +80,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{sword.name}</p>
-                  <p className="text-xs text-ink-dim">{warriorTypeLabel(ctx, sword)} · 1-2 lost, 3-6 survives</p>
+                  <p className="text-xs text-ink-dim">{warriorTypeLabel(ctx, sword)} · {burning ? '1–5 dies, 6 survives and earns +1 XP' : '1–2 lost, 3–6 survives'}</p>
                 </div>
                 {resolution.outcome ? <Tag tone={OUTCOME_TAG[resolution.outcome].tone}>{OUTCOME_TAG[resolution.outcome].label}</Tag> : null}
               </div>
@@ -101,6 +106,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                     <p className="text-xs text-ink-dim">
                       {outOfAction} of {group.size} out of action ·{' '}
                       {(() => {
+                        if (burning) return 'dead on 1–5; 6 survives and earns +1 group XP'
                         const ex = henchmanInjuryException(group)
                         if (!ex) return `dead on ${HENCHMAN_INJURY.deadOn.join('-')}`
                         if (ex.deadOn.length === 0) return `no injury roll (${ex.note})`
@@ -188,7 +194,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{animal.name}</p>
-                  <p className="text-xs text-ink-dim">{animal.holderName}'s · 1-2 dead (the item is lost), 3-6 survives</p>
+                  <p className="text-xs text-ink-dim">{animal.holderName}&apos;s · {burning ? '1–5 dead, 6 survives' : '1–2 dead (the item is lost), 3–6 survives'}</p>
                 </div>
                 {dead !== null ? <Tag tone={dead ? 'danger' : 'brass'}>{dead ? 'Dead' : 'Survives'}</Tag> : null}
               </div>

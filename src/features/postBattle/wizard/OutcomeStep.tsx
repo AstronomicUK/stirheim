@@ -18,13 +18,14 @@ function conflicts(mine: ReportResult, theirs: ReportResult): boolean {
   return mine === theirs
 }
 
-export function OutcomeStep({ draft, derived, update, mine, opponents, opponentReports }: StepProps) {
+export function OutcomeStep({ draft, derived, update, mine, opponents, opponentReports, ctx }: StepProps) {
   const highest = opponents.reduce<number | null>((best, o) => (best === null || o.rating > best ? o.rating : best), null)
   const bonus = derived.xp.underdogAvailable
   const conflicting = draft.result ? opponentReports.filter((r) => conflicts(draft.result!, r.result)) : []
   return (
     <StepBody title="How did it go?">
-      <Intro>Each side files its own report. Winning gives the leader +1 experience and one more exploration die.</Intro>
+      <Intro>Each side files its own report. Experience and exploration use the played scenario’s rules.</Intro>
+      {ctx.scenarioId === 'the_sword_of_the_herald' ? <SwitchRow label="Agreed non-campaign mode" description="The referee’s optional mode: no injuries, XP or exploration. Only rewards for removing the sword and Star Stone splinters may be recorded." checked={draft.scenarioNonCampaign ?? false} onChange={v => update(d => ({ ...d, scenarioNonCampaign: v }))} /> : null}
       {opponentReports.length > 0 ? (
         <Card className="px-4 py-2">
           {opponentReports.map((r) => (

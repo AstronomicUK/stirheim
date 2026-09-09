@@ -33,6 +33,7 @@ import { mapGrade } from '../../../rules/resolve/explorationAids'
 import { unitRules } from '../../../rules/data/campaignRules'
 import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
+import { scenarioAftermath } from '../../../rules/data/campaign/scenarioAftermath'
 import { defaultPromotedName, effectiveStep, emptyDraft as emptyAdvanceDraft, findSubject, planGroup, planHero, subjectName, type AdvanceDraft, type AdvanceStep, type AdvanceSubject, type GroupPlan, type HeroPlan } from '../../advances/model'
 import { skillTableName } from '../../roster/view/lookups'
 import type { CampaignHouseRules } from '../../../rules/types/roster'
@@ -40,6 +41,7 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  scenarioId?: string | null
   roster: RosterWarband
   template: WarbandTemplate | undefined
   /** Item rows of the warband, to find the row ids behind a hero's equipment. */
@@ -170,25 +172,46 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
   }
 }
 
-export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null): InjuriesDerived {
+export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null): InjuriesDerived {
+  const burning = scenarioId === 'mordheim_s_burning'
   const out = heroOoaIds(draft)
   const heroes = participants.heroes
     .filter((h) => out.has(h.id))
     .map((hero) => {
       const skip = draft.injurySkips[hero.id]
+      if (burning && skip === undefined) {
+        const die = draft.scenarioInjuryDice?.[hero.id]
+        const res = resolveHeroInjuryFlow(hero, { rolls: isDie(die, 6) ? [{ d66: die === 6 ? 41 : 11, subRoll: null }] : [], countRoll: null }, matchId)
+        if (res.line && isDie(die, 6)) res.line = { ...res.line, rolls: [die], injuryName: die === 6 ? 'Praise Be Sigmar!' : 'Death in the flames', effect: die === 6 ? 'Survived Mordheim’s Burning unharmed; +1 Experience.' : 'Mordheim’s Burning: dies on 1–5.' }
+        if (die === 6) res.hero = { ...res.hero, xp: res.hero.xp + 1 }
+        return { hero, resolution: res }
+      }
       return { hero, resolution: skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId, perks) }
     })
   const hiredSwords = participants.hiredSwords
     .filter((s) => out.has(s.id))
     .map((sword) => {
       const skip = draft.injurySkips[sword.id]
+      if (burning && skip === undefined) {
+        const die = draft.swordInjuries[sword.id] ?? null
+        const res = resolveHiredSwordInjury(sword, isDie(die, 6) ? die === 6 ? 6 : 1 : null)
+        if (res.line && isDie(die, 6)) res.line = { ...res.line, rolls: [die], injuryName: die === 6 ? 'Praise Be Sigmar!' : 'Death in the flames', effect: die === 6 ? 'Survived Mordheim’s Burning unharmed; +1 Experience.' : 'Mordheim’s Burning: dies on 1–5.' }
+        if (die === 6) res.sword = { ...res.sword, xp: res.sword.xp + 1 }
+        return { sword, resolution: res }
+      }
       return { sword, resolution: skip !== undefined ? skippedSword(sword, skip) : resolveHiredSwordInjury(sword, draft.swordInjuries[sword.id] ?? null) }
     })
   const groups = participants.groups
     .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0)
     .map((group) => {
       const outOfAction = Math.min(group.size, draft.groupsOut[group.id] ?? 0)
-      const dice = draft.groupInjuryDice[group.id]?.count ?? (henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : outOfAction)
+      const dice = draft.groupInjuryDice[group.id]?.count ?? (!burning && henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : outOfAction)
+      if (burning) {
+        const rolls = (draft.groupInjuries[group.id] ?? []).slice(0, dice).filter((r): r is number => isDie(r, 6))
+        const dead = rolls.filter(r => r < 6).length
+        const complete = rolls.length === dice
+        return { group, outOfAction, dice, resolution: { group: { ...group, size: Math.max(0, group.size - dead), xp: group.xp + (rolls.includes(6) ? 1 : 0) }, dead, complete, line: complete ? { subjectType: 'group' as const, subjectId: group.id, subjectName: group.name, rolls, dead } : null } }
+      }
       return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
     })
 
@@ -197,7 +220,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((a) => animalIds.has(a.id))
     .map((animal) => {
       const roll = draft.animalInjuries[animal.id] ?? null
-      return { animal, roll, dead: isDie(roll, 6) ? HENCHMAN_INJURY.deadOn.includes(roll as number) : null }
+      return { animal, roll, dead: isDie(roll, 6) ? burning ? roll < 6 : HENCHMAN_INJURY.deadOn.includes(roll as number) : null }
     })
   const summary: InjurySummary = { dead: 0, captured: 0, retired: 0, injured: 0, recovered: 0, henchmenDead: 0, pending: 0 }
   const count = (outcome: InjuryOutcome | null) => {
@@ -225,7 +248,7 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
   const underdogAvailable = underdogBonusFor(ctx.myRating, ctx.opponentRating)
   const underdogApplied = draft.underdog ? underdogAvailable : 0
   const won = draft.result === 'won'
-  const xpCtx = { won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras: draft.xpExtras }
+  const xpCtx = { won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras: draft.xpExtras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
   const heroAfter = new Map(injuries.heroes.map((h) => [h.hero.id, h.resolution]))
   const swordAfter = new Map(injuries.hiredSwords.map((s) => [s.sword.id, s.resolution]))
   const groupAfter = new Map(injuries.groups.map((g) => [g.group.id, g.resolution]))
@@ -280,6 +303,9 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
 
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
+  const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
+  if (scenario.needsMission) problems.experience.push('Choose which scenario mission was played.')
+  if (scenario.conflict && draft.scenarioUseBody === undefined) problems.experience.push('Choose the agreed interpretation of this scenario’s conflicting award values.')
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
   if (kit.pending > 0) problems.injuries.push(`${kit.pending} ${kit.pending === 1 ? 'roll' : 'rolls'} for kit after the battle still to make.`)
   if (!injuries.complete) {
@@ -330,6 +356,10 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
 }
 
 function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Participants, injuries: InjuriesDerived, xp: XpDerived, exploration: ExplorationDerived, kit: KitDerived): ReportApplied {
+  if (ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign) return {
+    heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems ?? [],
+    warband: { gold_delta: draft.battleGold, wyrdstone_delta: draft.battleWyrdstone, veteran_pool: null },
+  }
   const xpBySubject = new Map(xp.lines.map((l) => [l.subjectId, l]))
   const heroes: ReportApplied['heroes'] = []
   const pending: ReportApplied['pending_advances'] = []
@@ -491,7 +521,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     },
     pending_advances: pending,
     remove_item_ids: [...new Set(removeItemIds)],
-    stash_items: record?.itemsFound ?? [],
+    stash_items: [...(record?.itemsFound ?? []), ...(draft.scenarioItems ?? [])],
     item_patches: [...itemPatchesFor(ctx, draft).filter((p) => !kitRemovals.some((k) => k.id === p.id)), ...kitRemovals],
   }
 }
@@ -514,6 +544,11 @@ function ooaLines(draft: ReportDraft, participants: Participants, takenOutBy: Re
 
 function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext): string {
   const parts: string[] = []
+  if (draft.scenarioMission) parts.push(`Scenario mission: ${draft.scenarioMission}.`)
+  if (draft.scenarioGardenRerolled) parts.push('A Stroll in the Garden: re-rolled the entire exploration pool.')
+  if (draft.scenarioNonCampaign) parts.push('Sword of the Herald: agreed non-campaign mode; no injuries, experience or exploration applied. Scenario rewards only.')
+  if (draft.scenarioUseBody !== undefined) parts.push(`Conflicting scenario awards: the table chose ${draft.scenarioUseBody ? 'the explanatory text' : 'the heading value'}.`)
+  for (const item of draft.scenarioItems ?? []) parts.push(`Scenario reward: ${item.quantity} × ${item.custom_name ?? item.item_rules_id}.`)
   if (draft.battleWyrdstone > 0) parts.push(`${draft.battleWyrdstone} ${draft.battleWyrdstone === 1 ? 'shard' : 'shards'} of wyrdstone picked up during the battle.`)
   const abundance = ctx ? abundanceShards(draft, ctx) : null
   if (abundance) parts.push(`${ctx!.map!.districtName} (Abundance of Wyrdstone): +${abundance} ${abundance === 1 ? 'shard' : 'shards'} for winning there (D6 ${draft.abundanceRoll}).`)
@@ -526,6 +561,7 @@ function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext):
 
 /** The winner of a battle in an Abundance of Wyrdstone district owes a D3 for extra shards. */
 export function abundanceShardsDue(draft: ReportDraft, ctx: ReportContext): boolean {
+  if (ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign) return false
   return Boolean(ctx.map?.abundance) && draft.result === 'won'
 }
 
@@ -622,13 +658,18 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
 }
 
 export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedReport {
+  const nonCampaign = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign
+  if (nonCampaign) draft = { ...draft, veteranPool: [null, null], veteranPoolExtra: null, injurySkips: {}, groupInjuryDice: {} }
   const participants = participantsOf(ctx.roster, ctx.template)
-  const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: ctx.itemsUsed ?? {}, heroesOut: heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
+  const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
+  if (nonCampaign) { kit.prompts = []; kit.pending = 0 }
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
-  const injuries = deriveInjuries(draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks)
-  const xp = deriveXp(draft, participants, injuries, ctx)
+  const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
+  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx)
   const exploration = deriveExploration(draft.exploration, ctx.roster, {
+    scenarioId: ctx.scenarioId,
+    disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : undefined,
     won: draft.result === 'won',
     eligibleHeroes: survivingHeroes,
     enemiesOut: Object.values(draft.enemiesOut).reduce((n, v) => n + (v ?? 0), 0),

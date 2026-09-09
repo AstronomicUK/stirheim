@@ -178,11 +178,11 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 6. Two large rules-completeness audits already exist and are still open
 
-**Status:** 🔲 Open
+**Status:** 🔲 Open — settled: staying as standalone docs, not folded into the tracker
 **Priority:** 🟡 Low
 **Reported:** n/a — pointer to pre-existing docs, not a new report
 
-**Notes:** [`docs/WARBAND-RULES-GAPS.md`](WARBAND-RULES-GAPS.md) and [`docs/WEAPONS-ARMOUR-RULES-GAPS.md`](WEAPONS-ARMOUR-RULES-GAPS.md) are dated 2026-09-05 audits of warband special rules and weapon/armour rules that are documented but not mechanically enforced (dozens of specific items each, e.g. per-warband exploration bonuses, income modifiers, units that never gain experience). Left as their own documents rather than duplicated in here item-by-item — this entry exists only so the tracker doesn't quietly forget they're there. Say the word if these should be folded into this tracker as individual entries instead.
+**Notes:** [`docs/WARBAND-RULES-GAPS.md`](WARBAND-RULES-GAPS.md) and [`docs/WEAPONS-ARMOUR-RULES-GAPS.md`](WEAPONS-ARMOUR-RULES-GAPS.md) are dated 2026-09-05 audits of warband special rules and weapon/armour rules that are documented but not mechanically enforced (dozens of specific items each, e.g. per-warband exploration bonuses, income modifiers, units that never gain experience). **Tom confirmed (2026-09-09): leave them as their own documents** rather than duplicating into individual tracker entries. This pointer entry stays so the tracker doesn't quietly forget they're there.
 
 ## Batch — 2026-09-07
 
@@ -535,7 +535,7 @@ Second half is more nuanced than it first looks — **most of what's being asked
 
 ### 20. Tapping a dice-roll button more than once should log every result, not just the last one, to stop re-rolling out of sight
 
-**Status:** 🔲 Open
+**Status:** 🔲 Open — scope settled, not yet built
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -548,6 +548,8 @@ Second half is more nuanced than it first looks — **most of what's being asked
 - **A full "Start again"** in the Fight tab's roll-through popup (`FightTab.tsx`) — `state.log` (every roll of the current attack) lives only in local component state until "Log to both sheets" is pressed. Hitting "Start again" resets `state` to `null` and re-runs the whole attack from scratch, discarding the entire previous sequence's rolls with no record at all — arguably the more consequential version of the same worry, since it can rewrite a whole attack's outcome (to hit, to wound, injury), not just one die.
 
 Any fix needs to decide where the retained history is meant to live (kept only for the current session so a GM can see it live, vs. actually persisted to the record) and whether "Start again" should still be allowed unrestricted once dice have been rolled — that's a product question worth settling with Tom before writing code here, since it changes how disruptive/costly the fix is.
+
+**Settled by Tom (2026-09-09):** log every attempt for visibility, but keep "Start again" unrestricted — don't add friction for genuine mistakes, just make re-rolling out of sight impossible to hide. Not yet built.
 
 ### 21. Can't submit the second warband's post-battle report after submitting the first, when one player controls both sides of a match
 
@@ -1517,7 +1519,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 58. Magic and prayers: smaller rules-fidelity gaps (rulebook clauses with no code effect)
 
-**Status:** 🟡 Partially fixed — dead id removed; the real armour-exception question still needs Tom
+**Status:** 🟡 Partially fixed — dead id removed; armour-exception question settled (no change needed); the remaining smaller gaps (duplicate-spell difficulty, Warrior Wizard, spell damage, Sorcerous Society lore picker) are still open
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the magic and prayers rules audit, reviewed by Tom
 
@@ -1525,7 +1527,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 - **A duplicate spell can't be recorded at reduced difficulty.** The advance screen tells the player to "roll again, or lower its difficulty by 1 by hand" but there's nowhere on the roster to put a per-spell difficulty modifier, so the casting screen always shows the printed number regardless. Rolling again works fine; the other half of the rulebook's own offered choice doesn't.
 - **Warrior Wizard doesn't lift the armour-casting ban** (carried over from the skills audit, #59 below — the skill itself has no effect anywhere).
-- **The prayer armour exception covers four lores where the rulebook names only one** ("The only exception is the Prayers of Sigmar. Sisters of Sigmar and Warrior Priests may wear armour and use their prayers.") `PRAYER_LORE_IDS` also exempts Prayers of Taal, Prayers of Ulric and the Lady's Prayers — probably the reading most groups actually use, but applied inconsistently: Funerary Rites and Mortuary Cult Scrolls read as prayers too and are *not* exempted, so a Priest of Morr is blocked by armour while a Priest of Taal isn't. Worth Tom settling one way or the other rather than leaving the inconsistency.
+- ~~**The prayer armour exception covers four lores where the rulebook names only one**~~ **Settled by Tom (2026-09-09): keep the current four** (Sigmar, Taal, Ulric, Lady's Prayers). No code change — the existing `PRAYER_LORE_IDS` list stands as the deliberate reading, not an inconsistency to fix. Funerary Rites and Mortuary Cult Scrolls remain un-exempted, as they are today.
 - ~~`prayers_of_myrmidia` is a dead id sitting in `PRAYER_LORE_IDS` with no such lore anywhere in the data or the rules reference — harmless, but it's how the inconsistency above crept in (the list was written from memory, not from the lore table).~~ **Fixed:** confirmed zero matches anywhere in `src/rules/data/` and removed it from the array; zero behaviour change since nothing ever matched it. The actual policy question above (which lores get the armour exception) is untouched — still Tom's call.
 - **Spell damage isn't modelled** (no critical hits from spells, armour saves always apply) — reasonable scope, since the fight calculator has no spell-damage path at all, only melee/missile duels.
 - **The Sorcerous Society's four Elemental Lores have no picker anywhere** — 24 complete spells with no route to them, the same "scraped in faithfully, never wired to a unit" shape as the orphaned skill tables in #59/#60.
@@ -1683,7 +1685,7 @@ Left open (the five further gaps above, none touched by this fix): the Catacombs
 
 **Notes:** Shorter audit than most because income and trading is largely right — praised as correct and not worth re-checking: the wyrdstone income chart (8 rows × 6 size bands), warband size counting active heroes plus henchmen and excluding hired swords, partial wyrdstone sales with the once-per-sequence limit, rare availability at 2D6 vs the rarity number (one roll per Hero, barred for anyone taken out of action), selling at half price (and half the basic cost only for dice-priced rare items), and the full veteran-recruit flow. Half-price rounding down (a 15 gc item sells for 7) is also now a **settled ruling** — Tom confirmed 2026-09-07 that flooring is his own instruction, not a scrape gap; nobody should reopen it. Two further wiring gaps, both "everything needed already exists, just not connected":
 
-- **Nothing in the shop checks whether an item is on the warband's own equipment list.** The rule ("your warriors lack the skill to use any weapons other than the ones listed in the Recruitment charts") is fully data-backed — every warband template carries its `equipmentLists` — but the only consumers are `builder.ts` (creation) and `freeDagger.ts`. After creation, any warrior can be sold anything in the catalogue with no warning: a Skaven with a halberd, a Sister of Sigmar with a bow. This is separate from the per-item `ITEM_RESTRICTIONS` gate ("Chaos Dwarfs only") that Phase 16 already built and which works well — list membership itself has no check anywhere. **Left open**: which of a warband's (possibly several) equipment lists applies to a given unit is a real design question — not a one-line wiring fix like the ban gap below — worth Tom's steer on before building it.
+- **Nothing in the shop checks whether an item is on the warband's own equipment list.** The rule ("your warriors lack the skill to use any weapons other than the ones listed in the Recruitment charts") is fully data-backed — every warband template carries its `equipmentLists` — but the only consumers are `builder.ts` (creation) and `freeDagger.ts`. After creation, any warrior can be sold anything in the catalogue with no warning: a Skaven with a halberd, a Sister of Sigmar with a bow. This is separate from the per-item `ITEM_RESTRICTIONS` gate ("Chaos Dwarfs only") that Phase 16 already built and which works well — list membership itself has no check anywhere. **Settled by Tom (2026-09-09): a warning with an override, same pattern as the category-ban fix below** — not a hard block like the rare-item cap. Not yet built.
 - **Category equipment bans never reach the shop.** `equipmentBanReason` (`resolve/roster.ts:297`) already knows a Troll Slayer may wear no armour, Flagellants use no missile weapons, and so on — but it's only called from `validateRoster`, which runs on the Warband page. `itemRestrictionWarnings`, which the Buy tab does call, never consults it. The shop sells a Slayer heavy armour without comment, and the problem only surfaces later on a different screen, after the gold is already spent.
 
 **Fixed:**
@@ -2005,7 +2007,7 @@ existing mechanic vs. a new house-rule variant of it), but touches the same code
 
 ### 80. Rename "Scenarios" to "Battles" in the nav, order by active/upcoming/past, and move scenario editing under Campaign Settings
 
-**Status:** 🔲 Open
+**Status:** 🔲 Open — scope settled, not yet built
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2032,6 +2034,10 @@ campaign first, which is worth settling before building.
 Moving scenario editing under Campaign Settings is a reasonable new home — `ScenarioLibraryPage`
 already understands "Your group's" scenarios scoped to a campaign — but this is an IA change (not a
 relocation of one button) worth confirming scope on before starting.
+
+**Settled by Tom (2026-09-09):** the top-level Battles destination aggregates every campaign at once
+(not a campaign picker first), and scenario editing moves under Campaign Settings in the same pass
+as the nav rename, not a separate one. Not yet built.
 
 ### 81. Quick Actions redesign: fold My/Enemy Warband into a new "View Rosters" quick action
 
@@ -2172,7 +2178,7 @@ push` needs permission this session doesn't have.
 
 ### 83. A game-day scheduling tool on the Campaign page: GM proposes dates, players respond, GM finalises
 
-**Status:** 🔲 Open
+**Status:** 🔲 Open — scope settled, not yet built
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2191,6 +2197,13 @@ GM-finalised outcome) and new UI, most naturally a new `Section` on `CampaignPag
 existing "Battles" (`:170`) or "Recent activity" (`:172`) sections. Worth confirming one thing before
 building: whether "the next game day" is meant as one date for the whole campaign's next session, or
 per-scenario/per-match-up scheduling layered on top of what `NewMatchPage` already does.
+
+**Settled by Tom (2026-09-09):** one date for the whole campaign's next session is the primary
+feature — a straw poll on `CampaignPage.tsx`. *Also* add a lighter "suggest dates" option next to the
+date field when scheduling an individual battle in `NewMatchPage`, working the same way (propose
+candidates, collect responses) but scoped to that one match rather than the whole campaign. Two
+surfaces, one underlying mechanism — worth designing the data model to serve both from the start
+rather than bolting the per-match version on after. Not yet built.
 
 ### 84. Give the Cast a Spell box a nice casting animation, and improve the spell icon
 
@@ -2555,7 +2568,7 @@ run` all clean.
 
 ### 90. The hired swords icon is weird — brainstorm alternatives, don't just ship one
 
-**Status:** 🔲 Open — needs Tom's choice, not a unilateral fix
+**Status:** ✅ Fixed — Tom picked candidate A (sword and coin)
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2584,6 +2597,8 @@ dropped — the shield read as a circle/lollipop at this scale, not worth offeri
   individual," and gives hired swords and Dramatis Personae a shared visual language since both are
   named specialists you bring into the warband from outside it, not warband-grown warriors.
   `M11 5L13 15h-4zM9 15h6M12 15v5M10 20h4M18 1l0.65 2.35L21 4l-2.35 0.65L18 7l-0.65-2.35L15 4l2.35-0.65z`
+
+**Fixed (2026-09-09):** Tom picked **A — sword and coin**. Shipped in `src/ui/icons.tsx`, verified live at 150px (renders as a clean stylised sword with a coin at the hilt, easily readable, no lollipop problem like the dropped shield idea had). Candidates C and D are recorded above for reference only, not needed further.
 
 No preference recorded here on purpose — genuinely Tom's call between "plain and minimal" (C),
 "paid mercenary" (A), or "matches Dramatis Personae" (D).

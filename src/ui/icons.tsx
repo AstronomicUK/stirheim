@@ -80,7 +80,9 @@ const PATHS: Record<IconName, IconArt> = {
   models: { fill: 'M12 10.8a2.8 2.8 0 100-5.6 2.8 2.8 0 000 5.6zM12 12.1c-3.3 0-5.5 2-5.5 5 0 .5.4.9.9.9h9.2c.5 0 .9-.4.9-.9 0-3-2.2-5-5.5-5z', stroke: 'M4.7 12.3a2 2 0 100-4 2 2 0 000 4zM4.7 13.6c-2 0-3.3 1.3-3.3 3.3 0 .3.2.5.5.5h2.2M19.3 12.3a2 2 0 100-4 2 2 0 000 4zM19.3 13.6c2 0 3.3 1.3 3.3 3.3 0 .3-.2.5-.5.5h-2.2' },
   heroes: { fill: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z' },
   henchmen: 'M12 11.7a3.6 3.6 0 100-7.2 3.6 3.6 0 000 7.2zM12 13.2c-4.2 0-7 2.5-7 6.3 0 .6.4 1 1 1h12c.6 0 1-.4 1-1 0-3.8-2.8-6.3-7-6.3z',
-  hired: 'M4 20l7-7M9 8l7 7M14 4l6 6-3 3-6-6zM3 21l3-1-2-2z',
+  // #90: a sword and coin — "a blade for pay" — replacing the old crossed-strokes mark, which read
+  // as nothing in particular at 20px. Tom's pick from three rendered candidates.
+  hired: { stroke: 'M12 2l1.8 10.5h-3.6zM7.5 12.5h9M12 12.5v6.5M9.5 19h5', fill: 'M18.3 15.3a2.3 2.3 0 100-4.6 2.3 2.3 0 000 4.6z' },
   buy: 'M4 9h16l-2 11H6zM12 2v5M9.5 4.5L12 7l2.5-2.5',
   sell: 'M4 9h16l-2 11H6zM12 8v-5M9.5 5.5L12 3l2.5 2.5',
   stash: 'M4 11h16v9H4zM4 11C4 7 20 7 20 11M12 11l-1.5 2 1.5 2 1.5-2z',

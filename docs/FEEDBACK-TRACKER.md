@@ -2038,7 +2038,7 @@ action is active, on both mobile and desktop.
 
 ### 82. A matchup-maker tool: generate the next batch of games aiming for a round robin
 
-**Status:** ✅ Fixed — deployment and live UI pass pending (Astra, 2026-09-08)
+**Status:** ✅ Fixed — code live on production; DB migration still needs applying before the feature actually works there (see below)
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2122,6 +2122,33 @@ history/bye reads, duplicate rejection, GM/owner/bye checks, cancellation and le
 Build retains the existing large-chunk warning. No browser available in Astra's sandbox: visual
 layout, checklist clicks, embedded-form navigation and live production behaviour remain for the
 Stirheim Developer handoff; API integration is not claimed as browser E2E verification.
+
+**Live pass (Stirheim Developer, 2026-09-09):** reconciled the shared checkout against origin
+(byte-identical, fast-forwarded cleanly) and ran the actual UI against local dev, where the
+migration is already applied. The Matchup Maker section renders correctly on `CampaignPage.tsx`
+beside Battles, with a real attendee checklist (one checkbox per campaign member, each showing
+their active warbands) and a number-of-matchups/date picker. Checked both attendees (Tom's 3
+warbands, Ana's 1) and generated: the resolver correctly detected this specific pairing is
+infeasible — 4 warbands from only 2 owners can never form a full cross-owner round — and returned
+the actionable message from the spec ("These warbands cannot form a full round without pairing the
+same owner...") instead of crashing or emitting a same-owner pairing. Could not exercise the
+success path (a real proposed pairing → `NewMatchForm` → save → appears in Battles) against this
+specific seed campaign, since its only two enrolled players have a warband count (3 vs 1) that
+makes every possible attendee combination infeasible by the same math — not a bug, just a gap in
+the seed data for this particular check. **Not yet checked:** mobile layout, the save-a-pairing
+round trip, and reload/history behaviour, same three items Astra asked for.
+
+**Deployment status:** the frontend for this feature is live on production as of the #66/#68/#72
+batch deploy (2026-09-09) — it shipped as part of `main` before the migration dependency was
+caught. Confirmed the existing scheduling flow is unaffected (the new RPC arguments are only sent
+when the matchmaker is actually used; `undefined` values are dropped from the request, so a normal
+scheduled match calls the unmigrated production `schedule_match` exactly as before). The one real
+consequence: a GM who opens the now-visible Matchup Maker on production and tries to save a
+generated pairing will hit a server-side RPC error until the migration lands — contained to that
+one new action, not a wider break. **Blocked on Tom:** applying
+`supabase/migrations/20260909000001_matchmaking.sql` (and the also-pending, unrelated, and equally
+safe `20260908000028_cancel_match_reverts_reports.sql` for #75) to production — `npx supabase db
+push` needs permission this session doesn't have.
 
 ### 83. A game-day scheduling tool on the Campaign page: GM proposes dates, players respond, GM finalises
 

@@ -55,13 +55,15 @@ function NavTile({ icon, label, detail, active, tone, onClick, castCircle = fals
   const ring = active ? (tone === 'accent' ? 'border-accent bg-accent/10' : 'border-brass bg-brass/10') : 'border-border bg-surface-low hover:bg-surface-high'
   const ink = active ? (tone === 'accent' ? 'text-accent' : 'text-brass') : 'text-brass'
   return (
-    <button type="button" aria-pressed={active} onClick={onClick} className={`flex min-h-16 flex-1 flex-col items-start gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${ring} ${castCircle ? 'stirheim-cast-tile' : ''}`}>
+    <button type="button" aria-pressed={active} onClick={onClick} className={`flex min-h-16 flex-1 flex-col items-start gap-1 rounded-md border px-3 py-2.5 text-left transition-colors ${ring} ${castCircle ? 'stirheim-cast-magic' : ''}`}>
       {castCircle ? (
-        <svg className="stirheim-cast-orbit" aria-hidden="true" focusable="false">
-          <rect width="100%" height="100%" rx="6" pathLength="100" />
-        </svg>
+        <>
+          <span className="stirheim-cast-aura" aria-hidden="true" />
+          <span className="stirheim-cast-trail" aria-hidden="true" />
+          <span className="stirheim-cast-sheen" aria-hidden="true" />
+        </>
       ) : null}
-      <Icon name={icon} size={20} className={ink} />
+      <Icon name={icon} size={20} className={castCircle ? 'stirheim-cast-comet' : ink} />
       <span className="text-sm font-semibold leading-tight text-ink">{label}</span>
       {detail ? <span className="text-xs leading-snug text-ink-dim">{detail}</span> : null}
     </button>

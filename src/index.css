@@ -552,3 +552,61 @@ body {
   .stirheim-advance-star,
   .stirheim-advance-sheen { animation: none; }
 }
+
+/* #214: comet and whole-tile magic; all decorative layers leave input untouched. */
+.stirheim-cast-magic {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: #bfdff3;
+  box-shadow: 0 0 9px #bfdff326;
+}
+.stirheim-cast-magic[aria-pressed='true'] {
+  border-color: var(--color-brass);
+  box-shadow: inset 0 0 0 1px var(--color-brass), 0 0 12px #bfdff340;
+}
+.stirheim-cast-aura,
+.stirheim-cast-trail,
+.stirheim-cast-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.stirheim-cast-aura {
+  z-index: -1;
+  background: radial-gradient(ellipse at 12% 22%, #dff3ff80, transparent 65%), radial-gradient(ellipse at 90% 95%, #bfdff340, transparent 65%);
+  animation: stirheim-cast-aura 6s ease-in-out infinite alternate;
+}
+.stirheim-cast-trail {
+  padding: 2px;
+  background: conic-gradient(from 0deg, transparent 265deg, #bfdff380 310deg, #f5fbff 340deg, transparent 358deg);
+  mask: linear-gradient(#fff 0 0) content-box exclude, linear-gradient(#fff 0 0);
+  animation: stirheim-cast-light 7s linear infinite;
+}
+@property --cast-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.stirheim-cast-trail {
+  background: conic-gradient(from var(--cast-angle), transparent 265deg, #bfdff380 310deg, #f5fbff 340deg, transparent 358deg);
+}
+.stirheim-cast-comet {
+  color: #f5fbff;
+  filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 4px #bfdff3);
+  animation: stirheim-cast-comet 4s ease-in-out infinite;
+}
+.stirheim-cast-sheen {
+  background: linear-gradient(110deg, transparent 38%, #bfdff317 44%, #f5fbff70 50%, #bfdff317 56%, transparent 62%);
+  transform: translateX(-125%);
+  animation: stirheim-advance-sheen 9s ease-in-out infinite;
+}
+@keyframes stirheim-cast-light { to { --cast-angle: 360deg; } }
+@keyframes stirheim-cast-aura { to { opacity: .45; } }
+@keyframes stirheim-cast-comet {
+  50% { filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 6px #f5fbff) drop-shadow(0 0 9px #bfdff3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stirheim-cast-aura, .stirheim-cast-trail, .stirheim-cast-comet, .stirheim-cast-sheen { animation: none; }
+}

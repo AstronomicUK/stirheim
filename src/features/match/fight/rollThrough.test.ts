@@ -284,6 +284,47 @@ describe('attacking a stunned or knocked-down target (01:947-959)', () => {
   })
 })
 
+describe('opposed Weapon Skill parry house rule (#79)', () => {
+  // Attacker WS 3, defender WS 5, a hit rolled at 4 (a winning face for the default hitThreshold
+  // 4): attacker's total is 3+4=7, so the defender needs 5+p > 7, i.e. p in {3,4,5,6}.
+  const opposedPlan = (parry: { beatsOrMatches: boolean; reroll: boolean } = { beatsOrMatches: false, reroll: false }) =>
+    plan('Sword', { parryEligible: true, opposedParryWS: true, attackerWS: 3, defenderWS: 5 }, parry)
+
+  it("compares WS + roll on each side instead of the raw hit roll", () => {
+    let s = applyRoll(startPhase([opposedPlan()], 1, 1), 4)
+    expect(s.pending).toMatchObject({ kind: 'parry', detail: 'Opposed WS: 5 + the parry roll must beat 3 + 4 = 7' })
+    expect(applyRoll(s, 3).outcomes).toEqual(['parried']) // 5+3=8 > 7
+    expect(applyRoll(s, 2).outcomes).not.toEqual(['parried']) // 5+2=7, not > 7
+  })
+
+  it("Master of Blades allows a tie (>=) instead of requiring a strict beat", () => {
+    const s = applyRoll(startPhase([opposedPlan({ beatsOrMatches: true, reroll: false })], 1, 1), 4)
+    expect(applyRoll(s, 2).outcomes).toEqual(['parried']) // 5+2=7 == 7, matches
+  })
+
+  it("a reroll on a failed opposed attempt behaves the same as the flat rule's reroll", () => {
+    let s = applyRoll(startPhase([opposedPlan({ beatsOrMatches: false, reroll: true })], 1, 1), 4)
+    s = applyRoll(s, 2) // fails (5+2=7, not > 7)
+    expect(s.pending?.kind).toBe('parryReroll')
+    expect(applyRoll(s, 3).outcomes).toEqual(['parried']) // 5+3=8 > 7 on the reroll
+  })
+
+  it("a fixed parry threshold (Starblade) is unaffected by the opposed flag even if both are set", () => {
+    const fixedPlan: AttackPlan = { weaponName: 'Starblade', input: input({ parryEligible: true, opposedParryWS: true, attackerWS: 3, defenderWS: 5 }), parry: { beatsOrMatches: false, reroll: false, fixedThreshold: 4 } }
+    const s = applyRoll(startPhase([fixedPlan], 1, 1), 4)
+    expect(s.pending).toMatchObject({ detail: 'Parries on 4+ whatever was rolled to hit' })
+    expect(applyRoll(s, 1).outcomes).not.toEqual(['parried']) // below the fixed 4+, regardless of WS totals
+    expect(applyRoll(s, 4).outcomes).toEqual(['parried'])
+  })
+
+  it("without the house rule flag, the same WS values are ignored and the flat rule applies", () => {
+    const s = applyRoll(startPhase([plan('Sword', { parryEligible: true, attackerWS: 3, defenderWS: 5 })], 1, 1), 4)
+    expect(s.pending).toMatchObject({ detail: 'Must beat the 4 rolled to hit' })
+    expect(applyRoll(s, 4).outcomes).not.toEqual(['parried']) // beat, not strictly beat 4 -> fails the flat rule
+    expect(applyRoll(s, 5).outcomes).toEqual(['parried'])
+  })
+})
+
 describe('Ball and Chain — D3 wounds per hit instead of 1 (#69)', () => {
   it('a normal (non-crit) wound asks a D3 for how many wounds it causes, then resolves saves/injury for that many', () => {
     let s = startPhase([plan('Ball and Chain', { armourThreshold: IMPOSSIBLE, multipleWoundsD3OnHit: true })], 1, 0)

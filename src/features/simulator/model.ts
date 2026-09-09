@@ -135,7 +135,7 @@ export function statGains(input: AnalyserInput, metric: ChainMetric, fallbackWea
     opponentBS: input.defender.stats.BS,
     opponentA: input.defender.stats.A,
     context: input.context,
-    houseRules: { strengthArmourPiercing: input.houseRules.strengthArmourPiercing },
+    houseRules: { strengthArmourPiercing: input.houseRules.strengthArmourPiercing, opposedParryWS: input.houseRules.opposedParryWS },
     phase: input.phase,
   })
   const rows: StatGainRowView[] = breakdown.rows.map((r) => ({
@@ -163,7 +163,7 @@ export function skillGains(input: AnalyserInput, role: 'offensive' | 'defensive'
     opponentWeapon: opponentWeapon(input.defenderKit, input.phase, fallbackWeapon),
     category: categoryFor(role, input.phase),
     context: input.context,
-    houseRules: { strengthArmourPiercing: input.houseRules.strengthArmourPiercing },
+    houseRules: { strengthArmourPiercing: input.houseRules.strengthArmourPiercing, opposedParryWS: input.houseRules.opposedParryWS },
     respectSkillTables: respectTables,
   })
 }

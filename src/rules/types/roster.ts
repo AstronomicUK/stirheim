@@ -190,6 +190,8 @@ export interface CampaignHouseRules {
   rewardsOfTheShadowlord: boolean;
   /** How a spellcaster's first spell (at warband creation, or on gaining the ability to cast) is chosen. RAW is "random". */
   firstSpellRule: FirstSpellRule;
+  /** Parry as an opposed Weapon Skill roll (each side adds WS to their die) instead of the rulebook's flat "beat the to-hit roll" threshold. Off by default (house rule). */
+  opposedParryWS: boolean;
   /** Content removed from the campaign. */
   bans: CampaignBans;
 }
@@ -204,6 +206,7 @@ export function defaultCampaignHouseRules(): CampaignHouseRules {
     rabbitsFootBattleOnly: true,
     rewardsOfTheShadowlord: false,
     firstSpellRule: "random",
+    opposedParryWS: false,
     bans: emptyCampaignBans(),
   };
 }

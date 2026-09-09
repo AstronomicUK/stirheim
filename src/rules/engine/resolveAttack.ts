@@ -80,6 +80,10 @@ export interface AttackInput {
   parryEligible: boolean;
   /** Given a Parry attempt is actually spent on this attack (turnAggregate.ts decides that), probability it succeeds and the attack is discarded entirely. */
   parrySuccessProbGivenAttempt: number;
+  /** House rule: Parry is an opposed WS roll rather than a flat threshold. Set only when the rule is on and a fixed parry threshold (Starblade) isn't already in play. Needs attackerWS/defenderWS to actually resolve the real dice in rollThrough.ts — the probability side already folds the comparison into parrySuccessProbGivenAttempt above. */
+  opposedParryWS?: boolean;
+  attackerWS?: number;
+  defenderWS?: number;
   /** The target is already knocked down (hand-to-hand only): this attack hits automatically, no to-hit roll. */
   autoHitKnockedDown?: boolean;
   /** The target is already stunned (hand-to-hand only): this attack takes it out of action automatically, no rolls at all. */

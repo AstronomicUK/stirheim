@@ -230,7 +230,16 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
     case 'parry':
     case 'parryReroll': {
       const hitRoll = state.cur.hitRoll ?? 6
-      const success = plan.parry.fixedThreshold !== undefined ? passesSave(roll, plan.parry.fixedThreshold) : plan.parry.beatsOrMatches ? roll >= hitRoll : roll > hitRoll
+      const success =
+        plan.parry.fixedThreshold !== undefined
+          ? passesSave(roll, plan.parry.fixedThreshold)
+          : input.opposedParryWS && input.attackerWS !== undefined && input.defenderWS !== undefined
+            ? plan.parry.beatsOrMatches
+              ? input.defenderWS + roll >= input.attackerWS + hitRoll
+              : input.defenderWS + roll > input.attackerWS + hitRoll
+            : plan.parry.beatsOrMatches
+              ? roll >= hitRoll
+              : roll > hitRoll
       if (success) return finishAttack(log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Parried!`, 'bad'), 'parried')
       if (pending.kind === 'parry' && plan.parry.reroll) {
         return {
@@ -341,6 +350,11 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
 
 function parryDetail(plan: AttackPlan, hitRoll: number): string {
   if (plan.parry.fixedThreshold !== undefined) return `Parries on ${plan.parry.fixedThreshold}+ whatever was rolled to hit`
+  const { opposedParryWS, attackerWS, defenderWS } = plan.input
+  if (opposedParryWS && attackerWS !== undefined && defenderWS !== undefined) {
+    const attackerTotal = attackerWS + hitRoll
+    return `Opposed WS: ${defenderWS} + the parry roll must ${plan.parry.beatsOrMatches ? 'match or beat' : 'beat'} ${attackerWS} + ${hitRoll} = ${attackerTotal}`
+  }
   return plan.parry.beatsOrMatches ? `Must match or beat the ${hitRoll} rolled to hit` : `Must beat the ${hitRoll} rolled to hit${hitRoll >= 6 ? ' (impossible)' : ''}`
 }
 

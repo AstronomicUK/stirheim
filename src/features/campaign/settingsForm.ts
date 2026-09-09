@@ -143,6 +143,11 @@ export const HOUSE_RULE_SWITCHES: HouseRuleSwitch[] = [
     label: 'Rewards of the Shadowlord',
     description: "Rulebook optional rule: a Cult of the Possessed Magister or Mutant earning a New Skill may roll 2D6 on the Rewards table instead. Wrath on a 2, nothing on 3-6, a mutation on 7-8, Chaos Armour on 9-10, a Daemon Weapon on 11, Possessed on 12.",
   },
+  {
+    key: 'opposedParryWS',
+    label: 'Opposed Weapon Skill parry',
+    description: "Each side adds Weapon Skill to their die; the defender must beat (or match, with Master of Blades) the attacker's total instead of just beating the raw to-hit roll. A fixed parry threshold (Starblade) is unaffected.",
+  },
 ]
 
 export interface FirstSpellRuleOption {

@@ -319,10 +319,15 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   // The Ogre Club counts one Strength higher for the parry check when swung two-handed.
   const parryStrength = attackStrength + (weapon.id === "ogre_club" && context.twoHanded ? 1 : 0);
   const parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S && !context.targetKnockedDown;
+  // A fixed parry threshold (Starblade) is its own mechanic — always a flat save regardless of
+  // either side's WS — so it still wins over the opposed-WS house rule when both are in play.
+  const opposedParryWS = parryEligible && houseRules.opposedParryWS && defender.parryThreshold === undefined;
   const parrySuccessProbGivenAttempt = parryEligible
     ? defender.parryThreshold !== undefined
       ? probabilityAtLeastForParry(defender.parryThreshold, defender.parryReroll)
-      : parrySuccessProbability(hitThreshold, masterOfBlades, defender.parryReroll)
+      : opposedParryWS
+        ? opposedParrySuccessProbability(effectiveWS, hitThreshold, defender.WS, masterOfBlades, defender.parryReroll)
+        : parrySuccessProbability(hitThreshold, masterOfBlades, defender.parryReroll)
     : 0;
   // Misericordia against a knocked-down target: 2D6 to wound, keep the highest.
   const rerollToWound = Boolean(weapon.toWoundHighestOf2D6VsKnockedDown && context.targetKnockedDown);
@@ -364,6 +369,9 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     autoHitKnockedDown,
     autoOutOfActionStunned,
     multipleWoundsD3OnHit: weapon.multipleWoundsD3OnHit,
+    opposedParryWS: opposedParryWS || undefined,
+    attackerWS: opposedParryWS ? effectiveWS : undefined,
+    defenderWS: opposedParryWS ? defender.WS : undefined,
   };
 }
 
@@ -381,6 +389,35 @@ export function computeMaxParries(defender: DefenderProfile, customSkills: Skill
 }
 
 /** A Starblade parries on a fixed roll (4+) rather than beating the to-hit die. */
+/**
+ * House rule: Parry as an opposed WS roll. Each side adds their Weapon Skill to a D6; the
+ * defender needs to strictly beat the attacker's total (or match it, with Master of Blades), same
+ * spirit as the flat rule but comparing sums instead of raw faces. Averaged the same way as
+ * `parrySuccessProbability` — uniformly over the attacker's possible winning to-hit faces, and
+ * uniformly over the defender's own D6 (the opposed sum has no natural-1/6 special case of its
+ * own; Tom's own worked example just compares WS + die on each side).
+ */
+export function opposedParrySuccessProbability(attackerWS: number, hitThreshold: number, defenderWS: number, beatsOrMatches: boolean, reroll: boolean): number {
+  const winningFaces: number[] = [];
+  const lowestWinningFace = hitThreshold <= 1 ? 2 : Math.max(2, Math.min(6, hitThreshold));
+  for (let face = lowestWinningFace; face <= 6; face++) winningFaces.push(face);
+  if (winningFaces.length === 0) return 0;
+
+  const successProbForFace = (hitFace: number) => {
+    const attackerTotal = attackerWS + hitFace;
+    let wins = 0;
+    for (let p = 1; p <= 6; p++) {
+      const defenderTotal = defenderWS + p;
+      if (beatsOrMatches ? defenderTotal >= attackerTotal : defenderTotal > attackerTotal) wins += 1;
+    }
+    const q = wins / 6;
+    return reroll ? 1 - (1 - q) * (1 - q) : q;
+  };
+
+  const total = winningFaces.reduce((sum, face) => sum + successProbForFace(face), 0);
+  return total / winningFaces.length;
+}
+
 export function probabilityAtLeastForParry(threshold: number, reroll: boolean): number {
   const p = Math.max(0, Math.min(1, (7 - Math.max(2, Math.min(6, threshold))) / 6));
   return reroll ? 1 - (1 - p) * (1 - p) : p;

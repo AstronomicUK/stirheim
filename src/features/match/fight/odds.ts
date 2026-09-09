@@ -187,7 +187,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const primary = pick(setup.primary)
   const offHand = setup.offHand ? pick(setup.offHand) : null
   const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
-  const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing }
+  const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
   const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
@@ -262,7 +262,7 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
   const primary = pick(setup.primary)
   const offHand = setup.offHand ? pick(setup.offHand) : null
   const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
-  const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing }
+  const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
   const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   const perWeapon = weaponsForPhase(weapons, phase).map((weapon, index) => ({ weapon, count: computeAttackCount(attacker, weapon, index === 0, context) }))

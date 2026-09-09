@@ -8,7 +8,7 @@ import { critDistribution } from "../crit";
 import { resolveSingleAttack, type AttackInput } from "../resolveAttack";
 import { resolveTurn } from "../turnAggregate";
 import type { SingleAttackBreakdown } from "../resolveAttack";
-import { buildAttackInput, computeAttackCount, computeMaxParries, parrySuccessProbability, totalAttackCount } from "../buildAttackInput";
+import { buildAttackInput, computeAttackCount, computeMaxParries, opposedParrySuccessProbability, parrySuccessProbability, probabilityAtLeastForParry, totalAttackCount } from "../buildAttackInput";
 import { resolveCharacterTurn } from "../combat";
 import { injuryDistributionForWounds } from "../injury";
 import { parryRerollFromItems } from "../../domain/opponentScenario";
@@ -525,6 +525,78 @@ describe("Parry re-roll (01:846, 02:296, 02:308, 02:409)", () => {
   it("whips cannot be parried", () => {
     const input = buildAttackInput({ attacker: testCharacter(), weapon: W("steel_whip"), defender: testDefender({ parryWeaponCount: 1 }), context: testContext(), customSkills: [] });
     expect(input.parryEligible).toBe(false);
+  });
+});
+
+describe("Opposed WS parry (house rule #79): success probability", () => {
+  it("equal WS on both sides reduces to exactly the flat rule's own numbers", () => {
+    // Adding the same constant to both sides of an opposed comparison changes nothing: WS 3 v WS 3
+    // at hitThreshold 4 is identical to the base "beat the raw face" rule (hand-derived 1/6 above).
+    expect(opposedParrySuccessProbability(3, 4, 3, false, false)).toBeCloseTo(parrySuccessProbability(4, false, false), 10);
+    expect(opposedParrySuccessProbability(3, 4, 3, true, false)).toBeCloseTo(parrySuccessProbability(4, true, false), 10);
+  });
+
+  it("hand-derived: attacker WS3, defender WS5, hitThreshold 4, strict beat, no reroll = 1/2", () => {
+    // Winning faces {4,5,6}; attacker totals 7,8,9. Defender wins on 5+p > total:
+    // face 4 -> p in {3,4,5,6} = 4/6; face 5 -> p in {4,5,6} = 3/6; face 6 -> p in {5,6} = 2/6.
+    // Average (4+3+2)/18 = 9/18 = 1/2.
+    expect(opposedParrySuccessProbability(3, 4, 5, false, false)).toBeCloseTo(1 / 2, 10);
+  });
+
+  it("Master of Blades (beats-or-matches) on top of the same higher-WS defender = 2/3", () => {
+    // Same faces/totals as above but >= instead of >: face 4 -> p>=2 = 5/6; face 5 -> p>=3 = 4/6; face 6 -> p>=4 = 3/6.
+    // Average (5+4+3)/18 = 12/18 = 2/3.
+    expect(opposedParrySuccessProbability(3, 4, 5, true, false)).toBeCloseTo(2 / 3, 10);
+  });
+
+  it("a lower-WS defender parries worse than the flat rule; a higher-WS defender parries better", () => {
+    const base = parrySuccessProbability(4, false, false);
+    expect(opposedParrySuccessProbability(5, 4, 3, false, false)).toBeLessThan(base);
+    expect(opposedParrySuccessProbability(3, 4, 5, false, false)).toBeGreaterThan(base);
+  });
+
+  it("reroll strictly increases success probability, same as the flat rule", () => {
+    const withoutReroll = opposedParrySuccessProbability(3, 4, 5, false, false);
+    const withReroll = opposedParrySuccessProbability(3, 4, 5, false, true);
+    expect(withReroll).toBeGreaterThan(withoutReroll);
+  });
+
+  it("buildAttackInput wires the house rule through: equal WS4 vs WS4 matches the flat rule's own number", () => {
+    const attacker = testCharacter(); // WS 4
+    const weapon = testWeapon();
+    const defender = testDefender({ parryWeaponCount: 2, WS: 4 });
+    const houseRules = { strengthArmourPiercing: false, opposedParryWS: true };
+    const input = buildAttackInput({ attacker, weapon, defender, context: testContext(), customSkills: [], houseRules });
+    expect(input.opposedParryWS).toBe(true);
+    expect(input.attackerWS).toBe(4);
+    expect(input.defenderWS).toBe(4);
+    expect(input.parrySuccessProbGivenAttempt).toBeCloseTo(parrySuccessProbability(input.hitThreshold as number, false, false), 10);
+  });
+
+  it("buildAttackInput's number matches calling opposedParrySuccessProbability directly with the same inputs", () => {
+    const attacker = testCharacter(); // WS 4
+    const weapon = testWeapon();
+    const defender = testDefender({ parryWeaponCount: 2, WS: 6, parryReroll: true });
+    const houseRules = { strengthArmourPiercing: false, opposedParryWS: true };
+    const input = buildAttackInput({ attacker, weapon, defender, context: testContext(), customSkills: [], houseRules });
+    expect(input.parrySuccessProbGivenAttempt).toBeCloseTo(opposedParrySuccessProbability(4, input.hitThreshold as number, 6, false, true), 10);
+  });
+
+  it("off by default: buildAttackInput without the house rule never sets opposedParryWS", () => {
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: testWeapon(), defender: testDefender({ parryWeaponCount: 2 }), context: testContext(), customSkills: [] });
+    expect(input.opposedParryWS).toBeUndefined();
+    expect(input.attackerWS).toBeUndefined();
+    expect(input.defenderWS).toBeUndefined();
+  });
+
+  it("a fixed parry threshold (Starblade) still wins over the opposed-WS house rule", () => {
+    const attacker = testCharacter();
+    const weapon = testWeapon();
+    const defender = testDefender({ parryWeaponCount: 1, parryThreshold: 4 });
+    const houseRules = { strengthArmourPiercing: false, opposedParryWS: true };
+    const input = buildAttackInput({ attacker, weapon, defender, context: testContext(), customSkills: [], houseRules });
+    expect(input.opposedParryWS).toBeUndefined();
+    expect(input.parrySuccessProbGivenAttempt).toBeCloseTo(probabilityAtLeastForParry(4, false), 10);
   });
 });
 

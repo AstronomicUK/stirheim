@@ -36,6 +36,7 @@ export const campaignHouseRulesSchema = z.object({
   rabbitsFootBattleOnly: z.boolean().default(true),
   rewardsOfTheShadowlord: z.boolean().default(false),
   firstSpellRule: firstSpellRuleSchema.default("random"),
+  opposedParryWS: z.boolean().default(false),
   bans: campaignBansSchema.default(emptyCampaignBans),
 }) satisfies z.ZodType<CampaignHouseRules, unknown>;
 

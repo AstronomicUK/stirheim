@@ -1993,7 +1993,7 @@ confusing styling, not a rendering bug.
 
 ### 79. House rule: parry as an opposed Weapon Skill roll instead of a flat threshold
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2020,6 +2020,18 @@ The plumbing for a new on/off house rule already has a clear template to follow:
 The switch is easy; the new dice-comparison branch in the fight engine is the real work. Related to
 #8 (parrying may not be working properly today) — a different concern (a possible bug in the
 existing mechanic vs. a new house-rule variant of it), but touches the same code.
+
+**Fixed (2026-09-09):** New `opposedParryWS: boolean` switch, off by default, following the exact
+template above end to end — `CampaignHouseRules`, `defaultCampaignHouseRules`,
+`campaignHouseRulesSchema` (a manual Zod schema, so it needed its own line — see the note below),
+`describeHouseRules`, and a new `HOUSE_RULE_SWITCHES` entry that renders automatically since
+`SettingsFields.tsx` already maps over that list; verified live on the campaign settings screen
+(screenshot taken, unchecked by default, sitting right under Rewards of the Shadowlord). The real
+work was the two places that actually resolve a parry:
+  - **Probability engine** (`buildAttackInput.ts`): a new `opposedParrySuccessProbability(attackerWS, hitThreshold, defenderWS, beatsOrMatches, reroll)`, built the same way the existing `parrySuccessProbability` already averages over the attacker's possible winning to-hit faces — for each of those faces, count how many of the defender's own six D6 faces make `defenderWS + p` beat (or, with Master of Blades, match) `attackerWS + hitFace`, then average. A fixed parry threshold (Starblade) still wins over the house rule when both apply — a flat "always needs 4+" mechanic is orthogonal to an opposed-WS general rule, same precedence the code already gave it over the plain flat rule. `AttackInput` gained `opposedParryWS?`, `attackerWS?`, `defenderWS?` (only set when the rule actually applies) so the interactive path below has the real numbers to work with — `effectiveWS`/`defender.WS` were already computed in scope for the to-hit roll, so no new stat plumbing was needed.
+  - **Live roll-through** (`rollThrough.ts`): the `parry`/`parryReroll` case gained a third comparison branch alongside the existing fixed-threshold and flat-threshold ones, and `parryDetail()` now describes the opposed math ("Opposed WS: 5 + the parry roll must beat 3 + 4 = 7") instead of the flat "must beat the 4 rolled to hit" line, when the flag is set.
+  - **A real bug caught mid-implementation, the same shape as #54 and #56's**: `campaignHouseRulesSchema` in `domain/settings.ts` is a hand-maintained Zod schema separate from the `CampaignHouseRules` TypeScript interface, and adding a field to the interface alone would have left this new switch silently stripped by `.parse()` on every read from the database — `satisfies z.ZodType<CampaignHouseRules>` doesn't fail on a schema merely missing an optional-looking boolean field, exactly like the earlier two bugs. Caught this time before shipping (not live), by remembering the pattern rather than by a failing test — added `opposedParryWS: z.boolean().default(false)` to the schema. Flagging again: any future addition to `CampaignHouseRules` needs the same manual schema update, and nothing currently enforces it automatically.
+  - Verified via new tests: hand-derived probabilities in `engine.test.ts` (equal-WS reduces to exactly the flat rule's own numbers — a nice sanity invariant; an asymmetric WS3-vs-WS5 case hand-derived to 1/2 strict-beat, 2/3 with Master of Blades; a fixed-threshold-wins-over-house-rule case), and `rollThrough.test.ts` driving the real `applyRoll` sequence for the opposed comparison, the Master-of-Blades tie, the reroll interaction, and the Starblade-still-wins case. `tsc -b`, `oxlint`, and the full suite (1281 passed) all clean. Not verified live in an actual fight roll-through for the same reason as #1/#2/#69 — no disposable test match; the settings-screen half was verified live since viewing (not saving a changed value on) Tom's real campaign's settings page carries no risk to his game state.
 
 ### 80. Rename "Scenarios" to "Battles" in the nav, order by active/upcoming/past, and move scenario editing under Campaign Settings
 

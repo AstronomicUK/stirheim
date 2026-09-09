@@ -80,5 +80,8 @@ export function describeHouseRules(rules: CampaignHouseRules): string[] {
         ]
           .filter(Boolean)
           .join(", ")}).`,
+    rules.opposedParryWS
+      ? "Parry is an opposed Weapon Skill roll: each side adds WS to their die, and the defender must beat (or match, with Master of Blades) the attacker's total (house rule)."
+      : "Parry succeeds by beating the attacker's to-hit roll on a D6 (rulebook).",
   ];
 }

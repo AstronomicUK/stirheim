@@ -290,10 +290,12 @@ export interface WarbandRoster {
 export interface HouseRules {
   /** Strength erodes armour saves above a threshold (core rulebook chart 01:734-752, engine/armourSave.ts) — off by default per this group's current ruling. */
   strengthArmourPiercing: boolean;
+  /** Parry as an opposed Weapon Skill roll (each side adds WS to their die, defender must strictly beat — or match, with Master of Blades — the attacker's total) instead of the rulebook's flat "beat the to-hit roll" threshold. Off by default. */
+  opposedParryWS: boolean;
 }
 
 export function defaultHouseRules(): HouseRules {
-  return { strengthArmourPiercing: false };
+  return { strengthArmourPiercing: false, opposedParryWS: false };
 }
 
 // ---- Engine-facing types ----

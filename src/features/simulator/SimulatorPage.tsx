@@ -7,21 +7,22 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCampaign, useMyCampaigns } from '../../api/campaigns'
 import { useMyWarbands, useWarband } from '../../api/warbands'
 import { useSession } from '../../app/session'
-import { CHAIN_METRICS } from '../../rules/engine/chain'
 import { SKILLS } from '../../rules/data/skills'
 import { WARBAND_TEMPLATES, findWarbandTemplate } from '../../rules/data/warbandTemplates'
-import { findWeapon } from '../../rules/data/weapons'
 import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
-import type { CombatContext, Weapon, WeaponKind } from '../../rules/types'
+import type { CombatContext, WeaponKind } from '../../rules/types'
 import type { CampaignHouseRules } from '../../rules/types/roster'
-import { Notice, PageHeader, SegmentedControl, SelectField, Spinner, TextField, TwoColumn } from '../../ui'
+import { Notice, PageHeader, SelectField, Spinner, TextField } from '../../ui'
 import { Card, Section, Tag } from '../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant } from '../match/fight/combatants'
-import { combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, type FightOdds, type OddsSensitivity } from '../match/fight/odds'
-import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, opponentWeapon, pts, skillGains, statGains, unitsOf, type AnalyserInput, type SideSource, type TemplateSide } from './model'
+import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds } from '../match/fight/odds'
+import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, pts, unitsOf, type SideSource, type TemplateSide } from './model'
 import { usePageTitle } from '../onboarding/usePageTitle'
 
-type Tab = 'odds' | 'stats' | 'skills'
+import { StatisticsView, SimulatorTabs } from './StatisticsView'
+import { referenceOpponent } from './statistics'
+
+type Mode = 'statistics' | 'simulation'
 
 interface SideState {
   source: SideSource
@@ -47,8 +48,9 @@ const NO_CHOICES: FightChoices = { primaryId: null, offHandId: null, toggles: {}
 
 export function SimulatorPage() {
   usePageTitle('Simulator')
-  const [tab, setTab] = useState<Tab>('odds')
+  const [mode, setMode] = useState<Mode>('statistics')
   const [choices, setChoices] = useState<FightChoices>(NO_CHOICES)
+  const [defenderChoices, setDefenderChoices] = useState<FightChoices>(NO_CHOICES)
   const [attacker, setAttacker] = useState<SideState>(initialSide)
   const [defender, setDefender] = useState<SideState>(() => ({ ...initialSide(), source: 'template', template: defaultTemplateSide('skaven_of_clan_eshin') }))
   const [rulesCampaignId, setRulesCampaignId] = useState('')
@@ -63,45 +65,21 @@ export function SimulatorPage() {
   return (
     <>
       <PageHeader eyebrow="Ledger" title="Simulator" description="Exact odds for any fight, and what each characteristic or skill would add. Nothing here is rolled or saved." />
-      <TwoColumn
-        rail={
-          <div className="flex flex-col gap-4">
-            <SidePicker title="Your warrior" side={attacker} onChange={setAttacker} resolved={a} campaigns={(campaigns.data ?? []).map((c) => ({ id: c.id, name: c.name }))} />
-            <SidePicker title="Their warrior" side={defender} onChange={setDefender} resolved={d} campaigns={(campaigns.data ?? []).map((c) => ({ id: c.id, name: c.name }))} />
-            {campaigns.data && campaigns.data.length > 0 ? (
-              <SelectField label="House rules from" value={rulesCampaignId} onChange={(e) => setRulesCampaignId(e.target.value)} hint="Armour erosion and the critical tables follow the campaign picked; otherwise the group defaults.">
-                <option value="">Group defaults</option>
-                {campaigns.data.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </SelectField>
-            ) : null}
-          </div>
-        }
-        railFirst
-      >
-        <SegmentedControl
-          label="What to look at"
-          value={tab}
-          options={[
-            { value: 'odds', label: 'Odds', icon: 'dice' },
-            { value: 'stats', label: 'Stat gains', icon: 'rating' },
-            { value: 'skills', label: 'Skill gains', icon: 'advances' },
-          ]}
-          onChange={setTab}
-        />
-        {a.combatant && d.combatant ? (
-          <Fight tab={tab} attacker={a.combatant} defender={d.combatant} houseRules={houseRules} choices={choices} setChoices={setChoices} />
-        ) : a.pending || d.pending ? (
-          <div className="flex justify-center py-10">
-            <Spinner label="Loading the warband" />
-          </div>
-        ) : (
-          <Notice tone="info">Pick a warrior on each side to see the numbers.</Notice>
-        )}
-      </TwoColumn>
+      <div className="flex min-w-0 flex-col gap-5">
+        <SimulatorTabs label="Simulator mode" value={mode} onChange={setMode} options={[{ value: 'statistics', label: 'Statistics' }, { value: 'simulation', label: 'Simulation' }]} />
+        <div className={mode === 'simulation' ? 'grid min-w-0 grid-cols-2 items-start gap-2 sm:gap-4 [&>section]:min-w-0' : 'min-w-0'}>
+          <SidePicker title={mode === 'simulation' ? 'Model one' : 'Your warrior'} side={attacker} onChange={setAttacker} resolved={a} choices={choices} setChoices={setChoices} campaigns={(campaigns.data ?? []).map((c) => ({ id: c.id, name: c.name }))} />
+          {mode === 'simulation' && <SidePicker title="Model two" side={defender} onChange={setDefender} resolved={d} choices={defenderChoices} setChoices={setDefenderChoices} campaigns={(campaigns.data ?? []).map((c) => ({ id: c.id, name: c.name }))} />}
+        </div>
+        {campaigns.data && campaigns.data.length > 0 && <details className="rounded-md border border-border p-3"><summary className="cursor-pointer text-sm text-ink-dim">House rules</summary>
+          <SelectField label="House rules from" value={rulesCampaignId} onChange={(e) => setRulesCampaignId(e.target.value)}>
+            <option value="">Group defaults</option>{campaigns.data.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </SelectField>
+        </details>}
+        {a.combatant && (mode === 'statistics' || d.combatant) ?
+          <Fight defenderChoices={defenderChoices} mode={mode} attacker={a.combatant} defender={mode === 'statistics' ? referenceOpponent(a.combatant) : d.combatant!} houseRules={houseRules} choices={choices} setChoices={setChoices} />
+          : a.pending || d.pending ? <Spinner label="Loading the warband" /> : <Notice tone="info">Choose {mode === 'statistics' ? 'a warrior' : 'a warrior on each side'} to see the numbers.</Notice>}
+      </div>
     </>
   )
 }
@@ -132,7 +110,7 @@ function useResolvedSide(side: SideState): ResolvedSide {
   return { combatant, options, pending: Boolean(side.warbandId) && warband.isPending, error: warband.error?.message ?? null }
 }
 
-function SidePicker({ title, side, onChange, resolved, campaigns }: { title: string; side: SideState; onChange: (s: SideState) => void; resolved: ResolvedSide; campaigns: { id: string; name: string }[] }) {
+function SidePicker({ title, side, onChange, resolved, campaigns, choices, setChoices }: { choices: FightChoices; setChoices: (next: FightChoices) => void; title: string; side: SideState; onChange: (s: SideState) => void; resolved: ResolvedSide; campaigns: { id: string; name: string }[] }) {
   const user = useSession((s) => s.user)
   const mine = useMyWarbands(side.source === 'mine' ? user?.id : undefined)
   const campaign = useCampaign(side.source === 'campaign' && side.campaignId ? side.campaignId : undefined)
@@ -150,17 +128,10 @@ function SidePicker({ title, side, onChange, resolved, campaigns }: { title: str
 
   return (
     <Section title={title}>
-      <Card className="flex flex-col gap-3 px-4 py-3">
-        <SegmentedControl
-          label={`${title}: source`}
-          value={side.source}
-          options={[
-            { value: 'mine', label: 'My warbands', icon: 'warbands' },
-            { value: 'campaign', label: 'A campaign', icon: 'campaigns' },
-            { value: 'template', label: 'Any warrior', icon: 'template' },
-          ]}
-          onChange={(source) => onChange({ ...side, source, warbandId: '', combatantId: '' })}
-        />
+      <Card className="flex min-w-0 flex-col gap-3 px-2 py-3 sm:px-4">
+        <SelectField label={`${title}: source`} value={side.source} onChange={(e) => onChange({ ...side, source: e.target.value as SideSource, warbandId: '', combatantId: '' })}>
+          <option value="mine">My Warbands</option><option value="campaign">My Campaigns</option><option value="template">Custom Unit</option>
+        </SelectField>
         {side.source === 'campaign' ? (
           <SelectField label="Campaign" value={side.campaignId} onChange={(e) => onChange({ ...side, campaignId: e.target.value, warbandId: '', combatantId: '' })}>
             <option value="">Choose a campaign</option>
@@ -222,6 +193,7 @@ function SidePicker({ title, side, onChange, resolved, campaigns }: { title: str
                 ))}
               </SelectField>
             ) : null}
+            <details><summary className="cursor-pointer text-sm text-ink-dim">Equipment and skills</summary>
             {kit.length > 0 ? (
               <fieldset className="flex flex-col gap-1">
                 <legend className="text-sm font-medium text-ink-dim">Kit from the list</legend>
@@ -245,9 +217,10 @@ function SidePicker({ title, side, onChange, resolved, campaigns }: { title: str
               </fieldset>
             ) : null}
             {unit ? <SkillsPicker unit={unit} side={side} onChange={onChange} /> : null}
+            </details>
           </>
         )}
-        {resolved.combatant ? <CombatantSummary c={resolved.combatant} /> : null}
+        {resolved.combatant ? <><WeaponPicker combatant={resolved.combatant} choices={choices} setChoices={setChoices} /><details><summary className="cursor-pointer text-sm text-ink-dim">Warrior details</summary><CombatantSummary c={resolved.combatant} /></details></> : null}
       </Card>
     </Section>
   )
@@ -311,83 +284,63 @@ function CombatantSummary({ c }: { c: Combatant }) {
 // The fight
 // ---------------------------------------------------------------------------------------------
 
+function selectedWeapons(combatant: Combatant, choices: FightChoices) {
+  const kit = loadoutFor(combatant)
+  const melee = kit.melee.length ? kit.melee : [defaultPrimary([])]
+  const weapons = [...melee, ...kit.ranged]
+  const primary = weapons.find((w) => w.id === choices.primaryId) ?? defaultPrimary(melee)
+  const offHandOptions = primary.type === 'melee' ? offHandCandidates(melee, primary) : []
+  const preferred = choices.offHandId === 'none' ? null : melee.find((w) => w.id === choices.offHandId) ?? defaultOffHand(melee, primary)
+  const offHand = preferred && offHandOptions.includes(preferred) ? preferred : null
+  return { kit, weapons, primary, offHand, offHandOptions }
+}
+
+function WeaponPicker({ combatant, choices, setChoices }: { combatant: Combatant; choices: FightChoices; setChoices: (next: FightChoices) => void }) {
+  const { weapons, primary, offHand, offHandOptions } = selectedWeapons(combatant, choices)
+  return <div className="flex min-w-0 flex-col gap-3 border-t border-border pt-3">
+    <SelectField label="Attack weapon" value={primary.id} onChange={(e) => setChoices({ ...choices, primaryId: e.target.value, offHandId: null })}>
+      {weapons.map((w, i) => <option key={`${w.id}-${i}`} value={w.id}>{w.name} ({w.type === 'melee' ? 'melee' : 'shooting'})</option>)}
+    </SelectField>
+    {offHandOptions.length > 0 && <SelectField label="Other hand" value={offHand?.id ?? 'none'} onChange={(e) => setChoices({ ...choices, offHandId: e.target.value })}>
+      <option value="none">Nothing (one weapon)</option>{offHandOptions.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+    </SelectField>}
+  </div>
+}
+
 function Fight({
-  tab,
+  defenderChoices,
+  mode,
   attacker,
   defender,
   houseRules,
   choices,
   setChoices,
 }: {
-  tab: Tab
+  mode: Mode
+  defenderChoices: FightChoices
   attacker: Combatant
   defender: Combatant
   houseRules: CampaignHouseRules
   choices: FightChoices
   setChoices: (next: FightChoices) => void
 }) {
-  const attackerKit = useMemo(() => loadoutFor(attacker), [attacker])
-  const defenderKit = useMemo(() => loadoutFor(defender), [defender])
-  const weapons: Weapon[] = [...(attackerKit.melee.length > 0 ? attackerKit.melee : [defaultPrimary([])]), ...attackerKit.ranged]
-  const melee = attackerKit.melee.length > 0 ? attackerKit.melee : weapons.slice(0, 1)
-  const [role, setRole] = useState<'offensive' | 'defensive'>('offensive')
-  const [respectTables, setRespectTables] = useState(true)
-
-  // A weapon the attacker no longer carries falls back to his best; the choice itself is not thrown away.
-  const primary = weapons.find((w) => w.id === choices.primaryId) ?? defaultPrimary(melee)
-  const offHandOptions = primary.type === 'melee' ? offHandCandidates(melee, primary) : []
-  const offHandDefault = defaultOffHand(melee, primary)
-  const offHand =
-    primary.type === 'melee'
-      ? choices.offHandId === 'none'
-        ? null
-        : choices.offHandId === null
-          ? offHandDefault
-          : (melee.find((w) => w.id === choices.offHandId) ?? offHandDefault)
-      : null
-  const offHandValid = offHand ? offHandOptions.includes(offHand) : true
+  const { kit: attackerKit, primary, offHand } = selectedWeapons(attacker, choices)
+  const otherWeapons = selectedWeapons(defender, defenderChoices)
+  const defenderKit = otherWeapons.kit
   const phase: WeaponKind = primary.type
-  const toggleList = relevantToggles(attacker, phase, primary, defenderKit, offHandValid ? offHand : null)
+  const chargingMatters = [primary, ...(offHand ? [offHand] : [])].some((w) => w.strengthBonusFirstTurnOnly || w.strengthBonusMountedChargeOnly || w.chargeBonusAttacks || w.firstTurnBonusAttacks || w.special.includes('mountedChargeStrengthBonus')) || SKILLS.some((s) => attacker.skillIds.includes(s.id) && s.conditionField === 'charging')
+  const toggleList = relevantToggles(attacker, phase, primary, defenderKit, offHand).filter((t) => t.field !== 'charging' || chargingMatters)
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = choices.toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)
-  const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules }
+  const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand, context, houseRules, woundsAlreadyLost: defender.woundsLost }
   const odds: FightOdds = computeOdds(fightSetup)
-  const sensitivity = computeOddsSensitivity(fightSetup)
-  // The reverse direction (#4): defender's own gains against a range of the attacker's own WS/T, hitting
-  // back with whatever they'd actually reach for — same convention as the skill/stat analysers' own
-  // "opponent weapon" fallback. No off-hand modelled for this side; the situation toggles above are held
-  // as chosen, same as the forward direction already does.
-  const reverseWeapon = opponentWeapon(defenderKit, phase, findWeapon(phase === 'melee' ? 'sword' : 'bow')!)
-  const reverseFightSetup = { attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: attackerKit, primary: reverseWeapon, offHand: null, context, houseRules }
-  const reverseSensitivity = computeOddsSensitivity(reverseFightSetup)
-  const phaseWeapons = offHand && offHandValid && phase === 'melee' ? [primary, offHand] : [primary]
-  const input: AnalyserInput = { attacker, attackerKit, defender, defenderKit, phase, weapons: phaseWeapons, context, houseRules }
-  const fallback = findWeapon(phase === 'melee' ? 'sword' : 'bow')!
+  const reverse = { ...fightSetup, attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: attackerKit, primary: otherWeapons.primary, offHand: otherWeapons.offHand, context: combatContextFor(houseRules, defenderChoices.toggles), woundsAlreadyLost: attacker.woundsLost }
 
   return (
     <>
-      <Section title="The fight">
+      {toggleList.length > 0 && <Section title="Situation">
         <Card className="flex flex-col gap-3 px-4 py-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SelectField label={`${attacker.name} attacks with`} value={primary.id} onChange={(e) => setChoices({ ...choices, primaryId: e.target.value, offHandId: null })}>
-              {weapons.map((w, i) => (
-                <option key={`${w.id}-${i}`} value={w.id}>
-                  {w.name} ({w.type === 'melee' ? 'hand-to-hand' : 'shooting'})
-                </option>
-              ))}
-            </SelectField>
-            {primary.type === 'melee' && offHandOptions.length > 0 ? (
-              <SelectField label="Other hand" value={offHand && offHandValid ? offHand.id : 'none'} onChange={(e) => setChoices({ ...choices, offHandId: e.target.value === 'none' ? 'none' : e.target.value })}>
-                <option value="none">Nothing (one weapon)</option>
-                {offHandOptions.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </SelectField>
-            ) : null}
-          </div>
           {toggleList.length > 0 ? (
             <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
               <legend className="mb-1 text-sm font-medium text-ink-dim">Situation</legend>
@@ -405,16 +358,10 @@ function Fight({
             </fieldset>
           ) : null}
         </Card>
-      </Section>
+      </Section>}
 
-      {tab === 'odds' ? (
-        <>
-          <OddsView odds={odds} attacker={attacker} defender={defender} />
-          <OddsSensitivityView sensitivity={sensitivity} reverseSensitivity={reverseSensitivity} attacker={attacker} defender={defender} reverseWeapon={reverseWeapon} />
-        </>
-      ) : null}
-      {tab === 'stats' ? <StatGainsView input={input} fallback={fallback} /> : null}
-      {tab === 'skills' ? <SkillGainsView input={input} role={role} setRole={setRole} respectTables={respectTables} setRespectTables={setRespectTables} fallback={fallback} /> : null}
+      {mode === 'simulation' && <OddsView odds={odds} attacker={attacker} defender={defender} />}
+      <StatisticsView setup={fightSetup} reverse={reverse} simulation={mode === 'simulation'} />
     </>
   )
 }
@@ -499,326 +446,6 @@ function OddsView({ odds, attacker, defender }: { odds: FightOdds; attacker: Com
             ))}
           </ul>
         ) : null}
-      </Card>
-    </Section>
-  )
-}
-
-/** One header row of opponent stat values 1-10, then labelled percentage rows; the real opponent's value picked out. */
-function RowTable({ columnsLabel, rows, highlight }: { columnsLabel: string; rows: { label: string; values: number[] }[]; highlight: number }) {
-  return (
-    <div className="-mx-1 overflow-x-auto px-1">
-      <table className="w-full min-w-[34rem] border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-border text-left">
-            <th scope="col" className="py-1.5 pr-3 text-left text-[10px] font-medium uppercase tracking-wider text-ink-dim">
-              {columnsLabel}
-            </th>
-            {STATS_1_TO_10.map((v) => (
-              <th key={v} scope="col" className={`py-1.5 pl-2 text-right font-medium ${v === highlight ? 'text-brass' : 'text-ink-dim'}`}>
-                {v}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-b border-border/60 last:border-0">
-              <th scope="row" className="max-w-[13rem] py-1.5 pr-3 text-left text-sm font-normal text-ink">
-                {row.label}
-              </th>
-              {row.values.map((p, i) => (
-                <td key={i} className={`py-1.5 pl-2 text-right tabular-nums ${STATS_1_TO_10[i] === highlight ? 'bg-brass/10 font-semibold text-ink' : 'text-ink-dim'}`}>
-                  {percent(p)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-/** Chance to take the defender out of action this phase, opponent Weapon Skill by Toughness, both 1-10; the real matchup picked out. */
-function OoaGrid({ grid, referenceWS, referenceT }: { grid: number[][]; referenceWS: number; referenceT: number }) {
-  return (
-    <div className="-mx-1 overflow-x-auto px-1">
-      <table className="w-full min-w-[34rem] border-collapse text-xs">
-        <thead>
-          <tr>
-            <th className="py-1 pr-2 text-left text-[10px] font-medium uppercase tracking-wider text-ink-dim" rowSpan={2}>
-              Opp. WS ↓
-            </th>
-            <th className="py-1 text-center text-[10px] font-medium uppercase tracking-wider text-ink-dim" colSpan={10}>
-              Opponent Toughness →
-            </th>
-          </tr>
-          <tr>
-            {STATS_1_TO_10.map((t) => (
-              <th key={t} className={`py-1 text-center font-medium ${t === referenceT ? 'text-brass' : 'text-ink-dim'}`}>
-                {t}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {STATS_1_TO_10.map((ws, r) => (
-            <tr key={ws}>
-              <th scope="row" className={`py-1 pr-2 text-left font-medium ${ws === referenceWS ? 'text-brass' : 'text-ink-dim'}`}>
-                {ws}
-              </th>
-              {STATS_1_TO_10.map((t, c) => (
-                <td
-                  key={t}
-                  className={`py-1 text-center tabular-nums ${ws === referenceWS && t === referenceT ? 'bg-brass/20 font-semibold text-ink' : 'text-ink-dim'}`}
-                >
-                  {percent(grid[r][c])}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-/**
- * The same odds, but across the full range of an opponent's stats rather than only the one chosen
- * above — how sensitive this matchup is, and where the real opponent sits in it.
- */
-function OddsSensitivityView({
-  sensitivity,
-  reverseSensitivity,
-  attacker,
-  defender,
-  reverseWeapon,
-}: {
-  sensitivity: OddsSensitivity
-  reverseSensitivity: OddsSensitivity
-  attacker: Combatant
-  defender: Combatant
-  reverseWeapon: Weapon
-}) {
-  const [direction, setDirection] = useState<'attacking' | 'defending'>('attacking')
-  const attacking = direction === 'attacking'
-  const from = attacking ? attacker : defender
-  const against = attacking ? defender : attacker
-  const shown = attacking ? sensitivity : reverseSensitivity
-
-  return (
-    <Section title="Against a range of opponents" aside={`${against.name}'s own WS ${shown.referenceWS}, T ${shown.referenceT} highlighted`}>
-      <Card className="flex flex-col gap-4 px-4 py-4">
-        <SegmentedControl
-          label="Direction"
-          value={direction}
-          options={[
-            { value: 'attacking', label: 'Attacking', icon: 'battle' },
-            { value: 'defending', label: 'Defending', icon: 'warbands' },
-          ]}
-          onChange={setDirection}
-        />
-        <p className="text-sm leading-relaxed text-ink-dim">
-          {from.name}&apos;s odds if {against.name}&apos;s Weapon Skill or Toughness were different, with everything else — armour, skills, the
-          situation above — held as chosen. The highlighted row or column is {against.name}&apos;s real value.
-          {!attacking ? (
-            <>
-              {' '}
-              {defender.name} hits back with {reverseWeapon.name} (their own best weapon, or a dagger if that&apos;s all they have) — no off-hand
-              modelled for this side.
-            </>
-          ) : null}
-        </p>
-        {shown.hitRows ? (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to hit, against opponent Weapon Skill</p>
-            <RowTable columnsLabel="Opponent WS" rows={shown.hitRows} highlight={shown.referenceWS} />
-          </div>
-        ) : null}
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to hit and wound, against opponent Toughness</p>
-          <RowTable columnsLabel="Opponent T" rows={shown.woundRows} highlight={shown.referenceT} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to take {against.name} out of action this phase</p>
-          <OoaGrid grid={shown.ooaGrid} referenceWS={shown.referenceWS} referenceT={shown.referenceT} />
-        </div>
-      </Card>
-    </Section>
-  )
-}
-
-/** A signed change in percentage points, coloured by direction and dimmed when it is nothing. */
-function Delta({ value, muted = false }: { value: number | null; muted?: boolean }) {
-  if (value === null) return <span className="text-ink-dim/60">—</span>
-  const nothing = Math.abs(value) < 0.0005
-  const tone = nothing || muted ? 'text-ink-dim' : value > 0 ? 'text-ok' : 'text-accent'
-  return <span className={`tabular-nums ${tone}`}>{pts(value)}</span>
-}
-
-/** The three chain outcomes as table columns, worst first. */
-const COLUMNS = [...CHAIN_METRICS].reverse()
-
-function StatGainsView({ input, fallback }: { input: AnalyserInput; fallback: Weapon }) {
-  // The metric here only orders the rows; every column is shown either way.
-  const result = useMemo(() => statGains(input, 'outOfAction', fallback), [input, fallback])
-  const opponentWeaponName = input.defenderKit.melee[0]?.name ?? input.defenderKit.ranged[0]?.name ?? fallback.name
-
-  return (
-    <Section title="What +1 to each characteristic would do">
-      <Card className="flex flex-col gap-4 px-4 py-4">
-        <p className="text-sm leading-relaxed text-ink-dim">
-          Each row adds one to a characteristic and re-runs the whole phase both ways: {input.attacker.name} attacking {input.defender.name} with the weapons chosen above, and {input.defender.name} hitting back with {opponentWeaponName}. Figures are the change in percentage points against the row of numbers at the top.
-        </p>
-
-        <GainTable
-          caption={`${input.attacker.name} attacking`}
-          baseline={result.breakdown.baselineAttack}
-          rows={result.rows.map((r) => ({
-            key: `a-${r.stat}`,
-            name: `+1 ${r.stat}`,
-            note: !r.modeled ? 'not modelled' : !r.relevant.offensive ? 'no effect attacking' : undefined,
-            chain: r.relevant.offensive && r.modeled ? r.attack : null,
-            invert: false,
-          }))}
-        />
-
-        <GainTable
-          caption={`${input.attacker.name} defending`}
-          baseline={result.breakdown.baselineDefend}
-          baselineNote={`how often ${input.attacker.name} goes down now`}
-          rows={result.rows.map((r) => ({
-            key: `d-${r.stat}`,
-            name: `+1 ${r.stat}`,
-            note: !r.modeled ? 'not modelled' : !r.relevant.defensive ? 'no effect defending' : undefined,
-            chain: r.relevant.defensive && r.modeled ? r.defend : null,
-            invert: true,
-          }))}
-        />
-        <p className="text-xs leading-relaxed text-ink-dim">
-          Defending figures are improvements: a positive number means {input.attacker.name} goes down that much less often.
-        </p>
-      </Card>
-    </Section>
-  )
-}
-
-interface GainRow {
-  key: string
-  name: string
-  note?: string
-  /** Null where the characteristic or skill does nothing here. */
-  chain: FightOdds['chain'] | null
-  /** Defending: a fall in the chance is the gain, so the sign is flipped. */
-  invert: boolean
-  /** Rules text, shown under the name. */
-  detail?: string
-}
-
-/** The comprehensive table: every outcome as a column, the baseline above and the change below. */
-function GainTable({ caption, baseline, baselineNote, rows }: { caption: string; baseline: FightOdds['chain']; baselineNote?: string; rows: GainRow[] }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-ink-dim">
-        {caption}
-        {baselineNote ? ` · ${baselineNote}` : ''}
-      </p>
-      <div className="-mx-1 overflow-x-auto px-1">
-        <table className="w-full min-w-[26rem] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border text-left">
-              <th scope="col" className="py-1.5 pr-3 font-medium text-ink-dim">
-                &nbsp;
-              </th>
-              {COLUMNS.map((m) => (
-                <th key={m.id} scope="col" className="py-1.5 pl-2 text-right font-medium text-ink-dim">
-                  {m.short}
-                </th>
-              ))}
-            </tr>
-            <tr className="border-b border-border">
-              <th scope="row" className="py-1 pr-3 text-left text-xs font-normal text-ink-dim">
-                As it stands
-              </th>
-              {COLUMNS.map((m) => (
-                <td key={m.id} className="py-1 pl-2 text-right text-xs tabular-nums text-ink">
-                  {percent(baseline[m.id])}
-                </td>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.key} className="border-b border-border/60 last:border-0">
-                <th scope="row" className="max-w-[11rem] py-1.5 pr-3 text-left font-normal">
-                  <span className="text-ink">{row.name}</span>
-                  {row.note ? <span className="block text-[11px] leading-tight text-ink-dim">{row.note}</span> : null}
-                  {row.detail ? <span className="block text-[11px] leading-snug text-ink-dim">{row.detail}</span> : null}
-                </th>
-                {COLUMNS.map((m) => (
-                  <td key={m.id} className="py-1.5 pl-2 text-right">
-                    <Delta value={row.chain === null ? null : row.invert ? baseline[m.id] - row.chain[m.id] : row.chain[m.id] - baseline[m.id]} />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function SkillGainsView({
-  input,
-  role,
-  setRole,
-  respectTables,
-  setRespectTables,
-  fallback,
-}: {
-  input: AnalyserInput
-  role: 'offensive' | 'defensive'
-  setRole: (r: 'offensive' | 'defensive') => void
-  respectTables: boolean
-  setRespectTables: (v: boolean) => void
-  fallback: Weapon
-}) {
-  const result = useMemo(() => skillGains(input, role, fallback, respectTables), [input, role, fallback, respectTables])
-  const invert = role === 'defensive'
-  const lead = (chain: FightOdds['chain']) => (invert ? result.baseline.outOfAction - chain.outOfAction : chain.outOfAction - result.baseline.outOfAction)
-  const rows = [...result.rows].sort((x, y) => lead(y.chain) - lead(x.chain))
-  const hasTables = Boolean(input.attacker.skillTableIds && input.attacker.skillTableIds.length > 0)
-
-  return (
-    <Section title="What each skill would do">
-      <Card className="flex flex-col gap-4 px-4 py-4">
-        <p className="text-sm leading-relaxed text-ink-dim">
-          Every modelled skill {input.attacker.name} could still take, added on its own and the phase re-run. Conditional skills only count when their situation is ticked above. Ordered by what each does to the chance of an out of action.
-        </p>
-        <SegmentedControl
-          label="Role"
-          value={role}
-          options={[
-            { value: 'offensive', label: 'Attacking', icon: 'battle' },
-            { value: 'defensive', label: 'Defending', icon: 'warbands' },
-          ]}
-          onChange={setRole}
-        />
-        <label className="flex min-h-9 items-center gap-2 text-sm text-ink">
-          <input type="checkbox" className="h-4 w-4 accent-brass" checked={respectTables} onChange={(e) => setRespectTables(e.target.checked)} />
-          Only skills on {input.attacker.name}&apos;s lists{!hasTables ? ' (no lists known: showing all)' : ''}
-        </label>
-        {rows.length === 0 ? (
-          <p className="text-sm text-ink-dim">No modelled skill left to take for this role and phase.</p>
-        ) : (
-          <GainTable
-            caption={role === 'defensive' ? `${input.attacker.name} defending` : `${input.attacker.name} attacking`}
-            baseline={result.baseline}
-            rows={rows.map((r) => ({ key: r.skill.id, name: r.skill.name, detail: r.skill.description, chain: r.chain, invert }))}
-          />
-        )}
       </Card>
     </Section>
   )

@@ -18,7 +18,7 @@ import { Notice, PageHeader, SegmentedControl, SelectField, Spinner, TextField, 
 import { Card, Section, Tag } from '../roster/view/bits'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant } from '../match/fight/combatants'
 import { combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, type FightOdds, type OddsSensitivity } from '../match/fight/odds'
-import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, pts, skillGains, statGains, unitsOf, type AnalyserInput, type SideSource, type TemplateSide } from './model'
+import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, opponentWeapon, pts, skillGains, statGains, unitsOf, type AnalyserInput, type SideSource, type TemplateSide } from './model'
 import { usePageTitle } from '../onboarding/usePageTitle'
 
 type Tab = 'odds' | 'stats' | 'skills'
@@ -354,6 +354,13 @@ function Fight({
   const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules }
   const odds: FightOdds = computeOdds(fightSetup)
   const sensitivity = computeOddsSensitivity(fightSetup)
+  // The reverse direction (#4): defender's own gains against a range of the attacker's own WS/T, hitting
+  // back with whatever they'd actually reach for — same convention as the skill/stat analysers' own
+  // "opponent weapon" fallback. No off-hand modelled for this side; the situation toggles above are held
+  // as chosen, same as the forward direction already does.
+  const reverseWeapon = opponentWeapon(defenderKit, phase, findWeapon(phase === 'melee' ? 'sword' : 'bow')!)
+  const reverseFightSetup = { attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: attackerKit, primary: reverseWeapon, offHand: null, context, houseRules }
+  const reverseSensitivity = computeOddsSensitivity(reverseFightSetup)
   const phaseWeapons = offHand && offHandValid && phase === 'melee' ? [primary, offHand] : [primary]
   const input: AnalyserInput = { attacker, attackerKit, defender, defenderKit, phase, weapons: phaseWeapons, context, houseRules }
   const fallback = findWeapon(phase === 'melee' ? 'sword' : 'bow')!
@@ -403,7 +410,7 @@ function Fight({
       {tab === 'odds' ? (
         <>
           <OddsView odds={odds} attacker={attacker} defender={defender} />
-          <OddsSensitivityView sensitivity={sensitivity} attacker={attacker} defender={defender} />
+          <OddsSensitivityView sensitivity={sensitivity} reverseSensitivity={reverseSensitivity} attacker={attacker} defender={defender} reverseWeapon={reverseWeapon} />
         </>
       ) : null}
       {tab === 'stats' ? <StatGainsView input={input} fallback={fallback} /> : null}
@@ -581,27 +588,61 @@ function OoaGrid({ grid, referenceWS, referenceT }: { grid: number[][]; referenc
  * The same odds, but across the full range of an opponent's stats rather than only the one chosen
  * above — how sensitive this matchup is, and where the real opponent sits in it.
  */
-function OddsSensitivityView({ sensitivity, attacker, defender }: { sensitivity: OddsSensitivity; attacker: Combatant; defender: Combatant }) {
+function OddsSensitivityView({
+  sensitivity,
+  reverseSensitivity,
+  attacker,
+  defender,
+  reverseWeapon,
+}: {
+  sensitivity: OddsSensitivity
+  reverseSensitivity: OddsSensitivity
+  attacker: Combatant
+  defender: Combatant
+  reverseWeapon: Weapon
+}) {
+  const [direction, setDirection] = useState<'attacking' | 'defending'>('attacking')
+  const attacking = direction === 'attacking'
+  const from = attacking ? attacker : defender
+  const against = attacking ? defender : attacker
+  const shown = attacking ? sensitivity : reverseSensitivity
+
   return (
-    <Section title="Against a range of opponents" aside={`${defender.name}'s own WS ${sensitivity.referenceWS}, T ${sensitivity.referenceT} highlighted`}>
+    <Section title="Against a range of opponents" aside={`${against.name}'s own WS ${shown.referenceWS}, T ${shown.referenceT} highlighted`}>
       <Card className="flex flex-col gap-4 px-4 py-4">
+        <SegmentedControl
+          label="Direction"
+          value={direction}
+          options={[
+            { value: 'attacking', label: 'Attacking', icon: 'battle' },
+            { value: 'defending', label: 'Defending', icon: 'warbands' },
+          ]}
+          onChange={setDirection}
+        />
         <p className="text-sm leading-relaxed text-ink-dim">
-          {attacker.name}&apos;s odds if {defender.name}&apos;s Weapon Skill or Toughness were different, with everything else — armour, skills, the
-          situation above — held as chosen. The highlighted row or column is {defender.name}&apos;s real value.
+          {from.name}&apos;s odds if {against.name}&apos;s Weapon Skill or Toughness were different, with everything else — armour, skills, the
+          situation above — held as chosen. The highlighted row or column is {against.name}&apos;s real value.
+          {!attacking ? (
+            <>
+              {' '}
+              {defender.name} hits back with {reverseWeapon.name} (their own best weapon, or a dagger if that&apos;s all they have) — no off-hand
+              modelled for this side.
+            </>
+          ) : null}
         </p>
-        {sensitivity.hitRows ? (
+        {shown.hitRows ? (
           <div className="flex flex-col gap-1.5">
             <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to hit, against opponent Weapon Skill</p>
-            <RowTable columnsLabel="Opponent WS" rows={sensitivity.hitRows} highlight={sensitivity.referenceWS} />
+            <RowTable columnsLabel="Opponent WS" rows={shown.hitRows} highlight={shown.referenceWS} />
           </div>
         ) : null}
         <div className="flex flex-col gap-1.5">
           <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to hit and wound, against opponent Toughness</p>
-          <RowTable columnsLabel="Opponent T" rows={sensitivity.woundRows} highlight={sensitivity.referenceT} />
+          <RowTable columnsLabel="Opponent T" rows={shown.woundRows} highlight={shown.referenceT} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to take {defender.name} out of action this phase</p>
-          <OoaGrid grid={sensitivity.ooaGrid} referenceWS={sensitivity.referenceWS} referenceT={sensitivity.referenceT} />
+          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Chance to take {against.name} out of action this phase</p>
+          <OoaGrid grid={shown.ooaGrid} referenceWS={shown.referenceWS} referenceT={shown.referenceT} />
         </div>
       </Card>
     </Section>

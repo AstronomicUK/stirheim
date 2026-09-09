@@ -162,11 +162,13 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 4. Simulator's out-of-action grid only shows the attacking direction
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** n/a — scope note from building item below
 
 **Notes:** The old `mordheim-simulator` project's sensitivity grid had an Attacking/Defending toggle (attacker hits the opponent, or the opponent hits back). The new "Against a range of opponents" section on Stirheim's Simulator → Odds tab only ported the attacking direction, matching how the rest of that tab already works one-directionally. Adding the reverse toggle is a reasonably contained follow-up if it turns out to matter.
+
+**Fixed (2026-09-09):** Turned out to need no new engine math at all — `computeOddsSensitivity` (`match/fight/odds.ts`) already takes a generic `FightSetup`, so the reverse direction is just the same function called again with attacker/defender swapped. The defender's own "hits back with" weapon reuses `opponentWeapon()` from `features/simulator/model.ts` — the same "best weapon, or a dagger if that's all they have" convention the stat/skill-gain analysers already use elsewhere on this page, so this stayed consistent with an existing pattern rather than inventing a new one. No off-hand modelled for the reverse side (the UI has no control for picking the defender's own off-hand, and adding one felt like scope creep for a "reasonably contained follow-up") and the situation toggles stay as chosen for both directions, matching how the forward-only version already worked. Added a `SegmentedControl` (reusing the exact "Attacking"/"Defending" labels and icons the Skill gains tab's own role toggle already uses, for visual consistency) to `OddsSensitivityView`, and a sentence naming which weapon the reverse direction assumes. Verified live: switched to Assassin Adept vs Captain Ulrich Brandt, confirmed the sentence, attack count (2→1) and every number in all three tables genuinely changed on toggling — not just relabelled. `tsc -b` and `oxlint` clean; no new pure logic to unit test (the change is entirely in how the existing, already-tested `computeOddsSensitivity` gets called from the page).
 
 ### 5. The injury-enforcement audit only covered two injuries
 

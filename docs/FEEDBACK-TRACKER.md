@@ -256,7 +256,7 @@ Also corrected a separate unit mismatch in the rendering path: the interface say
 
 ### 8. Parrying may not be working properly in roll-it-out; wants the same hand-off armour saves get
 
-**Status:** ⛔ Blocked — Tom will test it himself and report back what he actually sees
+**Status:** ⛔ Dropped for now (Tom, 2026-09-09) — nothing was found wrong by static reading; re-raise with specifics if it comes up again
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -397,7 +397,7 @@ claiming a check that didn't happen.
 
 ### 14. Warband units — possibly Sons of Hashut specifically, possibly wider — start at 1 XP instead of 0
 
-**Status:** ⛔ Blocked — needs Tom to check the audit log (or say how that warband was created)
+**Status:** ⛔ Dropped for now (Tom, 2026-09-09) — can't recall the specific warband/circumstances; re-raise if it recurs
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -553,7 +553,7 @@ Any fix needs to decide where the retained history is meant to live (kept only f
 
 ### 21. Can't submit the second warband's post-battle report after submitting the first, when one player controls both sides of a match
 
-**Status:** ⛔ Blocked — needs Tom to reproduce it and capture the exact symptom (error banner, disabled button, redirect)
+**Status:** ⛔ Dropped for now (Tom, 2026-09-09) — could not be reproduced live; re-raise with the exact symptom if it happens again
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 

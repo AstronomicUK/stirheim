@@ -118,9 +118,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
                 <li key={`${inj.injuryCode}-${i}`} className="text-ink">
                   <HoverCard label={inj.name} title={inj.name}>
                     <span className="whitespace-pre-line">{HERO_INJURIES.find(result => result.code === inj.injuryCode)?.text ?? (inj.effect || 'No additional injury rules recorded.')}</span>
-                    {inj.effect ? <span className="mt-2 block">Recorded effect: {inj.effect}</span> : null}
                   </HoverCard>
-                  {inj.effect ? <span className="text-ink-dim"> — {inj.effect}</span> : null}
                 </li>
               ))}
             </ul>

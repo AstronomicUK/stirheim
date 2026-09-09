@@ -1,3 +1,4 @@
+import { useBattleTurns } from '../../../api/battleTurns'
 // The attack calculator: pick one of your warriors and one enemy model, see the exact odds for
 // this phase of attacks, then (optionally) walk real dice through it step by step. An out of
 // action result can be logged straight to the attacker's "Enemies out" tally.
@@ -145,7 +146,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   // automatically in hand-to-hand, and a stunned target goes straight out of action (01:947-959).
   // Read from the shared log, not a toggle — this is exactly the "the battle sheet doesn't do
   // either of these" report, so it needs to just happen rather than rely on a checkbox.
-  const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn).get(defender.id) : undefined
+  const turns = useBattleTurns(matchId)
+  const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn, turns.data?.recoveries).get(defender.id) : undefined
   if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
   if (defenderCondition === 'Stunned') active.targetStunned = true
   const context = combatContextFor(houseRules, active)

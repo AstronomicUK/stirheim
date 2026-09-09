@@ -9,6 +9,13 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      battle_turns: {
+        Row: { match_id: string; turn_order: string[]; active_index: number; round: number; round_limit: number | null; recovered: boolean; finished: boolean; revision: number; recoveries: Json; updated_at: string }
+        Insert: { match_id: string; turn_order: string[]; active_index?: number; round?: number; round_limit?: number | null; recovered?: boolean; finished?: boolean; revision?: number; recoveries?: Json; updated_at?: string }
+        Update: { round?: number }
+        Relationships: []
+      }
+
       audit_log: {
         Row: {
           action: string
@@ -1234,6 +1241,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      battle_turn_action: {
+        Args: { p_match_id: string; p_action: string; p_revision: number; p_order?: string[]; p_limit?: number }
+        Returns: Json
+      }
+
       agree_match_district: {
         Args: {
           p_district_id: string

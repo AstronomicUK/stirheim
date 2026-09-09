@@ -1,3 +1,5 @@
+import { useBattleTurns } from '../../api/battleTurns'
+import { TurnControls } from './battle/TurnControls'
 // The one screen a player keeps open on their phone during the game: their own tally sheet, the
 // enemy rosters and live tallies, loot and notes. Saves itself; every phone at the table is kept
 // in step by Realtime.
@@ -17,7 +19,7 @@ import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import type { RosterWarband } from '../../rules/types/roster'
 import { usePageTitle } from '../onboarding/usePageTitle'
 import { overlaySessions } from './shared/helpers'
-import { Button, Notice, Sheet, Spinner, useIsDesktop } from '../../ui'
+import { Button, Notice, Sheet, Spinner } from '../../ui'
 import { EnemyView } from './battle/EnemyView'
 import { FightTab } from './fight/FightTab'
 import { BattleNav, type BattleTab } from './battle/BattleNav'
@@ -43,6 +45,7 @@ export function BattlePage() {
   const match = useMatch(id, user?.id)
   const sessions = useBattleSessions(id)
   const events = useBattleEvents(id)
+  const [selectedWarband, setSelectedWarband] = useState('')
   useMatchRealtime(id)
 
   if (match.isPending || sessions.isPending) {
@@ -81,7 +84,9 @@ export function BattlePage() {
       </>
     )
   }
-  return <Battle match={summary} sessions={sessions.data} events={events.data ?? []} userId={user?.id} />
+  const owned = summary.participants.filter(p => p.mine)
+  const selected = owned.find(p => p.warband_id === selectedWarband)?.warband_id ?? owned[0]?.warband_id
+  return <Battle key={selected} preferredWarband={selected} onSelectWarband={setSelectedWarband} match={summary} sessions={sessions.data} events={events.data ?? []} userId={user?.id} />
 }
 
 function scenarioName(match: MatchSummary): string {
@@ -90,11 +95,11 @@ function scenarioName(match: MatchSummary): string {
   return match.custom_scenario_name ? match.custom_scenario_name + suffix : 'Scenario to be decided'
 }
 
-function Battle({ match, sessions, events, userId }: { match: MatchSummary; sessions: BattleSessionView[]; events: BattleEventRow[]; userId: string | undefined }) {
+function Battle({ match, sessions, events, userId, preferredWarband, onSelectWarband }: { preferredWarband?: string; onSelectWarband: (id: string) => void; match: MatchSummary; sessions: BattleSessionView[]; events: BattleEventRow[]; userId: string | undefined }) {
   const navigate = useNavigate()
   const campaign = useCampaign(match.campaign_id)
   const isGm = campaign.data?.campaign.gm_id === userId
-  const mine = match.participants.find((p) => p.mine)
+  const mine = match.participants.find((p) => p.mine && (!preferredWarband || p.warband_id === preferredWarband))
   const boosts = useBattleBoosts(match, Boolean(campaign.data?.settings.mapCampaign))
   const others = match.participants.filter((p) => p.warband_id !== mine?.warband_id)
   const inProgress = match.state === 'in_progress'
@@ -200,6 +205,12 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
   }
 
   return (
+    <>
+    {match.participants.filter(p => p.mine).length > 1 ? <label className="mb-8 flex flex-col gap-1 text-sm">Playing as
+      <select className="rounded border border-border bg-surface-low p-2" value={mine.warband_id} disabled={['pending', 'saving', 'failed'].includes(handle.saveState)} onChange={e => onSelectWarband(e.target.value)}>
+        {match.participants.filter(p => p.mine).map(p => <option key={p.warband_id} value={p.warband_id}>{p.warband_name}</option>)}
+      </select>
+    </label> : null}
     <PlayerBattle
       match={match}
       sessions={shownSessions}
@@ -218,6 +229,7 @@ function Battle({ match, sessions, events, userId }: { match: MatchSummary; sess
     >
       {endSheet}
     </PlayerBattle>
+    </>
   )
 }
 
@@ -242,6 +254,7 @@ interface PlayerBattleProps {
 }
 
 function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
+  const turns = useBattleTurns(match.id)
   const myBoosts = boosts[roster.id] ?? NO_BOOSTS
   const boostLines = [
     ...(myBoosts.leaderLd ? [`Leader +${myBoosts.leaderLd} Ld (${myBoosts.leaderLdSources.join(', ')})`] : []),
@@ -249,13 +262,12 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
   ]
   const template = useMemo(() => findWarbandTemplate(roster.warbandTemplateId), [roster.warbandTemplateId])
   // What the player sees: their own taps plus every kill and casualty the shared log recorded for them.
-  const shown = useMemo(() => applyBattleEvents(handle.sheet, events, roster.id), [handle.sheet, events, roster.id])
+  const shown = useMemo(() => { const result = applyBattleEvents(handle.sheet, events, roster.id); return turns.data ? { ...result, turn: turns.data.round } : result }, [handle.sheet, events, roster.id, turns.data])
   const pendingAdvances = usePendingAdvances(roster.id)
   const advancesDue = pendingAdvances.data?.length ?? 0
   const totals = useMemo(() => sheetTotals(shown, roster), [shown, roster])
   const rout = routStatus(shown, totals.startingModels)
-  // Desktop: my warband always on the left, the other sections as tabs on the right.
-  const desktop = useIsDesktop()
+  // All screen sizes use the same roster/action navigation.
   const inApp = match.combat_mode === 'app'
   // Shares the Enemy tab's cache, so this costs nothing extra: it only feeds the "enemies out of N".
   const enemyRosters = useEnemyRosters(match.id, others)
@@ -272,7 +284,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
     return { outOfAction: out, models, routAt: routThreshold(models) }
   }, [others, enemyRosters.warbands, sessions])
   const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
-  const sideTab: Tab = desktop && tab === 'mine' ? 'enemy' : tab
+  const sideTab: Tab = tab
   // Which quick action opened the Attack tab: only changes the weapon it starts on, the picker still offers both.
   const [attackStartWith, setAttackStartWith] = useState<'melee' | 'ranged'>('melee')
 
@@ -281,15 +293,17 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
       <TopStrip
         scenario={scenario}
         warbands={[{ name: roster.name, mine: true }, ...others.map((p) => ({ name: p.warband_name, mine: false }))]}
-        turn={shown.turn}
+        turn={turns.data?.round ?? shown.turn}
         onTurn={(turn) => handle.edit((s) => setTurn(s, turn))}
         totals={totals}
         rout={rout}
         onRouted={(routed) => handle.edit((s) => setRouted(s, routed))}
         readOnly={readOnly}
+        turnLocked={inApp && !!turns.data}
         enemy={enemy}
       />
 
+      {inApp ? <TurnControls matchId={match.id} state={turns.data} participants={match.participants} myId={roster.id} readOnly={readOnly} loading={turns.isPending} error={turns.error?.message} onBattleOver={onBattleOver} /> : null}
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}
       {boostLines.length > 0 && !readOnly ? (
@@ -307,20 +321,13 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
         </Notice>
       ) : null}
 
-      <div className={desktop ? 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-8' : 'flex flex-col gap-6'}>
-        {desktop ? (
-          <div className="flex flex-col gap-3">
-            <h2 className="text-xs uppercase tracking-[0.25em] text-ink-dim">My warband</h2>
-            <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} />
-          </div>
-        ) : null}
+      <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-6">
           <BattleNav
             tab={sideTab}
             setTab={setTab}
             inApp={inApp}
             canCast={canCast}
-            desktop={desktop}
             attackStartWith={attackStartWith}
             onAttack={(kind) => {
               setAttackStartWith(kind)
@@ -328,7 +335,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
             }}
           />
 
-          {!desktop && sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
+          {sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
           {sideTab === 'enemy' ? <EnemyView matchId={match.id} participants={others} sessions={sessions} events={events} turn={shown.turn} /> : null}
           {sideTab === 'cast' ? <CastTab matchId={match.id} roster={roster} template={template} others={others} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
           {sideTab === 'fight' && inApp ? (

@@ -1,3 +1,4 @@
+import { useBattleTurns } from '../../../api/battleTurns'
 import { useMemo, useState } from 'react'
 import { useMatchRoster, type BattleSessionView, type MatchParticipantView } from '../../../api/matches'
 import { battleTotals, type BattleEventRow } from '../../../domain'
@@ -22,6 +23,7 @@ export interface EnemyViewProps {
 
 /** Every other warband at the table: their roster for reference and their live tallies. */
 export function EnemyView({ matchId, participants, sessions, events = [], turn = 0 }: EnemyViewProps) {
+  const turns = useBattleTurns(matchId)
   return (
     <>
       {participants.length === 0 ? <p className="text-sm text-ink-dim">No other warbands in this match.</p> : null}
@@ -31,7 +33,7 @@ export function EnemyView({ matchId, participants, sessions, events = [], turn =
           matchId={matchId}
           participant={p}
           session={sessions.find((s) => s.warband_id === p.warband_id)}
-          conditions={conditionsFor(events, p.warband_id, turn)}
+          conditions={conditionsFor(events, p.warband_id, turn, turns.data?.recoveries)}
         />
       ))}
     </>

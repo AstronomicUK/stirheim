@@ -1,3 +1,5 @@
+import { useBattleTurns } from '../../../api/battleTurns'
+import { conditionsFor } from './sheet'
 import { useState } from 'react'
 import { eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
@@ -35,6 +37,8 @@ interface Asking {
 }
 
 export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events = [], matchId, others = [] }: MyWarbandTabProps) {
+  const turns = useBattleTurns(matchId ?? '')
+  const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries)
   const warriors = splitWarriors(roster, sheet)
   const groups = fightingGroups(roster)
   const animals = animalsFighting(roster)
@@ -57,14 +61,14 @@ export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events =
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <MyWarriorCard key={entry.warrior.id} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />
+          <MyWarriorCard condition={conditions.get(entry.warrior.id)} key={entry.warrior.id} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />
         ))}
       </Section>
 
       <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((group) => (
-          <MyGroupCard key={group.id} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />
+          <MyGroupCard condition={conditions.get(group.id)} key={group.id} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />
         ))}
       </Section>
 
@@ -119,6 +123,7 @@ export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events =
 }
 
 interface MyWarriorCardProps {
+  condition?: string
   entry: SheetWarrior
   template: WarbandTemplate | undefined
   sheet: BattleLiveState
@@ -129,7 +134,7 @@ interface MyWarriorCardProps {
   onAsk: (name: string) => void
 }
 
-function MyWarriorCard({ entry, template, sheet, edit, readOnly, fromLog, onAsk }: MyWarriorCardProps) {
+function MyWarriorCard({ condition, entry, template, sheet, edit, readOnly, fromLog, onAsk }: MyWarriorCardProps) {
   const [expanded, setExpanded] = useState(false)
   const { warrior } = entry
   const out = isHeroOut(sheet, warrior.id)
@@ -140,6 +145,7 @@ function MyWarriorCard({ entry, template, sheet, edit, readOnly, fromLog, onAsk 
 
   return (
     <Card className={out ? 'opacity-70' : ''}>
+      {condition && !out ? <span className="px-4 pt-2 text-sm font-semibold text-accent-strong">{condition}</span> : null}
       <WarriorHead
         name={warrior.name}
         typeName={warriorTypeName(entry, template)}
@@ -191,6 +197,7 @@ function MyWarriorCard({ entry, template, sheet, edit, readOnly, fromLog, onAsk 
 }
 
 interface MyGroupCardProps {
+  condition?: string
   group: RosterHenchmanGroup
   template: WarbandTemplate | undefined
   sheet: BattleLiveState
@@ -200,7 +207,7 @@ interface MyGroupCardProps {
   onAsk: (index: number) => void
 }
 
-function MyGroupCard({ group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
+function MyGroupCard({ condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
   const [expanded, setExpanded] = useState(false)
   const out = groupOut(sheet, group.id)
   const by = takenOutBy(sheet, group.id)
@@ -210,6 +217,7 @@ function MyGroupCard({ group, template, sheet, edit, readOnly, onAsk }: MyGroupC
 
   return (
     <Card className={out >= group.size ? 'opacity-70' : ''}>
+      {condition && out < group.size ? <span className="px-4 pt-2 text-sm font-semibold text-accent-strong">{condition}</span> : null}
       <WarriorHead
         name={group.name}
         typeName={groupTypeName(group, template)}

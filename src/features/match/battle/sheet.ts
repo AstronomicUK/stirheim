@@ -329,15 +329,28 @@ export const EXPERIENCE_REMINDERS: readonly { who: string; text: string }[] = [
  * knocked-down or stunned model recovers, so only results from the current turn count, and being
  * hit again later in the same turn replaces the earlier state.
  */
-export function conditionsFor(events: BattleEventRow[], warbandId: string, turn: number): Map<string, string> {
+export function conditionsFor(events: BattleEventRow[], warbandId: string, turn: number, recoveries?: readonly { warbandId: string; at: string }[]): Map<string, string> {
   const out = new Map<string, string>()
-  for (const event of events) {
-    if (event.reverted_at !== null) continue
-    const p = event.payload
-    if (p.target_warband_id !== warbandId || p.turn !== turn) continue
+  const timeline = [
+    ...events.filter(e => e.reverted_at === null && e.payload.target_warband_id === warbandId && (recoveries !== undefined || e.payload.turn === turn)).map(event => ({ at: event.at, event })),
+    ...(recoveries ?? []).filter(r => r.warbandId === warbandId).map(r => ({ at: r.at, event: null })),
+  ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+  const removed = new Set<string>()
+  for (const entry of timeline) {
+    if (!entry.event) {
+      for (const [id, condition] of out) {
+        if (condition === 'Stunned') out.set(id, 'Knocked down')
+        else if (condition === 'Knocked down') out.delete(id)
+      }
+      continue
+    }
+    const p = entry.event.payload
     const outcome = p.outcome.toLowerCase()
-    if (outcome === 'knocked down' || outcome === 'stunned') out.set(p.target_id, p.outcome)
-    else out.delete(p.target_id)
+    if (p.out_of_action || outcome === 'out of action') { out.delete(p.target_id); if (p.target_kind === 'hero' || p.target_size === 1) removed.add(p.target_id) }
+    else if (!removed.has(p.target_id) && (outcome === 'knocked down' || outcome === 'stunned')) {
+      out.set(p.target_id, outcome === 'stunned' ? 'Stunned' : 'Knocked down')
+    }
+    // A missed attack or successful save never makes a downed warrior stand up.
   }
   return out
 }

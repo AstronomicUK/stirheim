@@ -20,6 +20,7 @@ export interface TopStripProps {
   rout: RoutStatus
   onRouted: (routed: boolean) => void
   readOnly: boolean
+  turnLocked?: boolean
 }
 
 /** How many more have to fall before a rout test is due, in words. */
@@ -46,14 +47,14 @@ function Tile({ icon, label, value, sub, tone = 'plain' }: { icon: IconName; lab
  * matter. Routing is not one of them — the rout check announces itself further down the sheet, and
  * a warband that has routed says so here in a line rather than a tile that reads "No" all game.
  */
-export function TopStrip({ scenario, warbands, turn, onTurn, totals, enemy, rout, onRouted, readOnly }: TopStripProps) {
+export function TopStrip({ scenario, warbands, turn, onTurn, totals, enemy, rout, onRouted, readOnly, turnLocked = false }: TopStripProps) {
   return (
     <div className="sticky top-0 z-10 -mx-5 -mt-4 flex flex-col gap-2 border-b border-border bg-surface/95 px-5 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-surface/85 lg:-mx-10 lg:-mt-8 lg:px-10 lg:pt-6">
       <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 truncate font-headline text-lg leading-tight text-ink">{scenario}</p>
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-[10px] uppercase tracking-wider text-ink-dim">Turn</span>
-          <Stepper value={turn} onChange={onTurn} label="turn" disabled={readOnly} />
+          <Stepper value={turn} onChange={onTurn} label="turn" disabled={readOnly || turnLocked} />
         </div>
       </div>
       {/* One tag per warband rather than a sentence that runs off the side of a phone. */}

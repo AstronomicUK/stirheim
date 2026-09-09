@@ -604,3 +604,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .stirheim-cast-aura, .stirheim-cast-trail, .stirheim-cast-comet { animation: none; }
 }
+
+/* #212: a bright green cell and underline make advances visible beyond text colour alone. */
+.stirheim-raised-cell, .stirheim-raised-value {
+  background-color: #d9f3cf;
+  box-shadow: inset 0 -2px 0 #66a94b;
+}
+.stirheim-raised-value { color: #28651d; }
+.stirheim-raised-cell .stirheim-raised-value { background: none; box-shadow: none; }

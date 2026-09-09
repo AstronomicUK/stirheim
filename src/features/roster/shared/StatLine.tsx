@@ -25,7 +25,7 @@ function isRaised(raised: StatLineProps['raised'], key: StatKey): boolean {
  * roster sheet. Fits a 360 px phone at 15 px figures.
  */
 export function StatLine({ stats, compact = false, raised, lowered, className = '' }: StatLineProps) {
-  const tone = (k: StatKey) => (lowered?.includes(k) ? 'text-accent-strong' : isRaised(raised, k) ? 'text-ok' : 'text-ink')
+  const tone = (k: StatKey) => (lowered?.includes(k) ? 'text-accent-strong' : isRaised(raised, k) ? 'stirheim-raised-value' : 'text-ink')
   const title = (k: StatKey) => (lowered?.includes(k) ? 'Below the starting profile' : isRaised(raised, k) ? 'Raised by an advance' : undefined)
   if (compact) {
     return (
@@ -41,7 +41,7 @@ export function StatLine({ stats, compact = false, raised, lowered, className = 
   return (
     <div className={`grid grid-cols-9 divide-x divide-border overflow-hidden rounded border border-border text-center tabular-nums ${className}`} aria-label="Characteristics">
       {STAT_ORDER.map((k) => (
-        <div key={k} className="flex flex-col py-1" title={title(k)}>
+        <div key={k} className={`flex flex-col py-1 ${isRaised(raised, k) && !lowered?.includes(k) ? 'stirheim-raised-cell' : ''}`} title={title(k)}>
           <span className="text-[10px] font-bold tracking-wide text-ink-dim">{k}</span>
           <span className={`text-[15px] font-semibold leading-5 ${tone(k)}`}>{stats[k]}</span>
         </div>

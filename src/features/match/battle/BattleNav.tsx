@@ -13,8 +13,6 @@ export interface BattleNavProps {
   inApp: boolean
   /** Somebody on the roster can cast a spell or recite a prayer. */
   canCast: boolean
-  /** On desktop my own warband is always on the left, so the slider has nothing to swap. */
-  desktop: boolean
   /** Which quick action opened the fight tab, so only that tile lights up rather than both. */
   attackStartWith: 'melee' | 'ranged'
   /** Opens the Attack tab already leaning towards a melee or a ranged weapon (the picker still offers both). */
@@ -69,37 +67,24 @@ function NavTile({ icon, label, detail, active, tone, onClick, castCircle = fals
   )
 }
 
-export function BattleNav({ tab, setTab, inApp, canCast, desktop, attackStartWith, onAttack }: BattleNavProps) {
+export function BattleNav({ tab, setTab, inApp, canCast, attackStartWith, onAttack }: BattleNavProps) {
   return (
     <div className="flex flex-col gap-4">
-      {desktop ? null : <WarbandSlider tab={tab} setTab={setTab} />}
-      {desktop ? (
-        <button
-          type="button"
-          aria-pressed={tab === 'enemy'}
-          onClick={() => setTab('enemy')}
-          className={`flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
-            tab === 'enemy' ? 'border-accent bg-accent text-surface-low' : 'border-border bg-surface-low text-ink-dim hover:text-ink'
-          }`}
-        >
-          <Icon name="enemy" size={18} />
-          Enemy warband
-        </button>
-      ) : null}
-
         <section className="flex flex-col gap-2">
           <h3 className="text-xs uppercase tracking-[0.2em] text-ink-dim">Quick actions</h3>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <NavTile icon="warbands" label="View Rosters" detail="Your warband and opponents" active={tab === 'mine' || tab === 'enemy'} tone="brass" onClick={() => setTab('mine')} />
             {inApp ? <NavTile icon="battle" label="Melee Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'melee'} tone="accent" onClick={() => onAttack('melee')} /> : null}
             {inApp ? <NavTile icon="shooting" label="Ranged Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'ranged'} tone="accent" onClick={() => onAttack('ranged')} /> : null}
             <NavTile castCircle={canCast} icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} />
+
+        {inApp ? <NavTile icon="log" label="Log" detail="What both sides have rolled" active={tab === 'log'} tone="brass" onClick={() => setTab('log')} /> : null}
+        <NavTile icon="notes" label="Notes" detail="Objectives and scribbles" active={tab === 'notes'} tone="brass" onClick={() => setTab('notes')} />
+
           </div>
         </section>
 
-      <section className="flex gap-2">
-        {inApp ? <NavTile icon="log" label="Log" detail="What both sides have rolled" active={tab === 'log'} tone="brass" onClick={() => setTab('log')} /> : null}
-        <NavTile icon="notes" label="Notes" detail="Objectives and scribbles" active={tab === 'notes'} tone="brass" onClick={() => setTab('notes')} />
-      </section>
+      {tab === 'mine' || tab === 'enemy' ? <WarbandSlider tab={tab} setTab={setTab} /> : null}
     </div>
   )
 }

@@ -99,10 +99,10 @@ describe('describeActivity', () => {
     expect(line).toBe('Tom archived the campaign and changed the campaign settings')
   })
 
-  it('falls back to a generic line for tables it does not know', () => {
-    expect(describeActivity(entry({ table_name: 'match_reports', action: 'insert' }))).toBe('Ana added a match report record for Claws of Eshin')
+  it('uses familiar names for battle records', () => {
+    expect(describeActivity(entry({ table_name: 'match_reports', action: 'insert' }))).toBe('Ana added a battle report for Claws of Eshin')
     expect(describeActivity(entry({ table_name: 'matches', action: 'update', actor_display_name: null, warband_id: null, warband_name: null }))).toBe(
-      'Someone changed a match record',
+      'Someone updated a battle',
     )
   })
 })

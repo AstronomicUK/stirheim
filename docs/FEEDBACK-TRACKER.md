@@ -1632,14 +1632,14 @@ missing Cavalry table, unresolved kit items, and the fee/upkeep edge cases) are 
 
 ### 64. Experience and advances: smaller points worth a look
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed — the scenario-award bullet is fixed as #72; the statIncreases note is informational, not a bug
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the experience and advances rules audit, reviewed by Tom
 
 **Notes:** Named as "built closer to the rulebook than anything else audited so far" overall — both Advance tables exact band-for-band, all 30 racial maximum profiles correct, henchman +1-per-stat caps tracked properly with re-rolls on a maxed/repeated result, "a lad's got talent" promotion faithful in every particular (including the units that should never be promoted), the underdog table correct and switchable, starting experience correctly granting no free advances at creation (the working reference case for #62's bug), veteran recruits implemented properly. Remaining smaller items:
 
-- **A scenario's own bespoke experience award is never shown when awarding experience** — the three standard awards apply automatically and correctly, but anything a scenario adds (six scenarios deviate from the standard leader award, two giving +2 and one +5) has to be typed in by hand via "Add scenario experience" with nothing on screen reminding the player it applies. The match already knows which scenario was played and every scenario's `experience` text already exists in the data — just needs surfacing at the point of award.
-- `promoteHenchman` drops the group's `statIncreases` record on promotion — harmless today since a promoted hero is bound by racial maxima rather than the henchman +1 cap, but worth knowing the history doesn't carry across if that ever needs reconstructing.
+- ~~**A scenario's own bespoke experience award is never shown when awarding experience**~~ **Fixed as #72** (2026-09-09) — the Experience step now shows the played scenario's own text above the awards list.
+- `promoteHenchman` drops the group's `statIncreases` record on promotion — harmless today since a promoted hero is bound by racial maxima rather than the henchman +1 cap, and nothing reads a hero's `statIncreases` after promotion. Left as a documented fact rather than a fix: there's no current consumer for the preserved history, so carrying it across would be data kept on the chance it's wanted later rather than because anything needs it today.
 
 ### 65. CI's e2e job silently red on main since 18:38, on every commit including unrelated docs
 
@@ -1758,8 +1758,8 @@ Confirmed correct, not worth re-checking: Frenzy's doubling (including the off-h
 
 **Notes:** This audit is explicitly an inventory of 26 optional rulesets, not a backlog — "not implemented" is a scope decision for an optional rule, not a defect, and the auditor asks that the other ~24 not be read as outstanding work. Two are already fully built (the per-category Advanced Critical Hit Charts, verified in #69; Rewards of the Shadowlord). The one section worth acting on is where the app already half-promises something to the player it can't deliver:
 
-- **Pit Fights** — same item as #54: "Sold to the Pits" sets a flag and emits an event nothing consumes, and the Amphitheatre map district prints "A hero Sold to the Pits wins the fight" for a fight that can't be played.
-- **Blackpowder Misfires** — three weapons carry `blackpowderMisfireRulesAlwaysOn` and three more `experimentalBlackpowderRulesAlwaysOn`, but no misfire table exists anywhere in the app. The table is six D6 results, two of which change the roster (weapon destroyed; weapon jammed for the battle) — small and self-contained if ever picked up.
+- ~~**Pit Fights**~~ **Fixed as #54** (2026-09-09) — a real win/lose resolution flow now exists; the Amphitheatre's `pitFightAutoWin` perk still isn't wired to it (see #54's own "left open" note).
+- **Blackpowder Misfires** — three weapons carry `blackpowderMisfireRulesAlwaysOn` and three more `experimentalBlackpowderRulesAlwaysOn`, but no misfire table exists anywhere in the app. The table is six D6 results (verified against the source: BOOM! destroys the weapon and hits the shooter for S4; Jammed for the rest of the battle; Phut costs an extra turn to fire again; 4-5 Click, no effect; KA-BOOM hits the target anyway at +1 Strength) — small in isolation, but wiring the "this was a natural 1, roll a misfire" trigger and its consequences (permanent weapon loss, a per-battle jammed state, a converted-hit-on-a-miss case) touches the live fight engine's to-hit resolution for these six weapons specifically. Deliberately not attempted in the same sitting as #54/#56's fixes tonight — those already found three separate persistence bugs, and the fight engine (`resolveAttack.ts`/`buildAttackInput.ts`) is shared by every combat calculation in the app, a much larger blast radius than a roster flag. Worth its own careful pass rather than rushing it in.
 - **Mounted Warriors / Blazing Saddles** — same item as #59 (missing cavalry skills) and #61 (hired swords/units pointing at a nonexistent Cavalry table); repeated here since this is its home ruleset.
 
 Five more (Sawbones, Power in the Stones, the two vampire skill-list rulesets, Subplots and Random Happenings, Encampments) are offered as candidates that would fit data the app already keeps, not defects — worth a look if the team ever wants to expand scope, not urgent. Eleven more are properly out of scope and shouldn't be re-audited, though Dark Rituals would touch the magic data if ever wanted and the Trade Wagon's rout-loss rule (already logged, #68) is the one place Vehicles matters today.

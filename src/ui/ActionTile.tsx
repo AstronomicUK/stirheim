@@ -28,14 +28,15 @@ export function ActionTile({ to, icon, title, detail, count = null, highlight = 
       to={to}
       className={`relative flex min-h-20 flex-col gap-1.5 rounded-md border bg-surface-low px-3 pb-2.5 pt-3 no-underline transition-colors hover:bg-surface-high ${
         highlight ? 'border-brass shadow-[inset_0_0_0_1px_var(--color-brass)]' : 'border-border'
-      } ${glow ? 'stirheim-cast-tile' : ''}`}
+      } ${glow ? 'stirheim-advance-magic' : ''}`}
     >
       {glow ? (
-        <svg className="stirheim-cast-orbit" aria-hidden="true" focusable="false">
-          <rect width="100%" height="100%" rx="6" pathLength="100" />
-        </svg>
+        <>
+          <span className="stirheim-advance-edge" aria-hidden="true" />
+          <span className="stirheim-advance-sheen" aria-hidden="true" />
+        </>
       ) : null}
-      <Icon name={icon} size={22} className={`text-brass ${glow ? 'stirheim-glow' : ''}`} />
+      <Icon name={icon} size={22} className={glow ? 'stirheim-advance-star' : 'text-brass'} />
       <span className="text-sm font-semibold leading-tight text-ink">{title}</span>
       {detail ? <span className="text-xs leading-snug text-ink-dim">{detail}</span> : null}
       {count !== null && count > 0 ? (

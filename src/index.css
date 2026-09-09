@@ -484,3 +484,71 @@ body {
     animation: none;
   }
 }
+
+/* #213: approved ice-blue magic. Decorative layers never intercept tile clicks. */
+.stirheim-advance-magic {
+  --advance-silver: #bfdff3;
+  --advance-light: #f5fbff;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: var(--advance-silver);
+  box-shadow: 0 0 10px #bfdff326;
+}
+.stirheim-advance-edge {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+.stirheim-advance-edge::before {
+  content: '';
+  position: absolute;
+  width: 160%;
+  height: 800%;
+  left: -30%;
+  top: -350%;
+  background: conic-gradient(transparent 0deg 265deg, #bfdff34d 292deg, var(--advance-silver) 319deg, var(--advance-light) 340deg, var(--advance-silver) 349deg, transparent 358deg);
+  animation: stirheim-advance-edge 7s linear infinite;
+}
+.stirheim-advance-edge::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: var(--color-surface-low);
+}
+.stirheim-advance-magic:hover .stirheim-advance-edge::after {
+  background: var(--color-surface-high);
+}
+.stirheim-advance-star {
+  color: var(--advance-light);
+  filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 4px var(--advance-silver));
+  animation: stirheim-advance-star 4s ease-in-out infinite;
+}
+.stirheim-advance-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 38%, #bfdff317 44%, #f5fbff7a 50%, #bfdff317 56%, transparent 62%);
+  transform: translateX(-125%);
+  animation: stirheim-advance-sheen 8s ease-in-out infinite;
+}
+@keyframes stirheim-advance-edge {
+  to { transform: rotate(360deg); }
+}
+@keyframes stirheim-advance-star {
+  0%, 100% { filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 3px var(--advance-silver)); }
+  50% { filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 6px var(--advance-light)) drop-shadow(0 0 9px var(--advance-silver)); }
+}
+@keyframes stirheim-advance-sheen {
+  0%, 16% { transform: translateX(-125%); }
+  40%, 100% { transform: translateX(125%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stirheim-advance-edge::before,
+  .stirheim-advance-star,
+  .stirheim-advance-sheen { animation: none; }
+}

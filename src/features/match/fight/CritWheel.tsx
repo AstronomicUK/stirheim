@@ -12,8 +12,8 @@ export interface CritWheelProps {
   table: CritTableKey
   /** Web of Steel and the like shift which row a face reaches. */
   rollModifier: number
-  /** The face the chart was rolled on, once it settles. */
-  onSettled: (face: number) => void
+  /** The face the chart was rolled on, once it settles; `manual` is true when a face was tapped in rather than rolled with the button. */
+  onSettled: (face: number, manual: boolean) => void
   /** Names the table in the heading ("Bladed weapons"). */
   tableName: string
   disabled?: boolean
@@ -45,13 +45,13 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
     return index === -1 ? rows.length - 1 : index
   }
 
-  function spin(value: number) {
+  function spin(value: number, manual: boolean) {
     const target = rowFor(value)
     setFace(value)
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     if (reduced) {
       setCursor(target)
-      timers.current.push(window.setTimeout(() => onSettled(value), 400))
+      timers.current.push(window.setTimeout(() => onSettled(value, manual), 400))
       return
     }
     setSpinning(true)
@@ -70,7 +70,7 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
       )
     }
     // Hold on the answer before handing back, so the row that came up is actually read.
-    timers.current.push(window.setTimeout(() => onSettled(value), at + SETTLE_MS))
+    timers.current.push(window.setTimeout(() => onSettled(value, manual), at + SETTLE_MS))
   }
 
   const settled = !spinning && cursor !== null
@@ -117,7 +117,7 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" disabled={disabled || spinning} onClick={() => spin(rollDie(6))}>
+          <Button variant="secondary" disabled={disabled || spinning} onClick={() => spin(rollDie(6), false)}>
             {spinning ? 'Rolling…' : 'Roll on the chart'}
           </Button>
           <span className="text-xs text-ink-dim">or tap the face you rolled</span>
@@ -128,7 +128,7 @@ export function CritWheel({ table, rollModifier, onSettled, tableName, disabled 
                 type="button"
                 disabled={disabled || spinning}
                 aria-label={`Critical hit chart: ${value}`}
-                onClick={() => spin(value)}
+                onClick={() => spin(value, true)}
                 className="rounded-[22%] opacity-60 transition-transform hover:opacity-100 disabled:cursor-default"
               >
                 <DieFace value={value} size={34} />

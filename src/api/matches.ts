@@ -313,8 +313,8 @@ export interface PromptAsk {
   optional: boolean
 }
 
-/** The face they rolled, or their refusal of an optional step. */
-export type PromptAnswer = { roll: number } | { declined: true }
+/** The face they rolled, or their refusal of an optional step. `manual` is omitted on older, already-persisted answers. */
+export type PromptAnswer = { roll: number; manual?: boolean } | { declined: true }
 
 export interface BattlePrompt {
   id: string

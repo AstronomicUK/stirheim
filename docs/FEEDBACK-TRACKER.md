@@ -125,13 +125,20 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 1. Dice rolls in the persisted combat log don't say app-rolled vs entered by hand
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-06 (part of a larger list)
 
 > "All dice rolls should show app-rolled vs manually-entered; scenario selection should say '(randomly chosen)' when applicable."
 
 **Notes:** Done for the live Fight tab UI (`RollResult` tags "Rolled by the app" / "Entered by hand") and for `DieField`s in the post-battle wizard, and the scenario half is fully done. Not done: the *persisted* attack narrative written to the combat log (`rollThrough.ts`'s `log()` calls, ~30 call sites) still always says "rolled X", regardless of which way that particular die actually came in. Threading it through would mean passing a `manual` flag into `applyRoll`/`declineRoll` and rewording every log line — judged out of scope for that pass since the live UI already shows it at the moment it matters.
+
+**Fixed (2026-09-09):** `applyRoll(state, roll, manual?)` in `rollThrough.ts` now takes the same optional flag `RollResult` already used, and every one of its ~26 `log()` call sites that mentions a roll got the same tag appended right after the face — `${roll}${rollTag}` where `rollTag` is `' (rolled by the app)'` / `' (entered by hand)'` / `''` when unknown, worded to match `RollResult` exactly (Dice.tsx) so the persisted line agrees with what was shown on screen at the time. `declineRoll` untouched — it never logs a face at all (a parry/Lucky Charm decline, not a roll). Wired from all three places a roll actually enters the phase, which turned out to need more than the one obvious call site:
+  - The GM's own `DicePicker` in `FightTab.tsx` already computed `manual` for the transient `RollResult` display; now passes the same value into `applyRoll`.
+  - `CritWheel.tsx`'s `onSettled` gained the same `manual` parameter — the wheel has always supported both "Roll on the chart" (app-rolled) and tapping a face directly ("or tap the face you rolled", manual), but both went through one shared `spin()` that didn't distinguish them internally; now does.
+  - The cross-device hand-off path needed the most: the defending player's own roll happens in `PromptSheet.tsx` on their device and is sent back over the wire, so `manual` had to be added to `PromptAnswer` (`api/matches.ts`, optional — older persisted answers just read as unknown) and threaded through `useHandOff`'s `onRoll` callback in `FightTab.tsx`.
+  - Tests in `rollThrough.test.ts` cover the tag appearing/omitted correctly and a full attack (including the new #69 D3 wound roll) carrying the right tag at each of its own steps. `tsc -b`, `oxlint`, and the full suite (1264 passed) all clean.
+  - **Not verified live in the browser**: this only reaches the persisted narrative text, already covered end-to-end by tests that drive the exact same `applyRoll`/`CritWheel`/hand-off code paths the real UI calls; the only live match available locally is Tom's actual in-progress "Ruins of the Stir" campaign, and rolling a real attack through it to look at the log would persist a genuine (fake) combat result into his group's real campaign state, which isn't worth the risk for a text-only change.
 
 ### 2. Cast a Spell rolls have no app-rolled / entered-by-hand tag
 

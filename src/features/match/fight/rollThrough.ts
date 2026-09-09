@@ -196,17 +196,19 @@ export function declineRoll(state: RollState): RollState {
   return afterHit(log(state, 'No parry attempted.'))
 }
 
-export function applyRoll(initial: RollState, roll: number): RollState {
+export function applyRoll(initial: RollState, roll: number, manual?: boolean): RollState {
   let state = initial
   const pending = state.pending
   if (!pending || state.done) return state
   const plan = state.plans[state.index]
   const input = plan.input
+  /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
+  const rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
     case 'hit':
     case 'hitReroll': {
       if (passes(roll, input.hitThreshold)) {
-        const s = log({ ...state, cur: { ...state.cur, hitRoll: roll } }, `${attackName(state)}: rolled ${roll} to hit. Hit.`, 'good')
+        const s = log({ ...state, cur: { ...state.cur, hitRoll: roll } }, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Hit.`, 'good')
         if (!s.charmUsed && plan.luckyCharm !== undefined) {
           return { ...s, charmUsed: true, pending: { kind: 'luckyCharm', who: 'defender', label: 'Lucky Charm', detail: `The first hit of the battle: discarded on ${plan.luckyCharm}+`, optional: true } }
         }
@@ -214,33 +216,33 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       }
       if (pending.kind === 'hit' && input.rerollToHit) {
         return {
-          ...log(state, `${attackName(state)}: rolled ${roll} to hit. Missed, but the miss may be rerolled.`),
+          ...log(state, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Missed, but the miss may be rerolled.`),
           cur: { ...state.cur, rerolled: true },
           pending: { kind: 'hitReroll', who: 'attacker', label: `${attackName(state)}: reroll to hit`, detail: `Needs ${thresholdText(input.hitThreshold)}` },
         }
       }
-      return finishAttack(log(state, `${attackName(state)}: rolled ${roll} to hit. Missed.`, 'bad'), 'miss')
+      return finishAttack(log(state, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Missed.`, 'bad'), 'miss')
     }
     case 'luckyCharm': {
-      if (passesSave(roll, plan.luckyCharm ?? IMPOSSIBLE)) return finishAttack(log(state, `Lucky Charm: rolled ${roll}. The hit is discarded.`, 'bad'), 'charmed')
-      return offerParry(log(state, `Lucky Charm: rolled ${roll}. No luck.`, 'good'))
+      if (passesSave(roll, plan.luckyCharm ?? IMPOSSIBLE)) return finishAttack(log(state, `Lucky Charm: rolled ${roll}${rollTag}. The hit is discarded.`, 'bad'), 'charmed')
+      return offerParry(log(state, `Lucky Charm: rolled ${roll}${rollTag}. No luck.`, 'good'))
     }
     case 'parry':
     case 'parryReroll': {
       const hitRoll = state.cur.hitRoll ?? 6
       const success = plan.parry.fixedThreshold !== undefined ? passesSave(roll, plan.parry.fixedThreshold) : plan.parry.beatsOrMatches ? roll >= hitRoll : roll > hitRoll
-      if (success) return finishAttack(log(state, `Parry: rolled ${roll} against the ${hitRoll} to hit. Parried!`, 'bad'), 'parried')
+      if (success) return finishAttack(log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Parried!`, 'bad'), 'parried')
       if (pending.kind === 'parry' && plan.parry.reroll) {
         return {
-          ...log(state, `Parry: rolled ${roll} against the ${hitRoll} to hit. Failed; the parry may be rerolled.`),
+          ...log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Failed; the parry may be rerolled.`),
           pending: { kind: 'parryReroll', who: 'defender', label: 'Parry reroll', detail: parryDetail(plan, hitRoll) },
         }
       }
-      return afterHit(log(state, `Parry: rolled ${roll} against the ${hitRoll} to hit. Failed.`, 'good'))
+      return afterHit(log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Failed.`, 'good'))
     }
     case 'dodge': {
-      if (passesSave(roll, input.dodgeThreshold ?? IMPOSSIBLE)) return finishAttack(log(state, `Dodge: rolled ${roll}. Dodged!`, 'bad'), 'dodged')
-      return askWound(log(state, `Dodge: rolled ${roll}. Failed.`, 'good'))
+      if (passesSave(roll, input.dodgeThreshold ?? IMPOSSIBLE)) return finishAttack(log(state, `Dodge: rolled ${roll}${rollTag}. Dodged!`, 'bad'), 'dodged')
+      return askWound(log(state, `Dodge: rolled ${roll}${rollTag}. Failed.`, 'good'))
     }
     case 'wound':
     case 'woundReroll': {
@@ -248,15 +250,15 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       const wounded = auto || passes(roll, input.woundThreshold)
       if (wounded && roll === 6 && plan.rot && !state.rotPassed) state = log({ ...state, rotPassed: true }, "A 6 to wound from a carrier of Nurgle's Rot: the target contracts the Rot.", 'good')
       if (!wounded && pending.kind === 'wound' && input.rerollToWound) {
-        return { ...log(state, `To wound: rolled ${roll}. No wound on the first die; roll the second and keep the highest.`), pending: { kind: 'woundReroll', who: 'attacker', label: 'To wound (second die)', detail: `Needs ${thresholdText(input.woundThreshold)}` } }
+        return { ...log(state, `To wound: rolled ${roll}${rollTag}. No wound on the first die; roll the second and keep the highest.`), pending: { kind: 'woundReroll', who: 'attacker', label: 'To wound (second die)', detail: `Needs ${thresholdText(input.woundThreshold)}` } }
       }
-      if (!wounded) return finishAttack(log(state, `To wound: rolled ${roll}. No wound.`, 'bad'), 'noWound')
+      if (!wounded) return finishAttack(log(state, `To wound: rolled ${roll}${rollTag}. No wound.`, 'bad'), 'noWound')
       const critEligible = !state.critUsed && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
       if (critEligible) {
-        const s = log({ ...state, critUsed: true }, `To wound: rolled ${roll}. Wounded, and it is a critical hit!`, 'good')
+        const s = log({ ...state, critUsed: true }, `To wound: rolled ${roll}${rollTag}. Wounded, and it is a critical hit!`, 'good')
         return { ...s, pending: { kind: 'critTable', who: 'attacker', label: 'Critical hit table', detail: input.critTableRollModifier ? `D6 ${input.critTableRollModifier > 0 ? '+' : ''}${input.critTableRollModifier}` : 'Roll a D6' } }
       }
-      const s = log(state, auto ? `To wound: automatic wound from the 6 to hit (rolled ${roll}, no critical).` : `To wound: rolled ${roll}. Wounded.`, 'good')
+      const s = log(state, auto ? `To wound: automatic wound from the 6 to hit (rolled ${roll}${rollTag}, no critical).` : `To wound: rolled ${roll}${rollTag}. Wounded.`, 'good')
       if (input.multipleWoundsD3OnHit) {
         return { ...s, cur: { ...s.cur, crit: null, pendingWoundBase: 1 }, pending: { kind: 'multiWound', who: 'attacker', label: `${plan.weaponName}: Wounds caused`, detail: 'Roll a D3 for how many Wounds this hit causes' } }
       }
@@ -272,7 +274,7 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       if (result.minSeverityKnockedDown) bits.push('knocked down even if saved')
       if (result.ignoresHelmetSave) bits.push('no helmet save')
       if (result.flavourOnly) bits.push(result.flavourOnly)
-      const s = log(state, `Critical: rolled ${roll}. ${result.label}${bits.length ? ` (${bits.join(', ')})` : ''}.`, 'good')
+      const s = log(state, `Critical: rolled ${roll}${rollTag}. ${result.label}${bits.length ? ` (${bits.join(', ')})` : ''}.`, 'good')
       if (input.multipleWoundsD3OnHit) {
         return { ...s, cur: { ...s.cur, crit: result, pendingWoundBase: result.woundsCaused }, pending: { kind: 'multiWound', who: 'attacker', label: `${plan.weaponName}: Wounds caused`, detail: `Roll a D3; the critical's ${result.woundsCaused} wound${result.woundsCaused > 1 ? 's' : ''} stands if it's higher` } }
       }
@@ -281,7 +283,7 @@ export function applyRoll(initial: RollState, roll: number): RollState {
     case 'multiWound': {
       const wounds = Math.max(state.cur.pendingWoundBase, roll)
       const beaten = wounds !== roll
-      const s = log(state, `${plan.weaponName}: rolled ${roll} on the D3.${beaten ? ` The critical's ${state.cur.pendingWoundBase} wounds is higher, so that stands.` : ` ${wounds} wound${wounds > 1 ? 's' : ''} caused.`}`, 'good')
+      const s = log(state, `${plan.weaponName}: rolled ${roll}${rollTag} on the D3.${beaten ? ` The critical's ${state.cur.pendingWoundBase} wounds is higher, so that stands.` : ` ${wounds} wound${wounds > 1 ? 's' : ''} caused.`}`, 'good')
       return startSaves({ ...s, cur: { ...s.cur, wounds } })
     }
     case 'save': {
@@ -289,15 +291,15 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       const saved = passesSave(roll, input.armourThreshold)
       if (saved) {
         if (step.wound === -1) {
-          const s = log(state, `Armour save: rolled ${roll}. Saved.`, 'bad')
+          const s = log(state, `Armour save: rolled ${roll}${rollTag}. Saved.`, 'bad')
           if (state.cur.crit?.minSeverityKnockedDown) return finishAttack(log(s, 'Thrust: the target is knocked down all the same.', 'good'), 'knockedDown')
           return finishAttack(s, 'saved')
         }
         const savedWounds = new Set(state.cur.savedWounds).add(step.wound)
         const queue = state.cur.saveQueue.slice(1).filter((q) => q.wound !== step.wound)
-        return nextSaveStep(log({ ...state, cur: { ...state.cur, savedWounds, saveQueue: queue } }, `Armour save (wound ${step.wound + 1}): rolled ${roll}. Saved.`, 'bad'))
+        return nextSaveStep(log({ ...state, cur: { ...state.cur, savedWounds, saveQueue: queue } }, `Armour save (wound ${step.wound + 1}): rolled ${roll}${rollTag}. Saved.`, 'bad'))
       }
-      const s = log(state, `Armour save: rolled ${roll}. Failed.`, 'good')
+      const s = log(state, `Armour save: rolled ${roll}${rollTag}. Failed.`, 'good')
       if (state.cur.crit?.autoOOAOnFailedSave) return finishAttack(log(s, 'Bludgeoned: straight out of action.', 'good'), 'outOfAction')
       return nextSaveStep({ ...s, cur: { ...s.cur, saveQueue: s.cur.saveQueue.slice(1) } })
     }
@@ -310,16 +312,16 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       if (passesSave(roll, threshold ?? IMPOSSIBLE)) {
         const savedWounds = new Set(state.cur.savedWounds).add(step.wound)
         const queue = state.cur.saveQueue.slice(1).filter((q) => q.wound !== step.wound)
-        return nextSaveStep(log({ ...state, cur: { ...state.cur, savedWounds, saveQueue: queue } }, `${name}: rolled ${roll}. Saved.`, 'bad'))
+        return nextSaveStep(log({ ...state, cur: { ...state.cur, savedWounds, saveQueue: queue } }, `${name}: rolled ${roll}${rollTag}. Saved.`, 'bad'))
       }
-      return nextSaveStep(log({ ...state, cur: { ...state.cur, saveQueue: state.cur.saveQueue.slice(1) } }, `${name}: rolled ${roll}. Failed.`, 'good'))
+      return nextSaveStep(log({ ...state, cur: { ...state.cur, saveQueue: state.cur.saveQueue.slice(1) } }, `${name}: rolled ${roll}${rollTag}. Failed.`, 'good'))
     }
     case 'injuryIgnore': {
       if (passesSave(roll, input.injuryIgnoreThreshold ?? IMPOSSIBLE)) {
-        const s = log(state, `Undead Construct: rolled ${roll}. The injury is ignored (the wound is still lost).`, 'bad')
+        const s = log(state, `Undead Construct: rolled ${roll}${rollTag}. The injury is ignored (the wound is still lost).`, 'bad')
         return injuryRolled(s, null)
       }
-      const s = log(state, `Undead Construct: rolled ${roll}. The injury counts.`, 'good')
+      const s = log(state, `Undead Construct: rolled ${roll}${rollTag}. The injury counts.`, 'good')
       return { ...s, pending: injuryPending(s) }
     }
     case 'injury': {
@@ -327,12 +329,12 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       const modified = roll + bonus
       const [koMax, stunnedMax] = resolveInjuryBand(input.concussion, input.trueGrit, input.hardToKill, input.injuryRemap)
       const result: 'knockedDown' | 'stunned' | 'outOfAction' = modified <= koMax ? 'knockedDown' : modified <= stunnedMax ? 'stunned' : 'outOfAction'
-      const s = log(state, `Injury: rolled ${roll}${bonus ? ` (${modified} after +${bonus})` : ''}. ${OUTCOME_LABEL[result]}.`, result === 'outOfAction' ? 'good' : 'neutral')
+      const s = log(state, `Injury: rolled ${roll}${rollTag}${bonus ? ` (${modified} after +${bonus})` : ''}. ${OUTCOME_LABEL[result]}.`, result === 'outOfAction' ? 'good' : 'neutral')
       return injuryRolled(s, result)
     }
     case 'stunSave': {
-      if (passesSave(roll, input.stunAvoidanceThreshold ?? IMPOSSIBLE)) return finishAttack(log(state, `Helmet: rolled ${roll}. The stun becomes knocked down.`, 'bad'), 'knockedDown')
-      return finishAttack(log(state, `Helmet: rolled ${roll}. Still stunned.`, 'good'), 'stunned')
+      if (passesSave(roll, input.stunAvoidanceThreshold ?? IMPOSSIBLE)) return finishAttack(log(state, `Helmet: rolled ${roll}${rollTag}. The stun becomes knocked down.`, 'bad'), 'knockedDown')
+      return finishAttack(log(state, `Helmet: rolled ${roll}${rollTag}. Still stunned.`, 'good'), 'stunned')
     }
   }
 }

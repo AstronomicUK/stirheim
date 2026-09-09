@@ -100,7 +100,7 @@ function OnePrompt({ matchId, prompt, queued, onAnswering, onClose }: { matchId:
                 </div>
                 {current ? (
                   <>
-                    <DicePicker count={1} sides={ask.kind === 'multiWound' ? 3 : 6} label={ask.label} resetKey={`${prompt.id}-${i}`} onComplete={(values) => record({ roll: values[0] })} />
+                    <DicePicker count={1} sides={ask.kind === 'multiWound' ? 3 : 6} label={ask.label} resetKey={`${prompt.id}-${i}`} onComplete={(values, manual) => record({ roll: values[0], manual })} />
                     {ask.optional ? (
                       <div>
                         <Button variant="ghost" onClick={() => record({ declined: true })}>

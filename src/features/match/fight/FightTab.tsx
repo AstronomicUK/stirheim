@@ -606,7 +606,7 @@ export interface HandOffTarget {
 
 function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
-  const hand = useHandOff(handOff, (roll) => advance((s) => applyRoll(s, roll), { value: roll, label: 'Their roll' }), () => advance(declineRoll))
+  const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
   const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral'; manual?: boolean } | null>(null)
   const stateRef = useRef<RollState | null>(null)
@@ -709,7 +709,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                   table={state.plans[state.index].input.critTable}
                   rollModifier={state.plans[state.index].input.critTableRollModifier}
                   tableName={critTableName(state.plans[state.index].input.critTable)}
-                  onSettled={(face) => advance((s) => applyRoll(s, face))}
+                  onSettled={(face, manual) => advance((s) => applyRoll(s, face, manual))}
                 />
               ) : (
                 <DicePicker
@@ -718,7 +718,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                   sides={state.pending.kind === 'multiWound' ? 3 : 6}
                   label={state.pending.label}
                   resetKey={state.log.length}
-                  onComplete={(values, manual) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label, manual })}
+                  onComplete={(values, manual) => advance((s) => applyRoll(s, values[0], manual), { value: values[0], label: state.pending!.label, manual })}
                 />
               )}
               {state.pending.optional ? (
@@ -851,7 +851,7 @@ function defenderKitReroll(kit: Loadout): boolean {
  * for their answer, and feeds the face they threw back into the phase. Withdrawing takes the
  * question off their screen and leaves the step to be rolled here.
  */
-function useHandOff(target: HandOffTarget | undefined, onRoll: (roll: number) => void, onDeclined: () => void) {
+function useHandOff(target: HandOffTarget | undefined, onRoll: (roll: number, manual?: boolean) => void, onDeclined: () => void) {
   const prompts = useBattlePrompts(target?.matchId)
   const ask = useAskBattlePrompt(target?.matchId)
   const withdraw = useWithdrawBattlePrompt(target?.matchId)
@@ -868,7 +868,7 @@ function useHandOff(target: HandOffTarget | undefined, onRoll: (roll: number) =>
     const answer = asked.answers[0]
     if (!answer) return
     if ('declined' in answer) onDeclined()
-    else onRoll(answer.roll)
+    else onRoll(answer.roll, answer.manual)
   }, [asked, onRoll, onDeclined])
 
   if (!target) return null

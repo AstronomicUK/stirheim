@@ -313,3 +313,29 @@ describe('Ball and Chain — D3 wounds per hit instead of 1 (#69)', () => {
     expect(s.pending?.label).toBe('Injury roll')
   })
 })
+
+describe('the persisted log says app-rolled vs entered by hand (#1)', () => {
+  it('tags a roll as entered by hand or rolled by the app, matching what the roll screen showed', () => {
+    const appRolled = applyRoll(startPhase([plan('Sword')], 1, 0), 4, false)
+    expect(appRolled.log.at(-1)?.text).toMatch(/rolled 4 \(rolled by the app\) to hit/)
+
+    const byHand = applyRoll(startPhase([plan('Sword')], 1, 0), 4, true)
+    expect(byHand.log.at(-1)?.text).toMatch(/rolled 4 \(entered by hand\) to hit/)
+  })
+
+  it('omitting manual leaves the log untagged, same as before this existed', () => {
+    const s = applyRoll(startPhase([plan('Sword')], 1, 0), 4)
+    expect(s.log.at(-1)?.text).toBe('Sword: rolled 4 to hit. Hit.')
+  })
+
+  it('every roll in a full attack carries its own tag, including the new D3 wound roll', () => {
+    let s = startPhase([plan('Ball and Chain', { armourThreshold: IMPOSSIBLE, multipleWoundsD3OnHit: true })], 1, 0)
+    s = applyRoll(s, 4, true) // hit, by hand
+    s = applyRoll(s, 5, false) // wound, by the app
+    s = applyRoll(s, 3, true) // D3, by hand
+    const texts = s.log.map((l) => l.text)
+    expect(texts.some((t) => t.includes('to hit') && t.includes('(entered by hand)'))).toBe(true)
+    expect(texts.some((t) => t.startsWith('To wound') && t.includes('(rolled by the app)'))).toBe(true)
+    expect(texts.some((t) => t.includes('D3') && t.includes('(entered by hand)'))).toBe(true)
+  })
+})

@@ -2568,7 +2568,7 @@ run` all clean.
 
 ### 90. The hired swords icon is weird — brainstorm alternatives, don't just ship one
 
-**Status:** 🔲 Reopened — new mockups ready; awaiting Tom's choice
+**Status:** ✅ Fixed — Tom picked the plain coin purse (2A)
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2606,7 +2606,11 @@ dropped — the shield read as a circle/lollipop at this scale, not worth offeri
 > 2. A coin purse
 > 3. A combination of the two (a person outline carrying both swords and a coin purse)
 
-New mockups are ready at [`docs/hired-swords-icon-mockups.html`](hired-swords-icon-mockups.html): two variants per concept, each at 20px and 120px, with paste-ready `{ stroke: "...", fill: "..." }` data. This review supersedes the earlier sword-and-coin pick; **Tom has not chosen a replacement yet**. The currently shipped icon is unchanged. Astra checked the static structure and path consistency, but has no browser verification. Handoff to Stirheim Developer [8aefaa]: pull, open the HTML in a real browser, render/screenshot all six variants at both sizes, check that swords/purses read clearly (especially at 20px, remembering the shield/lollipop failure), and show Tom before any implementation or shipping.
+New mockups are ready at [`docs/hired-swords-icon-mockups.html`](hired-swords-icon-mockups.html): two variants per concept, each at 20px and 120px, with paste-ready `{ stroke: "...", fill: "..." }` data. This review supersedes the earlier sword-and-coin pick.
+
+**Live review (Stirheim Developer, 2026-09-09):** rendered all six candidates in a real browser at 20px and 120px before showing Tom. The person-and-swords concept (1A/1B, and by extension the combination 3A/3B, which reuses the same head) has a real readability problem at both sizes, not just small ones: the two sword hilts drawn above the shoulders read as a pair of X eyes, making the whole icon look like a skull/knocked-out face rather than a person carrying swords. The coin purse alone (2A/2B) had no such issue and read cleanly both sizes.
+
+**Fixed:** Tom picked the plain outline purse (2A), no coins. A "purse plus two loose coins spilled at the base" variant was mocked up and rendered live per his own follow-up ask, but the coins read as a noise/blob at real 20px size even in the cleanest of three tried layouts — Tom's own call once he saw it rendered was to drop the coins and just ship the plain purse. Shipped in `src/ui/icons.tsx`: `M8 3h8l-2 4H10zM9 7h6M9 9C7 11 4 14 4 17c0 3 3 4 8 4s8-1 8-4c0-3-3-6-5-8`. Verified live on the Recruit page's Hired Swords tab. `tsc -b`, `oxlint` and the full suite (1253 passed) clean.
 
 ### 91. Remove the "gc" text from the Buy tab so it matches Sell's plain look
 

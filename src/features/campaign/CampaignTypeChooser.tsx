@@ -56,7 +56,7 @@ export function CampaignTypeChooser({ mapCampaign, onChange, disabled = false }:
               <Icon name={choice.icon} size={22} className="text-brass" />
               <span className="text-sm font-semibold leading-tight text-ink">{choice.title}</span>
               <span className="text-xs leading-snug text-ink-dim">{choice.blurb}</span>
-              <HoverCard title={choice.title} label={<span className="text-xs text-brass underline decoration-dotted underline-offset-2">What is this?</span>}>
+              <HoverCard title={choice.title} label={<span className="text-xs text-brass">What is this?</span>}>
                 {choice.tip}
               </HoverCard>
             </button>

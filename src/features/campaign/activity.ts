@@ -7,7 +7,11 @@ import type { Json } from '../../api/database.types'
 import type { IconName } from '../../ui/icons'
 import { findItem } from '../../rules/data/items'
 import { warbandTypeName } from '../roster/shared/names'
-import { skillName, spellName } from '../roster/view/lookups'
+import { findSpellOption, hiredSwordName, skillName, skillTableName, skillText, spellName } from '../roster/view/lookups'
+
+import { WARBAND_TEMPLATES } from '../../rules/data/warbandTemplates'
+import { HERO_INJURIES } from '../../rules/data/campaign/injuries'
+import { SPELL_LORES } from '../../rules/data/campaign/magic'
 
 type Row = Record<string, Json | undefined>
 
@@ -240,12 +244,16 @@ const FIELD_LABELS: Record<string, string> = {
 }
 
 function fieldLabel(key: string): string {
-  return FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+  return FIELD_LABELS[key] ?? key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase()
 }
 
 /** Rules-catalogue lookups for the handful of columns that store an id rather than plain text. */
 const ID_LOOKUPS: Partial<Record<string, (id: string) => string>> = {
   skills: skillName,
+  skill_tables: skillTableName,
+  hired_sword_rules_id: hiredSwordName,
+  magicLoreId: id => SPELL_LORES.find(lore => lore.id === id)?.name ?? id,
+  unit_type_rules_id: id => WARBAND_TEMPLATES.flatMap(w => [...w.heroTemplates, ...w.henchmanTemplates]).find(u => u.id === id)?.name ?? id,
   spells: spellName,
   item_rules_id: (id) => findItem(id)?.name ?? id,
   type_rules_id: warbandTypeName,
@@ -257,11 +265,20 @@ function displayValue(value: Json | undefined, key?: string): string {
   if (value === undefined || value === null) return 'none'
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
   const lookup = key ? ID_LOOKUPS[key] : undefined
-  if (typeof value === 'string') return value.trim() ? (lookup ? lookup(value) : value) : 'none'
+  if (typeof value === 'string') {
+    if (!value.trim()) return 'none'
+    if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(value)) return 'a linked record'
+    const named = lookup ? lookup(value) : value
+    return lookup || key === 'status' || key === 'holder_type' ? named.replace(/_/g, ' ') : named
+  }
   if (typeof value === 'number') return String(value)
   if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map((v) => displayValue(v, key)).join(', ')
   if (Object.keys(value).length === 0) return 'none'
-  return JSON.stringify(value)
+  if (key === 'injuries') {
+    const injury = HERO_INJURIES.find(i => i.code === value.injuryCode)
+    return [typeof value.name === 'string' ? value.name : injury?.name, typeof value.effect === 'string' ? value.effect : null].filter(Boolean).join(' — ') || 'Recorded injury'
+  }
+  return Object.entries(value).filter(([k]) => !BORING_FIELDS.has(k) && !/Id$|_id$/.test(k)).map(([k, v]) => `${fieldLabel(k)}: ${displayValue(v, k)}`).join('; ') || 'none'
 }
 
 const STAT_ORDER = ['M', 'WS', 'BS', 'S', 'T', 'W', 'I', 'A', 'Ld'] as const
@@ -301,10 +318,23 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
   const keys = new Set([...(before ? Object.keys(before) : []), ...(after ? Object.keys(after) : [])])
   const out: FieldChange[] = []
   for (const key of keys) {
-    if (BORING_FIELDS.has(key)) continue
+    if (BORING_FIELDS.has(key) || ((/_id$|Id$/.test(key)) && !ID_LOOKUPS[key])) continue
     const a = before?.[key]
     const b = after?.[key]
     if (before && after && sameValue(a, b)) continue
+    if ((key === 'flags' || key === 'settings' || key === 'stat_increases') && (asRow(a) || asRow(b))) {
+      const oldFields = asRow(a) ?? {}, newFields = asRow(b) ?? {}
+      for (const child of new Set([...Object.keys(oldFields), ...Object.keys(newFields)])) {
+        if (BORING_FIELDS.has(child) || sameValue(oldFields[child], newFields[child])) continue
+        if (child === 'spellDifficultyReductions') {
+          const oldSpells = asRow(oldFields[child]) ?? {}, newSpells = asRow(newFields[child]) ?? {}
+          for (const id of new Set([...Object.keys(oldSpells), ...Object.keys(newSpells)])) {
+            if (!sameValue(oldSpells[id], newSpells[id])) out.push({ label: `${spellName(id)} difficulty reduction`, before: String(oldSpells[id] ?? 0), after: String(newSpells[id] ?? 0) })
+          }
+        } else out.push({ label: fieldLabel(child), before: displayValue(oldFields[child], child), after: displayValue(newFields[child], child) })
+      }
+      continue
+    }
     const statsA = key === 'stats' ? asStats(a) : null
     const statsB = key === 'stats' ? asStats(b) : null
     const changedStats = statsA && statsB ? STAT_ORDER.filter((k) => statsA[k] !== statsB[k]) : null
@@ -315,6 +345,23 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
     out.push({ label: fieldLabel(key), before: beforeText, after: afterText })
   }
   return out.sort((x, y) => x.label.localeCompare(y.label))
+}
+
+export interface ActivityTerm { label: string; text?: string }
+
+export function activityTerms(entry: CampaignActivity, label: string, side: 'before' | 'after'): ActivityTerm[] | null {
+  const key = Object.keys(FIELD_LABELS).find(k => FIELD_LABELS[k] === label)
+  if (!key || !['skills', 'spells', 'item_rules_id', 'injuries'].includes(key)) return null
+  const value = asRow(entry[side])?.[key]
+  if (value == null) return null
+  return (Array.isArray(value) ? value : [value]).map(v => {
+    if (typeof v === 'string') {
+      const item = key === 'item_rules_id' ? findItem(v) : undefined
+      return { label: displayValue(v, key), text: key === 'skills' ? skillText(v) : key === 'spells' ? findSpellOption(v)?.text : item?.specialRules.map(r => `${r.name}: ${r.text}`).join('\n\n') }
+    }
+    const injury = asRow(v)
+    return { label: displayValue(v, key), text: HERO_INJURIES.find(i => i.code === injury?.injuryCode)?.text }
+  })
 }
 
 export interface ActivityLine {

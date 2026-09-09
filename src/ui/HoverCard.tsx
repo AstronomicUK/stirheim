@@ -5,7 +5,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 
 export interface HoverCardProps {
-  /** The term as shown in running text; rendered as a button with a dotted underline. */
+  /** The term as shown in running text; rendered as a compact rectangular button. */
   label: ReactNode
   /** The rules text. */
   children: ReactNode
@@ -47,7 +47,7 @@ export function HoverCard({ label, children, title, className = '' }: HoverCardP
         onClick={() => setOpen((v) => !v)}
         onFocus={() => setHover(true)}
         onBlur={() => setHover(false)}
-        className="inline cursor-help rounded-sm text-left underline decoration-ink-dim/70 decoration-dotted underline-offset-[3px] hover:decoration-ink"
+        className="inline cursor-pointer rounded-sm border border-border bg-surface px-1.5 py-0.5 text-left leading-snug text-inherit transition-colors hover:border-brass/60 hover:bg-surface-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
       >
         {label}
       </button>

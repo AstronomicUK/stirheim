@@ -3,8 +3,8 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { Icon } from '../../ui'
-import { activityFieldChanges, formatRelativeTime, type ActivityLine } from './activity'
+import { HoverCard, Icon } from '../../ui'
+import { activityFieldChanges, activityTerms, formatRelativeTime, type ActivityLine } from './activity'
 
 export function ActivityList({ lines, linkable = false }: { lines: ActivityLine[]; linkable?: boolean }) {
   const [openId, setOpenId] = useState<number | null>(null)
@@ -54,14 +54,14 @@ function ActivityDetail({ line }: { line: ActivityLine }) {
     <div className="flex flex-col gap-2 rounded-md bg-surface px-3 py-2">
       {groups.map(({ entry, changes }) => (
         <div key={entry.id} className="flex flex-col gap-1">
-          {groups.length > 1 ? <p className="text-[10px] uppercase tracking-wider text-ink-dim">{entry.table_name.replace(/_/g, ' ')}</p> : null}
+          {groups.length > 1 ? <p className="text-[10px] uppercase tracking-wider text-ink-dim">{String((entry.after as Record<string, unknown> | null)?.name ?? (entry.before as Record<string, unknown> | null)?.name ?? 'Other changes')}</p> : null}
           <ul className="flex flex-col gap-0.5">
             {changes.map((c) => (
               <li key={c.label} className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-ink-dim">
-                <span className="text-ink">{c.label}:</span>
-                <span>{c.before}</span>
-                <span aria-hidden>→</span>
-                <span className="text-ink">{c.after}</span>
+                <span>{entry.action === 'insert' ? 'Set' : entry.action === 'delete' ? 'Removed' : 'Changed'} {c.label}{entry.action === 'update' ? ' from' : entry.action === 'insert' ? ' to' : ':'}</span>
+                {entry.action !== 'insert' ? <ChangeValue terms={activityTerms(entry, c.label, 'before')} fallback={c.before} /> : null}
+                {entry.action === 'update' ? <span>to</span> : null}
+                {entry.action !== 'delete' ? <ChangeValue terms={activityTerms(entry, c.label, 'after')} fallback={c.after} /> : null}
               </li>
             ))}
           </ul>
@@ -69,4 +69,9 @@ function ActivityDetail({ line }: { line: ActivityLine }) {
       ))}
     </div>
   )
+}
+
+function ChangeValue({ terms, fallback }: { terms: ReturnType<typeof activityTerms>; fallback: string }) {
+  if (!terms?.length) return <span className="text-ink break-words">{fallback}</span>
+  return <>{terms.map((term, i) => <span key={i} className="text-ink">{i > 0 ? ', ' : ''}{term.text ? <HoverCard label={term.label} title={term.label}><span className="whitespace-pre-line">{term.text}</span></HoverCard> : term.label}</span>)}</>
 }

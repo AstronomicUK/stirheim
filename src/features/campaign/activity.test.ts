@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CampaignActivity } from '../../api/campaigns'
-import { activityFieldChanges, activityLines, describeActivity, describeWarbandChanges, formatRelativeTime } from './activity'
+import { activityFieldChanges, activityTerms, activityLines, describeActivity, describeWarbandChanges, formatRelativeTime } from './activity'
 
 const ANA = '11111111-1111-1111-1111-111111111111'
 const TOM = '22222222-2222-2222-2222-222222222222'
@@ -217,5 +217,29 @@ describe('formatRelativeTime', () => {
   })
   it('returns an empty string for junk', () => {
     expect(formatRelativeTime('not a date', now)).toBe('')
+  })
+})
+
+
+describe('readable roster history', () => {
+  it('describes only changed conditions and names permanent spell improvements', () => {
+    const changes = activityFieldChanges(entry({ table_name: 'heroes', before: { flags: { causesFear: true, noRunning: false, spellDifficultyReductions: { fires_of_uzhul: 1 } } }, after: { flags: { causesFear: true, noRunning: true, spellDifficultyReductions: { fires_of_uzhul: 2 } } } }))
+    expect(changes).toEqual([
+      { label: "Fires of U'Zhul difficulty reduction", before: '1', after: '2' },
+      { label: 'no running', before: 'no', after: 'yes' },
+    ])
+  })
+  it('resolves units and applied injuries without exposing stored JSON or references', () => {
+    const changes = activityFieldChanges(entry({ table_name: 'heroes', action: 'insert', after: { unit_type_rules_id: 'mercenaries_reikland_champions', injuries: [{ injuryCode: 'leg_wound', name: 'Leg Wound', effect: '-1 Movement', rolled: { d66: 22 }, matchId: 'hidden-reference' }], match_id: 'hidden-reference' } }))
+    expect(changes).toEqual([
+      { label: 'injuries', before: '—', after: 'Leg Wound — -1 Movement' },
+      { label: 'unit type', before: '—', after: 'Champions' },
+    ])
+  })
+  it('provides rule text for historical skills and injuries, including removed values', () => {
+    const e = entry({ table_name: 'heroes', before: { skills: ['sprint'], injuries: [{ injuryCode: 'leg_wound', name: 'Leg Wound', effect: '-1 Movement' }] }, after: { skills: [], injuries: [] } })
+    expect(activityTerms(e, 'skills', 'before')?.[0]).toMatchObject({ label: 'Sprint', text: expect.any(String) })
+    expect(activityTerms(e, 'injuries', 'before')?.[0].text).toContain('Movement')
+    expect(activityTerms(e, 'skills', 'after')).toEqual([])
   })
 })

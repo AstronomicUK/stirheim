@@ -27,9 +27,9 @@ export function BattlesPage() {
     {campaigns.isPending || queries.some(q => q.isPending) ? <Spinner label="Loading battles" /> : null}
     {campaigns.error || queries.some(q => q.error) ? <Notice tone="error" title="Some battles could not be loaded">{campaigns.error?.message ?? queries.find(q => q.error)?.error?.message}</Notice> : null}
     {sections.map(section => <Section key={section.title} title={section.title} aside={String(section.matches.length)}>
-      {section.matches.map(match => <div key={match.id} className="flex flex-col gap-1">
-        <Link to={`/campaigns/${match.campaign_id}`} className="text-xs text-brass">{campaigns.data?.find(c => c.id === match.campaign_id)?.name ?? 'Campaign'}</Link>
-        <MatchRows matches={[match]} muted={section.title === 'Past battles'} />
+      {[...new Set(section.matches.map(match => match.campaign_id))].map(campaignId => <div key={campaignId} className="flex flex-col gap-1">
+        <Link to={`/campaigns/${campaignId}`} className="text-xs text-brass">{campaigns.data?.find(c => c.id === campaignId)?.name ?? 'Campaign'}</Link>
+        <MatchRows matches={section.matches.filter(match => match.campaign_id === campaignId)} muted={section.title === 'Past battles'} />
       </div>)}
       {section.matches.length === 0 && !campaigns.isPending && !queries.some(q => q.isPending) ? <p className="text-sm text-ink-dim">{section.empty}</p> : null}
     </Section>)}

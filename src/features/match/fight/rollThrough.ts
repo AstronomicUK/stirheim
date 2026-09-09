@@ -9,7 +9,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'critTable' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -75,6 +75,8 @@ interface Current {
   injuryResults: ('knockedDown' | 'stunned' | 'outOfAction')[]
   /** Undead Construct: the pending injury roll is ignored if its 4+ comes up. */
   awaitingIgnoreFor: number
+  /** Ball and Chain: wounds already locked in (1 normal, or a crit's woundsCaused) while a D3 roll decides if it goes higher. */
+  pendingWoundBase: number
 }
 
 export interface RollState {
@@ -97,7 +99,7 @@ export interface RollState {
 }
 
 function freshCurrent(): Current {
-  return { hitRoll: null, rerolled: false, crit: null, wounds: 0, savedWounds: new Set(), saveQueue: [], injuryRollsNeeded: 0, injuryResults: [], awaitingIgnoreFor: 0 }
+  return { hitRoll: null, rerolled: false, crit: null, wounds: 0, savedWounds: new Set(), saveQueue: [], injuryRollsNeeded: 0, injuryResults: [], awaitingIgnoreFor: 0, pendingWoundBase: 0 }
 }
 
 /** Does a D6 face pass a modified threshold, with the natural 1 fails / natural 6 succeeds convention? */
@@ -255,6 +257,9 @@ export function applyRoll(initial: RollState, roll: number): RollState {
         return { ...s, pending: { kind: 'critTable', who: 'attacker', label: 'Critical hit table', detail: input.critTableRollModifier ? `D6 ${input.critTableRollModifier > 0 ? '+' : ''}${input.critTableRollModifier}` : 'Roll a D6' } }
       }
       const s = log(state, auto ? `To wound: automatic wound from the 6 to hit (rolled ${roll}, no critical).` : `To wound: rolled ${roll}. Wounded.`, 'good')
+      if (input.multipleWoundsD3OnHit) {
+        return { ...s, cur: { ...s.cur, crit: null, pendingWoundBase: 1 }, pending: { kind: 'multiWound', who: 'attacker', label: `${plan.weaponName}: Wounds caused`, detail: 'Roll a D3 for how many Wounds this hit causes' } }
+      }
       return startSaves({ ...s, cur: { ...s.cur, crit: null, wounds: 1 } })
     }
     case 'critTable': {
@@ -268,7 +273,16 @@ export function applyRoll(initial: RollState, roll: number): RollState {
       if (result.ignoresHelmetSave) bits.push('no helmet save')
       if (result.flavourOnly) bits.push(result.flavourOnly)
       const s = log(state, `Critical: rolled ${roll}. ${result.label}${bits.length ? ` (${bits.join(', ')})` : ''}.`, 'good')
+      if (input.multipleWoundsD3OnHit) {
+        return { ...s, cur: { ...s.cur, crit: result, pendingWoundBase: result.woundsCaused }, pending: { kind: 'multiWound', who: 'attacker', label: `${plan.weaponName}: Wounds caused`, detail: `Roll a D3; the critical's ${result.woundsCaused} wound${result.woundsCaused > 1 ? 's' : ''} stands if it's higher` } }
+      }
       return startSaves({ ...s, cur: { ...s.cur, crit: result, wounds: result.woundsCaused } })
+    }
+    case 'multiWound': {
+      const wounds = Math.max(state.cur.pendingWoundBase, roll)
+      const beaten = wounds !== roll
+      const s = log(state, `${plan.weaponName}: rolled ${roll} on the D3.${beaten ? ` The critical's ${state.cur.pendingWoundBase} wounds is higher, so that stands.` : ` ${wounds} wound${wounds > 1 ? 's' : ''} caused.`}`, 'good')
+      return startSaves({ ...s, cur: { ...s.cur, wounds } })
     }
     case 'save': {
       const step = state.cur.saveQueue[0]

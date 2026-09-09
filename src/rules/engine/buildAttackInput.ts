@@ -363,6 +363,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     parrySuccessProbGivenAttempt,
     autoHitKnockedDown,
     autoOutOfActionStunned,
+    multipleWoundsD3OnHit: weapon.multipleWoundsD3OnHit,
   };
 }
 

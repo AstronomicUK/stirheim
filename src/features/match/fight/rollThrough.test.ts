@@ -283,3 +283,33 @@ describe('attacking a stunned or knocked-down target (01:947-959)', () => {
     expect(s.done).toBe(true)
   })
 })
+
+describe('Ball and Chain — D3 wounds per hit instead of 1 (#69)', () => {
+  it('a normal (non-crit) wound asks a D3 for how many wounds it causes, then resolves saves/injury for that many', () => {
+    let s = startPhase([plan('Ball and Chain', { armourThreshold: IMPOSSIBLE, multipleWoundsD3OnHit: true })], 1, 0)
+    s = applyRoll(s, 4) // to hit
+    expect(s.pending?.kind).toBe('wound')
+    s = applyRoll(s, 5) // wounded, not a crit trigger face
+    expect(s.pending).toMatchObject({ kind: 'multiWound', who: 'attacker' })
+    s = applyRoll(s, 3) // D3: 3 wounds
+    expect(s.pending).toMatchObject({ kind: 'injury', label: 'Injury roll 1 of 3' })
+  })
+
+  it("a critical hit's own wound count and the D3 don't stack: the higher of the two applies", () => {
+    let s = startPhase([plan('Ball and Chain', { armourThreshold: IMPOSSIBLE, multipleWoundsD3OnHit: true, critTable: 'missile', critTableRollModifier: 100 })], 1, 0)
+    s = applyRoll(s, 4) // to hit
+    s = applyRoll(s, 6) // wounded, and a crit trigger face
+    expect(s.pending?.kind).toBe('critTable')
+    s = applyRoll(s, 1) // the +100 modifier clamps to the table's top band regardless of the face rolled: Master Shot (2 wounds)
+    expect(s.pending).toMatchObject({ kind: 'multiWound', detail: expect.stringContaining('2') })
+    s = applyRoll(s, 1) // D3 rolls 1: max(2, 1) = 2, not 1
+    expect(s.pending).toMatchObject({ kind: 'injury', label: 'Injury roll 1 of 2' })
+    expect(s.log.some((l) => /the critical's 2 wounds is higher/i.test(l.text))).toBe(true)
+  })
+
+  it('without the flag, a wound is still a plain single wound straight into saves', () => {
+    const s = rolls(startPhase([plan('Sword', { armourThreshold: IMPOSSIBLE })], 1, 0), 4, 5)
+    expect(s.pending?.kind).toBe('injury')
+    expect(s.pending?.label).toBe('Injury roll')
+  })
+})

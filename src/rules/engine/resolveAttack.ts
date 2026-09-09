@@ -84,6 +84,8 @@ export interface AttackInput {
   autoHitKnockedDown?: boolean;
   /** The target is already stunned (hand-to-hand only): this attack takes it out of action automatically, no rolls at all. */
   autoOutOfActionStunned?: boolean;
+  /** Each successful hit causes D3 Wounds instead of 1 (Ball and Chain). A crit that also causes several wounds doesn't stack with this — the rulebook says to use whichever is higher. */
+  multipleWoundsD3OnHit?: boolean;
 }
 
 /**
@@ -92,7 +94,7 @@ export interface AttackInput {
  */
 export interface WoundEvent {
   probability: number;
-  wounds: 0 | 1 | 2;
+  wounds: 0 | 1 | 2 | 3;
   injury: InjuryModifiers;
   /** Bludgeoned: any wound through is an automatic OOA, however many Wounds the target has left. */
   autoOOA: boolean;
@@ -139,8 +141,8 @@ function binomial(n: number, q: number): number[] {
 }
 
 interface WoundResolutionOptions {
-  /** How many wounds this hit inflicts if it gets through (crit results can double it). */
-  wounds: 1 | 2;
+  /** How many wounds this hit inflicts if it gets through (crit results can double it; Ball and Chain triples the range). */
+  wounds: 1 | 2 | 3;
   /** No armour save at all against these wounds (crit "ignores armour saves", or a weapon like the Starsword). */
   ignoresArmourSave: boolean;
   /** Each wound takes its own armour save (Bladestorm) instead of one save gating them all. */
@@ -175,24 +177,41 @@ function woundEvents(input: AttackInput, opts: WoundResolutionOptions): WoundEve
   }
 
   return counts
-    .map((probability, k) => ({ probability, wounds: k as 0 | 1 | 2, injury, autoOOA: opts.autoOOA, minSeverityKnockedDown: opts.minSeverityKnockedDown }))
+    .map((probability, k) => ({ probability, wounds: k as 0 | 1 | 2 | 3, injury, autoOOA: opts.autoOOA, minSeverityKnockedDown: opts.minSeverityKnockedDown }))
     .filter((e) => e.probability > 0);
 }
 
+/**
+ * Ball and Chain: the D3 wound roll is a mixture over its three equally-likely faces. When a crit
+ * also caused several wounds (`baseWounds` > 1), the rulebook takes whichever is higher rather than
+ * stacking them, so each face resolves to `max(baseWounds, face)` wounds, not `face` wounds outright.
+ */
+function multiWoundMixture(input: AttackInput, baseWounds: number, opts: Omit<WoundResolutionOptions, "wounds">): WoundEvent[] {
+  const events: WoundEvent[] = [];
+  for (let face = 1; face <= 3; face++) {
+    const wounds = Math.max(baseWounds, face) as 1 | 2 | 3;
+    for (const e of woundEvents(input, { ...opts, wounds })) events.push({ ...e, probability: e.probability / 3 });
+  }
+  return events;
+}
+
 function normalWoundEvents(input: AttackInput): WoundEvent[] {
-  return woundEvents(input, { wounds: 1, ignoresArmourSave: false, separateSaves: false, injuryBonus: 0, ignoresHelmetSave: false, autoOOA: false, minSeverityKnockedDown: false });
+  const opts = { ignoresArmourSave: false, separateSaves: false, injuryBonus: 0, ignoresHelmetSave: false, autoOOA: false, minSeverityKnockedDown: false };
+  if (input.multipleWoundsD3OnHit) return multiWoundMixture(input, 1, opts);
+  return woundEvents(input, { wounds: 1, ...opts });
 }
 
 function critResultEvents(input: AttackInput, result: CritResult): WoundEvent[] {
-  return woundEvents(input, {
-    wounds: result.woundsCaused,
+  const opts = {
     ignoresArmourSave: result.ignoresArmourSave,
     separateSaves: (result.separateSaves ?? 1) > 1,
     injuryBonus: result.injuryRollBonus,
     ignoresHelmetSave: Boolean(result.ignoresHelmetSave),
     autoOOA: Boolean(result.autoOOAOnFailedSave),
     minSeverityKnockedDown: Boolean(result.minSeverityKnockedDown),
-  });
+  };
+  if (input.multipleWoundsD3OnHit) return multiWoundMixture(input, result.woundsCaused, opts);
+  return woundEvents(input, { wounds: result.woundsCaused, ...opts });
 }
 
 function critWoundEvents(input: AttackInput): WoundEvent[] {

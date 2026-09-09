@@ -34,7 +34,7 @@ import type { Weapon } from "../../types";
 
 export const MELEE_WEAPONS: Weapon[] = [
   { id: "axe", name: "Axe", type: "melee", strength: "user", critCategory: "bladed", concussion: false, saveModifier: 1, special: ["cuttingEdge"], rangedProfile: null },
-  { id: "ball_and_chain", name: "Ball and Chain", type: "melee", strength: "user", strengthBonus: 2, critCategory: "bludgeoning", concussion: false, ignoresArmourSave: true, defenderToBeHitModifier: -1, special: ["multipleWoundsD3OnHit", "randomMovement", "cumbersomeNoOtherWeapons", "unwieldyPostBattleInjury"], rangedProfile: null },
+  { id: "ball_and_chain", name: "Ball and Chain", type: "melee", strength: "user", strengthBonus: 2, critCategory: "bludgeoning", concussion: false, ignoresArmourSave: true, multipleWoundsD3OnHit: true, defenderToBeHitModifier: -1, special: ["multipleWoundsD3OnHit", "randomMovement", "cumbersomeNoOtherWeapons", "unwieldyPostBattleInjury"], rangedProfile: null },
   { id: "barbed_whip", name: "Barbed Whip", type: "melee", strength: "user", critCategory: "bladed", concussion: false, cannotBeParried: true, chargeBonusAttacks: 1, special: ["whipcrackBonusAttack", "enrageNearbyWarhounds"], rangedProfile: null },
   { id: "beastlash", name: "Beastlash", type: "melee", strength: "user", strengthBonus: -1, critCategory: "bladed", concussion: false, cannotBeParried: true, chargeBonusAttacks: 1, special: ["causesFearInAnimals", "whipcrackBonusAttack"], rangedProfile: null },
   { id: "bec_de_corbin", name: "Bec de Corbin", type: "melee", strength: "user", strengthBonus: 1, critCategory: "thrusting", concussion: true, special: ["twoHanded", "strikesFirstWhenCharged"], rangedProfile: null },

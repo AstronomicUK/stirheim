@@ -715,6 +715,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                 <DicePicker
                   key={state.log.length}
                   count={1}
+                  sides={state.pending.kind === 'multiWound' ? 3 : 6}
                   label={state.pending.label}
                   resetKey={state.log.length}
                   onComplete={(values, manual) => advance((s) => applyRoll(s, values[0]), { value: values[0], label: state.pending!.label, manual })}
@@ -804,6 +805,7 @@ const ROLL_KIND_HEADING: Record<RollKind, string> = {
   wound: 'To Wound',
   woundReroll: 'To Wound',
   critTable: 'Critical Hit',
+  multiWound: 'Wounds Caused',
   save: 'Armour Save',
   stepAside: 'Step Aside',
   afterSave: 'Peg Leg',

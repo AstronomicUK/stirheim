@@ -921,3 +921,58 @@ describe("Attacking stunned and knocked down warriors in hand-to-hand combat (01
     expect(turn.distribution.outOfAction).toBeCloseTo(1, 10);
   });
 });
+
+describe("Ball and Chain — D3 wounds per hit instead of 1 (#69)", () => {
+  const base: AttackInput = {
+    hitThreshold: 2,
+    woundThreshold: 2,
+    armourThreshold: IMPOSSIBLE,
+    injuryRollModifier: 0,
+    concussion: false,
+    trueGrit: false,
+    hardToKill: false,
+    critTriggerFaces: [6],
+    critTable: "missile",
+    critTableRollModifier: 100, // clamps to the table's top band regardless of the D6 rolled
+    parryEligible: false,
+    parrySuccessProbGivenAttempt: 0,
+    multipleWoundsD3OnHit: true,
+  };
+
+  it("weapon data: Ball and Chain carries the flag, nothing else does", () => {
+    expect(W("ball_and_chain").multipleWoundsD3OnHit).toBe(true);
+    expect(W("sword").multipleWoundsD3OnHit).toBeUndefined();
+  });
+
+  it("buildAttackInput wires the weapon flag straight through to AttackInput", () => {
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: W("ball_and_chain"), defender: testDefender(), context: testContext(), customSkills: [] });
+    expect(input.multipleWoundsD3OnHit).toBe(true);
+  });
+
+  it("a normal (non-crit) wound rolls a D3: 1/3 chance each of 1, 2 or 3 wounds", () => {
+    const { normalEvents } = resolveSingleAttack(base);
+    const byWounds = new Map(normalEvents.map((e) => [e.wounds, e.probability]));
+    expect(byWounds.get(1)).toBeCloseTo(1 / 3, 10);
+    expect(byWounds.get(2)).toBeCloseTo(1 / 3, 10);
+    expect(byWounds.get(3)).toBeCloseTo(1 / 3, 10);
+  });
+
+  it("a critical hit's own wound count and the D3 don't stack — the higher of the two applies", () => {
+    // Forced onto "Master Shot" (missile table, top band): woundsCaused 2. Against the D3's three
+    // equally-likely faces that's max(2,1)=2, max(2,2)=2, max(2,3)=3 — never 1, and 3 only a third
+    // of the time, not added on top of the crit's 2.
+    const { critEvents } = resolveSingleAttack(base);
+    const byWounds = new Map<number, number>();
+    for (const e of critEvents) byWounds.set(e.wounds, (byWounds.get(e.wounds) ?? 0) + e.probability);
+    const total = [...byWounds.values()].reduce((a, b) => a + b, 0);
+    expect(total).toBeCloseTo(1, 10);
+    expect(byWounds.get(1) ?? 0).toBe(0);
+    expect((byWounds.get(2) ?? 0) / total).toBeCloseTo(2 / 3, 10);
+    expect((byWounds.get(3) ?? 0) / total).toBeCloseTo(1 / 3, 10);
+  });
+
+  it("without the flag, a normal wound is still a plain single wound", () => {
+    const { normalEvents } = resolveSingleAttack({ ...base, multipleWoundsD3OnHit: false });
+    expect(normalEvents).toEqual([{ probability: 1, wounds: 1, injury: expect.any(Object), autoOOA: false, minSeverityKnockedDown: false }]);
+  });
+});

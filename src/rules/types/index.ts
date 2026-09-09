@@ -62,6 +62,8 @@ export interface Weapon {
   saveModifier?: number;
   /** No armour save is ever allowed against this weapon (Ball and Chain, Claw of the Old Ones, Sun Gauntlet, Sunstaff, Starsword). Ward saves and Step Aside still apply. */
   ignoresArmourSave?: boolean;
+  /** Each successful hit causes D3 Wounds instead of 1 (Ball and Chain). If the hit is also a critical that causes several wounds, the rulebook says to use whichever is higher, not to add them. */
+  multipleWoundsD3OnHit?: boolean;
   /** The weapon's strengthBonus applies only in the first turn of a combat (Flail, Morning Star, Censer — "Heavy") or only when charging (Lance). Gated on CombatContext.charging / firstTurnOfCombat. */
   strengthBonusFirstTurnOnly?: boolean;
   /** Cannot be fired in a turn the model moved unless the shooter has Nimble (crossbows, handguns, etc.). */

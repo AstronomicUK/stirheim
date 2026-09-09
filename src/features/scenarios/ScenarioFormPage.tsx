@@ -75,12 +75,13 @@ function EditLoader({ id }: { id: string }) {
 function ScenarioForm({ existing }: { existing?: ScenarioRow }) {
   usePageTitle(existing ? `Edit · ${existing.name}` : 'New scenario')
   const navigate = useNavigate()
+  const { campaignId } = useParams<{ campaignId: string }>()
   const user = useSession((s) => s.user)
   const campaigns = useMyCampaigns(user?.id)
   const create = useCreateScenario()
   const update = useUpdateScenario(existing?.id ?? '')
 
-  const initial = useMemo<ScenarioFormValues>(() => (existing ? fromScenarioRow(existing) : EMPTY_SCENARIO_FORM), [existing])
+  const initial = useMemo<ScenarioFormValues>(() => (existing ? fromScenarioRow(existing) : { ...EMPTY_SCENARIO_FORM, campaignId: campaignId ?? EVERYONE }), [existing, campaignId])
   const [values, setValues] = useState<ScenarioFormValues>(initial)
   const [errors, setErrors] = useState<ScenarioFormErrors>({})
   const [rulesView, setRulesView] = useState<RulesView>('write')
@@ -108,10 +109,10 @@ function ScenarioForm({ existing }: { existing?: ScenarioRow }) {
     try {
       if (existing) {
         await update.mutateAsync(input)
-        navigate(`/scenarios/custom/${existing.id}`, { replace: true })
+        navigate(campaignId ? `/campaigns/${campaignId}/settings/scenarios` : `/scenarios/custom/${existing.id}`, { replace: true })
       } else {
         const id = await create.mutateAsync(input)
-        navigate(`/scenarios/custom/${id}`, { replace: true })
+        navigate(campaignId ? `/campaigns/${campaignId}/settings/scenarios` : `/scenarios/custom/${id}`, { replace: true })
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Something went wrong while saving.')

@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
 import { useCustomScenarios } from '../../api/scenarios'
 import { useSession } from '../../app/session'
 import type { ScenarioRow } from '../../domain'
@@ -26,11 +25,7 @@ export function ScenarioLibraryPage() {
         eyebrow="Ledger"
         title="Scenarios"
         description="The rulebook nine with their full text, your group's own, and the wider library."
-        aside={
-          <Link to="/scenarios/new" className="inline-flex min-h-11 items-center px-2 text-sm text-brass underline-offset-4 hover:underline">
-            New scenario
-          </Link>
-        }
+
       />
 
       <Section title="Core rulebook">
@@ -62,12 +57,12 @@ export function ScenarioLibraryPage() {
             <p className="text-sm leading-relaxed text-ink-dim">
               Nothing written up yet. Custom scenarios are shared with everyone signed in, or kept to one campaign you run.
             </p>
-            <PrimaryLink to="/scenarios/new">Write a scenario</PrimaryLink>
+            <PrimaryLink to="/campaigns">Manage scenarios in Campaign Settings</PrimaryLink>
           </div>
         ) : (
           <>
             <ScenarioRows rows={custom.data.map((row) => customRow(row, user?.id))} />
-            <PrimaryLink to="/scenarios/new">New scenario</PrimaryLink>
+            <PrimaryLink to="/campaigns">Manage scenarios in Campaign Settings</PrimaryLink>
           </>
         )}
       </Section>

@@ -11,7 +11,7 @@ export interface NavTab {
 export const NAV_TABS: NavTab[] = [
   { to: '/', label: 'Warbands', icon: 'warbands', end: true },
   { to: '/campaigns', label: 'Campaigns', icon: 'campaigns', end: false },
-  { to: '/scenarios', label: 'Scenarios', icon: 'scenarios', end: false },
+  { to: '/battles', label: 'Battles', icon: 'battle', end: false },
   { to: '/simulator', label: 'Simulator', icon: 'simulator', end: false },
   { to: '/account', label: 'Account', icon: 'account', end: false },
 ]

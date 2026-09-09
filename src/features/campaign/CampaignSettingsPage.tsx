@@ -217,6 +217,9 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         </div>
       </form>
 
+      <Section title="Scenarios">
+        <TextLink to={`/campaigns/${campaign.id}/settings/scenarios`}>Manage scenarios</TextLink>
+      </Section>
       <Section title="Members" aside={`${people.length} ${people.length === 1 ? 'player' : 'players'}`}>
         {people.length === 0 ? (
           <p className="text-sm text-ink-dim">Nobody has enrolled yet.</p>

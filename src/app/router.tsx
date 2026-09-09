@@ -26,6 +26,8 @@ const ImportPage = lazyPage(() => import('../features/importer/ImportPage'), 'Im
 const RosterImportPage = lazyPage(() => import('../features/importer/RosterImportPage'), 'RosterImportPage')
 const JoinCampaignPage = lazyPage(() => import('../features/campaign/JoinCampaignPage'), 'JoinCampaignPage')
 const NewCampaignPage = lazyPage(() => import('../features/campaign/NewCampaignPage'), 'NewCampaignPage')
+const BattlesPage = lazyPage(() => import('../features/match/BattlesPage'), 'BattlesPage')
+const CampaignScenariosPage = lazyPage(() => import('../features/scenarios/CampaignScenariosPage'), 'CampaignScenariosPage')
 const BattlePage = lazyPage(() => import('../features/match/BattlePage'), 'BattlePage')
 const MatchPage = lazyPage(() => import('../features/match/MatchPage'), 'MatchPage')
 const NewMatchPage = lazyPage(() => import('../features/match/NewMatchPage'), 'NewMatchPage')
@@ -78,6 +80,10 @@ export const router = createBrowserRouter([
       { path: 'campaigns/:id/settings', element: <RequireAuth><CampaignSettingsPage /></RequireAuth> },
       { path: 'campaigns/:id/map', element: <RequireAuth><MapPage /></RequireAuth> },
       { path: 'campaigns/:id/matches/new', element: <RequireAuth><NewMatchPage /></RequireAuth> },
+      { path: 'battles', element: <RequireAuth><BattlesPage /></RequireAuth> },
+      { path: 'campaigns/:campaignId/settings/scenarios', element: <RequireAuth><CampaignScenariosPage /></RequireAuth> },
+      { path: 'campaigns/:campaignId/settings/scenarios/new', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
+      { path: 'campaigns/:campaignId/settings/scenarios/:id/edit', element: <RequireAuth><ScenarioFormPage /></RequireAuth> },
       { path: 'matches/:id', element: <RequireAuth><MatchPage /></RequireAuth> },
       { path: 'matches/:id/battle', element: <RequireAuth><BattlePage /></RequireAuth> },
       { path: 'matches/:id/report/:warbandId', element: <RequireAuth><PostBattlePage /></RequireAuth> },

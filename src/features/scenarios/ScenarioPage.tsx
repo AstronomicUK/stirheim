@@ -234,7 +234,7 @@ function CustomScenarioView({ row }: { row: ScenarioRow }) {
           <Button variant="danger" className="flex-1" onClick={() => setDeleteOpen(true)}>
             Delete
           </Button>
-          <SecondaryLink to={`/scenarios/custom/${row.id}/edit`}>Edit</SecondaryLink>
+          <SecondaryLink to={row.campaign_id ? `/campaigns/${row.campaign_id}/settings/scenarios/${row.id}/edit` : '/campaigns'}>Edit in campaign settings</SecondaryLink>
         </div>
       ) : null}
 

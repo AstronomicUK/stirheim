@@ -1,17 +1,21 @@
 import { useState } from 'react'
 import type { XpLine } from '../../../domain'
 import { nextAdvanceAt } from '../../../rules/resolve/advances'
-import { Button, NumberField, TextField } from '../../../ui'
+import { Button, Markdown, NumberField, Notice, TextField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { addXpExtra, removeXpExtra, setUnderdog, type XpExtra } from '../model'
 import { Intro, SwitchRow, type StepProps } from './bits'
 import { StepBody } from './WizardShell'
 import { unitGainsExperience } from '../../../rules/data/campaignRules'
+import { scenarioDetail } from '../../../rules/data/campaign/scenarioDetails'
+import { findScenario } from '../../../rules/data/campaign/scenarios'
 
-export function ExperienceStep({ draft, derived, update }: StepProps) {
+export function ExperienceStep({ draft, derived, update, match }: StepProps) {
   const { lines, underdogAvailable } = derived.xp
   const byId = new Map(lines.map((l) => [l.subjectId, l]))
   const { participants } = derived
+  const scenarioExperience = match.scenario_rules_id ? scenarioDetail(match.scenario_rules_id)?.experience : undefined
+  const scenarioTitle = match.scenario_rules_id ? findScenario(match.scenario_rules_id)?.title : undefined
   const noXp = (id: string) => !byId.has(id)
   const byRule = [
     ...participants.heroes.filter((h) => noXp(h.id) && !unitGainsExperience(h.unitTemplateId)).map((h) => h.name),
@@ -27,6 +31,12 @@ export function ExperienceStep({ draft, derived, update }: StepProps) {
   return (
     <StepBody title="Experience">
       <Intro>+1 for surviving, +1 to the leader for a win, +1 per enemy a hero put out of action. Add anything the scenario awards as an extra line with a reason.</Intro>
+      {scenarioExperience ? (
+        <Notice tone="info" title={`${scenarioTitle ?? 'This scenario'}'s own experience rules`}>
+          <Markdown source={scenarioExperience} className="text-sm" />
+          <p className="mt-2 text-xs text-ink-dim">The three standard awards above are already applied automatically — add anything beyond them as a line below.</p>
+        </Notice>
+      ) : null}
       {underdogAvailable > 0 ? (
         <SwitchRow
           label={`Underdog bonus: +${underdogAvailable} to every survivor`}

@@ -1746,7 +1746,7 @@ Five more (Sawbones, Power in the Stones, the two vampire skill-list rulesets, S
 
 ### 72. Scenario experience awards and non-wyrdstone rewards are never applied, and the scraped "experience" field is unreliable
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed — the scenario's own experience text is now shown; auto-applying it, the extraction gap, and the other two findings remain open
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the scenarios rules audit; pre-authorised overnight, not yet personally reviewed by Tom
 
@@ -1759,6 +1759,8 @@ Five more (Sawbones, Power in the Stones, the two vampire skill-list rulesets, S
 - **Scenario eligibility isn't recorded** — four scenarios in the source restrict who may play them, `ScenarioSummary` has no field for it, so the scenario picker and roll-for-a-scenario feature can offer a warband a scenario its own rules exclude it from.
 
 Deployment, terrain, starting/ending the game, victory conditions and per-scenario special rules are all verbatim and correctly left to the table.
+
+**Fixed (2026-09-09), the "never even shown" half:** the post-battle wizard's Experience step now shows the played scenario's own experience text (when its `scenario_rules_id` resolves to one) right above the awards list, in a "Skirmish's own experience rules" note, with a line reminding the player the three standard awards are already applied automatically — so anything beyond them (the six deviating scenarios' +2/+5 leader awards, and the many bespoke deeds) is visible at the exact point it needs to be added by hand via the existing "Add scenario experience" line. Deliberately a reminder, not automation — same reasoning as #68's rout-skill fix, since auto-applying would need the extraction gap below fixed first and a structured (not prose) representation of each deviation. Verified live: filed a test draft against a real "Skirmish" match and confirmed the note renders correctly above the awards, then discarded the draft (nothing applied to the roster). No component test added, matching this codebase's existing convention of not unit-testing wizard step components; `tsc -b`, `oxlint` and the full suite (1232 passed) clean since no pure logic changed. **Left open:** the extraction bug itself (9 of 103 scenarios show no experience text where several should), non-wyrdstone gold/item rewards described only in prose, and unrecorded scenario eligibility restrictions.
 
 ### 73. Scrape markers show the reload rule for every blackpowder weapon is tagged and never enforced, plus a missing warband-max-size hook
 

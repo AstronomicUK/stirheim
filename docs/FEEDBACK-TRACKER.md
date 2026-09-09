@@ -702,7 +702,7 @@ skipped) all clean.
 
 ### 27. Dramatis Personae list is inconsistent (some full descriptions, some just cost); wants a tap-to-read pop-up and a persistent bottom "Search" button
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -715,6 +715,13 @@ Root cause of the inconsistency: every row's second line falls back through `per
 Tapping a row today calls `setPicked(persona)` (line 56), which goes straight into the `SearchSheet` — there's no intermediate "read more" popup. All 30 personas do have a `detail` object with flavour text and a rating, but it only appears at the bottom of the already-open `SearchSheet` (lines 214-219), not as a preview before committing to search. The "who goes searching" screen exists inside that same sheet, headed "Who goes looking?" (line 176, close to but not exactly Tom's phrasing) with the usual checkbox-and-die-roll list; there's no persistent bottom "Search" button anywhere today — tapping a persona row is the only entry point.
 
 Two existing patterns could serve the "tap to read more" request: `src/ui/HoverCard.tsx` (already used for spell descriptions in `CastTab.tsx` and elsewhere) for a lightweight popover, or `HiredSwordsTab.tsx`'s `HiredSwordDetail` (lines 362-403, stats + equipment + skills + a collapsible flavour block) as the model for a fuller "stats etc." popup, which is closer to what Tom described.
+
+**Fixed (2026-09-09):** All three parts, in the order Tom listed them:
+  - **Row inconsistency**: replaced the row's `hireCost?.text ?? detail?.hireFee ?? 'No plain fee'` fallback with a new `shortFee()` in `trading/helpers.ts` that only ever shows a short one-line fee — a "See details" pointer to the new popup otherwise. Turned out the bug wasn't only in the `hireFee` fallback the notes above named: `hireCost.text` itself can *also* be long prose for some personas — found live testing Sigmund Spindle ("70 gold crowns to hire; Sigmund Sprandle may also be hired in the payment of one body part...") after the first pass had already fixed Bertha and Penthesilea's `hireFee` case, so both fields needed the same length/newline guard, not just one.
+  - **Tap to read more**: `HiredSwordsTab.tsx`'s `HiredSwordDetail` turned out to be directly reusable rather than just a model — `DramatisPersonaSummary.detail` is already typed as "same shape as a Hired Sword's." Narrowed the component's prop from the whole `HiredSwordSummary` wrapper to just the `detail` object it actually reads, exported it, and reused it as-is in a new `PersonaPreviewSheet` (stats, equipment, skills, special rules, background) that a row tap now opens first, instead of going straight into the search flow.
+  - **Persistent bottom Search button**: needed no new layout work — `Sheet`'s own doc comment already says "actions pinned under the scrolling body," which is exactly the "in case of scrolled descriptions" behaviour asked for. The preview's footer button transitions into the existing `SearchSheet` (unchanged) for the actual search.
+  - Also relaxed the row button's `disabled={!trade.canTrade}` — it now only previews (read-only), so there's no reason a read-only viewer can't look; the actual commit (`SearchSheet`'s roll/hire actions) still goes through `run()`, which already refuses and shows "Only the owner of this warband can trade." independent of button state.
+  - Verified via a new `shortFee` test suite in `helpers.test.ts`, including a real-data audit asserting every one of the 30 catalogue entries gets a short, safe row line (this is what caught the Sigmund Spindle case above). `tsc -b` and `oxlint` clean (the initial version tripped a Fast Refresh lint warning for exporting a helper from a component file — moved `shortFee` into the existing `trading/helpers.ts` instead of a new file, since it fits that file's own scope exactly). Full suite (1287 passed). Verified live on The Argent Hammer's real Trading Post → Dramatis Personae: Bertha, Penthesilea and Sigmund Spindle's rows now read "See details" instead of inlining prose, and tapping Sigmund Spindle opens the preview with his eligibility notice, stats/rules, and a "Search for Sigmund Spindle" button pinned at the bottom — closed without actually searching, so nothing was recorded against the warband's real post-battle sequence.
 
 ### 28. Creating a warband with a spellcaster never prompts a spell roll or pick — also needs a house rule for how the first spell is chosen
 

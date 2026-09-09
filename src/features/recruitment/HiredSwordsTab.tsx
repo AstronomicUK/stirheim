@@ -355,7 +355,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
           <KeyValue label="Upkeep" value={upkeepText(entry)} />
           <KeyValue label="Treasury after" value={`${roster.gold - cost} gc`} />
         </div>
-        <HiredSwordDetail entry={entry} />
+        <HiredSwordDetail detail={entry.detail} />
         {error ? <Notice tone="error">{error}</Notice> : null}
       </div>
     </Sheet>
@@ -386,8 +386,8 @@ function RestrictionNotice({ entry, eligibility }: { entry: HiredSwordSummary; e
   ) : null
 }
 
-function HiredSwordDetail({ entry }: { entry: HiredSwordSummary }) {
-  const detail = entry.detail
+/** Stats, equipment, skills, special rules and background — shared with the Dramatis Personae preview, since a persona's write-up is the same shape as a Hired Sword's. */
+export function HiredSwordDetail({ detail }: { detail: HiredSwordSummary['detail'] }) {
   if (!detail) return <p className="text-sm text-ink-dim">No write-up in the rules data.</p>
   const profile = detail.profiles[0]
   const kit = hiredSwordEquipment(detail)

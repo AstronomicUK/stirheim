@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { DRAMATIS_PERSONAE } from '../../rules/data/campaign/dramatisPersonae'
 import { findItem, ITEMS } from '../../rules/data/items'
 import { parseDice } from '../../rules/resolve/dice'
 import { makeHero, makeHiredSword, makeWarband } from '../../rules/resolve/__tests__/fixtures'
+import type { DramatisPersonaSummary, HiredSwordDetail } from '../../rules/types/campaignContent'
 import type { Item } from '../../rules/types/items'
 import { defaultCampaignHouseRules } from '../../rules/types/roster'
 import {
@@ -18,6 +20,7 @@ import {
   priceLine,
   sellForGold,
   sellListing,
+  shortFee,
   sizeBandLabel,
 } from './helpers'
 
@@ -234,5 +237,46 @@ describe('phaseSummary', () => {
   it('describes the sale and the searches', () => {
     expect(phaseSummary('m', false, 0, 2)).toBe('This post-battle sequence: wyrdstone not yet sold; 2 rare-item searches left.')
     expect(phaseSummary('m', true, 1, 1)).toBe('This post-battle sequence: wyrdstone already sold; 1 rare-item search left (1 used).')
+  })
+})
+
+function personaDetail(over: Partial<HiredSwordDetail> = {}): HiredSwordDetail {
+  return { sourceLine: '', hireLine: '', mayBeHired: '', rating: '', flavour: '', profiles: [], weaponsArmour: '', skills: '', specialRules: [], sourceFile: 'x.md:1-1', ...over }
+}
+
+function persona(over: Partial<DramatisPersonaSummary> = {}): DramatisPersonaSummary {
+  return { id: 'x', name: 'X', hireCost: null, upkeep: null, grade: 'core', source: 'Mordheim Rulebook', ...over }
+}
+
+describe('shortFee (#27)', () => {
+  it('uses hireCost.text when it is short', () => {
+    expect(shortFee(persona({ hireCost: { text: '150 gc', base: 150 } }))).toBe('150 gc')
+  })
+
+  it('falls back to a short detail.hireFee when there is no hireCost', () => {
+    expect(shortFee(persona({ detail: personaDetail({ hireFee: '25 gc' }) }))).toBe('25 gc')
+  })
+
+  it('points to the detail popup instead of inlining a long hireCost.text', () => {
+    const longFee = 'Sigmund Sprandle may also be hired in the payment of one body part. If you wish to do this then a chosen Hero suffers one Severe Arm Wound.'
+    expect(shortFee(persona({ hireCost: { text: longFee, base: 70 } }))).toBe('See details')
+  })
+
+  it('points to the detail popup instead of inlining a long or multi-paragraph detail.hireFee', () => {
+    const longFee = 'Roll a D6 for each of the following: 1-2 nothing happens, 3-4 something happens, 5-6 something else happens entirely and it takes several sentences to explain why.'
+    expect(shortFee(persona({ detail: personaDetail({ hireFee: longFee }) }))).toBe('See details')
+    expect(shortFee(persona({ detail: personaDetail({ hireFee: 'First line\nSecond line' }) }))).toBe('See details')
+  })
+
+  it('points to the detail popup when there is no fee at all', () => {
+    expect(shortFee(persona())).toBe('See details')
+  })
+
+  it('real-data audit: every persona in the catalogue gets a one-line fee, never inlined prose', () => {
+    for (const p of DRAMATIS_PERSONAE) {
+      const fee = shortFee(p)
+      expect(fee.length, `${p.name}: "${fee}"`).toBeLessThanOrEqual(40)
+      expect(fee, `${p.name}: "${fee}"`).not.toContain('\n')
+    }
   })
 })

@@ -16,13 +16,16 @@ import { findItem } from '../../rules/data/items'
 import type { RosterHero } from '../../rules/types/roster'
 import type { DramatisPersonaSummary } from '../../rules/types/campaignContent'
 import { Button, DieField, Notice, SelectField, Sheet, TextField } from '../../ui'
+import { HiredSwordDetail } from '../recruitment/HiredSwordsTab'
 import { readRestriction, type Eligibility } from '../recruitment/helpers'
 import { Card, KeyValue, Section, Tag } from '../roster/view/bits'
+import { shortFee } from './helpers'
 import type { TradeContext } from './useTrade'
 
 export function CharactersTab({ trade }: { trade: TradeContext }) {
   const { roster, phase } = trade
   const template = useMemo(() => findWarbandTemplate(roster.warbandTemplateId), [roster.warbandTemplateId])
+  const [previewing, setPreviewing] = useState<DramatisPersonaSummary | null>(null)
   const [picked, setPicked] = useState<DramatisPersonaSummary | null>(null)
   const searchers = characterSearchers(roster.heroes, phase.heroesSearched, phase.heroesOutOfAction)
   const hiredIds = new Set(roster.hiredSwords.filter((s) => s.status === 'active').map((s) => s.hiredSwordId))
@@ -76,9 +79,8 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
             <li key={persona.id}>
               <button
                 type="button"
-                disabled={!trade.canTrade}
-                onClick={() => setPicked(persona)}
-                className="flex min-h-12 w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-surface-high disabled:cursor-default"
+                onClick={() => setPreviewing(persona)}
+                className="flex min-h-12 w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-surface-high"
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="flex flex-wrap items-center gap-2">
@@ -87,7 +89,7 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
                     {eligibility.kind === 'restricted' ? <Tag tone="warn">Not for this warband</Tag> : null}
                   </span>
                   <span className="text-sm text-ink-dim">
-                    {persona.hireCost?.text ?? persona.detail?.hireFee ?? 'No plain fee'} · upkeep {persona.upkeep?.text ?? 'none'} · {persona.source}
+                    {shortFee(persona)} · upkeep {persona.upkeep?.text ?? 'none'} · {persona.source}
                   </span>
                 </span>
               </button>
@@ -95,8 +97,67 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
           ))}
         </ul>
       </Section>
+      {previewing ? (
+        <PersonaPreviewSheet
+          key={previewing.id}
+          persona={previewing}
+          eligibility={rows.find((r) => r.persona.id === previewing.id)?.eligibility}
+          alreadyHired={hiredIds.has(previewing.id)}
+          onClose={() => setPreviewing(null)}
+          onSearch={() => {
+            setPicked(previewing)
+            setPreviewing(null)
+          }}
+        />
+      ) : null}
       {picked ? <SearchSheet key={picked.id} persona={picked} eligibility={rows.find((r) => r.persona.id === picked.id)?.eligibility} trade={trade} searchers={searchers} alreadyHired={hiredIds.has(picked.id)} onClose={() => setPicked(null)} /> : null}
     </div>
+  )
+}
+
+/** "Tap to read more" (#27): stats, equipment, skills and background before committing to a search,
+ * with the Search button pinned under the scrolling body — Sheet already does this (its own doc
+ * comment: "actions pinned under the scrolling body"), which is exactly what a long flavour block
+ * (Bertha Bestraufrung and Penthesilea each embed a dice-roll table) needs. */
+function PersonaPreviewSheet({
+  persona,
+  eligibility,
+  alreadyHired,
+  onClose,
+  onSearch,
+}: {
+  persona: DramatisPersonaSummary
+  eligibility: Eligibility | undefined
+  alreadyHired: boolean
+  onClose: () => void
+  onSearch: () => void
+}) {
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={persona.name}
+      description={`${shortFee(persona)} to hire · upkeep ${persona.upkeep?.text ?? 'none'} · ${persona.source}`}
+      footer={
+        <Button block onClick={onSearch}>
+          {alreadyHired ? 'Already in the warband — search anyway' : `Search for ${persona.name}`}
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-4 py-2">
+        {eligibility?.kind === 'restricted' ? (
+          <Notice tone="warn" title="The rules say this character will not join this warband">
+            {eligibility.reason}
+          </Notice>
+        ) : eligibility?.kind === 'check' && eligibility.reason ? (
+          <Notice tone="info" title="May be hired">
+            {eligibility.reason}
+          </Notice>
+        ) : null}
+        {alreadyHired ? <Notice tone="info">{persona.name} is already in the warband; only one can ever be found.</Notice> : null}
+        <HiredSwordDetail detail={persona.detail} />
+      </div>
+    </Sheet>
   )
 }
 

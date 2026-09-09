@@ -10,6 +10,7 @@ import type { DiceSpec } from '../../rules/resolve/dice'
 import { itemPrice, type InventoryLocation } from '../../rules/resolve/trading'
 import type { Item, ItemCategory } from '../../rules/types/items'
 import type { CampaignHouseRules, RosterHero, RosterItem, RosterWarband } from '../../rules/types/roster'
+import type { DramatisPersonaSummary } from '../../rules/types/campaignContent'
 
 // ---- Catalogue ----
 
@@ -298,4 +299,23 @@ export function phaseSummary(matchId: string | null, wyrdstoneSold: boolean, sea
   const sale = wyrdstoneSold ? 'wyrdstone already sold' : 'wyrdstone not yet sold'
   const searches = `${searchesLeft} rare-item ${searchesLeft === 1 ? 'search' : 'searches'} left${searchesUsed > 0 ? ` (${searchesUsed} used)` : ''}`
   return `This post-battle sequence: ${sale}; ${searches}.`
+}
+
+// ---- Dramatis Personae ----
+
+/** A plain one-line fee, short enough to sit in a compact list row. */
+function isShort(text: string): boolean {
+  return !text.includes('\n') && text.length <= 40
+}
+
+/** The row's own short fee line: a short hireCost.text or hireFee, or a pointer to the detail popup
+ * — never the multi-paragraph rules text some personas carry instead of a plain fee (Bertha
+ * Bestraufrung and Penthesilea each embed a dice-roll table; Sigmund Spindle's own index text runs
+ * into a whole conditional-payment paragraph). */
+export function shortFee(persona: DramatisPersonaSummary): string {
+  const cost = persona.hireCost?.text
+  if (cost && isShort(cost)) return cost
+  const fee = persona.detail?.hireFee
+  if (fee && isShort(fee)) return fee
+  return 'See details'
 }

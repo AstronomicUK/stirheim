@@ -336,6 +336,7 @@ function CastRun({ state, advance, usedUp }: { state: CastState; advance: (step:
             headline={`${score} against ${target}+`}
             detail={last?.text}
             tone={score >= target ? 'good' : 'bad'}
+            manual={state.diceManual}
           />
         ) : null}
 
@@ -366,7 +367,7 @@ function CastRun({ state, advance, usedUp }: { state: CastState; advance: (step:
                   count={step.dice}
                   label={step.label}
                   resetKey={`${state.log.length}-${step.kind}`}
-                  onComplete={(values) => advance((s) => applyCastRoll(s, values))}
+                  onComplete={(values, manual) => advance((s) => applyCastRoll(s, values, manual))}
                 />
                 {step.optional ? (
                   <div>
@@ -422,7 +423,7 @@ function OneDieReroll({ state, advance }: { state: CastState; advance: (step: (s
         ))}
       </div>
       {which ? (
-        <DicePicker count={1} label={`New face for die ${which}`} resetKey={which} onComplete={(values) => advance((s) => applyCastRoll(s, [which, values[0]]))} />
+        <DicePicker count={1} label={`New face for die ${which}`} resetKey={which} onComplete={(values, manual) => advance((s) => applyCastRoll(s, [which, values[0]], manual))} />
       ) : null}
     </div>
   )

@@ -323,6 +323,8 @@ export interface CastState {
   applied: { id: string; name: string; amount: number }[];
   bonus: number;
   dice: [number, number] | null;
+  /** Whether `dice` came from the app's own Roll button or was tapped/typed in by hand; undefined when unknown. */
+  diceManual?: boolean;
   /** Re-roll ids spent in this cast or earlier this battle. */
   used: string[];
   pending: CastStep | null;
@@ -392,11 +394,13 @@ export function availableRerolls(state: CastState): CastReroll[] {
   return state.profile.rerolls.filter((r) => !state.used.includes(r.id));
 }
 
-/** Feed the dice for the pending step. */
-export function applyCastRoll(state: CastState, values: number[]): CastState {
+/** Feed the dice for the pending step. `manual` is whether the app rolled these or they were tapped/typed in by hand; omit when unknown. */
+export function applyCastRoll(state: CastState, values: number[], manual?: boolean): CastState {
   const step = state.pending;
   if (!step) return state;
   const next: CastState = { ...state, log: [...state.log], used: [...state.used] };
+  /** Matches RollResult's own wording (ui/Dice.tsx), so the persisted line agrees with what was shown on screen at the time. */
+  const rollTag = manual === undefined ? "" : manual ? " (entered by hand)" : " (rolled by the app)";
 
   switch (step.kind) {
     case "chooseReroll":
@@ -405,11 +409,12 @@ export function applyCastRoll(state: CastState, values: number[]): CastState {
     case "cast":
     case "reroll": {
       next.dice = [values[0], values[1]];
+      next.diceManual = manual;
       const sum = values[0] + values[1];
       const score = sum + next.bonus;
       const verb = step.kind === "reroll" ? "Re-rolled" : "Rolled";
       next.log.push({
-        text: `${verb} ${values[0]} + ${values[1]} = ${sum}${modifierText(next)}${next.bonus !== 0 ? ` = ${score}` : ""} against ${next.difficulty}+.`,
+        text: `${verb} ${values[0]} + ${values[1]}${rollTag} = ${sum}${modifierText(next)}${next.bonus !== 0 ? ` = ${score}` : ""} against ${next.difficulty}+.`,
         tone: score >= (next.difficulty ?? 0) ? "good" : "bad",
       });
       return score >= (next.difficulty ?? 0) ? succeed(next) : offerRerollOrFail(next);
@@ -419,15 +424,16 @@ export function applyCastRoll(state: CastState, values: number[]): CastState {
       const [which, face] = values;
       const before = next.dice ?? [0, 0];
       next.dice = which === 1 ? [face, before[1]] : [before[0], face];
+      next.diceManual = manual;
       const sum = next.dice[0] + next.dice[1];
       const score = sum + next.bonus;
-      next.log.push({ text: `Mind Focus re-rolls the ${which === 1 ? "first" : "second"} die to ${face}: ${next.dice[0]} + ${next.dice[1]} = ${sum}${next.bonus !== 0 ? ` = ${score}` : ""}.`, tone: score >= (next.difficulty ?? 0) ? "good" : "bad" });
+      next.log.push({ text: `Mind Focus re-rolls the ${which === 1 ? "first" : "second"} die to ${face}${rollTag}: ${next.dice[0]} + ${next.dice[1]} = ${sum}${next.bonus !== 0 ? ` = ${score}` : ""}.`, tone: score >= (next.difficulty ?? 0) ? "good" : "bad" });
       return score >= (next.difficulty ?? 0) ? succeed(next) : offerRerollOrFail(next);
     }
     case "gate": {
       const gate = state.profile.rerolls.find((r) => r.id === step.rerollId)?.gate;
       const passed = gate ? values[0] >= gate.threshold : false;
-      next.log.push({ text: `${gate?.label ?? "Gate"}: rolled ${values[0]}, ${passed ? `${gate?.threshold}+ — the re-roll is granted` : "no re-roll"}.`, tone: passed ? "good" : "bad" });
+      next.log.push({ text: `${gate?.label ?? "Gate"}: rolled ${values[0]}${rollTag}, ${passed ? `${gate?.threshold}+ — the re-roll is granted` : "no re-roll"}.`, tone: passed ? "good" : "bad" });
       next.used.push(step.rerollId!);
       if (!passed) return offerRerollOrFail(next);
       const reroll = state.profile.rerolls.find((r) => r.id === step.rerollId)!;
@@ -438,14 +444,14 @@ export function applyCastRoll(state: CastState, values: number[]): CastState {
       const sum = values.length > 1 ? values[0] + values[1] : values[0];
       const target = step.dispelAgainst === "difficulty" ? (next.difficulty ?? 0) : (step.dispelAgainst?.threshold ?? 0);
       const dispelled = sum >= target;
-      next.log.push({ text: `Dispel attempt: rolled ${values.join(" + ")}${values.length > 1 ? ` = ${sum}` : ""} against ${target}+. ${dispelled ? "The spell fails to work." : "The spell works normally."}`, tone: dispelled ? "bad" : "good" });
+      next.log.push({ text: `Dispel attempt: rolled ${values.join(" + ")}${rollTag}${values.length > 1 ? ` = ${sum}` : ""} against ${target}+. ${dispelled ? "The spell fails to work." : "The spell works normally."}`, tone: dispelled ? "bad" : "good" });
       if (dispelled) next.outcome = "dispelled";
       return afterCast(next);
     }
     case "toughness": {
       const passed = values[0] < 6 && values[0] <= toughnessOf(state);
       next.log.push({
-        text: `Magical Aptitude, Toughness test: rolled ${values[0]} against ${toughnessOf(state)}. ${passed ? "He may attempt a second spell." : "He is wracked by the effort."}`,
+        text: `Magical Aptitude, Toughness test: rolled ${values[0]}${rollTag} against ${toughnessOf(state)}. ${passed ? "He may attempt a second spell." : "He is wracked by the effort."}`,
         tone: passed ? "good" : "bad",
       });
       if (passed) {
@@ -459,7 +465,7 @@ export function applyCastRoll(state: CastState, values: number[]): CastState {
     case "aptitudeInjury": {
       const sum = values[0] + values[1];
       const band = sum <= 2 ? "Knocked down" : sum <= 4 ? "Stunned" : "Stunned (Out of action counts as Stunned)";
-      next.log.push({ text: `Injury roll ${values[0]} + ${values[1]} = ${sum}: ${band}.`, tone: "bad" });
+      next.log.push({ text: `Injury roll ${values[0]} + ${values[1]}${rollTag} = ${sum}: ${band}.`, tone: "bad" });
       next.pending = null;
       next.done = true;
       return next;

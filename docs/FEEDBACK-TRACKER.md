@@ -142,11 +142,13 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 2. Cast a Spell rolls have no app-rolled / entered-by-hand tag
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-06 (part of the same list as #1)
 
 **Notes:** Same request as #1, but for `CastTab.tsx`. Its `RollResult` reads `CastState.dice` directly rather than going through the `shown`-bucket pattern `FightTab.tsx` uses, so the same fix doesn't drop in without touching `casting.ts`'s state shape too.
+
+**Fixed (2026-09-09):** `applyCastRoll(state, values, manual?)` in `casting.ts` gained the same optional flag and `rollTag` treatment as #1's `applyRoll`, worded identically to match `RollResult`. Unlike `rollThrough.ts`'s single uniform "rolled X" phrasing, all seven of `applyCastRoll`'s log lines word the roll differently ("Rolled X + Y", "Re-rolled X + Y", "Mind Focus re-rolls the ... die to X", a gate's "rolled X", a dispel's "rolled X + Y", the Toughness test's "rolled X", the injury roll's "X + Y") — each got the tag inserted by hand at the right point rather than one mechanical find-and-replace. Also fixed the *live* half of the same gap the note called out: `CastState` had nowhere to remember whether the dice it's holding were app-rolled or entered by hand, so `RollResult` in `CastTab.tsx` never showed the tag at all (unlike `FightTab.tsx`, which threads it through its own local `shown` state) — added `CastState.diceManual`, set alongside `dice` in the two cases that set it, and read back into `<RollResult manual={state.diceManual}>`. Wired from both dice-picker call sites in `CastTab.tsx` (the main roll and Mind Focus's single-die reroll). Verified via new tests in `casting.test.ts` covering the tag on every one of the seven log shapes plus `diceManual` on the live-display path; `tsc -b`, `oxlint`, and the full suite (1267 passed) clean. Not verified live in the browser, for the same reason as #1 — no disposable test match to roll a real cast through without touching Tom's actual campaign data.
 
 ### 3. Confirm the Cast tab's new friendly-target picker against a real spellcaster
 

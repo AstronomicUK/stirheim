@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RosterHero } from "../../types/roster";
-import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll } from "../casting";
+import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll, type CastState } from "../casting";
 
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 8 };
 
@@ -162,5 +162,64 @@ describe("rolling a cast", () => {
     const hurt = applyCastRoll(wracked, [6, 6]);
     expect(hurt.log.at(-1)?.text).toMatch(/Out of action counts as Stunned/);
     expect(hurt.done).toBe(true);
+  });
+});
+
+describe("the persisted log and diceManual say app-rolled vs entered by hand (#2)", () => {
+  const spellOf = (p: ReturnType<typeof profileOf>, name: string) => p.lore.spells.find((s) => s.name === name)!;
+
+  const has = (state: CastState, pattern: RegExp) => state.log.some((l) => pattern.test(l.text));
+
+  it("tags the cast roll and records diceManual for the live display", () => {
+    const p = profileOf(hero());
+    const spell = spellOf(p, "Vision of Torment");
+    const byHand = applyCastRoll(startCast(p, spell), [5, 5], true);
+    expect(byHand.diceManual).toBe(true);
+    expect(has(byHand, /Rolled 5 \+ 5 \(entered by hand\)/)).toBe(true);
+
+    const byApp = applyCastRoll(startCast(p, spell), [5, 5], false);
+    expect(byApp.diceManual).toBe(false);
+    expect(has(byApp, /Rolled 5 \+ 5 \(rolled by the app\)/)).toBe(true);
+  });
+
+  it("omitting manual leaves diceManual undefined and the log untagged, same as before this existed", () => {
+    const p = profileOf(hero());
+    const spell = spellOf(p, "Vision of Torment");
+    const cast = applyCastRoll(startCast(p, spell), [5, 5]);
+    expect(cast.diceManual).toBeUndefined();
+    expect(cast.log[0]?.text).toBe("Rolled 5 + 5 = 10 against 10+.");
+  });
+
+  it("tags a re-roll, Mind Focus, a reroll gate, a dispel, the Toughness test and the injury roll", () => {
+    const p = profileOf(hero({ equipment: [{ itemId: "familiar", quantity: 1 }] }));
+    const spell = spellOf(p, "Vision of Torment");
+    const missed = applyCastRoll(startCast(p, spell), [1, 2], true);
+    expect(has(missed, /\(entered by hand\)/)).toBe(true);
+    const spending = spendReroll(missed, "familiar");
+    const reroll = applyCastRoll(spending, [1, 1], false);
+    expect(has(reroll, /Re-rolled 1 \+ 1 \(rolled by the app\)/)).toBe(true);
+
+    const gubbinzP = profileOf(hero({ equipment: [{ itemId: "magic_gubbinz", quantity: 1 }] }));
+    const gubbinzSpell = spellOf(gubbinzP, "Vision of Torment");
+    const gubbinzMissed = applyCastRoll(startCast(gubbinzP, gubbinzSpell), [1, 2]);
+    const gate = spendReroll(gubbinzMissed, "magic_gubbinz");
+    expect(has(applyCastRoll(gate, [5], true), /rolled 5 \(entered by hand\)/)).toBe(true);
+
+    const focusP = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_mind_focus"] }));
+    const focusSpell = spellOf(focusP, "Vision of Torment");
+    const focusMissed = applyCastRoll(startCast(focusP, focusSpell), [1, 2]);
+    const focus = spendReroll(focusMissed, "mind_focus");
+    expect(has(applyCastRoll(focus, [1, 6], true), /to 6 \(entered by hand\)/)).toBe(true);
+
+    const source = { id: "elven_runestones", name: "Elven Runestones", detail: "x", against: "difficulty" as const };
+    const cast = applyCastRoll(startCast(p, spell, { enemyDispel: [source] }), [6, 6]);
+    expect(has(applyCastRoll(cast, [6, 6], true), /Dispel attempt: rolled 6 \+ 6 \(entered by hand\)/)).toBe(true);
+
+    const aptP = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_magical_aptitude"] }));
+    const aptCast = applyCastRoll(startCast(aptP, aptP.lore.spells[0]), [6, 6])
+    const wracked = applyCastRoll(aptCast, [5], true)
+    expect(has(wracked, /Toughness test: rolled 5 \(entered by hand\)/)).toBe(true)
+    const hurt = applyCastRoll(wracked, [6, 6], false)
+    expect(has(hurt, /Injury roll 6 \+ 6 \(rolled by the app\)/)).toBe(true)
   });
 });

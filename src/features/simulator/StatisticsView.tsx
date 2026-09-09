@@ -44,6 +44,7 @@ export function StatisticsView({ setup, reverse, simulation = false }: { setup: 
   const [direction, setDirection] = useState<Direction>('attacking')
   const [incoming, setIncoming] = useState(1)
   const [selections, setSelections] = useState({ attacking: { ws: 3, power: 3 }, defending: { ws: 3, power: 3 } })
+  const [ooaWsOverrides, setOoaWsOverrides] = useState<Record<Direction, number | '' | null>>({ attacking: null, defending: null })
   const [gainType, setGainType] = useState<'stats' | 'skills'>('stats')
   const [measure, setMeasure] = useState<AttackMeasure>('any')
   const [stat, setStat] = useState<keyof Stats>('WS')
@@ -54,6 +55,7 @@ export function StatisticsView({ setup, reverse, simulation = false }: { setup: 
   const selection = selections[direction]
   const baseSetup = useMemo(() => defensive ? simulation && reverse ? reverse : reverseSetup(setup, simulation ? undefined : incoming) : setup, [setup, reverse, defensive, simulation, incoming])
   const reference = simulation ? { ws: defensive ? baseSetup.attacker.stats.WS : baseSetup.defender.stats.WS, power: defensive ? baseSetup.attacker.stats.S : baseSetup.defender.stats.T } : selection
+  const ooaWs = ooaWsOverrides[direction] === '' ? reference.ws : ooaWsOverrides[direction] ?? reference.ws
   const model = setup.attacker
   const skills = SKILLS.filter((s) => s.modeled && !model.skillIds.includes(s.id) && (!respectTables || skillAvailableTo(s, toCharacter(model, setup.attackerKit))))
   const selectedSkill = skills.find((s) => s.id === skillId) ?? skills[0]
@@ -68,7 +70,10 @@ export function StatisticsView({ setup, reverse, simulation = false }: { setup: 
     const wound = simulation ? [selected] : STATS_1_TO_10.map((power) => stageOdds(at(reference.ws, power)))
     const changed = upgrade ? withUpgrade(effectiveSetup, direction, upgrade) : effectiveSetup
     const afterAt = (ws: number, power: number) => stageOdds(atOpponent(changed, direction, ws, power))
-    return { selected, hit, wound, afterHit: simulation ? [afterAt(reference.ws, reference.power)] : STATS_1_TO_10.map((ws) => afterAt(ws, reference.power)),
+    const ooaPowers = simulation ? [reference.power] : STATS_1_TO_10
+    const ooa = ooaPowers.map((power) => stageOdds(at(ooaWs, power)))
+    const afterOoa = ooaPowers.map((power) => afterAt(ooaWs, power))
+    return { selected, hit, wound, ooa, afterOoa, afterHit: simulation ? [afterAt(reference.ws, reference.power)] : STATS_1_TO_10.map((ws) => afterAt(ws, reference.power)),
       afterWound: simulation ? [afterAt(reference.ws, reference.power)] : STATS_1_TO_10.map((power) => afterAt(reference.ws, power)) }
   })()
   const setSelection = (key: 'ws' | 'power', value: number) => setSelections((current) => ({ ...current, [direction]: { ...current[direction], [key]: value } }))
@@ -112,10 +117,16 @@ export function StatisticsView({ setup, reverse, simulation = false }: { setup: 
       </>}
       <div className="flex justify-end"><SimulatorTabs compact label="Upgrade attack measure" value={measure} onChange={setMeasure} options={[{ value: 'any', label: 'At least 1 attack' }, { value: 'all', label: 'All attacks' }]} /></div>
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">{(['hit', 'wound', 'ooa'] as const).map((stage) => {
-        const before = stage === 'hit' ? calculations.hit : calculations.wound
-        const after = stage === 'hit' ? calculations.afterHit : calculations.afterWound
-        return <div key={stage} className="min-w-0"><h3 className="text-sm font-semibold text-ink">{stage === 'hit' ? hitLabel : stage === 'wound' ? woundLabel : ooaLabel}</h3>
-          <p className="mb-2 text-[11px] text-ink-dim">{stage === 'ooa' ? `Whole phase · opponent WS ${reference.ws}` : measure === 'any' ? 'At least one attack' : 'All attacks'}</p>
+        const before = stage === 'hit' ? calculations.hit : stage === 'ooa' ? calculations.ooa : calculations.wound
+        const after = stage === 'hit' ? calculations.afterHit : stage === 'ooa' ? calculations.afterOoa : calculations.afterWound
+        return <div key={stage} className="min-w-0"><div className="flex min-h-9 items-center justify-between gap-2"><h3 className="text-sm font-semibold text-ink">{stage === 'hit' ? hitLabel : stage === 'wound' ? woundLabel : ooaLabel}</h3>
+          {stage === 'ooa' && <label className="flex shrink-0 items-center gap-1 text-xs text-ink-dim">WS
+            <input type="number" inputMode="numeric" min={1} max={10} step={1} aria-label="OOA comparison opponent WS" title="Opponent Weapon Skill for this OOA comparison" value={ooaWsOverrides[direction] ?? reference.ws}
+              onChange={(e) => { const value = e.target.value === '' ? '' : Math.max(1, Math.min(10, Math.floor(Number(e.target.value)) || 1)); setOoaWsOverrides((current) => ({ ...current, [direction]: value })) }}
+              onBlur={() => { if (ooaWsOverrides[direction] === '') setOoaWsOverrides((current) => ({ ...current, [direction]: null })) }}
+              className="min-h-9 w-14 rounded-md border border-border bg-surface-low px-2 text-sm tabular-nums text-ink focus:border-brass focus:outline-none" />
+          </label>}</div>
+          <p className="mb-2 text-[11px] text-ink-dim">{stage === 'ooa' ? `Whole phase · opponent WS ${ooaWs}` : measure === 'any' ? 'At least one attack' : 'All attacks'}</p>
           <table className="w-full text-xs"><thead><tr className="border-b border-border text-ink-dim"><th scope="col" className="py-2 text-left">{simulation ? 'Matchup' : stage === 'hit' ? 'WS' : powerLabel}</th><th scope="col" className="text-right">Before → after</th></tr></thead><tbody>
             {before.map((r, i) => <tr key={i} className="border-b border-border/50"><th scope="row" className="text-left font-normal text-ink">{simulation ? 'Selected' : i + 1}</th><td><Change before={stage === 'ooa' ? r.ooa : r[stage][measure]} after={stage === 'ooa' ? after[i].ooa : after[i][stage][measure]} defensive={defensive} /></td></tr>)}
           </tbody></table></div>

@@ -357,7 +357,7 @@ export function activityTerms(entry: CampaignActivity, label: string, side: 'bef
   return (Array.isArray(value) ? value : [value]).map(v => {
     if (typeof v === 'string') {
       const item = key === 'item_rules_id' ? findItem(v) : undefined
-      return { label: displayValue(v, key), text: key === 'skills' ? skillText(v) : key === 'spells' ? findSpellOption(v)?.text : item?.specialRules.map(r => `${r.name}: ${r.text}`).join('\n\n') }
+      return { label: displayValue(v, key), text: key === 'skills' ? skillText(v) : key === 'spells' ? findSpellOption(v)?.text : item ? [item.description, ...item.specialRules.map(r => `${r.name}: ${r.text}`)].filter(Boolean).join('\n\n') : undefined }
     }
     const injury = asRow(v)
     return { label: displayValue(v, key), text: HERO_INJURIES.find(i => i.code === injury?.injuryCode)?.text }

@@ -13,7 +13,7 @@ import { findItem } from '../../../rules/data/items'
 import { findWarbandSkill } from '../../../rules/data/campaign/warbandSkills'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet, Spinner, Stepper } from '../../../ui'
+import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, Spinner, Stepper } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
@@ -22,6 +22,7 @@ import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollKind, type RollState } from './rollThrough'
 import { CritWheel } from './CritWheel'
+import { RollDiceIcon } from '../../../ui/RollDiceIcon'
 import { critTableName } from '../../../rules/engine/crit'
 import { useEnemyRosters } from './useEnemyRosters'
 
@@ -330,9 +331,10 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           disabled={!odds || !attacker || !defender || odds.attacks < 1}
           onClick={() => setRolling(true)}
           aria-label="Roll it through"
-          className="stirheim-dice-button absolute left-1/2 top-1/2 z-10 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-brass bg-brass text-surface-low shadow-[0_2px_6px_rgba(36,31,26,0.28)] transition-colors hover:bg-brass/85 disabled:opacity-40"
+          data-rolling={rolling || undefined}
+          className="stirheim-dice-button absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
         >
-          <Icon name="dice" size={24} />
+          <RollDiceIcon />
         </button>
       </div>
 

@@ -251,24 +251,69 @@ body {
   }
 }
 
-/*
-  Roll It Out's dice icon (#25): a flat static square read as "crappy" per Tom's own words. Spins
-  on hover/focus rather than on its own, so it stays inside "nothing else moves on its own" (see
-  stirheim-glow above) while still giving the button some life when you're actually about to use it.
-*/
-.stirheim-dice-button svg {
-  transition: transform 0.5s ease;
+/* #25: Tom's selected tumbling-pair design. Motion is decorative, never a dice result. */
+.stirheim-dice-button {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c3a366;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #b9944d, #785421);
+  box-shadow: inset 0 1px 1px #f6d68b99, inset 0 -2px 4px #35220966, 0 0 0 4px var(--color-surface-low), 0 4px 9px #26180b40;
+  cursor: pointer;
+  touch-action: manipulation;
 }
-
-.stirheim-dice-button:hover svg,
-.stirheim-dice-button:focus-visible svg {
-  transform: rotate(360deg);
+.stirheim-dice-button:disabled { opacity: .4; cursor: not-allowed; }
+.stirheim-dice-button:focus-visible { outline: 3px solid var(--color-brass); outline-offset: 5px; }
+.stirheim-dice-button:active:not(:disabled) { box-shadow: inset 0 2px 5px #35220988, 0 0 0 4px var(--color-surface-low); }
+.stirheim-dice-pair { position: relative; width: 56px; height: 56px; perspective: 180px; pointer-events: none; }
+.stirheim-dice-cube {
+  --die-angle: -16deg;
+  position: absolute;
+  left: 10px;
+  top: 12px;
+  width: 20px;
+  height: 20px;
+  transform-style: preserve-3d;
+  transform: rotateX(-25deg) rotateY(-35deg) rotateZ(var(--die-angle));
 }
-
+.stirheim-dice-cube + .stirheim-dice-cube { --die-angle: 14deg; left: 28px; top: 27px; animation-delay: 80ms !important; }
+.stirheim-dice-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 3px;
+  gap: 1px;
+  border: 1px solid #bcaa7f;
+  border-radius: 3px;
+  background: #f8ebc9;
+  box-shadow: inset 0 1px 2px #fff9;
+  backface-visibility: hidden;
+}
+.stirheim-dice-face:nth-child(1) { transform: translateZ(10px); }
+.stirheim-dice-face:nth-child(2) { transform: rotateY(90deg) translateZ(10px); background: #dbcca8; }
+.stirheim-dice-face:nth-child(3) { transform: rotateX(90deg) translateZ(10px); background: #fff4d7; }
+.stirheim-dice-face:nth-child(4) { transform: rotateY(180deg) translateZ(10px); }
+.stirheim-dice-face:nth-child(5) { transform: rotateY(-90deg) translateZ(10px); background: #dfcfad; }
+.stirheim-dice-face:nth-child(6) { transform: rotateX(-90deg) translateZ(10px); }
+.stirheim-dice-pip { border-radius: 50%; background: #49371d; box-shadow: inset 0 1px 1px #180e07aa; }
+@keyframes stirheim-dice-tumble {
+  0% { transform: rotateX(-25deg) rotateY(-35deg) rotateZ(var(--die-angle)); }
+  35% { transform: rotateX(150deg) rotateY(130deg) rotateZ(calc(var(--die-angle) + 23deg)) translateY(-5px); }
+  78% { transform: rotateX(333deg) rotateY(325deg) rotateZ(calc(var(--die-angle) - 3deg)) translateY(1px); }
+  100% { transform: rotateX(335deg) rotateY(325deg) rotateZ(var(--die-angle)); }
+}
+.stirheim-dice-button:focus-visible:not(:disabled) .stirheim-dice-cube,
+.stirheim-dice-button[data-rolling]:not(:disabled) .stirheim-dice-cube { animation: stirheim-dice-tumble 850ms cubic-bezier(.2,.65,.25,1) both; }
+@media (hover: hover) {
+  .stirheim-dice-button:hover:not(:disabled) { filter: brightness(1.08); }
+  .stirheim-dice-button:hover:not(:disabled) .stirheim-dice-cube { animation: stirheim-dice-tumble 850ms cubic-bezier(.2,.65,.25,1) both; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .stirheim-dice-button svg {
-    transition: none;
-  }
+  .stirheim-dice-button .stirheim-dice-cube { animation: none !important; }
 }
 
 /*

@@ -2509,7 +2509,6 @@ Recite → Roll → resolve flow, not just reading the code.
 
 ---
 
-<!--
 ### 85. Cast a Spell now matches the attack layout, but the two boxes still carry very different content — and the Target select clips its own text
 
 **Status:** 🟡 Partially fixed — item 1 (clipped text) done; items 2-4 (layout parity) still open
@@ -2757,6 +2756,137 @@ confirming it genuinely partitions the list rather than being a no-op. `npx tsc 
 
 ---
 
+## Batch — 2026-09-09 (audit-coverage check: findings that never became tracker items)
+
+Tom asked whether every actionable finding from the 18 overnight rules audits actually made it into
+this tracker, given the audit docs themselves stay as standalone references rather than being folded
+in (#6). Cross-checked all 18 audit docs against every tracker item, finding by finding. Verdict:
+overwhelmingly yes — of roughly 140 actionable findings across the smaller/medium audits, all but the
+eight below already have a tracker item, most cited by exact finding number. The two largest audits,
+`WARBAND-RULES-GAPS.md` and `WEAPONS-ARMOUR-RULES-GAPS.md`, are covered differently: #6 is Tom's own
+dated decision to leave their ~120 combined findings as standalone-document references rather than
+splitting each into its own tracker item, and that decision was confirmed still intact (a handful of
+their findings *did* get pulled out individually anyway — #33, #34 — so the boundary isn't perfectly
+clean, but nothing was found missing from *awareness* either way). The eight below are the genuine
+gaps: real findings that no tracker item anywhere addresses, however loosely. Logged now so the
+tracker is actually complete, not fixed.
+
+### 94. Trading resolver's own `searchesRemaining` helper sits unused; the feature layer counts searchers itself instead
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the income/trading rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/INCOME-TRADING-RULES-GAPS.md`, finding 6: the resolver defines `searchesRemaining`,
+but `TradingPage` and `BuyTab` both call `eligibleSearchers` and take its length instead of using that
+helper. No behavioural difference today, just two ways of asking the same question — worth deleting
+the unused one or actually wiring it in, whichever the next person touching this area prefers.
+
+### 95. Captured heroes have no resolution flow at all — no ransom, exchange, sale, Zombie or sacrifice
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the injuries rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/INJURIES-RULES-GAPS.md`, finding 3 (first flagged in audit #1,
+`WARBAND-RULES-GAPS.md`, "capture flows," and still open there too). Captured only ever sets the
+warrior's status and stops; none of the entry's five outcomes exist anywhere in the app:
+
+- ransom at a price the captor sets;
+- exchange for one of the captor's own captives;
+- sale to slavers for D6×5 gold crowns;
+- an Undead warband killing the captive to gain a Zombie;
+- the Possessed sacrificing him, with +1 experience to the warband leader.
+
+The only route back today is changing the status by hand in the roster editor, which moves no gold,
+adds no Zombie and awards no experience — and equipment handling is unimplemented too (ransomed or
+exchanged captives keep their kit; sold, killed or zombified ones leave it with their captors). The
+same shape as #54's Sold to the Pits fix (a flag recorded and then abandoned) — worth building
+together with that pattern in mind, though this has five outcomes instead of two.
+
+### 96. Bitter Enmity's hatred target is stored as prose, so nothing can warn a player before a fight
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the injuries rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/INJURIES-RULES-GAPS.md`, finding 4. The flag is set and the D6 sub-roll correctly
+picks which of the four hatred targets applies, but the target itself is stored as free text, so
+nothing downstream can act on it. Defensible for a tracker in general (hatred plays out on the table),
+but it means the app can never tell a player "this warrior hates the warband you're about to fight" —
+the one place a tracker could actually help here. Would need the target recorded as a structured
+warband/faction reference instead of prose.
+
+### 97. Hiring resolver doesn't check eligibility itself — consistent with the app's pattern elsewhere, but worth knowing
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the hired swords rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/HIRED-SWORDS-RULES-GAPS.md`, finding 14: `hireHiredSword` itself does not check
+eligibility — the "may be hired" reading and the warband's own hiring rule live only in the feature
+layer (`hiredSwordEligibility`), so the resolver will hire a Dwarf Troll Slayer into an Elf warband
+without comment if ever called another way. The audit's own framing: "consistent with how the app
+handles restrictions elsewhere (warn, allow, record), but worth knowing the resolver is silent." Not
+clearly a bug given that established pattern — logged for completeness and so a future
+defense-in-depth pass (if ever wanted) knows where the gap is, not because the current UI behaviour is
+wrong.
+
+### 98. A Dramatis Persona's rating can still count experience they shouldn't have earned
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the hired swords rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/HIRED-SWORDS-RULES-GAPS.md`, finding 16. Rating counts a persona's experience where
+the entry's own text says to, but personae shouldn't be earning experience in the first place (#60's
+`isDramatisPersona` fix stops future accrual). The audit calls this "moot once [that] is fixed" — true
+going forward, but any persona already carrying accrued XP from before that fix would still inflate
+their rating today. Worth a one-off check of whether any live roster has this stale data, rather than
+new code.
+
+### 99. Grade-restricted hired swords ("Grade 1A may be hired at creation") aren't filtered anywhere
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** n/a — found by the hired swords rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/HIRED-SWORDS-RULES-GAPS.md`, finding 17. The rulebook gates some hired swords and
+personae by campaign grade (a Grade 1A entry hireable at warband creation; some personae only after
+the first match), and every entry already carries its grade — but nothing filters by it anywhere in
+the hiring flow. The audit's own note: "belongs with campaign settings rather than the rules layer,"
+i.e. this is a real feature gap, not a data gap — the grade data needed to build it already exists.
+
+### 100. Skill restrictions only ever warn — worth confirming whether the unambiguous cases should hard-block
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the skills rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/SKILLS-RULES-GAPS.md`, finding A3. By design, the skill picker only ever warns rather
+than blocking — matching how every other restriction in the app behaves (warn, allow, record). The
+auditor flags this specifically because a few cases are genuinely unambiguous (leader-only skills,
+skills with an unmet prerequisite skill) rather than judgement calls, and asks whether Tom wants those
+specific cases to hard-block instead of just warn. A decision for Tom, not a code investigation — the
+current behaviour is consistent with the rest of the app either way.
+
+### 101. Four more skills have post-battle effects that are still text only
+
+**Status:** 🔲 Open
+**Priority:** 🟡 Low
+**Reported:** n/a — found by the skills rules audit; not yet personally reviewed by Tom
+
+**Notes:** `docs/SKILLS-RULES-GAPS.md`, finding A7 (the audit's own note: "belongs with audits #8/#9,"
+i.e. trading/income and post-battle sequence, but recorded here since that's where it was found).
+Most of the skills this finding originally listed are already covered elsewhere — Wyrdstone Hunter,
+Haggle and Streetwise are part of #59's "18 skills with no effect" list, and Bribery is tracked under
+#68 — so what's actually still untracked is four: **Song of Honor** (+1 XP to everyone if a Slayer
+died this battle), **Fungus Farmer**, **Body Dealer**, and **Chaos Engineer**, none of which have any
+code effect or any other tracker item naming them.
+
+---
+
+<!--
 ### N. Short title
 
 **Status:** 🔲 Open

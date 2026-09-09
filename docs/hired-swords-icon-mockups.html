@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hired swords — icon mockups (#90)</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 32px 20px; background: #faf9f6; color: #292721; font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 1040px; margin: auto; }
+h1 { font-size: 26px; margin: 0 0 12px; }
+h2 { font-size: 19px; margin: 0 0 8px; }
+p { margin: 0 0 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px; }
+article { background: white; border: 1px solid #d8d5ce; border-radius: 8px; padding: 20px; min-width: 0; }
+.preview { display: flex; align-items: flex-end; gap: 40px; margin: 24px 0; }
+figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.icon-slot { height: 120px; display: flex; align-items: center; justify-content: center; }
+svg { display: block; flex-shrink: 0; }
+figcaption { font-size: 13px; }
+pre { padding: 12px; background: #f5f4f0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.note { max-width: 85ch; }
+</style>
+</head>
+<body><main>
+<h1>Hired swords — new icon directions</h1>
+<p class="note">#90 · Design review only · 9 September 2026 · Tom has not chosen a replacement.</p>
+<p class="note">Compare the 20px icons first, at 100% browser zoom. The 120px copies expose the linework. Every SVG uses the app’s 24 × 24 grid, currentColor, 1.8 stroke and round caps/joins. No enlarged stroke, backgrounds inside the SVG, masks or effects.</p>
+<p class="note">These proposals supersede the earlier sword-and-coin selection for review; the live icon remains unchanged. Astra has not rendered these in a browser. Stirheim Developer should screenshot every variant at both sizes and check small-size readability before presenting them to Tom.</p>
+<div class="grid">
+<article><h2>1A. Person + sheathed swords</h2><p>Hilts above the shoulders; scabbards disappear behind the outlined torso and emerge at the sides. Check that these read as swords rather than shoulder decoration.</p><div class="preview">
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l4 4M2 7l4-4M21 3l-4 4M18 3l4 4M4.2 17.5L2.8 20.2M19.8 17.5l1.4 2.7M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 21v-2c0-3.5 2.8-6 7-6s7 2.5 7 6v2z" /></svg></div><figcaption>20px · actual size</figcaption></figure>
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l4 4M2 7l4-4M21 3l-4 4M18 3l4 4M4.2 17.5L2.8 20.2M19.8 17.5l1.4 2.7M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 21v-2c0-3.5 2.8-6 7-6s7 2.5 7 6v2z" /></svg></div><figcaption>120px · linework</figcaption></figure>
+</div><pre><code>{ stroke: &quot;M3 3l4 4M2 7l4-4M21 3l-4 4M18 3l4 4M4.2 17.5L2.8 20.2M19.8 17.5l1.4 2.7M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 21v-2c0-3.5 2.8-6 7-6s7 2.5 7 6v2z&quot;, fill: &quot;&quot; }</code></pre></article>
+<article><h2>1B. Person + sheathed swords</h2><p>Back view with visible crossed scabbards. More literal, but the crossing may become crowded at 20px.</p><div class="preview">
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l4 4M2 7l4-4M21 3l-4 4M18 3l4 4M7 7l2 2M17 7l-2 2M8 14l8 6M16 14l-8 6M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 21v-2c0-3.5 2.8-6 7-6s7 2.5 7 6v2z" /></svg></div><figcaption>20px · actual size</figcaption></figure>
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 3l4 4M2 7l4-4M21 3l-4 4M18 3l4 4M7 7l2 2M17 7l-2 2M8 14l8 6M16 14l-8 6M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 21v-2c0-3.5 2.8-6 7-6s7 2.5 7 6v2z" /></svg></div><figcaption>120px · linework</figcaption></figure>
+</div><pre><code>{ stroke: &quot;M3 3l4 4M2 7l4-4M21 3l-4 4M18 3l4 4M7 7l2 2M17 7l-2 2M8 14l8 6M16 14l-8 6M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 21v-2c0-3.5 2.8-6 7-6s7 2.5 7 6v2z&quot;, fill: &quot;&quot; }</code></pre></article>
+<article><h2>2A. Coin purse</h2><p>Outline bag with a broad gathered mouth; no coin symbol or fine folds.</p><div class="preview">
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3h8l-2 4H10zM9 7h6M9 9C7 11 4 14 4 17c0 3 3 4 8 4s8-1 8-4c0-3-3-6-5-8" /></svg></div><figcaption>20px · actual size</figcaption></figure>
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3h8l-2 4H10zM9 7h6M9 9C7 11 4 14 4 17c0 3 3 4 8 4s8-1 8-4c0-3-3-6-5-8" /></svg></div><figcaption>120px · linework</figcaption></figure>
+</div><pre><code>{ stroke: &quot;M8 3h8l-2 4H10zM9 7h6M9 9C7 11 4 14 4 17c0 3 3 4 8 4s8-1 8-4c0-3-3-6-5-8&quot;, fill: &quot;&quot; }</code></pre></article>
+<article><h2>2B. Coin purse</h2><p>Solid silhouette; the gap below the mouth separates the tied neck from the bag. Compare against the outline at 20px.</p><div class="preview">
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3h8l-2 4h-4zM9 9h6c2 2 5 5 5 8 0 3-3 4-8 4s-8-1-8-4c0-3 3-6 5-8z" fill="currentColor" stroke="none" /></svg></div><figcaption>20px · actual size</figcaption></figure>
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3h8l-2 4h-4zM9 9h6c2 2 5 5 5 8 0 3-3 4-8 4s-8-1-8-4c0-3 3-6 5-8z" fill="currentColor" stroke="none" /></svg></div><figcaption>120px · linework</figcaption></figure>
+</div><pre><code>{ stroke: &quot;&quot;, fill: &quot;M8 3h8l-2 4h-4zM9 9h6c2 2 5 5 5 8 0 3-3 4-8 4s-8-1-8-4c0-3 3-6 5-8z&quot; }</code></pre></article>
+<article><h2>3A. Combination</h2><p>Outlined person with sword hilts behind the shoulders and an outlined purse at the hip. Check that the purse remains distinct.</p><div class="preview">
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 10a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6zM13 14c-1.1-.7-2.5-1-4-1-3.6 0-6 2.4-6 5.7V21h8M2 3l3.5 4M1.5 6.8l3.8-3.3M16 3l-3.5 4M12.7 3.5l3.8 3.3M16 12h5l-1.2 3h-2.6zM17.2 15C15.8 16.4 14.5 18 14.5 19.5c0 1.5 1.5 2 4 2s4-.5 4-2c0-1.5-1.3-3.1-2.7-4" /></svg></div><figcaption>20px · actual size</figcaption></figure>
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 10a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6zM13 14c-1.1-.7-2.5-1-4-1-3.6 0-6 2.4-6 5.7V21h8M2 3l3.5 4M1.5 6.8l3.8-3.3M16 3l-3.5 4M12.7 3.5l3.8 3.3M16 12h5l-1.2 3h-2.6zM17.2 15C15.8 16.4 14.5 18 14.5 19.5c0 1.5 1.5 2 4 2s4-.5 4-2c0-1.5-1.3-3.1-2.7-4" /></svg></div><figcaption>120px · linework</figcaption></figure>
+</div><pre><code>{ stroke: &quot;M9 10a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6zM13 14c-1.1-.7-2.5-1-4-1-3.6 0-6 2.4-6 5.7V21h8M2 3l3.5 4M1.5 6.8l3.8-3.3M16 3l-3.5 4M12.7 3.5l3.8 3.3M16 12h5l-1.2 3h-2.6zM17.2 15C15.8 16.4 14.5 18 14.5 19.5c0 1.5 1.5 2 4 2s4-.5 4-2c0-1.5-1.3-3.1-2.7-4&quot;, fill: &quot;&quot; }</code></pre></article>
+<article><h2>3B. Combination</h2><p>Same person and hilts with a solid purse at the hip, using the app’s stroke-plus-fill pattern.</p><div class="preview">
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 10a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6zM13 14c-1.1-.7-2.5-1-4-1-3.6 0-6 2.4-6 5.7V21h8M2 3l3.5 4M1.5 6.8l3.8-3.3M16 3l-3.5 4M12.7 3.5l3.8 3.3" /><path d="M16 12h5l-1.2 2.5h-2.6zM17.2 16h2.6c1.4 1.2 2.7 2.5 2.7 3.8 0 1.4-1.5 2-4 2s-4-.6-4-2c0-1.3 1.3-2.6 2.7-3.8z" fill="currentColor" stroke="none" /></svg></div><figcaption>20px · actual size</figcaption></figure>
+<figure><div class="icon-slot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 10a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6zM13 14c-1.1-.7-2.5-1-4-1-3.6 0-6 2.4-6 5.7V21h8M2 3l3.5 4M1.5 6.8l3.8-3.3M16 3l-3.5 4M12.7 3.5l3.8 3.3" /><path d="M16 12h5l-1.2 2.5h-2.6zM17.2 16h2.6c1.4 1.2 2.7 2.5 2.7 3.8 0 1.4-1.5 2-4 2s-4-.6-4-2c0-1.3 1.3-2.6 2.7-3.8z" fill="currentColor" stroke="none" /></svg></div><figcaption>120px · linework</figcaption></figure>
+</div><pre><code>{ stroke: &quot;M9 10a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6zM13 14c-1.1-.7-2.5-1-4-1-3.6 0-6 2.4-6 5.7V21h8M2 3l3.5 4M1.5 6.8l3.8-3.3M16 3l-3.5 4M12.7 3.5l3.8 3.3&quot;, fill: &quot;M16 12h5l-1.2 2.5h-2.6zM17.2 16h2.6c1.4 1.2 2.7 2.5 2.7 3.8 0 1.4-1.5 2-4 2s-4-.6-4-2c0-1.3 1.3-2.6 2.7-3.8z&quot; }</code></pre></article>
+</div></main></body></html>

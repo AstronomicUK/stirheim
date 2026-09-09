@@ -2568,7 +2568,7 @@ run` all clean.
 
 ### 90. The hired swords icon is weird — brainstorm alternatives, don't just ship one
 
-**Status:** ✅ Fixed — Tom picked candidate A (sword and coin)
+**Status:** 🔲 Reopened — new mockups ready; awaiting Tom's choice
 **Priority:** 🟢 Low (polish)
 **Reported:** 2026-09-08
 
@@ -2600,8 +2600,13 @@ dropped — the shield read as a circle/lollipop at this scale, not worth offeri
 
 **Fixed (2026-09-09):** Tom picked **A — sword and coin**. Shipped in `src/ui/icons.tsx`, verified live at 150px (renders as a clean stylised sword with a coin at the hilt, easily readable, no lollipop problem like the dropped shield idea had). Candidates C and D are recorded above for reference only, not needed further.
 
-No preference recorded here on purpose — genuinely Tom's call between "plain and minimal" (C),
-"paid mercenary" (A), or "matches Dramatis Personae" (D).
+**New design review (Astra, 2026-09-09):** Tom has seen the shipped sword-and-coin icon and does not like it. His requested directions are:
+
+> 1. A person outline with sheathed swords across their back
+> 2. A coin purse
+> 3. A combination of the two (a person outline carrying both swords and a coin purse)
+
+New mockups are ready at [`docs/hired-swords-icon-mockups.html`](hired-swords-icon-mockups.html): two variants per concept, each at 20px and 120px, with paste-ready `{ stroke: "...", fill: "..." }` data. This review supersedes the earlier sword-and-coin pick; **Tom has not chosen a replacement yet**. The currently shipped icon is unchanged. Astra checked the static structure and path consistency, but has no browser verification. Handoff to Stirheim Developer [8aefaa]: pull, open the HTML in a real browser, render/screenshot all six variants at both sizes, check that swords/purses read clearly (especially at 20px, remembering the shield/lollipop failure), and show Tom before any implementation or shipping.
 
 ### 91. Remove the "gc" text from the Buy tab so it matches Sell's plain look
 

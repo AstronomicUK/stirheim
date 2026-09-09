@@ -80,6 +80,7 @@ interface Current {
 }
 
 export interface RollState {
+  hitBatch?: { phase: 'collect' | 'parry' | 'resolve'; hits: { roll: number | null; outcome?: Outcome }[]; parryIndices: number[] }
   plans: AttackPlan[]
   index: number
   defenderW: number
@@ -132,6 +133,8 @@ export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: n
     outcomes: [],
     worst: null,
     done: plans.length === 0,
+    hitBatch: plans.length > 1 && maxParries > 0 && plans.some(p => p.input.parryEligible) && !plans.some(p => p.input.autoHitKnockedDown || p.input.autoOutOfActionStunned)
+      ? { phase: 'collect', hits: [], parryIndices: [] } : undefined,
   }
   return state.done ? state : beginAttack(state)
 }
@@ -153,6 +156,11 @@ function attackName(state: RollState): string {
 function beginAttack(state: RollState): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
+  if (state.hitBatch?.phase === 'resolve') {
+    const hit = state.hitBatch.hits[state.index]
+    if (hit.outcome) return finishAttack(fresh, hit.outcome)
+    return afterHit({ ...fresh, cur: { ...fresh.cur, hitRoll: hit.roll } })
+  }
   // A stunned target: taken out of action by the first hit in hand-to-hand combat, no rolls at all (01:947-959).
   if (plan.input.autoOutOfActionStunned) {
     return finishAttack(log(fresh, `${attackName(state)}: the target is stunned — automatically out of action.`, 'good'), 'outOfAction')
@@ -178,6 +186,8 @@ function log(state: RollState, text: string, tone: LogLine['tone'] = 'neutral'):
 }
 
 function finishAttack(state: RollState, outcome: Outcome): RollState {
+  if (state.hitBatch?.phase === 'collect') return collectHit(state, outcome)
+  if (state.hitBatch?.phase === 'parry') return nextBatchParry({ ...state, hitBatch: { ...state.hitBatch, hits: state.hitBatch.hits.map((h, i) => i === state.index ? { ...h, outcome } : h) } })
   const outcomes = [...state.outcomes, outcome]
   const worst = state.worst === null || OUTCOME_RANK[outcome] > OUTCOME_RANK[state.worst] ? outcome : state.worst
   let next: RollState = { ...state, outcomes, worst, pending: null }
@@ -189,10 +199,31 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
   return beginAttack({ ...next, index: state.index + 1 })
 }
 
+/** Roll every hit before choosing the highest for parry; damage still resolves in attack order. */
+function collectHit(state: RollState, outcome?: Outcome): RollState {
+  const batch = state.hitBatch!
+  const hits = [...batch.hits, { roll: state.cur.hitRoll, outcome }]
+  if (hits.length < state.plans.length) return beginAttack({ ...state, index: state.index + 1, hitBatch: { ...batch, hits } })
+  const ranked = hits.map((h, index) => ({ ...h, index })).filter(h => !h.outcome && h.roll !== null).sort((a, b) => b.roll! - a.roll! || a.index - b.index)
+  const chosen = ranked.slice(0, state.parriesLeft).map(h => h.index)
+  return nextBatchParry({ ...state, index: 0, hitBatch: { phase: 'parry', hits, parryIndices: chosen } })
+}
+
+function nextBatchParry(state: RollState): RollState {
+  const batch = state.hitBatch!
+  const [index, ...remaining] = batch.parryIndices
+  if (index === undefined) return beginAttack({ ...state, index: 0, hitBatch: { ...batch, phase: 'resolve' } })
+  return offerParry({ ...state, index, cur: { ...freshCurrent(), hitRoll: batch.hits[index].roll }, hitBatch: { ...batch, parryIndices: remaining } })
+}
+
+function afterCollectedHit(state: RollState): RollState {
+  return state.hitBatch?.phase === 'collect' ? collectHit(state) : offerParry(state)
+}
+
 /** The defender declines an optional roll (a parry attempt, or the Lucky Charm): the hit stands. */
 export function declineRoll(state: RollState): RollState {
   if (!state.pending?.optional) return state
-  if (state.pending.kind === 'luckyCharm') return offerParry(log(state, 'The Lucky Charm is kept for later.'))
+  if (state.pending.kind === 'luckyCharm') return afterCollectedHit(log(state, 'The Lucky Charm is kept for later.'))
   return afterHit(log(state, 'No parry attempted.'))
 }
 
@@ -212,7 +243,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
         if (!s.charmUsed && plan.luckyCharm !== undefined) {
           return { ...s, charmUsed: true, pending: { kind: 'luckyCharm', who: 'defender', label: 'Lucky Charm', detail: `The first hit of the battle: discarded on ${plan.luckyCharm}+`, optional: true } }
         }
-        return offerParry(s)
+        return afterCollectedHit(s)
       }
       if (pending.kind === 'hit' && input.rerollToHit) {
         return {
@@ -225,7 +256,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
     }
     case 'luckyCharm': {
       if (passesSave(roll, plan.luckyCharm ?? IMPOSSIBLE)) return finishAttack(log(state, `Lucky Charm: rolled ${roll}${rollTag}. The hit is discarded.`, 'bad'), 'charmed')
-      return offerParry(log(state, `Lucky Charm: rolled ${roll}${rollTag}. No luck.`, 'good'))
+      return afterCollectedHit(log(state, `Lucky Charm: rolled ${roll}${rollTag}. No luck.`, 'good'))
     }
     case 'parry':
     case 'parryReroll': {
@@ -362,6 +393,9 @@ function parryDetail(plan: AttackPlan, hitRoll: number): string {
 function offerParry(state: RollState): RollState {
   const plan = state.plans[state.index]
   const hitRoll = state.cur.hitRoll ?? 6
+  if (state.parriesLeft > 0 && (!plan.input.parryEligible || (hitRoll === 6 && !plan.parry.beatsOrMatches && !plan.input.opposedParryWS && plan.parry.fixedThreshold === undefined))) {
+    return afterHit(log({ ...state, parriesLeft: Math.max(0, state.parriesLeft - 1) }, 'The highest hit cannot be parried; this parry opportunity is lost.'))
+  }
   if (plan.input.parryEligible && state.parriesLeft > 0) {
     return {
       ...state,
@@ -373,6 +407,7 @@ function offerParry(state: RollState): RollState {
 }
 
 function afterHit(state: RollState): RollState {
+  if (state.hitBatch?.phase === 'parry') return nextBatchParry(state)
   const input = state.plans[state.index].input
   if (input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) {
     return { ...state, pending: { kind: 'dodge', who: 'defender', label: 'Dodge', detail: `Needs ${thresholdText(input.dodgeThreshold)}` } }
@@ -425,6 +460,9 @@ function woundsThrough(state: RollState): RollState {
     return finishAttack(state, 'saved')
   }
   if (state.cur.crit?.autoOOAOnFailedSave) return finishAttack(log(state, 'Bludgeoned: straight out of action.', 'good'), 'outOfAction')
+  if (state.plans[state.index].input.autoHitKnockedDown) {
+    return finishAttack(log({ ...state, woundsLost: state.woundsLost + through }, 'An unsaved wound against a knocked-down target: automatically out of action.', 'good'), 'outOfAction')
+  }
   const before = state.woundsLost
   const after = before + through
   // Injury is rolled for the wound that takes the target to zero Wounds and every wound after it.

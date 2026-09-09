@@ -114,18 +114,26 @@ describe('rerolls, parry and dodge', () => {
     expect(s.outcomes).toEqual(['miss'])
   })
 
-  it('the defender may parry the first hit of the phase, once', () => {
+  it('collects every hit and parries the highest before damage', () => {
     const plans = [plan('Sword', { parryEligible: true }), plan('Dagger', { parryEligible: true })]
     let s = applyRoll(startPhase(plans, 1, 1), 4)
-    expect(s.pending).toMatchObject({ kind: 'parry', who: 'defender', optional: true, detail: 'Must beat the 4 rolled to hit' })
-    const parried = applyRoll(s, 5)
-    expect(parried.outcomes).toEqual(['parried'])
-    // Second attack: the parry is spent.
-    expect(applyRoll(parried, 4).pending?.kind).toBe('wound')
-    // Failing the parry lets the hit through; declining does too.
-    expect(applyRoll(s, 4).pending?.kind).toBe('wound')
-    expect(declineRoll(s).pending?.kind).toBe('wound')
+    expect(s.pending?.kind).toBe('hit')
+    s = applyRoll(s, 5)
+    expect(s.pending).toMatchObject({ kind: 'parry', who: 'defender', optional: true, detail: 'Must beat the 5 rolled to hit' })
+    const parried = applyRoll(s, 6)
+    expect(parried.pending?.kind).toBe('wound')
+    const finished = applyRoll(parried, 1)
+    expect(finished.outcomes).toEqual(['noWound', 'parried'])
+    expect(finished.done).toBe(true)
     expect(declineRoll(s).parriesLeft).toBe(0)
+  })
+
+  it('a later six prevents an ordinary parry against an earlier four', () => {
+    const plans = [plan('Sword', { parryEligible: true }), plan('Dagger', { parryEligible: true })]
+    const s = rolls(startPhase(plans, 1, 1), 4, 6)
+    expect(s.pending?.kind).toBe('wound')
+    expect(s.parriesLeft).toBe(0)
+    expect(s.log.some(l => l.text.includes('cannot be parried'))).toBe(true)
   })
 
   it('a buckler and sword reroll a failed parry; Master of Blades parries on a match', () => {
@@ -137,10 +145,23 @@ describe('rerolls, parry and dodge', () => {
     expect(applyRoll(master, 4).outcomes).toEqual(['parried'])
   })
 
+  it('Master of Blades resolves both highest-hit parries before any wounds', () => {
+    const p = plan('Sword', { parryEligible: true }, { beatsOrMatches: true, reroll: false })
+    let s = rolls(startPhase([p, p], 1, 2), 4, 6)
+    expect(s.pending?.kind).toBe('parry')
+    expect(s.cur.hitRoll).toBe(6)
+    s = applyRoll(s, 6)
+    expect(s.pending?.kind).toBe('parry')
+    expect(s.cur.hitRoll).toBe(4)
+    s = applyRoll(s, 4)
+    expect(s.outcomes).toEqual(['parried', 'parried'])
+    expect(s.done).toBe(true)
+  })
+
   it('a 6 to hit cannot be parried in the ordinary way', () => {
     const s = applyRoll(startPhase([plan('Sword', { parryEligible: true })], 1, 1), 6)
-    expect(s.pending?.detail).toMatch(/impossible/)
-    expect(applyRoll(s, 6).pending?.kind).toBe('wound')
+    expect(s.pending?.kind).toBe('wound')
+    expect(s.parriesLeft).toBe(0)
   })
 
   it('Dodge is rolled after a shot hits, before wounding', () => {
@@ -272,8 +293,7 @@ describe('attacking a stunned or knocked-down target (01:947-959)', () => {
     s = applyRoll(s, 4) // wound roll: needs 4+
     expect(s.pending).toMatchObject({ kind: 'save' })
     s = applyRoll(s, 1)
-    expect(s.pending?.kind).toBe('injury')
-    s = applyRoll(s, 6)
+    expect(s.pending).toBeNull()
     expect(s.outcomes).toEqual(['outOfAction'])
   })
 

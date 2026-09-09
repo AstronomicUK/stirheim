@@ -80,6 +80,8 @@ export interface AttackInput {
   parryEligible: boolean;
   /** Given a Parry attempt is actually spent on this attack (turnAggregate.ts decides that), probability it succeeds and the attack is discarded entirely. */
   parrySuccessProbGivenAttempt: number;
+  /** Conditional parry probability for each actual hit face (indices 0–6). */
+  parrySuccessByFace?: number[];
   /** House rule: Parry is an opposed WS roll rather than a flat threshold. Set only when the rule is on and a fixed parry threshold (Starblade) isn't already in play. Needs attackerWS/defenderWS to actually resolve the real dice in rollThrough.ts — the probability side already folds the comparison into parrySuccessProbGivenAttempt above. */
   opposedParryWS?: boolean;
   attackerWS?: number;
@@ -200,7 +202,7 @@ function multiWoundMixture(input: AttackInput, baseWounds: number, opts: Omit<Wo
 }
 
 function normalWoundEvents(input: AttackInput): WoundEvent[] {
-  const opts = { ignoresArmourSave: false, separateSaves: false, injuryBonus: 0, ignoresHelmetSave: false, autoOOA: false, minSeverityKnockedDown: false };
+  const opts = { ignoresArmourSave: false, separateSaves: false, injuryBonus: 0, ignoresHelmetSave: false, autoOOA: Boolean(input.autoHitKnockedDown), minSeverityKnockedDown: false };
   if (input.multipleWoundsD3OnHit) return multiWoundMixture(input, 1, opts);
   return woundEvents(input, { wounds: 1, ...opts });
 }
@@ -211,7 +213,7 @@ function critResultEvents(input: AttackInput, result: CritResult): WoundEvent[] 
     separateSaves: (result.separateSaves ?? 1) > 1,
     injuryBonus: result.injuryRollBonus,
     ignoresHelmetSave: Boolean(result.ignoresHelmetSave),
-    autoOOA: Boolean(result.autoOOAOnFailedSave),
+    autoOOA: Boolean(result.autoOOAOnFailedSave || input.autoHitKnockedDown),
     minSeverityKnockedDown: Boolean(result.minSeverityKnockedDown),
   };
   if (input.multipleWoundsD3OnHit) return multiWoundMixture(input, result.woundsCaused, opts);
@@ -235,8 +237,8 @@ export function eventSeverity(event: WoundEvent, woundsTaken: number, maxWounds:
   const total = woundsTaken + event.wounds;
   const rolls = event.wounds === 0 ? 0 : Math.max(0, total - Math.max(woundsTaken, maxWounds - 1));
   let dist: Severity4Distribution;
-  if (rolls === 0) dist = ZERO_DIST;
-  else if (event.autoOOA) dist = { none: 0, knockedDown: 0, stunned: 0, outOfAction: 1 };
+  if (event.autoOOA && event.wounds > 0) dist = { none: 0, knockedDown: 0, stunned: 0, outOfAction: 1 };
+  else if (rolls === 0) dist = ZERO_DIST;
   else {
     const injured = injuryDistributionForWounds(event.injury, rolls);
     dist = { none: injured.none ?? 0, knockedDown: injured.knockedDown, stunned: injured.stunned, outOfAction: injured.outOfAction };
@@ -253,6 +255,7 @@ export function eventsSeverity(events: WoundEvent[], maxWounds = 1, woundsTaken 
 }
 
 export interface SingleAttackBreakdown {
+  hitFaces?: { face: number; probability: number; wound: number; trigger: number; parry: number }[];
   pHit: number;
   /** Joint hit & wound probability, after Dodge (ranged) is applied. */
   pWound: number;
@@ -337,6 +340,15 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
 
   return {
     pHit,
+    hitFaces: input.autoHitKnockedDown ? undefined : [
+      { face: 0, probability: 1 - pHit, wound: 0, trigger: 0, parry: 0 },
+      ...Array.from({ length: 6 }, (_, i) => i + 1).filter(face => input.hitThreshold !== IMPOSSIBLE && face > 1 && (face === 6 || face >= input.hitThreshold)).map(face => ({
+        face, probability: (1 + (input.rerollToHit ? 1 - pHitBase : 0)) / 6,
+        wound: (1 - pDodge) * (input.autoWoundOnNaturalSixToHit && face === 6 ? 1 : pWoundIfHit),
+        trigger: (1 - pDodge) * triggerFraction,
+        parry: input.parrySuccessByFace?.[face] ?? input.parrySuccessProbGivenAttempt,
+      })),
+    ],
     pWound,
     pWoundNormal,
     pWoundTriggerEligible,

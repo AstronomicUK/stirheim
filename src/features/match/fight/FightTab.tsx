@@ -122,6 +122,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
   // The roll-through lives in a sheet the dice button opens, rather than a slab down the page.
   const [rolling, setRolling] = useState(false)
+  const [rollSetup, setRollSetup] = useState<FightOdds | null>(null)
 
   // Carry-over between fights: the target's remaining Wounds (their sheet, or what we saw happen here),
   // whether their one parry this turn is spent, and how many of the attacker's attacks go at them.
@@ -332,7 +333,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         <button
           type="button"
           disabled={!odds || !attacker || !defender || odds.attacks < 1}
-          onClick={() => setRolling(true)}
+          onClick={() => { setRollSetup(null); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
           className="stirheim-dice-button absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
@@ -355,9 +356,13 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               </Button>
             }
           >
-          <RollSection
-            key={`${attackKey}:${JSON.stringify(context)}`}
-            odds={odds}
+          {!rollSetup ? <div className="flex flex-col gap-4 py-3">
+            <p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
+            <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} />
+            <Button block onClick={() => setRollSetup(odds)}>Begin attacks</Button>
+          </div> : <RollSection
+            key={attackKey}
+            odds={rollSetup}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, attempt))}
             attacker={attacker}
@@ -391,7 +396,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 // An animal is a single model: its tally is a hero-style out toggle under its animal id.
                 target_name: defender.name,
                 target_size: defender.groupSize ?? 1,
-                wounds_lost: Math.max(0, state.woundsLost - odds.woundsAlreadyLost),
+                wounds_lost: Math.max(0, state.woundsLost - rollSetup.woundsAlreadyLost),
                 out_of_action: state.worst === 'outOfAction',
                 kill: state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
@@ -401,7 +406,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               })
             }
             onFinished={rememberFight}
-          />
+          />}
           </Sheet>
           <OddsSection odds={odds} attacker={attacker} defender={defender} />
         </>

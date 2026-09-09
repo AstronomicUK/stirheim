@@ -366,6 +366,18 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     autoWoundOnNaturalSixToHit: autoWound,
     parryEligible,
     parrySuccessProbGivenAttempt,
+    parrySuccessByFace: Array.from({ length: 7 }, (_, hit) => {
+      if (!parryEligible) return 0;
+      let wins = 0;
+      for (let die = 1; die <= 6; die++) {
+        const success = defender.parryThreshold !== undefined ? die >= Math.max(2, defender.parryThreshold)
+          : opposedParryWS ? (masterOfBlades ? defender.WS + die >= effectiveWS + hit : defender.WS + die > effectiveWS + hit)
+          : masterOfBlades ? die >= hit : die > hit;
+        if (success) wins++;
+      }
+      const p = wins / 6;
+      return defender.parryReroll ? 1 - (1 - p) ** 2 : p;
+    }),
     autoHitKnockedDown,
     autoOutOfActionStunned,
     multipleWoundsD3OnHit: weapon.multipleWoundsD3OnHit,

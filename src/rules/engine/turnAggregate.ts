@@ -6,8 +6,8 @@
 //
 // - A model may cause at most one critical hit per phase: the FIRST attack whose wound roll lands
 //   on a crit-trigger face becomes the crit; every other such attack just wounds normally.
-// - A defender gets at most `maxParries` Parry ATTEMPTS per phase (usually 1): the first eligible
-//   hits each get one D6 attempt to discard the attack outright before it reaches the wound roll.
+// - A defender gets at most `maxParries` Parry ATTEMPTS per phase (usually 1), against the highest
+//   hit(s). The public wrapper partitions those hit faces before running the wound chain below.
 // - A target with W Wounds only starts rolling for Injury once it has taken W wounds this phase
 //   (the wound that takes it to zero, and every wound after that — one roll each, highest applies).
 //   A two-wound critical counts double. Wounds already taken in earlier turns aren't tracked: the
@@ -148,7 +148,7 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
  * order. `maxParries` — see buildAttackInput.ts's computeMaxParries. `defenderWounds` is the
  * target's Wounds characteristic (default 1).
  */
-export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries: number = 0, defenderWounds: number = 1, woundsAlreadyTaken: number = 0): TurnResult {
+function resolveIndependentTurn(attacks: SingleAttackBreakdown[], maxParries: number = 0, defenderWounds: number = 1, woundsAlreadyTaken: number = 0): TurnResult {
   const maxWounds = Math.max(1, Math.round(defenderWounds));
   let state = emptyState(maxParries, maxWounds);
   // Lost Wounds carry over between turns: a target already down to its last Wound (or at zero and
@@ -195,4 +195,54 @@ export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries: number
     ricochetProbability,
     attacks: attacks.length,
   };
+}
+
+/** Partition by the highest hit(s), then run the damage chain in its original weapon order.
+ * Each partition leaves independent, truncated hit-face distributions, avoiding 6^attacks enumeration.
+ */
+export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries = 0, defenderWounds = 1, woundsAlreadyTaken = 0): TurnResult {
+  if (maxParries === 0 || !attacks.some(a => a.parryEligible) || attacks.some(a => !a.hitFaces)) {
+    return resolveIndependentTurn(attacks, maxParries, defenderWounds, woundsAlreadyTaken);
+  }
+  const total: TurnResult = { distribution: { none: 0, knockedDown: 0, stunned: 0, outOfAction: 0 }, outOfActionProbability: 0, anyHitProbability: 1 - attacks.reduce((p, a) => p * (1 - a.pHit), 1), anyWoundProbability: 0, criticalHitProbability: 0, outOfActionGivenCriticalHit: 0, ricochetProbability: 0, attacks: attacks.length };
+  let jointCritOOA = 0;
+  type Face = NonNullable<SingleAttackBreakdown['hitFaces']>[number];
+  function accumulate(options: Face[][], selected: Map<number, Face>) {
+    let mass = 1;
+    const conditioned = attacks.map((a, i) => {
+      const faces = selected.has(i) ? [selected.get(i)!] : options[i];
+      const weight = faces.reduce((n, f) => n + f.probability, 0);
+      mass *= weight;
+      const retained = selected.has(i) && a.parryEligible ? 1 - selected.get(i)!.parry : 1;
+      const hit = faces.reduce((n, f) => n + (f.face > 0 ? f.probability : 0), 0);
+      const wound = faces.reduce((n, f) => n + f.probability * f.wound, 0);
+      const trigger = faces.reduce((n, f) => n + f.probability * f.trigger, 0);
+      const scale = weight > 0 ? retained / weight : 0;
+      return { ...a, hitFaces: undefined, parryEligible: false, pHit: hit * scale, pWound: wound * scale, pWoundNormal: Math.max(0, wound - trigger) * scale, pWoundTriggerEligible: trigger * scale };
+    });
+    if (mass === 0) return;
+    const r = resolveIndependentTurn(conditioned, 0, defenderWounds, woundsAlreadyTaken);
+    for (const k of OUTCOME_KEYS) total.distribution[k] += mass * r.distribution[k];
+    total.anyWoundProbability += mass * r.anyWoundProbability;
+    total.criticalHitProbability += mass * r.criticalHitProbability;
+    jointCritOOA += mass * r.criticalHitProbability * r.outOfActionGivenCriticalHit;
+    total.ricochetProbability += mass * r.ricochetProbability;
+  }
+  function partition(options: Face[][], selected: Map<number, Face>) {
+    if (selected.size >= maxParries) { accumulate(options, selected); return; }
+    // Fewer hits than available parries: all remaining attacks miss.
+    accumulate(options.map((faces, i) => selected.has(i) ? faces : faces.filter(f => f.face === 0)), selected);
+    for (let i = 0; i < attacks.length; i++) {
+      if (selected.has(i)) continue;
+      for (const face of options[i]) {
+        if (face.face === 0 || face.probability === 0) continue;
+        const next = options.map((faces, j) => selected.has(j) || j === i ? faces : faces.filter(f => f.face < face.face || (f.face === face.face && j > i)));
+        partition(next, new Map([...selected, [i, face]]));
+      }
+    }
+  }
+  partition(attacks.map(a => a.hitFaces!), new Map());
+  total.outOfActionProbability = total.distribution.outOfAction;
+  total.outOfActionGivenCriticalHit = total.criticalHitProbability > 0 ? jointCritOOA / total.criticalHitProbability : 0;
+  return total;
 }

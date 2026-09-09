@@ -60,6 +60,8 @@ export const warriorFlagsSchema = z.object({
   addictedTo: z.array(z.string()).optional(),
   /** Rewards of the Shadowlord: Possessed by a Daemon. */
   daemonPossessed: z.boolean().optional(),
+  /** Sold to the Pits: owes a fight against a Pit Fighter before rejoining the warband (#54). */
+  pitFightOwed: z.boolean().optional(),
 }) satisfies z.ZodType<WarriorFlags>;
 
 /** henchman_groups.stat_increases: increases already taken per characteristic. */

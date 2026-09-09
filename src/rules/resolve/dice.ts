@@ -64,6 +64,18 @@ export function rollDie(sides: number, rng: () => number = Math.random): number 
 }
 
 /**
+ * A D66 restricted to a range (Sold to the Pits' follow-up roll is "11-35" — the rulebook doesn't
+ * offer a re-roll rule for this, so this rerolls silently rather than surfacing an invalid result).
+ * Not every number in [min, max] is reachable if the range doesn't respect D66's tens/units shape
+ * (e.g. 36-39 never come up at all); callers should only use ranges the source actually specifies.
+ */
+export function rollD66InRange(min: number, max: number, rng: () => number = Math.random): number {
+  let roll = rollDie(D66_SIDES, rng);
+  for (let guard = 0; (roll < min || roll > max) && guard < 200; guard++) roll = rollDie(D66_SIDES, rng);
+  return roll;
+}
+
+/**
  * Roll a spec or expression. `rng` defaults to Math.random; pass a seeded function in tests and
  * in any resolver that needs determinism. This is the only place randomness enters src/rules.
  */

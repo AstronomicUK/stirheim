@@ -115,7 +115,7 @@ const FLAG_KEYS: Record<InjuryFlag, keyof WarriorFlags | null> = {
   captured: "captured",
   blindedInOneEye: "blindedInOneEye",
   robbed: null,
-  soldToThePits: null,
+  soldToThePits: "pitFightOwed",
   bitterEnmity: null, // set via flags.hates from the sub-roll outcome text
 };
 

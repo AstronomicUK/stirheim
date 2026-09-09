@@ -25,6 +25,7 @@ import { WarbandHistory } from './view/WarbandHistory'
 import { ImportFixups } from './view/ImportFixups'
 import { ImportQuestions } from './view/ImportQuestions'
 import { GrimoireCard } from './view/GrimoireCard'
+import { PitFightCard } from './view/PitFightCard'
 import { PendingBattleCard } from './view/PendingBattleCard'
 import { usePageTitle } from '../onboarding/usePageTitle'
 
@@ -202,6 +203,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
 
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
+      <PitFightCard detail={detail} canEdit={canEdit} onError={setActionError} />
       {rating.notes.length > 0 ? (
         <Notice tone="info" title="Rating notes">
           <ul className="flex list-disc flex-col gap-1 pl-4">

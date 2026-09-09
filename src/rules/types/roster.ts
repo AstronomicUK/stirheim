@@ -70,6 +70,8 @@ export interface WarriorFlags {
   readBookOfTheDead?: boolean;
   /** Has read the Liber Bubonicus (a warband may use one only, once, in a campaign). */
   readLiberBubonicus?: boolean;
+  /** Sold to the Pits: owes a fight against a Pit Fighter before rejoining the warband (#54). */
+  pitFightOwed?: boolean;
 }
 
 export interface RosterHero {

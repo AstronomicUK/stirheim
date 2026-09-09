@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RulesError } from "../errors";
-import { minMax, multiplesIn, parseDice, rollDice, rollDie, sumDice } from "../dice";
+import { minMax, multiplesIn, parseDice, rollD66InRange, rollDice, rollDie, sumDice } from "../dice";
 import { seededRng } from "./fixtures";
 
 describe("parseDice", () => {
@@ -108,6 +108,25 @@ describe("rollDice", () => {
       expect(total).toBeGreaterThanOrEqual(2);
       expect(total).toBeLessThanOrEqual(12);
     }
+  });
+});
+
+describe("rollD66InRange (#54)", () => {
+  it("stays within the given range across many real rolls", () => {
+    for (let i = 0; i < 500; i++) {
+      const roll = rollD66InRange(11, 35);
+      expect(roll).toBeGreaterThanOrEqual(11);
+      expect(roll).toBeLessThanOrEqual(35);
+    }
+  });
+
+  it("rerolls a value outside the range with a scripted rng, rather than returning it", () => {
+    // First D66 comes out 42 (out of range: tens 0.65->4, units 0.2->2), second comes out
+    // 26 (in range: tens 0.2->2, units 0.9->6).
+    const values = [0.65, 0.2, 0.2, 0.9];
+    let i = 0;
+    const rng = () => values[i++];
+    expect(rollD66InRange(11, 35, rng)).toBe(26);
   });
 });
 

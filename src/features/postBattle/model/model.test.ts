@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { battleReportSchema, emptyBattleLiveState, type ItemRow } from '../../../domain'
+import { battleReportSchema, emptyBattleLiveState, heroReportPatchSchema, type ItemRow } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { deriveExploration } from './exploration'
@@ -238,6 +238,22 @@ describe('hero injuries', () => {
     expect(d.injuries.heroes[0].resolution.outcome).toBe('recovered')
     expect(d.xp.lines.find((l) => l.subjectId === 'champion')).toMatchObject({ amount: 1, xpAfter: 8, advancesEarned: 1 })
     expect(d.report?.applied.remove_item_ids).toEqual([])
+  })
+
+  it('Sold to the Pits sets pitFightOwed on the hero, in the applied patch, and survives the report schema (#54)', () => {
+    let draft = setResult(emptyDraft(), 'lost')
+    draft = setHeroOut(draft, 'champion', true)
+    draft = addHeroInjuryRoll(draft, 'champion', 65)
+    const d = derive(draft)
+    const res = d.injuries.heroes[0].resolution
+    expect(res.hero.flags.pitFightOwed).toBe(true)
+    const patch = d.report?.applied.heroes.find((h) => h.id === 'champion')?.patch
+    expect(patch?.flags).toMatchObject({ pitFightOwed: true })
+    // #54's actual bug: derive.ts got this right, but warriorFlagsSchema (domain/json.ts) didn't
+    // know the key yet, and battleReportSchema.parse() silently stripped it before the RPC call —
+    // `satisfies z.ZodType<WarriorFlags>` does not catch a schema missing an optional field, so
+    // this only ever shows up by actually parsing a real patch through it, not from tsc.
+    expect(heroReportPatchSchema.shape.patch.parse(patch).flags).toMatchObject({ pitFightOwed: true })
   })
 
   it('Robbed removes the equipment rows and keeps the hero', () => {

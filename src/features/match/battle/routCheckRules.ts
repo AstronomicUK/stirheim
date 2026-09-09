@@ -40,3 +40,54 @@ export function leadershipOptions(roster: RosterWarband, template: WarbandTempla
 export function suggestedLeadership(options: LdOption[]): LdOption | undefined {
   return options.find((o) => o.leader && o.standing) ?? options.find((o) => o.standing && o.mayLead) ?? options.find((o) => o.standing) ?? options[0]
 }
+
+/**
+ * #68: 15 warband skills across 10 warbands re-roll or avoid a failed Rout test, and none of them
+ * showed up anywhere on the rout screen despite being on the hero's own roster data. This is a
+ * reminder list, not automation — same house style as the Frenzy/Hatred combat-trait badges: the
+ * exact conditions (once per game, "only if not stunned or knocked down", a specific hero only)
+ * are folded into the note text for the table to apply themselves, since the sheet doesn't track
+ * per-turn state precisely enough to enforce them.
+ */
+const ROUT_SKILLS: { skillId: string; skillName: string; note: string }[] = [
+  { skillId: "sisters_of_sigmar_skills_utter_determination", skillName: "Utter Determination", note: "may re-roll a failed Rout test" },
+  { skillId: "protectorate_of_sigmar_special_skills_utter_determination", skillName: "Utter Determination", note: "may re-roll a failed Rout test" },
+  { skillId: "beastmen_raiders_special_skills_bellowing_roar", skillName: "Bellowing Roar", note: "may re-roll the first failed Rout test" },
+  { skillId: "maneaters_skills_bellowing_roar", skillName: "Bellowing Roar", note: "may re-roll the first failed Rout test" },
+  { skillId: "ogre_hunting_party_skills_bellowing_roar", skillName: "Bellowing Roar", note: "may re-roll the first failed Rout test" },
+  { skillId: "orc_mob_skills_da_cunnin_plan", skillName: "Da Cunnin' Plan", note: "the warband may re-roll a failed Rout test while the Boss is not out of action" },
+  { skillId: "black_orcs_skills_da_cunnin_plan", skillName: "Da Cunnin' Plan", note: "the warband may re-roll a failed Rout test while the Boss is not out of action" },
+  { skillId: "ostlander_mercenaries_skills_blood_oath", skillName: "Blood Oath", note: "may re-roll a failed Rout test, once per game" },
+  { skillId: "bretonnian_knights_virtues_virtue_of_discipline", skillName: "Virtue of Discipline", note: "may re-roll a failed Rout test once per game, if not out of action, stunned or knocked down" },
+  { skillId: "black_dwarfs_skills_tyrant", skillName: "Tyrant", note: "may re-roll a failed Rout test if not knocked down or stunned — the new result stands even if worse" },
+  { skillId: "bretonnian_chapel_guard_skills_questing_vow", skillName: "Questing Vow", note: "may re-roll a Rout test once, if charging, charged, or fighting a fear-causing enemy" },
+  { skillId: "marauders_of_chaos_skills_heart_of_the_warrior", skillName: "Heart of the Warrior", note: "may re-roll a failed Rout test" },
+  { skillId: "dreamwalkers_cult_of_morr_skills_fanatical", skillName: "Fanatical", note: "may re-roll a failed Rout test once per game, if not out of action, stunned or knocked down" },
+  { skillId: "dwarf_slayer_cult_skills_songster", skillName: "Songster", note: "gives any friendly model within 6\" +1 Leadership and a re-roll on a failed Rout test, to a max of 10" },
+];
+
+export interface RoutSkillReminder {
+  warriorId: string;
+  warriorName: string;
+  skillName: string;
+  note: string;
+}
+
+/** Standing heroes (or hired swords/personae, in case a future data source grants them one) whose
+ * skills affect a Rout test. Out-of-action warriors are excluded — a fallen hero's skill can't help. */
+export function routSkillReminders(roster: RosterWarband, sheet: BattleLiveState): RoutSkillReminder[] {
+  const out: RoutSkillReminder[] = [];
+  const warriors: { id: string; name: string; skillIds: string[] }[] = [
+    ...roster.heroes,
+    ...roster.hiredSwords,
+  ];
+  for (const warrior of warriors) {
+    if (isHeroOut(sheet, warrior.id)) continue;
+    for (const entry of ROUT_SKILLS) {
+      if (warrior.skillIds.includes(entry.skillId)) {
+        out.push({ warriorId: warrior.id, warriorName: warrior.name, skillName: entry.skillName, note: entry.note });
+      }
+    }
+  }
+  return out;
+}

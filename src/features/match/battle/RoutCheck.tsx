@@ -10,7 +10,7 @@ import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband } from '../../../rules/types/roster'
 import { Button, DieField, Notice, SelectField, Sheet } from '../../../ui'
 import type { SheetTotals } from './sheet'
-import { leadershipOptions, suggestedLeadership } from './routCheckRules'
+import { leadershipOptions, routSkillReminders, suggestedLeadership } from './routCheckRules'
 import { setNotes, setRouted } from './sheet'
 
 export interface RoutCheckProps {
@@ -35,6 +35,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
   const [outcome, setOutcome] = useState<'passed' | 'failed' | null>(null)
   const options = leadershipOptions(roster, template, sheet, leaderLd)
   const suggested = suggestedLeadership(options)
+  const skillReminders = routSkillReminders(roster, sheet)
   const [chosenId, setChosenId] = useState<string | null>(null)
   const chosen = options.find((o) => o.id === chosenId) ?? suggested
   const [d1, setD1] = useState<number | null>(null)
@@ -142,6 +143,17 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
           </SelectField>
           {suggested && chosen && chosen.id !== suggested.id ? (
             <p className="text-xs text-ink-dim">The rules suggest {suggested.label}; using someone else is your call at the table.</p>
+          ) : null}
+          {skillReminders.length > 0 ? (
+            <Notice tone="info" title="Before you roll">
+              <ul className="flex flex-col gap-1">
+                {skillReminders.map((r, i) => (
+                  <li key={`${r.warriorId}-${i}`}>
+                    <span className="font-semibold text-ink">{r.warriorName}</span> has <span className="font-semibold text-ink">{r.skillName}</span> — {r.note}.
+                  </li>
+                ))}
+              </ul>
+            </Notice>
           ) : null}
           <div className="flex flex-wrap items-end gap-3">
             <DieField label="First die" sides={6} value={d1} onChange={setD1} disabled={outcome !== null} />

@@ -1680,7 +1680,7 @@ Equipment-list membership (the first bullet above) is left open — it needs a d
 
 ### 68. Rout checks: 15 warband skills that should help are invisible on the rout screen, plus per-warband model-counting exceptions
 
-**Status:** 🔲 Open
+**Status:** 🟡 Partially fixed — the 15 skills now show a reminder; model-counting exceptions and the rest remain open
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the warband rating and rout rules audit, reviewed by Tom, sent directly for the tracker
 
@@ -1696,6 +1696,8 @@ Equipment-list membership (the first bullet above) is left open — it needs a d
 - **Housekeeping**: two functions are both named `warbandRating` — `resolve/rating.ts`'s is the real one every screen and both API paths use; `data/campaign/trading.ts`'s only caller is its own test, dead code that could silently drift. Worth deleting or renaming.
 
 Also confirmed correct: voluntary rout is offered exactly when the rulebook allows it (only once a test is required), and nothing wrongly exempts psychology-immune warbands from rout tests (the Undead must test too, correctly).
+
+**Fixed (2026-09-09), the first bullet above:** all 15 skill entries (10 distinct skills across Sisters of Sigmar, Protectorate of Sigmar, Beastmen Raiders, Maneaters, Ogre Hunting Party, Orc Mob, Black Orcs, Ostlander Mercenaries, Bretonnian Knights, Black Dwarfs, Bretonnian Chapel Guard, Marauders of Chaos, Dreamwalkers and Dwarf Slayer Cult) now surface as a reminder in `RoutCheck.tsx` right before the roll, whenever a standing hero or hired sword holds one. This is a reminder, same house style as the Frenzy/Hatred combat-trait badges, not automation — each note folds in its own condition ("once per game", "while the Boss is not out of action", "if not knocked down or stunned") for the table to apply themselves, since the sheet doesn't track per-turn state precisely enough to enforce it (same limitation as the "stunned" bullet below). New file: `ROUT_SKILLS` table and `routSkillReminders()` in `routCheckRules.ts`. Verified with 4 new tests (a standing hero surfaces its reminder, an out-of-action one doesn't, a hired sword is checked too, no false positives) plus the full suite (1232 passed); `tsc -b` and `oxlint` clean. **Left open, unchanged:** the model-counting exceptions (Snotlings, Night Goblins' Squigs, etc.), the missing "stunned" state for the leader-substitution rule, Merchant Caravans' Bribery (a real payment flow, not a reminder), and Trade Wagon abandonment.
 
 ### 69. Combat engine: multi-wound weapons always inflict one wound, plus seven more untracked weapon rules
 

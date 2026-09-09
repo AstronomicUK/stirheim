@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
-import { leadershipOptions, suggestedLeadership } from './routCheckRules'
+import { leadershipOptions, routSkillReminders, suggestedLeadership } from './routCheckRules'
 import { toggleHeroOut } from './sheet'
 
 const REIKLAND = findWarbandTemplate('mercenaries_reikland')!
@@ -48,5 +48,37 @@ describe('rout check leadership', () => {
     // Even once the leader is down, the suggestion falls to the next eligible hero, not the hired sword.
     const sheet = toggleHeroOut(emptyBattleLiveState(), 'cap')
     expect(suggestedLeadership(leadershipOptions(withOgre, REIKLAND, sheet))?.id).toBe('ch1')
+  })
+})
+
+describe('rout skill reminders (#68)', () => {
+  it('surfaces a standing hero holding a rout-affecting skill', () => {
+    const matriarch = hero('m', 'Reverend Mother Elsbeth', 'sisters_of_sigmar_matriarch', 8)
+    matriarch.skillIds = ['sisters_of_sigmar_skills_utter_determination']
+    const withSkill: RosterWarband = { ...roster, heroes: [...roster.heroes, matriarch] }
+    const reminders = routSkillReminders(withSkill, emptyBattleLiveState())
+    expect(reminders).toEqual([{ warriorId: 'm', warriorName: 'Reverend Mother Elsbeth', skillName: 'Utter Determination', note: 'may re-roll a failed Rout test' }])
+  })
+
+  it('drops the reminder once that warrior is out of action', () => {
+    const boss = hero('boss', 'Grishnak', 'orc_mob_boss', 7)
+    boss.skillIds = ['orc_mob_skills_da_cunnin_plan']
+    const withSkill: RosterWarband = { ...roster, heroes: [...roster.heroes, boss] }
+    const sheet = toggleHeroOut(emptyBattleLiveState(), 'boss')
+    expect(routSkillReminders(withSkill, sheet)).toEqual([])
+  })
+
+  it('also checks hired swords, in case a future data source grants one the skill', () => {
+    const bard: RosterHiredSword = {
+      id: 'bard', hiredSwordId: 'dwarf_slayer_cult_bard', name: 'Ustgrim', stats: { ...stats, Ld: 7 }, xp: 0, levelUps: 0, skillIds: ['dwarf_slayer_cult_skills_songster'], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active',
+    }
+    const withBard: RosterWarband = { ...roster, hiredSwords: [bard] }
+    const reminders = routSkillReminders(withBard, emptyBattleLiveState())
+    expect(reminders).toHaveLength(1)
+    expect(reminders[0].skillName).toBe('Songster')
+  })
+
+  it('returns nothing when no standing warrior has a rout-affecting skill', () => {
+    expect(routSkillReminders(roster, emptyBattleLiveState())).toEqual([])
   })
 })

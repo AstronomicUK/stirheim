@@ -117,6 +117,10 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
   const [tumbling, setTumbling] = useState<number[] | null>(null)
   // The faces that just came up, held and flashed before the step moves on.
   const [landed, setLanded] = useState<number[] | null>(null)
+  // Every face each die has shown while this roll is still in progress (#20) — with more than one
+  // die, a player can keep re-tapping one die's face while the other sits blank, with the old face
+  // otherwise vanishing the moment a new one is tapped. Visible so that can't happen out of sight.
+  const [attemptsByDie, setAttemptsByDie] = useState<number[][]>(() => Array.from({ length: count }, () => []))
   const timers = useRef<number[]>([])
   // Mirrors `values` so two taps landing in the same frame do not both read the pre-tap array.
   const latest = useRef<(number | null)[]>(Array<number | null>(count).fill(null))
@@ -141,6 +145,13 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
     if (disabled) return
     const next = [...latest.current]
     next[index] = value
+    setAttemptsByDie((prev) => {
+      const mine = prev[index]
+      if (mine[mine.length - 1] === value) return prev
+      const copy = [...prev]
+      copy[index] = [...mine, value]
+      return copy
+    })
     settle(next)
   }
 
@@ -180,25 +191,33 @@ function OneRoll({ count = 1, sides = 6, onComplete, label, disabled = false, ro
     <div className={`flex flex-col gap-2 ${className}`} role="group" aria-label={label}>
       {Array.from({ length: count }, (_, die) => {
         const chosen = tumbling ? tumbling[die] : (landed?.[die] ?? values[die])
+        const attempts = attemptsByDie[die] ?? []
         return (
-          <div key={die} className="flex flex-wrap items-center gap-1.5">
-            {count > 1 ? <span className="w-10 text-[10px] uppercase tracking-wide text-ink-dim">Die {die + 1}</span> : null}
-            {faces.map((face) => {
-              const active = chosen === face
-              return (
-                <button
-                  key={face}
-                  type="button"
-                  disabled={disabled || tumbling !== null || landed !== null}
-                  aria-label={count > 1 ? `${label}: die ${die + 1}, ${face}` : `${label}: ${face}`}
-                  aria-pressed={active}
-                  onClick={() => set(die, face)}
-                  className={`rounded-[22%] transition-transform disabled:cursor-default ${active ? (landed ? 'stirheim-land' : 'scale-105') : 'opacity-60 hover:opacity-100'}`}
-                >
-                  <DieFace value={face} size={38} tone={active ? 'brass' : 'plain'} rolling={tumbling !== null} />
-                </button>
-              )
-            })}
+          <div key={die} className="flex flex-col gap-0.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {count > 1 ? <span className="w-10 text-[10px] uppercase tracking-wide text-ink-dim">Die {die + 1}</span> : null}
+              {faces.map((face) => {
+                const active = chosen === face
+                return (
+                  <button
+                    key={face}
+                    type="button"
+                    disabled={disabled || tumbling !== null || landed !== null}
+                    aria-label={count > 1 ? `${label}: die ${die + 1}, ${face}` : `${label}: ${face}`}
+                    aria-pressed={active}
+                    onClick={() => set(die, face)}
+                    className={`rounded-[22%] transition-transform disabled:cursor-default ${active ? (landed ? 'stirheim-land' : 'scale-105') : 'opacity-60 hover:opacity-100'}`}
+                  >
+                    <DieFace value={face} size={38} tone={active ? 'brass' : 'plain'} rolling={tumbling !== null} />
+                  </button>
+                )
+              })}
+            </div>
+            {attempts.length > 1 ? (
+              <p className="pl-1 text-[10px] text-ink-dim" title="Every face this die has shown for this roll, in order — visible so a re-tap can't happen out of sight.">
+                Tried {attempts.join(' → ')}
+              </p>
+            ) : null}
           </div>
         )
       })}

@@ -33,6 +33,9 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
   const [seen, setSeen] = useState(value)
   // Which way the current value arrived, for the "app-rolled" / "entered" tag; unknown until typed or rolled here.
   const [manual, setManual] = useState<boolean | null>(null)
+  // Every value that has passed through this field since it was last blank — #20: re-typing or
+  // re-rolling to a result you like better should stay visible, not vanish the moment it's replaced.
+  const [attempts, setAttempts] = useState<number[]>([])
 
   const valid = (n: number | null): n is number => n !== null && Number.isInteger(n) && n >= 1 && n <= sides
 
@@ -43,6 +46,7 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
     if (value === null) {
       if (valid(parsed)) setText('')
       setManual(null)
+      setAttempts([])
     } else if (parsed !== value) {
       // Arrived from outside (a parent rolling several dice at once, say): our own text/roll didn't produce it.
       setText(String(value))
@@ -50,17 +54,24 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
     }
   }
 
+  function record(n: number) {
+    setAttempts((a) => (a[a.length - 1] === n ? a : [...a, n]))
+  }
+
   function handle(next: string) {
     setText(next)
     const parsed = parse(next)
-    setManual(valid(parsed) ? true : null)
-    onChange(valid(parsed) ? parsed : null)
+    const ok = valid(parsed)
+    setManual(ok ? true : null)
+    if (ok) record(parsed)
+    onChange(ok ? parsed : null)
   }
 
   function roll() {
     const result = rollDie(sides)
     setText(String(result))
     setManual(false)
+    record(result)
     onChange(result)
   }
 
@@ -103,6 +114,10 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
       {invalid ? (
         <p id={`${id}-error`} className="text-xs text-accent-strong">
           1 to {sides}
+        </p>
+      ) : attempts.length > 1 ? (
+        <p className="text-[10px] text-ink-dim" title="Every result this field has held, in order — visible so a re-roll can't happen out of sight.">
+          Tried {attempts.join(' → ')}
         </p>
       ) : manual !== null ? (
         <p className="text-[10px] text-ink-dim">{manual ? 'Entered' : 'App-rolled'}</p>

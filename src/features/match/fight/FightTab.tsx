@@ -612,6 +612,10 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
   const stateRef = useRef<RollState | null>(null)
   const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
   const [logError, setLogError] = useState<string | null>(null)
+  // Every attempt "Start again" threw away without logging (#20) — kept visible, not restricted:
+  // Tom's own call was that restarting should stay unrestricted friction-wise, but a discarded
+  // attempt vanishing with zero trace is exactly the "reroll before anyone sees it" risk raised.
+  const [pastAttempts, setPastAttempts] = useState<RollState['log'][]>([])
 
   function start() {
     const plans: AttackPlan[] = odds.weapons.flatMap((w) =>
@@ -772,6 +776,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
             variant="ghost"
             block
             onClick={() => {
+              if (stateRef.current && stateRef.current.log.length > 0) setPastAttempts((p) => [...p, stateRef.current!.log])
               stateRef.current = null
               setShown(null)
               start()
@@ -779,6 +784,24 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
           >
             Start again
           </Button>
+
+          {pastAttempts.length > 0 ? (
+            <details className="text-xs text-ink-dim">
+              <summary className="cursor-pointer select-none">
+                {pastAttempts.length} earlier {pastAttempts.length === 1 ? 'attempt was' : 'attempts were'} restarted without logging
+              </summary>
+              <ol className="mt-2 flex flex-col gap-2">
+                {pastAttempts.map((log, i) => (
+                  <li key={i} className="rounded-md border border-border bg-surface-low p-2">
+                    <p className="mb-1 font-semibold text-ink-dim">Attempt {i + 1}</p>
+                    {log.map((line, j) => (
+                      <p key={j}>{line.text}</p>
+                    ))}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          ) : null}
         </div>
       )}
     </div>

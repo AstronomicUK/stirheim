@@ -546,7 +546,7 @@ Second half is more nuanced than it first looks — **most of what's being asked
 
 ### 20. Tapping a dice-roll button more than once should log every result, not just the last one, to stop re-rolling out of sight
 
-**Status:** 🔲 Open — scope settled, not yet built
+**Status:** ✅ Fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -560,7 +560,13 @@ Second half is more nuanced than it first looks — **most of what's being asked
 
 Any fix needs to decide where the retained history is meant to live (kept only for the current session so a GM can see it live, vs. actually persisted to the record) and whether "Start again" should still be allowed unrestricted once dice have been rolled — that's a product question worth settling with Tom before writing code here, since it changes how disruptive/costly the fix is.
 
-**Settled by Tom (2026-09-09):** log every attempt for visibility, but keep "Start again" unrestricted — don't add friction for genuine mistakes, just make re-rolling out of sight impossible to hide. Not yet built.
+**Settled by Tom (2026-09-09):** log every attempt for visibility, but keep "Start again" unrestricted — don't add friction for genuine mistakes, just make re-rolling out of sight impossible to hide.
+
+**Fixed (2026-09-09), all three surfaces:** deliberately kept this to on-screen visibility, not a persisted database trail — Tom's own framing was "shouldn't happen out of sight" (of the other players watching), not "must survive to an audit log," and a visible trail costs nothing structurally while a persisted one would need new columns on top of these three already-different data shapes.
+  - **`DieField`** (`src/ui/DieField.tsx`): now keeps an `attempts` array of every distinct value that has passed through the field (typed or rolled) since it was last blank, and shows "Tried 5 → 3" in place of the usual "Entered"/"App-rolled" tag once there's more than one. Resets to empty when the field goes back to blank from outside (a genuinely new question), so a fresh field doesn't inherit a stale trail.
+  - **`DicePicker`** (`src/ui/Dice.tsx`): the 2D6 case let a player keep re-tapping one die's face while the other sat blank, with no trace once a die's second tap replaced the first. Same "Tried X → Y" treatment, per die, shown under that die's row once it has more than one distinct tap. A single-die picker has no exploit to fix — tapping any face already completes the roll immediately, so there's nothing to hide there.
+  - **Fight tab's "Start again"** (`FightTab.tsx`): the more consequential case, since a full attack's to-hit/to-wound/injury sequence could be discarded with zero trace by hitting "Start again" before "Log to both sheets." Kept genuinely unrestricted (no confirmation dialog, no cooldown, per Tom's own call) but the discarded attempt's full dice log is now kept in a `pastAttempts` list and shown in a collapsed "N earlier attempts were restarted without logging" disclosure, expandable to read exactly what happened in each one.
+  - Verified live: Advances → Resolve on a real hero (The Argent Hammer's Artur), typed a new First D6 value over an existing one and confirmed "Tried 5 → 3" appeared exactly as designed, then closed without submitting — the advance is still owed and nothing was recorded. `DicePicker`'s per-die trail and the Fight tab's restart history weren't verified live (both need a real match to exercise, same reasoning as #1/#2/#69/#79 — no disposable test match available locally without touching Tom's actual campaign state), but follow the identical, already-verified pattern. `tsc -b`, `oxlint`, and the full suite (1287 passed) clean — no new pure logic to unit test, this is entirely new component-local state and rendering.
 
 ### 21. Can't submit the second warband's post-battle report after submitting the first, when one player controls both sides of a match
 

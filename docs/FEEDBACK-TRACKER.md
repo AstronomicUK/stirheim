@@ -656,13 +656,17 @@ the same vein.
 
 ### 25. The roll-it-out dice icon needs a cooler animation (e.g. a rotating die)
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed
 **Priority:** 🟡 Low
 **Reported:** 2026-09-07
 
 > "The dice icon for roll it out is crappy and needs something way cooler. Like a rotating dice animation or something like that?"
 
 **Notes:** Confirmed — `src/ui/icons.tsx:96`, the `dice` icon is a completely static square outline with 5 fixed pips (a plain "rolled a 5" face), no motion at all, used on the "Roll it through" button in `FightTab.tsx`. There's already an established pattern for small looping/ambient icon animation to follow: `.stirheim-glow` (`src/index.css`) pulses an icon's drop-shadow continuously, already used for the "Advancements" tile when advances are due, complete with a `prefers-reduced-motion` fallback. A rotating-die version (spinning the icon, or cycling between a couple of pip layouts) could reuse the same CSS-keyframe-plus-reduced-motion-guard structure rather than inventing a new animation approach.
+
+**Fixed (2026-09-09):** Went with a hover/focus-triggered spin rather than `stirheim-glow`'s always-on ambient loop — `stirheim-glow`'s own comment in `index.css` explicitly calls that pattern (plus the Cast tile's orbit) "an explicit exception to 'nothing else moves on its own,'" and a die that's always visibly spinning at rest would be a third such exception for something that isn't waiting on the player the way an owed advance is. Instead, `.stirheim-dice-button svg` gets `transition: transform 0.5s ease`, and `.stirheim-dice-button:hover svg, .stirheim-dice-button:focus-visible svg` rotates it a full turn — motion triggered by the player's own intent (about to press it), not ambient, with a `prefers-reduced-motion` guard that drops the transition entirely. Applied the class to the existing "Roll it through" button in `FightTab.tsx`; no changes needed to the icon itself. `tsc -b` and `oxlint` clean.
+
+Verification note: confirmed the compiled rule is present and correctly targeted (`.stirheim-dice-button svg { transition: transform 0.5s; }` / `.stirheim-dice-button:hover svg, .stirheim-dice-button:focus-visible svg { transform: rotate(360deg); }`) by reading the live dev bundle's stylesheet directly. Couldn't get a real hover/focus-visible match through the browser automation tool itself to confirm visually — its synthetic mouse move doesn't register CSS `:hover`, and a programmatic `.focus()` call doesn't satisfy `:focus-visible`'s own heuristic (confirmed both are simply not true via `.matches()`, which is expected browser behaviour for synthetic input, not a sign of a bug) — so this is standard, well-supported CSS confirmed correct by inspection rather than by an actual mouse hovering over it. Worth a 2-second glance next time the fight sheet is open on a real device.
 
 ### 26. Trading post icons/names: "Characters" should be "Dramatis Personae"; stash should look like a treasure chest; Buy/Sell icons should read as a matched pair
 

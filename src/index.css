@@ -252,6 +252,26 @@ body {
 }
 
 /*
+  Roll It Out's dice icon (#25): a flat static square read as "crappy" per Tom's own words. Spins
+  on hover/focus rather than on its own, so it stays inside "nothing else moves on its own" (see
+  stirheim-glow above) while still giving the button some life when you're actually about to use it.
+*/
+.stirheim-dice-button svg {
+  transition: transform 0.5s ease;
+}
+
+.stirheim-dice-button:hover svg,
+.stirheim-dice-button:focus-visible svg {
+  transform: rotate(360deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stirheim-dice-button svg {
+    transition: none;
+  }
+}
+
+/*
   A result landing on the calculator: knocked down staggers, stunned wobbles and blurs, out of
   action is the biggest hit of the three. Each plays once when the outcome appears.
 */

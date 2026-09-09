@@ -330,7 +330,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           disabled={!odds || !attacker || !defender || odds.attacks < 1}
           onClick={() => setRolling(true)}
           aria-label="Roll it through"
-          className="absolute left-1/2 top-1/2 z-10 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-brass bg-brass text-surface-low shadow-[0_2px_6px_rgba(36,31,26,0.28)] transition-colors hover:bg-brass/85 disabled:opacity-40"
+          className="stirheim-dice-button absolute left-1/2 top-1/2 z-10 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-brass bg-brass text-surface-low shadow-[0_2px_6px_rgba(36,31,26,0.28)] transition-colors hover:bg-brass/85 disabled:opacity-40"
         >
           <Icon name="dice" size={24} />
         </button>

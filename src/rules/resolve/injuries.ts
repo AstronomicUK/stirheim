@@ -16,9 +16,13 @@
 // - Robbed has no persistent flag; the equipment loss is recorded in the AppliedInjury.
 // - Sold To The Pits is not resolved here (it needs a fight against a Pit Fighter): the injury is
 //   recorded and a "pitFight" event tells the caller to run that fight.
-// - Hired swords: the caller asked for the D6 henchman rule (1-2 dead). Note the rulebook itself
-//   has hired swords roll on the Heroes' chart; use applyHeroInjury-style handling if that is
-//   preferred later.
+// - Hired swords: the D6 henchman rule (1-2 lost, 3-6 survives), which is what the source says.
+//   04-hired-swords.md, "injuries": "If a Hired Sword goes out of action during the game, roll for
+//   his injuries as you would roll for a Henchman after a battle (i.e, 1-2 = Lost; 3-6 = Survives)."
+//   Do not "correct" this to the Heroes' chart. Dramatis Personae are the exception and are NOT
+//   handled here: 03-campaigns-magic-optional-rules.md:1238 says special characters "suffer serious
+//   injuries, just like Heroes", so they need applyHeroInjury once a persona can be told from an
+//   ordinary hired sword at runtime (see docs/HIRED-SWORDS-RULES-GAPS.md A2-A4).
 
 import type { Stats } from "../types";
 import type { StatKey } from "../types/common";

@@ -742,7 +742,12 @@ Small gaps carried over:
 - Free dagger for recruits joining an existing henchman group (matching the group's kit).
 - Skill prerequisites and "X only" restrictions carried on skills, enforced in learnSkill with the
   usual override-with-reason.
-- Hero advance at a racial maximum (Tom, 2026-09-05): a sub-rolled result (6, 8 or 9 on the hero
+- Hero advance at a racial maximum — **attribution corrected 2026-09-08: this was the Developer's
+  reading of the rules, not Tom's. Tom has confirmed he assumed he was misremembering and let it
+  stand. The "both maxed" half of the note below is WRONG against the rulebook, which says "you may
+  increase any other (that is not already at its racial maximum) by +1 instead" and adds that this is
+  the only way to gain the maximum Movement for some races. Now fixed to match the rulebook — see
+  `docs/EXPERIENCE-RULES-GAPS.md` findings A2/A3.** Original note (recorded 2026-09-05): a sub-rolled result (6, 8 or 9 on the hero
   table) whose characteristic is already at its maximum should offer the other characteristic of the
   pair first ("take the other option"); only when both are maxed does the player re-roll or take a
   skill. Today the wizard jumps straight to a skill. The choice results and the henchman re-roll

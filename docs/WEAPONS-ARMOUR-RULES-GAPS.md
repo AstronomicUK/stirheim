@@ -1,6 +1,10 @@
 # Weapons, armour and equipment rules not yet modelled in Stirheim
 
-Audit date: 2026-09-05, against the Phase 15 build (commit 3598838). Compared
+Audit date: 2026-09-05, against the Phase 15 build (commit 3598838).
+**Amended 2026-09-07 — read this as a 2026-09-05 snapshot with two sections since overtaken:**
+A1 (who may buy or carry an item) has since been built by Phase 16; see that entry for what survives.
+Section C's closing item, "34 unresolved list names", is also stale: all 253 warband equipment-list
+names now resolve (audit #18). Everything else here was still true when audit #18 was written. Compared
 `reference/rules/02-weapons-armour-equipment.md` (251 entries) with the item catalogue
 (`src/rules/data/items`), the fight calculator's weapon and armour model (`src/rules/data/weapons`,
 `src/rules/engine`, `src/features/match/fight`), the shop and builder (`src/rules/resolve/trading`,
@@ -40,14 +44,20 @@ Leadership test, Rabbit's Foot (house rule switch), Tarot Cards when the pre-bat
 
 ## A. Cross-cutting gaps
 
-1. **Who may buy or carry an item.** The "X only" and "not available to" clauses on 90-odd entries are
-   labels, never checks; the shop sells any item to any warband and to henchman groups. Not enforced:
-   miscellaneous equipment is Heroes only (Rain Coat and Winter Furs excepted); a brace counts as one
-   missile weapon; the two hand weapons plus dagger and two missile weapons cap; Hunting Arrows and Asp
-   Arrows need a bow; one Swivel Gun, one Clan Pestilens Banner, one Liber Bubonicus per campaign;
-   Standard of Nagarythe only at creation; Obsidian weapons' Blemished races; Bugman's Ale not for
-   Elves; Garlic, Blessed Water, Tears of Shallaya and the Halfling Cookbook barred to Undead or
-   Possessed; Chaos Armour and the Mechanical Suit fused to the buyer and never moved.
+1. ~~**Who may buy or carry an item.**~~ **BUILT since this audit — re-verified 2026-09-07.** Phase 16
+   added `src/rules/data/itemRules/restrictions.ts` (64 entries) and `src/rules/resolve/itemRestrictions.ts`.
+   Every clause listed here is now checked, as a warning with a "reason for buying anyway" override rather
+   than a hard block: Heroes-only kit with the Rain Coat and Winter Furs exceptions, the brace counting as
+   one missile weapon, the two-hand-weapon and two-missile-weapon caps, Hunting and Asp Arrows needing a
+   bow, one Swivel Gun / Clan Pestilens Banner / Liber Bubonicus, Standard of Nagarythe at creation only,
+   the Obsidian Blemished races, Bugman's Ale, Garlic, Blessed Water, Tears of Shallaya, the Halfling
+   Cookbook, and Chaos Armour / Mechanical Suit fused to the wearer.
+   **What survives:** the gromril and ithilmar generator mints a new id (`gromril_<base>`) and no variant
+   id appears in `ITEM_RESTRICTIONS`, so 10 restricted bases produce 20 unrestricted shop entries — Chain
+   Sticks, Dark Elf Blade, Ladle, Misericordia, Ogre Club, Quarter Staff, Sigmarite Warhammer, Sons of
+   Hashut Obsidian Weapon, Starblade and Steel Whip, in both materials. Any warband can buy a
+   Chaos-Dwarfs-only weapon through its variant with no warning. Fixing C's "upgrades modelled as
+   standalone weapons" removes two of these for free.
 2. **Conditional prices and rarities.** One rarity per item is used. Not built: Blowpipe common for
    Forest Goblins; Black Lotus and Dark Venom Rare 7 or 6 for Skaven, Lizardmen and Dark Elves and
    common at a fixed price for Skink heroes; Holy Relic and Blessed Water easier for priests and

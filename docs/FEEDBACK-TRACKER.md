@@ -199,7 +199,7 @@ earlier work, logged here so they don't get forgotten now that the tracker exist
 
 ### 7. The map is buggy in a Map Campaign: phantom nodes, selection mostly doesn't work
 
-**Status:** ✅ Fixed — remeasured and verified locally 2026-09-08; not deployed
+**Status:** ✅ Fixed — confirmed live on production 2026-09-09 (shipped incidentally in a later batch deploy; not separately verified in a live browser)
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -264,6 +264,8 @@ Also corrected a separate unit mismatch in the rendering path: the interface say
 **Verification limits:** Attempted Playwright Chromium against the existing local Vite server on 5174 with an isolated component harness, but Chromium failed before any test ran: macOS `bootstrap_check_in ... Permission denied (1100)` inside this session's sandbox. No live-browser click dispatch, touch-device check, authenticated campaign-page check or deployed-site check is claimed. The coordinate visual verification was direct inspection of Pillow PNGs; zoom verification was precise event-flow review plus the passing component-handler tests, not a browser test.
 
 **Checks:** `npx tsc -b` and `npm run lint` passed; `npm test -- --run` passed (82 test files passed, 13 skipped; 1202 tests passed, 69 skipped). No deployment performed.
+
+**Deployment confirmed (2026-09-09):** this fix (already merged to `main`) went live automatically the first time any later batch of unrelated fixes was deployed today, since a deploy always ships the whole current build — checked by fetching `districts-BXJbJY_9.js` from the live production CDN directly and confirming both the corrected Temple of Morr (`y: 63.0524`) and South Gate (`y: 64.2310`) coordinates are present. The tracker's earlier "not deployed" note had simply gone stale; this needed no action from Tom, just a deploy that had already happened. Still not verified with a real live-browser click/tap test (the "Verification limits" note above stands) — worth a quick look at the actual map on a phone next time it comes up.
 
 ### 8. Parrying may not be working properly in roll-it-out; wants the same hand-off armour saves get
 

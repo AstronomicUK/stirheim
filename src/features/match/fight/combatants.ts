@@ -64,12 +64,30 @@ const TRAIT_BY_RULE_NAME: [RegExp, string][] = [
   [/undead construct/i, 'undead_construct'],
   [/^pit fighter$/i, 'pit_fighter'],
   [/wight blades?/i, 'wight_blades_5plus'],
+  // #70: psychology traits, checked against every warband's actual rule headings rather than
+  // assumed. "Fear"/"Cause Fear"/"Fearsome" and "Immune to Psychology" are used consistently across
+  // all 73 warbands with no unrelated rule reusing the heading.
+  //
+  // Not added: immune_to_fear. The audit's "2 units" turned out on inspection to both be optional
+  // hero-pickable skills ("Beastmen Skill: Fearless", "Warband Skill: Noblesse Obliges") stored in
+  // the same warband-level specialRules list as automatic warband-wide rules, with nothing in the
+  // data distinguishing the two shapes — a blanket read of that list overshot by 8x on a trial run.
+  // Reaching these properly needs a hero's chosen skillIds threaded into traitsFromRules, the same
+  // "warband skill, not unit rule" wiring gap #56/#68 already have open, not a name-matching fix.
+  [/^(cause )?fear$/i, 'causes_fear'],
+  [/^fearsome$/i, 'causes_fear'],
+  [/^immune to psychology$/i, 'immune_to_psychology'],
 ]
 
 export function traitsFromRules(rules: readonly NamedRule[]): string[] {
   const out: string[] = []
   for (const rule of rules) {
     for (const [re, id] of TRAIT_BY_RULE_NAME) if (re.test(rule.name.trim()) && !out.includes(id)) out.push(id)
+    // "Stupidity"/"Mass Stupidity" is reused, confusingly, for two unrelated rules (Cold One
+    // Beasthounds' Leadership note; Orc/Goblin Mobs' "Mass Stupidity" advancement-reroll rule) that
+    // have nothing to do with the psychology trait — name alone isn't safe here, so this one checks
+    // the rule text actually describes it before tagging it.
+    if (/^(mass )?stupidity$/i.test(rule.name.trim()) && /subject to( the rules for)? stupidity/i.test(rule.text) && !out.includes('stupidity')) out.push('stupidity')
   }
   return out
 }
@@ -121,6 +139,12 @@ export interface BattleBoosts {
 export const NO_BOOSTS: BattleBoosts = { leaderLd: 0, leaderLdSources: [], fearImmunity: null }
 
 export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | undefined, warbandName: string, sheet: BattleLiveState | undefined, boosts: BattleBoosts = NO_BOOSTS): Combatant[] {
+  // #70: template.specialRules (warband-wide) was tried here too, on the same theory as raceTraits
+  // below, but reverted — several warbands (Beastmen included) list optional per-hero skills under
+  // this same field ("Beastmen Skill: Fearless" is a skill a Beastman may take, not a trait every
+  // unit in the warband automatically has), and there's no flag distinguishing the two shapes. A
+  // blanket merge overshot the audit's own count by 8x for immune_to_fear alone. Left for a pass
+  // that can tell "automatic warband-wide rule" from "warband-specific skill list" apart per entry.
   const race = template?.raceTraits ?? []
   const leaderUnitId = template ? leaderTemplate(template)?.id : undefined
   const boostTraits = boosts.fearImmunity ? ['immune_to_fear'] : []

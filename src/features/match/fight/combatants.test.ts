@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState } from '../../../domain'
-import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
+import { findWarbandTemplate, WARBAND_TEMPLATES } from '../../../rules/data/warbandTemplates'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { setGroupOut, toggleHeroOut } from '../battle/sheet'
 import { canBeOffHand, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, offHandCandidates, traitsFromRules } from './combatants'
@@ -140,6 +140,39 @@ describe('traitsFromRules', () => {
   it('maps rule headings to modelled traits', () => {
     expect(traitsFromRules([{ name: 'Frenzy', text: '' }, { name: 'Hatred', text: '' }, { name: 'Large', text: '' }, { name: 'Leader', text: '' }])).toEqual(['frenzy', 'hatred', 'large_target'])
     expect(traitsFromRules([{ name: 'Hate Chaos', text: '' }])).toEqual(['hatred'])
+  })
+
+  it('maps the psychology headings (#70)', () => {
+    expect(traitsFromRules([{ name: 'Fear', text: 'Trolls cause fear.' }])).toEqual(['causes_fear'])
+    expect(traitsFromRules([{ name: 'Cause Fear', text: 'Vampires cause fear.' }])).toEqual(['causes_fear'])
+    expect(traitsFromRules([{ name: 'Fearsome', text: 'A Trained Bear causes fear.' }])).toEqual(['causes_fear'])
+    expect(traitsFromRules([{ name: 'Immune to Psychology', text: 'Zombies are not affected by psychology.' }])).toEqual(['immune_to_psychology'])
+    // Not covered (see the code comment): both real "immune to fear" instances turned out to be
+    // optional hero skills, not automatic unit/warband traits, and are deliberately left unmatched.
+    expect(traitsFromRules([{ name: 'Beastmen Skill: Fearless', text: 'Immune to fear and All Alone tests.' }])).toEqual([])
+    expect(traitsFromRules([{ name: 'Warband Skill: Noblesse Obliges', text: 'The Warrior is immune to fear and can stomp opponents...' }])).toEqual([])
+  })
+
+  it('only tags Stupidity when the text actually describes the psychology rule, not the two unrelated rules that reuse the heading', () => {
+    expect(traitsFromRules([{ name: 'Stupidity', text: 'A Troll is subject to the rules for stupidity.' }])).toEqual(['stupidity'])
+    expect(traitsFromRules([{ name: 'Stupidity', text: 'A Rat Ogre is subject to Stupidity unless a Skaven Hero is within 6".' }])).toEqual(['stupidity'])
+    // Cold One Beasthounds: a Leadership note mislabelled "Stupidity" in the source, no psychology content at all.
+    expect(traitsFromRules([{ name: 'Stupidity', text: 'Cold One Beasthounds may use the basic Leadership of the Beastmaster if they are within 6" of him.' }])).toEqual([])
+    // Orc/Goblin Mobs: "Mass Stupidity" is an advancement-reroll rule, not the psychology trait.
+    expect(traitsFromRules([{ name: 'Mass Stupidity', text: "A Mob can never gain 'That Lad's Got Talent'. If TLGT is rolled, re-roll until a different advancement is gained." }])).toEqual([])
+  })
+
+  it('reaches real unit templates across the catalogue (#70)', () => {
+    // Counts against the audit's own tally (60/36/17/2): causes_fear lands exactly on it once
+    // warband-level rules are included (see combatantsOf's own comment on why that merge was tried
+    // and reverted) — this test only exercises the per-unit half, so it checks the true, verified
+    // count for that half, not the audit's number, which mixed unit- and warband-level sources.
+    const units = WARBAND_TEMPLATES.flatMap((w) => [...w.heroTemplates, ...w.henchmanTemplates])
+    const count = (id: string) => units.filter((u) => traitsFromRules(u.specialRules ?? []).includes(id)).length
+    expect(count('causes_fear')).toBe(49)
+    expect(count('immune_to_psychology')).toBe(29)
+    expect(count('stupidity')).toBe(8)
+    expect(count('immune_to_fear')).toBe(0)
   })
 })
 

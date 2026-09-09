@@ -7,6 +7,7 @@ import { statDrift } from '../shared/stats'
 import { startingProfile } from './lookups'
 import { unitTypeName } from '../shared/names'
 import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
+import { HERO_INJURIES } from '../../../rules/data/campaign/injuries'
 import { HoverCard } from '../../../ui/HoverCard'
 import { Card, ItemLines, RuleList, Tag, XpBar } from './bits'
 import { findSpellOption, flagTags, hiredSwordName, skillName, skillTableName, skillText, spellName, statusLabel, warriorSpecialRules } from './lookups'
@@ -115,7 +116,10 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
             <ul className="flex flex-col gap-0.5 text-sm">
               {hero.injuries.map((inj, i) => (
                 <li key={`${inj.injuryCode}-${i}`} className="text-ink">
-                  {inj.name}
+                  <HoverCard label={inj.name} title={inj.name}>
+                    <span className="whitespace-pre-line">{HERO_INJURIES.find(result => result.code === inj.injuryCode)?.text ?? (inj.effect || 'No additional injury rules recorded.')}</span>
+                    {inj.effect ? <span className="mt-2 block">Recorded effect: {inj.effect}</span> : null}
+                  </HoverCard>
                   {inj.effect ? <span className="text-ink-dim"> — {inj.effect}</span> : null}
                 </li>
               ))}

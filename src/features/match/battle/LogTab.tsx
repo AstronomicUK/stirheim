@@ -3,7 +3,7 @@
 // with the note, so the record is honest.
 
 import { useState } from 'react'
-import type { MatchParticipantView } from '../../../api/matches'
+import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import { useRevertBattleEvent } from '../../../api/matches'
 import { attackRollsLine, type BattleEventRow } from '../../../domain'
 import { Button, Notice, Sheet, TextArea } from '../../../ui'
@@ -13,18 +13,20 @@ import { PostBattleSequence } from './PostBattleSequence'
 export interface LogTabProps {
   matchId: string
   events: BattleEventRow[]
+  sessions: BattleSessionView[]
   participants: MatchParticipantView[]
   /** Participants and the GM may revert; the battle must still be in progress. */
   canRevert: boolean
 }
 
-export function LogTab({ matchId, events, participants, canRevert }: LogTabProps) {
+export function LogTab({ matchId, events, sessions, participants, canRevert }: LogTabProps) {
   const [reverting, setReverting] = useState<BattleEventRow | null>(null)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const revert = useRevertBattleEvent(matchId)
   const byWarband = new Map(participants.map((p) => [p.warband_id, p]))
   const ordered = [...events].sort((a, b) => b.at.localeCompare(a.at))
+  const attempts = sessions.flatMap(s => s.live_state.rollAttempts.map(a => ({ ...a, warbandId: s.warband_id }))).sort((a, b) => b.at.localeCompare(a.at))
 
   async function confirm() {
     if (!reverting) return
@@ -40,6 +42,14 @@ export function LogTab({ matchId, events, participants, canRevert }: LogTabProps
 
   return (
     <>
+      <Section title="Dice history" aside={String(attempts.length)}>
+        <p className="text-sm text-ink-dim">Every attack and spell attempt, including failed rolls and restarts. Saving this history does not apply damage; applied results appear below.</p>
+        {attempts.length === 0 ? <p className="text-sm text-ink-dim">No recorded dice attempts yet.</p> : attempts.map(a => <Card key={`${a.warbandId}:${a.id}`} className="px-4 py-3">
+          <p className="text-sm font-semibold text-ink">Turn {a.turn}: {a.label}</p>
+          <p className="text-xs text-ink-dim">{byWarband.get(a.warbandId)?.warband_name} · {new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} · {a.status === 'complete' ? 'Completed attempt' : a.status === 'restarted' ? 'Restarted' : 'Unfinished attempt'}</p>
+          <ol className="mt-2 flex flex-col gap-1 text-sm text-ink-dim">{a.rolls.map((line, i) => <li key={i}>{line}</li>)}</ol>
+        </Card>)}
+      </Section>
       <Section title="Combat log" aside={events.length > 0 ? `${events.filter((e) => e.reverted_at === null).length} live` : undefined}>
         <p className="text-sm text-ink-dim">
           Results logged from the attack calculator on any phone at the table. Each one adds to the attacker&apos;s kills and the target&apos;s casualties on both

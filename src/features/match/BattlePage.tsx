@@ -173,7 +173,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
         </header>
         {!inProgress ? <AwaitingReportsNotice matchId={match.id} /> : null}
         <EnemyView matchId={match.id} participants={match.participants} sessions={shownSessions} />
-        {match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} /> : null}
+        {match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} sessions={shownSessions} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} /> : null}
         {canEnd ? (
           <>
             <SaveBar saveState="readonly" saveError={null} onRetry={() => {}} onBattleOver={() => setEndOpen(true)} />
@@ -355,7 +355,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
               startWith={attackStartWith}
             />
           ) : null}
-          {sideTab === 'log' && inApp ? <LogTab matchId={match.id} events={events} participants={match.participants} canRevert={!readOnly} /> : null}
+          {sideTab === 'log' && inApp ? <LogTab matchId={match.id} events={events} sessions={[...sessions.filter(s => s.warband_id !== roster.id), { warband_id: roster.id, live_state: shown, updated_at: shown.editedAt ?? '' }]} participants={match.participants} canRevert={!readOnly} /> : null}
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} scenarioId={match.scenario_rules_id} custom={match.custom_scenario_name !== null} /> : null}
         </div>
       </div>

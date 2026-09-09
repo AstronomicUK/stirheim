@@ -6,6 +6,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
+import { withRollAttempt, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -357,6 +358,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           <RollSection
             key={`${attackKey}:${JSON.stringify(context)}`}
             odds={odds}
+            turn={sheet.turn}
+            onAttempt={attempt => edit?.(s => withRollAttempt(s, attempt))}
             attacker={attacker}
             defender={defender}
             defenderKit={defenderKit!}
@@ -582,6 +585,8 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
 // ---------------------------------------------------------------------------------------------
 
 interface RollSectionProps {
+  turn: number
+  onAttempt: (attempt: RollAttempt) => void
   odds: FightOdds
   attacker: Combatant
   defender: Combatant
@@ -608,7 +613,7 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff }: RollSectionProps) {
+function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
@@ -620,8 +625,14 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
   // Tom's own call was that restarting should stay unrestricted friction-wise, but a discarded
   // attempt vanishing with zero trace is exactly the "reroll before anyone sees it" risk raised.
   const [pastAttempts, setPastAttempts] = useState<RollState['log'][]>([])
+  const attempt = useRef({ id: crypto.randomUUID(), at: new Date().toISOString() })
+  function record(next: RollState, status: RollAttempt['status'] = next.done ? 'complete' : 'incomplete') {
+    if (readOnly || next.log.length === 0) return
+    onAttempt({ ...attempt.current, kind: 'attack', turn, label: `${attacker.name} attacks ${defender.name}`, status, rolls: next.log.map(line => line.text) })
+  }
 
   function start() {
+    attempt.current = { id: crypto.randomUUID(), at: new Date().toISOString() }
     const plans: AttackPlan[] = odds.weapons.flatMap((w) =>
       Array.from({ length: w.attacks }, () => ({
         weaponName: w.weapon.name,
@@ -637,6 +648,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     const started = startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost, charmAvailable)
     stateRef.current = started
     setState(started)
+    record(started)
   }
 
   async function log() {
@@ -666,6 +678,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
     const next = step(current)
     stateRef.current = next
     setState(next)
+    record(next)
     const line = next.log.at(-1)
     if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone, manual: rolled.manual })
     else if (!rolled) setShown(null)
@@ -780,7 +793,10 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
             variant="ghost"
             block
             onClick={() => {
-              if (stateRef.current && stateRef.current.log.length > 0) setPastAttempts((p) => [...p, stateRef.current!.log])
+              if (stateRef.current && stateRef.current.log.length > 0) {
+                record(stateRef.current, 'restarted')
+                setPastAttempts((p) => [...p, stateRef.current!.log])
+              }
               stateRef.current = null
               setShown(null)
               start()
@@ -792,7 +808,7 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
           {pastAttempts.length > 0 ? (
             <details className="text-xs text-ink-dim">
               <summary className="cursor-pointer select-none">
-                {pastAttempts.length} earlier {pastAttempts.length === 1 ? 'attempt was' : 'attempts were'} restarted without logging
+                {pastAttempts.length} earlier {pastAttempts.length === 1 ? 'attempt was' : 'attempts were'} restarted — dice history retained
               </summary>
               <ol className="mt-2 flex flex-col gap-2">
                 {pastAttempts.map((log, i) => (

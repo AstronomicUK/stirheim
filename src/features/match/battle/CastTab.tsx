@@ -5,7 +5,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import type { BattleLiveState } from '../../../domain'
-import { castsThisTurn, rerollsSpent, withCast } from '../../../domain'
+import { castsThisTurn, rerollsSpent, withCast, withRollAttempt } from '../../../domain'
 import {
   applyCastRoll,
   availableRerolls,
@@ -65,6 +65,7 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
   // The attempt is written to the sheet exactly once, whatever order the renders come in.
   const recorded = useRef<string | null>(null)
   const stateRef = useRef<CastState | null>(null)
+  const attempt = useRef({ id: crypto.randomUUID(), at: new Date().toISOString() })
 
   if (casters.length === 0) {
     return (
@@ -82,6 +83,7 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
   const usedUp = [...new Set([...spentIds.game.filter((id) => caster.rerolls.find((r) => r.id === id)?.limit === 'perGame'), ...spentIds.turn])]
 
   function begin(spell: Spell) {
+    attempt.current = { id: crypto.randomUUID(), at: new Date().toISOString() }
     const started = startCast(caster!, spell, {
       modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
       alreadyUsed: usedUp,
@@ -91,6 +93,7 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
     recorded.current = null
     stateRef.current = started
     setState(started)
+    recordDice(started)
     // A spell that needs no roll is finished the moment it starts.
     if (started.done) record(started)
   }
@@ -127,12 +130,21 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
     )
   }
 
+  function recordDice(next: CastState) {
+    if (readOnly || !edit || next.log.length === 0) return
+    const identity = { ...attempt.current }
+    edit(s => withRollAttempt(s, { ...identity, kind: 'spell', turn: sheet.turn,
+      label: `${next.profile.name}: ${next.spell.name}${targetId ? ` → ${targets.find(t => t.id === targetId)?.name ?? 'target'}` : ''}`,
+      status: next.done ? 'complete' : 'incomplete', rolls: next.log.map(line => line.text) }))
+  }
+
   function advance(step: (s: CastState) => CastState) {
     const current = stateRef.current
     if (!current) return
     const next = step(current)
     stateRef.current = next
     setState(next)
+    recordDice(next)
     if (next.done && !current.done) record(next)
   }
 

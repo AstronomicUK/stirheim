@@ -52,6 +52,17 @@ export const castRecordSchema = z.object({
 });
 export type CastRecord = z.infer<typeof castRecordSchema>;
 
+export const rollAttemptSchema = z.object({
+  id: z.string(),
+  at: z.string(),
+  turn: z.number(),
+  label: z.string(),
+  kind: z.enum(['attack', 'spell']),
+  status: z.enum(['incomplete', 'complete', 'restarted']),
+  rolls: z.array(z.string()),
+});
+export type RollAttempt = z.infer<typeof rollAttemptSchema>;
+
 export const battleLiveStateSchema = z.object({
   version: z.literal(BATTLE_LIVE_STATE_VERSION).default(BATTLE_LIVE_STATE_VERSION),
   /** A game starts at turn 1; the min stays 0 so a GM can still correct it back down. */
@@ -77,6 +88,8 @@ export const battleLiveStateSchema = z.object({
   takenOutBy: z.record(z.string(), z.array(takenOutBySchema)).default({}),
   /** Spells and prayers attempted this battle, in order. */
   casts: z.array(castRecordSchema).default([]),
+  /** Dice history only: never contributes wounds, kills or resource spending. */
+  rollAttempts: z.array(rollAttemptSchema).default([]),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });
@@ -84,6 +97,12 @@ export type BattleLiveState = z.infer<typeof battleLiveStateSchema>;
 
 export function emptyBattleLiveState(): BattleLiveState {
   return battleLiveStateSchema.parse({});
+}
+
+/** Keep each attempt through restarts, without duplicating it after every die. */
+export function withRollAttempt(state: BattleLiveState, attempt: RollAttempt): BattleLiveState {
+  const exists = state.rollAttempts.some(a => a.id === attempt.id);
+  return { ...state, rollAttempts: exists ? state.rollAttempts.map(a => a.id === attempt.id ? attempt : a) : [...state.rollAttempts, attempt], editedAt: new Date().toISOString() };
 }
 
 /** Parse whatever is stored; anything malformed falls back to an empty sheet rather than crashing the table. */

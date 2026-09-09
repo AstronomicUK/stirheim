@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally } from "../battle";
+import { battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
 
 describe("battle live state", () => {
+  it("retains failed and restarted dice through storage without applying casualties or consuming casts", () => {
+    const first: RollAttempt = { id: 'attempt-1', at: '2026-09-09T17:00:00Z', turn: 1, label: 'Captain attacks Henchman', kind: 'attack', status: 'incomplete', rolls: ['Rolled 1 (entered by hand) to hit. Missed.'] };
+    let state = withRollAttempt(emptyBattleLiveState(), first);
+    state = withRollAttempt(state, { ...first, status: 'restarted' });
+    state = withRollAttempt(state, { ...first, id: 'attempt-2', kind: 'spell', status: 'complete', rolls: ['Casting: 1 + 1 (rolled by the app). Failed.'] });
+    const restored = parseBattleLiveState(JSON.parse(JSON.stringify(state)));
+    expect(restored.rollAttempts).toHaveLength(2);
+    expect(restored.rollAttempts[0]).toEqual({ ...first, status: 'restarted' });
+    expect(restored.rollAttempts[1].rolls[0]).toContain('rolled by the app');
+    expect(battleTotals(restored)).toEqual({ enemiesOutOfAction: 0, ownOutOfAction: 0 });
+    expect(restored.casts).toEqual([]);
+    expect(restored.tallies).toEqual([]);
+  });
+
   it("parses an empty or malformed value to an empty sheet", () => {
     expect(parseBattleLiveState(null)).toEqual(emptyBattleLiveState());
     expect(parseBattleLiveState({ turn: "three" })).toEqual(emptyBattleLiveState());

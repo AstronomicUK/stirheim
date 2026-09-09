@@ -156,6 +156,7 @@ function attackName(state: RollState): string {
 function beginAttack(state: RollState): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
+  if (plan.input.automaticHits) return askWound(log(fresh, `${attackName(state)}: automatic spell hit.`, 'good'))
   if (state.hitBatch?.phase === 'resolve') {
     const hit = state.hitBatch.hits[state.index]
     if (hit.outcome) return finishAttack(fresh, hit.outcome)

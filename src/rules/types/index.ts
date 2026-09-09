@@ -225,6 +225,9 @@ export interface EquipmentList {
 }
 
 export interface UnitTemplate {
+  /** This alternative occupies a slot from another Hero entry, rather than adding a slot. */
+  replacementFor?: string;
+  alternateHero?: 'priest_of_morr' | 'wolf_priest_of_ulric';
   id: string;
   name: string;
   role: CharacterRole;

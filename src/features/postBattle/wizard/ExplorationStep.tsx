@@ -30,7 +30,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
   const ex = derived.exploration
   const [newItem, setNewItem] = useState('')
 
-  if (ex.allowed === null) {
+  if (ex.allowed === null || ex.allowed.count === 0) {
     return (
       <StepBody title="Exploration">
         <Notice tone="info" title="No exploration">

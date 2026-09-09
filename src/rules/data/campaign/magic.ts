@@ -63,6 +63,260 @@ export const WIZARD_ALLOCATIONS: WizardAllocation[] = [
 ];
 
 export const SPELL_LORES: SpellLore[] = [
+{
+  "id": "dark_mage_magic",
+  "name": "Dark Magic (Dark Mage)",
+  "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-2a",
+  "intro": "The Dark Mage may randomly generate a spell from this list, and may gain more from this or Lesser Magic.",
+  "usedBy": [
+    "Dark Mage"
+  ],
+  "die": "D6",
+  "spells": [
+    {
+      "id": "dark_mage_banishment",
+      "name": "Banishment",
+      "roll": {
+        "min": 1,
+        "max": 1
+      },
+      "difficulty": 8,
+      "text": "_Pulling the energies of death to him, the Dark Mage dispels the power of the undead._  \nAll Undead within 4” of the Dark Mage must take an unmodified Leadership Test or suffer a S4 hit."
+    },
+    {
+      "id": "dark_mage_soul_render",
+      "name": "Soul Render",
+      "roll": {
+        "min": 2,
+        "max": 2
+      },
+      "difficulty": 8,
+      "text": "_For the most brief of moments, the Mage centers dark energies upon an unlucky foe._  \nSoul Render is a magic missile spell, with a range of 18 inches. If successfully cast, the spell causes D3 S3 hits."
+    },
+    {
+      "id": "dark_mage_shade_mount",
+      "name": "Shade Mount",
+      "roll": {
+        "min": 3,
+        "max": 3
+      },
+      "difficulty": 8,
+      "text": "_Darkness forms about the caster, carrying him aloft on wings of shadow._  \nThis spell may be cast on the wizard himself, or a hero within 8 inches of him. Upon a successful casting, the model may immediately fly up to 12 inches. Should this movement bring the model into Base to Base contact with an enemy model, consider it a charge."
+    },
+    {
+      "id": "dark_mage_jozun_s_decay",
+      "name": "Jozun’s Decay",
+      "roll": {
+        "min": 4,
+        "max": 4
+      },
+      "difficulty": 9,
+      "text": "_Ashes and dust. Focusing the dark energies, the wizard forces the very life from his opponent._  \nThis spell has a range of 12 inches. Upon a successful casting, the target must pass a Leadership Test, or suffer a one point reduction to its Toughness attribute. Each recovery phase the model must attempt to pass a Leadership Test, reducing its Toughness a further point for each failure. Should a model be reduced to 0 Toughness, it is removed from the game irrespective of how many wounds it has left. Should a Leadership Test be passed, the model must play the remainder of the game at its modified Toughness score. A model may not be targeted more than once per game."
+    },
+    {
+      "id": "dark_mage_cowel_of_pain",
+      "name": "Cowel of Pain",
+      "roll": {
+        "min": 5,
+        "max": 5
+      },
+      "difficulty": 6,
+      "text": "_Nothing compares to the pain of the dark. Wrapping it about him like a cloak, the caster strengthens himself._  \nThe mage cannot be Stunned until his next magic phase. Treat 3-4 results as Knocked Down instead."
+    },
+    {
+      "id": "dark_mage_doom_dark",
+      "name": "Doom & Dark",
+      "roll": {
+        "min": 6,
+        "max": 6
+      },
+      "difficulty": 7,
+      "text": "_Dark energies coalesce about the mage, chilling the air and driving dread into all those around him._  \nAny model within 2” of the Dark Mage must take an immediate All Alone Test, even if in close combat. Should a model flee from Close Combat, free strikes occur as normal, assuming that there are combatants who have not failed their test."
+    }
+  ],
+  "source": {
+    "publication": "Letters of the Damned 6",
+    "file": "04-hired-swords.md:2220-2276"
+  }
+},
+{
+  "id": "crow_master_magic",
+  "name": "Crow Master’s magic",
+  "sourceUrl": "https://mordheimer.net/docs/campaigns/dramatis-personae/grade-1b",
+  "intro": "Simius knows Decay of Ages in addition to all six Necromancy spells.",
+  "usedBy": [
+    "Crow Master"
+  ],
+  "die": "D6",
+  "spells": [
+    {
+      "id": "crow_master_decay_of_ages",
+      "name": "Decay of Ages",
+      "roll": {
+        "min": 1,
+        "max": 6
+      },
+      "difficulty": 9,
+      "text": "_Gesturing to his hapless victim with a bony outstretched finger Simius invokes the Decay of ages. Skin withers and cracks, muscles atrophy, bones become brittle as the victim ages horrifically in seconds._\n\nThis spell affects a single warrior within 6\" of Simius Gantt. The warrior must pass an immediate toughness test on a D6 or they will lose -1 from all of their characteristics with the exception of Attacks and Wounds. In each subsequent Recovery phase they must pass a Toughness test or will lose a further -1. As soon as they pass the test all characteristics are returned to normal. If any characteristic reaches O the model is taken out of action. Simius cannot cast this spell on more than one model at a time. If he decides to cast it again the effects on the previous victim are undone."
+    }
+  ],
+  "source": {
+    "publication": "Town Cryer 25",
+    "file": "05-dramatis-personae.md:553-561"
+  }
+},
+{
+  "id": "snotling_waaagh_magic",
+  "name": "Snotling Waaagh! Magic",
+  "sourceUrl": "https://mordheimer.net/docs/warbands/grade-2a-warbands/snotlings",
+  "intro": "Snotlings, despite their diminutive size, still have Shamans like their larger cousins. In fact, because there are so many of the little chaps, they probably have at least twice as many shamans as the Orcs or Goblins have. However, because of their weedy stature and weak constitution, these Shamans do not last very long when channelling the Power of the Waaagh! In fact the reason Snotling Shamans aren't seen is because they usually die after their first 'successful' casting. The Shamans in this warband however have survived their first casting (their first mind you!) and have been elevated to the rank of Shaman where their self-destructive powers could kill the enemy as much as themselves….",
+  "usedBy": [
+    "Snotling Shaman"
+  ],
+  "die": "D6",
+  "spells": [
+    {
+      "id": "snotling_waaagh_magic_mork_s_blessing",
+      "name": "Mork's Blessing",
+      "roll": {
+        "min": 1,
+        "max": 1
+      },
+      "difficulty": 6,
+      "text": "The warrior targeted by this spell has become Blessed by the Greenskin God Mork, who gets quite irate when anyone inflicts harm on the Little Fellow. Mork's Blessing can be used to target any friendly greenskin hero on the board regardless of line of sight to the caster or not. In any game that the Hero is put Out of Action, roll a D6. On a roll of 4+, the inflictor of the damage suffers an automatic wound with no saving throw allowed. Once cast, the blessing remains active till the end of the game or the blessed hero is put out of action. It may be recast, but once successfully recast, the original blessing fades (if the original Blessed model is still on the board). It may be cast on the shaman himself."
+    },
+    {
+      "id": "snotling_waaagh_magic_we_can_fly",
+      "name": "'We Can Fly!'",
+      "roll": {
+        "min": 2,
+        "max": 2
+      },
+      "difficulty": 7,
+      "text": "The Shaman draws upon the might of the Waaagh! energy in the air to propel himself and a group of Snotlings nearby, towards the enemy. The Shaman and the closest 1D6 Friendly models within 6 inches are immediately moved 12 inches towards the closest enemy model. If they contact the enemy, they count as Charging in the close combat phase."
+    },
+    {
+      "id": "snotling_waaagh_magic_foot_of_gork",
+      "name": "Foot of Gork!",
+      "roll": {
+        "min": 3,
+        "max": 3
+      },
+      "difficulty": 9,
+      "text": "The great Greenskin God Gork sees that the Snotlings are engaging a far superior force than themselves and decides that he'll give them a little bit of help as a reward for being so audacious. Randomly select an enemy model on the board. That model, and any other model (friend or foe) within 3 inches are automatically crushed under a giant green foot that descends from the heavens. Each model in range suffers D3 hits wounding enemies on a 3+ and snotling warband members on a 5+. All hits are at a -3 save modifier."
+    },
+    {
+      "id": "snotling_waaagh_magic_pebbles_of_doom",
+      "name": "Pebbles of Doom",
+      "roll": {
+        "min": 4,
+        "max": 4
+      },
+      "difficulty": 6,
+      "text": "Any friendly Hero within 6\" gains D6 magical pebbles blessed by Gork. These may be thrown or shot from a slingshot, and count as having +1 to hit and +1 Strength from the respective weapon. These pebbles last until they are each used up, until the hero is taken out of action, until the end of the game, or until the spell is successfully recast. If the spell is successfully recast, any existing Pebbles of Doom created by your shaman that are already on the board dissipate."
+    },
+    {
+      "id": "snotling_waaagh_magic_pointy_stick_of_death",
+      "name": "Pointy Stick of Death",
+      "roll": {
+        "min": 5,
+        "max": 5
+      },
+      "difficulty": 7,
+      "text": "The Shaman is blessed with the Pointy Stick of Death. It grants the Shaman +2 WS, +1 Strength, and the Shaman strikes first in every round of combat (even when charged). The Shaman must make a Difficulty test at the start of each Recovery Phase if he wants to maintain the Pointy Stick of Death."
+    },
+    {
+      "id": "snotling_waaagh_magic_blessing_of_the_shrimp",
+      "name": "Blessing of the Shrimp",
+      "roll": {
+        "min": 6,
+        "max": 6
+      },
+      "difficulty": 6,
+      "text": "Target Hero within 6\" gains +1WS, +1T and +1 Leadership. If used on your Leader, all models within 12\" may test off his Leadership. If not used on your Leader, all models within 6\" may test off its Leadership as if he was an additional Leader. The Blessing will fade after 1D3 Rounds (thus, a blessing that lasts 1 Round would wear off at the beginning of your next Recovery Phase). Only one friendly model may have the Blessing of the Shrimp at any given time, and if recast before it fades, the new model gains the bonus while the old one loses it."
+    }
+  ],
+  "source": {
+    "publication": "Snotling Waaagh! Magic",
+    "file": "warbands/grade-2a-part2.md:1282-2394"
+  }
+},
+{
+  "id": "woodland_incantations",
+  "name": "Woodland Incantations",
+  "sourceUrl": "https://mordheimer.net/docs/warbands/grade-2a-warbands/wood-elves-of-athel-loren",
+  "intro": "The Forest Mage rolls D6 to randomly generate a spell from the following list:\n\n| D6 | Result |\n|---|---|\n| 1 | Song of Thorns |\n| 2 | Murmuring of the Wind |\n| 3 | The Rain Song |\n| 4 | Lyrics of Feral Infatuation |\n| 5 | Song of the Sun |\n| 6 | Eagle's Cry |",
+  "usedBy": [
+    "Forest Mage"
+  ],
+  "die": "D6",
+  "spells": [
+    {
+      "id": "woodland_incantations_song_of_thorns",
+      "name": "Song of Thorns",
+      "roll": {
+        "min": 1,
+        "max": 1
+      },
+      "difficulty": 8,
+      "text": "Branches strike out to the foe under influence of the singer's cadence. If no plants are present wooden chips fly at the victim, as if they want to be thorns… Victim suffers 2D6 S1 hits, range 8\"."
+    },
+    {
+      "id": "woodland_incantations_murmuring_of_the_wind",
+      "name": "Murmuring of the Wind",
+      "roll": {
+        "min": 2,
+        "max": 2
+      },
+      "difficulty": 7,
+      "text": "Very softly the wind increases around the caster and takes him wherever he wants. Caster may move anywhere within 12\", if he gets into HtH it counts as a charge."
+    },
+    {
+      "id": "woodland_incantations_the_rain_song",
+      "name": "The Rain Song",
+      "roll": {
+        "min": 3,
+        "max": 3
+      },
+      "difficulty": 9,
+      "text": "The air around the caster becomes moist and it starts to rain, until it looks like a major downpour… Everything, except Wood Elves, within 6\" of the caster suffers -1 to hit and suffers -1 Initiative. This lasts until the beginning of the caster's next magic phase."
+    },
+    {
+      "id": "woodland_incantations_lyrics_of_feral_infatuation",
+      "name": "Lyrics of Feral Infatuation",
+      "roll": {
+        "min": 4,
+        "max": 4
+      },
+      "difficulty": 8,
+      "text": "This soothing song seems to calm even the most ferocious monsters and sends them into a lethargic state. Any animal or monster has to pass a Ld-test, on his own Ld, in order to attack an opponent. If it fails it will do nothing else that turn, not even fighting back if attacked."
+    },
+    {
+      "id": "woodland_incantations_song_of_the_sun",
+      "name": "Song of the Sun",
+      "roll": {
+        "min": 5,
+        "max": 5
+      },
+      "difficulty": 6,
+      "text": "While the caster sings his victim believes he is in a scorching desert. His movement slows and throat becomes parched. The target must be within 18\" and is -1M until the caster's next magic phase, he also must make a test, if he fails, he suffers a S4 hit."
+    },
+    {
+      "id": "woodland_incantations_eagle_s_cry",
+      "name": "Eagle's Cry",
+      "roll": {
+        "min": 6,
+        "max": 6
+      },
+      "difficulty": 8,
+      "text": "The caster utters a melodious cry, which sounds like a great eagle. This inspires the elves so much they gain the legendary sight of Thuarindir. All Wood Elves within 6\" gain +1 to hit and +1 on the critical hit table. This lasts until the beginning of the caster's next magic phase."
+    }
+  ],
+  "source": {
+    "publication": "Woodland Incantations",
+    "file": "warbands/grade-2a-part2.md:1282-2394"
+  }
+},
   {
     id: "amazon_rituals",
     name: "Amazon Rituals",
@@ -2195,6 +2449,15 @@ export function findSpell(loreId: string, spellId: string) {
  * differently from the table's own label, or a unit name the table doesn't repeat in full.
  */
 const LORE_OVERRIDES: Record<string, string> = {
+  court_of_pleasures_priest_of_obscene: 'chaos_rituals',
+  druchii_sorceress: 'dark_elf_magic',
+  nipponese_vim_to_mage: 'arabian_elemental_magic',
+  warrior_priest: 'prayers_of_sigmar',
+  snotling_shaman: 'snotling_waaagh_magic',
+  seer: 'charms_and_hexes',
+  forest_mage: 'woodland_incantations',
+  restless_dead_variant_liche: 'necromancy_the_restless_dead',
+  restless_dead_variant_necromancer: 'necromancy_the_restless_dead',
   sisters_of_sigmar_matriarch: "prayers_of_sigmar", // warband name carries a leading "The"
   undead_necromancer: "necromancy", // warband name carries a leading "The"
   skaven_eshin_sorcerer: "magic_of_the_horned_rat", // table row is "Skaven Sorcerer"
@@ -2203,8 +2466,30 @@ const LORE_OVERRIDES: Record<string, string> = {
   skaven_pestilens_sorcerer: "magic_of_the_horned_rat", // table row is "Skaven of Clan Pestilens Sorcerer"
 };
 
+export interface StartingMagicOption { id: string; label: string; loreId: string | null; count: number; firstChosen?: boolean }
+/** Starting choices from the unit's own source; Arkhar is explicitly not a caster. */
+export function startingMagicOptions(unitId: string, template: WarbandTemplate): StartingMagicOption[] {
+  if (unitId === 'marauders_seer') return [
+    { id: 'undivided', label: 'Chaos Undivided', loreId: 'chaos_rituals', count: 1 },
+    { id: 'eagle', label: 'Tchar the Eagle', loreId: 'tchar_rituals', count: 2, firstChosen: true },
+    { id: 'crow', label: 'Onogal the Crow', loreId: 'onogal_rituals', count: 1 },
+    { id: 'serpent', label: 'Shornaal the Serpent', loreId: 'shornaal_rituals', count: 1 },
+    { id: 'arkhar', label: 'Arkhar the Dog — Bloodfather, no spells', loreId: null, count: 0 },
+  ];
+  if (template.id === 'sorcerous_society' && ['magus', 'mages'].includes(unitId)) return ['elemental_lore_of_water', 'elemental_lore_of_fire', 'elemental_lore_of_earth', 'elemental_lore_of_air', 'lesser_magic'].map(id => ({ id, label: findLore(id)!.name, loreId: id, count: unitId === 'magus' ? 2 : 1 }));
+  const lore = loreForUnit(unitId, template);
+  return lore ? [{ id: lore.id, label: lore.name, loreId: lore.id, count: unitId === 'restless_dead_variant_liche' ? 2 : 1 }] : [];
+}
+
+export function startingMagicFor(unitId: string, template: WarbandTemplate, choiceId?: string): StartingMagicOption | undefined {
+  const options = startingMagicOptions(unitId, template);
+  return options.find(o => o.id === choiceId) ?? (options.length === 1 ? options[0] : undefined);
+}
+
 /** The lore a unit type draws spells from, by matching its name against the Wizard -> Type of Magic table; null when nothing matches (not a spellcaster). */
 export function loreForUnit(unitTemplateId: string, template: WarbandTemplate): SpellLore | null {
+  if (unitTemplateId.endsWith('__priest_of_morr')) return findLore('funerary_rites')!;
+  if (unitTemplateId.endsWith('__wolf_priest_of_ulric')) return findLore('prayers_of_ulric')!;
   const override = LORE_OVERRIDES[unitTemplateId];
   if (override) return findLore(override) ?? null;
   const unit = findUnitTemplate(template, unitTemplateId);

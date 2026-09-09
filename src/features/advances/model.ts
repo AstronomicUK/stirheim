@@ -129,7 +129,7 @@ export function hiredSwordAsHero(sword: RosterHiredSword, name: string = sword.n
     levelUps: sword.levelUps,
     skillTableIds: hiredSwordSkillTables(sword),
     skillIds: sword.skillIds,
-    spellIds: [],
+    spellIds: sword.spellIds,
     injuries: sword.injuries,
     flags: sword.flags,
     equipment: sword.equipment,
@@ -139,7 +139,7 @@ export function hiredSwordAsHero(sword: RosterHiredSword, name: string = sword.n
 
 /** Fold a resolver's hero result back onto the hired sword row (stats, advances and skills only). */
 export function heroToHiredSword(sword: RosterHiredSword, hero: RosterHero): RosterHiredSword {
-  return { ...sword, stats: hero.stats, levelUps: hero.levelUps, skillIds: hero.skillIds }
+  return { ...sword, stats: hero.stats, levelUps: hero.levelUps, skillIds: hero.skillIds, spellIds: hero.spellIds, flags: hero.flags }
 }
 
 function groupAsHero(group: RosterHenchmanGroup): RosterHero {
@@ -204,7 +204,9 @@ export function groupMaxima(group: RosterHenchmanGroup, warbandTemplateId: strin
 
 /** The lore a hero draws new spells from, or null when the roster gives no sign he is a wizard.
  * Only reads `spellIds`/`unitTemplateId`, so a differently-shaped draft can supply just those two. */
-export function loreForHero(hero: Pick<RosterHero, 'spellIds' | 'unitTemplateId'>, template: WarbandTemplate | undefined): SpellLore | null {
+export function loreForHero(hero: Pick<RosterHero, 'spellIds' | 'unitTemplateId'> & Partial<Pick<RosterHero, 'flags'>>, template: WarbandTemplate | undefined): SpellLore | null {
+  const chosen = SPELL_LORES.find(lore => lore.id === hero.flags?.magicLoreId)
+  if (chosen) return chosen
   const known = SPELL_LORES.find((lore) => lore.spells.some((s) => hero.spellIds.includes(s.id)))
   if (known) return known
   return template ? loreForUnit(hero.unitTemplateId, template) : null
@@ -230,6 +232,7 @@ export type AdvanceStep = 'roll' | 'choose' | 'review'
 export const ADVANCE_STEPS: readonly AdvanceStep[] = ['roll', 'choose', 'review']
 
 export interface AdvanceDraft {
+  spellLoreId?: string
   /** The two D6 as rolled. */
   dice: [number | null, number | null]
   /** The D6 follow-up of a "roll again" characteristic result. */
@@ -541,6 +544,7 @@ export interface StatOption {
 export type HeroNeed = 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
 
 export interface HeroPlan {
+  lores?: SpellLore[]
   total: number | null
   roll: HeroAdvanceRoll | null
   maxima: MaximaInfo
@@ -606,7 +610,9 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   const hero = isSword ? hiredSwordAsHero(subject.sword) : subject.hero
   const warbandTemplateId = ctx.roster.warbandTemplateId
   const maxima = isSword ? hiredSwordMaxima(subject.sword, warbandTemplateId) : heroMaxima(hero, warbandTemplateId)
-  const lore = isSword ? null : loreForHero(hero, ctx.template)
+  const homeLore = loreForHero(hero, ctx.template)
+  const lores = isSword && subject.sword.hiredSwordId === 'dark_mage' ? SPELL_LORES.filter(l => ['dark_mage_magic', 'lesser_magic'].includes(l.id)) : homeLore ? [homeLore] : []
+  const lore = lores.find(l => l.id === draft.spellLoreId) ?? homeLore
   const plan: HeroPlan = {
     total: diceTotal(draft),
     roll: null,
@@ -620,6 +626,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     allowReward: false,
     reward: null,
     lore,
+    lores,
     spells: lore ? unknownSpells(lore, hero, ctx.bans) : [],
     skillTables: availableSkills(hero, warbandTemplateId, { roster: ctx.roster, bans: ctx.bans }),
     result: null,
@@ -654,13 +661,14 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
       if (out.allowSpell && draft.mode === 'spell') {
         if (!draft.spellId || !lore) return { ...out, need: 'skill' }
         const spell = lore.spells.find((s) => s.id === draft.spellId)
-        const r = learnSpell(hero, lore.id, draft.spellId)
+        const duplicate = hero.spellIds.includes(draft.spellId)
+        const r = learnSpell(hero, lore.id, draft.spellId, duplicate)
         return {
           ...out,
           result: finish(r.value, r.events, {
             outcome: 'spell',
             spellId: draft.spellId,
-            spellName: spell?.name ?? draft.spellId,
+            spellName: `${spell?.name ?? draft.spellId}${duplicate ? ' (known spell: Difficulty reduced by 1)' : ''}`,
             loreId: lore.id,
             ...(subRoll !== undefined ? { subRoll } : {}),
           }),

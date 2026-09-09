@@ -12,15 +12,16 @@ import { Card, Section } from '../view/bits'
 import { DieField } from '../../../ui'
 
 export interface FirstSpellCardProps {
+  title?: string
   lore: SpellLore
   rule: FirstSpellRule
   selected: string | null
   onSelect: (id: string | null) => void
 }
 
-export function FirstSpellCard({ lore, rule, selected, onSelect }: FirstSpellCardProps) {
+export function FirstSpellCard({ lore, rule, selected, onSelect, title = 'First spell' }: FirstSpellCardProps) {
   return (
-    <Section title="First spell" aside={lore.name}>
+    <Section title={title} aside={lore.name}>
       <Card className="flex flex-col gap-3 px-4 py-3">
         {rule === 'chooseFreely' ? (
           <SpellPicker lore={lore} spells={lore.spells} knownSpellIds={[]} selected={selected} onSelect={onSelect} chooseFrom={{ reason: 'House rule' }} />

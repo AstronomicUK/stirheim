@@ -53,6 +53,13 @@ function rolled(a: number, b: number, draft: AdvanceDraft = emptyDraft(NEW_ID)):
 }
 
 describe('groupAdvancesBySubject', () => {
+  it('a hired caster can improve a known spell and retain the improvement on the hired-sword roster', () => {
+    const sword: RosterHiredSword = { id: NEW_ID, hiredSwordId: 'warlock', name: 'QA Warlock', stats: captain.stats, xp: 2, levelUps: 0, skillIds: [], spellIds: ['fires_of_uzhul'], flags: {}, injuries: [], equipment: [], status: 'active' }
+    const draft = { ...rolled(5, 6), mode: 'spell' as const, spellId: 'fires_of_uzhul' }
+    const plan = planHero(draft, { kind: 'hiredSword', sword }, { ...ctx, roster: { ...roster, hiredSwords: [sword] } })
+    expect(plan.allowSpell).toBe(true)
+    expect(plan.result?.next.hiredSwords[0]).toMatchObject({ spellIds: ['fires_of_uzhul'], levelUps: 1, flags: { spellDifficultyReductions: { fires_of_uzhul: 1 } } })
+  })
   it('groups by warrior, oldest warrior first, each warrior oldest advance first', () => {
     const rows = [
       advance('a3', 'hero', CAPTAIN_ID, 24, '2026-09-04T12:00:00Z'),

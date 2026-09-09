@@ -306,6 +306,30 @@ describe("hireHiredSword / payUpkeep", () => {
     expect(r.value.warband.hiredSwords[0].status).toBe("active");
   });
 
+  it('gives named casters their full sets and rolls Khar-mel’s starting count', () => {
+    for (const [id, count] of [['abdul_alhazred_the_mad_sorcerer', 12], ['crow_master_the', 7], ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 6], ['nicodemus_the_cursed_pilgrim', 6], ['dark_mage', 1], ['warrior_priest_of_sigmar', 1]] as const) {
+      const result = hireHiredSword({ ...makeWarband(), wyrdstone: 2 }, id, 'caster');
+      expect(result.value.hiredSwords[0].spellIds.length, id).toBe(count);
+      if (id === 'nicodemus_the_cursed_pilgrim') {
+        expect(result.value.wyrdstone).toBe(1);
+        const upkeep = payUpkeep(result.value, 'caster');
+        expect(upkeep.value.warband.wyrdstone).toBe(0);
+        expect(payUpkeep(upkeep.value.warband, 'caster').value.paid).toBe(false);
+      }
+    }
+    expect(hireHiredSword(makeWarband(), 'khar_mel_the_djinn', 'djinn', { rng: () => .99 }).value.hiredSwords[0].spellIds).toHaveLength(3);
+  });
+
+  it('priest alternatives use an existing hero slot, never an extra Hired Sword slot', () => {
+    const alternative = REIKLAND.heroTemplates.find(u => u.replacementFor === CHAMPIONS)!;
+    const hired = recruitHero(makeWarband(), REIKLAND, alternative.id, 'Morr priest', 'priest').value;
+    expect(hired.heroes.find(h => h.id === 'priest')).toMatchObject({ xp: 8, flags: { magicLoreId: 'funerary_rites' } });
+    expect(hired.hiredSwords).toEqual([]);
+    const full = { ...hired, heroes: [...hired.heroes, { ...hired.heroes.find(h => h.id === 'priest')!, id: 'champion', unitTemplateId: CHAMPIONS }] };
+    expect(canRecruit(full, REIKLAND, CHAMPIONS).ok).toBe(false);
+    expect(canRecruit(full, REIKLAND, alternative.id).ok).toBe(false);
+  });
+
   it("the hired sword leaves when upkeep cannot be paid", () => {
     const wb = { ...hireHiredSword(makeWarband(), "dwarf_troll_slayer", "grim").value, gold: 5 };
     const before = structuredClone(wb);

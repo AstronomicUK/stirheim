@@ -36,6 +36,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Already-established hits, such as a successfully cast damage spell. */
+  automaticHits?: boolean;
   /** Minimum D6 to hit, with all modifiers (opposed WS or flat BS + cover/range/moving/large-target stack) already folded in. */
   hitThreshold: Threshold;
   /** Minimum D6 to wound (attacker/weapon Strength vs defender Toughness), with skill modifiers already folded in. */
@@ -304,7 +306,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
       guaranteedOutOfAction: true,
     };
   }
-  const pHitBase = input.autoHitKnockedDown ? 1 : probabilityAtLeast(input.hitThreshold);
+  const pHitBase = input.autoHitKnockedDown || input.automaticHits ? 1 : probabilityAtLeast(input.hitThreshold);
   const pWoundIfHitBase = probabilityAtLeast(input.woundThreshold);
   // Reroll a failure once (Expert Swordsman / Hatred): P(success on either roll) = 1 - P(fail)^2.
   const pHit = input.rerollToHit ? 1 - (1 - pHitBase) * (1 - pHitBase) : pHitBase;
@@ -340,7 +342,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
 
   return {
     pHit,
-    hitFaces: input.autoHitKnockedDown ? undefined : [
+    hitFaces: input.autoHitKnockedDown || input.automaticHits ? undefined : [
       { face: 0, probability: 1 - pHit, wound: 0, trigger: 0, parry: 0 },
       ...Array.from({ length: 6 }, (_, i) => i + 1).filter(face => input.hitThreshold !== IMPOSSIBLE && face > 1 && (face === 6 || face >= input.hitThreshold)).map(face => ({
         face, probability: (1 + (input.rerollToHit ? 1 - pHitBase : 0)) / 6,

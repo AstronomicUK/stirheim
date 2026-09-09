@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { RosterHero } from "../../types/roster";
-import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll, type CastState } from "../casting";
+import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll, profileForSpell, type CastState } from "../casting";
+import { learnSpell } from '../advances';
+import { warriorFlagsSchema } from '../../../domain/json';
 
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 8 };
 
@@ -26,6 +28,33 @@ function hero(over: Partial<RosterHero> = {}): RosterHero {
 const profileOf = (h: RosterHero) => casterProfile({ hero: h, warbandName: "Cult of the Possessed", unitName: "Magister" })!;
 
 describe("who can cast", () => {
+  it('uses each known spell’s lore despite the chosen home lore', () => {
+    const h = hero({ spellIds: ['vision_of_torment', 'hearts_of_steel'], skillIds: ['sorcery'], equipment: [{ itemId: 'light_armour', quantity: 1 }, { itemId: 'holy_tome', quantity: 1 }] });
+    for (const loreId of ['chaos_rituals', 'prayers_of_sigmar']) {
+      const p = casterProfile({ hero: h, loreId })!;
+      expect(profileForSpell(p, 'vision_of_torment').blocks).toHaveLength(1);
+      const prayer = profileForSpell(p, 'hearts_of_steel');
+      expect(prayer.blocks).toEqual([]);
+      expect(prayer.modifiers.map(m => m.id)).toEqual(['holy_tome']);
+      const cast = startCast(p, p.spells.find(s => s.spell.id === 'hearts_of_steel')!.spell);
+      expect(cast.profile.kind).toBe('prayer');
+      expect(cast.applied.map(m => m.id)).toEqual(['holy_tome']);
+    }
+  });
+  it('Warrior Wizard lifts the armour restriction without changing spell bonuses', () => {
+    const p = profileOf(hero({ skillIds: ['warrior_wizard', 'sorcery'], equipment: [{ itemId: 'heavy_armour', quantity: 1 }] }));
+    expect(p.blocks).toEqual([]);
+    expect(p.modifiers.map(m => m.id)).toEqual(['sorcery']);
+  });
+  it('persists duplicate improvements and casts against the reduced difficulty', () => {
+    const h = learnSpell(hero(), 'chaos_rituals', 'vision_of_torment', true).value;
+    const p = profileOf({ ...h, flags: warriorFlagsSchema.parse(h.flags) });
+    const known = p.spells[0];
+    expect(known.difficulty).toBe(known.spell.difficulty! - 1);
+    expect(startCast(p, known.spell).difficulty).toBe(known.difficulty);
+    expect(h.spellIds).toEqual(['vision_of_torment']);
+    expect(h.levelUps).toBe(3);
+  });
   it("finds the lore from a spell the hero knows, and from the Wizard table when he knows none", () => {
     expect(profileOf(hero()).lore.id).toBe("chaos_rituals");
     expect(profileOf(hero({ spellIds: [] })).lore.id).toBe("chaos_rituals");

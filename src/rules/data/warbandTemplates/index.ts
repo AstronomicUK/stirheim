@@ -21,7 +21,22 @@ export const WARBAND_TEMPLATES: WarbandTemplate[] = [
   ...GRADE_2A_1,
   ...GRADE_2A_2,
   ...VARIANTS,
-];
+].map(template => ({ ...template, heroTemplates: [...template.heroTemplates], equipmentLists: [...template.equipmentLists] }));
+
+// Town Cryer 12/8, reference/rules/04-hired-swords.md:1407-1443,1719-1753.
+// These are ordinary Heroes occupying existing slots, not Hired Swords.
+for (const template of WARBAND_TEMPLATES.filter(w => /mercenar/i.test(w.name))) {
+  const bases = template.heroTemplates.filter(h => /^0-/.test(h.rosterLimit));
+  template.equipmentLists.push({ id: 'priest_of_morr_equipment', name: 'Priest of Morr', meleeWeapons: [{ name: 'Dagger', cost: '1st free/2 gc' }, { name: 'Scythe', cost: '10 gc' }], missileWeapons: [], armour: [] });
+  for (const base of bases) {
+    template.heroTemplates.push({ ...base, id: `${base.id}__priest_of_morr`, name: `Priest of Morr (instead of ${base.name})`, replacementFor: base.id, alternateHero: 'priest_of_morr', cost: 35, rosterLimit: '0-1', startingExperience: 8, stats: { M: 4, WS: 2, BS: 2, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 9 }, equipmentListId: 'priest_of_morr_equipment', skillTableIds: ['academic', 'speed'], specialRules: [{ name: 'Funerary Rites', text: 'Choose a Funerary Rite using the rules for Magic.' }, { name: 'Loner', text: 'Does not suffer from the All Alone rules.' }, { name: 'Weapons and armour', text: 'Dagger and Scythe only; may never wear armour.' }] });
+    if (template.id === 'mercenaries_middenheim' && /champion/i.test(base.name)) {
+      const list = template.equipmentLists.find(l => l.id === base.equipmentListId)!;
+      template.equipmentLists.push({ ...list, id: 'wolf_priest_equipment', name: 'Wolf Priest of Ulric', meleeWeapons: list.meleeWeapons.filter(w => /dagger|hammer|mace|club|flail|morning|double.hand/i.test(w.name)), missileWeapons: [], armour: [] });
+      template.heroTemplates.push({ ...base, id: `${base.id}__wolf_priest_of_ulric`, name: 'Wolf Priest of Ulric (instead of a Champion)', replacementFor: base.id, alternateHero: 'wolf_priest_of_ulric', cost: 60, rosterLimit: '0-1', stats: { M: 4, WS: 3, BS: 2, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 8 }, equipmentListId: 'wolf_priest_equipment', skillTableIds: ['combat', 'academic', 'strength', 'speed'], specialRules: [{ name: 'Prayers', text: 'Uses the Prayers of Ulric.' }, { name: 'Wolfcloak', text: 'Included in the hire price; 6+ armour save. Other armour may not be used.' }, { name: 'Hatred', text: 'Hates Witch Hunters, Warrior-Priests, Sigmarite Matriarchs and Sisters Superior.' }] });
+    }
+  }
+}
 
 export function findWarbandTemplate(id: string): WarbandTemplate | undefined {
   return WARBAND_TEMPLATES.find((w) => w.id === id);
@@ -69,6 +84,7 @@ export function listedHeroSlots(template: WarbandTemplate): number | null {
   if (ruled !== undefined) return ruled;
   let total = 0;
   for (const hero of template.heroTemplates) {
+    if (hero.replacementFor) continue;
     const upper = rosterLimitUpperBound(hero.rosterLimit);
     if (upper === null) return null;
     total += upper;

@@ -38,6 +38,11 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  /** Permanent reductions earned by rolling a known spell again. Keyed by spell id. */
+  spellDifficultyReductions?: Record<string, number>;
+  /** Chosen starting lore, retained when later books add spells from other lores. */
+  magicLoreId?: string;
+  chaosMark?: string;
   /** Games the warrior must sit out before playing again (Deep Wound, Light arm wound, etc.). */
   missNextGames?: number;
   /** Old Battle Wound: roll a D6 at the start of each battle, 1 = cannot fight. */

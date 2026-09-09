@@ -76,7 +76,7 @@ export function warbandHeroCount(warband: RosterWarband): number {
 /** How many models of a unit type the roster holds: active heroes for hero templates, total henchmen for henchman templates. */
 export function unitCount(warband: RosterWarband, unit: UnitTemplate): number {
   if (unit.role === "hero") {
-    return warband.heroes.filter((h) => h.status === "active" && h.unitTemplateId === unit.id).length;
+    return warband.heroes.filter((h) => h.status === "active" && (unit.alternateHero ? h.unitTemplateId.endsWith(`__${unit.alternateHero}`) : h.unitTemplateId === unit.id || h.unitTemplateId.startsWith(`${unit.id}__`))).length;
   }
   return warband.henchmenGroups.filter((g) => g.unitTemplateId === unit.id).reduce((sum, g) => sum + g.size, 0);
 }

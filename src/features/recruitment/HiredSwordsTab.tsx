@@ -318,6 +318,9 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
   const cost = overrideReady(feeOverride) ? feeOverride.amount : listedFee
   const feeBlocks = feeOverride !== null && !overrideReady(feeOverride)
   const restricted = eligibility.kind === 'restricted'
+  const needsConditions = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer', 'khar_mel_the_djinn'].includes(entry.id)
+  const [conditionsMet, setConditionsMet] = useState(false)
+  const shardFee = entry.id === 'nicodemus_the_cursed_pilgrim'
 
   async function confirm() {
     const id = crypto.randomUUID()
@@ -338,13 +341,15 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
       title={entry.name}
       description={`${entry.hireCost.text} to hire · upkeep ${upkeepText(entry)} · ${entry.source}`}
       footer={
-        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks} onClick={() => void confirm()}>
-          {restricted ? `Hire anyway for ${cost} gc` : `Hire for ${cost} gc`}
+        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks || (needsConditions && !conditionsMet) || (shardFee && roster.wyrdstone < 1)} onClick={() => void confirm()}>
+          {shardFee ? 'Hire for 1 wyrdstone shard' : restricted ? `Hire anyway for ${cost} gc` : `Hire for ${cost} gc`}
         </Button>
       }
     >
       <div className="flex flex-col gap-4 pb-2">
         <RestrictionNotice entry={entry} eligibility={eligibility} />
+        {needsConditions ? <label className="flex gap-2 text-sm"><input type="checkbox" checked={conditionsMet} onChange={e => setConditionsMet(e.target.checked)} />The required audience, search or summoning conditions in this character’s rules have been met.</label> : null}
+        {shardFee ? <Notice tone="info">Nicodemus takes one wyrdstone shard when hired, and another after each battle, including his first. Treasury: {roster.wyrdstone} shards.</Notice> : null}
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire fee" value={`${cost} gc`} />
@@ -463,4 +468,3 @@ function GroupUpkeepSheet({ detail, line, onClose, onDone }: { detail: WarbandDe
     </Sheet>
   )
 }
-

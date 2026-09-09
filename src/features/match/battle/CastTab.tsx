@@ -15,10 +15,12 @@ import {
   dispelsFor,
   spendReroll,
   startCast,
+  profileForSpell,
   type CasterProfile,
   type CastState,
 } from '../../../rules/resolve/casting'
 import { castersOf } from './casters'
+import { SpellDamage } from './SpellDamage'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband } from '../../../rules/types/roster'
 import type { Spell } from '../../../rules/types/magic'
@@ -178,13 +180,7 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
           ) : (
             <p className="text-sm font-semibold text-ink">{caster.name}</p>
           )}
-          <p className="text-xs text-ink-dim">{caster.kind === 'prayer' ? 'Prayers' : 'Spells'} · {caster.lore.name}</p>
-
-          {caster.blocks.length > 0 ? (
-            <Notice tone="error" title={`${caster.name} may not cast`}>
-              {caster.blocks.join(' ')}
-            </Notice>
-          ) : null}
+          <p className="text-xs text-ink-dim">Known spells and prayers</p>
           {already.length > 0 ? (
             <Notice tone="warn" title="Already cast this turn">
               {already.map((c) => `${c.spellName}${c.targetName ? ` on ${c.targetName}` : ''} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
@@ -192,24 +188,27 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
             </Notice>
           ) : null}
 
-          {caster.modifiers.length > 0 ? <ModifierBar caster={caster} spent={spent} setSpent={setSpent} /> : null}
-
           <div className="flex flex-col gap-2">
-            {caster.spells.map(({ spell, difficulty }) => (
+            {caster.spells.map(({ spell, difficulty }) => {
+              const selected = profileForSpell(caster, spell.id)
+              return (
               <Card key={spell.id} className="flex flex-col gap-2 px-3 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <HoverCard title={spell.name} label={<span className="text-sm font-semibold text-ink">{spell.name}</span>}>
+                      <p>{difficulty === null ? 'Cast automatically' : `Difficulty: ${difficulty}${difficulty !== spell.difficulty ? ` (Base difficulty ${spell.difficulty})` : ''}`}</p>
                       {spell.text}
                     </HoverCard>
-                    <p className="text-xs text-ink-dim">{difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
+                    <p className="text-xs text-ink-dim">{selected.lore.name} · {difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
                   </div>
-                  <Button variant="secondary" disabled={caster.blocks.length > 0} onClick={() => begin(spell)}>
-                    {caster.kind === 'prayer' ? 'Recite' : 'Cast'}
+                  <Button variant="secondary" disabled={selected.blocks.length > 0} onClick={() => begin(spell)}>
+                    {selected.kind === 'prayer' ? 'Recite' : 'Cast'}
                   </Button>
                 </div>
+                {selected.blocks.length > 0 ? <p className="text-xs text-danger">{selected.blocks.join(' ')}</p> : null}
+                {selected.modifiers.length > 0 ? <ModifierBar caster={selected} spent={spent} setSpent={setSpent} /> : null}
               </Card>
-            ))}
+            )})}
           </div>
 
           {caster.reminders.length > 0 ? (
@@ -244,7 +243,7 @@ export function CastTab({ matchId, roster, template, others, sheet, readOnly, ed
         open={state !== null}
         onClose={closeCast}
         size="full"
-        title={state ? `${caster.name} ${caster.kind === 'prayer' ? 'recites' : 'casts'} ${state.spell.name}` : ''}
+        title={state ? `${caster.name} ${state.profile.kind === 'prayer' ? 'recites' : 'casts'} ${state.spell.name}` : ''}
         description="Roll your dice one step at a time, or tap Roll."
         footer={
           <Button
@@ -414,6 +413,7 @@ function CastRun({ state, advance, usedUp }: { state: CastState; advance: (step:
               <span className="text-ink-dim">{describeCast(state)}</span>
             </p>
             {usedUp.length > 0 || state.used.length > 0 ? <p className="text-xs text-ink-dim">Spent so far: {[...new Set([...usedUp, ...state.used])].join(', ') || 'nothing'}.</p> : null}
+            {state.outcome === 'cast' || state.outcome === 'automatic' ? <SpellDamage spellName={state.spell.name} onLog={lines => advance(s => ({ ...s, log: [...s.log, ...lines] }))} /> : null}
           </div>
         ) : null}
       </Card>

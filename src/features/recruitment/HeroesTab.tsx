@@ -1,4 +1,7 @@
 import type { MapPerks } from '../../rules/resolve/mapAdvantages'
+import type { FirstSpellRule } from '../../rules/types/roster'
+import { startingMagicFor, startingMagicOptions } from '../../rules/data/campaign/magic'
+import { StartingMagicCard } from '../roster/builder/StartingMagicCard'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
@@ -15,6 +18,7 @@ import { UnitList } from './UnitList'
 import { outcomeFrom, useCommit, type Outcome } from './useCommit'
 
 export interface RecruitTabProps {
+  firstSpellRule?: FirstSpellRule
   detail: WarbandDetail
   template: WarbandTemplate
   canEdit: boolean
@@ -24,7 +28,7 @@ export interface RecruitTabProps {
 }
 
 /** Hire a hero from the warband list: name him, pay the hire cost, arm him later at the trading post. */
-export function HeroesTab({ detail, template, canEdit, onDone }: RecruitTabProps) {
+export function HeroesTab({ detail, template, canEdit, onDone, firstSpellRule = 'random' }: RecruitTabProps) {
   const listings = useMemo(() => listUnits(detail.roster, template, 'hero'), [detail.roster, template])
   const [picked, setPicked] = useState<UnitListing | null>(null)
   return (
@@ -39,6 +43,7 @@ export function HeroesTab({ detail, template, canEdit, onDone }: RecruitTabProps
           detail={detail}
           template={template}
           listing={picked}
+          firstSpellRule={firstSpellRule}
           onClose={() => setPicked(null)}
           onDone={(outcome) => {
             setPicked(null)
@@ -51,6 +56,7 @@ export function HeroesTab({ detail, template, canEdit, onDone }: RecruitTabProps
 }
 
 interface HeroSheetProps {
+  firstSpellRule: FirstSpellRule
   detail: WarbandDetail
   template: WarbandTemplate
   listing: UnitListing
@@ -58,9 +64,13 @@ interface HeroSheetProps {
   onDone: (outcome: Outcome) => void
 }
 
-function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProps) {
+function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule }: HeroSheetProps) {
   const { roster } = detail
   const unit = listing.unit
+  const [magicChoiceId, setMagicChoiceId] = useState<string>()
+  const [spellIds, setSpellIds] = useState<string[]>([])
+  const magic = startingMagicFor(unit.id, template, magicChoiceId)
+  const needsMagic = startingMagicOptions(unit.id, template).length > 0 && (!magic || new Set(spellIds.filter(Boolean)).size !== magic.count)
   const [name, setName] = useState(() => defaultHeroName(unit, roster))
   const { commit, error, pending } = useCommit(detail)
   const [override, setOverride] = useState<Override | null>(null)
@@ -81,7 +91,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProp
     const note = overrideReady(override) ? overrideNote('Hire cost', `${listed} gc`, `${override.amount} gc`, override.reason) : null
     const result = await commit(
       () => {
-        const hired = recruitHero(roster, template, unit.id, trimmed, id, overrideReady(override) ? { costOverride: override.amount } : {})
+        const hired = recruitHero(roster, template, unit.id, trimmed, id, { ...(overrideReady(override) ? { costOverride: override.amount } : {}), magicChoiceId, spellIds })
         let warband = hired.value
         const events = [...hired.events]
         for (const line of giftTotal.lines) {
@@ -108,7 +118,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProp
       title={`Hire a ${singular(unit.name)}`}
       description={`${listing.countText} on the roster · limit ${unit.rosterLimit}`}
       footer={
-        <Button block pending={pending} disabled={trimmed.length === 0 || overrideBlocks || (mustHaveGift && giftItems.length === 0)} onClick={() => void confirm()}>
+        <Button block pending={pending} disabled={trimmed.length === 0 || overrideBlocks || needsMagic || (mustHaveGift && giftItems.length === 0)} onClick={() => void confirm()}>
           Hire for {cost} gc
         </Button>
       }
@@ -121,6 +131,8 @@ function HeroSheet({ detail, template, listing, onClose, onDone }: HeroSheetProp
           <KeyValue label="Starting xp" value={unit.startingExperience} />
         </div>
         <OverrideField what="the hire cost" suggested={listed} value={override} onChange={setOverride} />
+        <StartingMagicCard unitId={unit.id} template={template} choiceId={magicChoiceId} spells={spellIds} rule={firstSpellRule} onChoice={id => { setMagicChoiceId(id); setSpellIds([]) }} onSpells={setSpellIds}
+          apprenticeSpells={unit.id === 'restless_dead_variant_necromancer' ? roster.heroes.find(h => h.unitTemplateId === 'restless_dead_variant_liche' && h.status === 'active')?.spellIds : undefined} />
         {gifts.length > 0 ? (
           <fieldset className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">
             <legend className="px-1 text-xs uppercase tracking-wider text-ink-dim">Bought with the recruit</legend>

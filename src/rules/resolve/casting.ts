@@ -21,7 +21,7 @@ export type CasterKind = "spell" | "prayer";
 
 /** Lores that are prayers rather than sorcery: their users may wear armour, and use prayer kit.
  * The rulebook names only Prayers of Sigmar for the armour exception (#58); Taal/Lady's/Ulric are
- * included here too as the reading most tables actually use, left for Tom to settle either way. */
+ * included here too as explicitly approved by Tom on 2026-09-09. */
 export const PRAYER_LORE_IDS = ["prayers_of_sigmar", "prayers_of_taal", "ladys_prayers", "prayers_of_ulric"] as const;
 
 /**
@@ -67,6 +67,8 @@ export interface CastableSpell {
   spell: Spell;
   /** Null for the handful of spells the source marks "Auto": they need no roll. */
   difficulty: number | null;
+  /** The selected spell's lore supplies its own restrictions, kit and skills. */
+  casting?: Omit<CasterProfile, 'spells'>;
 }
 
 export interface CasterProfile {
@@ -127,6 +129,8 @@ function casterKit(hero: RosterHero, kind: CasterKind): CasterKitFinding {
   const has = itemIds(hero);
   const skill = (id: string) => hero.skillIds.includes(id);
   const out: CasterKitFinding = { modifiers: [], rerolls: [], dispel: [], reminders: [] };
+  const identity = 'hiredSwordId' in hero ? hero.hiredSwordId : hero.unitTemplateId;
+  if (kind === 'prayer' && identity === 'bertha_bestraufrung_high_matriarch_of_the_sisterhood') out.modifiers.push({ id: 'sigmars_handmaiden', name: 'Sigmar’s Handmaiden', amount: 2, source: 'Bertha’s special rule', optional: false, oncePerBattle: false });
 
   // ---- always-on modifiers ----
   if (kind === "spell" && skill("sorcery")) {
@@ -219,6 +223,7 @@ function casterKit(hero: RosterHero, kind: CasterKind): CasterKitFinding {
 
 /** The lore a hero casts from, by the spells he knows or by his unit's row in the Wizard table. */
 export function loreForCaster(hero: RosterHero, warbandName: string | undefined, unitName: string | undefined): SpellLore | null {
+  if (hero.flags.magicLoreId && findLore(hero.flags.magicLoreId)) return findLore(hero.flags.magicLoreId)!;
   const known = hero.spellIds.length > 0 ? findLoreOfSpell(hero.spellIds) : null;
   if (known) return known;
   const labels = [warbandName && unitName ? `${warbandName} ${unitName}` : null, unitName ?? null].filter((x): x is string => x !== null).map((x) => x.toLowerCase());
@@ -245,24 +250,34 @@ export function casterProfile(input: CasterInput): CasterProfile | null {
   const { hero } = input;
   const lore = input.loreId ? (findLore(input.loreId) ?? null) : loreForCaster(hero, input.warbandName, input.unitName);
   if (!lore) return null;
-  const kind: CasterKind = (PRAYER_LORE_IDS as readonly string[]).includes(lore.id) ? "prayer" : "spell";
 
   // Every spell he knows, wherever it came from: a Tome of Magic or a Book of the Dead can leave a
   // warrior holding spells from two lores, and he may cast all of them.
   const seen = new Set<string>();
   const known: Spell[] = [];
+  const knownLores = new Map<string, SpellLore>();
   for (const source of [lore, ...SPELL_LORES.filter((l) => l.id !== lore.id)]) {
     for (const spell of source.spells) {
       if (seen.has(spell.id) || !hero.spellIds.includes(spell.id)) continue;
       if (input.isBanned?.(spell.id) ?? false) continue;
       seen.add(spell.id);
       known.push(spell);
+      knownLores.set(spell.id, source);
     }
   }
 
+  return {
+    ...castingRules(hero, lore),
+    spells: known.map(spell => ({ spell, difficulty: spell.difficulty === null ? null : Math.max(0, spell.difficulty - (hero.flags.spellDifficultyReductions?.[spell.id] ?? 0)), casting: castingRules(hero, knownLores.get(spell.id) ?? lore) })),
+  };
+}
+
+function castingRules(hero: RosterHero, lore: SpellLore): Omit<CasterProfile, 'spells'> {
+  const kind: CasterKind = (PRAYER_LORE_IDS as readonly string[]).includes(lore.id) ? 'prayer' : 'spell';
   const kit = casterKit(hero, kind);
   const blocks: string[] = [];
-  if (kind === "spell") {
+  const innateWarriorWizard = hero.unitTemplateId === 'restless_dead_variant_liche' || ('hiredSwordId' in hero && hero.hiredSwordId === 'the_fallen_sister');
+  if (kind === "spell" && !hero.skillIds.includes('warrior_wizard') && !innateWarriorWizard) {
     const worn = armourBlockingCasting(hero);
     if (worn.length > 0) blocks.push(`A wizard may not use magic wearing armour, a shield or a buckler. Carrying: ${worn.join(", ")}.`);
   }
@@ -273,7 +288,6 @@ export function casterProfile(input: CasterInput): CasterProfile | null {
     name: hero.name,
     kind,
     lore,
-    spells: known.map((spell) => ({ spell, difficulty: spell.difficulty })),
     modifiers: kit.modifiers,
     rerolls: kit.rerolls,
     blocks,
@@ -281,6 +295,10 @@ export function casterProfile(input: CasterInput): CasterProfile | null {
     reminders: kit.reminders,
     toughness: hero.stats.T,
   };
+}
+
+export function profileForSpell(profile: CasterProfile, spellId: string): CasterProfile {
+  return { ...profile, ...profile.spells.find(s => s.spell.id === spellId)?.casting };
 }
 
 /** Everything on the roster that can try to stop an enemy spell. */
@@ -353,6 +371,8 @@ export interface StartCastOptions {
 }
 
 export function startCast(profile: CasterProfile, spell: Spell, options: StartCastOptions = {}): CastState {
+  profile = profileForSpell(profile, spell.id);
+  const difficulty = profile.spells.find(s => s.spell.id === spell.id)?.difficulty ?? spell.difficulty;
   const chosen = options.modifiers ?? [];
   const applied = profile.modifiers
     .filter((m) => !m.optional || chosen.some((c) => c.id === m.id))
@@ -363,7 +383,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
   const state: CastState = {
     profile,
     spell,
-    difficulty: spell.difficulty,
+    difficulty,
     applied,
     bonus,
     dice: null,
@@ -384,7 +404,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
   state.pending = CAST_STEP({
     kind: "cast",
     label: profile.kind === "prayer" ? "Recite the prayer" : "Cast the spell",
-    detail: `${spell.name}: 2D6, needs ${spell.difficulty}+${bonus !== 0 ? ` with ${bonus >= 0 ? "+" : ""}${bonus}` : ""}.`,
+    detail: `${spell.name}: 2D6, needs ${difficulty}+${difficulty !== spell.difficulty ? ` (base ${spell.difficulty})` : ''}${bonus !== 0 ? ` with ${bonus >= 0 ? "+" : ""}${bonus}` : ""}.`,
   });
   return state;
 }

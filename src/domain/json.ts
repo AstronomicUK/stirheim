@@ -43,6 +43,9 @@ export const appliedInjuriesSchema = z.array(appliedInjurySchema);
 
 /** heroes.flags */
 export const warriorFlagsSchema = z.object({
+  spellDifficultyReductions: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  magicLoreId: z.string().optional(),
+  chaosMark: z.string().optional(),
   missNextGames: z.number().int().min(0).optional(),
   oldBattleWound: z.boolean().optional(),
   singleHandedWeaponsOnly: z.boolean().optional(),

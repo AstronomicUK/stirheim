@@ -25,6 +25,19 @@ function plan(name: string, extra: Partial<AttackInput> = {}, parry = { beatsOrM
   return { weaponName: name, input: input(extra), parry }
 }
 
+describe('spell damage', () => {
+  it('starts at the wound roll, never makes a critical, and retains armour saves', () => {
+    let state = startPhase([plan('Fireball', { automaticHits: true, critTriggerFaces: [] })], 3, 0)
+    expect(state.pending?.kind).toBe('wound')
+    state = applyRoll(state, 6)
+    expect(state.pending?.kind).toBe('save')
+    state = applyRoll(state, 1)
+    expect(state.pending).toBeNull()
+    expect(state.woundsLost).toBe(1)
+    expect(state.worst).toBe('wounded')
+  })
+})
+
 function rolls(state: RollState, ...dice: number[]): RollState {
   return dice.reduce((s, d) => applyRoll(s, d), state)
 }

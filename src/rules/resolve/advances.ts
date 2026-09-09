@@ -509,8 +509,9 @@ export function availableSkills(hero: RosterHero, warbandTemplateId?: string, op
  * Learn a spell instead of a skill (wizards). With a `loreId` the spell must exist in that lore;
  * pass null to record a spell the catalogue does not have (custom / house lore).
  */
-export function learnSpell(hero: RosterHero, loreId: string | null, spellId: string): Resolution<RosterHero> {
-  if (hero.spellIds.includes(spellId)) {
+export function learnSpell(hero: RosterHero, loreId: string | null, spellId: string, lowerDifficulty = false): Resolution<RosterHero> {
+  const duplicate = hero.spellIds.includes(spellId);
+  if (duplicate && !lowerDifficulty) {
     throw new RulesError("SPELL_KNOWN", `${hero.name} already knows the spell "${spellId}"`);
   }
   let label = spellId;
@@ -522,9 +523,9 @@ export function learnSpell(hero: RosterHero, loreId: string | null, spellId: str
   } else {
     events.push({ kind: "warning", subjectId: hero.id, message: `Spell "${spellId}" recorded without lore validation.`, data: { spellId } });
   }
-  const next = recordAdvanceTaken({ ...hero, spellIds: [...hero.spellIds, spellId] });
+  const next = recordAdvanceTaken({ ...hero, spellIds: duplicate ? hero.spellIds : [...hero.spellIds, spellId], flags: duplicate ? { ...hero.flags, spellDifficultyReductions: { ...hero.flags.spellDifficultyReductions, [spellId]: (hero.flags.spellDifficultyReductions?.[spellId] ?? 0) + 1 } } : hero.flags });
   events.push(
-    { kind: "spellLearned", subjectId: hero.id, message: `${hero.name} learns the spell ${label}.`, data: { spellId, loreId } },
+    { kind: "spellLearned", subjectId: hero.id, message: duplicate ? `${hero.name} improves ${label}: permanent Difficulty -1.` : `${hero.name} learns the spell ${label}.`, data: { spellId, loreId } },
     { kind: "advanceTaken", subjectId: hero.id, message: `${hero.name} has taken ${next.levelUps} advance${next.levelUps === 1 ? "" : "s"}.`, data: { levelUps: next.levelUps } },
   );
   return { value: next, events };

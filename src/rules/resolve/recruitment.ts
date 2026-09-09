@@ -35,7 +35,7 @@ import type {
 } from "../types/roster";
 import { resolveEquipmentName } from "../data/items/aliases";
 import { findHiredSword } from "../data/campaign/hiredSwords";
-import { findLore } from "../data/campaign/magic";
+import { findLore, SPELL_LORES, startingMagicFor, startingMagicOptions } from "../data/campaign/magic";
 import { VETERAN_XP_COST_GC } from "../data/campaign/trading";
 import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
 import { RulesError } from "./errors";
@@ -47,15 +47,13 @@ import { startingLevelUps, unitStartingStats } from "./builder";
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
 
 /**
- * #56: hired swords whose own entry says they start with a fixed number of spells "generated at
- * random" — a genuine wizard-table caster the hire flow never actually gave any spells to, so
- * `castersOf` would list them but `loreForCaster` had nothing to find. Excludes the few with a
- * dice-determined *count* rather than a fixed one (Khar-mel the Djinn: D3) and the open-ended ones
- * ("may gain more from X or Y", the Dark Mage) — those need more than a fixed roll loop and are
- * left open. Also excludes Priest of Morr and Wolf Priest of Ulric, whose entries are "Hero" cost
- * (an alternate build choice, not hired for gold through this resolver at all).
+ * Published starting allocations. Khar-mel rolls D3 for the count; named full sets are below.
+ * Priest of Morr and Wolf Priest are ordinary Hero alternatives in the warband catalogue.
  */
 const HIRED_SWORD_STARTING_SPELLS: Record<string, { loreId: string; count: number }> = {
+  warrior_priest_of_sigmar: { loreId: 'prayers_of_sigmar', count: 1 },
+  dark_mage: { loreId: 'dark_mage_magic', count: 1 },
+  khar_mel_the_djinn: { loreId: 'arabian_elemental_magic', count: 0 },
   warlock: { loreId: "lesser_magic", count: 2 },
   witch: { loreId: "charms_and_hexes", count: 2 },
   elf_mage: { loreId: "spells_of_the_djedhi", count: 3 },
@@ -65,18 +63,26 @@ const HIRED_SWORD_STARTING_SPELLS: Record<string, { loreId: string; count: numbe
   truthsayer: { loreId: "lore_of_light", count: 3 },
 };
 
-/** Roll a hired sword's fixed starting spells, re-rolling a repeat exactly as the rulebook's own
- * duplicate-spell rule allows ("roll again, or lower the difficulty by 1" — rerolling here, since
- * there's nowhere on the roster to record a per-spell difficulty modifier; see #58's first bullet). */
+/** Roll starting spells with the source-permitted duplicate reroll; learning improvements use advances. */
 function rollHiredSwordSpells(hiredSwordId: string, rng: () => number): string[] {
+  const full: Record<string, string[]> = {
+    bertha_bestraufrung_high_matriarch_of_the_sisterhood: ['prayers_of_sigmar'],
+    nicodemus_the_cursed_pilgrim: ['lesser_magic'],
+    abdul_alhazred_the_mad_sorcerer: ['arabian_elemental_magic', 'necromancy'],
+    crow_master_the: ['necromancy', 'crow_master_magic'],
+  };
+  if (full[hiredSwordId]) return [...new Set(full[hiredSwordId].flatMap(id => findLore(id)!.spells.map(s => s.id)))];
   const spec = HIRED_SWORD_STARTING_SPELLS[hiredSwordId];
   const lore = spec ? findLore(spec.loreId) : undefined;
   if (!spec || !lore) return [];
+  const count = hiredSwordId === 'khar_mel_the_djinn' ? rollDie(3, rng) : spec.count;
   const spellIds: string[] = [];
-  for (let guard = 0; spellIds.length < spec.count && guard < 50; guard++) {
+  for (let guard = 0; spellIds.length < count && guard < 50; guard++) {
     const spell = spellForRoll(lore, rollDie(6, rng));
     if (spell && !spellIds.includes(spell.id)) spellIds.push(spell.id);
   }
+  // A pathological RNG must not silently under-allocate spells.
+  if (spellIds.length < count) for (const spell of lore.spells) { if (!spellIds.includes(spell.id)) spellIds.push(spell.id); if (spellIds.length === count) break; }
   return spellIds;
 }
 
@@ -104,6 +110,11 @@ function recruitmentBlock(
   count: number,
 ): string | undefined {
   if (unit.cost === null) return `${unit.name} cannot be hired for gold`;
+  if (unit.replacementFor) {
+    const replaced = findUnitTemplate(template, unit.replacementFor)!;
+    const cap = parseRosterLimit(replaced.rosterLimit).max;
+    if (cap !== null && unitCount(warband, replaced) >= cap) return `No ${replaced.name} slot is free for this priest.`;
+  }
   const limit = parseRosterLimit(unit.rosterLimit);
   const current = unitCount(warband, unit);
   if (limit.max !== null && current + count > limit.max) {
@@ -150,6 +161,9 @@ export function canRecruit(
 
 /** Hire a new hero of the given unit type: template stats, starting experience, no equipment. */
 export interface RecruitHeroOptions {
+  rng?: () => number;
+  magicChoiceId?: string;
+  spellIds?: string[];
   /** Pay this instead of the listed hire cost (the UI records why). */
   costOverride?: number;
 }
@@ -180,15 +194,24 @@ export function recruitHero(
     stats: unitStartingStats(unit),
     xp: unit.startingExperience,
     levelUps: startingLevelUps(unit, "hero"),
-    skillTableIds: [...unit.skillTableIds],
+    skillTableIds: [...unit.skillTableIds, ...(opts.magicChoiceId === 'arkhar' ? ['strength'] : [])],
     skillIds: [...(unitRules(unit.id).startingSkillIds ?? [])],
-    spellIds: [],
+    spellIds: opts.spellIds?.filter(Boolean) ?? [],
     injuries: [],
-    flags: {},
+    flags: { ...(startingMagicFor(unit.id, template, opts.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(unit.id, template, opts.magicChoiceId)!.loreId! } : {}), ...(unit.id === 'marauders_seer' ? { chaosMark: opts.magicChoiceId } : {}) },
     equipment: freeDagger ? [{ itemId: freeDagger.itemId, ...(freeDagger.itemId ? {} : { customName: freeDagger.name }), quantity: 1 }] : [],
     status: "active",
   };
 
+  const magic = startingMagicFor(unit.id, template, opts.magicChoiceId);
+  if (unit.alternateHero === 'wolf_priest_of_ulric') hero.equipment.push({ itemId: 'wolfcloak', quantity: 1 });
+  if (startingMagicOptions(unit.id, template).length && !magic) throw new RulesError('recruitment.magicChoice', 'Choose the recruit’s starting lore or Mark.');
+  if (magic?.loreId && !opts.spellIds) {
+    const pool = [...findLore(magic.loreId)!.spells];
+    while (hero.spellIds.length < magic.count && pool.length) hero.spellIds.push(pool.splice(rollDie(pool.length, opts.rng ?? Math.random) - 1, 1)[0].id);
+  }
+  if (magic && new Set(hero.spellIds).size !== magic.count) throw new RulesError('recruitment.startingSpells', `Record ${magic.count} distinct starting spells.`);
+  if (magic?.loreId && hero.spellIds.some(id => !findLore(magic.loreId!)!.spells.some(s => s.id === id))) throw new RulesError('recruitment.startingSpells', 'A starting spell does not belong to the chosen lore.');
   return {
     value: { ...warband, gold: warband.gold - cost, heroes: [...warband.heroes, hero] },
     events: [
@@ -502,7 +525,9 @@ export function hireHiredSword(
   if (warband.hiredSwords.some((s) => s.hiredSwordId === hiredSwordId && s.status === "active")) {
     throw new RulesError(DUPLICATE_HIRED_SWORD, `The warband already has a ${entry.name}; you can only have one of each type of Hired Sword`);
   }
-  const cost = opts.feeOverride ?? entry.hireCost.base;
+  const specialFree = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer'].includes(hiredSwordId);
+  const shardFee = hiredSwordId === 'nicodemus_the_cursed_pilgrim';
+  const cost = opts.feeOverride ?? entry.hireCost.base ?? (specialFree || shardFee ? 0 : null);
   if (cost === null) {
     throw new RulesError(
       "recruitment.hiredSwordNotForGold",
@@ -514,6 +539,7 @@ export function hireHiredSword(
     throw new RulesError("recruitment.hiredSwordNoProfile", `${entry.name} has no stat profile in the data`);
   }
   assertGold(warband, cost, entry.name);
+  if (shardFee && warband.wyrdstone < 1) throw new RulesError('recruitment.shardFee', 'Nicodemus requires one wyrdstone shard to join.');
   const spellIds = rollHiredSwordSpells(hiredSwordId, opts.rng ?? Math.random);
 
   const hiredSword: RosterHiredSword = {
@@ -523,7 +549,7 @@ export function hireHiredSword(
     stats: { ...profile.stats },
     xp: 0,
     levelUps: 0,
-    skillIds: [],
+    skillIds: hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? ['sorcery', 'fearsome'] : hiredSwordId === 'the_fallen_sister' ? ['warrior_wizard'] : [],
     spellIds,
     injuries: [],
     flags: {},
@@ -532,9 +558,9 @@ export function hireHiredSword(
   };
 
   const upkeep = entry.upkeep?.text ?? "no upkeep listed";
-  const spellNote = spellIds.length > 0 ? `; spells rolled: ${spellIds.map((sid) => findLore(HIRED_SWORD_STARTING_SPELLS[hiredSwordId].loreId)?.spells.find((sp) => sp.id === sid)?.name ?? sid).join(", ")}` : "";
+  const spellNote = spellIds.length > 0 ? `; spells rolled: ${spellIds.map((sid) => SPELL_LORES.flatMap(l => l.spells).find(sp => sp.id === sid)?.name ?? sid).join(", ")}${hiredSwordId === 'khar_mel_the_djinn' ? ` (D3 starting count: ${spellIds.length})` : ''}` : "";
   return {
-    value: { ...warband, gold: warband.gold - cost, hiredSwords: [...warband.hiredSwords, hiredSword] },
+    value: { ...warband, gold: warband.gold - cost, wyrdstone: warband.wyrdstone - (shardFee ? 1 : 0), hiredSwords: [...warband.hiredSwords, hiredSword] },
     events: [
       {
         kind: "hiredSword.hired",
@@ -569,6 +595,10 @@ export function payUpkeep(
     throw new RulesError("recruitment.notActive", `${hs.name} has already ${hs.status === "dead" ? "died" : "left"}; no upkeep is due`);
   }
   const entry = findHiredSword(hs.hiredSwordId);
+  if (hs.hiredSwordId === 'nicodemus_the_cursed_pilgrim' && opts.amountOverride === undefined) {
+    const paid = warband.wyrdstone >= 1;
+    return { value: { paid, warband: { ...warband, wyrdstone: warband.wyrdstone - (paid ? 1 : 0), hiredSwords: warband.hiredSwords.map(s => s.id === hs.id && !paid ? { ...s, status: 'left' } : s) } }, events: [{ kind: 'hiredSword.upkeep', subjectId: hs.id, message: paid ? `${hs.name} is paid one wyrdstone shard.` : `${hs.name} leaves: no wyrdstone shard to pay him.` }] };
+  }
   const upkeep = opts.amountOverride ?? entry?.upkeep?.base ?? null;
 
   if (upkeep === null || upkeep <= 0) {
@@ -658,4 +688,3 @@ export function payHenchmanUpkeep(warband: RosterWarband, groupId: string, opts:
     events: [{ kind: "henchmen.left", subjectId: group.id, message: `${group.name} could not be paid ${due} gc upkeep and leave the warband`, data: { upkeep: due } }],
   };
 }
-

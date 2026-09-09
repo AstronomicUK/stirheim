@@ -168,7 +168,8 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
     )
   }
 
-  const skillPicker = (
+  const skillPicker = (<>
+    {plan.allowSpell && (plan.lores?.length ?? 0) > 1 ? <SelectField label="Learn from lore" value={plan.lore?.id ?? ''} onChange={e => update(d => ({ ...d, spellLoreId: e.target.value, spellId: null }))}>{plan.lores!.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</SelectField> : null}
     <SkillOrSpellPicker
       draft={draft}
       tables={plan.skillTables}
@@ -179,7 +180,7 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
       chooseSpell={chooseSpell}
       reward={plan.allowReward ? { plan: plan.reward, hero } : null}
     />
-  )
+  </>)
 
   if (plan.roll?.kind === 'statSubRoll' && plan.subStat !== null) {
     const rolledOption = plan.statOptions[0]
@@ -609,10 +610,9 @@ export function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect, c
     setD6(v)
     if (v === null) return
     const spell = spellForRoll(lore, v)
-    if (spell && !knownSpellIds.includes(spell.id)) onSelect(spell.id)
+    onSelect(spell && !knownSpellIds.includes(spell.id) ? spell.id : null)
   }
 
-  if (spells.length === 0) return <Notice tone="warn">{lore.name}: every spell is already known. Take a skill instead.</Notice>
   return (
     <div className="flex flex-col gap-3">
       {chooseFrom ? (
@@ -624,7 +624,7 @@ export function SpellPicker({ lore, spells, knownSpellIds, selected, onSelect, c
           <p className="text-sm leading-relaxed text-ink-dim">Spells are generated at random: roll a {lore.die} on the {lore.name} table, or tap the one you rolled.</p>
           <div className="flex flex-wrap items-end gap-3">
             <DieField label={lore.die} sides={6} value={d6} onChange={roll} rollable />
-            {rolledKnown ? <p className="text-xs text-warn">Already known: roll again, or lower its difficulty by 1 by hand and pick another here.</p> : null}
+            {rolledKnown ? <div className="flex flex-col gap-2"><p className="text-xs text-warn">Already known: roll again, or permanently lower this spell’s difficulty by 1.</p><Button variant="secondary" onClick={() => onSelect(rolledSpell!.id)}>Lower {rolledSpell!.name} difficulty by 1</Button>{selected === rolledSpell!.id ? <p className="text-xs text-brass">Difficulty reduction selected.</p> : null}</div> : null}
           </div>
         </>
       )}

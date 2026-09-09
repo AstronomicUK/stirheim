@@ -34,7 +34,7 @@ import { isBanned } from "./houseRules";
 import { halfPriceIfEligible } from "./trading";
 import { freeDaggerLine } from "./freeDagger";
 import { unitRules, warbandRules } from "../data/campaignRules";
-import { loreForUnit } from "../data/campaign/magic";
+import { startingMagicFor, startingMagicOptions } from "../data/campaign/magic";
 import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
 
 // ---- Draft model ----
@@ -51,6 +51,7 @@ export interface DraftItem {
 }
 
 export interface DraftHero {
+  magicChoiceId?: string;
   id: string;
   name: string;
   unitTemplateId: string;
@@ -512,12 +513,12 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       stats: unitStartingStats(unit),
       xp: unit?.startingExperience ?? 0,
       levelUps: startingLevelUps(unit, "hero"),
-      skillTableIds: [...(unit?.skillTableIds ?? [])],
+      skillTableIds: [...(unit?.skillTableIds ?? []), ...(hero.magicChoiceId === 'arkhar' ? ['strength' as const] : [])],
       skillIds: [],
-      spellIds: [...hero.spellIds],
+      spellIds: hero.spellIds.filter(Boolean),
       injuries: [],
-      flags: {},
-      equipment: hero.equipment.map((item) => toRosterItem(item, 1)),
+      flags: { ...(startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)!.loreId! } : {}), ...(hero.unitTemplateId === 'marauders_seer' ? { chaosMark: hero.magicChoiceId } : {}) },
+      equipment: [...hero.equipment.map((item) => toRosterItem(item, 1)), ...(unit?.alternateHero === 'wolf_priest_of_ulric' ? [{ itemId: 'wolfcloak', quantity: 1 }] : [])],
       isLarge: unitIsLarge(unit),
       status: "active",
     };
@@ -582,11 +583,12 @@ export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, ba
     }
   }
   for (const hero of draft.heroes) {
-    const lore = loreForUnit(hero.unitTemplateId, template);
-    if (lore && hero.spellIds.length === 0) {
+    const options = startingMagicOptions(hero.unitTemplateId, template);
+    const magic = startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId);
+    if (options.length > 0 && (!magic || new Set(hero.spellIds.filter(Boolean)).size < magic.count)) {
       problems.push({
         code: "builder.noFirstSpell",
-        message: `${hero.name.trim() || findUnitTemplate(template, hero.unitTemplateId)?.name || hero.unitTemplateId}: choose a first spell (${lore.name})`,
+        message: `${hero.name.trim() || findUnitTemplate(template, hero.unitTemplateId)?.name || hero.unitTemplateId}: ${magic ? `record ${magic.count} starting spell(s) (${magic.label})` : 'choose the starting magic or Mark'}`,
         subjectId: hero.id,
       });
     }

@@ -244,7 +244,7 @@ export function planGrimoire(roster: RosterWarband, use: GrimoireUse, choices: G
   const nextHero: RosterHero = {
     ...hero,
     spellIds: lowered ? hero.spellIds : [...hero.spellIds, spell.id],
-    flags: { ...hero.flags, [READ_FLAG[use.itemId]]: true },
+    flags: { ...hero.flags, [READ_FLAG[use.itemId]]: true, ...(lowered ? { spellDifficultyReductions: { ...hero.flags.spellDifficultyReductions, [spell.id]: (hero.flags.spellDifficultyReductions?.[spell.id] ?? 0) + 1 } } : {}) },
     notes,
     // The Liber Bubonicus is used up; the other two stay on the roster, bound to their reader.
     equipment: use.consumed ? removeOne(hero.equipment, use.itemId) : hero.equipment,

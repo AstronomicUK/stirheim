@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
-import { loreForUnit } from '../../../rules/data/campaign/magic'
 import type { CampaignBans } from '../../../rules/types/roster'
-import { equipmentOptionsFor, removeDraftHero, renameDraftHero, setDraftHeroSpell, type DraftHero } from '../../../rules/resolve/builder'
+import { equipmentOptionsFor, removeDraftHero, renameDraftHero, type DraftHero } from '../../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../../rules/types'
 import { Button, Sheet, TextField } from '../../../ui'
 import { StatLine } from '../shared/StatLine'
 import { useDraftStore } from './draftStore'
 import { EquipmentRows } from './EquipmentRows'
 import { EquipmentSheet } from './EquipmentSheet'
-import { FirstSpellCard } from './FirstSpellCard'
+import { StartingMagicCard } from './StartingMagicCard'
 import { formatAmount, heroCost } from './helpers'
 import { useBuilderRules } from './rulesContext'
 
@@ -30,7 +29,7 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
   const houseRules = useBuilderRules()
   const cost = heroCost(hero, template, houseRules)
   const subject = { kind: 'hero' as const, id: hero.id }
-  const lore = useMemo(() => loreForUnit(hero.unitTemplateId, template), [hero.unitTemplateId, template])
+  const masterSpells = useDraftStore(s => s.draft?.heroes.find(h => h.unitTemplateId === 'restless_dead_variant_liche')?.spellIds)
 
   return (
     <article className="flex flex-col gap-3 rounded-md border border-border bg-surface-low px-4 py-3">
@@ -62,14 +61,10 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
         Add equipment
       </Button>
 
-      {lore ? (
-        <FirstSpellCard
-          lore={lore}
-          rule={houseRules.firstSpellRule}
-          selected={hero.spellIds[0] ?? null}
-          onSelect={(spellId) => update((d) => setDraftHeroSpell(d, hero.id, spellId))}
-        />
-      ) : null}
+      <StartingMagicCard unitId={hero.unitTemplateId} template={template} rule={houseRules.firstSpellRule} choiceId={hero.magicChoiceId} spells={hero.spellIds}
+        apprenticeSpells={hero.unitTemplateId === 'restless_dead_variant_necromancer' ? masterSpells ?? [] : undefined}
+        onChoice={id => update(d => ({ ...d, heroes: d.heroes.map(h => h.id === hero.id ? { ...h, magicChoiceId: id, spellIds: [] } : h) }))}
+        onSpells={ids => update(d => ({ ...d, heroes: d.heroes.map(h => h.id === hero.id ? { ...h, spellIds: ids } : h) }))} />
 
       <EquipmentSheet
         open={shopping}

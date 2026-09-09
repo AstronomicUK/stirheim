@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MAGIC_RULES, SPELL_LORES, WIZARD_ALLOCATIONS, findLore, findSpell } from "../campaign/magic";
+import { loreForUnit, startingMagicOptions } from '../campaign/magic';
+import { WARBAND_TEMPLATES, findWarbandTemplate } from '../warbandTemplates';
 
 const SOURCE = resolve(process.cwd(), "reference/rules/03-campaigns-magic-optional-rules.md");
 
@@ -22,6 +24,19 @@ const AUTO_SPELLS: Array<[string, string]> = [
 ];
 
 describe("magic rules", () => {
+  it('connects the nine missing units to their source lores and exposes the multi-lore choices', () => {
+    const expected = { court_of_pleasures_priest_of_obscene: 'chaos_rituals', druchii_sorceress: 'dark_elf_magic', nipponese_vim_to_mage: 'arabian_elemental_magic', warrior_priest: 'prayers_of_sigmar', snotling_shaman: 'snotling_waaagh_magic', seer: 'charms_and_hexes', forest_mage: 'woodland_incantations', restless_dead_variant_liche: 'necromancy_the_restless_dead', restless_dead_variant_necromancer: 'necromancy_the_restless_dead' };
+    for (const [unit, lore] of Object.entries(expected)) {
+      const template = WARBAND_TEMPLATES.find(w => w.heroTemplates.some(h => h.id === unit))!;
+      expect(loreForUnit(unit, template)?.id, unit).toBe(lore);
+    }
+    const society = findWarbandTemplate('sorcerous_society')!;
+    expect(startingMagicOptions('magus', society)).toHaveLength(5);
+    expect(startingMagicOptions('magus', society).every(o => o.count === 2)).toBe(true);
+    const marauders = WARBAND_TEMPLATES.find(w => w.heroTemplates.some(h => h.id === 'marauders_seer'))!;
+    expect(startingMagicOptions('marauders_seer', marauders).find(o => o.id === 'eagle')).toMatchObject({ count: 2, firstChosen: true });
+    expect(startingMagicOptions('marauders_seer', marauders).find(o => o.id === 'arkhar')).toMatchObject({ count: 0, loreId: null });
+  });
   it("has the three general rules verbatim", () => {
     expect(MAGIC_RULES.map((r) => r.name)).toEqual(["Casting spells", "Damage", "Allocated spells"]);
     expect(MAGIC_RULES[0].text).toContain("must roll equal to or greater than the spell's Difficulty score on 2D6");
@@ -41,17 +56,18 @@ describe("spell lores", () => {
     // Plus the Sorcerous Society's four Elemental Lores, which live on the warband page (Phase 17).
     const elemental = SPELL_LORES.filter((l) => l.id.startsWith("elemental_lore_of_"));
     expect(elemental).toHaveLength(4);
-    expect(SPELL_LORES.length).toBe(headings.length + elemental.length);
+    const extraIds = ['snotling_waaagh_magic', 'woodland_incantations', 'dark_mage_magic', 'crow_master_magic'];
+    expect(SPELL_LORES.length).toBe(headings.length + elemental.length + extraIds.length);
     expect(new Set(SPELL_LORES.map((l) => l.id)).size).toBe(SPELL_LORES.length);
-    expect(SPELL_LORES.filter((l) => !l.id.startsWith("elemental_lore_of_")).map((l) => l.name)).toEqual(headings.map((h) => h.slice("## Magic — ".length).trim()));
+    expect(SPELL_LORES.filter((l) => !l.id.startsWith("elemental_lore_of_") && !extraIds.includes(l.id)).map((l) => l.name)).toEqual(headings.map((h) => h.slice("## Magic — ".length).trim()));
   });
 
   it("every lore has a source URL, intro, D6 die and a source ref into the reference file", () => {
     for (const l of SPELL_LORES) {
-      expect(l.sourceUrl, l.id).toMatch(/^https:\/\/mordheimer\.net\/docs\/(magic|warbands)\//);
+      expect(l.sourceUrl, l.id).toMatch(/^https:\/\/mordheimer\.net\/docs\/(magic|warbands|campaigns)\//);
       expect(l.intro.length, l.id).toBeGreaterThan(0);
       expect(l.die, l.id).toBe("D6");
-      expect(l.source.file, l.id).toMatch(/^(03-campaigns-magic-optional-rules|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
+      expect(l.source.file, l.id).toMatch(/^(03-campaigns-magic-optional-rules|04-hired-swords|05-dramatis-personae|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
       expect(new Set(l.spells.map((s) => s.id)).size, `${l.id}: duplicate spell ids`).toBe(l.spells.length);
       for (const s of l.spells) expect(s.text.length, `${l.id}/${s.id}: empty text`).toBeGreaterThan(0);
     }
@@ -60,7 +76,11 @@ describe("spell lores", () => {
   it("every lore has six spells covering rolls 1-6, except the two the source structures differently", () => {
     for (const l of SPELL_LORES) {
       const rolls = l.spells.map((s) => s.roll);
-      if (l.id === "rituals_of_hashut") {
+      if (l.id === 'crow_master_magic') {
+        expect(l.spells).toHaveLength(1);
+        expect(l.spells[0].name).toBe('Decay of Ages');
+        continue;
+      } else if (l.id === "rituals_of_hashut") {
         // Source table runs 0-6: row 0 is the Sacrificial Ritual (only castable at an Engine of Chaos), so 7 spells.
         expect(l.spells.length).toBe(7);
         expect(rolls.map((r) => r.min)).toEqual([0, 1, 2, 3, 4, 5, 6]);

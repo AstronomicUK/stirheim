@@ -226,7 +226,8 @@ export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWa
   if (roster.hiredSwords.some((s) => s.hiredSwordId === entry.id && s.status === 'active')) {
     return { kind: 'blocked', reason: `Already in the warband; you can only have one of each type of Hired Sword.` }
   }
-  if (entry.hireCost.base === null) {
+  if (entry.hireCost.base === null && !['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'nicodemus_the_cursed_pilgrim', 'dark_emissary', 'truthsayer'].includes(entry.id)) {
+    if (['priest_of_morr', 'wolf_priest_of_ulric'].includes(entry.id)) return { kind: 'blocked', reason: 'Recruit this priest from Heroes: he replaces an existing hero slot in an eligible warband.' }
     return { kind: 'blocked', reason: `Not hired for a plain fee (${entry.hireCost.text}); add by hand from the roster if the rules allow it.` }
   }
   if (!entry.detail?.profiles[0]) {

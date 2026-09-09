@@ -566,8 +566,7 @@ body {
   box-shadow: inset 0 0 0 1px var(--color-brass), 0 0 12px #bfdff340;
 }
 .stirheim-cast-aura,
-.stirheim-cast-trail,
-.stirheim-cast-sheen {
+.stirheim-cast-trail {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -597,16 +596,11 @@ body {
   filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 4px #bfdff3);
   animation: stirheim-cast-comet 4s ease-in-out infinite;
 }
-.stirheim-cast-sheen {
-  background: linear-gradient(110deg, transparent 38%, #bfdff317 44%, #f5fbff70 50%, #bfdff317 56%, transparent 62%);
-  transform: translateX(-125%);
-  animation: stirheim-advance-sheen 9s ease-in-out infinite;
-}
 @keyframes stirheim-cast-light { to { --cast-angle: 360deg; } }
 @keyframes stirheim-cast-aura { to { opacity: .45; } }
 @keyframes stirheim-cast-comet {
   50% { filter: drop-shadow(0 1px 1px #829eaf) drop-shadow(0 0 6px #f5fbff) drop-shadow(0 0 9px #bfdff3); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .stirheim-cast-aura, .stirheim-cast-trail, .stirheim-cast-comet, .stirheim-cast-sheen { animation: none; }
+  .stirheim-cast-aura, .stirheim-cast-trail, .stirheim-cast-comet { animation: none; }
 }

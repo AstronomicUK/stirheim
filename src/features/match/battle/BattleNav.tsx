@@ -60,7 +60,6 @@ function NavTile({ icon, label, detail, active, tone, onClick, castCircle = fals
         <>
           <span className="stirheim-cast-aura" aria-hidden="true" />
           <span className="stirheim-cast-trail" aria-hidden="true" />
-          <span className="stirheim-cast-sheen" aria-hidden="true" />
         </>
       ) : null}
       <Icon name={icon} size={20} className={castCircle ? 'stirheim-cast-comet' : ink} />
@@ -71,7 +70,6 @@ function NavTile({ icon, label, detail, active, tone, onClick, castCircle = fals
 }
 
 export function BattleNav({ tab, setTab, inApp, canCast, desktop, attackStartWith, onAttack }: BattleNavProps) {
-  const quick = inApp || canCast;
   return (
     <div className="flex flex-col gap-4">
       {desktop ? null : <WarbandSlider tab={tab} setTab={setTab} />}
@@ -89,16 +87,14 @@ export function BattleNav({ tab, setTab, inApp, canCast, desktop, attackStartWit
         </button>
       ) : null}
 
-      {quick ? (
         <section className="flex flex-col gap-2">
           <h3 className="text-xs uppercase tracking-[0.2em] text-ink-dim">Quick actions</h3>
           <div className="flex gap-2">
             {inApp ? <NavTile icon="battle" label="Melee Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'melee'} tone="accent" onClick={() => onAttack('melee')} /> : null}
             {inApp ? <NavTile icon="shooting" label="Ranged Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'ranged'} tone="accent" onClick={() => onAttack('ranged')} /> : null}
-            {canCast ? <NavTile castCircle icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} /> : null}
+            <NavTile castCircle={canCast} icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} />
           </div>
         </section>
-      ) : null}
 
       <section className="flex gap-2">
         {inApp ? <NavTile icon="log" label="Log" detail="What both sides have rolled" active={tab === 'log'} tone="brass" onClick={() => setTab('log')} /> : null}

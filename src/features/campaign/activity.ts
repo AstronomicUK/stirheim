@@ -172,16 +172,17 @@ export function describeActivity(entry: CampaignActivity): string {
     case 'campaign_members':
       return describeMembership(entry, before, after)
     default: {
-      const what = entry.table_name.replace(/_/g, ' ')
-      const verb = entry.action === 'insert' ? 'added' : entry.action === 'delete' ? 'removed' : 'changed'
+      const labels: Record<string, string> = {
+        pending_advances: 'an advance', matches: 'a battle', match_participants: 'a battle participant',
+        battle_sessions: 'a battle sheet', battle_events: 'a battle action', match_reports: 'a battle report',
+        report_revisions: 'a report revision', map_adjustments: 'a map adjustment', hired_swords: 'a hired sword',
+      }
+      const what = labels[entry.table_name]
+      const verb = entry.action === 'insert' ? 'added' : entry.action === 'delete' ? 'removed' : 'updated'
       const where = entry.warband_name ? ` for ${entry.warband_name}` : ''
-      return `${actorName(entry)} ${verb} a ${singular(what)} record${where}`
+      return what ? `${actorName(entry)} ${verb} ${what}${where}` : `${actorName(entry)} recorded changes${where}`
     }
   }
-}
-
-function singular(words: string): string {
-  return words.endsWith('es') && !words.endsWith('ses') ? words.slice(0, -2) : words.endsWith('s') ? words.slice(0, -1) : words
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -208,6 +209,8 @@ const BORING_FIELDS = new Set([
   'replaced_by',
   'actor_id',
   'reverted_by',
+  'resolved_at',
+  'version',
 ])
 
 /** Human labels for columns worth naming specially; anything else falls back to "un snaked case". */
@@ -274,6 +277,8 @@ function displayValue(value: Json | undefined, key?: string): string {
   if (typeof value === 'number') return String(value)
   if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map((v) => displayValue(v, key)).join(', ')
   if (Object.keys(value).length === 0) return 'none'
+  if (typeof value.text === 'string') return value.text
+  if (typeof value.summary === 'string') return value.summary
   if (key === 'injuries') {
     const injury = HERO_INJURIES.find(i => i.code === value.injuryCode)
     return [typeof value.name === 'string' ? value.name : injury?.name, typeof value.effect === 'string' ? value.effect : null].filter(Boolean).join(' — ') || 'Recorded injury'
@@ -341,7 +346,7 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
     const beforeText = statsA ? statsLine(statsA, changedStats ?? undefined) : before ? displayValue(a, key) : '—'
     const afterText = statsB ? statsLine(statsB, changedStats ?? undefined) : after ? displayValue(b, key) : '—'
     // An insert or delete is only worth a line when the field actually held something.
-    if ((!before && afterText === 'none') || (!after && beforeText === 'none')) continue
+    if ((!before && (afterText === 'none' || b === false)) || (!after && (beforeText === 'none' || a === false))) continue
     out.push({ label: fieldLabel(key), before: beforeText, after: afterText })
   }
   return out.sort((x, y) => x.label.localeCompare(y.label))

@@ -243,3 +243,8 @@ describe('readable roster history', () => {
     expect(activityTerms(e, 'skills', 'after')).toEqual([])
   })
 })
+
+
+it('names pending advances without exposing table names or broken singulars', () => {
+  expect(describeActivity(entry({ table_name: 'pending_advances', action: 'insert' }))).toContain('added an advance')
+})

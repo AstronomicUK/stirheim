@@ -1889,6 +1889,15 @@ new test included, gated behind `SUPABASE_LOCAL=1`) and `npm run build` all clea
 itself passed running live against local Supabase (`SUPABASE_LOCAL=1 npx vitest run
 src/api/__tests__/match.integration.test.ts` — 6 passed).
 
+**Production migration applied (2026-09-09, Tom):** this was marked Fixed above on local-only
+verification, but the actual `cancel_match` function on production stayed the old, unfixed version
+the whole time — the migration was never called out as a separate blocker the way #82's was, a gap
+in this entry rather than a new bug. Tom applied `20260908000028_cancel_match_reverts_reports.sql`
+(alongside #82's own pending migration) via `npx supabase db push`; confirmed via `npx supabase
+migration list` and `npx supabase db diff --linked` (both agree production now matches every local
+migration file exactly, "No schema changes found"). Cancelling a match with an applied report now
+genuinely reverts it in production, not just in the local test.
+
 ---
 
 ## Batch — 2026-09-08 (Tom testing tonight's Quick Actions fix, #30/#31)
@@ -2113,7 +2122,7 @@ action is active, on both mobile and desktop.
 
 ### 82. A matchup-maker tool: generate the next batch of games aiming for a round robin
 
-**Status:** ✅ Fixed — code live on production; DB migration still needs applying before the feature actually works there (see below)
+**Status:** ✅ Fixed — code and migration both live on production; save-a-pairing round trip still not exercised end-to-end (see below)
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2224,6 +2233,23 @@ one new action, not a wider break. **Blocked on Tom:** applying
 `supabase/migrations/20260909000001_matchmaking.sql` (and the also-pending, unrelated, and equally
 safe `20260908000028_cancel_match_reverts_reports.sql` for #75) to production — `npx supabase db
 push` needs permission this session doesn't have.
+
+**Migration applied (2026-09-09, Tom):** the Claude Code auto-mode classifier itself blocked this
+session from running `npx supabase db push` even with Tom's go-ahead in chat — a production schema
+migration needs its own permission rule, not just conversational approval, and this session declined
+to route around that via `psql` or the management API. Tom ran the push himself. Confirmed both
+migrations landed cleanly: `npx supabase migration list` shows both `20260908000028` and
+`20260909000001` now present on `remote`, matching `local`; `npx supabase db diff --linked` (a full
+shadow-database rebuild from every local migration file, diffed against the live production schema)
+reports "No schema changes found" — production's schema is now byte-for-byte what the migration
+files describe, no drift. Also confirmed via a live, read-only REST query
+(`/rest/v1/matches?select=matchmaking_round_id,matchmaking_bye_warband_id`) that both new columns
+are genuinely queryable on production, not just present in the migration ledger.
+
+The save-a-pairing round trip (generate a matchup → `NewMatchForm` → save → appears in Battles) is
+still the one thing nobody has exercised end-to-end against production, for the same reason noted in
+the live pass above — the seed campaign's only feasible attendee split has no valid pairing to save.
+Worth a real check next time a campaign has three or more active players.
 
 ### 83. A game-day scheduling tool on the Campaign page: GM proposes dates, players respond, GM finalises
 

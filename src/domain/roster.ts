@@ -185,7 +185,7 @@ export type HeroPatch = Pick<
   "stats" | "xp" | "level_ups" | "skill_tables" | "skills" | "spells" | "injuries" | "flags" | "status" | "notes" | "unit_type_rules_id"
 >;
 
-export type HiredSwordPatch = Pick<HeroRow, "stats" | "xp" | "level_ups" | "skills" | "injuries" | "flags" | "status">;
+export type HiredSwordPatch = Pick<HeroRow, "stats" | "xp" | "level_ups" | "skills" | "spells" | "injuries" | "flags" | "status">;
 
 export type HenchmanGroupPatch = Pick<
   HenchmanGroupRow,
@@ -214,6 +214,7 @@ export function hiredSwordPatchFromRoster(hiredSword: RosterHiredSword): HiredSw
     xp: hiredSword.xp,
     level_ups: hiredSword.levelUps,
     skills: hiredSword.skillIds,
+    spells: hiredSword.spellIds,
     injuries: hiredSword.injuries,
     flags: hiredSword.flags,
     status: hiredSword.status,

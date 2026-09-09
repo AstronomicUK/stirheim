@@ -275,10 +275,29 @@ describe("patches from the roster model", () => {
       xp: 3,
       level_ups: 0,
       skills: [],
+      spells: [],
       injuries: [],
       flags: {},
       status: "left",
     });
+  });
+
+  it("hiredSwordPatchFromRoster carries spellIds through (#56 — was silently dropped)", () => {
+    const hs: RosterHiredSword = {
+      id: OGRE_ID,
+      hiredSwordId: "warlock",
+      name: "Grimlok",
+      stats: ogre.stats,
+      xp: 0,
+      levelUps: 0,
+      skillIds: [],
+      spellIds: ["fires_of_uzhul", "silver_arrows_of_arha"],
+      injuries: [],
+      flags: {},
+      equipment: [],
+      status: "active",
+    };
+    expect(hiredSwordPatchFromRoster(hs).spells).toEqual(["fires_of_uzhul", "silver_arrows_of_arha"]);
   });
 
   it("groupPatchFromRoster returns only the mutable columns", () => {

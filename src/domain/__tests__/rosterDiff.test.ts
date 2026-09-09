@@ -263,6 +263,27 @@ describe("diffRoster", () => {
     ]);
   });
 
+  it("carries a hired sword's rolled spellIds into the insert (#56 — spells: [] used to be hardcoded, silently dropping them)", () => {
+    const w = roster();
+    const hired: RosterHiredSword = {
+      id: NEW_HIRED_ID,
+      hiredSwordId: "warlock",
+      name: "Grimlok",
+      stats: { M: 4, WS: 2, BS: 2, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 8 },
+      xp: 0,
+      levelUps: 0,
+      skillIds: [],
+      spellIds: ["fires_of_uzhul", "silver_arrows_of_arha"],
+      injuries: [],
+      flags: {},
+      equipment: [],
+      status: "active",
+    };
+    const changes = diffRoster(rows(), { ...w, gold: 0, hiredSwords: [hired] });
+    const insert = ofTable(changes, "heroes").find((c) => c.op === "insert" && c.id === NEW_HIRED_ID);
+    expect((insert!.data as { spells: string[] }).spells).toEqual(["fires_of_uzhul", "silver_arrows_of_arha"]);
+  });
+
   it("numbers a new hero and a new hired sword in the same batch consecutively", () => {
     const w = roster();
     const recruit: RosterHero = { ...hero(w, PIETER_ID), id: NEW_HERO_ID, name: "Otto", equipment: [] };

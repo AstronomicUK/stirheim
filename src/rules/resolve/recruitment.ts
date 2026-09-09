@@ -35,13 +35,50 @@ import type {
 } from "../types/roster";
 import { resolveEquipmentName } from "../data/items/aliases";
 import { findHiredSword } from "../data/campaign/hiredSwords";
+import { findLore } from "../data/campaign/magic";
 import { VETERAN_XP_COST_GC } from "../data/campaign/trading";
 import { findUnitTemplate, heroCapacity } from "../data/warbandTemplates";
 import { RulesError } from "./errors";
 import { freeDaggerLine } from "./freeDagger";
+import { rollDie } from "./dice";
+import { spellForRoll } from "./grimoires";
 import { unitRules } from "../data/campaignRules";
 import { startingLevelUps, unitStartingStats } from "./builder";
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
+
+/**
+ * #56: hired swords whose own entry says they start with a fixed number of spells "generated at
+ * random" — a genuine wizard-table caster the hire flow never actually gave any spells to, so
+ * `castersOf` would list them but `loreForCaster` had nothing to find. Excludes the few with a
+ * dice-determined *count* rather than a fixed one (Khar-mel the Djinn: D3) and the open-ended ones
+ * ("may gain more from X or Y", the Dark Mage) — those need more than a fixed roll loop and are
+ * left open. Also excludes Priest of Morr and Wolf Priest of Ulric, whose entries are "Hero" cost
+ * (an alternate build choice, not hired for gold through this resolver at all).
+ */
+const HIRED_SWORD_STARTING_SPELLS: Record<string, { loreId: string; count: number }> = {
+  warlock: { loreId: "lesser_magic", count: 2 },
+  witch: { loreId: "charms_and_hexes", count: 2 },
+  elf_mage: { loreId: "spells_of_the_djedhi", count: 3 },
+  the_fallen_sister: { loreId: "lesser_magic", count: 1 },
+  norse_shaman: { loreId: "norse_runes", count: 2 },
+  dark_emissary: { loreId: "lore_of_darkness", count: 4 },
+  truthsayer: { loreId: "lore_of_light", count: 3 },
+};
+
+/** Roll a hired sword's fixed starting spells, re-rolling a repeat exactly as the rulebook's own
+ * duplicate-spell rule allows ("roll again, or lower the difficulty by 1" — rerolling here, since
+ * there's nowhere on the roster to record a per-spell difficulty modifier; see #58's first bullet). */
+function rollHiredSwordSpells(hiredSwordId: string, rng: () => number): string[] {
+  const spec = HIRED_SWORD_STARTING_SPELLS[hiredSwordId];
+  const lore = spec ? findLore(spec.loreId) : undefined;
+  if (!spec || !lore) return [];
+  const spellIds: string[] = [];
+  for (let guard = 0; spellIds.length < spec.count && guard < 50; guard++) {
+    const spell = spellForRoll(lore, rollDie(6, rng));
+    if (spell && !spellIds.includes(spell.id)) spellIds.push(spell.id);
+  }
+  return spellIds;
+}
 
 /** RulesError code when a second hired sword of the same type is hired. */
 export const DUPLICATE_HIRED_SWORD = "DUPLICATE_HIRED_SWORD";
@@ -386,6 +423,8 @@ export interface HireHiredSwordOptions {
   name?: string;
   /** Pay this instead of the listed hire fee (conditional fees; the UI records why). */
   feeOverride?: number;
+  /** Injectable for tests; defaults to Math.random. */
+  rng?: () => number;
 }
 
 /** Prose the entries open with before they list anything: "A Warlock carries", "He wears". */
@@ -475,6 +514,7 @@ export function hireHiredSword(
     throw new RulesError("recruitment.hiredSwordNoProfile", `${entry.name} has no stat profile in the data`);
   }
   assertGold(warband, cost, entry.name);
+  const spellIds = rollHiredSwordSpells(hiredSwordId, opts.rng ?? Math.random);
 
   const hiredSword: RosterHiredSword = {
     id,
@@ -484,7 +524,7 @@ export function hireHiredSword(
     xp: 0,
     levelUps: 0,
     skillIds: [],
-    spellIds: [],
+    spellIds,
     injuries: [],
     flags: {},
     equipment: hiredSwordEquipment(entry.detail),
@@ -492,13 +532,14 @@ export function hireHiredSword(
   };
 
   const upkeep = entry.upkeep?.text ?? "no upkeep listed";
+  const spellNote = spellIds.length > 0 ? `; spells rolled: ${spellIds.map((sid) => findLore(HIRED_SWORD_STARTING_SPELLS[hiredSwordId].loreId)?.spells.find((sp) => sp.id === sid)?.name ?? sid).join(", ")}` : "";
   return {
     value: { ...warband, gold: warband.gold - cost, hiredSwords: [...warband.hiredSwords, hiredSword] },
     events: [
       {
         kind: "hiredSword.hired",
         subjectId: id,
-        message: `Hired ${hiredSword.name} for ${cost} gc (upkeep ${upkeep} after each battle); treasury now ${warband.gold - cost} gc`,
+        message: `Hired ${hiredSword.name} for ${cost} gc (upkeep ${upkeep} after each battle); treasury now ${warband.gold - cost} gc${spellNote}`,
         data: { hiredSwordId, cost, upkeep: entry.upkeep?.base ?? null },
       },
     ],

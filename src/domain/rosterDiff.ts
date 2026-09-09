@@ -138,7 +138,7 @@ function hiredSwordInsertData(hs: RosterHiredSword, sortOrder: number): Record<s
     level_ups: hs.levelUps,
     skill_tables: [],
     skills: hs.skillIds,
-    spells: [],
+    spells: hs.spellIds,
     injuries: hs.injuries,
     flags: hs.flags,
     equipment_locked: true,

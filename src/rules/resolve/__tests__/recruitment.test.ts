@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RosterHenchmanGroup, RosterHero, RosterWarband } from "../../types/roster";
 import type { Stats } from "../../types";
 import { findUnitTemplate, findWarbandTemplate } from "../../data/warbandTemplates";
+import { findLore } from "../../data/campaign/magic";
 import { RulesError } from "../errors";
 import {
   DUPLICATE_HIRED_SWORD,
@@ -262,6 +263,39 @@ describe("hireHiredSword / payUpkeep", () => {
   it("refuses unknown hired swords and short treasuries", () => {
     expect(codeOf(() => hireHiredSword(makeWarband(), "nobody", "x"))).toBe("recruitment.unknownHiredSword");
     expect(codeOf(() => hireHiredSword(makeWarband({ gold: 10 }), "dwarf_troll_slayer", "x"))).toBe("recruitment.notEnoughGold");
+  });
+
+  describe("#56: hired swords with a fixed number of starting spells", () => {
+    /** A queue of D6 faces (1-6), fed to rollDie's injected rng one at a time. */
+    function faces(...faces: number[]): () => number {
+      let i = 0;
+      return () => ((faces[i++] ?? 1) - 1) / 6 + 0.001;
+    }
+
+    it("a Warlock is hired with two distinct Lesser Magic spells", () => {
+      const lore = findLore("lesser_magic")!;
+      const r = hireHiredSword(makeWarband(), "warlock", "grim", { rng: faces(1, 4) });
+      expect(r.value.hiredSwords[0].spellIds).toEqual(["fires_of_uzhul", "silver_arrows_of_arha"]);
+      expect(r.events[0].message).toContain(`spells rolled: ${lore.spells[0].name}, ${lore.spells[3].name}`);
+    });
+
+    it("re-rolls a repeated face rather than recording the same spell twice", () => {
+      // 1, 1 (repeat, discarded), 4 -> two distinct spells, not three.
+      const r = hireHiredSword(makeWarband(), "warlock", "grim", { rng: faces(1, 1, 4) });
+      expect(r.value.hiredSwords[0].spellIds).toEqual(["fires_of_uzhul", "silver_arrows_of_arha"]);
+    });
+
+    it("an Elf Mage gets three Spells of the Djed'hi", () => {
+      const lore = findLore("spells_of_the_djedhi")!;
+      const r = hireHiredSword(makeWarband(), "elf_mage", "sil", { rng: faces(1, 2, 3) });
+      expect(r.value.hiredSwords[0].spellIds).toEqual(lore.spells.slice(0, 3).map((s) => s.id));
+    });
+
+    it("a plain hired sword with no wizard-table entry gets no spells and no rolled-spell note", () => {
+      const r = hireHiredSword(makeWarband(), "dwarf_troll_slayer", "grim");
+      expect(r.value.hiredSwords[0].spellIds).toEqual([]);
+      expect(r.events[0].message).not.toContain("spells rolled");
+    });
   });
 
   it("pays upkeep when affordable", () => {

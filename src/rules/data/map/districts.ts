@@ -1,5 +1,5 @@
 // The Mordheim Campaign Map (Philip Spence, beyondthetabletop.com, illustrated by Nuala Kennedy).
-// All thirty district centres measured from the labelled illustrations on the served poster:
+// District overlays follow the printed circles on the served poster (not the building centres):
 // public/map/mordheim-campaign-map.jpg (2400 x 1697 pixels). x is percent of image width;
 // y is percent of image height. Convert y to SVG units with districtMapY before rendering.
 // Rules and connections: reference/map/districts.json (see its README for provenance);
@@ -61,10 +61,10 @@ export const MAP_DISTRICTS: MapDistrict[] = [
   { id: "the-pit", name: "The Pit", x: 63.5417, y: 51.6205, scale: 1.2, advantage: "During the Exploration Procedure, if a location is found, you may change the result to The Pit instead. However, Heroes are devoured on a roll of 1 or 2. Cult of the Possessed Heroes always return with the maximum amount of wyrdstone shards.", abundance: true, hard: true, gate: false, connections: ["amphitheatre", "market-square", "city-hall", "sages-hall", "clock-tower", "poor-quarter"] },
   { id: "middle-bridge", name: "Middle Bridge", x: 45.0000, y: 40.2475, scale: 0.975, advantage: "The warband that controls the bridge has installed a toll here. They gain 2D6 gc at the end of any game if another warband passes through this location to reach the battle.", abundance: true, hard: true, gate: false, connections: ["count-steinhardts-palace", "rich-quarter", "statue-of-count-gotthard", "merchants-quarter", "amphitheatre", "the-rock", "executioners-square"] },
   { id: "the-rock", name: "The Rock", x: 46.6667, y: 55.7454, scale: 1.17, advantage: "The Sisters of Sigmar wish to hide wyrdstone deep beneath Sigmar's Rock. When selling wyrdstone gain 20% more gold, always rounding down.", abundance: true, hard: false, gate: false, connections: ["middle-bridge", "amphitheatre", "south-gate"] },
-  { id: "river-gate", name: "River Gate", x: 55.8333, y: 20.0354, scale: 1.15, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["statue-of-count-gotthard", "quayside", "the-great-library"] },
-  { id: "east-gate", name: "East Gate", x: 78.3333, y: 49.0866, scale: 0.8, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["temple-of-sigmar", "city-hall", "sages-hall"] },
+  { id: "river-gate", name: "River Gate", x: 55.7083, y: 18.2086, scale: 1.10, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["statue-of-count-gotthard", "quayside", "the-great-library"] },
+  { id: "east-gate", name: "East Gate", x: 79.4583, y: 47.3188, scale: 0.8, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["temple-of-sigmar", "city-hall", "sages-hall"] },
   { id: "south-gate", name: "South Gate", x: 52.0833, y: 64.2310, scale: 1.07, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["temple-of-morr", "the-rock", "amphitheatre", "poor-quarter"] },
-  { id: "west-gate", name: "West Gate", x: 24.5833, y: 31.3494, scale: 1.02, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["raven-barracks", "memorial-gardens", "artisan-quarter", "dwarven-district"] },
+  { id: "west-gate", name: "West Gate", x: 24.3750, y: 30.7602, scale: 1.02, advantage: "1/2 price to hire Luthor Wolfenbaum. A hero sent to look for Luthor automatically finds him.", abundance: false, hard: false, gate: true, connections: ["raven-barracks", "memorial-gardens", "artisan-quarter", "dwarven-district"] },
 ]
 
 const BY_ID = new Map(MAP_DISTRICTS.map((d) => [d.id, d]))

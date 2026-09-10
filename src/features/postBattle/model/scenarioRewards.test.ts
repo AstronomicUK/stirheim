@@ -371,3 +371,23 @@ it('limits Herald splinters by player count and requires a referee exception for
   expect(undead.gold).toBe(0)
   expect(scenarioRewards({ ...keep, scenarioRewards: { herald: { ...keep.scenarioRewards.herald, keepReason: 'Referee’s altered sword rules' } } }, 'the_sword_of_the_herald', participants).problems).toEqual([])
 })
+
+
+describe('Mule Train recovered cargo', () => {
+  it('pays each escaped defender mule independently even after a loss', () => {
+    const r = derive('mule_train', { mule: { role: 'defender', starting: 4, recovered: 2 }, finds: { 'mule-pay-0': { discovery: null, dice: [2, 3] }, 'mule-pay-1': { discovery: null, dice: [4, 5] } } }, { result: 'lost' })
+    expect(r.gold).toBe(14); expect(r.items).toEqual([]); expect(r.problems).toEqual([])
+  })
+  it('awards actual mules and one combined cargo search with improved discovery targets', () => {
+    const finds = Object.fromEntries(['light', 'heavy', 'map', 'halberds', 'swords', 'shields', 'bows', 'helmets'].map(id => [id, { discovery: 1, dice: ['map', 'heavy'].includes(id) ? [] : [2] }]))
+    const r = derive('mule_train', { mule: { role: 'attacker', starting: 6, recovered: 6 }, finds: { ...finds, 'cargo-gold': { discovery: null, dice: [1, 2, 3] }, daggers: { discovery: null, dice: [4] } } })
+    expect(r.gold).toBe(30); expect(r.problems).toEqual([])
+    expect(r.items.find(i => i.item_rules_id === 'mule')?.quantity).toBe(6)
+    expect(r.items.find(i => i.item_rules_id === 'heavy_armour')?.quantity).toBe(1)
+  })
+  it('rejects excess counts and grants nothing for abandoned mules', () => {
+    expect(derive('mule_train', { mule: { role: 'attacker', starting: 3, recovered: 4 } }).problems).not.toEqual([])
+    const r = derive('mule_train', { mule: { role: 'attacker', starting: 3, recovered: 0 } })
+    expect(r.items).toEqual([]); expect(r.gold).toBe(0); expect(r.problems).toEqual([])
+  })
+})

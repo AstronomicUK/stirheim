@@ -109,3 +109,7 @@ Local mobile filing passed for Stake-Out, Herald and Kidnapped. Migration 47 is 
 - **In the Dead of the Night**, `06-scenarios.md:4133–4206`: winner D3 shards; successful defending ritual may retain D3+3 Zombies within roster capacity, excess wander away. Six retained Zombies form groups of five and one; both persist in the report transaction.
 
 Mobile tests filed both reports against disposable local warbands and checked saved shards, benefit and actual group sizes. No production changes.
+
+### Local milestone 24 — Mule Train rewards (#72)
+
+Full scenario source `06-scenarios.md:4748–4792` and Slaughtered Warband table reviewed. Record starting train and actual mules led off; defenders receive separate 2D6 payments even after a loss. Attackers keep the actual mules and receive one combined cargo search, with +1 per additional mule on discovery rolls only. Zero recovered mules grants nothing, and changing role/count clears dependent rolls. Forty reward tests, typecheck and mobile loss/payment/reload/report filing pass. Coverage is now 89 explicit scenario reward paths out of 103; 14 remain. No deployment.

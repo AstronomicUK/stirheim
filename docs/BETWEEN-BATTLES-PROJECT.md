@@ -171,3 +171,7 @@ The scheduled battle shows each Trapmaster’s one free trap and zero-to-five op
 ### Local milestone 23 — individual Fanatic supply and lasting effects (#123)
 
 Battle start consumes one held/stash mushroom dose per Fanatic; unsupplied models sit out. Multi-model groups split into individual records preserving identical equipment and experience; unresolved advances or uneven kit block that split. Surviving supplied Fanatics owe the mandatory post-battle D6 without a used-item checkbox, and permanent Stupidity applies only to that model, appears on its card and carries into combat. The web list retains experience but rerolls promotion; the original list still earns none. Six local database supply/Trapmaster tests, nine kit/report tests and mobile partial-supply/start/reload checks pass. Typecheck passes. Migration 50 is local only; final combined testing remains. No push or deployment.
+
+### Local milestone 24 — Mule Train rewards (#72)
+
+Full scenario source `06-scenarios.md:4748–4792` and Slaughtered Warband table reviewed. Record starting train and actual mules led off; defenders receive separate 2D6 payments even after a loss. Attackers keep the actual mules and receive one combined cargo search, with +1 per additional mule on discovery rolls only. Zero recovered mules grants nothing, and changing role/count clears dependent rolls. Forty reward tests, typecheck and mobile loss/payment/reload/report filing pass. Coverage is now 89 explicit scenario reward paths out of 103; 14 remain. No deployment.

@@ -1,3 +1,4 @@
+import { muleRewards } from '../model/muleRewards'
 import { locationRecruits } from '../model/locationRecruits'
 import { ritualZombies } from '../model/scenarioRecruits'
 import { FerryRewards } from './FerryRewards'
@@ -39,6 +40,12 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
       <NumberField label="Unspoiled pies carried away by your warriors" allowEmpty value={state.recipe?.pies ?? null} onChange={pies => change(s => ({ ...s, recipe: { ...s.recipe, pies } }))} />
       {draft.result === 'won' ? <><NumberField label="Unspoiled pies claimed from the cart" allowEmpty value={state.recipe?.cartPies ?? null} onChange={cartPies => change(s => ({ ...s, recipe: { ...s.recipe, cartPies } }))} /><SelectField label="Is your warband turning Geefer in for the reward?" value={state.recipe?.turnsInGeefer === undefined ? '' : String(state.recipe.turnsInGeefer)} onChange={e => change(s => ({ ...s, recipe: { ...s.recipe, turnsInGeefer: e.target.value === '' ? undefined : e.target.value === 'true', dice: [] } }))}><option value="">Choose…</option><option value="true">Yes — we claim the payment</option><option value="false">No — another allied winner claims it</option></SelectField>{state.recipe?.turnsInGeefer ? <div className="flex flex-wrap gap-3">{Array.from({ length: 5 }, (_, i) => <DieField key={i} sides={6} rollable label={`Geefer payment: D6 ${i + 1}`} value={state.recipe?.dice?.[i] ?? null} onChange={v => change(s => ({ ...s, recipe: { ...s.recipe, dice: Array.from({ length: 5 }, (_, j) => i === j ? v : s.recipe?.dice?.[j] ?? null) } }))} />)}</div> : null}</> : null}
     </Card> : null}
+    {rule.kind === 'mule-train' ? <>
+      <SelectField label="Mule Train: your role" value={state.mule?.role ?? ''} onChange={e => change(s => ({ ...s, mule: { ...s.mule, role: e.target.value as 'attacker' | 'defender' }, finds: {} }))}><option value="">Choose…</option><option value="attacker">Attacker</option><option value="defender">Defender</option></SelectField>
+      <NumberField label="Mules in the starting train" hint="3–6 mules, as set up for this battle" allowEmpty value={state.mule?.starting ?? null} onChange={starting => change(s => ({ ...s, mule: { ...s.mule, starting, recovered: null }, finds: {} }))} />
+      <NumberField label="Mules your warband led safely off" allowEmpty value={state.mule?.recovered ?? null} onChange={recovered => change(s => ({ ...s, mule: { ...s.mule, recovered }, finds: {} }))} />
+      {muleRewards(state.mule ?? {}).rule ? <ScenarioRewards draft={draft} derived={derived} update={update} ctx={ctx} ruleOverride={muleRewards(state.mule ?? {}).rule!} /> : null}
+    </> : null}
     {rule.kind === 'ferry' ? <FerryRewards state={state.ferry ?? {}} won={draft.result === 'won'} change={ferry => change(s => ({ ...s, ferry }))} /> : null}
     {rule.kind === 'horses' ? <Card className="flex flex-col gap-3 px-4 py-3"><NumberField label="Successfully stolen horses before routing losses" allowEmpty value={state.horses ?? null} onChange={horses => change(s => ({ ...s, horses }))} />{draft.routed ? <DieField label="Horses lost: D3" sides={3} rollable value={state.lostHorsesDie ?? null} onChange={lostHorsesDie => change(s => ({ ...s, lostHorsesDie }))} /> : null}</Card> : null}
     {rule.kind === 'bounty' ? <>

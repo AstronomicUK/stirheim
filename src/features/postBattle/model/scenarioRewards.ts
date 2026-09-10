@@ -1,3 +1,4 @@
+import { muleRewards, type MuleDraft } from './muleRewards'
 import { harpyRewards, type HarpyDraft } from './harpyRewards'
 import type { RitualZombiesDraft } from './scenarioRecruits'
 import type { KidnappedDraft } from './kidnappedRewards'
@@ -12,6 +13,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  mule?: MuleDraft
   harpy?: HarpyDraft
   ritualZombies?: RitualZombiesDraft
   kidnapped?: KidnappedDraft
@@ -72,6 +74,13 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
   if (rule.kind === 'repeated' && rule.extraPerWarband) {
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
+  }
+  if (rule.kind === 'mule-train') {
+    const mule = muleRewards(state.mule ?? {})
+    if (!mule.rule) { rewards.problems.push(...mule.problems); return rewards }
+    const found = scenarioRewards(draft, scenarioId, participants, context, mule.rule)
+    found.notes.unshift(`${state.mule?.role}: ${state.mule?.recovered} of ${state.mule?.starting} mules led off. ${mule.rule.note}`)
+    return found
   }
   if (rule.kind === 'choice') {
     const branch = rule.options.find(o => o.id === state.branch)

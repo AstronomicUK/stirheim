@@ -235,3 +235,15 @@ it('scenario hunting bolts improve crossbow injury rolls without affecting bows 
   expect(result.kit.ranged.find(w => w.id === 'bow')?.special).not.toContain('injuryBonus:1')
   expect(result.kit.melee.find(w => w.id === 'sword')?.special).not.toContain('injuryBonus:1')
 })
+
+
+it('keeps Albion protective saves against high Strength and armour-ignoring attacks',()=>{
+ for(const [itemId,threshold] of [['dark_emissary_spiral',5],['truthsayer_triskele',4]] as const){
+  const attacker=combatant('Strong attacker',[{itemId:'sword',quantity:1}],{stats:{...base,S:10}})
+  for(const equipment of [[{itemId,quantity:1}],[{itemId:null,customName:itemId==='dark_emissary_spiral'?'The Spiral':'The Triskele',quantity:1}]]){
+   const fight=setup(attacker,combatant('Protected',equipment),'sword',null)
+   fight.primary={...fight.primary,ignoresArmourSave:true}
+   expect(computeOdds(fight).weapons[0].input.wardSaveThreshold).toBe(threshold)
+  }
+ }
+})

@@ -24,7 +24,7 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,599 ordinary tests and all 152 local database tests pass**; typechecked build and lint pass with existing warnings. The latest focused 79 tests pass following the final exploration eligibility correction. Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,605 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
 
 Migrations through 67 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
@@ -404,3 +404,12 @@ Source `reference/rules/04-hired-swords.md:1850–1862`: a Guardian intercepts s
 The decision is included both in saved roll attempts (including misses) and in shared damage-event logs. Approved reasoned exceptions remain available. Existing Guardian objective/search/loot restrictions and shared upkeep remain unchanged.
 
 Validation: actual 390px mobile workflow verifies the initial gate, target redirection, required explanation when keeping the Merchant, and persistence of both decisions in completed missed-attack logs. Disposable local fixtures are removed afterward. Script `/tmp/stirheim-guardian-mobile-qa.mjs`. Typecheck passes; combatant mapping tests cover correct and missing contracts. No new migration, push or deployment. Remaining work is Defend the Oasis scope, bespoke hired equipment/effects and source ambiguities, plus final combined release checks.
+
+
+### Local milestone 50 — Albion protective equipment and casting staff (#61/#74, not deployed)
+
+Source `05-dramatis-personae.md:579–581,821–823`: The Spiral grants an unmodifiable 5+ save, The Triskele an unmodifiable 4+ save, and the Staff of Darkness adds +1 to casting rolls. All three now have unique non-shop catalogue records and operational effects. New recruitment saves those IDs; exact old custom names remain recognised without rewriting equipment. These icons are miscellaneous protective items, so they do not prevent spellcasting as body armour would. Zero-quantity copies grant nothing. The Staff of Light remains the existing halberd with a dispel reminder; its once-per-turn dispel still needs the appropriate shared usage ledger and is not claimed complete here.
+
+Validation: all **1,605 ordinary tests pass** (152 database-dependent tests skipped in this run; last separate DB run passed all 152). Typechecked build and lint pass with existing warnings. Tests exercise high Strength and armour-ignoring attacks retaining both wards, recruitment/non-shop availability, and new/legacy casting equipment. The 390px mobile casting check displays the automatic Staff of Darkness bonus and fits the viewport (`/tmp/stirheim-albion-mobile-qa.mjs`). No migration or production changes.
+
+A fresh executable equipment inventory is saved in `docs/HIRED-KIT-REMAINING-2026-09-11.md`: 27 character/role entries with unmapped equipment. Some are descriptive or tabletop-only; this is not a count of missing combat rules. Review them against source before implementation, and also inspect effects hidden behind ordinary mapped equipment (for example Staff of Light and Luthor’s alternate sword use). This replaces the vague remaining-kit label with an actionable list. The inventory probe was temporary and removed after generating the document.

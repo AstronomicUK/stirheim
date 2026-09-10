@@ -252,3 +252,16 @@ describe("the persisted log and diceManual say app-rolled vs entered by hand (#2
     expect(has(hurt, /Injury roll 6 \+ 6 \(rolled by the app\)/)).toBe(true)
   });
 });
+
+
+it('applies one Staff of Darkness bonus from actual new or legacy equipment',()=>{
+ for(const equipment of [[{itemId:'dark_emissary_staff',quantity:1},{itemId:'dark_emissary_spiral',quantity:1}],[{itemId:null,customName:'Staff of Darkness',quantity:1},{itemId:null,customName:'The Spiral',quantity:1}]]){
+  const profile=profileOf(hero({equipment}))
+  expect(profile.blocks).toEqual([])
+  const cast=startCast(profile,profile.spells[0].spell)
+  expect(cast.bonus).toBe(1)
+  expect(cast.applied.map(m=>m.id)).toContain('dark_emissary_staff')
+ }
+ const absent=profileOf(hero({equipment:[{itemId:'dark_emissary_staff',quantity:0}]}))
+ expect(startCast(absent,absent.spells[0].spell).bonus).toBe(0)
+})

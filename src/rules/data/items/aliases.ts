@@ -1,3 +1,4 @@
+import { HIRED_SPECIAL_ITEMS } from './hiredSpecial';
 // Equipment-list names -> catalogue items. Warband templates write their equipment lists as free
 // text ("Long bow", "Ball & Chain", "Cutlass (Sword)", "Throwing Knives (Heroes Only)") while the
 // catalogue has one canonical `Item.name` per entry, so the warband builder needs a lookup that
@@ -31,7 +32,7 @@ import { WARBAND_SPECIAL_ITEMS } from "./warbandSpecial";
 
 // Built from the category files rather than ./index so that index.ts can re-export this module
 // without a circular import evaluating ITEMS before it exists.
-const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS, ...MATERIAL_VARIANT_ITEMS, ...SCENARIO_REWARD_ITEMS];
+const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS, ...MATERIAL_VARIANT_ITEMS, ...HIRED_SPECIAL_ITEMS, ...SCENARIO_REWARD_ITEMS];
 
 /**
  * Equipment-list names that are different words for a catalogue item. Keys are the names as written

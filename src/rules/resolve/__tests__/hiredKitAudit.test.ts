@@ -64,3 +64,11 @@ it('gives the Tactician usable plate without adding a purchasable or lamellar su
  expect(SHOP_ITEMS.some(i=>i.id==='imperial_tactician_plate_armour')).toBe(false)
  expect(resolveEquipmentName('plate armour (4+ save, -1M)')?.armourSave).toBe(4)
 })
+
+
+it('recruits Albion protective items as usable unique equipment, outside the shop',()=>{
+ const dark=hiredSwordStartingEquipment('dark_emissary',findHiredSword('dark_emissary')!.detail)
+ expect(dark.map(i=>i.itemId)).toEqual(['dark_emissary_staff','dark_emissary_spiral'])
+ expect(hiredSwordStartingEquipment('truthsayer',findHiredSword('truthsayer')!.detail)).toContainEqual({itemId:'truthsayer_triskele',quantity:1})
+ for(const id of ['dark_emissary_staff','dark_emissary_spiral','truthsayer_triskele'])expect(SHOP_ITEMS.some(i=>i.id===id)).toBe(false)
+})

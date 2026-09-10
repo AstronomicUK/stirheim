@@ -1,3 +1,4 @@
+import { legacyHiredItemId } from '../data/items/hiredSpecial';
 // Casting a spell or reciting a prayer, as the rulebook plays it (03-campaigns-magic-optional-rules.md:1447-1514).
 //
 // "To use a spell, the wizard must roll equal to or greater than the spell's Difficulty score on
@@ -110,7 +111,7 @@ export const CASTING_SKILL_IDS = [
 ] as const;
 
 function itemIds(hero: RosterHero): Set<string> {
-  return new Set(hero.equipment.map((e) => e.itemId).filter((id): id is string => typeof id === "string"));
+  return new Set(hero.equipment.filter(e=>e.quantity>0).map((e) => e.itemId ?? legacyHiredItemId(e.customName)).filter((id): id is string => typeof id === "string"));
 }
 
 /** Body armour, a shield or a buckler stops a wizard casting; helmets and Chaos Armour do not. */
@@ -131,6 +132,8 @@ function casterKit(hero: RosterHero, kind: CasterKind): CasterKitFinding {
   const out: CasterKitFinding = { modifiers: [], rerolls: [], dispel: [], reminders: [] };
   const identity = 'hiredSwordId' in hero ? hero.hiredSwordId : hero.unitTemplateId;
   if (kind === 'prayer' && identity === 'bertha_bestraufrung_high_matriarch_of_the_sisterhood') out.modifiers.push({ id: 'sigmars_handmaiden', name: 'Sigmar’s Handmaiden', amount: 2, source: 'Bertha’s special rule', optional: false, oncePerBattle: false });
+
+  if (kind === "spell" && has.has("dark_emissary_staff")) out.modifiers.push({id:"dark_emissary_staff",name:"Staff of Darkness",amount:1,source:"Carried",optional:false,oncePerBattle:false});
 
   // ---- always-on modifiers ----
   if (kind === "spell" && skill("sorcery")) {

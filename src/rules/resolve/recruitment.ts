@@ -814,12 +814,12 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   if(id==='snake_charmer') return kit(['dagger', 'sword']);
   if(id==='chameleon_skink') return kit(['dagger','blowpipe','buckler']);
   if(id==='dark_emissary') return [
-    {itemId:null,customName:'Staff of Darkness',quantity:1,notes:'+1 to casting rolls.'},
-    {itemId:null,customName:'The Spiral',quantity:1,notes:'5+ save which cannot be reduced.'},
+    {itemId:'dark_emissary_staff',quantity:1},
+    {itemId:'dark_emissary_spiral',quantity:1},
   ];
   if(id==='truthsayer') return [
     {itemId:'halberd',quantity:1,notes:'Staff of Light: also dispels one enemy spell per turn on 4+.'},
-    {itemId:null,customName:'The Triskele',quantity:1,notes:'4+ save which cannot be reduced.'},
+    {itemId:'truthsayer_triskele',quantity:1},
   ];
   if(id==='luthor_wolfenbaum') {
     if(!role) throw new RulesError('recruitment.luthorRole','Choose Luthor’s role before hiring him.');

@@ -1,3 +1,4 @@
+import { HIRED_SPECIAL_ITEMS } from './hiredSpecial';
 // Full equipment catalogue (shopping/inventory view) — every "###" entry in
 // rules/02-weapons-armour-equipment.md across all six sections, one file per category.
 
@@ -23,7 +24,7 @@ export const ITEMS: Item[] = [
   ...ANIMAL_ITEMS,
   ...WARBAND_SPECIAL_ITEMS,
   ...MATERIAL_VARIANT_ITEMS,
-  ...SCENARIO_REWARD_ITEMS,
+  ...HIRED_SPECIAL_ITEMS, ...SCENARIO_REWARD_ITEMS,
 ];
 
 /** The catalogue as offered for purchase: superseded entries (generic gromril / ithilmar weapon) left out. */

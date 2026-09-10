@@ -8,6 +8,9 @@ import type { ItemEffect } from "./types";
 const UNDEAD_AND_POSSESSED = ["undead", "possessed"];
 
 export const ITEM_EFFECTS: Record<string, ItemEffect> = {
+  dark_emissary_spiral: { wardSave: 5, note: "The Spiral: unmodifiable 5+ save." },
+  truthsayer_triskele: { wardSave: 4, note: "The Triskele: unmodifiable 4+ save." },
+  dark_emissary_staff: { note: "Staff of Darkness: +1 to casting rolls; applied in Cast a Spell." },
   // ---- Traits ----
   bear_claw_necklace: { traits: ["frenzy"], note: "Bear-Claw Necklace: subject to Frenzy." },
   red_toof_tribal_jewellery: { traits: ["frenzy"], note: "Red Toof Tribal Jewellery: subject to Frenzy." },

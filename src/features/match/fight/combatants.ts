@@ -1,3 +1,4 @@
+import { legacyHiredItemId } from '../../../rules/data/items/hiredSpecial'
 import { GUARDIAN_RULES } from '../../../rules/resolve/hiredCompanions'
 // Who can attack whom: every model on the table as the calculator sees it, and the pure mapping
 // from a roster warrior's kit to the probability engine's weapons, armour and traits. No React,
@@ -363,9 +364,10 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
   const out = emptyLoadout()
   let toughenedLeathers = false
   for (const entry of equipment) {
+    if (entry.quantity <= 0) continue
     // Recognise the exact published plate-armour line on older hires without rewriting their kit.
     const legacyPlate = !entry.itemId && resolveEquipmentName(entry.customName ?? '')?.id === 'imperial_tactician_plate_armour'
-    const item = findItem(entry.itemId ?? (legacyPlate ? 'imperial_tactician_plate_armour' : ''))
+    const item = findItem(entry.itemId ?? (legacyPlate ? 'imperial_tactician_plate_armour' : legacyHiredItemId(entry.customName) ?? ''))
     if (!item) {
       out.ignored.push(entry.itemId ?? entry.customName ?? 'Unnamed item')
       continue

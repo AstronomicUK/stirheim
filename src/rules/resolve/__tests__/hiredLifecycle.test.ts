@@ -80,3 +80,12 @@ it('does not charge a Snake separately from the Charmer’s shared contract', ()
   const r = hireHiredSword(roster(), 'snake_charmer', 'charmer').value
   expect(() => payUpkeep(r, r.hiredSwords[1].id)).toThrow('no separate upkeep')
 })
+
+it('applies both published Elf/Dwarf individual upkeep increases', () => {
+ let r=hireHiredSword(roster(),'dwarf_troll_slayer','d').value
+ r=hireHiredSword(r,'elf_ranger','e').value
+ expect(r.gold-payUpkeep(r,'d').value.warband.gold).toBe(20)
+ expect(r.gold-payUpkeep(r,'e').value.warband.gold).toBe(40)
+ const alone={...r,hiredSwords:r.hiredSwords.filter(h=>h.id==='e')}
+ expect(alone.gold-payUpkeep(alone,'e').value.warband.gold).toBe(20)
+})

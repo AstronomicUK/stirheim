@@ -1244,6 +1244,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      pirate_upkeep_status: { Args: { p_warband_id: string }; Returns: Json }
+      pay_pirate_upkeep: { Args: { p_warband_id: string; p_amount?: number; p_reason?: string | null }; Returns: undefined }
       set_trap_order: { Args: { p_match_id: string; p_hero_id: string; p_extra: number }; Returns: undefined }
       use_trap_supply: { Args: { p_match_id: string; p_hero_id: string }; Returns: number }
 

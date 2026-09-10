@@ -1,3 +1,4 @@
+import { DWARF_HIRES, ELF_HIRES } from './mixedHireUpkeep'
 import { isDramatisPersona } from '../data/campaign/hiredSwords'
 import { findWarbandTemplate } from "../data/warbandTemplates";
 import { parseDice, rollDice } from './dice';
@@ -668,8 +669,9 @@ function resolveUpkeepPayment(
     const paid = warband.wyrdstone >= upkeepShards;
     return { value: { paid, warband: { ...warband, wyrdstone: warband.wyrdstone - (paid ? upkeepShards : 0), hiredSwords: warband.hiredSwords.map(s => s.id === hs.id && !paid ? { ...s, status: 'left' } : s) } }, events: [{ kind: 'hiredSword.upkeep', subjectId: hs.id, message: paid ? `${hs.name} is paid ${upkeepShards} wyrdstone/treasure.` : `${hs.name} leaves: no wyrdstone shard to pay him.` }] };
   }
-  const withElves = /elf|elves/i.test(findWarbandTemplate(warband.warbandTemplateId)?.race ?? '') || warband.hiredSwords.some(s => s.status === 'active' && /elf|shadow_warrior|aenur/.test(s.hiredSwordId));
-  const upkeep = opts.amountOverride ?? (hs.hiredSwordId === 'dwarf_troll_slayer' && withElves ? 20 : hs.hiredSwordId === 'snake_charmer' ? 10 + 5 * warband.hiredSwords.filter(s => s.flags.hireGroupId === hs.flags.hireGroupId && s.flags.hireCompanion && s.status === 'active').length : entry?.upkeep?.base ?? null);
+  const withElves = /elf|elves/i.test(findWarbandTemplate(warband.warbandTemplateId)?.race ?? '') || warband.hiredSwords.some(s => s.status === 'active' && ELF_HIRES.includes(s.hiredSwordId));
+  const withDwarfs = /dwarf|dwarves/i.test(findWarbandTemplate(warband.warbandTemplateId)?.race ?? '') || warband.hiredSwords.some(s => s.status === 'active' && DWARF_HIRES.includes(s.hiredSwordId));
+  const upkeep = opts.amountOverride ?? (['dwarf_troll_slayer', 'dwarf_slayer_pirate'].includes(hs.hiredSwordId) && withElves ? 20 : hs.hiredSwordId === 'elf_ranger' && withDwarfs ? 40 : hs.hiredSwordId === 'snake_charmer' ? 10 + 5 * warband.hiredSwords.filter(s => s.flags.hireGroupId === hs.flags.hireGroupId && s.flags.hireCompanion && s.status === 'active').length : entry?.upkeep?.base ?? null);
 
   if (upkeep === null && entry?.upkeep) throw new RulesError('recruitment.specialUpkeep', `${hs.name}: ${entry.upkeep.text}. Record the agreed payment through Hired Swords.`);
   if (upkeep !== null && (!Number.isInteger(upkeep) || upkeep < 0)) throw new RulesError('recruitment.invalidUpkeep', 'Enter a non-negative whole number for upkeep.');

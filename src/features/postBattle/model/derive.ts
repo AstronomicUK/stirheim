@@ -1,3 +1,4 @@
+import { mixedPirateCrew } from '../../../rules/resolve/mixedHireUpkeep'
 import { caravanRewards } from './caravanRewards'
 import { harpyRewards } from './harpyRewards'
 import { ritualZombies } from './scenarioRecruits'
@@ -847,6 +848,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const departingIds=new Set(applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id))
   applied.pending_advances=applied.pending_advances.filter(a=>!departingIds.has(a.subject_id))
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
+  if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.experience.push(...(kidnapped?.problems ?? []))
@@ -881,7 +883,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, ctx), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

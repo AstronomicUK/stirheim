@@ -32,6 +32,43 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
     const source=(await admin.from('items').insert({warband_id:warbands[1],holder_type:'hero',holder_id:heroes[1],item_rules_id:'sword',quantity,notes:'Original named blade'}).select('*').single()).data!
     return {item_id:source.id,from_warband_id:warbands[1],quantity:1,expected:source,reason:'Recovered the stolen blade'}
   }
+  it('sells the actual stolen copy without retaining it and restores the source on withdrawal',async()=>{
+    const t={...await transferFixture(1),sale_value:11,reason:'Stolen blade selected at setup; agreed value 11 gc'}
+    const submit=()=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:{result:'won',won:true,routed:false,applied:{stop_thief_outcome:{defender_id:warbands[0]},warband:{gold_delta:5,wyrdstone_delta:0},scenario_item_transfers:[t]}}})
+    expect((await submit()).error).toBeNull()
+    expect((await admin.from('items').select('id').eq('id',t.item_id)).data).toEqual([])
+    expect((await admin.from('items').select('id').eq('warband_id',warbands[0]).eq('holder_type','stash')).data).toEqual([])
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(105)
+    expect((await admin.from('match_reports').select('notes').eq('match_id',match).single()).data?.notes).toContain('sold for 5 gc')
+    expect((await withdraw()).error).toBeNull()
+    expect((await admin.from('items').select('id,quantity,holder_id').eq('id',t.item_id).single()).data).toEqual({id:t.item_id,quantity:1,holder_id:heroes[1]})
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(100)
+  })
+  it('rejects contradictory recovery and sale reports in either filing order',async()=>{
+    const t={...await transferFixture(1),sale_value:10}
+    const recovery=()=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[1],p_report:{result:'won',won:true,routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},stop_thief_outcome:{defender_id:warbands[0],recovered:true}}}})
+    const sale=()=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:{result:'won',won:true,routed:false,applied:{warband:{gold_delta:5,wyrdstone_delta:0},stop_thief_outcome:{defender_id:warbands[0]},scenario_item_transfers:[t]}}})
+    expect((await recovery()).error).toBeNull()
+    expect((await sale()).error?.message).toContain('already recorded recovery')
+    expect((await player.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:warbands[1]})).error).toBeNull()
+    expect((await sale()).error).toBeNull()
+    expect((await recovery()).error?.message).toContain('already been sold')
+    expect((await withdraw()).error).toBeNull()
+    expect((await recovery()).error).toBeNull()
+  })
+  it('rejects losing, unrelated, multi-copy and stale stolen-item sales atomically',async()=>{
+    const t={...await transferFixture(2),sale_value:10}
+    expect((await file({stop_thief_outcome:{defender_id:warbands[0]},scenario_item_transfers:[t]})).error?.message).toContain('Only a Stop Thief winner')
+    const submit=(sale:object)=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:{result:'won',won:true,routed:false,applied:{stop_thief_outcome:{defender_id:warbands[0]},warband:{gold_delta:5,wyrdstone_delta:0},scenario_item_transfers:[sale]}}})
+    expect((await submit({...t,quantity:2})).error?.message).toContain('Only a Stop Thief winner')
+    await admin.from('matches').update({scenario_rules_id:'the_forbidden_square'}).eq('id',match)
+    expect((await submit(t)).error?.message).toContain('Invalid Stop Thief defender')
+    await admin.from('matches').update({scenario_rules_id:'stop_thief'}).eq('id',match)
+    await admin.from('items').update({notes:'Later inventory edit'}).eq('id',t.item_id)
+    expect((await submit(t)).error?.message).toContain('source equipment changed')
+    expect((await admin.from('items').select('quantity').eq('id',t.item_id).single()).data?.quantity).toBe(2)
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(100)
+  })
   it('transfers one existing copy, logs it, and restores both rosters on withdrawal',async()=>{
     const t=await transferFixture()
     expect((await file({scenario_item_transfers:[t]})).error).toBeNull()

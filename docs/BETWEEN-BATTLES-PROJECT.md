@@ -312,3 +312,14 @@ Validation: all 129 local database tests pass. The latest ordinary suite passed 
 Scenario reward coverage is now 98/103. Remaining: Defend the Oasis, The Thing in the Woods, Stop Thief, Raids and Rawhide. Broader optional systems and bespoke hired-sword limitations remain open; this count does not imply complete automation of every scenario rule.
 
 Latest user authorisation: after the complete main batch is pushed, deployed and verified, continue fixing queued #221–226 and #23/#54 follow-ups as a second batch. Keep menu layout proposals available for user review. Avoid intermediate production deployments.
+
+
+### Local milestone 42 — Stop Thief actual equipment settlement (#72, not deployed)
+
+Fanatic Magazine 7 (`reference/rules/06-scenarios.md:1795–1848`) now has a report form for the agreed setup defender and stolen equipment. The defending winner reviews one actual original copy per attacker, its recorded full value and selection/valuation reason, then sells it for half value rounded down or records an allied return. The sale removes the source copy without creating a retained duplicate. Attacking winners record their actual 2D6 valuables and recovery; recovery awards the participating leader one XP through normal survival/advancement handling. Equipment that remained on its original roster is not manufactured again; copies currently held by the defender can be transferred back. Temporary Halfling Thief services do not create a permanent free hire.
+
+Migration 59 adds equipment sales, source snapshots, duplicate-sale protection and agreement checks. Reports cannot disagree on the defender or record both recovery and sale, in either filing order. Withdrawal restores source ownership/quantity and gold using existing transaction checks. Setup highest rating, portable/magic-item selection and unpriced-item valuation require explicit review of the actual pre-battle agreement; the app does not reconstruct historical setup inventory from current values.
+
+Validation: 1,559 ordinary tests pass; all 132 local database tests pass separately. Typechecked production build and lint pass with existing warnings. Both mobile flows at 390×844 persist through reload and withdraw correctly: defender sells one of two original swords for 5gc on an agreed 11gc valuation, and attacker recovers an unchanged original sword with 7gc and exactly one additional leader XP. No horizontal overflow or page errors. Scripts: `/tmp/stirheim-stop-thief-mobile-qa.mjs` and `/tmp/stirheim-stop-thief-attacker-mobile-qa.mjs`. Migration remains local, no push or deployment.
+
+Scenario reward coverage: 99/103. Remaining paths are Defend the Oasis, The Thing in the Woods, Raids and Rawhide. Pending broader kit/Guardian/Medicine Chest work and final release verification remain as recorded above.

@@ -1,3 +1,4 @@
+import { stopThiefRewards } from './stopThiefRewards'
 import { rockRewards } from './rockRewards'
 import { rockConscripts } from './rockConscripts'
 import { encampmentRewards } from './encampmentRewards'
@@ -831,9 +832,12 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
   const kidnapped = ctx.scenarioId === 'kidnapped' ? kidnappedRewards(draft.scenarioRewards?.kidnapped, { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h) }, ctx.items) : null
+  const thief=ctx.scenarioId==='stop_thief'?stopThiefRewards(draft.scenarioRewards?.stopThief??{},draft.result==='won',ctx.roster.id,[{id:ctx.roster.id,name:ctx.roster.name},...(ctx.opponents??[]).map(o=>({id:o.id,name:o.name??'Opponent'}))]):null
+  const thiefLeader=participants.heroes.find(h=>h.id===participants.leaderId)
   const rock = ctx.scenarioId==='assault_on_the_rock'?rockRewards(draft.scenarioRewards?.rock??{},draft.result==='won',scenarioRewardContext(ctx,injuries).roster):null
-  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? []), ...(rock?.xpAwards??[])])
+  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? []), ...(rock?.xpAwards??[]),...(thief?.retrievedLeaderXp&&thiefLeader?[{id:thiefLeader.id,name:thiefLeader.name,amount:1,reason:"Stop Thief: recovered the stolen item"}]:[])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  if(thief&&!thief.problems.length){applied.scenario_item_transfers=thief.transfers;const state=draft.scenarioRewards!.stopThief!;applied.stop_thief_outcome={defender_id:state.defenderId!,recovered:state.recovered,returned_allies:state.returnedAllies}}
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
   if(ctx.scenarioId==='assault_on_the_rock'&&draft.result==='won')applied.rock_tome_claim=true
   if(ctx.scenarioId==='encampment_raid') {

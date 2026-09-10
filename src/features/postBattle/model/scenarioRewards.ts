@@ -1,3 +1,4 @@
+import {stopThiefRewards,type StopThiefDraft} from './stopThiefRewards'
 import { rockRewards, type RockDraft, type RockRoster } from './rockRewards'
 import { encampmentRewards, type EncampmentDraft } from './encampmentRewards'
 import { forbiddenSquareRewards, type ForbiddenSquareDraft } from './forbiddenSquareRewards'
@@ -21,6 +22,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  stopThief?: StopThiefDraft
   rock?: RockDraft
   encampment?: EncampmentDraft
   forbiddenSquare?: ForbiddenSquareDraft
@@ -91,6 +93,7 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
   }
+  if(rule.kind==='stop-thief')return {...rewards,...stopThiefRewards(state.stopThief??{},draft.result==='won',context?.roster?.id??'',[{id:context?.roster?.id??'',name:context?.roster?.name??'This warband'},...(context?.opponents??[]).map(o=>({id:o.id,name:o.name??'Opponent'}))])}
   if(rule.kind==='rock')return {...rewards,...rockRewards(state.rock??{},draft.result==='won',context?.roster??{warbandTemplateId:''})}
   if(rule.kind==='encampment')return {...rewards,...encampmentRewards(state.encampment??{},draft.result==='won',context?.opponents??[])}
   if(rule.kind==='forbidden-square')return {...rewards,...forbiddenSquareRewards(state.forbiddenSquare??{},[context?.roster?.id??'',...(context?.opponents??[]).map(o=>o.id)],context?.roster?.id??'')}

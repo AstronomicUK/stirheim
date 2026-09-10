@@ -171,6 +171,7 @@ function hiredSwordUpdateData(row: HeroRow, hs: RosterHiredSword): Record<string
 
 function groupInsertData(group: RosterHenchmanGroup, sortOrder: number): Record<string, unknown> {
   return {
+    ...(group.campaignState ? {campaign_state:group.campaignState} : {}),
     name: group.name,
     unit_type_rules_id: group.unitTemplateId,
     size: group.size,

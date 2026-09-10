@@ -688,7 +688,7 @@ export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied)
     henchmenGroups: [...roster.henchmenGroups.map((g) => {
       const p = groupPatches.get(g.id)
       if (!p) return g
-      return { ...g, size: p.size ?? g.size, xp: p.xp ?? g.xp, levelUps: p.level_ups ?? g.levelUps }
+      return { ...g, ...(p.campaign_state?{campaignState:p.campaign_state}:{}), size: p.size ?? g.size, xp: p.xp ?? g.xp, levelUps: p.level_ups ?? g.levelUps }
     }), ...(applied.new_groups ?? []).map(g => ({id:g.id,name:g.name,unitTemplateId:g.unit_type_rules_id,size:g.size,stats:g.stats,xp:g.xp,levelUps:g.level_ups,statIncreases:{},equipment:[]}))],
   }
 }
@@ -765,6 +765,14 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   })
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, exploration.record?.xpAwards)
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  if(!nonCampaign)for(const group of ctx.roster.henchmenGroups){
+    const existing=applied.groups.find(g=>g.id===group.id)
+    if(unitRules(group.unitTemplateId).upkeep&&(existing?.patch.size??group.size)>0){
+      const campaign_state={...group.campaignState,upkeepOwedAfter:ctx.matchId}
+      if(existing)existing.patch.campaign_state=campaign_state
+      else applied.groups.push({id:group.id,patch:{campaign_state}})
+    }
+  }
   const hireDepartures = conditionalHireDepartures(ctx.roster, rosterAfterReport(ctx.roster,applied))
   for (const departure of hireDepartures) {
     const existing = applied.heroes.find(h=>h.id===departure.id)

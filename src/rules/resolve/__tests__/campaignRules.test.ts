@@ -149,6 +149,7 @@ describe("income and rating", () => {
 describe("upkeep", () => {
   it("a Troll wants feeding after every battle and leaves when unpaid", () => {
     const orcs = warband("orc_mob", [hero("b", "orc_mob_boss")], [group("t", "orc_mob_troll", 1)], { gold: 10 });
+    orcs.henchmenGroups[0].campaignState={upkeepOwedAfter:'battle'};
     expect(henchmanUpkeepDue(orcs)).toEqual([expect.objectContaining({ groupId: "t", gold: 15 })]);
     const unpaid = payHenchmanUpkeep(orcs, "t");
     expect(unpaid.value.paid).toBe(false);
@@ -165,3 +166,23 @@ describe("racial maxima", () => {
     expect(resolveRacialProfile(hero("o", "ogre_hunting_party_ogre_hunter"), "ogre_hunting_party").value.profile).toBe("Ogre");
   });
 });
+
+it('settles Troll upkeep once and allows the printed two-model sacrifice when short of gold',()=>{
+ const r=warband('orc_mob',[hero('b','orc_mob_boss')],[group('t','orc_mob_troll',1),{...group('g','orc_mob_goblin_warriors',3),equipment:[{itemId:'sword',quantity:3}]}],{gold:0})
+ r.henchmenGroups[0].campaignState={upkeepOwedAfter:'battle'}
+ expect(()=>payHenchmanUpkeep(r,'t',{trollPayment:'sacrifice',sacrificeGroups:{g:1}})).toThrow('exactly two')
+ const result=payHenchmanUpkeep(r,'t',{trollPayment:'sacrifice',sacrificeGroups:{g:2}})
+ expect(result.value.paid).toBe(true)
+ expect(result.value.warband.henchmenGroups[1]).toMatchObject({size:1,equipment:[{itemId:'sword',quantity:1}]})
+ expect(henchmanUpkeepDue(result.value.warband)).toEqual([])
+ expect(()=>payHenchmanUpkeep(result.value.warband,'t')).toThrow('already settled')
+})
+it('charges five for the Black Orc alternative and counts the Troll twice for income and roster limits',()=>{
+ const r=warband('black_orcs',[hero('b','black_orcs_black_orc_boss')],[group('t','black_orcs_troll',1)],{gold:5})
+ r.henchmenGroups[0].campaignState={upkeepOwedAfter:'battle'}
+ const paid=payHenchmanUpkeep(r,'t',{trollPayment:'cheap'}).value.warband
+ expect(paid.gold).toBe(0)
+ expect(incomeSize(paid).size).toBe(3)
+ expect(paid.henchmenGroups[0].campaignState?.cheapTrollFeed).toBe(true)
+ expect(()=>payHenchmanUpkeep({...r,gold:20},'t',{trollPayment:'cheap'})).toThrow('only when')
+})

@@ -1,3 +1,4 @@
+import { HenchmanUpkeepCard } from './view/HenchmanUpkeepCard'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
@@ -208,6 +209,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       <HiredRosterRepairCard detail={detail} canEdit={canEdit} />
       <HiredUpkeepCard detail={detail} canEdit={canEdit} />
+      <HenchmanUpkeepCard detail={detail} canEdit={canEdit} />
       {detail.roster.explorationDiscoveries && (detail.roster.explorationDiscoveries.catacombs || detail.roster.explorationDiscoveries.straggler || detail.roster.explorationDiscoveries.tunnels || detail.roster.explorationDiscoveries.freeHireReportId) ? <Card className="flex flex-col gap-2 px-4 py-3">
         <h3 className="font-semibold">Exploration discoveries</h3>
         {detail.roster.explorationDiscoveries.catacombs ? <p className="text-sm">Entrance to the Catacombs: permanently reroll one exploration die. Further entrances do not stack.</p> : null}

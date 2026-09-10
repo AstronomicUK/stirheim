@@ -11,6 +11,7 @@ import { z } from "zod";
 import { combatModeSchema } from "./settings";
 import {
   advanceResolutionSchema,
+  henchmanCampaignStateSchema,
   appliedInjuriesSchema,
   liveStateSchema,
   reportLogSchema,
@@ -175,6 +176,7 @@ export type HeroInsert = z.input<typeof heroInsertSchema>;
 // ---------------------------------------------------------------------------------------------
 
 export const henchmanGroupRowSchema = z.object({
+  campaign_state: henchmanCampaignStateSchema.optional(),
   id: uuidSchema,
   warband_id: uuidSchema,
   name: z.string().min(1).max(60),

@@ -63,7 +63,7 @@ export function incomeSize(warband: RosterWarband): IncomeSize {
       henchmen += g.size > 0 ? rules.groupIncomeCountsAs : 0;
       if (g.size > 0) notes.push(`${g.name} counts as ${rules.groupIncomeCountsAs} model${rules.groupIncomeCountsAs === 1 ? "" : "s"} for income`);
     } else {
-      const each = rules.incomeCountsAs ?? 1;
+      const each = g.unitTemplateId==='black_orcs_troll'&&g.campaignState?.cheapTrollFeed?2:rules.incomeCountsAs ?? 1;
       henchmen += g.size * each;
       if (each !== 1 && g.size > 0) notes.push(`${g.name} count as ${each} each for income`);
     }

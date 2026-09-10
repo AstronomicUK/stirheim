@@ -7,7 +7,7 @@
 // match once every participant has reported. See supabase/migrations/20260904000007_reports.sql.
 
 import { z } from "zod";
-import { appliedInjurySchema, statsSchema, warriorFlagsSchema } from "./json";
+import { henchmanCampaignStateSchema, appliedInjurySchema, statsSchema, warriorFlagsSchema } from "./json";
 
 export const REPORT_VERSION = 1;
 
@@ -97,6 +97,7 @@ export const heroReportPatchSchema = z.object({
 export const groupReportPatchSchema = z.object({
   id: z.string(),
   patch: z.object({
+    campaign_state: henchmanCampaignStateSchema.optional(),
     size: z.number().int().min(0).optional(),
     xp: z.number().int().min(0).optional(),
     level_ups: z.number().int().min(0).optional(),

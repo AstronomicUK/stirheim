@@ -112,7 +112,14 @@ export interface RosterHero {
   notes?: string;
 }
 
+export interface HenchmanCampaignState {
+  upkeepOwedAfter?: string;
+  upkeepPaidAfter?: string;
+  cheapTrollFeed?: boolean;
+}
+
 export interface RosterHenchmanGroup {
+  campaignState?: HenchmanCampaignState;
   id: string;
   name: string;
   unitTemplateId: string;

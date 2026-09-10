@@ -106,6 +106,7 @@ export function toRosterHiredSword(hero: HeroRow, equipment: RosterItem[]): Rost
 
 export function toRosterHenchmanGroup(group: HenchmanGroupRow, equipment: RosterItem[]): RosterHenchmanGroup {
   const result: RosterHenchmanGroup = {
+    ...(group.campaign_state && Object.keys(group.campaign_state).length ? {campaignState:group.campaign_state} : {}),
     id: group.id,
     name: group.name,
     unitTemplateId: group.unit_type_rules_id,
@@ -187,7 +188,7 @@ export type HiredSwordPatch = Pick<HeroRow, "stats" | "xp" | "level_ups" | "skil
 
 export type HenchmanGroupPatch = Pick<
   HenchmanGroupRow,
-  "stats" | "xp" | "level_ups" | "size" | "stat_increases" | "notes" | "model_names"
+  "stats" | "xp" | "level_ups" | "size" | "stat_increases" | "notes" | "model_names" | "campaign_state"
 >;
 
 export function heroPatchFromRoster(hero: RosterHero): HeroPatch {
@@ -221,6 +222,7 @@ export function hiredSwordPatchFromRoster(hiredSword: RosterHiredSword): HiredSw
 
 export function groupPatchFromRoster(group: RosterHenchmanGroup): HenchmanGroupPatch {
   return {
+    ...(group.campaignState ? {campaign_state:group.campaignState} : {}),
     stats: group.stats,
     xp: group.xp,
     level_ups: group.levelUps,

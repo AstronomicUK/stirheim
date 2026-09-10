@@ -1,3 +1,4 @@
+import { GroupUpkeepSheet } from './GroupUpkeepSheet'
 import { RetainedScout } from '../roster/view/RetainedScout'
 import { isDramatisPersona } from '../../rules/data/campaign/hiredSwords'
 import { HIRED_EQUIPMENT_CHOICES } from '../../rules/resolve/hiredEquipmentChoices'
@@ -5,7 +6,7 @@ import { halfPriceHireSource, halved, type PerkSource } from '../../rules/resolv
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
-import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, hiredSwordStartingEquipment, payHenchmanUpkeep, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
+import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, hiredSwordStartingEquipment, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
 import { Button, DieField, Markdown, Notice, NumberField, Sheet, TextField, OverrideField, SelectField } from '../../ui'
@@ -457,39 +458,3 @@ export function HiredSwordDetail({ detail, equipment }: { detail: HiredSwordSumm
     </div>
   )
 }
-
-function GroupUpkeepSheet({ detail, line, onClose, onDone }: { detail: WarbandDetail; line: HenchmanUpkeepLine; onClose: () => void; onDone: (outcome: Outcome) => void }) {
-  const { roster } = detail
-  const { commit, error, pending } = useCommit(detail)
-  const willLeave = roster.gold < line.gold
-
-  async function confirm() {
-    const result = await commit(() => payHenchmanUpkeep(roster, line.groupId), (v) => v.warband, reasonWith('recruitment', null))
-    if (!result) return
-    onDone(result.value.paid ? outcomeFrom(`${line.name} fed`, result.events) : outcomeFrom(`${line.name} have left the warband`, result.events, { tone: 'warn' }))
-  }
-
-  return (
-    <Sheet
-      open
-      onClose={onClose}
-      title="Pay upkeep"
-      description={line.name}
-      footer={
-        <Button block variant={willLeave ? 'danger' : 'primary'} pending={pending} onClick={() => void confirm()}>
-          {willLeave ? 'Cannot pay: they leave' : `Pay ${line.gold} gc`}
-        </Button>
-      }
-    >
-      <div className="flex flex-col gap-4 pb-2">
-        <div className="grid grid-cols-2 gap-3">
-          <KeyValue label="Upkeep due" value={`${line.gold} gc`} />
-          <KeyValue label="Treasury" value={`${roster.gold} gc`} />
-        </div>
-        <Notice tone={willLeave ? 'warn' : 'info'}>{line.note}</Notice>
-        {error ? <Notice tone="error">{error}</Notice> : null}
-      </div>
-    </Sheet>
-  )
-}
-

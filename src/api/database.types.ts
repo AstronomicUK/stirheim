@@ -352,6 +352,7 @@ export type Database = {
       }
       henchman_groups: {
         Row: {
+          campaign_state: Json
           created_at: string
           id: string
           is_large: boolean
@@ -369,6 +370,7 @@ export type Database = {
           xp: number
         }
         Insert: {
+          campaign_state?: Json
           created_at?: string
           id?: string
           is_large?: boolean
@@ -386,6 +388,7 @@ export type Database = {
           xp?: number
         }
         Update: {
+          campaign_state?: Json
           created_at?: string
           id?: string
           is_large?: boolean

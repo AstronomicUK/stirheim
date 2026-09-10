@@ -95,3 +95,5 @@ export type StatsJson = z.infer<typeof statsSchema>;
 export type AppliedInjuryJson = z.infer<typeof appliedInjurySchema>;
 export type WarriorFlagsJson = z.infer<typeof warriorFlagsSchema>;
 export type StatIncreasesJson = z.infer<typeof statIncreasesSchema>;
+
+export const henchmanCampaignStateSchema = z.object({upkeepOwedAfter:z.string().optional(),upkeepPaidAfter:z.string().optional(),cheapTrollFeed:z.boolean().optional()});

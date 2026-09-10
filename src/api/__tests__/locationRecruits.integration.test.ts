@@ -24,6 +24,18 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Exploration recruit report tr
   expect((await file()).error).toBeNull()
   expect((await admin.from('henchman_groups').select('id').eq('warband_id',warbands[0])).data).toHaveLength(1)
  })
+ it('saves henchman upkeep state through the report and protects a later settlement',async()=>{
+  expect((await admin.from('henchman_groups').insert({id:group,warband_id:warbands[0],name:'Troll',unit_type_rules_id:'orc_mob_troll',size:1,stats:{M:6,WS:3,BS:1,S:5,T:4,W:3,I:1,A:3,Ld:4}})).error).toBeNull()
+  const filed=await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:{won:false,result:'lost',routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},groups:[{id:group,patch:{campaign_state:{upkeepOwedAfter:match}}}]}}})
+  expect(filed.error).toBeNull()
+  expect((await admin.from('henchman_groups').select('campaign_state').eq('id',group).single()).data?.campaign_state).toEqual({upkeepOwedAfter:match})
+  expect((await player.rpc('update_roster',{p_warband_id:warbands[0],p_reason:'Paid Troll upkeep',p_changes:[{table:'henchman_groups',op:'update',id:group,data:{campaign_state:{upkeepPaidAfter:match}}}]})).error).toBeNull()
+  expect((await withdraw()).error?.message).toContain('henchman upkeep has changed')
+  expect((await admin.from('henchman_groups').select('campaign_state').eq('id',group).single()).data?.campaign_state).toEqual({upkeepPaidAfter:match})
+  expect((await admin.from('henchman_groups').update({campaign_state:{upkeepOwedAfter:match}}).eq('id',group)).error).toBeNull()
+  expect((await withdraw()).error).toBeNull()
+  expect((await admin.from('henchman_groups').select('campaign_state').eq('id',group).single()).data?.campaign_state).toEqual({})
+ })
  it('refuses to erase later recruit changes and rolls back the withdrawal',async()=>{
   expect((await file()).error).toBeNull()
   expect((await admin.from('henchman_groups').update({size:4}).eq('id',group)).error).toBeNull()

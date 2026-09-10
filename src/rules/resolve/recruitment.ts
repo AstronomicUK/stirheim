@@ -607,6 +607,8 @@ export function hireHiredSword(
 }
 
 export interface PayUpkeepOptions {
+  trollPayment?: "gold" | "sacrifice" | "cheap";
+  sacrificeGroups?: Record<string,number>;
   contractRoll?: number;
   mariannaHelpedAndSurvived?: boolean;
   /** Pay this instead of the listed upkeep (e.g. a Troll Slayer in a warband with Elves: 20 gc). */
@@ -711,7 +713,7 @@ export interface HenchmanUpkeepLine {
 export function henchmanUpkeepDue(warband: RosterWarband): HenchmanUpkeepLine[] {
   const out: HenchmanUpkeepLine[] = [];
   for (const g of warband.henchmenGroups) {
-    if (g.size <= 0) continue;
+    if (g.size <= 0 || !g.campaignState?.upkeepOwedAfter) continue;
     const rule = unitRules(g.unitTemplateId).upkeep;
     if (rule) out.push({ groupId: g.id, name: g.name, gold: rule.gold * g.size, note: rule.note });
   }
@@ -719,11 +721,24 @@ export function henchmanUpkeepDue(warband: RosterWarband): HenchmanUpkeepLine[] 
 }
 
 /** Pay a henchman group's upkeep, or let the group go when the treasury cannot cover it. */
-export function payHenchmanUpkeep(warband: RosterWarband, groupId: string, opts: PayUpkeepOptions = {}): Resolution<PayUpkeepResult> {
+function resolveHenchmanPayment(warband: RosterWarband, groupId: string, opts: PayUpkeepOptions = {}): Resolution<PayUpkeepResult> {
   const group = warband.henchmenGroups.find((g) => g.id === groupId);
   if (!group) throw new RulesError("recruitment.unknownGroup", `No henchman group with id "${groupId}"`);
   const rule = unitRules(group.unitTemplateId).upkeep;
   const due = opts.amountOverride ?? (rule ? rule.gold * group.size : 0);
+  if(opts.trollPayment && opts.trollPayment!=='gold'){
+    if(!rule||warband.gold>=rule.gold*group.size)throw new RulesError('upkeep.alternative','The printed alternative is available only when you cannot afford normal Troll upkeep.');
+    if(opts.trollPayment==='cheap'){
+      if(group.unitTemplateId!=='black_orcs_troll')throw new RulesError('upkeep.alternative','Only Black Orc Trolls have the reduced-cost option.');
+      const cost=5*group.size;assertGold(warband,cost,'Reduced Troll upkeep');
+      return {value:{paid:true,warband:{...warband,gold:warband.gold-cost,henchmenGroups:warband.henchmenGroups.map(g=>g.id===groupId?{...g,campaignState:{...g.campaignState,cheapTrollFeed:true}}:g)}},events:[{kind:'henchmen.upkeep',subjectId:groupId,message:`Paid ${cost} gc for ${group.name}; each Troll now counts as two members for income and the warband limit.`}]};
+    }
+    const food=trollFoodGroups(warband,groupId)
+    const chosen=Object.entries(opts.sacrificeGroups??{}).filter(([,n])=>n!==0)
+    if(!food.length||chosen.some(([id,n])=>!Number.isInteger(n)||n<0||n>(food.find(g=>g.id===id)?.size??0))||chosen.reduce((sum,[,n])=>sum+n,0)!==2*group.size)throw new RulesError('upkeep.sacrifice','Choose exactly two eligible Goblins or Cave Squigs for each Troll.');
+    const groups=warband.henchmenGroups.map(g=>{const count=opts.sacrificeGroups?.[g.id]??0;return count?{...g,size:g.size-count,equipment:g.equipment.map(i=>({...i,quantity:Math.floor(i.quantity*(g.size-count)/g.size)})).filter(i=>i.quantity>0)}:g});
+    return {value:{paid:true,warband:{...warband,henchmenGroups:groups}},events:[{kind:'henchmen.upkeep',subjectId:groupId,message:`Fed ${group.name} ${chosen.map(([id,n])=>`${n} from ${food.find(g=>g.id===id)!.name}`).join(' and ')} instead of paying ${due} gc. Sacrificed models and their equipment are removed.`}]};
+  }
   if (due <= 0) {
     return { value: { warband, paid: true }, events: [{ kind: "henchmen.upkeep", subjectId: group.id, message: `${group.name}: no upkeep due`, data: { upkeep: 0 } }] };
   }
@@ -793,4 +808,22 @@ export function payUpkeep(warband: RosterWarband, id: string, opts: PayUpkeepOpt
     const {upkeepOwedAfter:_owed,contractCheckOwed:_check,...flags}=s.flags;
     return {...s,flags};
   })}},events:opts.contractRoll ? [...result.events,{kind:'hiredSword.contract',subjectId:id,message:`End-of-battle contract check: D6 ${opts.contractRoll}.`}] : result.events};
+}
+
+
+export function trollFoodGroups(warband:RosterWarband,groupId:string) {
+ const troll=warband.henchmenGroups.find(g=>g.id===groupId)
+ const ids=troll?.unitTemplateId==='orc_mob_troll'?['orc_mob_goblin_warriors','orc_mob_cave_squigs']:troll?.unitTemplateId==='night_goblins_troll'?['night_goblins_warriors','night_goblins_cave_squigs']:troll?.unitTemplateId==='night_goblins_web_troll'?['night_goblins_web_warriors','night_goblins_web_cave_squigs']:[]
+ return warband.henchmenGroups.filter(g=>g.size>0&&ids.includes(g.unitTemplateId))
+}
+
+export function payHenchmanUpkeep(warband:RosterWarband,groupId:string,opts:PayUpkeepOptions={}):Resolution<PayUpkeepResult>{
+ const original=warband.henchmenGroups.find(g=>g.id===groupId)
+ if(original?.campaignState?.upkeepPaidAfter&&!original.campaignState.upkeepOwedAfter)throw new RulesError('upkeep.alreadyPaid','This group’s upkeep is already settled for the last battle.')
+ const result=resolveHenchmanPayment(warband,groupId,opts)
+ return {...result,value:{...result.value,warband:{...result.value.warband,henchmenGroups:result.value.warband.henchmenGroups.map(g=>{
+  if(g.id!==groupId)return g
+  const {upkeepOwedAfter,...state}=g.campaignState??{}
+  return {...g,campaignState:{...state,upkeepPaidAfter:upkeepOwedAfter??'manual',cheapTrollFeed:opts.trollPayment==='cheap'}}
+ })}}}
 }

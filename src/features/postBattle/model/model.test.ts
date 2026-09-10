@@ -1,3 +1,4 @@
+import {setMedicineChestReroll} from './state'
 import { describe, expect, it } from 'vitest'
 import { battleReportSchema, emptyBattleLiveState, heroReportPatchSchema, type ItemRow } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
@@ -962,4 +963,19 @@ it('files Rawhide cargo separately from ordinary exploration and gold rewards',(
  expect(result.report?.applied.warband.gold_delta).toBe(0)
  expect(result.report?.applied.rawhide_settlement).toEqual({outcome:'escaped',gold_delta:108,wyrdstone_delta:-3})
  expect(result.report?.notes).toContain('208 gc')
+})
+
+
+it('files a Medicine Chest reroll with both dice and one real consumed copy',()=>{
+ const chestId='12345678-1234-4234-8234-123456789012'
+ const band={...makeRoster(),heroes:[hero('patient',{xp:51})],hiredSwords:[],henchmenGroups:[]}
+ const chest:ItemRow={id:chestId,warband_id:'w1',holder_type:'stash',holder_id:null,item_rules_id:'scenario_medicine_chest',custom_name:null,quantity:1,notes:'',created_at:'',updated_at:''}
+ let d=setHeroOut(setResult(emptyDraft(),'lost'),'patient',true)
+ d=addHeroInjuryRoll(d,'patient',22);d=setMedicineChestReroll(d,'patient',0,chestId,41)
+ const result=derive(d,ctx({roster:band,items:[chest]}))
+ expect(result.report).not.toBeNull()
+ expect(result.report?.applied.medicine_chests).toEqual([{item_id:chestId,quantity:1,expected_quantity:1}])
+ expect(result.report?.applied.item_patches).toContainEqual({id:chestId,quantity:0})
+ expect(result.report?.injuries[0].rolls).toEqual([22,41])
+ expect(result.report?.applied.heroes[0].patch.stats?.M).toBe(4)
 })

@@ -1,3 +1,4 @@
+import {medicineChestUses} from './medicineChest'
 import {rawhideReport} from './rawhideReport'
 import {raidsRewards,type RaidSurvivors} from './raidsRewards'
 import {absentGroupModels,afterAbsenceBattle} from '../../../rules/resolve/groupAbsences'
@@ -869,6 +870,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const rock = ctx.scenarioId==='assault_on_the_rock'?rockRewards(draft.scenarioRewards?.rock??{},draft.result==='won',scenarioRewardContext(ctx,injuries).roster):null
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? []), ...(rock?.xpAwards??[]),...(thief?.retrievedLeaderXp&&thiefLeader?[{id:thiefLeader.id,name:thiefLeader.name,amount:1,reason:"Stop Thief: recovered the stolen item"}]:[])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  const medicine=medicineChestUses(draft,ctx.items,Object.fromEntries([...injuries.heroes.map(h=>[h.hero.id,h.resolution.steps] as const),...injuries.hiredSwords.filter(h=>h.resolution.heroFlow).map(h=>[h.sword.id,h.resolution.heroFlow!.steps] as const)]))
+  if(medicine.uses.length){
+    applied.medicine_chests=medicine.uses
+    for(const use of medicine.uses){const existing=applied.item_patches.find(p=>p.id===use.item_id);if(existing)existing.quantity=(existing.quantity??use.expected_quantity)-use.quantity;else applied.item_patches.push({id:use.item_id,quantity:use.expected_quantity-use.quantity})}
+  }
   const rawhide=ctx.scenarioId==='rawhide'?rawhideReport(draft.scenarioRewards?.rawhide??{},ctx.rawhideCargo,ctx.roster.id,!!ctx.rawhideEnded,ctx.reportId):null
   if(rawhide?.settlement&&!rawhide.problems.length)applied.rawhide_settlement=rawhide.settlement
   if(thief&&!thief.problems.length){applied.scenario_item_transfers=thief.transfers;const state=draft.scenarioRewards!.stopThief!;applied.stop_thief_outcome={defender_id:state.defenderId!,recovered:state.recovered,returned_allies:state.returnedAllies}}
@@ -969,7 +975,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
-  problems.injuries.push(...equipmentLosses.problems)
+  problems.injuries.push(...equipmentLosses.problems,...medicine.problems)
   if(ctx.scenarioId==='brigands_in_the_pasturelands'&&!['attacker','defender'].includes(draft.scenarioRewards?.brigands?.role??''))problems.outcome.push('Choose your Brigands role for experience.')
   if(ctx.scenarioId==='the_hunters_become_the_hunted'&&draft.result==='won'&&(!Number.isInteger(draft.scenarioRewards?.hunters?.alive)||draft.scenarioRewards!.hunters!.alive!<0||draft.scenarioRewards!.hunters!.alive!>2))problems.outcome.push('Record the number of Cold Ones alive (0–2) for survivor experience.')
   problems.experience.push(...(kidnapped?.problems ?? []))

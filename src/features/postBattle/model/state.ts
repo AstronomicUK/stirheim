@@ -37,7 +37,7 @@ export interface HeroInjuryFlow {
    * `districtRoll` is the D6 a map district lets the player make to turn the result into a Full
    * Recovery (Temple of Morr, Temple of Sigmar), null until rolled.
    */
-  rolls: { d66: number; subRoll: number | null; districtRoll?: number | null }[]
+  rolls: { d66: number; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
   /** Multiple Injuries: the D6 that says how many further rolls to make. */
   countRoll: number | null
 }
@@ -338,6 +338,15 @@ function flowOf(draft: ReportDraft, heroId: string): HeroInjuryFlow {
 export function addHeroInjuryRoll(draft: ReportDraft, heroId: string, d66: number): ReportDraft {
   const flow = flowOf(draft, heroId)
   return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, rolls: [...flow.rolls, { d66, subRoll: null }] } } }
+}
+
+/** Replace one original result while retaining its provenance; later dependent rolls must be made afresh. */
+export function setMedicineChestReroll(draft:ReportDraft,heroId:string,rollIndex:number,itemId:string,d66:number):ReportDraft {
+  const flow=flowOf(draft,heroId),original=flow.rolls[rollIndex]
+  if(!original||original.medicine)return draft
+  const rolls=flow.rolls.slice(0,rollIndex+1)
+  rolls[rollIndex]={...original,subRoll:null,districtRoll:null,medicine:{itemId,d66,originalSubRoll:original.subRoll,originalDistrictRoll:original.districtRoll??null}}
+  return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls,countRoll:rollIndex===0?null:flow.countRoll}}}
 }
 
 export function setHeroInjurySubRoll(draft: ReportDraft, heroId: string, rollIndex: number, subRoll: number): ReportDraft {

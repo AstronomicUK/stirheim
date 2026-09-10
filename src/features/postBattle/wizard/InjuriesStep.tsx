@@ -1,3 +1,5 @@
+import {MedicineChest} from './MedicineChest'
+import type {ReactNode} from 'react'
 import { setPlantCasualty } from '../model/state'
 import { useState } from 'react'
 import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
@@ -72,6 +74,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               name={hero.name}
               type={warriorTypeLabel(ctx, hero)}
               resolution={resolution}
+              medicine={<MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/>}
               skip={draft.injurySkips[hero.id]}
               onSkip={(reason) => update((d) => setInjurySkip(d, hero.id, reason))}
               onD66={(d66) => update((d) => addHeroInjuryRoll(d, hero.id, d66))}
@@ -87,6 +90,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         <Section title="Hired swords and Dramatis Personae">
           {hiredSwords.map(({ sword, resolution }) => (
             resolution.heroFlow ? <HeroInjuryCard key={sword.id} name={sword.name} type="Dramatis Persona · D66" resolution={resolution.heroFlow}
+              medicine={<MedicineChest heroId={sword.id} draft={draft} items={ctx.items} resolution={resolution.heroFlow} update={update}/>}
               skip={draft.injurySkips[sword.id]} onSkip={reason => update(d => setInjurySkip(d, sword.id, reason))}
               onD66={d66 => update(d => addHeroInjuryRoll(d, sword.id, d66))}
               onSubRoll={(index,v) => update(d => v === null ? d : setHeroInjurySubRoll(d,sword.id,index,v))}
@@ -286,6 +290,7 @@ function SkipRow({ skip, onSkip }: { skip: string | undefined; onSkip: (reason: 
 }
 
 interface HeroInjuryCardProps {
+  medicine?: ReactNode
   name: string
   type: string
   resolution: HeroInjuryResolution
@@ -298,7 +303,7 @@ interface HeroInjuryCardProps {
   onReset: () => void
 }
 
-export function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
+export function HeroInjuryCard({ medicine, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
   const { steps, pending, outcome } = resolution
   const lastApplied = [...steps].reverse().find((s) => !s.rerolled)
@@ -317,7 +322,7 @@ export function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, on
         <ol className="flex flex-col gap-1.5 border-l border-border pl-3 text-sm">
           {steps.map((s, i) => (
             <li key={i} className={s.rerolled ? 'text-ink-dim line-through' : 'text-ink'}>
-              <span className="tabular-nums">{s.d66}</span>
+              <span className="tabular-nums">{s.medicineOriginal!==undefined?`${s.medicineOriginal} → `:""}{s.d66}</span>{s.medicineOriginal!==undefined?<span className="text-xs"> (Medicine Chest reroll)</span>:null}
               {s.subRoll !== null ? <span className="tabular-nums text-ink-dim"> / {s.subRoll}</span> : null} · {s.name}
               {s.rerolled ? <span className="text-xs"> (re-rolled)</span> : null}
               {s.effect ? <p className="text-xs text-ink-dim">{s.effect}</p> : null}
@@ -332,6 +337,7 @@ export function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, on
           <D66Entry onCommit={onD66} />
         </div>
       ) : null}
+      {medicine}
       {steps.length === 0 ? <SkipRow skip={skip} onSkip={onSkip} /> : null}
       {pending.kind === 'subRoll' ? (
         <div className="flex flex-col gap-2">

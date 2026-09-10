@@ -373,3 +373,16 @@ describe("hiredSwordEquipment (#74)", () => {
     expect(kit).toHaveLength(2); // Blunderbuss, Pick
   });
 });
+
+describe('Luthor’s selected role (#61)', () => {
+  it('persists one role, its equipment and fear immunity without making the impostor a spellcaster', () => {
+    for (const luthorRole of ['crimson','wizard','archer'] as const) {
+      const hired = hireHiredSword(makeWarband(), 'luthor_wolfenbaum', 'luthor', {luthorRole}).value.hiredSwords[0];
+      expect(hired.flags.luthorRole).toBe(luthorRole);
+      expect(!!hired.flags.immuneToFear).toBe(luthorRole === 'wizard');
+      expect(hired.spellIds).toEqual([]);
+      expect(hired.equipment.some(i => i.itemId === 'longbow')).toBe(luthorRole === 'archer');
+      expect(hired.equipment.some(i => i.customName === 'Fish-slapping staff')).toBe(luthorRole === 'wizard');
+    }
+  });
+});

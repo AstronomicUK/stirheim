@@ -15,7 +15,7 @@ import { actionsFor, performAction, type BetweenBattleAction } from '../../rules
 import { findItem } from '../../rules/data/items'
 import type { RosterHero } from '../../rules/types/roster'
 import type { DramatisPersonaSummary } from '../../rules/types/campaignContent'
-import { Button, DieField, Notice, SelectField, Sheet, TextField } from '../../ui'
+import { Button, DieField, Markdown, Notice, SelectField, Sheet, TextField } from '../../ui'
 import { HiredSwordDetail } from '../recruitment/HiredSwordsTab'
 import { readRestriction, type Eligibility } from '../recruitment/helpers'
 import { Card, KeyValue, Section, Tag } from '../roster/view/bits'
@@ -171,6 +171,7 @@ interface SearchSheetProps {
 
 function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onClose }: SearchSheetProps) {
   const { roster, run, pending, error, clearError } = trade
+  const [luthorRole,setLuthorRole] = useState<'crimson'|'wizard'|'archer'>('crimson')
   const [chosen, setChosen] = useState<string[]>([])
   const [rolls, setRolls] = useState<Record<string, number | null>>({})
   const [recorded, setRecorded] = useState<ReturnType<typeof resolveCharacterSearch> | null>(null)
@@ -205,7 +206,7 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
 
   async function hire() {
     if (fee === null) return
-    const ok = await run(() => hireHiredSword(roster, persona.id, crypto.randomUUID(), halfFrom && fee !== null ? { feeOverride: fee } : {}).value, { reason: `recruitment · ${persona.name} found and hired${halfFrom ? ` at half fee (${halfFrom.districtName})` : ''}` })
+    const ok = await run(() => hireHiredSword(roster, persona.id, crypto.randomUUID(), {luthorRole, ...(halfFrom && fee !== null ? { feeOverride: fee } : {})}).value, { reason: `recruitment · ${persona.name} found and hired${halfFrom ? ` at half fee (${halfFrom.districtName})` : ''}` })
     if (ok) onClose()
   }
 
@@ -244,6 +245,8 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
       }
     >
       <div className="flex flex-col gap-4 py-2">
+        {persona.id === 'luthor_wolfenbaum' ? <SelectField label="Luthor’s role — check the role’s hiring restrictions" value={luthorRole} onChange={e => setLuthorRole(e.target.value as typeof luthorRole)}><option value="crimson">Crimson Blade of Reikland</option><option value="wizard">Dark Wizard Extraordinaire</option><option value="archer">Master Archer of Drakwald</option></SelectField> : null}
+        {persona.id === 'luthor_wolfenbaum' ? persona.detail?.otherSections?.filter(s => s.name.includes(luthorRole === 'crimson' ? 'Crimson Blade' : luthorRole === 'wizard' ? 'Dark Wizard' : 'Master Archer')).map(s => <div key={s.name}><p className="font-medium">{s.name}</p><Markdown source={s.text} /></div>) : null}
         {eligibility?.kind === 'restricted' ? (
           <Notice tone="warn" title="The rules say this character will not join this warband">
             {eligibility.reason}

@@ -153,8 +153,12 @@ export function startingProfile(template: WarbandTemplate | undefined, unitId: s
 }
 
 /** Special rules shown when a card is expanded: the unit's own (heroes, henchmen) or the hired sword entry's. */
-export function warriorSpecialRules(template: WarbandTemplate | undefined, unitId: string | null, hiredSwordId: string | null): NamedRule[] {
-  if (hiredSwordId) return findHiredSword(hiredSwordId)?.detail?.specialRules ?? []
+export function warriorSpecialRules(template: WarbandTemplate | undefined, unitId: string | null, hiredSwordId: string | null, luthorRole?: 'crimson' | 'wizard' | 'archer'): NamedRule[] {
+  if (hiredSwordId) {
+    const detail = findHiredSword(hiredSwordId)?.detail
+    const role = luthorRole === 'crimson' ? 'Crimson Blade' : luthorRole === 'wizard' ? 'Dark Wizard' : 'Master Archer'
+    return [...(detail?.specialRules ?? []), ...(hiredSwordId === 'luthor_wolfenbaum' && luthorRole ? detail?.otherSections?.filter(s => s.name.includes(role)) ?? [] : [])]
+  }
   if (template && unitId) return findUnitTemplate(template, unitId)?.specialRules ?? []
   return []
 }

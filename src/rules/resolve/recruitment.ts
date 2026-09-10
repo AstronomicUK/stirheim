@@ -556,7 +556,7 @@ export function hireHiredSword(
     skillIds: [...new Set([...hiredSwordStartingSkills(hiredSwordId), ...(hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? ['sorcery', 'fearsome'] : hiredSwordId === 'the_fallen_sister' ? ['warrior_wizard'] : [])])],
     spellIds,
     injuries: [],
-    flags: {},
+    flags: hiredSwordId === 'luthor_wolfenbaum' ? {luthorRole:opts.luthorRole,...(opts.luthorRole === 'wizard' ? {immuneToFear:true} : {})} : {},
     equipment: hiredSwordStartingEquipment(entry.id, entry.detail, opts.luthorRole, opts.equipmentChoice),
     status: "active",
   };

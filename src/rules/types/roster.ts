@@ -40,6 +40,7 @@ export interface AppliedInjury {
 export interface WarriorFlags {
   /** Story Teller upgrade purchased instead of Wizard at recruitment. */
   chronicler?: boolean;
+  luthorRole?: 'crimson' | 'wizard' | 'archer';
   hireGroupId?: string;
   hireCompanion?: boolean;
   upkeepOwedAfter?: string;

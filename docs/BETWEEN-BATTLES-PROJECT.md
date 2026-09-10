@@ -57,3 +57,11 @@ Do not treat local implementations as a completed release. Outstanding: #61/#74/
 A preliminary inventory of all 103 scenario pages is at `/tmp/between-scenario-reward-inventory.json`; it identifies candidate reward sections, **not** a completed source audit. No assumption that a page without a matching heading has no reward is valid.
 
 Latest checkpoint validation: **1,384 unit tests pass**, 86 DB-dependent tests skipped in the ordinary suite. Separately, 10 battle/upkeep and 4 artefact integration tests passed locally. Typechecked production build passes with existing CSS/bundle warnings; lint reports only the three pre-existing unused imports in the audit probe. Nothing pushed or deployed.
+
+### Local milestone 6 — Personae search verification and Luthor (#220/#61)
+
+The actual mobile browser flow now verifies both directions of the persisted allowance: a Persona search consumes the Scholar's search, Trading Post after reload offers only the other hero, recording that hero's failed rare search leaves zero Persona searchers after navigation/reload. A successful Luthor search/hire also saves the selected role. All fixtures are disposable and cleaned afterwards.
+
+Fixed the found Persona hire path which previously omitted Luthor's mandatory role option (and therefore threw instead of recruiting him). Both hire paths persist `luthorRole`; the unit sheet shows the selected role's source rules; the false Wizard gains his Beer fear immunity but no spells. Equipment is still role-specific. Existing Luthors without a saved role are not guessed or rewritten. Wider #61/#119 work remains open.
+
+Latest full validation: **1,385 unit tests pass / 86 DB tests skipped** in the ordinary suite, with the 14 previously mentioned local DB tests separately passing. Build and lint pass with the same existing warnings. Local browser recruitment/upkeep plus shared-search/Luthor flows pass without page errors. No push or deploy.

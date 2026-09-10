@@ -1,3 +1,4 @@
+import { locationXp } from './locationXp'
 import { explorationFaction } from '../../../rules/resolve/explorationDiscoveries'
 import type { ArtefactDiscovery } from '../../../api/artefacts'
 import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
@@ -32,6 +33,8 @@ import { minMax } from '../../../rules/resolve/dice'
 
 export interface ExplorationInput {
   artefacts?: ArtefactDiscovery[]
+  rewardHeroes?: RosterHero[]
+  leaderId?: string | null
   artefactsError?: string
   reportId?: string
   scenarioId?: string | null
@@ -233,12 +236,18 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || testPassed === true || location?.id === 'shattered_building' || (location?.id === 'tavern' && testPassed === false))
   // Well (03:671-675): a Hero who fails the test misses the next game through sickness.
   const missNextGameHeroId = needsTest?.failEffect === 'missNextGame' && draft.testPassed === false && testSubject ? testSubject.id : null
-  const rewards = rewardsApply ? outcome!.rewards.filter(reward => {
+  let rewards = rewardsApply ? outcome!.rewards.filter(reward => {
     if (location?.id === 'tavern') return reward.amount === (testPassed ? '4D6' : 'D6')
     if (location?.id === 'shop' && reward.kind === 'item') return !input.maxFinds && draft.gold === 1
     return true
   }) : []
 
+  const faction = explorationFaction(roster.warbandTemplateId)
+  if (rewardsApply && location?.id === 'straggler' && faction === 'skaven') rewards = [{kind:'gold',amount:'2D6',text:'Straggler sold: 2D6 gc.'}]
+  if (rewardsApply && location?.id === 'prisoners' && (faction === 'skaven' || faction === 'other')) rewards = [{kind:'gold',amount:faction==='skaven'?'3D6':'2D6',text:faction==='skaven'?'Prisoners sold: 3D6 gc.':'Prisoners escorted to safety: 2D6 gc.'}]
+  if (location?.id === 'graveyard' && ['witch_hunters','sisters_of_sigmar'].includes(roster.warbandTemplateId)) rewards = []
+  const xp = locationXp(location?.id, roster.warbandTemplateId, draft, input.rewardHeroes ?? roster.heroes, input.leaderId)
+  problems.push(...xp.problems)
   const maxFinds = Boolean(input.maxFinds) && rewardsApply
   const gold = diceAmount(rewards, 'gold', draft.gold, maxFinds)
   const extraShards = diceAmount(rewards, 'wyrdstone', draft.extraShards, maxFinds)
@@ -285,7 +294,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (location?.id === 'shattered_building' && testPassed === true) suggestedItems.push({ item_rules_id: 'wardogs', custom_name: null, quantity: 1 })
   const items = draft.items ?? suggestedItems
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
-  const notes: string[] = []
+  const notes: string[] = xp.awards.map(a=>`${a.reason}: +${a.amount} XP to ${a.name}${xp.sides ? ` (D${xp.sides} ${draft.locationXpDie})` : ''}.`)
   if (artefact) notes.push(`Magical artefact D6 ${draft.artefactRoll}: ${artefact.name}.${draft.artefactOverrideReason?.trim() ? ` Agreed override: ${draft.artefactOverrideReason.trim()}` : ''}`)
   if (location?.id === 'shattered_building') notes.push(`Shattered Building: D3 shards are found regardless of the Leadership test.${testPassed === true ? ' The wardog joins; assign it from the stash to a Hero.' : testPassed === false ? ' The wardog does not join.' : ''}`)
   if (tavernAutoPass) notes.push('Tavern: this warband automatically passes the Leadership test; 4D6 gc.')
@@ -311,6 +320,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
       ? {
           ...(location?.id === 'straggler' && explorationFaction(roster.warbandTemplateId) === 'other' ? { benefits: ['straggler' as const] } : {}),
           ...(artefact ? {artefact:{roll:draft.artefactRoll!, ...(draft.artefactOverrideReason?.trim() ? {overrideReason:draft.artefactOverrideReason.trim()} : {})}} : {}),
+          ...(xp.awards.length ? {xpAwards:xp.awards} : {}),
           diceAllowed: allowed.count,
           diceReason: allowed.reason,
           rolls: rolls as number[],

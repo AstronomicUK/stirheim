@@ -71,3 +71,15 @@ describe('Conditional location rewards (#187)', () => {
      expect(result.record!==null).toBe(testPassed!==null);
    }
  });
+
+ it('resolves faction-specific Straggler and Prisoner gold and does not give holy warbands graveyard loot',()=>{
+   const input={won:false,eligibleHeroes:heroes};
+   expect(deriveExploration({...emptyExploration(),rolls:[4,4,1],gold:7},{...roster,warbandTemplateId:'skaven_of_clan_eshin'},input).record?.goldFound).toBe(7);
+   expect(deriveExploration({...emptyExploration(),rolls:[3,3,3],gold:10},{...roster,warbandTemplateId:'skaven_of_clan_pestilens'},input).gold.expressions).toEqual(['3D6']);
+   expect(deriveExploration({...emptyExploration(),rolls:[3,3,3],gold:6},roster,input).gold.expressions).toEqual(['2D6']);
+   const party=[...heroes,makeHero({id:'d'})];
+   const grave=deriveExploration({...emptyExploration(),rolls:[5,5,5,5],locationXpDie:3,locationXp:{a:1,b:2}},{...roster,heroes:party,warbandTemplateId:'witch_hunters'},{won:false,eligibleHeroes:party});
+   expect(grave.record?.goldFound).toBe(0);
+   expect(grave.record?.xpAwards?.map(a=>a.amount)).toEqual([1,2]);
+   expect(grave.problems).toEqual([]);
+ });

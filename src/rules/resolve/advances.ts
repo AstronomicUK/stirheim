@@ -223,7 +223,7 @@ function matchKeyword(text: string, warbandId: string): string | undefined {
 }
 
 /** Work out which RACIAL_MAXIMUMS profile caps a hero, with a warning event when we had to guess. */
-export function resolveRacialProfile(hero: RosterHero, warbandTemplateId: string): Resolution<RacialProfileMatch> {
+export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "unitTemplateId">, warbandTemplateId: string): Resolution<RacialProfileMatch> {
   const template = findWarbandTemplate(warbandTemplateId);
   const unit = template ? findUnitTemplate(template, hero.unitTemplateId) : undefined;
   const unitName = unit?.name ?? hero.name;

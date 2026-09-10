@@ -789,3 +789,38 @@ describe('automatic treasure and quantity rewards (#108, #109, #188)', () => {
     expect(setExplorationSubRoll(draft,5).exploration.itemQuantities).toEqual({})
   })
 })
+
+
+describe('Exploration recruits applied through reports',()=>{
+ it('adds a human prisoner to a veteran group with identical paid equipment and no XP fee',()=>{
+  const c=ctx();c.items=[...c.items,{id:'group-swords',warband_id:'w1',holder_type:'group',holder_id:'watch',item_rules_id:'sword',custom_name:null,quantity:3,notes:'',created_at:'',updated_at:''}]
+  const draft={...emptyDraft(),result:'lost' as const,exploration:{...emptyDraft().exploration,rolls:[3,3,3],gold:5,recruitChoice:'watch'}}
+  const d=deriveRawReport(draft,c)
+  expect(d.problems.exploration).toEqual([])
+  const applied=deriveReport(draft,c)
+  // Veteran dice remain an independent required step; inspect the report with them supplied.
+  const report=buildReport({...draft,veteranPool:[1,1]},c)
+  expect(report.applied.groups.find(g=>g.id==='watch')?.patch.size).toBe(4)
+  expect(report.applied.item_patches.find(i=>i.id==='group-swords')?.quantity).toBe(4)
+  expect(report.applied.warband.gold_delta).toBe(-5)
+  expect(report.exploration?.notes.join(' ')).toContain('no hire or veteran-experience fee')
+  expect(applied.problems.exploration).toEqual([])
+ })
+ it('blocks an unexplained equipment price and overfilled group',()=>{
+  const c=ctx();c.roster.henchmenGroups[0].size=5
+  const draft={...emptyDraft(),result:'lost' as const,exploration:{...emptyDraft().exploration,rolls:[3,3,3],gold:5,recruitChoice:'watch',recruitKitCost:0}}
+  expect(deriveRawReport(draft,c).problems.exploration.join(' ')).toContain('at most five')
+  expect(deriveRawReport(draft,c).problems.exploration.join(' ')).toContain('Explain')
+ })
+})
+
+it('creates the rolled Zombie reward as a new zero-experience group and preserves it in the report schema',()=>{
+ const c=ctx();c.template=findWarbandTemplate('the_undead');c.roster={...c.roster,warbandTemplateId:'the_undead',hiredSwords:[],henchmenGroups:[],heroes:c.roster.heroes.slice(0,3).map(h=>({...h,unitTemplateId:'the_undead_dregs',xp:0}))}
+ const id='8c26f284-565f-4d6d-972f-5a51953e9083'
+ const draft={...emptyDraft(),result:'lost' as const,veteranPool:[1,1] as [number,number],exploration:{...emptyDraft().exploration,rolls:[3,3,3],recruitDie:2,recruitChoice:'new',recruitGroupId:id}}
+ const report=buildReport(draft,c)
+ expect(report.applied.new_groups).toHaveLength(1)
+ expect(report.applied.new_groups![0]).toMatchObject({id,size:2,xp:0,level_ups:0})
+ expect(battleReportSchema.parse(report).applied.new_groups).toEqual(report.applied.new_groups)
+ expect(rosterAfterReport(c.roster,report.applied).henchmenGroups.find(g=>g.id===id)?.size).toBe(2)
+})

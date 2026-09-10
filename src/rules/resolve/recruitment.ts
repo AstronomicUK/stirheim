@@ -108,7 +108,7 @@ function requireUnit(template: WarbandTemplate, unitTemplateId: string): UnitTem
 }
 
 /** Everything that stops a hire except the treasury: unit limit, warband size, hero capacity, not-for-hire. */
-function recruitmentBlock(
+export function recruitmentBlock(
   warband: RosterWarband,
   template: WarbandTemplate,
   unit: UnitTemplate,

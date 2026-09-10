@@ -1,3 +1,4 @@
+import { locationRecruits } from './locationRecruits'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
 import { scenarioRewards } from './scenarioRewards'
 import { towerTreasure } from './scenarioTreasure'
@@ -257,11 +258,13 @@ function alive(outcome: InjuryOutcome | null): boolean {
   return outcome !== 'dead' && outcome !== 'retired'
 }
 
-export function deriveXp(draft: ReportDraft, participants: Participants, injuries: InjuriesDerived, ctx: ReportContext): XpDerived {
+export function deriveXp(draft: ReportDraft, participants: Participants, injuries: InjuriesDerived, ctx: ReportContext, locationAwards: import('./locationXp').LocationXpAward[] = []): XpDerived {
   const underdogAvailable = underdogBonusFor(ctx.myRating, ctx.opponentRating)
   const underdogApplied = draft.underdog ? underdogAvailable : 0
   const won = draft.result === 'won'
-  const xpCtx = { won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras: draft.xpExtras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
+  const extras = { ...draft.xpExtras }
+  for (const award of locationAwards) extras[award.id] = [...(extras[award.id] ?? []), {amount:award.amount,reason:award.reason}]
+  const xpCtx = { won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
   const heroAfter = new Map(injuries.heroes.map((h) => [h.hero.id, h.resolution]))
   const swordAfter = new Map(injuries.hiredSwords.map((s) => [s.sword.id, s.resolution]))
   const groupAfter = new Map(injuries.groups.map((g) => [g.group.id, g.resolution]))
@@ -282,6 +285,10 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
     const res = groupAfter.get(group.id)
     const line = groupXpLine(group, res?.group ?? group, xpCtx)
     if (line) lines.push(line)
+  }
+  for (const award of locationAwards.filter(a=>!participants.heroes.some(h=>h.id===a.id))) {
+    const hero = ctx.roster.heroes.find(h=>h.id===award.id)
+    if (hero) lines.push({subjectType:'hero',subjectId:hero.id,subjectName:hero.name,amount:award.amount,reasons:[award.reason],xpBefore:hero.xp,xpAfter:hero.xp+award.amount,advancesEarned:thresholdsCrossed('hero',hero.xp,hero.xp+award.amount,unitRules(hero.unitTemplateId).advanceRate??'normal').length})
   }
   return { lines, underdogAvailable, underdogApplied }
 }
@@ -527,6 +534,13 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     }
   }
 
+  for (const line of xp.lines.filter(l=>l.subjectType==='hero'&&!participants.heroes.some(h=>h.id===l.subjectId))) {
+    const existing=heroes.find(h=>h.id===line.subjectId)
+    if(existing) existing.patch.xp=line.xpAfter
+    else heroes.push({id:line.subjectId,patch:{xp:line.xpAfter}})
+    const hero=ctx.roster.heroes.find(h=>h.id===line.subjectId)!
+    for(const threshold of thresholdsCrossed('hero',line.xpBefore,line.xpAfter,unitRules(hero.unitTemplateId).advanceRate??'normal')) pending.push({subject_type:'hero',subject_id:line.subjectId,threshold_xp:threshold})
+  }
   const groups: ReportApplied['groups'] = []
   const groupRes = new Map(injuries.groups.map((g) => [g.group.id, g.resolution]))
   for (const group of participants.groups) {
@@ -667,11 +681,11 @@ export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied)
         status: p.status ?? s.status,
       }
     }),
-    henchmenGroups: roster.henchmenGroups.map((g) => {
+    henchmenGroups: [...roster.henchmenGroups.map((g) => {
       const p = groupPatches.get(g.id)
       if (!p) return g
       return { ...g, size: p.size ?? g.size, xp: p.xp ?? g.xp, levelUps: p.level_ups ?? g.levelUps }
-    }),
+    }), ...(applied.new_groups ?? []).map(g => ({id:g.id,name:g.name,unitTemplateId:g.unit_type_rules_id,size:g.size,stats:g.stats,xp:g.xp,levelUps:g.level_ups,statIncreases:{},equipment:[]}))],
   }
 }
 
@@ -727,13 +741,14 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
-  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx)
   const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
   const exploration = deriveExploration(draft.exploration, ctx.roster, {
     scenarioId: ctx.scenarioId,
     disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : undefined,
     won: draft.result === 'won',
     eligibleHeroes: slayer?.eligibleHeroes ?? survivingHeroes,
+    leaderId: participants.leaderId,
+    rewardHeroes: ctx.roster.heroes.map(h=>injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero??h),
     artefacts: ctx.artefacts,
     artefactsError: ctx.artefactsError,
     reportId: ctx.reportId,
@@ -744,9 +759,27 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     extraDiceNote: [ctx.map?.perks.explorationDiceSources.join(', '), slayer?.note].filter(Boolean).join('; '),
     maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
+  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, exploration.record?.xpAwards)
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  const recruits = locationRecruits(draft, ctx, exploration, injuries)
+  if (recruits.newGroups.length) applied.new_groups = recruits.newGroups
+  for (const row of recruits.groupPatches) {
+    const existing = applied.groups.find(g => g.id === row.id)
+    if (existing) Object.assign(existing.patch, row.patch)
+    else applied.groups.push(row)
+  }
+  for (const row of recruits.itemPatches) {
+    const existing = applied.item_patches.find(i => i.id === row.id)
+    const original = ctx.items.find(i => i.id === row.id)
+    if (existing && original) existing.quantity = (existing.quantity ?? original.quantity) + (row.quantity! - original.quantity)
+    else applied.item_patches.push(row)
+  }
+  applied.warband.gold_delta -= recruits.goldCost
+  if (recruits.goldCost > 0 && ctx.roster.gold + applied.warband.gold_delta < 0) recruits.problems.push('The treasury cannot afford identical equipment for the free recruit.')
+  if (exploration.record) exploration.record.notes.push(...recruits.notes)
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
+  problems.exploration.push(...recruits.problems)
   problems.advances.push(...advances.problems)
   const firstIncomplete = STEP_IDS.findIndex((id) => problems[id].length > 0)
   const firstIncompleteStep = firstIncomplete === -1 ? null : firstIncomplete

@@ -64,6 +64,7 @@ export const henchmanInjuryLineSchema = z.object({
 export type HenchmanInjuryLine = z.infer<typeof henchmanInjuryLineSchema>;
 
 export const explorationRecordSchema = z.object({
+  xpAwards: z.array(z.object({id:z.string(),name:z.string(),amount:z.number().int().min(1),reason:z.string()})).optional(),
   benefits: z.array(z.enum(['straggler'])).optional(),
   artefact: z.object({roll:z.number().int().min(1).max(6),overrideReason:z.string().optional()}).optional(),
   diceAllowed: z.number().int().min(0),
@@ -107,6 +108,7 @@ export const pendingAdvanceRequestSchema = z.object({
   threshold_xp: z.number().int().min(1),
 });
 export const reportAppliedSchema = z.object({
+  new_groups: z.array(z.object({id:z.string().uuid(),name:z.string().min(1),unit_type_rules_id:z.string().min(1),size:z.number().int().min(1).max(5),stats:statsSchema,xp:z.number().int().min(0),level_ups:z.number().int().min(0)})).optional(),
   heroes: z.array(heroReportPatchSchema),
   groups: z.array(groupReportPatchSchema),
   warband: z.object({

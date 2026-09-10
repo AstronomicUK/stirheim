@@ -1,3 +1,5 @@
+import { LocationRecruits } from './LocationRecruits'
+import { LocationExperience } from './LocationExperience'
 import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
 import { slayerExploration } from '../model/slayerExploration'
 import { emptyExploration } from '../model/state'
@@ -277,6 +279,8 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
         </Card>
       </Section> : null}
 
+      <LocationRecruits draft={draft} derived={derived} ctx={ctx} update={update} />
+      <LocationExperience draft={draft} derived={derived} ctx={ctx} update={update} />
       {ex.result && ex.rewardsApply ? (
         <Section title="Items found" aside="Go to the stash">
           {ex.itemQuantityPrompts.map(prompt => <div key={prompt.key} className="flex items-end gap-2">

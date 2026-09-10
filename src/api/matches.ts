@@ -1,3 +1,4 @@
+import { fetchScenarioCampaignEffects } from './scenarioCampaignEffects'
 import { fetchExplorationDiscoveries } from './explorationDiscoveries'
 // Matches: scheduling, challenges, lifecycle transitions and the live battle sheet. Transitions
 // go through the SQL functions in supabase/migrations/20260904000006_match_functions.sql; reads
@@ -184,12 +185,13 @@ export async function fetchBattleSessions(matchId: string): Promise<BattleSessio
 
 /** Full roster of any participant (members may read each other's warbands). */
 export async function fetchMatchRoster(warbandId: string, excludeMatchId?: string): Promise<{ warband: WarbandRow; roster: RosterWarband; heroes: HeroRow[]; groups: HenchmanGroupRow[]; items: ItemRow[] }> {
-  const [warband, heroes, groups, items, discoveries] = await Promise.all([
+  const [warband, heroes, groups, items, discoveries, scenarioEffects] = await Promise.all([
     supabase.from('warbands').select('*').eq('id', warbandId).maybeSingle(),
     supabase.from('heroes').select('*').eq('warband_id', warbandId).order('sort_order'),
     supabase.from('henchman_groups').select('*').eq('warband_id', warbandId).order('sort_order'),
     supabase.from('items').select('*').eq('warband_id', warbandId),
     fetchExplorationDiscoveries(warbandId, excludeMatchId),
+    fetchScenarioCampaignEffects(warbandId, excludeMatchId),
   ])
   const err = warband.error ?? heroes.error ?? groups.error ?? items.error
   if (err) throw new Error(err.message)
@@ -198,7 +200,7 @@ export async function fetchMatchRoster(warbandId: string, excludeMatchId?: strin
   const h = (heroes.data ?? []) as HeroRow[]
   const g = (groups.data ?? []) as HenchmanGroupRow[]
   const i = (items.data ?? []) as ItemRow[]
-  return { warband: w, heroes: h, groups: g, items: i, roster: { ...toRosterWarband(w, h, g, i), explorationDiscoveries: discoveries } }
+  return { warband: w, heroes: h, groups: g, items: i, roster: { ...toRosterWarband(w, h, g, i), explorationDiscoveries: discoveries, scenarioEffects } }
 }
 
 // ---- transitions ----

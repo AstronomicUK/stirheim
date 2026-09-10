@@ -19,6 +19,7 @@ export interface HoardFind {
 export type ScenarioRewardRule =
   | { kind: 'choice'; note: string; question: string; options: { id: string; label: string; rule: ScenarioRewardRule }[] }
   | { kind: 'none'; note: string }
+  | { kind: 'caravan'; note: string }
   | { kind: 'docks'; note: string }
   | { kind: 'mule-train'; note: string }
   | { kind: 'kidnapped'; note: string }
@@ -269,6 +270,8 @@ export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
     { id: 'tome', label: 'Tome of Magik', kind: 'item', itemName: 'Tome of Magic', threshold: 4, quantity: 1 },
   ] },
 
+  the_caravan: { kind: 'caravan', note: 'Record escaped and looted wagons. At least two escaped wagons means a defender victory unless the defender betrayed the caravan.' },
+  the_caravan_archive_pestilen: { kind: 'caravan', note: 'Use the actual cargo from setup. A Friend in the Business affects trading only when that optional variant was used.' },
   down_at_the_docks: { kind: 'docks', note: 'Raiders roll separately for each retained crate. Exclude goods lost while routing. In multiplayer, the defending warband instead earns 25 gc per crate remaining on the battlefield.' },
   mule_train: { kind: 'mule-train', note: 'Only count mules led safely off the table. Routing abandons mules still in play. Defenders earn 2D6 gc per escaped mule; attackers keep recovered mules and roll once for the combined cargo, adding +1 per mule beyond the first to discovery rolls.' },
   the_lost_prince: { kind: 'hoard', needsRescue: true, note: 'The father rewards the winning warband only if his son survived. Gold is automatic; roll separately for each other find.', finds: [

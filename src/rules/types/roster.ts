@@ -167,6 +167,7 @@ export interface RosterHiredSword {
 }
 
 export interface RosterWarband {
+  scenarioEffects?: import("../resolve/scenarioCampaignEffects").ScenarioCampaignState;
   explorationDiscoveries?: import('../resolve/explorationDiscoveries').ExplorationDiscoveries;
   id: string;
   name: string;

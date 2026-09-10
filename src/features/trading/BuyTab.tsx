@@ -1,3 +1,4 @@
+import { scenarioPurchasePrice } from '../../rules/resolve/scenarioCampaignEffects'
 import { useMemo, useState } from 'react'
 import { warbandRules } from '../../rules/data/campaignRules'
 import { mordheimMapResult } from '../../rules/resolve/explorationAids'
@@ -142,7 +143,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
   const mapRareBonus = trade.perks?.rareRollBonus ?? 0
   const wornGemBonus = roster.heroes.find(h => h.id === searcherId)?.equipment.some(e => e.itemId === 'scenario_smuggled_gems' && e.quantity > 0) ? 1 : 0
-  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus
+  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus + (roster.scenarioEffects?.rarePenalty ?? 0)
   const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && tracked
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
@@ -160,7 +161,8 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   // Two pistols bought together are a brace at the bracketed price (the item's own line, house rules aside).
   const braceAmount = braceAmountOf(item.price.text)
   const isBrace = braceAmount !== null && quantity === 2 && priceOverride === null && computed !== null
-  const total = priceReady ? (isBrace ? braceAmount : unitPrice * quantity) : null
+  const beforeScenarioPrice = priceReady ? (isBrace ? braceAmount : unitPrice * quantity) : null
+  const total = beforeScenarioPrice === null ? null : priceOverride !== null ? beforeScenarioPrice : scenarioPurchasePrice(beforeScenarioPrice, roster.scenarioEffects?.trade)
   const affordable = total !== null && total <= roster.gold
   // "You can only buy one rare item for each successful roll" — a brace of pistols is one purchase priced for two, so it keeps its own cap of 2.
   const rareMaxQty = isRare ? (braceAmount !== null ? 2 : 1) : null
@@ -184,10 +186,11 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     if (unitPrice === null) return
     const notes = [mapResult?.note, upgrade && upgradeBase ? `base: ${upgradeBase}` : null].filter((n): n is string => Boolean(n)).join(' · ') || undefined
     const reasons = [
+      roster.scenarioEffects?.trade && priceOverride === null ? `${roster.scenarioEffects.notes.join(" ")} Purchase total: ${total} gc.` : null,
       overrideReady(priceOverride) && computed !== null ? overrideNote(`${item.name} price`, `${computed} gc`, `${priceOverride.amount} gc`, priceOverride.reason) : null,
       warnings.length > 0 ? `${item.name} bought despite: ${warnings.join(' ')} Reason: ${restrictionReason.trim()}` : null,
     ].filter((r): r is string => Boolean(r))
-    const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, notes).value, {
+    const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, notes, total ?? undefined).value, {
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
       reason: reasons.length ? reasonWith('trading', reasons.join(' · ')) : undefined,
     })
@@ -196,7 +199,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
 
   async function recordFailedSearch() {
     // A Familiar's ritual costs its gold whether or not it works.
-    const spend = pricing.paidOnFailure && computed !== null ? computed : 0
+    const spend = pricing.paidOnFailure && total !== null ? total : 0
     const ok = await run(() => (spend > 0 ? { ...roster, gold: Math.max(0, roster.gold - spend) } : roster), {
       heroesSearched: [searcherId],
       reason: spend > 0 ? reasonWith('trading', `${item.name}: ${spend} gc spent on a failed search (paid on failure)`) : undefined,
@@ -205,7 +208,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   }
 
   async function recordFailedHunt() {
-    const spend = computed ?? unitPrice ?? 0
+    const spend = total ?? computed ?? unitPrice ?? 0
     const ok = await run(() => ({ ...roster, gold: Math.max(0, roster.gold - spend) }), {
       reason: reasonWith('trading', `${item.name}: hunt failed (rolled ${huntDie} against Strength ${huntStrength}); ${spend} gc spent`),
     })
@@ -223,7 +226,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     </Button>
   ) : isRare && search && !search.available && tracked ? (
     <Button block variant="secondary" pending={pending} disabled={!canTrade || !searcherOk} onClick={recordFailedSearch}>
-      {pricing.paidOnFailure && computed !== null ? `Record the failed search (${computed} gc spent)` : 'Record the failed search'}
+      {pricing.paidOnFailure && total !== null ? `Record the failed search (${total} gc spent)` : 'Record the failed search'}
     </Button>
   ) : huntFailed ? (
     <Button block variant="secondary" pending={pending} disabled={!canTrade} onClick={recordFailedHunt}>
@@ -244,6 +247,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
         {item.description ? <p className="text-sm leading-relaxed text-ink-dim">{item.description}</p> : null}
         {mapHalf && listedTotal !== null ? <Notice tone="info">{mapHalf.districtName}: half price, {computed} gc instead of {listedTotal} gc (map advantage).</Notice> : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
+        {roster.scenarioEffects?.notes.map(note => <p key={note} className="text-sm text-ink-dim">{note}</p>)}
         {pricing.notes.length > 0 ? (
           <Notice tone="info" title="For this buyer">
             {pricing.notes.join(' ')}

@@ -1,3 +1,5 @@
+import { caravanRewards, type CaravanDraft } from './caravanRewards'
+import type { ScenarioCampaignState } from '../../../rules/resolve/scenarioCampaignEffects'
 import { docksRewards, type DocksDraft } from './docksRewards'
 import { muleRewards, type MuleDraft } from './muleRewards'
 import { harpyRewards, type HarpyDraft } from './harpyRewards'
@@ -14,6 +16,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  caravan?: CaravanDraft
   docks?: DocksDraft
   mule?: MuleDraft
   harpy?: HarpyDraft
@@ -63,7 +66,7 @@ export function canKeepHeraldSword(warbandId: string) {
   return ['possessed', 'undead', 'skaven'].includes(explorationFaction(warbandId)) || /undead|skaven|beastm[ae]n/i.test(findWarbandTemplate(warbandId)?.race ?? '')
 }
 export interface ScenarioRewardsResult { artefacts: { roll: number; overrideReason?: string }[]; gold: number; shards: number; items: FoundItem[]; notes: string[]; problems: string[] }
-export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { roster?: { warbandTemplateId: string }; opponents?: { id: string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
+export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { campaignId?: string; roster?: { warbandTemplateId: string; scenarioEffects?: ScenarioCampaignState }; opponents?: { id: string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
   let rule = ruleOverride ?? scenarioRewardRule(scenarioId)
   const state = draft.scenarioRewards ?? {}
   const rewards = { artefacts: [] as { roll: number; overrideReason?: string }[], gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
@@ -76,6 +79,12 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
   if (rule.kind === 'repeated' && rule.extraPerWarband) {
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
+  }
+  if (rule.kind === 'caravan') {
+    const caravan = caravanRewards(state.caravan ?? {}, scenarioId === 'the_caravan_archive_pestilen', draft.result, context?.campaignId, context?.roster?.scenarioEffects)
+    const found = caravan.rule ? scenarioRewards(draft, scenarioId, participants, context, caravan.rule) : rewards
+    found.notes.unshift(...caravan.notes); found.problems.push(...caravan.problems)
+    return found
   }
   if (rule.kind === 'docks') {
     const cargo = docksRewards(state.docks ?? {}, context?.opponents ? new Set(context.opponents.map(o => o.id)).size + 1 : undefined)

@@ -1,3 +1,5 @@
+import { caravanRewards } from '../model/caravanRewards'
+import { CaravanRewards } from './CaravanRewards'
 import { DocksRewards } from './DocksRewards'
 import { muleRewards } from '../model/muleRewards'
 import { locationRecruits } from '../model/locationRecruits'
@@ -23,7 +25,7 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
   }
   const zombies = ritualZombies(draft, ctx, derived.injuries, locationRecruits(draft, ctx, derived.exploration, derived.injuries))
   const heroes = derived.participants.heroes.filter(h => !draft.heroesOut.includes(h.id))
-  return <Section title={ruleOverride ? "Additional treasure" : "Scenario rewards"}>
+  const content = <>
     <p className="text-sm text-ink-dim">{rule.note}</p>
     {ctx.scenarioId === 'in_the_dead_of_the_night' && !ruleOverride ? <Card className="flex flex-col gap-3 px-4 py-3">
       <SelectField label="Did your defending warband complete the ritual?" value={state.ritualZombies?.completed === undefined ? '' : String(state.ritualZombies.completed)} onChange={e => change(s => ({ ...s, ritualZombies: { completed: e.target.value === '' ? undefined : e.target.value === 'true' } }))}><option value="">Choose…</option><option value="false">No — no summoned recruits</option><option value="true">Yes — resolve the summoned Zombies</option></SelectField>
@@ -41,6 +43,10 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
       <NumberField label="Unspoiled pies carried away by your warriors" allowEmpty value={state.recipe?.pies ?? null} onChange={pies => change(s => ({ ...s, recipe: { ...s.recipe, pies } }))} />
       {draft.result === 'won' ? <><NumberField label="Unspoiled pies claimed from the cart" allowEmpty value={state.recipe?.cartPies ?? null} onChange={cartPies => change(s => ({ ...s, recipe: { ...s.recipe, cartPies } }))} /><SelectField label="Is your warband turning Geefer in for the reward?" value={state.recipe?.turnsInGeefer === undefined ? '' : String(state.recipe.turnsInGeefer)} onChange={e => change(s => ({ ...s, recipe: { ...s.recipe, turnsInGeefer: e.target.value === '' ? undefined : e.target.value === 'true', dice: [] } }))}><option value="">Choose…</option><option value="true">Yes — we claim the payment</option><option value="false">No — another allied winner claims it</option></SelectField>{state.recipe?.turnsInGeefer ? <div className="flex flex-wrap gap-3">{Array.from({ length: 5 }, (_, i) => <DieField key={i} sides={6} rollable label={`Geefer payment: D6 ${i + 1}`} value={state.recipe?.dice?.[i] ?? null} onChange={v => change(s => ({ ...s, recipe: { ...s.recipe, dice: Array.from({ length: 5 }, (_, j) => i === j ? v : s.recipe?.dice?.[j] ?? null) } }))} />)}</div> : null}</> : null}
     </Card> : null}
+    {rule.kind === 'caravan' ? <>
+      <CaravanRewards state={state.caravan ?? {}} archive={ctx.scenarioId === 'the_caravan_archive_pestilen'} result={draft.result} restricted={ctx.scenarioId === 'the_caravan' && !!ctx.campaignId && ctx.roster.scenarioEffects?.caravanBannedCampaigns.includes(ctx.campaignId)} change={caravan => change(s => ({ ...s, caravan, finds: {} }))} />
+      {caravanRewards(state.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).rule ? <ScenarioRewards draft={draft} derived={derived} update={update} ctx={ctx} ruleOverride={caravanRewards(state.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).rule!} /> : null}
+    </> : null}
     {rule.kind === 'docks' ? <DocksRewards state={state.docks ?? {}} participantCount={ctx.opponents ? new Set(ctx.opponents.map(o => o.id)).size + 1 : undefined} change={docks => change(s => ({ ...s, docks }))} /> : null}
     {rule.kind === 'mule-train' ? <>
       <SelectField label="Mule Train: your role" value={state.mule?.role ?? ''} onChange={e => change(s => ({ ...s, mule: { ...s.mule, role: e.target.value as 'attacker' | 'defender' }, finds: {} }))}><option value="">Choose…</option><option value="attacker">Attacker</option><option value="defender">Defender</option></SelectField>
@@ -92,6 +98,7 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
         </Card>
       }) : null}
     </> : null}
-    {rule.kind !== 'none' ? <p className="text-sm">Resolved rewards: {reward.gold} gc, {reward.shards} wyrdstone{reward.items.length ? `, ${reward.items.reduce((sum, item) => sum + item.quantity, 0)} items for the stash` : ''}. {reward.problems.length ? 'Complete the remaining entries before filing.' : 'The calculation will appear in the battle report.'}</p> : null}
-  </Section>
+    {!ruleOverride && rule.kind !== 'none' ? <p className="text-sm">Resolved rewards: {reward.gold} gc, {reward.shards} wyrdstone{reward.items.length ? `, ${reward.items.reduce((sum, item) => sum + item.quantity, 0)} items for the stash` : ''}. {reward.problems.length ? 'Complete the remaining entries before filing.' : 'The calculation will appear in the battle report.'}</p> : null}
+  </>
+  return ruleOverride ? <div className="flex flex-col gap-4">{content}</div> : <Section title="Scenario rewards">{content}</Section>
 }

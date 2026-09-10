@@ -209,7 +209,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       template: findWarbandTemplate(rosterData.roster.warbandTemplateId),
       items: rosterData.items,
       matchId: match.id,
-      scenarioId: match.scenario_rules_id,
+      scenarioId: match.scenario_rules_id, campaignId: match.campaign_id,
       myRating: participant.rating,
       opponents: opponents.map(o=>({id:o.warband_id,name:o.warband_name})),
       opponentRating: opponents.reduce<number | null>((best, o) => (best === null || o.rating > best ? o.rating : best), null),
@@ -220,7 +220,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
       takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
     }),
-    [artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
+    [artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

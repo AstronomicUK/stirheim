@@ -1,3 +1,4 @@
+import { caravanRewards } from './caravanRewards'
 import { harpyRewards } from './harpyRewards'
 import { ritualZombies } from './scenarioRecruits'
 import { kidnappedRewards } from './kidnappedRewards'
@@ -56,6 +57,7 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  campaignId?: string
   opponents?: {id:string;name:string}[]
   artefacts?: ArtefactDiscovery[]
   artefactsError?: string
@@ -790,6 +792,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const kidnapped = ctx.scenarioId === 'kidnapped' ? kidnappedRewards(draft.scenarioRewards?.kidnapped, { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h) }, ctx.items) : null
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
   if (harpy?.stragglerNext || (harpy?.stragglerNow && !exploration.record)) applied.scenario_benefits = ['harpy_straggler']
   if (kidnapped) {
     for (const row of kidnapped.heroes) {

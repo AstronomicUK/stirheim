@@ -300,3 +300,13 @@ describe("once-per-phase helpers", () => {
     expect(s2).toEqual({ wyrdstoneSold: true, heroSearches: { captain: true } });
   });
 });
+
+
+it('charges the agreed whole purchase total, including discounted multi-item purchases', () => {
+  const warband = { ...makeWarband(), gold: 13 }
+  const bought = buyItem(warband, item('sword'), 10, { kind: 'stash' }, 2, undefined, 13)
+  expect(bought.value.gold).toBe(0)
+  expect(bought.value.stash.find(i => i.itemId === 'sword')?.quantity).toBe(2)
+  expect(() => buyItem(warband, item('sword'), 10, { kind: 'stash' }, 2, undefined, 14)).toThrow()
+  expect(() => buyItem(warband, item('sword'), 10, { kind: 'stash' }, 2, undefined, -1)).toThrow()
+})

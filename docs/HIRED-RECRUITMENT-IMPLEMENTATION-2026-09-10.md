@@ -31,3 +31,7 @@ Validation result: **1,365 tests passed**, 78 local integration tests skipped; t
 ## Deployment verification
 
 Implementation commit `2f7c750` pushed to `origin/main`. Netlify production deployment `6aa2808e6bbf56761736abf5` is live. The production homepage selects `index-CyPUSKcq.js`; this file and `HiredSwordsTab-CB8GD-Pg.js`, `recruitment-YqdUOZMJ.js`, and `lookups-Btp4rX-x.js` all matched the local tested build byte for byte. No authenticated production roster was edited for this batch. Browser interaction testing of the new selector is not claimed.
+
+## Between Battles local follow-up: selected mounts and Guardian
+
+Source `04-hired-swords.md:503,548,657,2544`: explicit optional mount choices for Freelancer/Highwayman/Roadwarden; Knight uses a Warhorse already in the stash and adds five rating. Source `04-hired-swords.md:368–378,1850–1860`: earning Guardian creates the separate equipped Merchant bodyguard, with no experience, no separate upkeep and dependent departure. Guardian restrictions remain explicit in its equipment note/trait rather than inheriting merchant abilities. Shared companion upkeep cannot be charged twice from the recruit card. Verified mobile hire and advancement persistence; full ordinary suite passes. No deployment. Snake replacement remains outstanding.

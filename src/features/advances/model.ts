@@ -1,3 +1,4 @@
+import { grantMerchantGuardian, hasGuardianSkill } from '../../rules/resolve/hiredCompanions'
 // Pure helpers for the advancement screen: grouping pending advances by warrior, the persisted
 // draft of one advance being rolled, and turning that draft plus the loaded roster into a plan
 // (what the player still has to supply) or a finished result (the new roster, the events and the
@@ -658,7 +659,14 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
 
   const finish = (next: RosterHero, events: ResolutionEvent[], parts: Omit<ResolutionParts, keyof typeof base>): AdvanceResult => {
     if(maximaRuling) next={...next,flags:{...next.flags,agreedRacialMaxima:draft.agreedRacialMaxima,agreedRacialMaximaReason:draft.agreedRacialMaximaReason!.trim()}}
-    const roster = isSword ? replaceHiredSword(ctx.roster, heroToHiredSword(subject.sword, next)) : replaceHero(ctx.roster, next)
+    let roster = isSword ? replaceHiredSword(ctx.roster, heroToHiredSword(subject.sword, next)) : replaceHero(ctx.roster, next)
+    if (isSword && !hasGuardianSkill(subject.sword)) {
+      const changed = roster.hiredSwords.find(h => h.id === subject.sword.id)!
+      if (hasGuardianSkill(changed)) {
+        roster = grantMerchantGuardian(roster, changed.id, draft.newHeroId)
+        events = [...events, { kind: 'hiredSword.guardian', subjectId: changed.id, message: `${changed.name} gains an equipped Guardian bodyguard; no fee or upkeep.` }]
+      }
+    }
     const resolution=buildResolution({ ...base, ...parts })
     if(maximaRuling){const note=`Agreed racial maxima: ${STAT_KEYS.map(k=>`${k} ${maxima.maxima[k]}`).join(', ')}. ${maxima.note}`;resolution.text+=` ${note}`;events=[...events,{kind:'warning',message:note}]}
     return { next: roster, events, resolution }

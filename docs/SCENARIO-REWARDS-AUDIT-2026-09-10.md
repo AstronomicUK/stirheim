@@ -102,3 +102,10 @@ Full suite: **1,448 passing / 96 database-dependent skipped**; typechecked build
 | Kidnapped | 4297–4381 | Living victim +1 XP; rescued victim D6 XP +50 gc; sacrificed victim D6 XP and up to two optional Shadowlord rolls. Named XP allocation, direct hero equipment/skills/stats and logged consequences. |
 
 Local mobile filing passed for Stake-Out, Herald and Kidnapped. Migration 47 is local only; direct equipment transaction/undo tests pass. The all-scenario audit remains open.
+
+## Milestone 19 source review
+
+- **Happy Harpy Hunting Grounds**, `06-scenarios.md:2073–2147`: nest requires victory and all three Harpies defeated before rivals rout. Setup shards are not rerolled. Ten independent treasure entries plus Straggler 5+; Straggler may assist now or next exploration. Saved benefit survives skipped exploration.
+- **In the Dead of the Night**, `06-scenarios.md:4133–4206`: winner D3 shards; successful defending ritual may retain D3+3 Zombies within roster capacity, excess wander away. Six retained Zombies form groups of five and one; both persist in the report transaction.
+
+Mobile tests filed both reports against disposable local warbands and checked saved shards, benefit and actual group sizes. No production changes.

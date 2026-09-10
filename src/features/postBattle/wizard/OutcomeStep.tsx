@@ -1,4 +1,5 @@
-import { Notice, SegmentedControl, SelectField, TextField } from '../../../ui'
+import type { HarpyDraft } from '../model/harpyRewards'
+import { Notice, SegmentedControl, SelectField, TextField, DieField, NumberField } from '../../../ui'
 import { Card } from '../../roster/view/bits'
 import { setResult, setRouted, type ReportResult } from '../model'
 import { Intro, Row, SwitchRow, type StepProps } from './bits'
@@ -27,6 +28,14 @@ export function OutcomeStep({ draft, derived, update, mine, opponents, opponentR
       <Intro>Each side files its own report. Experience and exploration use the played scenario’s rules.</Intro>
       {ctx.scenarioId === 'the_sword_of_the_herald' ? <SwitchRow label="Agreed non-campaign mode" description="The referee’s optional mode: no injuries, XP or exploration. Only rewards for removing the sword and Star Stone splinters may be recorded." checked={draft.scenarioNonCampaign ?? false} onChange={v => update(d => ({ ...d, scenarioNonCampaign: v }))} /> : null}
       {ctx.scenarioId === 'stake_out' ? <Card className="flex flex-col gap-3 px-4 py-3"><p className="text-sm">Stake-Out gives fixed wyrdstone income but does not specify whether normal exploration also applies. Record your table’s interpretation before proceeding.</p><SelectField label="Agreed Stake-Out exploration" value={draft.scenarioRewards?.stakeOut?.mode ?? ''} onChange={e => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, stakeOut: { ...d.scenarioRewards?.stakeOut, mode: e.target.value as 'income-only' | 'also-explore' } } }))}><option value="">Choose…</option><option value="income-only">Printed income replaces exploration</option><option value="also-explore">Printed income plus normal exploration</option></SelectField><TextField label="Stake-Out table ruling" value={draft.scenarioRewards?.stakeOut?.reason ?? ''} onChange={e => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, stakeOut: { ...d.scenarioRewards?.stakeOut, reason: e.target.value } } }))} /></Card> : null}
+      {ctx.scenarioId === 'happy_harpy_hunting_grounds' && draft.result === 'won' ? <Card className="flex flex-col gap-3 px-4 py-3">
+        <SelectField label="Were all three Harpies taken out before the rivals routed?" value={draft.scenarioRewards?.harpy?.defeated === undefined ? '' : String(draft.scenarioRewards.harpy.defeated)} onChange={e => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, harpy: { defeated: e.target.value === '' ? undefined : e.target.value === 'true' }, finds: {} } }))}><option value="">Choose…</option><option value="true">Yes — our warband claims the nest</option><option value="false">No — nobody receives the nest</option></SelectField>
+        {draft.scenarioRewards?.harpy?.defeated ? <>
+          <NumberField label="Wyrdstone originally placed in the Harpy nest" allowEmpty value={draft.scenarioRewards.harpy.shards ?? null} onChange={shards => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, harpy: { ...d.scenarioRewards?.harpy, shards } } }))} hint="Use the setup roll’s 1–3 shards; do not roll again." />
+          <DieField label="Harpy nest Straggler D6 (5+)" sides={6} rollable value={draft.scenarioRewards.harpy.stragglerDie ?? null} onChange={stragglerDie => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, harpy: { ...d.scenarioRewards?.harpy, stragglerDie, stragglerUse: undefined } } }))} />
+          {(draft.scenarioRewards.harpy.stragglerDie ?? 0) >= 5 ? <SelectField label="When should the rescued Straggler help?" value={draft.scenarioRewards.harpy.stragglerUse ?? ''} onChange={e => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, harpy: { ...d.scenarioRewards?.harpy, stragglerUse: e.target.value as HarpyDraft['stragglerUse'] } } }))}><option value="">Choose…</option><option value="now">This exploration — roll an extra die and discard one</option><option value="next">Next exploration — save the benefit</option></SelectField> : null}
+        </> : null}
+      </Card> : null}
       {opponentReports.length > 0 ? (
         <Card className="px-4 py-2">
           {opponentReports.map((r) => (

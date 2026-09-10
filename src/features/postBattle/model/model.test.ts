@@ -878,3 +878,38 @@ describe('Kidnapped victim rewards', () => {
     expect(result.advances.rosterAfter.heroes.find(h => h.id === 'champion')?.flags.daemonPossessed).toBe(true)
   })
 })
+
+describe('summoned Zombie scenario rewards', () => {
+  it('splits six retained Zombies into legal groups and includes them in the report', () => {
+    const roster = { ...makeRoster(), warbandTemplateId: 'the_undead', heroes: [], henchmenGroups: [], hiredSwords: [] }
+    const c = ctx({ roster, template: findWarbandTemplate('the_undead'), scenarioId: 'in_the_dead_of_the_night', items: [] })
+    const draft: ReportDraft = { ...setResult(emptyDraft(), 'won'), scenarioRewards: { ritualZombies: { completed: true, die: 3, retain: 6, groupIds: ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'] }, finds: { 'ritual-shards': { discovery: null, dice: [2] } } } }
+    const result = deriveRawReport(draft, c)
+    expect(result.problems.veterans).toEqual([])
+    expect(result.report?.applied.new_groups?.map(g => g.size)).toEqual([5, 1])
+    expect(result.report?.applied.warband.wyrdstone_delta).toBe(2)
+    expect(result.report?.notes).toContain('6 retained')
+    expect(deriveRawReport({ ...draft, scenarioRewards: { ...draft.scenarioRewards, ritualZombies: { ...draft.scenarioRewards!.ritualZombies, retain: 7 } } }, c).problems.veterans.join()).toContain('0 to 6')
+  })
+  it('counts existing models against the ritual reward and permits excess Zombies to wander away', () => {
+    const roster = { ...makeRoster(), warbandTemplateId: 'the_undead', heroes: [], henchmenGroups: [group('existing', 14)], hiredSwords: [] }
+    roster.henchmenGroups[0].unitTemplateId = 'the_undead_zombies'
+    const c = ctx({ roster, template: findWarbandTemplate('the_undead'), scenarioId: 'in_the_dead_of_the_night', items: [] })
+    const draft: ReportDraft = { ...setResult(emptyDraft(), 'lost'), scenarioRewards: { ritualZombies: { completed: true, die: 3, retain: 6, groupIds: [] } } }
+    expect(deriveRawReport(draft, c).problems.veterans.join()).toContain('0 to 1')
+    expect(deriveRawReport({ ...draft, scenarioRewards: { ritualZombies: { completed: true, die: 3, retain: 0, groupIds: [] } } }, c).problems.veterans).toEqual([])
+  })
+})
+
+describe('Harpy nest Straggler', () => {
+  it('requires the actual nest victory and setup shards, with the Straggler decided before exploration', () => {
+    const c = ctx({ scenarioId: 'happy_harpy_hunting_grounds' })
+    const base: ReportDraft = { ...setResult(emptyDraft(), 'won'), scenarioRewards: { harpy: { defeated: true, shards: 2, stragglerDie: 5 } } }
+    expect(deriveRawReport(base, c).problems.outcome.join()).toContain('this exploration or the next')
+    const next = deriveRawReport({ ...base, scenarioRewards: { harpy: { ...base.scenarioRewards!.harpy, stragglerUse: 'next' } } }, c)
+    const now = deriveRawReport({ ...base, scenarioRewards: { harpy: { ...base.scenarioRewards!.harpy, stragglerUse: 'now' } } }, c)
+    expect(now.exploration.allowed!.count).toBe(next.exploration.allowed!.count + 1)
+    expect(now.exploration.allowed!.keep).toBe(next.exploration.allowed!.keep)
+    expect(deriveRawReport({ ...base, scenarioRewards: { harpy: { defeated: false } } }, c).problems.veterans).toEqual([])
+  })
+})

@@ -104,6 +104,11 @@ export function warbandRating(warband: RosterWarband, template?: WarbandTemplate
       if (ratedHireGroups.has(hs.flags.hireGroupId)) continue;
       ratedHireGroups.add(hs.flags.hireGroupId);
     }
+    if (hs.flags.merchantGuardian) {
+      breakdown.push({ subjectId: hs.id, name: hs.name, points: 0, reason: 'Guardian bodyguard: part of the Merchant’s skill, no separate hire rating or experience' });
+      continue;
+    }
+    if (hs.hiredSwordId === 'knight_of_the_white_wolf' && hs.equipment.some(i => i.itemId === 'warhorse' && i.quantity > 0)) breakdown.push({ subjectId: `${hs.id}:mount`, name: `${hs.name}’s Warhorse`, points: 5, reason: 'Cavalryman: Warhorse adds 5 to the warband rating' });
     const entry = findHiredSword(hs.hiredSwordId);
     const rating = parseHiredSwordRating(entry?.detail?.rating);
     if (!rating.parsed) {

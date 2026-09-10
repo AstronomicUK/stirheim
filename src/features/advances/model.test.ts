@@ -436,3 +436,15 @@ it('requires a recorded maximum-profile ruling for uncertain hired swords and pr
  expect(draftFromRolled(saved as unknown as Record<string,unknown>,NEW_ID)?.agreedRacialMaxima).toEqual(agreed.agreedRacialMaxima)
  expect(planHero(rolled(5,6),subject,context).need).toBe('skill')
 })
+
+it('creates the equipped Merchant bodyguard only when Guardian is newly learned', () => {
+  const merchant: RosterHiredSword = { id: 'merchant', name: 'Bazaar Merchant', hiredSwordId: 'arabian_merchant', stats: { M: 4, WS: 2, BS: 2, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 7 }, xp: 2, levelUps: 0, skillIds: [], spellIds: [], flags: {}, injuries: [], equipment: [], status: 'active' }
+  const r = { ...roster, hiredSwords: [merchant] }
+  const plan = planHero(setSkill(setDice(emptyDraft(NEW_ID), 5, 5), 'hired_arabian_merchant_skills_guardian'), { kind: 'hiredSword', sword: merchant }, { ...ctx, roster: r })
+  expect(plan.error).toBeNull()
+  expect(plan.result?.next.hiredSwords).toHaveLength(2)
+  const bodyguard = plan.result!.next.hiredSwords[1]
+  expect(bodyguard).toMatchObject({ id: NEW_ID, stats: { WS: 4, S: 4 }, flags: { hireGroupId: 'merchant', hireCompanion: true, merchantGuardian: true }, xp: 0, skillIds: [] })
+  expect(bodyguard.equipment.map(i => i.itemId)).toEqual(['sword', 'light_armour', 'shield', 'helmet'])
+  expect(plan.result?.events.some(e => e.message.includes('Guardian bodyguard'))).toBe(true)
+})

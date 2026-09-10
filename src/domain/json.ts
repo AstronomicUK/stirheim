@@ -47,6 +47,7 @@ export const warriorFlagsSchema = z.object({
   luthorRole: z.enum(['crimson','wizard','archer']).optional(),
   hireGroupId: z.string().optional(),
   hireCompanion: z.boolean().optional(),
+  merchantGuardian: z.boolean().optional(),
   returningFavourReportId: z.string().optional(),
   upkeepOwedAfter: z.string().optional(),
   contractCheckOwed: z.boolean().optional(),

@@ -1,3 +1,4 @@
+import { OPTIONAL_HIRED_MOUNTS, sharedUpkeepOwner } from '../../rules/resolve/recruitment'
 import { GroupUpkeepSheet } from './GroupUpkeepSheet'
 import { RetainedScout } from '../roster/view/RetainedScout'
 import { isDramatisPersona } from '../../rules/data/campaign/hiredSwords'
@@ -70,24 +71,26 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
             <ul className="flex flex-col gap-3">
               {active.map((hs) => {
                 const entry = findHiredSwordEntry(hs.hiredSwordId)
+                const shared = sharedUpkeepOwner(detail.roster, hs)
+                const noOwnUpkeep = !!hs.flags.hireCompanion && (hs.hiredSwordId !== 'ulli_and_marquand' || !!shared)
                 return (
                   <li key={hs.id}>
                     <Card className="flex flex-col gap-3 px-4 py-3">
                       <div className="flex items-baseline justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-base text-ink">{hs.name}</p>
-                          <p className="text-xs text-ink-dim">{entry?.name ?? hs.hiredSwordId}</p>
+                          <p className="text-xs text-ink-dim">{hs.flags.merchantGuardian ? 'Guardian bodyguard' : hs.hiredSwordId === 'snake_charmer' && hs.flags.hireCompanion ? 'Snake' : entry?.name ?? hs.hiredSwordId}</p>
                         </div>
                         <span className="shrink-0 text-right text-xs text-ink-dim">
-                          Upkeep <span className="text-sm text-ink">{upkeepText(entry)}</span>
+                          Upkeep <span className="text-sm text-ink">{noOwnUpkeep ? hs.flags.merchantGuardian ? 'None' : 'Shared contract' : upkeepText(entry)}</span>
                         </span>
                       </div>
                       {hs.hiredSwordId==='maglah_khan_s_horde'&&canEdit?<RetainedScout detail={detail} hire={hs}/>:null}
                       <StatLine stats={hs.stats} compact className="text-xs" />
                       {canEdit ? (
                         <div className="grid grid-cols-2 gap-2">
-                          <Button variant="secondary" onClick={() => setPaying(hs)}>
-                            Pay upkeep
+                          <Button variant="secondary" disabled={noOwnUpkeep} onClick={() => setPaying(hs)}>
+                            {noOwnUpkeep ? 'No separate upkeep' : 'Pay upkeep'}
                           </Button>
                           <Button variant="danger" onClick={() => setDismissing(hs)}>
                             Dismiss
@@ -320,6 +323,8 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
   const { roster } = detail
   const { entry, eligibility } = option
   const availableFavour = !isDramatisPersona(entry.id) && roster.explorationDiscoveries?.freeHireReportId && !roster.hiredSwords.some(h => h.flags.returningFavourReportId === roster.explorationDiscoveries?.freeHireReportId) ? roster.explorationDiscoveries.freeHireReportId : undefined
+  const [mounted, setMounted] = useState(false)
+  const optionalMount = OPTIONAL_HIRED_MOUNTS[entry.id]
   const [useFavour, setUseFavour] = useState(false)
   const [name, setName] = useState('')
   const equipmentChoices = HIRED_EQUIPMENT_CHOICES[entry.id]
@@ -347,7 +352,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
     const trimmed = name.trim()
     const note = useFavour ? 'Returning a Favour: one free Hired Sword for the next battle; ordinary upkeep afterwards.' : overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : randomFee ? `Ninja hire fee: 70 + 3D6 (${feeDice.join(' + ')}) = ${fullFee} gc.` : null
     const result = await commit(
-      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, equipmentChoice, ...(useFavour ? { returningFavourReportId: availableFavour } : {}), ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
+      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, equipmentChoice, mounted, ...(useFavour ? { returningFavourReportId: availableFavour } : {}), ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
       (w) => w,
       reasonWith('recruitment', note),
     )
@@ -374,6 +379,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
         {entry.id === 'luthor_wolfenbaum' ? <SelectField label="Luthor’s role — check the role’s hiring restrictions below" value={luthorRole} onChange={e=>setLuthorRole(e.target.value as typeof luthorRole)}><option value="crimson">Crimson Blade of Reikland</option><option value="wizard">Dark Wizard Extraordinaire</option><option value="archer">Master Archer of Drakwald</option></SelectField> : null}
         {entry.id === 'maglah_khan_s_horde'  ? <SelectField label="Hobgoblin Scouts (45 gc each to hire, 20 gc upkeep each)" value={String(scouts)} onChange={e => setScouts(Number(e.target.value))}>{[2,3,4,5].filter(n => n >= existingScouts).map(n => <option key={n} value={n}>{n} Scouts</option>)}</SelectField> : null}
         {randomFee && !useFavour ? <div className="flex flex-wrap gap-2">{feeDice.map((die,index) => <DieField key={index} label={`Hire fee die ${index + 1}`} sides={6} value={die} onChange={v => setFeeDice(previous => previous.map((value,i) => i === index ? v : value))} rollable />)}</div> : null}
+        {optionalMount ? <SelectField label="Starting mount" value={mounted ? 'mounted' : 'foot'} onChange={e => setMounted(e.target.value === 'mounted')}><option value="foot">On foot</option><option value="mounted" disabled={optionalMount.fromStash && !roster.stash.some(i => i.itemId === optionalMount.itemId && i.quantity > 0)}>{optionalMount.label}</option></SelectField> : null}
         {equipmentChoices ? <SelectField label="Starting equipment" value={equipmentChoice} onChange={e => setEquipmentChoice(e.target.value)}>{equipmentChoices.map(choice => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</SelectField> : null}
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">
@@ -385,7 +391,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
           <KeyValue label="Upkeep" value={upkeepText(entry)} />
           <KeyValue label="Treasury after" value={`${roster.gold - cost} gc`} />
         </div>
-        <HiredSwordDetail detail={entry.detail} equipment={hiredSwordStartingEquipment(entry.id, entry.detail, luthorRole, equipmentChoice)} />
+        <HiredSwordDetail detail={entry.detail} equipment={hiredSwordStartingEquipment(entry.id, entry.detail, luthorRole, equipmentChoice, mounted)} />
         {error ? <Notice tone="error">{error}</Notice> : null}
       </div>
     </Sheet>

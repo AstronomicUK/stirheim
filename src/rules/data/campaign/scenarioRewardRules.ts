@@ -61,6 +61,19 @@ const TOMB_TREASURE_TABLE: Extract<ScenarioRewardRule, { kind: 'repeated' }>['ta
     { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
   ]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
+  happy_harpy_hunting_grounds: { kind: 'hoard', winnerOnly: true, note: 'Only the winning warband receives the nest, and only if all three Harpies were taken out before the others routed. Use the setup shards and Straggler choice recorded on Outcome. Roll separately for each remaining find.', finds: [
+    { id: 'gold', label: 'Nest gold', kind: 'gold', threshold: 5, quantity: { count: 2, sides: 6 } },
+    { id: 'dagger', label: 'Jeweled Dagger', kind: 'item', itemName: 'Jeweled Dagger', threshold: 3, quantity: 1 },
+    { id: 'armour', label: 'Heavy Armour', kind: 'item', itemName: 'Heavy Armour', threshold: 5, quantity: 1 },
+    { id: 'ithilmar', label: 'Ithilmar Sword', kind: 'item', itemName: 'Ithilmar Sword', threshold: 6, quantity: 1 },
+    { id: 'gems', label: 'Gems worth 30 gc', kind: 'item', itemName: 'Gems (worth 30 gc)', threshold: 3, quantity: 1 },
+    { id: 'cloak', label: 'Wolfcloak', kind: 'item', itemName: 'Wolfcloak', threshold: 6, quantity: 1 },
+    { id: 'charm', label: 'Lucky Charm', kind: 'item', itemName: 'Lucky Charm', threshold: 3, quantity: 1 },
+    { id: 'shields', label: 'Shields', kind: 'item', itemName: 'Shield', threshold: 4, quantity: { count: 1, sides: 3 } },
+    { id: 'helmets', label: 'Helmets', kind: 'item', itemName: 'Helmet', threshold: 5, quantity: { count: 1, sides: 3 } },
+    { id: 'swords', label: 'Swords', kind: 'item', itemName: 'Sword', threshold: 6, quantity: { count: 1, sides: 3 } },
+  ] },
+  in_the_dead_of_the_night: { kind: 'hoard', winnerOnly: true, note: 'The winner recovers D3 ritual shards. A defending warband that completed the ritual may also retain D3+3 summoned Zombies, within its warband limit; excess Zombies wander away.', finds: [{ id: 'ritual-shards', label: 'Ritual wyrdstone', kind: 'shards', quantity: { count: 1, sides: 3 } }] },
   kidnapped: { kind: 'kidnapped', note: 'Resolve the victim’s fate on the Experience step: holding the living victim grants 1 XP; rescuing grants D6 XP and 50 gc; sacrificing grants D6 XP and optional Shadowlord rewards for up to two Heroes.' },
   the_sword_of_the_herald: { kind: 'herald', note: 'Each Star Stone splinter carried off is worth three wyrdstone. The recovered sword may be kept by Possessed, Undead, Beastmen or Skaven, or handed over for 100 gc. These rewards also apply in the referee’s non-campaign mode.' },
   stagecoash_ambush: { kind: 'none', note: 'No extra gold or treasure reward is specified. Loaned mounts, the stage driver and one-off hired swords are for this battle only; do not add them as permanent rewards.' },

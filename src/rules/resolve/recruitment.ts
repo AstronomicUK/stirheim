@@ -450,7 +450,15 @@ function copyItems(items: RosterItem[]): RosterItem[] {
   return items.map((i) => ({ ...i }));
 }
 
+export const OPTIONAL_HIRED_MOUNTS: Record<string, { itemId: string; label: string; fromStash?: boolean }> = {
+  freelancer: { itemId: 'warhorse', label: 'Warhorse — optional mounted rules' },
+  highwayman: { itemId: 'riding_draft_horse', label: 'Horse — optional mounted rules' },
+  roadwarden: { itemId: 'riding_draft_horse', label: 'Horse — optional mounted rules' },
+  knight_of_the_white_wolf: { itemId: 'warhorse', label: 'Warhorse from your stash', fromStash: true },
+};
+
 export interface HireHiredSwordOptions {
+  mounted?: boolean;
   returningFavourReportId?: string;
   /** Display name; defaults to the entry name ("Dwarf Troll Slayer"). */
   name?: string;
@@ -565,10 +573,22 @@ export function hireHiredSword(
     spellIds,
     injuries: [],
     flags: hiredSwordId === 'luthor_wolfenbaum' ? {luthorRole:opts.luthorRole,...(opts.luthorRole === 'wizard' ? {immuneToFear:true} : {})} : {},
-    equipment: hiredSwordStartingEquipment(entry.id, entry.detail, opts.luthorRole, opts.equipmentChoice),
+    equipment: hiredSwordStartingEquipment(entry.id, entry.detail, opts.luthorRole, opts.equipmentChoice, opts.mounted),
     status: "active",
   };
 
+  let stash = warband.stash;
+  if (opts.mounted) {
+    const mount = OPTIONAL_HIRED_MOUNTS[hiredSwordId];
+    if (!mount) throw new RulesError('recruitment.mount', 'This hire has no optional starting mount.');
+    if (mount.fromStash) {
+      const index = stash.findIndex(i => i.itemId === mount.itemId && i.quantity > 0);
+      if (index < 0) throw new RulesError('recruitment.mount', 'The Knight requires an existing Warhorse in your stash.');
+      stash = stash.flatMap((i, n) => n !== index ? [i] : i.quantity > 1 ? [{ ...i, quantity: i.quantity - 1 }] : []);
+    }
+    const skill = mount.itemId === 'warhorse' ? 'cavalry_ride_warhorse' : 'cavalry_ride_horse';
+    if (hiredSwordId === 'freelancer') hiredSword.skillIds = [...new Set([...hiredSword.skillIds, skill])];
+  }
   const companions: RosterHiredSword[] = [];
   if (hiredSwordId === 'ulli_and_marquand') {
     hiredSword.name = opts.name ? `${opts.name}: Marquand` : 'Marquand Volker';
@@ -594,7 +614,7 @@ export function hireHiredSword(
   const spellNote = spellIds.length > 0 ? `; spells rolled: ${spellIds.map((sid) => SPELL_LORES.flatMap(l => l.spells).find(sp => sp.id === sid)?.name ?? sid).join(", ")}${hiredSwordId === 'khar_mel_the_djinn' ? ` (D3 starting count: ${spellIds.length})` : ''}` : "";
   if (favour) hiredSword.flags = { ...hiredSword.flags, returningFavourReportId: favour };
   return {
-    value: { ...warband, gold: warband.gold - cost - scoutCost, wyrdstone: warband.wyrdstone - shardCost, hiredSwords: [...warband.hiredSwords, hiredSword, ...companions] },
+    value: { ...warband, stash, gold: warband.gold - cost - scoutCost, wyrdstone: warband.wyrdstone - shardCost, hiredSwords: [...warband.hiredSwords, hiredSword, ...companions] },
     events: [
       {
         kind: "hiredSword.hired",
@@ -767,7 +787,7 @@ export function departingHiredSword(warband: RosterWarband, id: string): RosterH
   });
 }
 
-export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail | undefined, role?: HireHiredSwordOptions['luthorRole'], equipmentChoice?: string): RosterItem[] {
+export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail | undefined, role?: HireHiredSwordOptions['luthorRole'], equipmentChoice?: string, mounted = false): RosterItem[] {
   const choices = HIRED_EQUIPMENT_CHOICES[id];
   if (choices) {
     const chosen = equipmentChoice === undefined ? choices[0] : choices.find(choice => choice.id === equipmentChoice);
@@ -775,9 +795,13 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
     return chosen.equipment.map(item => ({ ...item }));
   }
   const kit = (ids: string[]): RosterItem[] => ids.map(itemId => ({itemId,quantity:1}));
+  const mount = mounted && OPTIONAL_HIRED_MOUNTS[id] ? kit([OPTIONAL_HIRED_MOUNTS[id].itemId]) : [];
+  if(id==='freelancer') return [...kit(['heavy_armour', 'shield', 'lance', 'sword']), ...mount];
+  if(id==='highwayman') return [...kit(['dagger', 'rapier', 'buckler']), { itemId: 'pistol', quantity: 2 }, ...mount];
+  if(id==='roadwarden') return [...kit(['crossbow', 'horsemans_hammer', 'dagger', 'heavy_armour']), { itemId: 'torch', quantity: 3 }, ...mount];
   if(id==='cursed_hillman') return [...kit(['axe', 'dagger', 'longbow']), {itemId:null,customName:'Heavy fur cloak',quantity:1,notes:'5+ armour save against ranged attacks; 6+ in close combat. Equipment is left behind in wolf form and recovered after the battle.'}];
   if(id==='duellist') return kit(['duelling_pistol', 'sword', 'dagger', 'buckler']);
-  if(id==='knight_of_the_white_wolf') return kit(['heavy_armour', 'wolfcloak', 'horsemans_hammer']);
+  if(id==='knight_of_the_white_wolf') return [...kit(['heavy_armour', 'wolfcloak', 'horsemans_hammer']), ...mount];
   if(id==='johann_the_knife') return [{itemId:'throwing_knives_stars',quantity:1},{itemId:'sword',quantity:2,notes:'His long daggers count as two swords in close combat.'}];
   if(id==='ulli_and_marquand') return kit(['sword', 'light_armour', 'throwing_knives_stars']);
   if(id==='snake_charmer') return kit(['dagger', 'sword']);
@@ -799,7 +823,13 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   return hiredSwordEquipment(detail);
 }
 
+export function sharedUpkeepOwner(warband: RosterWarband, hire: RosterHiredSword): RosterHiredSword | undefined {
+  return hire.flags.hireCompanion && hire.flags.hireGroupId ? warband.hiredSwords.find(s => s.flags.hireGroupId === hire.flags.hireGroupId && !s.flags.hireCompanion && s.status === 'active') : undefined;
+}
+
 export function payUpkeep(warband: RosterWarband, id: string, opts: PayUpkeepOptions = {}): Resolution<PayUpkeepResult> {
+  const hire = warband.hiredSwords.find(h => h.id === id);
+  if (hire?.flags.hireCompanion && (hire.hiredSwordId !== 'ulli_and_marquand' || sharedUpkeepOwner(warband, hire))) throw new RulesError('upkeep.sharedContract', 'This companion has no separate upkeep payment; settle the main character’s contract.');
   const result = resolveUpkeepPayment(warband,id,opts);
   if (!result.value.paid) return result;
   const next = result.value.warband;

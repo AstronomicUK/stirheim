@@ -61,3 +61,22 @@ it('honours the selected Scout through dismissal and unpaid upkeep',()=>{
  expect(dismissWarrior(r,'khan').value.hiredSwords.filter(s=>s.status==='active').map(s=>s.id)).toEqual([scouts[2].id])
  expect(payUpkeep({...r,gold:0},'khan').value.warband.hiredSwords.filter(s=>s.status==='active').map(s=>s.id)).toEqual([scouts[2].id])
 })
+
+it('offers optional starting mounts only when selected and transfers a Knight’s existing Warhorse', () => {
+  for (const [id, mount] of [['freelancer', 'warhorse'], ['highwayman', 'riding_draft_horse'], ['roadwarden', 'riding_draft_horse']]) {
+    const foot = hireHiredSword(roster(), id, 'hire').value
+    const mounted = hireHiredSword(roster(), id, 'hire', { mounted: true }).value
+    expect(foot.hiredSwords[0].equipment.some(i => i.itemId === mount)).toBe(false)
+    expect(mounted.hiredSwords[0].equipment).toContainEqual({ itemId: mount, quantity: 1 })
+    expect(mounted.gold).toBe(foot.gold)
+  }
+  expect(() => hireHiredSword(roster(), 'knight_of_the_white_wolf', 'knight', { mounted: true })).toThrow('existing Warhorse')
+  const r = hireHiredSword({ ...roster(), stash: [{ itemId: 'warhorse', quantity: 2 }] }, 'knight_of_the_white_wolf', 'knight', { mounted: true }).value
+  expect(r.stash).toEqual([{ itemId: 'warhorse', quantity: 1 }])
+  expect(r.hiredSwords[0].equipment).toContainEqual({ itemId: 'warhorse', quantity: 1 })
+})
+
+it('does not charge a Snake separately from the Charmer’s shared contract', () => {
+  const r = hireHiredSword(roster(), 'snake_charmer', 'charmer').value
+  expect(() => payUpkeep(r, r.hiredSwords[1].id)).toThrow('no separate upkeep')
+})

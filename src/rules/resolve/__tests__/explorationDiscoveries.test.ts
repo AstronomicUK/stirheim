@@ -44,3 +44,9 @@ it('Returning a Favour waives gold and records one use across departures', () =>
   expect(()=>hireHiredSword({...hired,hiredSwords:hired.hiredSwords.map(h=>({...h,status:'left'}))},'warlock','mage',{returningFavourReportId:'report'})).toThrow(/not available/)
   expect(()=>hireHiredSword(roster,'aenur_the_sword_of_twilight','elf',{returningFavourReportId:'report'})).toThrow()
 })
+
+it('preserves a Harpy Straggler through skipped exploration and consumes it at the next exploration', () => {
+  const reward = { id: 'harpy', exploration: null, applied: { scenario_benefits: ['harpy_straggler'] } }
+  expect(explorationDiscoveries([reward, { id: 'skip', exploration: null }]).straggler).toBe(true)
+  expect(explorationDiscoveries([reward, { id: 'used', exploration: { locationId: null } }]).straggler).toBe(false)
+})

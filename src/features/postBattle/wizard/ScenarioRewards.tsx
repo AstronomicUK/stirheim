@@ -1,3 +1,5 @@
+import { locationRecruits } from '../model/locationRecruits'
+import { ritualZombies } from '../model/scenarioRecruits'
 import { FerryRewards } from './FerryRewards'
 import { RepeatedScenarioRewards } from './RepeatedScenarioRewards'
 import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
@@ -11,14 +13,21 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
   const rawRule = ruleOverride ?? scenarioRewardRule(ctx.scenarioId)
   const rule = rawRule?.kind === 'repeated' && rawRule.extraPerWarband ? { ...rawRule, requiredCount: (rawRule.requiredCount ?? 0) + rawRule.extraPerWarband * ((ctx.opponents?.length ?? 0) + 1) } : rawRule
   if (!rule) return null
+  if (ctx.scenarioId === 'happy_harpy_hunting_grounds' && (draft.result !== 'won' || !draft.scenarioRewards?.harpy?.defeated)) return <Section title="Scenario rewards"><p className="text-sm text-ink-dim">No nest rewards: these require victory and all three Harpies defeated before the rival warbands routed.</p></Section>
   const state = draft.scenarioRewards ?? {}
   const reward = scenarioRewards(draft, ctx.scenarioId, derived.participants, ctx, ruleOverride)
   function change(fn: (s: ScenarioRewardDraft) => ScenarioRewardDraft) {
     update(d => ({ ...d, scenarioRewards: fn(d.scenarioRewards ?? {}) }))
   }
+  const zombies = ritualZombies(draft, ctx, derived.injuries, locationRecruits(draft, ctx, derived.exploration, derived.injuries))
   const heroes = derived.participants.heroes.filter(h => !draft.heroesOut.includes(h.id))
   return <Section title={ruleOverride ? "Additional treasure" : "Scenario rewards"}>
     <p className="text-sm text-ink-dim">{rule.note}</p>
+    {ctx.scenarioId === 'in_the_dead_of_the_night' && !ruleOverride ? <Card className="flex flex-col gap-3 px-4 py-3">
+      <SelectField label="Did your defending warband complete the ritual?" value={state.ritualZombies?.completed === undefined ? '' : String(state.ritualZombies.completed)} onChange={e => change(s => ({ ...s, ritualZombies: { completed: e.target.value === '' ? undefined : e.target.value === 'true' } }))}><option value="">Choose…</option><option value="false">No — no summoned recruits</option><option value="true">Yes — resolve the summoned Zombies</option></SelectField>
+      {state.ritualZombies?.completed ? <><DieField label="Summoned Zombies: D3 (+3)" sides={3} rollable value={state.ritualZombies.die ?? null} onChange={die => change(s => ({ ...s, ritualZombies: { ...s.ritualZombies, die, retain: null, groupIds: [] } }))} />{zombies.available !== null ? <NumberField label="Summoned Zombies to retain" hint={`${zombies.available} available; room for ${zombies.capacity}. New groups have at most five models.`} allowEmpty value={state.ritualZombies.retain ?? null} onChange={retain => change(s => ({ ...s, ritualZombies: { ...s.ritualZombies, retain, groupIds: Array.from({ length: Math.ceil(Math.min(6, Math.max(0, retain ?? 0)) / 5) }, () => crypto.randomUUID()) } }))} /> : null}</> : null}
+      {zombies.problems.map(p => <p key={p} className="text-sm text-danger">{p}</p>)}
+    </Card> : null}
     {rule.kind === 'ambush' ? <Card className="flex flex-col gap-3 px-4 py-3"><SelectField label="Was your warband the defender?" value={state.conditions?.defender === undefined ? '' : String(state.conditions.defender)} onChange={e => change(s => ({ ...s, conditions: { ...s.conditions, defender: e.target.value === '' ? undefined : e.target.value === 'true' } }))}><option value="">Choose…</option><option value="true">Yes</option><option value="false">No</option></SelectField><DieField label="Defender’s starting D6" sides={6} value={state.startingDie ?? null} onChange={startingDie => change(s => ({ ...s, startingDie }))} /><NumberField label="Defender’s starting Hero count" allowEmpty value={state.defendingHeroes ?? null} onChange={defendingHeroes => change(s => ({ ...s, defendingHeroes }))} />{state.conditions?.defender === false ? <NumberField label="Defending Heroes taken out by your warband" allowEmpty value={state.enemyHeroesOut ?? null} onChange={enemyHeroesOut => change(s => ({ ...s, enemyHeroesOut }))} /> : null}</Card> : null}
     {rule.kind === 'choice' ? <>
       <SelectField label={rule.question} value={state.branch ?? ''} onChange={e => change(() => ({ branch: e.target.value }))}><option value="">Choose…</option>{rule.options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</SelectField>

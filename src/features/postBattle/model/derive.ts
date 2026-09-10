@@ -1,3 +1,5 @@
+import { harpyRewards } from './harpyRewards'
+import { ritualZombies } from './scenarioRecruits'
 import { kidnappedRewards } from './kidnappedRewards'
 import { conditionalHireDepartures } from '../../../rules/resolve/hiredSwordRules'
 import { pettyThief } from './pettyThief'
@@ -560,8 +562,8 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     if (Object.keys(patch).length > 0) groups.push({ id: group.id, patch })
   }
 
-  // Snakes cannot remain as independent hires after the charmer is lost.
-  for (const sword of ctx.roster.hiredSwords.filter(s => s.hiredSwordId === 'snake_charmer' && !s.flags.hireCompanion)) {
+  // Dependent companions cannot remain after their charmer or Merchant is lost.
+  for (const sword of ctx.roster.hiredSwords.filter(s => ['snake_charmer', 'arabian_merchant', 'cathayan_merchant'].includes(s.hiredSwordId) && !s.flags.hireCompanion)) {
     const status = heroes.find(h => h.id === sword.id)?.patch.status ?? sword.status
     if (status !== 'active') for (const companion of ctx.roster.hiredSwords.filter(s => s.flags.hireCompanion && s.flags.hireGroupId === sword.flags.hireGroupId)) {
       const patch = heroes.find(h => h.id === companion.id)
@@ -761,7 +763,9 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
   const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
-  const exploration = deriveExploration(draft.exploration, ctx.roster, {
+  const harpy = ctx.scenarioId === 'happy_harpy_hunting_grounds' ? harpyRewards(draft) : null
+  const explorationRoster = harpy?.stragglerNow ? { ...ctx.roster, explorationDiscoveries: { catacombs: false, tunnels: false, ...ctx.roster.explorationDiscoveries, straggler: true } } : ctx.roster
+  const exploration = deriveExploration(draft.exploration, explorationRoster, {
     scenarioId: ctx.scenarioId,
     disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : ctx.scenarioId === 'stake_out' && draft.scenarioRewards?.stakeOut?.mode === 'income-only' ? 'Stake-Out: the table agreed to use the printed fixed income instead of exploration.' : undefined,
     won: draft.result === 'won',
@@ -781,6 +785,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const kidnapped = ctx.scenarioId === 'kidnapped' ? kidnappedRewards(draft.scenarioRewards?.kidnapped, { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h) }, ctx.items) : null
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  if (harpy?.stragglerNext || (harpy?.stragglerNow && !exploration.record)) applied.scenario_benefits = ['harpy_straggler']
   if (kidnapped) {
     for (const row of kidnapped.heroes) {
       const existing = applied.heroes.find(h => h.id === row.id)
@@ -813,7 +818,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     if(line)line.advancesEarned=0
   }
   const recruits = locationRecruits(draft, ctx, exploration, injuries)
-  if (recruits.newGroups.length) applied.new_groups = recruits.newGroups
+  const summoned = ritualZombies(draft, ctx, injuries, recruits)
+  if (recruits.newGroups.length || summoned.newGroups.length) applied.new_groups = [...recruits.newGroups, ...summoned.newGroups]
   for (const row of recruits.groupPatches) {
     const existing = applied.groups.find(g => g.id === row.id)
     if (existing) Object.assign(existing.patch, row.patch)
@@ -836,6 +842,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.experience.push(...(kidnapped?.problems ?? []))
+  problems.outcome.push(...(harpy?.problems ?? []))
+  problems.veterans.push(...summoned.problems)
   problems.exploration.push(...recruits.problems, ...theft.problems)
   const maglahLoss=injuries.hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
   let retainedScoutNote=''
@@ -865,7 +873,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), ...theft.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, ctx), ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

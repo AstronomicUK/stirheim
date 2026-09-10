@@ -11,12 +11,12 @@ export async function fetchExplorationDiscoveries(warbandId: string, excludeMatc
     before = current.data?.submitted_at
   }
   for (let offset = 0; ; offset += 500) {
-    let query = supabase.from('match_reports').select('id,exploration').eq('warband_id', warbandId).eq('status', 'applied').order('submitted_at').order('id').range(offset, offset + 499)
+    let query = supabase.from('match_reports').select('id,exploration,applied').eq('warband_id', warbandId).eq('status', 'applied').order('submitted_at').order('id').range(offset, offset + 499)
     if (excludeMatchId) query = query.neq('match_id', excludeMatchId)
     if (before) query = query.lt('submitted_at', before)
     const { data, error } = await query
     if (error) throw new Error(`Could not load exploration discoveries: ${error.message}`)
-    reports.push(...data.map(row => ({ id: row.id, exploration: row.exploration as DiscoveryReport['exploration'] })))
+    reports.push(...data.map(row => ({ id: row.id, applied: row.applied as DiscoveryReport['applied'], exploration: row.exploration as DiscoveryReport['exploration'] })))
     if (data.length < 500) break
   }
   return explorationDiscoveries(reports)

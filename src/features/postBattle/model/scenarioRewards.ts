@@ -1,3 +1,5 @@
+import { harpyRewards, type HarpyDraft } from './harpyRewards'
+import type { RitualZombiesDraft } from './scenarioRecruits'
 import type { KidnappedDraft } from './kidnappedRewards'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import { explorationFaction } from '../../../rules/resolve/explorationDiscoveries'
@@ -10,6 +12,8 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  harpy?: HarpyDraft
+  ritualZombies?: RitualZombiesDraft
   kidnapped?: KidnappedDraft
   herald?: { splinters?: number | null; sword?: 'none' | 'sell' | 'keep'; keepReason?: string }
   stakeOut?: { mode?: 'income-only' | 'also-explore'; reason?: string; die?: number | null }
@@ -60,6 +64,11 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
   const state = draft.scenarioRewards ?? {}
   const rewards = { artefacts: [] as { roll: number; overrideReason?: string }[], gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
   if (!rule) return rewards
+  if (scenarioId === 'happy_harpy_hunting_grounds' && !ruleOverride) {
+    const harpy = harpyRewards(draft)
+    rewards.problems.push(...harpy.problems); rewards.notes.push(...harpy.notes); rewards.shards += harpy.shards
+    if (!harpy.eligible) return rewards
+  }
   if (rule.kind === 'repeated' && rule.extraPerWarband) {
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }

@@ -58,6 +58,7 @@ export interface Combatant {
 
 /** Special-rule headings that map to a modelled trait. Matched on the rule name only, never the text. */
 const TRAIT_BY_RULE_NAME: [RegExp, string][] = [
+  [/^invincible swordsman$/i, 'invincible_swordsman'],
   [/frenzy/i, 'frenzy'],
   [/\bhatred\b|^hates?\b/i, 'hatred'],
   [/^large( target)?$/i, 'large_target'],
@@ -390,6 +391,7 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
       continue
     }
     if (weapon) {
+      if (effect?.note) out.assumptions.push(effect.note)
       // Two of the same hand weapon is a real loadout (two swords); more than two never fight at once.
       const copies = weapon.type === 'melee' && !weapon.paired ? Math.min(2, Math.max(1, entry.quantity)) : 1
       for (let i = 0; i < copies; i++) (weapon.type === 'melee' ? out.melee : out.ranged).push(weapon)

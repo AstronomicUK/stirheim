@@ -6,18 +6,14 @@ Generated from current starting equipment and combat loadout mapping. These are 
 |---|---|
 | Clan Skryre Rat Ogre | Jaws; claws; small Warpfire Thrower on its mechanical left arm |
 | Dwarf Treasure Hunter | lantern rig (see below) |
-| Kislev Ranger | Hunter’s cloak |
 | Mule Skinner | whip |
 | Norse Shaman | Rune Staff |
-| Thief | Thief's cloak |
 | Warrior Priest Of Sigmar | Hammer of Sigmar |
 | Coachman | Whip |
 | Pyromaniac | Fireworks |
 | Cursed Hillman | Heavy fur cloak |
 | Dwarf Slayer Pirate | many many Pistols |
 | Halfling Knight | Hound; Barding |
-| Ninja Gnoblar | Shurikens (Throwing stars with Stealthy special rule); Bo (gives an additional attack, may parry and requires both hands) |
-| Aenur, the sword of twilight | enormous sword known as Ienh-Khain |
 | Veskit, high executioner of clan eshin | Eshin Fighting Claws (the extra attack is included in his profile) |
 | Nicodemus, the cursed pilgrim | enormous Wizard's staff (see Special Rules) |
 | Abdul Alhazred, the Mad Sorcerer | Black Nomad Robes; Eye Pendant |
@@ -31,3 +27,5 @@ Generated from current starting equipment and combat loadout mapping. These are 
 | Luthor Wolfenbaum (wizard) | Fish-slapping staff; Bugman’s Beer; Clay orbs of Tilean Fire |
 | "Busty" Gwen | Knives; rolling pin |
 | The Foole | Poison Ring (See Special Rules) |
+
+Completed at milestone 51: Aenur/Ienh-Khain; Ninja Gnoblar Bo and shurikens; Thief’s Cloak; Hunter’s Cloak (visibility remains a tabletop rule, now explicitly shown). 23 listed character/role entries remain.

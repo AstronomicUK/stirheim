@@ -78,6 +78,8 @@ export interface Weapon {
   paired?: boolean;
   /** Extra attacks gained only in a turn the wielder charges (Whipcrack +1). */
   chargeBonusAttacks?: number;
+  /** Fixed extra attacks supplied by this weapon, added after Frenzy. */
+  bonusAttacks?: number;
   /** Flat Initiative bonus from the weapon itself (e.g. an Ithilmar weapon's own +1). Recorded for completeness, matching Initiative's `not modeled` status elsewhere (Stat/Skill Gain Analysers) — Initiative isn't wired into the probability engine, so this is informational only until it is. Undefined = +0. */
   initiativeModifier?: number;
   /** Flat Weapon Skill bonus while fighting with this weapon (Cathayan Longsword "Mastercrafted" +1). */

@@ -247,3 +247,20 @@ describe('Merchant Guardian target links',()=>{
   expect(combatantsOf(band,undefined,band.name,undefined).find(c=>c.id==='guard')?.protectsMerchantId).toBeUndefined()
  })
 })
+
+
+it('reads Aenur’s fixed-hit rule from his actual entry and recognises legacy sword and Bo names',()=>{
+ const band=warband({hiredSwords:[hiredSword('aenur',{hiredSwordId:'aenur_the_sword_of_twilight'})]})
+ expect(combatantsOf(band,undefined,band.name,undefined)[0].traitIds).toContain('invincible_swordsman')
+ const sword=loadoutOf([{itemId:null,customName:'enormous sword known as Ienh-Khain',quantity:1}])
+ expect(sword.melee[0].id).toBe('ienh_khain')
+ const bo=loadoutOf([{itemId:null,customName:'Bo (gives an additional attack, may parry and requires both hands)',quantity:1},{itemId:'dagger',quantity:1}])
+ expect(offHandCandidates(bo.melee,bo.melee[0])).toEqual([])
+})
+
+it('retains the Ninja’s Stealthy reminder with its usable throwing weapon',()=>{
+ const kit=loadoutOf([{itemId:'ninja_gnoblar_shurikens',quantity:1}])
+ expect(kit.ranged[0].id).toBe('throwing_knife')
+ expect(kit.assumptions.some(n=>n.includes('Stealthy'))).toBe(true)
+ expect(kit.ignored).toEqual([])
+})

@@ -72,3 +72,11 @@ it('recruits Albion protective items as usable unique equipment, outside the sho
  expect(hiredSwordStartingEquipment('truthsayer',findHiredSword('truthsayer')!.detail)).toContainEqual({itemId:'truthsayer_triskele',quantity:1})
  for(const id of ['dark_emissary_staff','dark_emissary_spiral','truthsayer_triskele'])expect(SHOP_ITEMS.some(i=>i.id===id)).toBe(false)
 })
+
+
+it('supplies operational Aenur, Ninja and cloak equipment',()=>{
+ expect(hiredSwordStartingEquipment('aenur_the_sword_of_twilight',findHiredSword('aenur_the_sword_of_twilight')!.detail).map(i=>i.itemId)).toContain('ienh_khain')
+ expect(hiredSwordStartingEquipment('ninja_gnoblar',findHiredSword('ninja_gnoblar')!.detail).map(i=>i.itemId)).toEqual(['toughened_leathers','ninja_gnoblar_shurikens','ninja_gnoblar_bo'])
+ expect(kit('thief').map(i=>i.itemId)).toContain('thief_cloak')
+ expect(kit('kislev_ranger').map(i=>i.itemId)).toContain('kislev_ranger_cloak')
+})

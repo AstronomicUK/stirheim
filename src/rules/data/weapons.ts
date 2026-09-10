@@ -1,3 +1,4 @@
+import { HIRED_SPECIAL_WEAPONS } from './weapons/hiredSpecial';
 // Weapon catalogue — full database, extracted from rules/02-weapons-armour-equipment.md
 // (mordheimer.net) via two extraction agents reading close-combat/missile/blackpowder/animal
 // bestiary sections directly. See rules/00-index.md for provenance. Replaces the earlier
@@ -44,7 +45,7 @@ const MANUAL_ADDITIONS: Weapon[] = [
   },
 ];
 
-export const WEAPONS: Weapon[] = [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...WARBAND_SPECIAL_WEAPONS, ...MANUAL_ADDITIONS];
+export const WEAPONS: Weapon[] = [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...WARBAND_SPECIAL_WEAPONS, ...HIRED_SPECIAL_WEAPONS, ...MANUAL_ADDITIONS];
 
 export function findWeapon(id: string, customWeapons: Weapon[] = []): Weapon | undefined {
   return WEAPONS.find((w) => w.id === id) ?? customWeapons.find((w) => w.id === id);

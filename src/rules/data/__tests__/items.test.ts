@@ -1,3 +1,4 @@
+import { HIRED_SPECIAL_WEAPONS } from '../weapons/hiredSpecial';
 import { HIRED_SPECIAL_ITEMS } from '../items/hiredSpecial';
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -170,7 +171,7 @@ describe("item catalogue", () => {
 
   it("links every weaponId to an entry in the weapons database", () => {
     const weaponIds = new Set(
-      [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...WARBAND_SPECIAL_WEAPONS].map((w) => w.id),
+      [...MELEE_WEAPONS, ...RANGED_AND_CREATURE_WEAPONS, ...MATERIAL_VARIANT_WEAPONS, ...WARBAND_SPECIAL_WEAPONS, ...HIRED_SPECIAL_WEAPONS].map((w) => w.id),
     );
     let linked = 0;
     for (const item of ITEMS) {

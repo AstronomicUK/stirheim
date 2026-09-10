@@ -107,6 +107,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   let count = baseAttacks + skillBonus();
   if (pitFighterActive(character, context)) count += 1;
   if (weapon.paired) count += 1;
+  count += weapon.bonusAttacks ?? 0;
   // Whipcrack: +1 Attack when charging, and +1 against the charger when charged (the first turn either way).
   if (isFirstTurnOfCombat(context) && weapon.chargeBonusAttacks) count += weapon.chargeBonusAttacks;
   // Chain Sticks' Flurry: extra attacks in the first turn of each combat.
@@ -228,6 +229,9 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     modifierSum += defender.toBeHit?.missile ?? 0;
     hitThreshold = rangedToHitBaseThreshold(attacker.stats.BS) - modifierSum;
   }
+
+  // Aenur’s source says always 2+ in hand-to-hand, irrespective of opposing WS.
+  if (weapon.type === "melee" && attacker.traits.includes("invincible_swordsman")) hitThreshold = 2;
 
   // ---- To Wound ----
   const vsTraitsApply = Boolean(weapon.vsTraits && weapon.vsTraits.traits.some((t) => defender.activeTraitIds.includes(t)));

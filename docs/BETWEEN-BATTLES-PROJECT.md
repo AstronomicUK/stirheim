@@ -24,7 +24,7 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,605 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,611 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
 
 Migrations through 67 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
@@ -413,3 +413,14 @@ Source `05-dramatis-personae.md:579–581,821–823`: The Spiral grants an unmod
 Validation: all **1,605 ordinary tests pass** (152 database-dependent tests skipped in this run; last separate DB run passed all 152). Typechecked build and lint pass with existing warnings. Tests exercise high Strength and armour-ignoring attacks retaining both wards, recruitment/non-shop availability, and new/legacy casting equipment. The 390px mobile casting check displays the automatic Staff of Darkness bonus and fits the viewport (`/tmp/stirheim-albion-mobile-qa.mjs`). No migration or production changes.
 
 A fresh executable equipment inventory is saved in `docs/HIRED-KIT-REMAINING-2026-09-11.md`: 27 character/role entries with unmapped equipment. Some are descriptive or tabletop-only; this is not a count of missing combat rules. Review them against source before implementation, and also inspect effects hidden behind ordinary mapped equipment (for example Staff of Light and Luthor’s alternate sword use). This replaces the vague remaining-kit label with an actionable list. The inventory probe was temporary and removed after generating the document.
+
+
+### Local milestone 51 — Aenur, Ninja weapons and two cloaks (#61/#74, not deployed)
+
+Source reviewed: `05-dramatis-personae.md:184–194` and `04-hired-swords.md:1224–1232,1588–1594,2568–2574`. Ienh-Khain now supplies +1 Strength, parry and natural 5–6 criticals; Aenur’s own Invincible Swordsman rule supplies the fixed 2+ melee hit roll. The Ninja Gnoblar’s Bo adds one attack after Frenzy, parries and occupies both hands. Shurikens use the throwing-knife engine profile with their distinct Stealthy description/reminder. New recruitment saves operational catalogue equipment; old exact sword/Bo/shuriken names remain recognised. Unique items remain outside the ordinary shop.
+
+Thief’s Cloak now applies -1 to enemy missile hit rolls only. Hunter’s Cloak explains its shooting-while-hidden Initiative check in the combat assumptions. Hiding, spotting distances and visibility remain tabletop decisions and are not claimed automated. The source’s doubled spotting-distance wording for the Thief is retained rather than silently corrected. Weapon equipment notes now reach combat assumptions instead of being bypassed by weapon mapping.
+
+Validation: **1,611 ordinary tests pass**, typechecked build and lint pass with existing warnings. Source-to-combat tests cover Aenur’s trait, actual critical faces and Strength/Mighty Blow interaction, Bo attacks after Frenzy and blocked off-hand selection, legacy aliases, missile-only cloak effects and shuriken reminders. A disposable 390px mobile battle exposes the Bo as the selected usable weapon without an off-hand selector or overflow (`/tmp/stirheim-hired-weapons-mobile-qa.mjs`). No migration, push or deployment.
+
+Remaining equipment inventory now lists 23 character/role entries; see `HIRED-KIT-REMAINING-2026-09-11.md`. Staff of Light dispel, other mapped-item special effects, unresolved source identities/maxima, Defend the Oasis scope and final combined release checks remain open.

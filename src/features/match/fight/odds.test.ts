@@ -247,3 +247,29 @@ it('keeps Albion protective saves against high Strength and armour-ignoring atta
   }
  }
 })
+
+
+it('applies Aenur’s fixed hit roll and Ienh-Khain’s strength and critical threshold',()=>{
+ const aenur=combatant('Aenur',[{itemId:'ienh_khain',quantity:1}],{stats:{...base,WS:8,S:4,A:3},traitIds:['invincible_swordsman'],skillIds:['mighty_blow']})
+ const enemy=combatant('Enemy',[],{stats:{...base,WS:10,T:5},traitIds:[]})
+ const fight=setup(aenur,enemy,'ienh_khain',null)
+ fight.defenderKit.toBeHit.melee=-2
+ const odds=computeOdds(fight)
+ expect(odds.weapons[0].input.hitThreshold).toBe(2)
+ expect(odds.weapons[0].input.woundThreshold).toBe(3)
+ expect(odds.weapons[0].input.critTriggerFaces).toEqual([5,6])
+ expect(toDefender(fight.attacker,fight.attackerKit).parryWeaponCount).toBe(1)
+})
+it('adds the Bo’s attack after Frenzy and blocks an off-hand weapon',()=>{
+ const ninja=combatant('Ninja',[{itemId:'ninja_gnoblar_bo',quantity:1}],{stats:{...base,A:2},traitIds:['frenzy']})
+ const fight=setup(ninja,skaven,'ninja_gnoblar_bo',null)
+ expect(computeOdds(fight).attacks).toBe(5)
+ expect(fight.primary.special).toContain('twoHanded')
+ expect(toDefender(fight.attacker,fight.attackerKit).parryWeaponCount).toBe(1)
+})
+it('applies the Thief’s cloak to missile attacks only, including legacy equipment',()=>{
+ const hidden=combatant('Thief',[{itemId:null,customName:"Thief's cloak",quantity:1}])
+ const bare=combatant('Bare',[])
+ expect(computeOdds(setup(marksman,hidden,'bow',null)).weapons[0].input.hitThreshold).toBe(Number(computeOdds(setup(marksman,bare,'bow',null)).weapons[0].input.hitThreshold)+1)
+ expect(computeOdds(setup(captain,hidden,'sword',null)).weapons[0].input.hitThreshold).toBe(computeOdds(setup(captain,bare,'sword',null)).weapons[0].input.hitThreshold)
+})

@@ -11,6 +11,9 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   dark_emissary_spiral: { wardSave: 5, note: "The Spiral: unmodifiable 5+ save." },
   truthsayer_triskele: { wardSave: 4, note: "The Triskele: unmodifiable 4+ save." },
   dark_emissary_staff: { note: "Staff of Darkness: +1 to casting rolls; applied in Cast a Spell." },
+  ninja_gnoblar_shurikens: {note:"Stealthy: throwing these shurikens does not reveal the hidden Ninja unless the target passes an Initiative test. Resolve visibility on the tabletop."},
+  thief_cloak: {toBeHit:{missile:-1},note:"Thief’s Cloak: enemy missiles are -1 to hit; double the distance required to spot the hidden thief on the tabletop."},
+  kislev_ranger_cloak: {note:"Hunter’s Cloak: shooting while hidden does not reveal the Ranger unless the target passes an Initiative test. Resolve visibility on the tabletop."},
   // ---- Traits ----
   bear_claw_necklace: { traits: ["frenzy"], note: "Bear-Claw Necklace: subject to Frenzy." },
   red_toof_tribal_jewellery: { traits: ["frenzy"], note: "Red Toof Tribal Jewellery: subject to Frenzy." },

@@ -803,6 +803,8 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   if(id==='countess_marianna_chevaux_vampire_assassin') return kit(['rapier','dagger','throwing_knives_stars','crossbow_pistol']).map(i=>['rapier','crossbow_pistol'].includes(i.itemId!)?{...i,notes:'Coated in essence of garlic: acts as Black Lotus only against Vampires.'}:i);
   if(id==='dijin_katal_the_renegade_assassin') return [{itemId:'sword',quantity:2,notes:'Both swords are coated with Dark Venom.'},...kit(['repeater_crossbow']),{itemId:null,customName:"Druchii Assassin’s Cloak",quantity:1}];
   if(id==='the_dark_jester_in_mordheim') return [{itemId:'club_mace_or_hammer',quantity:1,notes:'Skeleton hobby horse: counts as a club.'},{itemId:'morning_star',quantity:1,notes:'Sack of spikes: counts as a morning star.'}];
+  if(id==='aenur_the_sword_of_twilight') return kit(['ithilmar_armour','elven_cloak','ienh_khain']);
+  if(id==='ninja_gnoblar') return kit(['toughened_leathers','ninja_gnoblar_shurikens','ninja_gnoblar_bo']);
   if(id==='freelancer') return [...kit(['heavy_armour', 'shield', 'lance', 'sword']), ...mount];
   if(id==='highwayman') return [...kit(['dagger', 'rapier', 'buckler']), { itemId: 'pistol', quantity: 2 }, ...mount];
   if(id==='roadwarden') return [...kit(['crossbow', 'horsemans_hammer', 'dagger', 'heavy_armour']), { itemId: 'torch', quantity: 3 }, ...mount];

@@ -124,6 +124,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
       }
     >
       <div className="flex flex-col gap-4 pb-2">
+        {unit.id==='ogre_hunting_party_ogre_hunter' && roster.hiredSwords.some(h=>h.status==='active'&&['ogre_bodyguard','ogre_slave_master'].includes(h.hiredSwordId)) ? <Notice tone="warn" title="Hired Ogres will leave">Recruiting this Hunter removes {roster.hiredSwords.filter(h=>h.status==='active'&&['ogre_bodyguard','ogre_slave_master'].includes(h.hiredSwordId)).map(h=>h.name).join(', ')} from the active warband, as required by Distasteful Company.</Notice> : null}
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" error={trimmed ? undefined : 'Give the hero a name'} />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire cost" value={`${cost} gc`} />

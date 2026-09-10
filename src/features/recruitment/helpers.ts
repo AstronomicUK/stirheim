@@ -4,7 +4,7 @@
 import { findHiredSword, HIRED_SWORDS } from '../../rules/data/campaign/hiredSwords'
 import { isBanned } from '../../rules/resolve/houseRules'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
-import { heroCapacity } from '../../rules/data/warbandTemplates'
+import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import { isRulesError } from '../../rules/resolve/errors'
 import { canRecruit, type CanRecruitResult } from '../../rules/resolve/recruitment'
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
@@ -206,8 +206,10 @@ function escapeRegExp(text: string): string {
 }
 
 /** The warband list's own hiring rule (Beastmen hire nobody, Dwarfs hire no Elves...), when it refuses this entry. */
-export function warbandRestriction(entry: HiredSwordSummary, template: WarbandTemplate | undefined): Eligibility | null {
+export function warbandRestriction(entry: HiredSwordSummary, template: WarbandTemplate | undefined, roster?: RosterWarband): Eligibility | null {
   if (!template) return null
+  const dynamic = conditionalHiringRule(entry, template, roster)
+  if (dynamic) return dynamic
   const rules = warbandRules(template.id).hiredSwords
   if (!rules) return null
   if (rules.allow === 'none') return { kind: 'restricted', reason: rules.note }
@@ -235,7 +237,7 @@ export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWa
   if (!entry.detail?.profiles[0]) {
     return { kind: 'blocked', reason: 'The rules data has no stat profile for this entry.' }
   }
-  const own = warbandRestriction(entry, template)
+  const own = warbandRestriction(entry, template, roster)
   if (own) return own
   return readRestriction(entry.detail.mayBeHired, template, entry.name)
 }
@@ -329,4 +331,47 @@ export function errorMessage(err: unknown, fallback = 'Something went wrong.'): 
   if (isRulesError(err)) return err.message
   if (err instanceof Error) return err.message || fallback
   return fallback
+}
+
+
+/** Explicit warband-side exceptions, with the current roster supplied for conditional access. */
+function conditionalHiringRule(entry:HiredSwordSummary,template:WarbandTemplate,roster?:RosterWarband):Eligibility|null {
+ const verdict=(allowed:boolean,reason:string):Eligibility=>({kind:allowed?'allowed':'restricted',reason})
+ const as=(id:string)=>readRestriction(entry.detail?.mayBeHired,findWarbandTemplate(id),entry.name)
+ const accepts=(id:string)=>['allowed','ok'].includes(as(id).kind)
+ const named=readRestriction(entry.detail?.mayBeHired,template,entry.name).kind==='allowed'
+ const active=roster?.heroes.filter(h=>h.status==='active')??[]
+ if(template.id==='sorcerous_society') {
+  const detail=entry.detail
+  const wizard=detail?.specialRules.some(r=>/^(?:wizard|spellcaster|magic user)$/i.test(r.name)||/\b(?:is|counts as) (?:a |an )?(?:\w+ )?wizard\b/i.test(r.text)) && entry.id!=='luthor_wolfenbaum'
+  if(entry.id==='elf_mage')return verdict(true,'High Elf Mage is the explicit exception to the Society’s Wizard exclusion.')
+  if(wizard)return verdict(false,'Keep it secret, keep it safe: the Society cannot recruit a Wizard other than the High Elf Mage.')
+  return as('mercenaries_reikland')
+ }
+ if(template.id==='maneaters'&&active.some(h=>h.skillIds.includes('maneaters_skills_dog_of_war')))return as('mercenaries_reikland')
+ if(template.id==='ogre_hunting_party') {
+  const noHunter=!active.some(h=>h.unitTemplateId==='ogre_hunting_party_ogre_hunter')
+  return verdict(['hobgoblin_scout','gnoblar_botcher','ninja_gnoblar'].includes(entry.id)||(noHunter&&['ogre_bodyguard','ogre_slaver'].includes(entry.id)),'Distasteful Company: Hobgoblin Scout, Gnoblar Botcher and Ninja Gnoblar only; Ogre Bodyguard/Slaver are allowed while there is no Ogre Hunter, and must leave when a Hunter returns.')
+ }
+ if(template.id==='marauders_of_chaos') {
+  const marked=active.some(h=>h.flags.chaosMark==='arkhar')
+  return verdict(['pit_fighter','ogre_bodyguard','norse_shaman','imperial_assassin'].includes(entry.id)||(['witch','warlock'].includes(entry.id)&&!marked)||(!['witch','warlock'].includes(entry.id)&&named),'Marauders hire Pit Fighters, Ogres, Norse Shamans, Imperial Assassins and explicitly named exceptions. Witches/Warlocks require no warrior with the Mark of Arkhar.')
+ }
+ if(['black_dwarfs','the_sons_of_hashut'].includes(template.id)) {
+  if(/\b(?:elf|elven|elves)\b/i.test(entry.name)||['shadow_warrior','aenur_the_sword_of_twilight'].includes(entry.id))return verdict(false,'Chaos Dwarfs never hire Elves.')
+  return verdict(['ogre_bodyguard','pit_fighter','warlock','imperial_assassin','hobgoblin_scout'].includes(entry.id)||accepts('orc_mob')||accepts('cult_of_the_possessed'),'Chaos Dwarfs allow their five named hires, universal hires and those available to Orc or Chaos warbands, excluding all Elves.')
+ }
+ if(template.id==='night_goblins_web')return verdict(['pit_fighter','ogre_bodyguard','warlock','witch'].includes(entry.id)||as('orc_mob').kind==='allowed'||named,'Night Goblins hire Pit Fighters, Ogre Bodyguards, Warlocks, Witches and hires which explicitly work with Orcs or Goblins.')
+ if(template.id==='imperial_outriders') {
+  if(entry.id==='highwayman')return verdict(false,'The Highwayman refuses to serve Imperial Outriders.')
+  if(['freelancer','freelance_knight','roadwarden','knight_of_the_white_wolf'].includes(entry.id))return verdict(true,'Imperial Outriders can hire this mounted warrior.')
+  const kit=entry.detail?.weaponsArmour??''
+  if(/(?:warhorse|riding horse|barded horse)/i.test(kit))return {kind:'check',reason:'Imperial Outriders require a mounted hire. Confirm the horse is included in the selected equipment.'}
+  return verdict(false,'Imperial Outriders may only be accompanied by mounted hired swords.')
+ }
+ if(template.id==='wood_elves_of_athel_loren') {
+  const evil=/chaos|dark elf|skaven|skryre|possessed|beastm|undead|necromanc|vampire|bone goliath|cursed hillman/i.test(entry.name+' '+entry.id.replaceAll('_',' '))
+  return evil?verdict(false,'Tolerant does not extend to Chaotic or evil hires: Skaven, Possessed, Beastmen, Dark Elves, Undead and similar.'): {kind:'check',reason:'Tolerant: Wood Elves may hire this warrior if they are not of a Chaotic or evil nature. Confirm any unusual alignment at the table.'}
+ }
+ return null
 }

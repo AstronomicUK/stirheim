@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
-import { hireHiredSword, payUpkeep, dismissWarrior } from '../recruitment'
-import { hiredSwordGainsExperience, hiredSwordStartingSkills } from '../hiredSwordRules'
+import { hireHiredSword, payUpkeep, dismissWarrior, recruitHero } from '../recruitment'
+import { conditionalHireDepartures, hiredSwordGainsExperience, hiredSwordStartingSkills } from '../hiredSwordRules'
 import { warbandRating } from '../rating'
 import { findWarbandTemplate } from '../../data/warbandTemplates'
 import { warriorXpLine } from '../../../features/postBattle/model/xp'
@@ -41,4 +41,23 @@ it('supplies the previously empty equipment entries and Luthor’s chosen role',
    for(const item of s.equipment) if(item.itemId) expect(findItem(item.itemId),item.itemId).toBeDefined()
   }
  }
+})
+
+it('removes hired Ogres and logs why when an Ogre Hunter returns',()=>{
+ const before=hireHiredSword({...roster(),warbandTemplateId:'ogre_hunting_party'},'ogre_bodyguard','ogre').value
+ const result=recruitHero(before,findWarbandTemplate('ogre_hunting_party')!,'ogre_hunting_party_ogre_hunter','Hunter','hunter')
+ expect(result.value.hiredSwords[0].status).toBe('left')
+ expect(result.events.some(e=>e.message.includes('Hunter rejoins'))).toBe(true)
+ const leader=result.value.heroes[0]
+ const maneaters={...before,warbandTemplateId:'maneaters',heroes:[{...leader,skillIds:['maneaters_skills_dog_of_war']}]}
+ expect(conditionalHireDepartures(maneaters,{...maneaters,heroes:[{...maneaters.heroes[0],status:'dead'}]})).toHaveLength(1)
+ expect(conditionalHireDepartures(maneaters,maneaters)).toEqual([])
+})
+
+it('honours the selected Scout through dismissal and unpaid upkeep',()=>{
+ const r=hireHiredSword(roster(),'maglah_khan_s_horde','khan',{scouts:3}).value
+ const scouts=r.hiredSwords.filter(s=>s.hiredSwordId==='hobgoblin_scout')
+ r.hiredSwords.find(s=>s.id==='khan')!.flags.retainedScoutId=scouts[2].id
+ expect(dismissWarrior(r,'khan').value.hiredSwords.filter(s=>s.status==='active').map(s=>s.id)).toEqual([scouts[2].id])
+ expect(payUpkeep({...r,gold:0},'khan').value.warband.hiredSwords.filter(s=>s.status==='active').map(s=>s.id)).toEqual([scouts[2].id])
 })

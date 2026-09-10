@@ -2,7 +2,7 @@ import { isDramatisPersona } from '../data/campaign/hiredSwords'
 import { findWarbandTemplate } from "../data/warbandTemplates";
 import { parseDice, rollDice } from './dice';
 import { HIRED_EQUIPMENT_CHOICES } from "./hiredEquipmentChoices";
-import { hiredSwordStartingSkills } from './hiredSwordRules';
+import { conditionalHireDepartures, hiredSwordStartingSkills } from './hiredSwordRules';
 // Recruitment resolvers — hiring heroes and henchmen from the warband template, hiring and paying
 // hired swords, and dismissing warriors. Rulebook "Recruiting new warriors" / "Veterans" (data in
 // data/campaign/trading) and the Hired Swords rules (data/campaign/hiredSwords).
@@ -217,8 +217,11 @@ export function recruitHero(
   }
   if (magic && new Set(hero.spellIds).size !== magic.count) throw new RulesError('recruitment.startingSpells', `Record ${magic.count} distinct starting spells.`);
   if (magic?.loreId && hero.spellIds.some(id => !findLore(magic.loreId!)!.spells.some(s => s.id === id))) throw new RulesError('recruitment.startingSpells', 'A starting spell does not belong to the chosen lore.');
+  const recruited = { ...warband, gold: warband.gold - cost, heroes: [...warband.heroes, hero] };
+  const departures = conditionalHireDepartures(warband, recruited);
+  for (const departure of departures) recruited.hiredSwords = departingHiredSword(recruited, departure.id);
   return {
-    value: { ...warband, gold: warband.gold - cost, heroes: [...warband.heroes, hero] },
+    value: recruited,
     events: [
       {
         kind: "hero.recruited",
@@ -226,6 +229,7 @@ export function recruitHero(
         message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${magic?.extraCost ? `; ${magic.label}` : ''}${freeDagger ? " and the free dagger" : ""}; treasury now ${warband.gold - cost} gc`,
         data: { unitTemplateId: unit.id, cost, startingExperience: unit.startingExperience },
       },
+      ...departures.map(d => ({kind: "hiredSword.left" as const,subjectId:d.id,message:`${d.name} leaves. ${d.reason}`})),
     ],
   };
 }
@@ -739,7 +743,8 @@ export function payHenchmanUpkeep(warband: RosterWarband, groupId: string, opts:
 export function departingHiredSword(warband: RosterWarband, id: string): RosterHiredSword[] {
   const hire = warband.hiredSwords.find(s => s.id === id);
   if (!hire) return warband.hiredSwords;
-  const remainingScout = warband.hiredSwords.find(s => s.hiredSwordId === 'hobgoblin_scout' && s.status === 'active');
+  const scouts = warband.hiredSwords.filter(s => s.hiredSwordId === 'hobgoblin_scout' && s.status === 'active');
+  const remainingScout = scouts.find(s=>s.id===hire.flags.retainedScoutId) ?? scouts[0];
   return warband.hiredSwords.map(s => {
     const grouped = hire.flags.hireGroupId && (!hire.flags.hireCompanion || hire.hiredSwordId === 'ulli_and_marquand') && s.flags.hireGroupId === hire.flags.hireGroupId;
     const retinue = hire.hiredSwordId === 'maglah_khan_s_horde' && s.hiredSwordId === 'hobgoblin_scout' && s.id !== remainingScout?.id;

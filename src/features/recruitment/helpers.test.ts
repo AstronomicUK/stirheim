@@ -279,3 +279,38 @@ describe('warband-specific hiring restrictions (#119)', () => {
     expect(warbandRestriction(findHiredSwordEntry('warlock')!, template)?.kind).toBe('restricted')
   })
 })
+
+describe('source-conditioned warband hiring',()=>{
+ const check=(warbandId:string,hireId:string,roster=warband())=>warbandRestriction(findHiredSwordEntry(hireId)!,findWarbandTemplate(warbandId),{...roster,warbandTemplateId:warbandId})
+ it('uses the Orc and Druchii printed lists',()=>{
+  expect(check('orc_mob','warlock')?.kind).toBe('allowed')
+  expect(check('orc_mob','halfling_scout')?.kind).toBe('restricted')
+  expect(check('druchii','duellist')?.kind).toBe('allowed')
+  expect(check('druchii','elf_ranger')?.kind).toBe('restricted')
+ })
+ it('opens the Ogre Bodyguard exception only without a Hunter',()=>{
+  expect(check('ogre_hunting_party','ogre_bodyguard')?.kind).toBe('allowed')
+  const r=warband();r.heroes[0].unitTemplateId='ogre_hunting_party_ogre_hunter'
+  expect(check('ogre_hunting_party','ogre_bodyguard',r)?.kind).toBe('restricted')
+  expect(check('ogre_hunting_party','ninja_gnoblar',r)?.kind).toBe('allowed')
+ })
+ it('recognises Wizards beyond the old four IDs, and the Elf Mage exception',()=>{
+  expect(check('sorcerous_society','warlock')?.kind).toBe('restricted')
+  expect(check('sorcerous_society','witch')?.kind).toBe('restricted')
+  expect(check('sorcerous_society','elf_mage')?.kind).toBe('allowed')
+ })
+ it('keeps the Marauder mark exclusion and mounted Outrider condition',()=>{
+  const r=warband();r.heroes[0].flags.chaosMark='arkhar'
+  expect(check('marauders_of_chaos','warlock',r)?.kind).toBe('restricted')
+  expect(check('marauders_of_chaos','warlock')?.kind).toBe('allowed')
+  expect(check('imperial_outriders','freelancer')?.kind).toBe('allowed')
+  expect(check('imperial_outriders','highwayman')?.kind).toBe('restricted')
+  expect(check('imperial_outriders','pit_fighter')?.kind).toBe('restricted')
+ })
+ it('allows Dog of War’s mercenary access and does not carry it from a dead leader',()=>{
+  const r=warband();r.heroes[0].skillIds=['maneaters_skills_dog_of_war']
+  expect(['allowed','ok']).toContain(check('maneaters','pit_fighter',r)?.kind)
+  r.heroes[0].status='dead'
+  expect(check('maneaters','pit_fighter',r)?.kind).toBe('restricted')
+ })
+})

@@ -1,3 +1,4 @@
+import { conditionalHireDepartures } from '../../../rules/resolve/hiredSwordRules'
 import { pettyThief } from './pettyThief'
 import { locationRecruits } from './locationRecruits'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
@@ -571,7 +572,8 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
   const maglah = ctx.roster.hiredSwords.find(s=>s.hiredSwordId==='maglah_khan_s_horde' && s.status==='active')
   if(maglah && ['dead','left','retired'].includes(heroes.find(h=>h.id===maglah.id)?.patch.status ?? 'active')) {
     const scouts=ctx.roster.hiredSwords.filter(s=>s.hiredSwordId==='hobgoblin_scout' && (heroes.find(h=>h.id===s.id)?.patch.status ?? s.status)==='active')
-    for(const scout of scouts.slice(1)) {
+    const retained=scouts.find(s=>s.id===(draft.retainedScoutId??maglah.flags.retainedScoutId))??scouts[0]
+    for(const scout of scouts.filter(s=>s.id!==retained?.id)) {
       const patch=heroes.find(h=>h.id===scout.id)
       if(patch)patch.patch.status='left'
       else heroes.push({id:scout.id,patch:{status:'left'}})
@@ -763,6 +765,15 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   })
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, exploration.record?.xpAwards)
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  const hireDepartures = conditionalHireDepartures(ctx.roster, rosterAfterReport(ctx.roster,applied))
+  for (const departure of hireDepartures) {
+    const existing = applied.heroes.find(h=>h.id===departure.id)
+    if(existing) existing.patch.status='left'
+    else applied.heroes.push({id:departure.id,patch:{status:'left'}})
+    applied.pending_advances = applied.pending_advances.filter(a=>a.subject_id!==departure.id)
+    const line=xp.lines.find(l=>l.subjectId===departure.id)
+    if(line)line.advancesEarned=0
+  }
   const recruits = locationRecruits(draft, ctx, exploration, injuries)
   if (recruits.newGroups.length) applied.new_groups = recruits.newGroups
   for (const row of recruits.groupPatches) {
@@ -781,9 +792,20 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (exploration.record) exploration.record.notes.push(...recruits.notes)
   const theft = pettyThief(draft, ctx, participants)
   if (theft.transfer) applied.petty_thief = theft.transfer
+  const departingIds=new Set(applied.heroes.filter(h=>h.patch.status==='left').map(h=>h.id))
+  applied.pending_advances=applied.pending_advances.filter(a=>!departingIds.has(a.subject_id))
+  for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.exploration.push(...recruits.problems, ...theft.problems)
+  const maglahLoss=injuries.hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
+  let retainedScoutNote=''
+  if(maglahLoss){
+    const scouts=ctx.roster.hiredSwords.filter(s=>s.hiredSwordId==='hobgoblin_scout'&&(injuries.hiredSwords.find(r=>r.sword.id===s.id)?.resolution.sword.status??s.status)==='active')
+    const kept=scouts.find(s=>s.id===(draft.retainedScoutId??maglahLoss.sword.flags.retainedScoutId))??(scouts.length===1?scouts[0]:undefined)
+    if(kept)retainedScoutNote=`Maglah’s retinue: ${kept.name} remains; the other surviving Scouts leave.`
+    if(scouts.length>1&&!scouts.some(s=>s.id===(draft.retainedScoutId??maglahLoss.sword.flags.retainedScoutId)))problems.injuries.push('Choose which Hobgoblin Scout stays after Maglah’s departure.')
+  }
   problems.advances.push(...advances.problems)
   const firstIncomplete = STEP_IDS.findIndex((id) => problems[id].length > 0)
   const firstIncompleteStep = firstIncomplete === -1 ? null : firstIncomplete
@@ -804,7 +826,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), ...theft.notes].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, ctx), ...theft.notes, retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

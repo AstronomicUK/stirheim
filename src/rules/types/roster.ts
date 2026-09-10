@@ -52,6 +52,7 @@ export interface WarriorFlags {
   /** Chosen starting lore, retained when later books add spells from other lores. */
   magicLoreId?: string;
   chaosMark?: string;
+  retainedScoutId?: string;
   /** Games the warrior must sit out before playing again (Deep Wound, Light arm wound, etc.). */
   missNextGames?: number;
   /** Old Battle Wound: roll a D6 at the start of each battle, 1 = cannot fight. */

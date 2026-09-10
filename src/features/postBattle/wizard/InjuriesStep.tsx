@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
 import { HENCHMAN_INJURY } from '../../../rules/data/campaign/injuries'
 import { rollDie } from '../../../rules/resolve/dice'
-import { Button, DieField, Markdown, Stepper, TextField } from '../../../ui'
+import { Button, DieField, Markdown, Stepper, TextField, SelectField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import {
   addHeroInjuryRoll,
@@ -39,11 +39,14 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
   const { heroes, hiredSwords, groups, animals, summary } = derived.injuries
   const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0 && animals.length === 0
   const kit = derived.kit.prompts
+  const maglah=hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
+  const scouts=ctx.roster.hiredSwords.filter(s=>s.hiredSwordId==='hobgoblin_scout'&&(hiredSwords.find(r=>r.sword.id===s.id)?.resolution.sword.status??s.status)==='active')
   return (
     <StepBody title="Serious injuries">
       <Intro>
         {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes and Dramatis Personae roll D66; ordinary hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
       </Intro>
+      {maglah&&scouts.length>1?<Card className="p-4"><SelectField label="Hobgoblin Scout who stays after Maglah’s departure" value={draft.retainedScoutId??maglah.sword.flags.retainedScoutId??''} onChange={e=>update(d=>({...d,retainedScoutId:e.target.value}))}><option value="">Choose the Scout who stays</option>{scouts.map(s=><option key={s.id} value={s.id}>{s.name} ({s.xp} XP)</option>)}</SelectField></Card>:null}
       {nothing ? (
         <Card className="px-4 py-3">
           <p className="text-sm text-ink">No casualties. Everyone walks back to camp.</p>

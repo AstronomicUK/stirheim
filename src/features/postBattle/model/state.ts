@@ -110,6 +110,7 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  retainedScoutId?: string
   pettyThiefRoll?: number | null
   pettyThiefSelection?: number | null
   scenarioMission?: string

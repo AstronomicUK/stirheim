@@ -61,7 +61,16 @@ describe.skipIf(!enabled)('battle-start upkeep (#219)', () => {
     expect(start.error).toBeNull()
     expect((await admin.from('heroes').select('status').in('id',[parent,companion])).data?.every(h=>h.status==='active')).toBe(true)
   })
-  it('rejects an anonymous preview and start', async () => {
+  it('retains the selected Scout when unpaid Maglah leaves at battle start',async()=>{
+    expect((await admin.from('heroes').update({hired_sword_rules_id:'maglah_khan_s_horde',flags:{upkeepOwedAfter:crypto.randomUUID(),retainedScoutId:paid}}).eq('id',parent)).error).toBeNull()
+    expect((await admin.from('heroes').update({hired_sword_rules_id:'hobgoblin_scout',flags:{}}).in('id',[companion,paid])).error).toBeNull()
+    const preview=await player.rpc('unpaid_match_hires',{p_match_id:match})
+    expect(preview.error).toBeNull()
+    expect(preview.data.map((h:{id:string})=>h.id).sort()).toEqual([parent,companion].sort())
+    expect((await player.rpc('start_match',{p_match_id:match,p_unpaid_ids:[parent,companion]})).error).toBeNull()
+    expect((await admin.from('heroes').select('status').eq('id',paid).single()).data?.status).toBe('active')
+  })
+  it('rejects an anonymous preview and start' , async () => {
     expect((await anonymous.rpc('unpaid_match_hires',{p_match_id:match})).error).not.toBeNull()
     expect((await anonymous.rpc('start_match',{p_match_id:match,p_unpaid_ids:[parent,companion]})).error).not.toBeNull()
   })

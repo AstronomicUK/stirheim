@@ -1,3 +1,4 @@
+import { RetainedScout } from '../roster/view/RetainedScout'
 import { isDramatisPersona } from '../../rules/data/campaign/hiredSwords'
 import { HIRED_EQUIPMENT_CHOICES } from '../../rules/resolve/hiredEquipmentChoices'
 import { halfPriceHireSource, halved, type PerkSource } from '../../rules/resolve/mapAdvantages'
@@ -80,6 +81,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
                           Upkeep <span className="text-sm text-ink">{upkeepText(entry)}</span>
                         </span>
                       </div>
+                      {hs.hiredSwordId==='maglah_khan_s_horde'&&canEdit?<RetainedScout detail={detail} hire={hs}/>:null}
                       <StatLine stats={hs.stats} compact className="text-xs" />
                       {canEdit ? (
                         <div className="grid grid-cols-2 gap-2">
@@ -490,3 +492,4 @@ function GroupUpkeepSheet({ detail, line, onClose, onDone }: { detail: WarbandDe
     </Sheet>
   )
 }
+

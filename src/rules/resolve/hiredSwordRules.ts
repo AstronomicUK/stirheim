@@ -29,3 +29,10 @@ export function hiredSwordStartingSkills(id: string): string[] {
  for(const rule of detail.specialRules){const match=SKILLS.find(s=>s.name.toLowerCase()===rule.name.toLowerCase());if(match)result.push(match.id)}
  return [...new Set(result)]
 }
+
+/** Departures explicitly required by the warband source, rather than generic eligibility warnings. */
+export function conditionalHireDepartures(before:import('../types/roster').RosterWarband,after:import('../types/roster').RosterWarband):{id:string;name:string;reason:string}[] {
+ const hunterReturns=before.warbandTemplateId==='ogre_hunting_party'&&!before.heroes.some(h=>h.status==='active'&&h.unitTemplateId==='ogre_hunting_party_ogre_hunter')&&after.heroes.some(h=>h.status==='active'&&h.unitTemplateId==='ogre_hunting_party_ogre_hunter')
+ const dogOfWarDied=before.warbandTemplateId==='maneaters'&&before.heroes.some(h=>h.status==='active'&&h.skillIds.includes('maneaters_skills_dog_of_war')&&after.heroes.some(a=>a.id===h.id&&a.status==='dead'))
+ return before.hiredSwords.filter(s=>s.status==='active'&&(dogOfWarDied||(hunterReturns&&['ogre_bodyguard','ogre_slave_master'].includes(s.hiredSwordId)))).map(s=>({id:s.id,name:s.name,reason:dogOfWarDied?'Dog of War: all hired swords leave when the leader dies.':'Distasteful Company: hired Ogres leave when an Ogre Hunter rejoins.'}))
+}

@@ -1,3 +1,4 @@
+import { RetainedScout } from './RetainedScout'
 import { useState } from 'react'
 import { type WarbandDetail } from '../../../api/warbands'
 import { useRosterEvent } from '../../../api/rosterEvents'
@@ -29,6 +30,7 @@ export function HiredUpkeepCard({detail,canEdit}:{detail:WarbandDetail;canEdit:b
    const shards = payment ? detail.roster.wyrdstone - payment.value.warband.wyrdstone : 0
    return <Card key={s.id} className="flex flex-col gap-2 p-4">
     <p className="font-semibold">{s.name}</p>
+    {s.hiredSwordId==='maglah_khan_s_horde'?<RetainedScout detail={detail} hire={s}/>:null}
     {s.flags.contractCheckOwed ? <>
       <DieField label={s.hiredSwordId === 'old_prospector' ? 'Old Coot — leaves on 1' : 'You can never escape your past…'} sides={6} value={rolls[s.id]??null} onChange={v=>setRolls(r=>({...r,[s.id]:v}))} rollable/>
       {s.hiredSwordId === 'countess_marianna_chevaux_vampire_assassin' && rolls[s.id] === 6 ? <>

@@ -799,6 +799,10 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   }
   const kit = (ids: string[]): RosterItem[] => ids.map(itemId => ({itemId,quantity:1}));
   const mount = mounted && OPTIONAL_HIRED_MOUNTS[id] ? kit([OPTIONAL_HIRED_MOUNTS[id].itemId]) : [];
+  if(id==='bertha_bestraufrung_high_matriarch_of_the_sisterhood') return [{itemId:'sigmarite_warhammer',quantity:2},...kit(['gromril_armour','blessed_water','holy_unholy_relic'])];
+  if(id==='countess_marianna_chevaux_vampire_assassin') return kit(['rapier','dagger','throwing_knives_stars','crossbow_pistol']).map(i=>['rapier','crossbow_pistol'].includes(i.itemId!)?{...i,notes:'Coated in essence of garlic: acts as Black Lotus only against Vampires.'}:i);
+  if(id==='dijin_katal_the_renegade_assassin') return [{itemId:'sword',quantity:2,notes:'Both swords are coated with Dark Venom.'},...kit(['repeater_crossbow']),{itemId:null,customName:"Druchii Assassin’s Cloak",quantity:1}];
+  if(id==='the_dark_jester_in_mordheim') return [{itemId:'club_mace_or_hammer',quantity:1,notes:'Skeleton hobby horse: counts as a club.'},{itemId:'morning_star',quantity:1,notes:'Sack of spikes: counts as a morning star.'}];
   if(id==='freelancer') return [...kit(['heavy_armour', 'shield', 'lance', 'sword']), ...mount];
   if(id==='highwayman') return [...kit(['dagger', 'rapier', 'buckler']), { itemId: 'pistol', quantity: 2 }, ...mount];
   if(id==='roadwarden') return [...kit(['crossbow', 'horsemans_hammer', 'dagger', 'heavy_armour']), { itemId: 'torch', quantity: 3 }, ...mount];

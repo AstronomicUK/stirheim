@@ -48,6 +48,13 @@ const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, .
  *   - "Horse" (Bretonnian Knights, Mazzalupo) is a riding horse, not a warhorse (listed separately).
  */
 export const EQUIPMENT_ALIASES: Record<string, string> = {
+  "Holy Relic": "holy_unholy_relic",
+  "Cavalry Spear": "spear",
+  "Dueling Pistols": "duelling_pistol",
+  "Double Handed Axe": "double_handed_weapon",
+  "Lucky Rabbit’s foot": "rabbits_foot",
+  "vial of Blessed Water": "blessed_water",
+
   "Battle Axe": "axe",
   "Scimitar": "sword",
   "Scimitar (counts as a Sword)": "sword",

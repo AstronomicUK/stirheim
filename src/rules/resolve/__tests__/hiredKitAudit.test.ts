@@ -44,3 +44,14 @@ describe('hired equipment source regressions (#61 / #74)', () => {
     for (const choice of HIRED_EQUIPMENT_CHOICES.ogre_bodyguard) expect(choice.equipment).toContainEqual({itemId: 'light_armour', quantity: 1})
   })
 })
+
+it('resolves the remaining explicit ordinary Persona kit without turning wardrobe prose into items',()=>{
+ const actual=(id:string)=>hiredSwordStartingEquipment(id,findHiredSword(id)!.detail)
+ expect(actual('bertha_bestraufrung_high_matriarch_of_the_sisterhood')).toEqual([{itemId:'sigmarite_warhammer',quantity:2},{itemId:'gromril_armour',quantity:1},{itemId:'blessed_water',quantity:1},{itemId:'holy_unholy_relic',quantity:1}])
+ expect(actual('countess_marianna_chevaux_vampire_assassin').map(i=>i.itemId)).toEqual(['rapier','dagger','throwing_knives_stars','crossbow_pistol'])
+ expect(actual('dijin_katal_the_renegade_assassin')[0]).toMatchObject({itemId:'sword',quantity:2,notes:'Both swords are coated with Dark Venom.'})
+ expect(actual('the_dark_jester_in_mordheim').map(i=>i.itemId)).toEqual(['club_mace_or_hammer','morning_star'])
+ expect(actual('the_headless_horseman')).toContainEqual({itemId:'duelling_pistol',quantity:2})
+ expect(resolveEquipmentName('Cavalry Spear')?.id).toBe('spear')
+ for(const id of ['bertha_bestraufrung_high_matriarch_of_the_sisterhood','countess_marianna_chevaux_vampire_assassin','dijin_katal_the_renegade_assassin','the_dark_jester_in_mordheim'])for(const item of actual(id))if(item.itemId)expect(findItem(item.itemId),item.itemId).toBeDefined()
+})

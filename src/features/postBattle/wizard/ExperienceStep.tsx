@@ -62,7 +62,7 @@ export function ExperienceStep({ draft, derived, update, match, ctx }: StepProps
       <Section title="Awards" aside={owed > 0 ? `${owed} ${owed === 1 ? 'advance' : 'advances'} owed` : undefined}>
         {lines.length === 0 ? <p className="text-sm text-ink-dim">Nobody earns experience this time.</p> : null}
         {lines.map((line) => (
-          <XpCard key={line.subjectId} line={line} suggestions={scenario.bonuses} extras={draft.xpExtras[line.subjectId] ?? []} onAdd={(x) => update((d) => addXpExtra(d, line.subjectId, x))} onRemove={(i) => update((d) => removeXpExtra(d, line.subjectId, i))} />
+          <XpCard key={line.subjectId} line={line} suggestions={ctx.scenarioId==='the_hunters_become_the_hunted'?scenario.bonuses.filter(b=>!/cold one/i.test(b.label)):scenario.bonuses} extras={draft.xpExtras[line.subjectId] ?? []} onAdd={(x) => update((d) => addXpExtra(d, line.subjectId, x))} onRemove={(i) => update((d) => removeXpExtra(d, line.subjectId, i))} />
         ))}
       </Section>
       {earnedNothing.length > 0 ? (

@@ -199,11 +199,18 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
 
 export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null): InjuriesDerived {
   const burning = scenarioId === 'mordheim_s_burning'
+  const plant = (id:string) => scenarioId === 'the_hunters_become_the_hunted' && !!draft.plantCasualties?.[id]
   const out = heroOoaIds(draft)
   const heroes = participants.heroes
     .filter((h) => out.has(h.id))
     .map((hero) => {
       const skip = draft.injurySkips[hero.id]
+      if (plant(hero.id) && skip === undefined) {
+        const die=draft.scenarioInjuryDice?.[hero.id]
+        const res=resolveHeroInjuryFlow(hero,{rolls:isDie(die,6)?[{d66:die===1?11:41,subRoll:null}]:[],countRoll:null},matchId)
+        if(res.line&&isDie(die,6))res.line={...res.line,rolls:[die],injuryName:die===1?'Eaten by a carnivorous plant':'Escaped the plant',effect:die===1?'Eaten: removed from the campaign with carried equipment.':'Survives the plant injury roll.'}
+        return {hero,resolution:res}
+      }
       if (burning && skip === undefined) {
         const die = draft.scenarioInjuryDice?.[hero.id]
         const res = resolveHeroInjuryFlow(hero, { rolls: isDie(die, 6) ? [{ d66: die === 6 ? 41 : 11, subRoll: null }] : [], countRoll: null }, matchId)
@@ -217,6 +224,12 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((s) => out.has(s.id))
     .map((sword) => {
       const skip = draft.injurySkips[sword.id]
+      if (plant(sword.id) && skip === undefined) {
+        const die=draft.swordInjuries[sword.id]??null
+        const res=resolveHiredSwordInjury(sword,isDie(die,6)?die===1?1:6:null)
+        if(res.line&&isDie(die,6))res.line={...res.line,rolls:[die],injuryName:die===1?'Eaten by a carnivorous plant':'Escaped the plant',effect:die===1?'Eaten: removed from the campaign with carried equipment.':'Survives the plant injury roll.'}
+        return {sword,resolution:res}
+      }
       if (burning && skip === undefined) {
         const die = draft.swordInjuries[sword.id] ?? null
         const res = resolveHiredSwordInjury(sword, isDie(die, 6) ? die === 6 ? 6 : 1 : null)
@@ -231,7 +244,15 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0)
     .map((group) => {
       const outOfAction = Math.min(group.size, draft.groupsOut[group.id] ?? 0)
-      const dice = draft.groupInjuryDice[group.id]?.count ?? (!burning && henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : outOfAction)
+      const hasPlants=Array.from({length:outOfAction},(_,i)=>plant(`${group.id}:${i}`)).some(Boolean)
+      const dice = draft.groupInjuryDice[group.id]?.count ?? (!burning && !hasPlants && henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : outOfAction)
+      if (hasPlants) {
+        const rolls=(draft.groupInjuries[group.id]??[]).slice(0,dice)
+        let current=group
+        for(let i=0;i<dice;i++)if(isDie(rolls[i],6))current=plant(`${group.id}:${i}`)?{...current,size:Math.max(0,current.size-(rolls[i]===1?1:0))}:resolveGroupInjuries(current,1,[rolls[i]]).group
+        const dead=group.size-current.size,complete=rolls.length===dice&&rolls.every(r=>isDie(r,6))
+        return {group,outOfAction,dice,resolution:{group:current,dead,complete,line:complete?{subjectType:'group' as const,subjectId:group.id,subjectName:group.name,rolls:rolls as number[],dead}:null}}
+      }
       if (burning) {
         const rolls = (draft.groupInjuries[group.id] ?? []).slice(0, dice).filter((r): r is number => isDie(r, 6))
         const dead = rolls.filter(r => r < 6).length
@@ -281,6 +302,11 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
   const swordAfter = new Map(injuries.hiredSwords.map((s) => [s.sword.id, s.resolution]))
   const groupAfter = new Map(injuries.groups.map((g) => [g.group.id, g.resolution]))
 
+  const coldOnes=draft.scenarioRewards?.hunters?.alive
+  if(ctx.scenarioId==='the_hunters_become_the_hunted'&&won&&coldOnes!=null&&Number.isInteger(coldOnes)&&coldOnes>=1&&coldOnes<=2) {
+    const surviving=[...participants.heroes.filter(h=>!heroAfter.has(h.id)||alive(heroAfter.get(h.id)!.outcome)),...participants.hiredSwords.filter(h=>!swordAfter.has(h.id)||alive(swordAfter.get(h.id)!.outcome)),...participants.groups.filter(g=>(groupAfter.get(g.id)?.group.size??g.size)>0)]
+    for(const h of surviving)extras[h.id]=[...(extras[h.id]??[]),{amount:coldOnes,reason:`Winning survivor: ${coldOnes} Cold One${coldOnes===1?'':'s'} alive`}]
+  }
   const lines: XpLine[] = []
   for (const hero of participants.heroes) {
     const res = heroAfter.get(hero.id)
@@ -864,6 +890,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.injuries.push(...equipmentLosses.problems)
+  if(ctx.scenarioId==='the_hunters_become_the_hunted'&&draft.result==='won'&&(!Number.isInteger(draft.scenarioRewards?.hunters?.alive)||draft.scenarioRewards!.hunters!.alive!<0||draft.scenarioRewards!.hunters!.alive!>2))problems.outcome.push('Record the number of Cold Ones alive (0–2) for survivor experience.')
   problems.experience.push(...(kidnapped?.problems ?? []))
   problems.outcome.push(...(harpy?.problems ?? []))
   problems.veterans.push(...summoned.problems)
@@ -896,7 +923,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), ...equipmentLosses.notes, applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, ctx), ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

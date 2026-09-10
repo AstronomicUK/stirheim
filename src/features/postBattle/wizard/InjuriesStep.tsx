@@ -1,3 +1,4 @@
+import { setPlantCasualty } from '../model/state'
 import { useState } from 'react'
 import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
 import { HENCHMAN_INJURY } from '../../../rules/data/campaign/injuries'
@@ -36,6 +37,8 @@ const OUTCOME_TAG: Record<InjuryOutcome, { label: string; tone: 'neutral' | 'war
 
 export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
   const burning = ctx.scenarioId === 'mordheim_s_burning'
+  const hunters=ctx.scenarioId==='the_hunters_become_the_hunted'
+  const plant=(id:string)=>hunters&&!!draft.plantCasualties?.[id]
   const { heroes, hiredSwords, groups, animals, summary } = derived.injuries
   const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0 && animals.length === 0
   const kit = derived.kit.prompts
@@ -46,6 +49,10 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       <Intro>
         {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes and Dramatis Personae roll D66; ordinary hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
       </Intro>
+      {hunters&&!nothing?<Section title="Carnivorous plant casualties"><Card className="flex flex-col gap-2 px-4 py-3">
+        <p className="text-sm">Mark each model taken out by a plant. It rolls D6 instead of its ordinary injury roll: 1 is eaten and removed; 2–6 survives.</p>
+        {[...heroes.map(h=>({id:h.hero.id,name:h.hero.name})),...hiredSwords.map(h=>({id:h.sword.id,name:h.sword.name})),...groups.flatMap(g=>Array.from({length:g.outOfAction},(_,index)=>({id:`${g.group.id}:${index}`,name:`${g.group.name} — ${modelLabel(g.group.modelNames,index)}`})))].map(h=><label key={h.id} className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={plant(h.id)} onChange={e=>{const checked=e.target.checked;update(d=>setPlantCasualty(d,h.id,checked))}}/>{h.name}</label>)}
+      </Card></Section>:null}
       {maglah&&scouts.length>1?<Card className="p-4"><SelectField label="Hobgoblin Scout who stays after Maglah’s departure" value={draft.retainedScoutId??maglah.sword.flags.retainedScoutId??''} onChange={e=>update(d=>({...d,retainedScoutId:e.target.value}))}><option value="">Choose the Scout who stays</option>{scouts.map(s=><option key={s.id} value={s.id}>{s.name} ({s.xp} XP)</option>)}</SelectField></Card>:null}
       {nothing ? (
         <Card className="px-4 py-3">
@@ -53,9 +60,9 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         </Card>
       ) : null}
       {heroes.length > 0 ? (
-        <Section title={burning ? 'Heroes (D6)' : 'Heroes (D66)'}>
+        <Section title={hunters?'Heroes':burning ? 'Heroes (D6)' : 'Heroes (D66)'}>
           {heroes.map(({ hero, resolution }) => (
-            burning ? <Card key={hero.id} className="flex flex-col gap-3 px-4 py-3">
+            burning || plant(hero.id) ? <Card key={hero.id} className="flex flex-col gap-3 px-4 py-3">
               <p>{hero.name}</p>
               {draft.injurySkips[hero.id] === undefined ? <DieField label={`${hero.name} injury D6`} sides={6} value={draft.scenarioInjuryDice?.[hero.id] ?? null} onChange={v => update(d => ({ ...d, scenarioInjuryDice: { ...d.scenarioInjuryDice, [hero.id]: v } }))} rollable /> : null}
               <SkipRow skip={draft.injurySkips[hero.id]} onSkip={reason => update(d => setInjurySkip(d, hero.id, reason))} />
@@ -89,7 +96,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{sword.name}</p>
-                  <p className="text-xs text-ink-dim">{warriorTypeLabel(ctx, sword)} · {burning ? '1–5 dies, 6 survives and earns +1 XP' : '1–2 lost, 3–6 survives'}</p>
+                  <p className="text-xs text-ink-dim">{warriorTypeLabel(ctx, sword)} · {plant(sword.id)?'Plant injury: 1 eaten; 2–6 survives':burning ? '1–5 dies, 6 survives and earns +1 XP' : '1–2 lost, 3–6 survives'}</p>
                 </div>
                 {resolution.outcome ? <Tag tone={OUTCOME_TAG[resolution.outcome].tone}>{OUTCOME_TAG[resolution.outcome].label}</Tag> : null}
               </div>

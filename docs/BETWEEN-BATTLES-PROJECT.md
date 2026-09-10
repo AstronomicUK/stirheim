@@ -16,13 +16,13 @@ Keep existing approved player overrides. #72 removes arbitrary treasure from the
 
 Implement cohesive local milestones, documenting source rules and meaningful tests. Keep tracker entries open until their complete scope is verified. Review mobile layouts and the full saved post-battle/recruitment/start-battle journey with disposable local data. Do not alter existing live player histories or the CoC–Dwarves battle for testing.
 
-## Current checkpoint — 10 September, timed continuation
+## Current checkpoint — 10 September, ongoing local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **92 of 103 scenarios**, up from 88 at the start of this continuation. This count does not claim complete automation of every later effect attached to a reward.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **93 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
 
 This continuation completed Mule Train, Down at the Docks and both Caravan versions, individual Fanatic supplies/lasting Stupidity, and Pirate mixed-crew upkeep. Milestones 23–27 below contain the source and implementation details.
 
-Remaining scenario paths (11): The Hunters Become the Hunted; Defend the Oasis; Assault on the Rock; The Thing in the Woods; Gathering of the Horde; Encampment Raid; Brigands in the Pasturelands; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
+Remaining scenario paths (10): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Gathering of the Horde; Encampment Raid; Brigands in the Pasturelands; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
 
 Other open work: remaining bespoke hired-character kit/legacy cases and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks. Guardian interception and Medicine Chest injury-reroll consumption do not have fully automated workflows; retain their documented limits. Do not close the broader tracker entries on the strength of partial milestones.
 
@@ -30,7 +30,7 @@ Validated checkpoint: **1,488 ordinary tests pass; all 114 local database tests 
 
 Five older database suites now create independent disposable seed-shaped campaigns/rosters. Their assertions are unchanged in meaning; mutable shared QA balances, membership and added warriors no longer contaminate these tests, and their cleanup no longer resets shared rosters. No database reset was used. All production migrations and the single final push/deployment remain outstanding by design.
 
-Stopped at this tested local checkpoint before Tom’s 60-minute limit (continuation began 15:40 UTC; checkpoint 16:33 UTC). No partial source changes remain from this continuation. The pre-existing dirty audit/tracker documents remain intact.
+The earlier timed continuation stopped before Tom’s 60-minute limit. Work has since resumed with authorization; milestones 28 onward record the newer checks. The pre-existing dirty audit/tracker documents remain intact.
 
 The following milestone sections are chronological history; earlier “remaining” lists and test totals describe those earlier checkpoints.
 
@@ -227,3 +227,9 @@ Migration 52 is local only. It permits withdrawal of unchanged new groups with t
 Discovery history now uses actual battle starts, falling back to filing dates only for legacy matches without them. Amending an old report cannot renew a consumed Straggler or bring future discoveries backwards into that report. A first draft uses its battle start even before a report exists. The signed-in local application API was verified with disposable out-of-order report history, including an amended Straggler and an earlier first draft.
 
 Combined checkpoint: 1,506 ordinary tests pass / 118 DB-dependent skipped; all 118 local database tests pass separately; typechecked build passes; lint/build retain only the existing warnings. These are local commits, not a release. Scenario coverage remains 92/103; the eleven remaining scenario paths and bespoke hired-character cases still require work.
+
+### Local milestone 31 — The Hunters Become the Hunted (#72)
+
+Source `reference/rules/06-scenarios.md:5703–5766` reviewed. Actual Beastmaster starting/retained counters grant shards, separate slain-plant D6 rolls grant gold, and the winner records live/dead Cold Ones, kept mounts and sales. The ambiguous price for two live animals requires a recorded per-animal/per-lot ruling. Winning survivors receive XP per Cold One alive through the normal advancement gates. Plant victims use the scenario D6 injury rule (1 eaten, 2–6 survives), including individual group casualties and equipment loss. Changing the cause clears only that model’s old roll.
+
+Typecheck and 102 focused tests pass. The mobile browser files an actual report with an eaten Captain and lost sword, surviving Champion XP, 127 gc from Cold Ones/plants, retained shards and persisted inputs through reload. No new migration. Coverage: 93/103 explicit scenario reward paths, ten remaining. Local only.

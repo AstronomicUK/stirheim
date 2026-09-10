@@ -118,6 +118,7 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  plantCasualties?: Record<string, boolean>
   groupEquipmentLosses?: Record<string, number | null>
   retainedScoutId?: string
   pettyThiefRoll?: number | null
@@ -534,4 +535,13 @@ export function setNotes(draft: ReportDraft, notes: string): ReportDraft {
 /** True for a whole number within [1, sides]. */
 export function isDie(value: number | null | undefined, sides: number): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= sides
+}
+
+
+/** Switching a casualty's source clears only that model's previous roll. */
+export function setPlantCasualty(draft:ReportDraft,id:string,checked:boolean):ReportDraft {
+  const next={...draft,plantCasualties:{...draft.plantCasualties,[id]:checked},groupEquipmentLosses:{}}
+  const group=id.match(/^(.*):(\d+)$/)
+  if(group){const rolls=[...(draft.groupInjuries[group[1]]??[])];rolls[Number(group[2])]=null;return {...next,groupInjuries:{...draft.groupInjuries,[group[1]]:rolls}}}
+  return {...next,scenarioInjuryDice:{...draft.scenarioInjuryDice,[id]:null},heroInjuries:{...draft.heroInjuries,[id]:{rolls:[],countRoll:null}},swordInjuries:{...draft.swordInjuries,[id]:null}}
 }

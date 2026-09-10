@@ -233,3 +233,17 @@ it('uses the Tactician’s actual 4+ plate save for new and legacy kit, with its
   }
   expect(loadoutOf([{itemId: null, customName: 'unidentified magical plate', quantity: 1}]).armour.type).toBe('none')
 })
+
+
+describe('Merchant Guardian target links',()=>{
+ it('links each bodyguard to its own Merchant rather than another hire',()=>{
+  const band=warband({hiredSwords:[hiredSword('merchant',{hiredSwordId:'cathayan_merchant',flags:{hireGroupId:'contract'}}),hiredSword('other',{hiredSwordId:'arabian_merchant',flags:{hireGroupId:'other'}}),hiredSword('guard',{hiredSwordId:'cathayan_merchant',flags:{hireGroupId:'contract',hireCompanion:true,merchantGuardian:true}})]})
+  const models=combatantsOf(band,undefined,band.name,undefined)
+  expect(models.find(c=>c.id==='guard')?.protectsMerchantId).toBe('merchant')
+  expect(models.find(c=>c.id==='merchant')?.protectsMerchantId).toBeUndefined()
+ })
+ it('does not invent a Merchant link for a legacy bodyguard without a contract',()=>{
+  const band=warband({hiredSwords:[hiredSword('other'),hiredSword('guard',{flags:{hireCompanion:true,merchantGuardian:true}})]})
+  expect(combatantsOf(band,undefined,band.name,undefined).find(c=>c.id==='guard')?.protectsMerchantId).toBeUndefined()
+ })
+})

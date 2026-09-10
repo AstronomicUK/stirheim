@@ -15,7 +15,7 @@ import { findItem } from '../../../rules/data/items'
 import { findWarbandSkill } from '../../../rules/data/campaign/warbandSkills'
 import type { CombatContext, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/roster'
-import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, Spinner, Stepper } from '../../../ui'
+import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, Spinner, Stepper, TextField } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
 import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
@@ -168,6 +168,13 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
     attacker && defender && attackerKit && defenderKit && primary
       ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, attackLimit, attackerPreBattle, defenderPreBattle })
       : null
+  const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
+  const [interceptionReason, setInterceptionReason] = useState('')
+  const interceptKey = `${attackKey}:${sheet.turn}:${Boolean(context.charging)}`
+  const guardians = defender ? targets.filter(c => c.protectsMerchantId === defender.id && c.warbandId === defender.warbandId && !c.out) : []
+  const interceptionChecked = interception?.key === interceptKey
+  const needsInterception = guardians.length > 0 && !interceptionChecked
+  const interceptionNote = interceptionChecked ? interception.note : undefined
   const charmAvailable = Boolean(defender && defenderKit && defenderKit.firstHitDiscard !== null && !targetMemory?.charmUsed)
 
   function rememberFight(state: RollState) {
@@ -333,7 +340,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         <button
           type="button"
           disabled={!odds || !attacker || !defender || odds.attacks < 1}
-          onClick={() => { setRollSetup(null); setRolling(true) }}
+          onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
           className="stirheim-dice-button absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
@@ -359,12 +366,24 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           {!rollSetup ? <div className="flex flex-col gap-4 py-3">
             <p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
             <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} />
-            <Button block onClick={() => setRollSetup(odds)}>Begin attacks</Button>
+            {needsInterception ? <div className="flex flex-col gap-3 rounded border border-brass p-3">
+              <p className="font-medium">Merchant’s Guardian</p>
+              <p className="text-sm">An unengaged bodyguard intercepts shooting and charges against {defender.name}. Confirm the situation on the tabletop before rolling.</p>
+              {guardians.map(g => <Button key={g.id} variant="secondary" onClick={() => {
+                const key = `${attacker.id}:${g.id}:${current?.primary}:${current?.offHand}:${sheet.turn}:${Boolean(context.charging)}`
+                setInterception({key, note:`Guardian: ${g.name} intercepted the attack against ${defender.name}.`})
+                setDefenderId(g.id)
+              }}>Direct the attack at {g.name}</Button>)}
+              <TextField label="Why the Guardian cannot intercept" value={interceptionReason} onChange={e=>setInterceptionReason(e.target.value)} hint="For example: already engaged in combat; this is an ongoing melee, not a charge. Record an agreed exception if needed."/>
+              <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
+            </div> : null}
+            {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
+            <Button block disabled={needsInterception} onClick={() => setRollSetup(odds)}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
             turn={sheet.turn}
-            onAttempt={attempt => edit?.(s => withRollAttempt(s, attempt))}
+            onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
             defender={defender}
             defenderKit={defenderKit!}
@@ -402,7 +421,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
                 nurgles_rot: state.rotPassed,
-                rolls: state.log.map((line) => line.text),
+                rolls: [...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
               })
             }
             onFinished={rememberFight}

@@ -45,6 +45,8 @@ export interface Combatant {
   weaponIds?: string[]
   /** The hero an animal belongs to. */
   holderName?: string
+  /** Merchant protected by this earned Guardian. */
+  protectsMerchantId?: string
   /** Skill lists the warrior may pick advances from (heroes and template units), for the skill analyser. */
   skillTableIds?: string[]
 }
@@ -178,6 +180,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         id: warrior.id,
         kind: 'hiredSword',
         name: warrior.name,
+        ...(warrior.flags.merchantGuardian && warrior.flags.hireGroupId ? { protectsMerchantId: roster.hiredSwords.find(h => !h.flags.hireCompanion && h.flags.hireGroupId === warrior.flags.hireGroupId)?.id } : {}),
         typeName: warrior.flags.merchantGuardian ? 'Merchant’s bodyguard' : warrior.hiredSwordId === 'snake_charmer' && warrior.flags.hireCompanion ? 'Snake' : hiredSwordName(warrior.hiredSwordId),
         ...(warrior.hiredSwordId === 'snake_charmer' && warrior.flags.hireCompanion ? { weaponIds: ['snake_bite'] } : {}),
         warbandId: roster.id,

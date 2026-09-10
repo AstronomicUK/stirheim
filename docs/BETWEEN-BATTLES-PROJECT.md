@@ -20,9 +20,9 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 **Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **102 of 103 scenarios**. This measures reward paths, not complete automation of every related campaign rule.
 
-Rawhide, Medicine Chest rerolls and The Thing in the Woods aftermath are now locally verified (milestones 45–48). The remaining scenario path is Defend the Oasis.
+Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian interception are now locally verified (milestones 45–49). The remaining scenario path is Defend the Oasis.
 
-Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, Guardian interception, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
+Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
 Validation: **1,599 ordinary tests and all 152 local database tests pass**; typechecked build and lint pass with existing warnings. The latest focused 79 tests pass following the final exploration eligibility correction. Mobile checks use disposable local records and actual 390px viewport constraints.
 
@@ -395,3 +395,12 @@ Roster and battle views show the curse profile and rules. Transformation trigger
 Validation: 1,599 ordinary tests and all 152 local database tests passed; the latest focused 79 tests also pass after excluding feral departures from exploration. Typechecked build and lint passed with existing warnings. Disposable 390px mobile checks verify curse acquisition/healthy-profile review through reload and withdrawal, and a later named henchman transformation with one recovered sword, persisted group reduction and complete withdrawal restoration. Scripts: `/tmp/stirheim-lycanthrope-cure-mobile-qa.mjs` and `/tmp/stirheim-lycanthrope-group-mobile-qa.mjs`.
 
 Reward-path coverage is now **102/103**. Defend the Oasis still awaits the recorded scope decision; bespoke hired equipment/effects, Guardian and final combined release checks remain outstanding. No push or production deployment.
+
+
+### Local milestone 49 — Merchant Guardian interception (#184, not deployed)
+
+Source `reference/rules/04-hired-swords.md:1850–1862`: a Guardian intercepts shooting/charges at its Merchant unless already engaged. Combatant records now link a bodyguard to its own Merchant through the persisted hire contract; missing legacy links are not guessed. Before beginning attacks against a protected Merchant, the player directs the attack at the bodyguard or records why interception does not apply (such as existing engagement or ongoing melee). Engagement and tabletop position are not tracked, so this is an explicit reviewed decision rather than an invented automatic positioning rule. Changing target uses the bodyguard’s actual profile/equipment. Each new attack sequence asks again; out-of-action bodyguards do not trigger the check.
+
+The decision is included both in saved roll attempts (including misses) and in shared damage-event logs. Approved reasoned exceptions remain available. Existing Guardian objective/search/loot restrictions and shared upkeep remain unchanged.
+
+Validation: actual 390px mobile workflow verifies the initial gate, target redirection, required explanation when keeping the Merchant, and persistence of both decisions in completed missed-attack logs. Disposable local fixtures are removed afterward. Script `/tmp/stirheim-guardian-mobile-qa.mjs`. Typecheck passes; combatant mapping tests cover correct and missing contracts. No new migration, push or deployment. Remaining work is Defend the Oasis scope, bespoke hired equipment/effects and source ambiguities, plus final combined release checks.

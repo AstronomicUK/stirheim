@@ -18,11 +18,11 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 ## Current checkpoint — 10 September, ongoing local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **94 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **95 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
 
 This continuation completed Mule Train, Down at the Docks and both Caravan versions, individual Fanatic supplies/lasting Stupidity, and Pirate mixed-crew upkeep. Milestones 23–27 below contain the source and implementation details.
 
-Remaining scenario paths (9): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Gathering of the Horde; Encampment Raid; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
+Remaining scenario paths (8): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Encampment Raid; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
 
 Other open work: remaining bespoke hired-character kit/legacy cases and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks. Guardian interception and Medicine Chest injury-reroll consumption do not have fully automated workflows; retain their documented limits. Do not close the broader tracker entries on the strength of partial milestones.
 
@@ -257,3 +257,9 @@ Source: `05-dramatis-personae.md` entries for these characters and `04-hired-swo
 Migration 54 adds transactional transfers of existing equipment copies between participants in Stop Thief, Encampment Raid and the Archive Forbidden Square. A source snapshot, quantity and reason are required. The source loses those copies and the recipient receives equivalent stash equipment with the original notes. Stale snapshots, repeated stacks, unrelated scenarios and nonparticipants are rejected. Encampment claims require victory and source stash equipment. Withdrawal restores the original source identity/holder/quantity and removes the awarded recipient copies; later changes on either side block automatic undo.
 
 All 124 local database tests and typecheck pass, including five added transfer/rollback tests. This is shared infrastructure; the scenario-specific forms and remaining reward branches are not yet complete, and scenario coverage remains 94/103. No production migration or deployment.
+
+### Local milestone 36 — Gathering of the Horde control (#72)
+
+Source `06-scenarios.md:3811–4000` reviewed. Reports record whether Dirk/Valnor was taken out or the game ended by routing. Winning reports choose an agreed winning controller of Executioner’s Square; multi-warband hordes require a written agreement because the source does not divide control among allied warbands. The map waits for all reports to be applied, confirms matching endings/controller and replaces prior footholds with that controller. Disagreements remain visible as map notices instead of guessing. A rout uses only ordinary map outcomes. Withdrawal removes the derived reward. Control is applied even if the battle was not assigned a district; report mutations now invalidate cached map data. No additional treasure is invented. Existing explicit scenario XP interpretation/objective controls remain available.
+
+Fifty-eight focused reward/map tests and typecheck pass. Mobile filing preserves the controller through reload; the signed-in map API verifies no premature takeover, actual control after the other report, and removal on withdrawal. Coverage: 95/103 scenario reward paths, eight remaining. No new migration or deployment.

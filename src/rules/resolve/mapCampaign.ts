@@ -22,6 +22,7 @@ export interface MapBattleEvent {
   participants: { warbandId: string; result: MapResult | null }[];
   /** The scenario played, when known (Surprise Attack won by the controller earns its leader +1 Ld here). */
   scenarioId?: string | null;
+  claimControl?: string;
 }
 
 export interface MapAdjustmentEvent {
@@ -71,6 +72,7 @@ export function deriveMapState(events: readonly MapEvent[]): MapState {
     const d = stateFor(state, e.districtId);
     if (e.kind === "battle") {
       for (const p of e.participants) d.explored.add(p.warbandId);
+      if(e.claimControl) {d.footholds.clear();d.footholds.add(e.claimControl);d.explored.add(e.claimControl);continue}
       const winners = e.participants.filter((p) => p.result === "won");
       const losers = e.participants.filter((p) => p.result === "lost");
       // "If the defender wins, the leader gains +1 Ld for all battles that occur in that district."

@@ -19,6 +19,7 @@ export interface HoardFind {
 export type ScenarioRewardRule =
   | { kind: 'choice'; note: string; question: string; options: { id: string; label: string; rule: ScenarioRewardRule }[] }
   | { kind: 'none'; note: string }
+  | { kind: 'gathering'; note: string }
   | { kind: 'brigands'; note: string }
   | { kind: 'hunters'; note: string }
   | { kind: 'caravan'; note: string }
@@ -66,6 +67,7 @@ const TOMB_TREASURE_TABLE: Extract<ScenarioRewardRule, { kind: 'repeated' }>['ta
     { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
   ]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
+  gathering_of_the_horde: {kind:'gathering',note:'Control of Executioner’s Square follows the defeat of Dirk or Valnor. Record the agreed controller of a victorious allied horde.'},
   brigands_in_the_pasturelands: {kind:'brigands',note:'Attackers claim per-casualty bounties; winning defenders may recruit one still-standing outlaw free, with normal upkeep.'},
   the_hunters_become_the_hunted: {kind:'hunters',note:'Record actual Beastmaster counters, plant-kill loot and captured Cold Ones. Only the winning warband receives the Cold One reward; its surviving units gain experience for each Cold One alive.'},
   happy_harpy_hunting_grounds: { kind: 'hoard', winnerOnly: true, note: 'Only the winning warband receives the nest, and only if all three Harpies were taken out before the others routed. Use the setup shards and Straggler choice recorded on Outcome. Roll separately for each remaining find.', finds: [

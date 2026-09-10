@@ -77,6 +77,7 @@ function MapView({ detail }: { detail: CampaignDetail }) {
           This campaign is not being played on the map. {isGm ? 'Turn it on from Settings › Campaign map and battles will ask for a district.' : 'The GM can turn it on from the campaign settings.'}
         </Notice>
       ) : null}
+      {events.data?.warnings?.map(w=><Notice key={w} tone="warn">{w}</Notice>)}
       {events.isError ? <Notice tone="error">{events.error.message}</Notice> : null}
 
       <TwoColumn

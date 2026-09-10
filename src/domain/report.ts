@@ -116,6 +116,7 @@ export const reportAppliedSchema = z.object({
   pirate_mixed_upkeep_due: z.boolean().optional(),
   scenario_effects: z.object({ caravanTreachery: z.number().int().min(1).max(6).optional(), caravanTrade: z.object({percent: z.union([z.literal(-20), z.literal(20)]), rounding: z.enum(["up", "down"])}).optional() }).optional(),
   scenario_item_transfers: z.array(z.object({item_id:z.string().uuid(),from_warband_id:z.string().uuid(),quantity:z.number().int().min(1),expected:z.record(z.string(),z.unknown()),reason:z.string().min(1)})).optional(),
+  gathering_control: z.object({ending:z.enum(["dirk","valnor","rout"]),controllerId:z.string().uuid().optional(),reason:z.string().optional()}).optional(),
   scenario_free_hire: z.object({ choices: z.array(z.enum(["highwayman", "warlock", "pit_fighter"])) }).optional(),
   scenario_benefits: z.array(z.enum(["harpy_straggler"])).optional(),
   awarded_items: z.array(z.object({holder_type:z.enum(["stash","hero","group"]),holder_id:z.string().uuid().nullable(),item_rules_id:z.string().nullable(),custom_name:z.string().max(80).nullable(),quantity:z.number().int().min(1),notes:z.string().optional()})).optional(),

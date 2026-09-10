@@ -1,3 +1,4 @@
+import { gatheringRewardProblems } from '../../../rules/resolve/gatheringControl'
 import { brigandsRewards, type BrigandsDraft } from './brigandsRewards'
 import { huntersRewards, type HuntersDraft } from './huntersRewards'
 import { caravanRewards, type CaravanDraft } from './caravanRewards'
@@ -18,6 +19,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  gathering?: import("../../../rules/resolve/gatheringControl").GatheringReward
   brigands?: BrigandsDraft
   hunters?: HuntersDraft
   caravan?: CaravanDraft
@@ -70,7 +72,7 @@ export function canKeepHeraldSword(warbandId: string) {
   return ['possessed', 'undead', 'skaven'].includes(explorationFaction(warbandId)) || /undead|skaven|beastm[ae]n/i.test(findWarbandTemplate(warbandId)?.race ?? '')
 }
 export interface ScenarioRewardsResult { artefacts: { roll: number; overrideReason?: string }[]; gold: number; shards: number; items: FoundItem[]; notes: string[]; problems: string[] }
-export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { campaignId?: string; roster?: { warbandTemplateId: string; scenarioEffects?: ScenarioCampaignState }; opponents?: { id: string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
+export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { campaignId?: string; roster?: { id?:string; name?:string; warbandTemplateId: string; scenarioEffects?: ScenarioCampaignState }; opponents?: { id: string; name?:string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
   let rule = ruleOverride ?? scenarioRewardRule(scenarioId)
   const state = draft.scenarioRewards ?? {}
   const rewards = { artefacts: [] as { roll: number; overrideReason?: string }[], gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
@@ -84,6 +86,7 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
   }
+  if(rule.kind==='gathering') {const g=state.gathering??{};rewards.problems.push(...gatheringRewardProblems(g,draft.result==='won',[context?.roster?.id??'',...(context?.opponents??[]).map(o=>o.id)]));rewards.notes.push(`Gathering of the Horde: ${g.ending==='rout'?'horde routed':g.ending?`${g.ending==='dirk'?'Dirk':'Valnor'} taken out`:'ending pending'}. ${draft.result==='won'&&g.controllerId?`Executioner’s Square controller: ${g.controllerId===context?.roster?.id?context?.roster?.name??'this warband':context?.opponents?.find(o=>o.id===g.controllerId)?.name??'the agreed winning warband'}. ${g.reason??''}`:'No extra treasure.'}`);return rewards}
   if (rule.kind === 'brigands') return {...rewards,...brigandsRewards(state.brigands??{},draft.result==='won',!!context?.campaignId)}
   if (rule.kind === 'hunters') return {...rewards,...huntersRewards(state.hunters??{},draft.result==='won',context?.opponents?new Set(context.opponents.map(o=>o.id)).size+1:6)}
   if (rule.kind === 'caravan') {

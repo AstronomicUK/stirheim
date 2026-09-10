@@ -1,3 +1,4 @@
+import { gatheringControl, type GatheringReward } from '../rules/resolve/gatheringControl'
 // Map campaigns (Phase 19): the events the map state is derived from (battles fought in a district,
 // with the results reported so far, plus the GM's adjustments), the GM's adjustment writes, and
 // moving an open battle to another district.
@@ -26,6 +27,7 @@ export interface MapAdjustmentRow {
 }
 
 export interface MapEvents {
+  warnings?: string[]
   events: MapEvent[]
   adjustments: MapAdjustmentRow[]
 }
@@ -39,7 +41,7 @@ interface MatchEventRow {
   started_at: string | null
   completed_at: string | null
   match_participants: { warband_id: string }[]
-  match_reports: { warband_id: string; result: string; status: string }[]
+  match_reports: { warband_id: string; result: string; status: string; applied: {gathering_control?:GatheringReward} | null }[]
 }
 
 /** Battles that count for the map: fought (in progress or later) in a district, not cancelled. */
@@ -47,9 +49,8 @@ export async function fetchMapEvents(campaignId: string): Promise<MapEvents> {
   const [matches, adjustments] = await Promise.all([
     supabase
       .from('matches')
-      .select('id, district_id, scenario_rules_id, state, created_at, started_at, completed_at, match_participants(warband_id), match_reports(warband_id, result, status)')
+      .select('id, district_id, scenario_rules_id, state, created_at, started_at, completed_at, match_participants(warband_id), match_reports(warband_id, result, status, applied)')
       .eq('campaign_id', campaignId)
-      .not('district_id', 'is', null)
       .in('state', ['in_progress', 'awaiting_reports', 'completed'])
       .order('created_at'),
     supabase.from('map_adjustments').select('*, profiles!map_adjustments_actor_profile_fkey(display_name)').eq('campaign_id', campaignId).order('at'),
@@ -57,7 +58,13 @@ export async function fetchMapEvents(campaignId: string): Promise<MapEvents> {
   if (matches.error) throw new Error(matches.error.message)
   if (adjustments.error) throw new Error(adjustments.error.message)
   const events: MapEvent[] = []
+  const warnings: string[] = []
   for (const m of (matches.data ?? []) as unknown as MatchEventRow[]) {
+    if(m.scenario_rules_id==='gathering_of_the_horde'){
+      const control=gatheringControl(m.match_participants.map(p=>p.warband_id),m.match_reports.map(r=>({warbandId:r.warband_id,result:r.result,status:r.status,reward:r.applied?.gathering_control})))
+      if(control.warning)warnings.push(control.warning)
+      if(control.controller)events.push({kind:'battle',at:m.completed_at??m.started_at??m.created_at,matchId:m.id,districtId:'executioners-square',participants:[],scenarioId:m.scenario_rules_id,claimControl:control.controller})
+    }
     if (!m.district_id) continue
     const reports = new Map(m.match_reports.filter((r) => r.status !== 'returned').map((r) => [r.warband_id, r.result as MapResult]))
     events.push({
@@ -74,7 +81,8 @@ export async function fetchMapEvents(campaignId: string): Promise<MapEvents> {
     return { ...row, kind: row.kind as 'explored' | 'foothold', actor_display_name: profiles?.display_name ?? 'GM' }
   })
   for (const r of rows) events.push({ kind: 'adjust', at: r.at, districtId: r.district_id, warbandId: r.warband_id, field: r.kind, value: r.value, reason: r.reason })
-  return { events, adjustments: rows }
+  events.sort((a,b)=>a.at.localeCompare(b.at)||Number(a.kind==='battle'&&!!a.claimControl)-Number(b.kind==='battle'&&!!b.claimControl))
+  return { events, adjustments: rows, warnings: [...new Set(warnings)] }
 }
 
 export function useMapEvents(campaignId: string | undefined, enabled = true) {

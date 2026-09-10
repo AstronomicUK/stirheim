@@ -404,7 +404,7 @@ describe('exploration', () => {
     let d = deriveReport(draft, ctx())
     expect(d.exploration.location?.id).toBe('shop')
     expect(d.exploration.gold).toEqual({ fixed: 0, expressions: ['D6'], value: null })
-    expect(d.exploration.suggestedItems).toEqual([{ item_rules_id: 'lucky_charm', custom_name: null, quantity: 1 }])
+    expect(d.exploration.suggestedItems).toEqual([])
     expect(d.problems.exploration[0]).toMatch(/gold/)
     draft = { ...draft, exploration: { ...draft.exploration, gold: 4, items: [] } }
     d = deriveReport(draft, ctx())

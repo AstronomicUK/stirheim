@@ -1,3 +1,5 @@
+import type { ArtefactDiscovery } from '../../../api/artefacts'
+import { slayerExploration } from './slayerExploration'
 import { battleTreasureAwards } from '../../../rules/resolve/battleTreasure'
 import { ONE_BATTLE_HIRES, requiresBattleGap } from '../../../rules/resolve/hiredSwordRules'
 import { isDramatisPersona } from '../../../rules/data/campaign/hiredSwords'
@@ -45,6 +47,9 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  artefacts?: ArtefactDiscovery[]
+  artefactsError?: string
+  reportId?: string
   scenarioId?: string | null
   roster: RosterWarband
   template: WarbandTemplate | undefined
@@ -709,14 +714,20 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx)
+  const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
   const exploration = deriveExploration(draft.exploration, ctx.roster, {
     scenarioId: ctx.scenarioId,
     disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : undefined,
     won: draft.result === 'won',
-    eligibleHeroes: survivingHeroes,
+    eligibleHeroes: slayer?.eligibleHeroes ?? survivingHeroes,
+    artefacts: ctx.artefacts,
+    artefactsError: ctx.artefactsError,
+    reportId: ctx.reportId,
+    allowWithoutSurvivors: !!slayer?.extraDice,
+    noExplorationReason: slayer ? `${slayer.note}. No qualifying exploration dice this battle.` : undefined,
     enemiesOut: Object.values(draft.enemiesOut).reduce((n, v) => n + (v ?? 0), 0),
-    extraDice: ctx.map?.perks.explorationDice ?? 0,
-    extraDiceNote: ctx.map?.perks.explorationDiceSources.join(', '),
+    extraDice: (ctx.map?.perks.explorationDice ?? 0) + (slayer?.extraDice ?? 0),
+    extraDiceNote: [ctx.map?.perks.explorationDiceSources.join(', '), slayer?.note].filter(Boolean).join('; '),
     maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)

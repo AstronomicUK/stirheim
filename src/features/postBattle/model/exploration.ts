@@ -1,3 +1,5 @@
+import type { ArtefactDiscovery } from '../../../api/artefacts'
+import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
 // Exploration for the report (core rulebook, "Income"):
 //   "Roll a D6 for each Hero in your warband who survives without going out of action ... Do not
 //    roll for any Heroes who went out of action during the battle ... If you won your last game,
@@ -15,8 +17,7 @@
 // - Location rewards: fixed amounts are taken from the text; dice amounts ("D6 gc") are rolled or
 //   entered by the player; a location with a characteristic test gives its rewards only when the
 //   player records a pass. Item names are matched to the catalogue where possible and otherwise
-//   kept as custom stash items. Conditional items ("If you roll a 1 you will also find a Lucky
-//   Charm") are suggested and can be removed.
+//   kept as custom stash items. Source conditions gate the rewards before they are suggested.
 
 import type { ExplorationRecord, ReportAdjustment } from '../../../domain'
 import { resolveEquipmentName } from '../../../rules/data/items/aliases'
@@ -29,9 +30,14 @@ import { isDie, type ExplorationDraft, type FoundItem } from './state'
 import { minMax } from '../../../rules/resolve/dice'
 
 export interface ExplorationInput {
+  artefacts?: ArtefactDiscovery[]
+  artefactsError?: string
+  reportId?: string
   scenarioId?: string | null
   disabledReason?: string
   won: boolean
+  allowWithoutSurvivors?: boolean
+  noExplorationReason?: string
   /** Fighting heroes who were not taken out of action. */
   eligibleHeroes: RosterHero[]
   /** Enemies this warband put out of action (Grave Goods and the like). */
@@ -82,6 +88,8 @@ export interface ExplorationDerived {
   gold: DiceAmount
   extraShards: DiceAmount
   itemQuantityPrompts: { key: string; name: string; expression: string; value: number | null }[]
+  needsArtefact: boolean
+  itemChoicePrompts: { key: string; name: string; choices: string[]; selected: string[]; quantity: number }[]
   suggestedItems: FoundItem[]
   items: FoundItem[]
   textNotes: string[]
@@ -142,6 +150,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     gold: empty,
     extraShards: empty,
     itemQuantityPrompts: [],
+    itemChoicePrompts: [],
+    needsArtefact: false,
     suggestedItems: [],
     items: [],
     textNotes: [],
@@ -151,7 +161,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   }
   const rules = warbandRules(roster.warbandTemplateId).exploration
   if (input.disabledReason) return { ...base, skippedReason: input.disabledReason }
-  if (input.eligibleHeroes.length === 0 && !rules?.extraDiceWithoutHeroes) return { ...base, skippedReason: NO_HEROES }
+  if (input.eligibleHeroes.length === 0 && !rules?.extraDiceWithoutHeroes && !input.allowWithoutSurvivors) return { ...base, skippedReason: input.noExplorationReason ?? NO_HEROES }
 
   const eligible = new Set(input.eligibleHeroes.map((h) => h.id))
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
@@ -172,7 +182,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     override && override.count !== suggested.count
       ? { label: 'Exploration dice', suggested: `${suggested.count} (${suggested.reason})`, used: String(override.count), reason: override.reason.trim() }
       : null
-  if (allowed.count <= 0) return { ...base, allowed, suggested, skippedReason: burning ? suggested.reason : NO_HEROES }
+  if (allowed.count <= 0) return { ...base, allowed, suggested, skippedReason: burning ? suggested.reason : input.noExplorationReason ?? NO_HEROES }
 
   const rolls: (number | null)[] = []
   for (let i = 0; i < allowed.count; i++) {
@@ -207,14 +217,20 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     needsSubRoll = Boolean(outcome.needsSubRoll)
     if (needsSubRoll) problems.push(`${location.name}: roll the location's D6.`)
   }
-  const needsTest = outcome?.needsTest ?? null
+  const tavernAutoPass = location?.id === 'tavern' && ['the_undead', 'undead', 'witch_hunters', 'sisters_of_sigmar'].includes(roster.warbandTemplateId)
+  const testPassed = tavernAutoPass ? true : draft.testPassed
+  const needsTest = tavernAutoPass ? null : outcome?.needsTest ?? null
   const testSubject = needsTest?.pickHero ? (input.eligibleHeroes.find((h) => h.id === draft.testSubjectId) ?? null) : null
   if (needsTest?.pickHero && !testSubject) problems.push(`${location?.name}: choose which Hero was sent.`)
-  if (needsTest && draft.testPassed === null) problems.push(`${location?.name}: record whether the test was passed.`)
-  const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || draft.testPassed === true)
+  if (needsTest && testPassed === null) problems.push(`${location?.name}: record whether the test was passed.`)
+  const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || testPassed === true || (location?.id === 'tavern' && testPassed === false))
   // Well (03:671-675): a Hero who fails the test misses the next game through sickness.
   const missNextGameHeroId = needsTest?.failEffect === 'missNextGame' && draft.testPassed === false && testSubject ? testSubject.id : null
-  const rewards = rewardsApply ? outcome!.rewards : []
+  const rewards = rewardsApply ? outcome!.rewards.filter(reward => {
+    if (location?.id === 'tavern') return reward.amount === (testPassed ? '4D6' : 'D6')
+    if (location?.id === 'shop' && reward.kind === 'item') return !input.maxFinds && draft.gold === 1
+    return true
+  }) : []
 
   const maxFinds = Boolean(input.maxFinds) && rewardsApply
   const gold = diceAmount(rewards, 'gold', draft.gold, maxFinds)
@@ -224,6 +240,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
 
   const itemQuantityPrompts: ExplorationDerived['itemQuantityPrompts'] = []
   const suggestedItems: FoundItem[] = []
+  const itemChoicePrompts: ExplorationDerived['itemChoicePrompts'] = []
   for (const [index, reward] of rewards.entries()) {
     if (reward.kind !== 'item' || !reward.itemName) continue
     let quantity: number | null = typeof reward.amount === 'number' ? reward.amount : 1
@@ -237,11 +254,32 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
         continue
       }
     }
-    if (quantity > 0) suggestedItems.push(foundItemFromName(reward.itemName, quantity))
+    if (quantity > 0 && reward.itemName === 'Shields or Bucklers (choose which)') {
+      const key = `${location!.id}:${draft.subRoll ?? 'fixed'}:${index}`
+      const choices = ['Shield', 'Buckler']
+      const selected = (draft.itemChoices?.[key] ?? []).slice(0, quantity)
+      itemChoicePrompts.push({key,name:reward.itemName,choices,selected,quantity})
+      if (selected.length !== quantity || selected.some(name => !choices.includes(name))) problems.push(`Armourer: choose a Shield or Buckler for each of the ${quantity} items found.`)
+      else for (const name of choices) {
+        const count = selected.filter(s => s === name).length
+        if (count) suggestedItems.push(foundItemFromName(name,count))
+      }
+    } else if (quantity > 0) suggestedItems.push(foundItemFromName(reward.itemName, quantity))
+  }
+  const needsArtefact = rewards.some(r => r.kind === 'text' && /magical artefact/i.test(r.text))
+  const artefact = needsArtefact ? MAGICAL_ARTEFACTS.find(a => a.band.min === draft.artefactRoll) : undefined
+  const discovery = artefact ? input.artefacts?.find(a => a.roll === draft.artefactRoll && (!input.reportId || a.reportId !== input.reportId)) : undefined
+  if (needsArtefact) {
+    if (!input.artefacts) problems.push(input.artefactsError ? `Cannot check campaign artefacts: ${input.artefactsError}` : 'Waiting for the campaign artefact record.')
+    if (!artefact) problems.push('Roll a D6 on the Magical Artefacts table.')
+    if (discovery && !draft.artefactOverrideReason?.trim()) problems.push(`${artefact!.name} was already found by ${discovery.warbandName}. Roll again or explain the agreed override.`)
+    if (artefact) suggestedItems.push(foundItemFromName(artefact.name))
   }
   const items = draft.items ?? suggestedItems
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
   const notes: string[] = []
+  if (artefact) notes.push(`Magical artefact D6 ${draft.artefactRoll}: ${artefact.name}.${draft.artefactOverrideReason?.trim() ? ` Agreed override: ${draft.artefactOverrideReason.trim()}` : ''}`)
+  if (tavernAutoPass) notes.push('Tavern: this warband automatically passes the Leadership test; 4D6 gc.')
   if (location && outcome && !needsSubRoll && outcome.text !== location.rules) notes.push(`${location.name} D6 ${draft.subRoll}: ${outcome.text}`)
   const testSubjectLabel = testSubject ? `${testSubject.name}'s ` : ''
   if (needsTest) notes.push(draft.testPassed ? `${testSubjectLabel}${needsTest.stat} test passed.` : draft.testPassed === false ? `${testSubjectLabel}${needsTest.stat} test failed: ${needsTest.prompt}` : '')
@@ -256,12 +294,13 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     const discarded = rolls.map((v, i) => (kept.includes(i) ? null : v)).filter((v): v is number => v !== null)
     notes.push(`Rolled ${rolls.length} dice (${(rolls as number[]).join(', ')}); kept ${keptRolls.join(', ')}, discarded ${discarded.join(', ')}.`)
   }
-  for (const use of draft.aids ?? []) notes.push(`Die ${use.dieIndex + 1}: ${use.from} ${use.kind === 'rollTwoKeepOne' ? `and ${use.alternativeRoll ?? "another die"}; chose` : use.kind === 'modify' ? "modified to" : "re-rolled to"} ${use.to} with ${use.label}${use.test ? ` (Ld test ${use.test.rolls[0]}+${use.test.rolls[1]} passed)` : ''}`)
+  for (const use of draft.aids ?? []) notes.push(`Die ${use.dieIndex + 1}: ${use.from} ${use.kind === 'rollTwoKeepOne' ? `and ${use.alternativeRoll ?? "another die"}; chose` : use.kind === 'rerollKeepEither' ? `rerolled (${use.alternativeRoll ?? 'new result'}); chose` : use.kind === 'modify' ? "modified to" : "re-rolled to"} ${use.to} with ${use.label}${use.test ? ` (Ld test ${use.test.rolls[0]}+${use.test.rolls[1]} passed)` : ''}`)
   const totalShards = result.shards + (extraShards.value ?? 0) + bonuses.shards
   notes.push(...bonuses.notes)
   const record: ExplorationRecord | null =
     problems.length === 0
       ? {
+          ...(artefact ? {artefact:{roll:draft.artefactRoll!, ...(draft.artefactOverrideReason?.trim() ? {overrideReason:draft.artefactOverrideReason.trim()} : {})}} : {}),
           diceAllowed: allowed.count,
           diceReason: allowed.reason,
           rolls: rolls as number[],
@@ -297,6 +336,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     gold,
     extraShards,
     itemQuantityPrompts,
+    itemChoicePrompts,
+    needsArtefact,
     suggestedItems,
     items,
     textNotes,

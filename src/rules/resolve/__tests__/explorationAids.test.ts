@@ -1,3 +1,4 @@
+import { makeHiredSword } from './fixtures';
 import { describe, expect, it } from "vitest";
 import type { RosterHero, RosterItem, RosterWarband } from "../../types/roster";
 import { aidUsesLeft, explorationAids, leadershipTest, mordheimMapResult, validateAidUse } from "../explorationAids";
@@ -78,3 +79,13 @@ it('does not reroll the same die using another aid, but permits a Guide choice b
   expect(() => validateAidUse(aid,use,[{...use,aidKey:'keepone:guide',kind:'rollTwoKeepOne'}])).not.toThrow();
   expect(() => validateAidUse(aid,{...use,dieIndex:1},[{...use,kind:'reroll'}])).not.toThrow();
 });
+
+ it('grants the Elf Ranger modifier, including a surviving OOA ranger, but not a dead ranger (#66)', () => {
+   const roster = warband([]);
+   roster.hiredSwords = [makeHiredSword({id:'ranger',hiredSwordId:'elf_ranger'})];
+   const aid = explorationAids(roster,{...base,heroesOutOfAction:['ranger']})[0];
+   expect(aid).toMatchObject({key:'seeker:ranger',kind:'modify',uses:1});
+   expect(() => validateAidUse(aid,{aidKey:aid.key,label:aid.label,dieIndex:0,from:3,to:5})).toThrow(/exactly one/);
+   roster.hiredSwords[0].status = 'dead';
+   expect(explorationAids(roster,base)).toEqual([]);
+ });

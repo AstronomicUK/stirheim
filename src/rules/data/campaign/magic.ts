@@ -2466,9 +2466,14 @@ const LORE_OVERRIDES: Record<string, string> = {
   skaven_pestilens_sorcerer: "magic_of_the_horned_rat", // table row is "Skaven of Clan Pestilens Sorcerer"
 };
 
-export interface StartingMagicOption { id: string; label: string; loreId: string | null; count: number; firstChosen?: boolean }
+export interface StartingMagicOption { id: string; label: string; loreId: string | null; count: number; firstChosen?: boolean; extraCost?: number }
 /** Starting choices from the unit's own source; Arkhar is explicitly not a caster. */
 export function startingMagicOptions(unitId: string, template: WarbandTemplate): StartingMagicOption[] {
+  if (unitId === 'cursed_cavalcade_twisted_scholar') return [
+    { id: 'scholar', label: 'Scholar — no upgrade', loreId: null, count: 0 },
+    { id: 'wizard', label: 'Wizard (+10 gc)', loreId: 'lesser_magic', count: 1, extraCost: 10 },
+    { id: 'chronicler', label: 'Chronicler (+10 gc)', loreId: null, count: 0, extraCost: 10 },
+  ];
   if (unitId === 'marauders_seer') return [
     { id: 'undivided', label: 'Chaos Undivided', loreId: 'chaos_rituals', count: 1 },
     { id: 'eagle', label: 'Tchar the Eagle', loreId: 'tchar_rituals', count: 2, firstChosen: true },

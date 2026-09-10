@@ -213,6 +213,7 @@ function useInvalidateAfterReport() {
   return () =>
     Promise.all([
       qc.invalidateQueries({ queryKey: reportKeys.all }),
+      qc.invalidateQueries({ queryKey: ['campaign-artefacts'] }),
       qc.invalidateQueries({ queryKey: matchKeys.all }),
       qc.invalidateQueries({ queryKey: warbandKeys.all }),
       qc.invalidateQueries({ queryKey: campaignKeys.all }),

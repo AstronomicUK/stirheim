@@ -187,7 +187,7 @@ export function recruitHero(
   }
   const block = recruitmentBlock(warband, template, unit, 1);
   if (block) throw new RulesError("recruitment.notAllowed", block);
-  const cost = opts.costOverride ?? unit.cost ?? 0;
+  const cost = opts.costOverride ?? ((unit.cost ?? 0) + (startingMagicFor(unit.id, template, opts.magicChoiceId)?.extraCost ?? 0));
   assertGold(warband, cost, `A ${unit.name}`);
   const freeDagger = freeDaggerLine(template, unit);
 
@@ -202,7 +202,7 @@ export function recruitHero(
     skillIds: [...(unitRules(unit.id).startingSkillIds ?? [])],
     spellIds: opts.spellIds?.filter(Boolean) ?? [],
     injuries: [],
-    flags: { ...(startingMagicFor(unit.id, template, opts.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(unit.id, template, opts.magicChoiceId)!.loreId! } : {}), ...(unit.id === 'marauders_seer' ? { chaosMark: opts.magicChoiceId } : {}) },
+    flags: { ...(unit.id === 'cursed_cavalcade_twisted_scholar' && opts.magicChoiceId === 'chronicler' ? { chronicler: true } : {}), ...(startingMagicFor(unit.id, template, opts.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(unit.id, template, opts.magicChoiceId)!.loreId! } : {}), ...(unit.id === 'marauders_seer' ? { chaosMark: opts.magicChoiceId } : {}) },
     equipment: freeDagger ? [{ itemId: freeDagger.itemId, ...(freeDagger.itemId ? {} : { customName: freeDagger.name }), quantity: 1 }] : [],
     status: "active",
   };
@@ -222,7 +222,7 @@ export function recruitHero(
       {
         kind: "hero.recruited",
         subjectId: id,
-        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${freeDagger ? " and the free dagger" : ""}; treasury now ${warband.gold - cost} gc`,
+        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${magic?.extraCost ? `; ${magic.label}` : ''}${freeDagger ? " and the free dagger" : ""}; treasury now ${warband.gold - cost} gc`,
         data: { unitTemplateId: unit.id, cost, startingExperience: unit.startingExperience },
       },
     ],

@@ -74,7 +74,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
   const [name, setName] = useState(() => defaultHeroName(unit, roster))
   const { commit, error, pending } = useCommit(detail)
   const [override, setOverride] = useState<Override | null>(null)
-  const listed = unit.cost ?? 0
+  const listed = (unit.cost ?? 0) + (magic?.extraCost ?? 0)
   const hireCost = overrideReady(override) ? override.amount : listed
   const overrideBlocks = override !== null && !overrideReady(override)
   const trimmed = name.trim()
@@ -126,7 +126,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
       <div className="flex flex-col gap-4 pb-2">
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" error={trimmed ? undefined : 'Give the hero a name'} />
         <div className="grid grid-cols-3 gap-3">
-          <KeyValue label="Hire cost" value={`${hireCost} gc${giftTotal.total ? ` + ${giftTotal.total}` : ''}`} />
+          <KeyValue label="Hire cost" value={`${cost} gc`} />
           <KeyValue label="Treasury after" value={`${roster.gold - cost} gc`} />
           <KeyValue label="Starting xp" value={unit.startingExperience} />
         </div>

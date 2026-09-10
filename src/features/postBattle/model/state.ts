@@ -71,7 +71,13 @@ export interface DiceOverride {
 }
 
 export interface ExplorationDraft {
+  artefactRoll?: number | null
+  artefactOverrideReason?: string
+  alliedWithWinner?: boolean
+  /** One qualifying witness per enemy-caused Slayer hero casualty. */
+  valorWitnesses?: Record<string, string>
   itemQuantities?: Record<string, number | null>;
+  itemChoices?: Record<string, string[]>;
   /** Null = roll what the app suggests. */
   diceOverride: DiceOverride | null
   /** One entry per die allowed; null until entered. */
@@ -420,7 +426,7 @@ export function applyExplorationAid(draft: ReportDraft, use: AidUse): ReportDraf
   const rolls = [...draft.exploration.rolls]
   while (rolls.length <= use.dieIndex) rolls.push(null)
   rolls[use.dieIndex] = use.to
-  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, itemQuantities: {} })
+  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '' })
 }
 
 /** Roll a different number of exploration dice than suggested (1..12); null goes back to the suggestion. The reason is required to file. */
@@ -439,11 +445,11 @@ export function setExplorationRoll(draft: ReportDraft, index: number, value: num
   while (rolls.length <= index) rolls.push(null)
   if (rolls[index] === value) return draft
   rolls[index] = value
-  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, itemQuantities: {} })
+  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '' })
 }
 
 export function setExplorationRolls(draft: ReportDraft, rolls: (number | null)[]): ReportDraft {
-  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, itemQuantities: {} })
+  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '' })
 }
 
 /** Toggle whether a rolled die (by index) is one of the six kept and scored; extra picks past `limit` are ignored. */
@@ -457,11 +463,11 @@ export function toggleExplorationKeep(draft: ReportDraft, index: number, limit: 
 /** The location's D6; a new value resets the answers that depend on it. */
 export function setExplorationSubRoll(draft: ReportDraft, subRoll: number | null): ReportDraft {
   if (draft.exploration.subRoll === subRoll) return draft
-  return withExploration(draft, { subRoll, gold: null, extraShards: null, items: null, itemQuantities: {} })
+  return withExploration(draft, { subRoll, gold: null, extraShards: null, items: null, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '' })
 }
 
 export function setExplorationTest(draft: ReportDraft, testPassed: boolean | null): ReportDraft {
-  return withExploration(draft, { testPassed, gold: null, extraShards: null, items: null, itemQuantities: {} })
+  return withExploration(draft, { testPassed, gold: null, extraShards: null, items: null, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '' })
 }
 
 export function setExplorationTestSubject(draft: ReportDraft, heroId: string | null): ReportDraft {
@@ -469,7 +475,7 @@ export function setExplorationTestSubject(draft: ReportDraft, heroId: string | n
 }
 
 export function setExplorationGold(draft: ReportDraft, gold: number | null): ReportDraft {
-  return withExploration(draft, { gold: gold === null ? null : Math.max(0, Math.trunc(gold)) })
+  return withExploration(draft, { gold: gold === null ? null : Math.max(0, Math.trunc(gold)), items: null })
 }
 
 export function setExplorationExtraShards(draft: ReportDraft, extraShards: number | null): ReportDraft {

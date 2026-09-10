@@ -1,3 +1,4 @@
+import { useCampaignArtefacts } from '../../api/artefacts'
 // The post-battle report wizard for one warband in one match (/matches/:id/report/:warbandId).
 // Seven steps: outcome, casualties, injuries, experience, exploration, veterans & notes, review.
 // The draft lives in localStorage until the report is filed, so the table can finish later.
@@ -194,6 +195,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
 
   const opponents = useMemo(() => match.participants.filter((p) => p.warband_id !== participant.warband_id), [match.participants, participant.warband_id])
   const matchReports = useMatchReports(match.id)
+  const artefacts = useCampaignArtefacts(match.campaign_id)
   const opponentReports = useMemo(
     () => (matchReports.data ?? []).filter((r) => r.warband_id !== participant.warband_id),
     [matchReports.data, participant.warband_id],
@@ -201,6 +203,9 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   const ctx = useMemo<ReportContext>(
     () => ({
       roster: rosterData.roster,
+      artefacts: artefacts.data,
+      artefactsError: artefacts.error?.message,
+      reportId: matchReports.data?.find(r => r.warband_id === participant.warband_id)?.id,
       template: findWarbandTemplate(rosterData.roster.warbandTemplateId),
       items: rosterData.items,
       matchId: match.id,
@@ -214,7 +219,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
       takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
     }),
-    [rosterData, match.id, match.scenario_rules_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
+    [artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

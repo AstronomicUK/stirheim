@@ -1,3 +1,6 @@
+import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
+import { slayerExploration } from '../model/slayerExploration'
+import { emptyExploration } from '../model/state'
 import { battleTreasureAwards } from '../../../rules/resolve/battleTreasure'
 import { heroOoaIds } from '../model/derive'
 import { useState } from 'react'
@@ -34,10 +37,22 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
   const awards = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign ? [] : battleTreasureAwards(derived.participants.heroes, heroOoaIds(draft), draft.enemiesOut)
   const awardSummary = awards.length ? <Notice tone="info" title="Extra treasure earned"><ul>{awards.map(a=><li key={`${a.subjectId}:${a.rule}`}>{a.name}: +{a.shards} wyrdstone/treasure — {a.rule}.</li>)}</ul>Added automatically; do not include this in manually recorded battle loot.</Notice> : null
 
+  const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, derived.participants) : null
+  const slayerControls = slayer ? <Card className="flex flex-col gap-3 px-4 py-3">
+    <p className="font-medium">Slayer exploration</p>
+    <p className="text-sm text-ink-dim">Only in Victory: Slayer heroes search after a win, draw or alliance with the winner, provided you did not rout. The Rememberer is exempt.</p>
+    {draft.result === 'lost' && !draft.routed ? <label className="flex gap-2 text-sm"><input type="checkbox" checked={!!draft.exploration.alliedWithWinner} onChange={e => update(d => ({...d, exploration: {...emptyExploration(), valorWitnesses: d.exploration.valorWitnesses, alliedWithWinner: e.target.checked}}))} />Allied with the winning warband</label> : null}
+    {slayer.casualties.length > 0 ? <p className="text-sm text-ink-dim">Record of Valor: choose a witness only if an enemy or hostile event caused this casualty and that witness was still on the board at the time. Self-inflicted falls do not count. A hero who returned to the battle gives no extra die. Each casualty counts once, even with two witnesses.</p> : null}
+    {slayer.casualties.map(h => <SelectField key={h.id} label={`${h.name} — qualifying witness`} value={draft.exploration.valorWitnesses?.[h.id] ?? ''} onChange={e => update(d => ({...d, exploration: {...emptyExploration(), alliedWithWinner: d.exploration.alliedWithWinner, valorWitnesses: {...d.exploration.valorWitnesses, [h.id]: e.target.value}}}))}>
+      <option value="">No qualifying witnessed casualty</option>{slayer.witnesses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+    </SelectField>)}
+  </Card> : null
+
   if (ex.allowed === null || ex.allowed.count === 0) {
     return (
       <StepBody title="Exploration">
         {awardSummary}
+        {slayerControls}
         <Notice tone="info" title="No exploration">
           {ex.skippedReason}
         </Notice>
@@ -60,6 +75,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
   return (
     <StepBody title="Exploration">
         {awardSummary}
+        {slayerControls}
       <Intro>
         Suggested: {ex.suggested?.count ?? allowed.count} {(ex.suggested?.count ?? allowed.count) === 1 ? 'die' : 'dice'} ({ex.suggested?.reason ?? allowed.reason}). Surviving{' '}
         {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.{won ? '' : ' No winner’s die.'}
@@ -248,12 +264,26 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
         </Section>
       ) : null}
 
+      {ex.needsArtefact ? <Section title="Magical artefact">
+        <Card className="flex flex-col gap-3 px-4 py-3">
+          <p className="text-sm text-ink-dim">Each artefact may be found only once per campaign, even if its bearer has died. The campaign record is checked again when you file this report.</p>
+          {ctx.artefacts === undefined ? <Notice tone={ctx.artefactsError ? 'error' : 'info'}>{ctx.artefactsError ?? 'Loading the campaign artefact record…'}</Notice> : <ul className="text-sm">{MAGICAL_ARTEFACTS.map(a => {
+            const found = ctx.artefacts?.find(f => f.roll === a.band.min && (!ctx.reportId || f.reportId !== ctx.reportId))
+            return <li key={a.band.min} className={found ? 'text-warn' : ''}>{a.band.min}. {a.name} — {found ? `already found by ${found.warbandName}; reroll` : 'available'}</li>
+          })}</ul>}
+          <DieField label="Magical artefact D6" sides={6} value={draft.exploration.artefactRoll ?? null} rollable onChange={value => update(d => ({...d,exploration:{...d.exploration,artefactRoll:value,artefactOverrideReason:'',items:null}}))} />
+          {MAGICAL_ARTEFACTS.filter(a => a.band.min === draft.exploration.artefactRoll).map(a => <div key={a.name}><p className="font-medium">{a.name}</p><Markdown source={a.text} /></div>)}
+          {ctx.artefacts?.some(a => a.roll === draft.exploration.artefactRoll && (!ctx.reportId || a.reportId !== ctx.reportId)) ? <TextField label="Agreed override reason (only to allow a duplicate)" value={draft.exploration.artefactOverrideReason ?? ''} onChange={e => update(d => ({...d,exploration:{...d.exploration,artefactOverrideReason:e.target.value}}))} hint="Leave blank and reroll to follow the campaign uniqueness rule." /> : null}
+        </Card>
+      </Section> : null}
+
       {ex.result && ex.rewardsApply ? (
         <Section title="Items found" aside="Go to the stash">
           {ex.itemQuantityPrompts.map(prompt => <div key={prompt.key} className="flex items-end gap-2">
-            <NumberField label={`${prompt.name} — quantity (${prompt.expression})`} value={prompt.value} allowEmpty onChange={value => update(d => ({...d,exploration:{...d.exploration,items:null,itemQuantities:{...d.exploration.itemQuantities,[prompt.key]:value}}}))} />
-            <Button variant="secondary" onClick={() => { const value = rollDice(prompt.expression).total; update(d => ({...d,exploration:{...d.exploration,items:null,itemQuantities:{...d.exploration.itemQuantities,[prompt.key]:value}}})) }}>Roll quantity</Button>
+            <NumberField label={`${prompt.name} — quantity (${prompt.expression})`} value={prompt.value} disabled={!!ctx.map?.perks.explorationMaxFinds} allowEmpty onChange={value => update(d => ({...d,exploration:{...d.exploration,items:null,itemQuantities:{...d.exploration.itemQuantities,[prompt.key]:value}}}))} />
+            <Button variant="secondary" disabled={!!ctx.map?.perks.explorationMaxFinds} onClick={() => { const value = rollDice(prompt.expression).total; update(d => ({...d,exploration:{...d.exploration,items:null,itemQuantities:{...d.exploration.itemQuantities,[prompt.key]:value}}})) }}>Roll quantity</Button>
           </div>)}
+          {ex.itemChoicePrompts.map(prompt => <div key={prompt.key} className="grid grid-cols-1 gap-2 sm:grid-cols-3">{Array.from({length:prompt.quantity}, (_,i) => <SelectField key={i} label={`Armourer item ${i + 1}`} value={prompt.selected[i] ?? ''} onChange={e => update(d => { const selected = Array.from({length:prompt.quantity}, (_,j) => j === i ? e.target.value : d.exploration.itemChoices?.[prompt.key]?.[j] ?? ''); return {...d,exploration:{...d.exploration,items:null,itemChoices:{...d.exploration.itemChoices,[prompt.key]:selected}}} })}><option value="">Choose…</option>{prompt.choices.map(name => <option key={name} value={name}>{name}</option>)}</SelectField>)}</div>)}
           <Card className="flex flex-col gap-3 px-4 py-3">
             {items.length === 0 ? <p className="text-sm text-ink-dim">Nothing. Add anything the text gives you.</p> : null}
             {items.map((item, i) => (

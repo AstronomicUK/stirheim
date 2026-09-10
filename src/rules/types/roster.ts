@@ -38,6 +38,8 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  /** Story Teller upgrade purchased instead of Wizard at recruitment. */
+  chronicler?: boolean;
   hireGroupId?: string;
   hireCompanion?: boolean;
   upkeepOwedAfter?: string;

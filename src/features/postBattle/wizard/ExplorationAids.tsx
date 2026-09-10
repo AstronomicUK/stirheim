@@ -15,7 +15,9 @@ export function ExplorationAidsCard({ draft, ctx, derived, update, rolls }: Pick
   const spent = draft.exploration.aids ?? []
   const participatingGroups = new Set(derived.participants.groups.map(g => g.id))
   const groupsAfter = new Map(derived.injuries.groups.map(g => [g.group.id, g.resolution.group]))
-  const aids = explorationAids({...ctx.roster, heroes:derived.participants.heroes, henchmenGroups:ctx.roster.henchmenGroups.filter(g=>participatingGroups.has(g.id)).map(g=>groupsAfter.get(g.id) ?? g)}, {
+  const heroesAfter = new Map(derived.injuries.heroes.map(h => [h.hero.id, h.resolution.hero]))
+  const hiresAfter = new Map(derived.injuries.hiredSwords.map(h => [h.sword.id, h.resolution.sword]))
+  const aids = explorationAids({...ctx.roster, heroes:derived.participants.heroes.map(h => heroesAfter.get(h.id) ?? h), hiredSwords:derived.participants.hiredSwords.map(h => hiresAfter.get(h.id) ?? h), henchmenGroups:ctx.roster.henchmenGroups.filter(g=>participatingGroups.has(g.id)).map(g=>groupsAfter.get(g.id) ?? g)}, {
     houseRules: ctx.houseRules ?? defaultCampaignHouseRules(),
     heroesOutOfAction: [...heroOoaIds(draft)],
     preBattle: ctx.preBattle ?? {},

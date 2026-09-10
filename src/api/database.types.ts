@@ -1241,6 +1241,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      campaign_artefact_ledger: { Args: { p_campaign_id: string }; Returns: Json }
       battle_turn_action: {
         Args: { p_match_id: string; p_action: string; p_revision: number; p_order?: string[]; p_limit?: number }
         Returns: Json

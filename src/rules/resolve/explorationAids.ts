@@ -109,6 +109,13 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
       out.push({ key: `tarot:${holder.id}`, label: "Tarot Cards", kind: "modify", uses: 1, holderId: holder.id, holderName: holder.name, note: `${holder.name} read the cards before the battle and passed: modify one die by +1 or -1.` });
     }
   }
+  for (const hero of warband.heroes) {
+    if (hero.unitTemplateId !== 'cursed_cavalcade_twisted_scholar' || !hero.flags.chronicler || hero.status !== 'active' || hero.flags.magicLoreId || hero.spellIds.length) continue;
+    out.push({ key: `chronicler:${hero.id}`, label: 'Story Teller', kind: 'rerollKeepEither', uses: 1, holderId: hero.id, holderName: hero.name, note: 'Chronicler: reroll one exploration die and choose which of the two results to keep.' });
+  }
+  for (const hire of warband.hiredSwords) {
+    if (hire.hiredSwordId === 'elf_ranger' && hire.status === 'active') out.push({key:`seeker:${hire.id}`,label:'Seeker',kind:'modify',uses:1,holderId:hire.id,holderName:hire.name,note:'Elf Ranger: modify one exploration die by +1 or −1.'});
+  }
   const rule = warbandRules(warband.warbandTemplateId).exploration;
   if (rule?.rollTwoKeepOneWith) {
     const seer = warband.heroes.find((h) => h.status === "active" && h.unitTemplateId === rule.rollTwoKeepOneWith && !down.has(h.id) && !(h.flags.missNextGames && h.flags.missNextGames > 0));
@@ -132,7 +139,7 @@ export function validateAidUse(aid: ExplorationAid, use: AidUse, spent: readonly
   if (aidUsesLeft(aid, spent) === 0) throw new RulesError('aid.spent', 'This exploration aid has already been used.');
   assertNoSecondReroll({...use,kind:aid.kind}, spent);
   if (!Number.isInteger(use.to) || use.to < 1 || use.to > 6) throw new RulesError("aid.invalidDie", `Not a valid D6 result: ${use.to}`);
-  if (aid.kind === "modify" && Math.abs(use.to - use.from) !== 1) throw new RulesError("aid.modifyByOne", "Tarot Cards move a die by exactly one");
+  if (aid.kind === "modify" && Math.abs(use.to - use.from) !== 1) throw new RulesError("aid.modifyByOne", `${aid.label} moves a die by exactly one`);
   if (aid.requiresTest && !use.test?.passed) throw new RulesError("aid.testFailed", `${aid.label} needs a passed ${aid.requiresTest.stat} test first`);
 }
 

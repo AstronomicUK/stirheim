@@ -13,7 +13,8 @@ export function StartingMagicCard({ unitId, template, choiceId, spells, rule, on
   const lore = selected?.loreId ? findLore(selected.loreId) : undefined
   if (!options.length) return null
   return <div className="flex flex-col gap-3">
-    {options.length > 1 ? <SelectField label={unitId === 'marauders_seer' ? 'Mark of Chaos' : 'Starting lore'} value={choiceId ?? ''} onChange={e => onChoice(e.target.value)}><option value="">Choose…</option>{options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</SelectField> : null}
+    {options.length > 1 ? <SelectField label={unitId === 'marauders_seer' ? 'Mark of Chaos' : unitId === 'cursed_cavalcade_twisted_scholar' ? 'Scholar training' : 'Starting lore'} value={choiceId ?? ''} onChange={e => onChoice(e.target.value)}><option value="">Choose…</option>{options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</SelectField> : null}
+    {selected?.id === 'chronicler' ? <p className="text-sm text-ink-dim">Story Teller: reroll one exploration die and choose which result to keep. This replaces the Wizard upgrade.</p> : null}
     {selected?.id === 'arkhar' ? <p className="text-sm text-ink-dim">A Bloodfather cannot cast spells. He may also learn Strength skills.</p> : null}
     {lore && selected ? Array.from({ length: selected.count }, (_, i) => {
       const available = lore.spells.filter(s => !spells.some((id, j) => j !== i && id === s.id) && (!apprenticeSpells || apprenticeSpells.includes(s.id)))

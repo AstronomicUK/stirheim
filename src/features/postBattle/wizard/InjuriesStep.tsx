@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
 import { HENCHMAN_INJURY } from '../../../rules/data/campaign/injuries'
 import { rollDie } from '../../../rules/resolve/dice'
-import { Button, DieField, Markdown, Stepper, TextField, SelectField } from '../../../ui'
+import { Button, DieField, Markdown, Stepper, TextField, SelectField, NumberField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import {
   addHeroInjuryRoll,
@@ -251,6 +251,13 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
           })}
         </Section>
       ) : null}
+      {derived.equipmentLosses.rows.length ? <Section title="Equipment lost with henchmen"><Card className="flex flex-col gap-3 px-4 py-3">
+        <p className="text-sm">Dead warriors’ equipment is lost. Identical kit is removed automatically. For mixed equipment or supplies used during the battle, record the copies carried by the models who died.</p>
+        {derived.equipmentLosses.rows.map(row=><div key={row.key} className="flex flex-col gap-1">
+          {row.manual?<NumberField label={`${row.groupName}: ${row.name} lost`} value={row.lost} onChange={lost=>update(d=>({...d,groupEquipmentLosses:{...d.groupEquipmentLosses,[row.key]:lost}}))}/>:<p className="text-sm">{row.groupName}: {row.lost} {row.name} lost; {row.available-row.lost!} retained.</p>}
+          {row.manual?<p className="text-xs text-ink-dim">{row.available} copies remain after recorded use; enter 0–{row.available} lost.</p>:null}
+        </div>)}
+      </Card></Section>:null}
     </StepBody>
   )
 }

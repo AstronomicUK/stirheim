@@ -1,3 +1,4 @@
+import { groupEquipmentLosses } from './groupEquipmentLosses'
 import { mixedPirateCrew } from '../../../rules/resolve/mixedHireUpkeep'
 import { caravanRewards } from './caravanRewards'
 import { harpyRewards } from './harpyRewards'
@@ -155,6 +156,7 @@ export interface AdvancesDerived {
 }
 
 export interface DerivedReport {
+  equipmentLosses: ReturnType<typeof groupEquipmentLosses>
   recruits: ReturnType<typeof locationRecruits>
   participants: Participants
   /** Kit after the battle: drugs' side effects, ruined clothes, maps and wishes. */
@@ -827,7 +829,15 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     const line=xp.lines.find(l=>l.subjectId===departure.id)
     if(line)line.advancesEarned=0
   }
-  const recruits = locationRecruits(draft, ctx, exploration, injuries, ctx.roster.gold + applied.warband.gold_delta)
+  const equipmentLosses = groupEquipmentLosses(ctx, draft, injuries, applied, !nonCampaign)
+  for (const row of equipmentLosses.patches) {
+    const existing = applied.item_patches.find(p=>p.id===row.id)
+    if(existing) Object.assign(existing,row)
+    else applied.item_patches.push(row)
+  }
+  const recruitItems = ctx.items.filter(i=>!applied.remove_item_ids.includes(i.id)).map(i=>({...i,...applied.item_patches.find(p=>p.id===i.id)})).filter(i=>i.quantity>0)
+  const recruitContext = {...ctx, items:recruitItems, roster:rosterAfterReport(ctx.roster,applied)}
+  const recruits = locationRecruits(draft, recruitContext, exploration, injuries, ctx.roster.gold + applied.warband.gold_delta)
   if (recruits.awardedItems.length) applied.awarded_items = [...(applied.awarded_items ?? []), ...recruits.awardedItems]
   const summoned = ritualZombies(draft, ctx, injuries, recruits)
   if (recruits.newGroups.length || summoned.newGroups.length) applied.new_groups = [...recruits.newGroups, ...summoned.newGroups]
@@ -838,7 +848,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   }
   for (const row of recruits.itemPatches) {
     const existing = applied.item_patches.find(i => i.id === row.id)
-    const original = ctx.items.find(i => i.id === row.id)
+    const original = recruitItems.find(i => i.id === row.id)
     if (existing && original) existing.quantity = (existing.quantity ?? original.quantity) + (row.quantity! - original.quantity)
     else applied.item_patches.push(row)
   }
@@ -853,6 +863,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
+  problems.injuries.push(...equipmentLosses.problems)
   problems.experience.push(...(kidnapped?.problems ?? []))
   problems.outcome.push(...(harpy?.problems ?? []))
   problems.veterans.push(...summoned.problems)
@@ -885,13 +896,13 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, ctx), ...equipmentLosses.notes, applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }
   }
 
-  return { participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
+  return { participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, equipmentLosses, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
 }
 
 /** The finished report, or an error naming what is still missing. */

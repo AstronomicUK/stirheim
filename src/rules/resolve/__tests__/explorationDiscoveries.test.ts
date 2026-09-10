@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { explorationDiscoveries } from '../explorationDiscoveries'
+import { discoveryHistory, explorationDiscoveries } from '../explorationDiscoveries'
 import { explorationAids } from '../explorationAids'
 import { makeWarband, makeHero } from './fixtures'
 import { deriveExploration } from '../../../features/postBattle/model/exploration'
@@ -49,4 +49,26 @@ it('preserves a Harpy Straggler through skipped exploration and consumes it at t
   const reward = { id: 'harpy', exploration: null, applied: { scenario_benefits: ['harpy_straggler'] } }
   expect(explorationDiscoveries([reward, { id: 'skip', exploration: null }]).straggler).toBe(true)
   expect(explorationDiscoveries([reward, { id: 'used', exploration: { locationId: null } }]).straggler).toBe(false)
+})
+
+
+describe('historical discovery chronology',()=>{
+ const day=(n:number)=>`2026-09-${String(n).padStart(2,'0')}T12:00:00Z`
+ const row=(id:string,battle:number,submitted:number,locationId:string|null,benefits:string[]=[])=>({id,matchId:id,battleAt:day(battle),submittedAt:day(submitted),exploration:{locationId,benefits}})
+ it('does not grant discoveries from later battles when amending an old report',()=>{
+  const reports=[row('first',1,10,null),row('future',3,3,'entrance_to_the_catacombs')]
+  expect(explorationDiscoveries(discoveryHistory(reports,'first')).catacombs).toBe(false)
+ })
+ it('does not renew an already consumed Straggler by amending its old report',()=>{
+  const reports=[row('straggler',1,10,'straggler',['straggler']),row('consumed',2,2,null)]
+  expect(explorationDiscoveries(discoveryHistory(reports)).straggler).toBe(false)
+ })
+ it('uses the actual battle start before the first report has even been filed',()=>{
+  const reports=[row('earlier',1,9,'entrance_to_the_catacombs'),row('later',3,3,'straggler',['straggler'])]
+  expect(explorationDiscoveries(discoveryHistory(reports,'draft',day(2)))).toMatchObject({catacombs:true,straggler:false})
+ })
+ it('retains filing order as a fallback for legacy matches without starts',()=>{
+  const reports=[{...row('second',2,2,null),battleAt:undefined},{...row('first',1,1,'straggler',['straggler']),battleAt:undefined}]
+  expect(discoveryHistory(reports).map(r=>r.id)).toEqual(['first','second'])
+ })
 })

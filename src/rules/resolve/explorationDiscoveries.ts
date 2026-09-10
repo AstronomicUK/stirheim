@@ -12,6 +12,19 @@ export interface DiscoveryReport {
   applied?: { scenario_benefits?: string[] }
   exploration: { locationId?: string | null; benefits?: string[] } | null
 }
+export interface DatedDiscoveryReport extends DiscoveryReport {
+  matchId: string
+  submittedAt: string
+  battleAt?: string
+}
+/** Battle order survives later report amendments. Legacy reports without a start use their filing time. */
+export function discoveryHistory(reports: DatedDiscoveryReport[], excludeMatchId?: string, cutoffAt?: string): DiscoveryReport[] {
+  const time=(r:DatedDiscoveryReport)=>Date.parse(r.battleAt??r.submittedAt)
+  const current=reports.find(r=>r.matchId===excludeMatchId)
+  const cutoff=cutoffAt?Date.parse(cutoffAt):current?time(current):undefined
+  return reports.filter(r=>r.matchId!==excludeMatchId&&(cutoff===undefined||time(r)<cutoff))
+    .sort((a,b)=>time(a)-time(b)||a.id.localeCompare(b.id))
+}
 /** Reports must be oldest first. A skipped exploration does not consume a Straggler die. */
 export function explorationDiscoveries(reports: DiscoveryReport[]): ExplorationDiscoveries {
   const latest = reports.at(-1)

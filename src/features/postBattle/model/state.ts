@@ -118,6 +118,7 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  groupEquipmentLosses?: Record<string, number | null>
   retainedScoutId?: string
   pettyThiefRoll?: number | null
   pettyThiefSelection?: number | null
@@ -316,7 +317,7 @@ export function setGroupOut(draft: ReportDraft, id: string, count: number, size:
   const groupInjuries = { ...draft.groupInjuries }
   if (rolls.length === 0) delete groupInjuries[id]
   else groupInjuries[id] = rolls
-  return { ...draft, groupsOut, groupInjuries }
+  return { ...draft, groupsOut, groupInjuries, groupEquipmentLosses: {} }
 }
 
 export function setEnemiesOut(draft: ReportDraft, id: string, count: number): ReportDraft {
@@ -387,7 +388,7 @@ export function setGroupInjuryDice(draft: ReportDraft, groupId: string, override
   const groupInjuryDice = { ...draft.groupInjuryDice }
   if (override === null) delete groupInjuryDice[groupId]
   else groupInjuryDice[groupId] = { count: Math.max(0, Math.min(20, Math.trunc(override.count))), reason: override.reason }
-  return { ...draft, groupInjuryDice }
+  return { ...draft, groupInjuryDice, groupEquipmentLosses: {} }
 }
 
 export function setSwordInjury(draft: ReportDraft, swordId: string, d6: number | null): ReportDraft {
@@ -400,7 +401,7 @@ export function setGroupInjuryRoll(draft: ReportDraft, groupId: string, index: n
   const rolls = [...(draft.groupInjuries[groupId] ?? [])]
   while (rolls.length < count) rolls.push(null)
   rolls[index] = d6
-  return { ...draft, groupInjuries: { ...draft.groupInjuries, [groupId]: rolls } }
+  return { ...draft, groupInjuries: { ...draft.groupInjuries, [groupId]: rolls }, groupEquipmentLosses: {} }
 }
 
 export function addXpExtra(draft: ReportDraft, subjectId: string, extra: XpExtra): ReportDraft {

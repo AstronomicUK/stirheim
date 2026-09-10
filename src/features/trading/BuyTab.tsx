@@ -141,7 +141,8 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const searchTotal = diceTotal(rareSpec, searchFaces)
   const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
   const mapRareBonus = trade.perks?.rareRollBonus ?? 0
-  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus
+  const wornGemBonus = roster.heroes.find(h => h.id === searcherId)?.equipment.some(e => e.itemId === 'scenario_smuggled_gems' && e.quantity > 0) ? 1 : 0
+  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus
   const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && tracked
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
@@ -333,7 +334,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
         </section>
         {isRare ? (
           <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this warband${mapRareBonus ? `, ${mapRareBonus} of it from ${trade.perks?.rareRollSource?.districtName}` : ''})` : ''}</h3>
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this search${wornGemBonus ? ', +1 from worn Smuggled Gems' : ''}${mapRareBonus ? `, ${mapRareBonus} of it from ${trade.perks?.rareRollSource?.districtName}` : ''})` : ''}</h3>
             {needsSearcher ? (
               searchers.length === 0 ? (
                 <Notice tone="warn">Every hero able to search has done so this sequence{downCount > 0 ? ` (${downCount} taken out of action may not)` : ''}. No more rare-item rolls until the next battle.</Notice>

@@ -2,6 +2,66 @@
 import type { Item } from "../../types/items"
 
 export const SCENARIO_REWARD_ITEMS: Item[] = [
+{
+  "id": "scenario_smuggled_gems",
+  "name": "Smuggled Gems",
+  "category": "misc",
+  "price": {
+    "base": null,
+    "text": "Scenario reward only"
+  },
+  "availability": {
+    "kind": "special",
+    "text": "Scenario reward only"
+  },
+  "description": "Down at the Docks: gems worth 100 gc. They may be fenced for 40 gc, or worn to add +1 to rarity finds.",
+  "specialRules": [],
+  "scenarioRewardOnly": true,
+  "source": {
+    "publication": "Town Cryer 25",
+    "file": "06-scenarios.md:3579-3603"
+  }
+},
+{
+  "id": "scenario_medicine_chest",
+  "name": "Medicine Chest",
+  "category": "misc",
+  "price": {
+    "base": null,
+    "text": "Scenario reward only"
+  },
+  "availability": {
+    "kind": "special",
+    "text": "Scenario reward only"
+  },
+  "description": "Down at the Docks: use as D6 doses of Healing Herbs, or expend the chest once to reroll a Hero Serious Injury result. It cannot reroll Pit Fight, Captured or similar outcomes. Choose one use only.",
+  "specialRules": [],
+  "scenarioRewardOnly": true,
+  "source": {
+    "publication": "Town Cryer 25",
+    "file": "06-scenarios.md:3579-3603"
+  }
+},
+{
+  "id": "scenario_hunting_bolts",
+  "name": "Hunting Bolts",
+  "category": "misc",
+  "price": {
+    "base": null,
+    "text": "Scenario reward only"
+  },
+  "availability": {
+    "kind": "special",
+    "text": "Scenario reward only"
+  },
+  "description": "Down at the Docks: hunting bolts accompanying one crossbow. Use the Hunting Arrows rules for one game only, then discard this supply.",
+  "specialRules": [],
+  "scenarioRewardOnly": true,
+  "source": {
+    "publication": "Town Cryer 25",
+    "file": "06-scenarios.md:3579-3603"
+  }
+},
   {
     "id": "scenario_athame",
     "name": "Athame",

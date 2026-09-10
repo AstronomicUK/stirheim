@@ -56,6 +56,7 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   manticore_spoor: { consumable: "battle", preBattle: { label: "Weapon smeared with Manticore Spoor", appliesTo: "allWeapons", note: "A wounded model rolls a D6 each turn: 1 loses a wound, 6 ends the poison (table rule)." } },
   reptile_venom: { consumable: "battle", preBattle: { label: "Reptile Venom on the missile weapon", appliesTo: "ranged", strengthBonus: 1, strengthBonusNoSaveModifier: true } },
   poisoned_weapon: { preBattle: { label: "Forest Goblin poison (permanent)", appliesTo: "allWeapons", injuryRollBonus: 1 }, note: "Poisoned Weapon: +1 to injury rolls with the poisoned weapon." },
+  scenario_hunting_bolts: { consumable: "battle", preBattle: { label: "Shooting Hunting Bolts", appliesTo: "crossbows", injuryRollBonus: 1 } },
   hunting_arrows: { preBattle: { label: "Shooting Hunting Arrows", appliesTo: "bows", injuryRollBonus: 1 } },
   asp_arrows: { preBattle: { label: "Shooting Asp Arrows", appliesTo: "bows", toHitBonus: 1 } },
   fire_arrows: { consumable: "battle", preBattle: { label: "Shooting Fire Arrows", appliesTo: "bows", note: "A hit sets the target alight on a 4+ (table rule)." } },

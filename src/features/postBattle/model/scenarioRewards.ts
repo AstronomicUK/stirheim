@@ -1,3 +1,4 @@
+import { docksRewards, type DocksDraft } from './docksRewards'
 import { muleRewards, type MuleDraft } from './muleRewards'
 import { harpyRewards, type HarpyDraft } from './harpyRewards'
 import type { RitualZombiesDraft } from './scenarioRecruits'
@@ -13,6 +14,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  docks?: DocksDraft
   mule?: MuleDraft
   harpy?: HarpyDraft
   ritualZombies?: RitualZombiesDraft
@@ -74,6 +76,10 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
   if (rule.kind === 'repeated' && rule.extraPerWarband) {
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
+  }
+  if (rule.kind === 'docks') {
+    const cargo = docksRewards(state.docks ?? {}, context?.opponents ? new Set(context.opponents.map(o => o.id)).size + 1 : undefined)
+    return { ...rewards, gold: cargo.gold, items: cargo.items, notes: cargo.notes, problems: cargo.problems }
   }
   if (rule.kind === 'mule-train') {
     const mule = muleRewards(state.mule ?? {})

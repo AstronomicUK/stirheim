@@ -3,7 +3,7 @@ import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
 import { loadoutOf, type Combatant } from './combatants'
-import { combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
+import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
@@ -225,4 +225,13 @@ describe('display helpers', () => {
     const pavise = loadoutOf([{ itemId: 'pavise', quantity: 1 }])
     expect(relevantToggles(brawler, 'melee', kit.melee[0], pavise).map((t) => t.field)).toContain('paviseFront')
   })
+})
+
+
+it('scenario hunting bolts improve crossbow injury rolls without affecting bows or melee', () => {
+  const model = combatant('Cargo shooter', [{ itemId: 'crossbow', quantity: 1 }, { itemId: 'bow', quantity: 1 }, { itemId: 'sword', quantity: 1 }])
+  const result = applyPreBattle(model, loadoutOf(model.equipment), [{ label: 'Hunting Bolts', appliesTo: 'crossbows', injuryRollBonus: 1 }])
+  expect(result.kit.ranged.find(w => w.id === 'crossbow')?.special).toContain('injuryBonus:1')
+  expect(result.kit.ranged.find(w => w.id === 'bow')?.special).not.toContain('injuryBonus:1')
+  expect(result.kit.melee.find(w => w.id === 'sword')?.special).not.toContain('injuryBonus:1')
 })

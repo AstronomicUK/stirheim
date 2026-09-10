@@ -1,3 +1,4 @@
+import { DocksRewards } from './DocksRewards'
 import { muleRewards } from '../model/muleRewards'
 import { locationRecruits } from '../model/locationRecruits'
 import { ritualZombies } from '../model/scenarioRecruits'
@@ -40,6 +41,7 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
       <NumberField label="Unspoiled pies carried away by your warriors" allowEmpty value={state.recipe?.pies ?? null} onChange={pies => change(s => ({ ...s, recipe: { ...s.recipe, pies } }))} />
       {draft.result === 'won' ? <><NumberField label="Unspoiled pies claimed from the cart" allowEmpty value={state.recipe?.cartPies ?? null} onChange={cartPies => change(s => ({ ...s, recipe: { ...s.recipe, cartPies } }))} /><SelectField label="Is your warband turning Geefer in for the reward?" value={state.recipe?.turnsInGeefer === undefined ? '' : String(state.recipe.turnsInGeefer)} onChange={e => change(s => ({ ...s, recipe: { ...s.recipe, turnsInGeefer: e.target.value === '' ? undefined : e.target.value === 'true', dice: [] } }))}><option value="">Choose…</option><option value="true">Yes — we claim the payment</option><option value="false">No — another allied winner claims it</option></SelectField>{state.recipe?.turnsInGeefer ? <div className="flex flex-wrap gap-3">{Array.from({ length: 5 }, (_, i) => <DieField key={i} sides={6} rollable label={`Geefer payment: D6 ${i + 1}`} value={state.recipe?.dice?.[i] ?? null} onChange={v => change(s => ({ ...s, recipe: { ...s.recipe, dice: Array.from({ length: 5 }, (_, j) => i === j ? v : s.recipe?.dice?.[j] ?? null) } }))} />)}</div> : null}</> : null}
     </Card> : null}
+    {rule.kind === 'docks' ? <DocksRewards state={state.docks ?? {}} participantCount={ctx.opponents ? new Set(ctx.opponents.map(o => o.id)).size + 1 : undefined} change={docks => change(s => ({ ...s, docks }))} /> : null}
     {rule.kind === 'mule-train' ? <>
       <SelectField label="Mule Train: your role" value={state.mule?.role ?? ''} onChange={e => change(s => ({ ...s, mule: { ...s.mule, role: e.target.value as 'attacker' | 'defender' }, finds: {} }))}><option value="">Choose…</option><option value="attacker">Attacker</option><option value="defender">Defender</option></SelectField>
       <NumberField label="Mules in the starting train" hint="3–6 mules, as set up for this battle" allowEmpty value={state.mule?.starting ?? null} onChange={starting => change(s => ({ ...s, mule: { ...s.mule, starting, recovered: null }, finds: {} }))} />

@@ -25,6 +25,7 @@ export const ITEM_RESTRICTIONS: Record<string, ItemRestriction> = {
   winter_furs: { heroesOnly: false, notWarbands: ["beastmen"], note: "Henchmen may wear Winter Furs; Beastmen may not." },
   reptile_venom: { heroesOnly: false, onlyUnits: ["lizardmen_skink_brave"], note: "Skink henchmen only, one per missile weapon." },
   toughened_leathers: { heroesOnly: false, noShield: true, unsellable: true, note: "Cannot be combined with a shield and cannot be sold back." },
+  scenario_hunting_bolts: { requiresAnyOf: { itemIds: ["crossbow"], label: "a crossbow" }, countsAsMissile: false },
   hunting_arrows: { requiresAnyOf: { itemIds: BOWS, label: "a bow" }, countsAsMissile: false, note: "Arrows are only any use with a Short Bow, Bow, Long Bow or Elf Bow." },
   asp_arrows: { requiresAnyOf: { itemIds: BOWS, label: "a bow" }, onlyUnits: ["tomb_guardians_tomb_lord"], countsAsMissile: false, note: "Tomb Lord only; needs a bow." },
   fire_arrows: { requiresAnyOf: { itemIds: BOWS, label: "a bow" }, countsAsMissile: false },

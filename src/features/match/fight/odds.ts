@@ -53,6 +53,7 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
       if (e.appliesTo === 'allWeapons') return true
       if (e.appliesTo === 'melee') return w.type === 'melee'
       if (e.appliesTo === 'ranged') return w.type === 'ranged'
+      if (e.appliesTo === 'crossbows') return w.id === 'crossbow'
       if (e.appliesTo === 'bows') return ['bow', 'short_bow', 'longbow', 'elf_bow'].includes(w.id)
       if (e.appliesTo === 'blackpowder') return w.type === 'ranged' && (w.saveModifier ?? 0) >= 2 && w.strength !== 'user'
       return false

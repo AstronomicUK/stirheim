@@ -12,6 +12,8 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   truthsayer_triskele: { wardSave: 4, note: "The Triskele: unmodifiable 4+ save." },
   dark_emissary_staff: { note: "Staff of Darkness: +1 to casting rolls; applied in Cast a Spell." },
   ninja_gnoblar_shurikens: {note:"Stealthy: throwing these shurikens does not reveal the hidden Ninja unless the target passes an Initiative test. Resolve visibility on the tabletop."},
+  sabertooth_tiger_hide: {ownSave:{melee:6,missile:5},note:"Sabertooth Tiger Hide: 6+ armour in melee, 5+ against missiles; normal save modifiers apply."},
+  abdul_eye_pendant: {wardSave:4,note:"The Eye Pendant: 4+ ward save. Before attacking Abdul, an Undead warrior must pass a Leadership test; resolve that prerequisite on the tabletop."},
   thief_cloak: {toBeHit:{missile:-1},note:"Thief’s Cloak: enemy missiles are -1 to hit; double the distance required to spot the hidden thief on the tabletop."},
   kislev_ranger_cloak: {note:"Hunter’s Cloak: shooting while hidden does not reveal the Ranger unless the target passes an Initiative test. Resolve visibility on the tabletop."},
   // ---- Traits ----

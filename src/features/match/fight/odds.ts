@@ -307,12 +307,14 @@ export function strikeOrder(setup: FightSetup): string {
   const aWeapons = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
   const dWeapons = setup.defenderKit.melee
   const first = (ws: Weapon[]) => ws.some((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))
-  const last = (ws: Weapon[]) => ws.some((w) => w.special.includes('strikesLast'))
+  const last = (ws: Weapon[], c: Combatant, kit: Loadout) => ws.filter(w => w.special.includes('strikesLast') && !(w.special.includes('twoHanded') && [...c.skillIds,...kit.skillIds].includes('strongman')))
+  const aLast = last(aWeapons,a,setup.attackerKit)
+  const dLast = last(dWeapons,d,setup.defenderKit)
   const aI = a.stats.I + Math.max(0, ...aWeapons.map((w) => w.initiativeModifier ?? 0), 0) + Math.min(0, ...aWeapons.map((w) => w.initiativeModifier ?? 0), 0)
   const dI = d.stats.I + Math.max(0, ...dWeapons.map((w) => w.initiativeModifier ?? 0), 0) + Math.min(0, ...dWeapons.map((w) => w.initiativeModifier ?? 0), 0)
   const firstTurn = setup.context.charging || setup.context.firstTurnOfCombat
-  if (last(aWeapons) && !last(dWeapons)) return `${d.name} strikes first: ${a.name}'s ${aWeapons.find((w) => w.special.includes('strikesLast'))!.name} always strikes last.`
-  if (last(dWeapons) && !last(aWeapons)) return `${a.name} strikes first: ${d.name}'s ${dWeapons.find((w) => w.special.includes('strikesLast'))!.name} always strikes last.`
+  if (aLast.length && !dLast.length) return `${d.name} strikes first: ${a.name}'s ${aLast[0].name} always strikes last.`
+  if (dLast.length && !aLast.length) return `${a.name} strikes first: ${d.name}'s ${dLast[0].name} always strikes last.`
   if (setup.context.charging) {
     if (firstTurn && first(dWeapons)) return `${d.name} strikes first despite the charge (${dWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}); a Strike First charger would roll off.`
     return `${a.name} strikes first: charging.`

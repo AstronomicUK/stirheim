@@ -16,16 +16,16 @@ Generated from current starting equipment and combat loadout mapping. These are 
 | Halfling Knight | Hound; Barding |
 | Veskit, high executioner of clan eshin | Eshin Fighting Claws (the extra attack is included in his profile) |
 | Nicodemus, the cursed pilgrim | enormous Wizard's staff (see Special Rules) |
-| Abdul Alhazred, the Mad Sorcerer | Black Nomad Robes; Eye Pendant |
 | Crow Master, The | Mantle of Crows; Needle & Thread |
 | Dijin Katal, The Renegade Assassin | Druchii Assassin’s Cloak |
-| Drenok Johansen, Wielder Of The Great Axe | great Axe of the Icefang; he wears Sabertooth Tiger Hide |
 | Heinrich 'Altdorf' Schmidt | Whip |
 | Maximilian The Mad | double handed Holy Weapon |
 | Belandysh, Condemned Champion Of Chen | Broadsword of Damnation (see Chaos Artefacts); Chaos Armour that hardly hold his body together |
 | Grand Master Ippan Shu | iron fan in one of his hands |
 | Luthor Wolfenbaum (wizard) | Fish-slapping staff; Bugman’s Beer; Clay orbs of Tilean Fire |
-| "Busty" Gwen | Knives; rolling pin |
+| "Busty" Gwen | Knives (profile/count not stated; Rolling Pin now operational) |
 | The Foole | Poison Ring (See Special Rules) |
 
 Completed at milestone 51: Aenur/Ienh-Khain; Ninja Gnoblar Bo and shurikens; Thief’s Cloak; Hunter’s Cloak (visibility remains a tabletop rule, now explicitly shown). 23 listed character/role entries remain.
+
+Milestone 52 maps Drenok’s axe/hide and Abdul’s robes/pendant; 21 listed character/role entries remain. Gwen’s rolling pin is mapped but her unspecified knives remain explicit. The Eye Pendant Leadership prerequisite is a tabletop reminder, and wider special abilities such as Drenok’s Berserker still require review separately from equipment.

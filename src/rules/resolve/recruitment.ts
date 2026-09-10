@@ -805,6 +805,9 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   if(id==='the_dark_jester_in_mordheim') return [{itemId:'club_mace_or_hammer',quantity:1,notes:'Skeleton hobby horse: counts as a club.'},{itemId:'morning_star',quantity:1,notes:'Sack of spikes: counts as a morning star.'}];
   if(id==='aenur_the_sword_of_twilight') return kit(['ithilmar_armour','elven_cloak','ienh_khain']);
   if(id==='ninja_gnoblar') return kit(['toughened_leathers','ninja_gnoblar_shurikens','ninja_gnoblar_bo']);
+  if(id==='drenok_johansen_wielder_of_the_great_axe') return kit(['icefang_axe','sabertooth_tiger_hide']);
+  if(id==='abdul_alhazred_the_mad_sorcerer') return kit(['nomad_robes','dagger','abdul_eye_pendant']);
+  if(id==='busty_gwen') return [{itemId:null,customName:'Knives',quantity:1},...kit(['gwen_rolling_pin'])];
   if(id==='freelancer') return [...kit(['heavy_armour', 'shield', 'lance', 'sword']), ...mount];
   if(id==='highwayman') return [...kit(['dagger', 'rapier', 'buckler']), { itemId: 'pistol', quantity: 2 }, ...mount];
   if(id==='roadwarden') return [...kit(['crossbow', 'horsemans_hammer', 'dagger', 'heavy_armour']), { itemId: 'torch', quantity: 3 }, ...mount];

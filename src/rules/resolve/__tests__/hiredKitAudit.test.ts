@@ -80,3 +80,11 @@ it('supplies operational Aenur, Ninja and cloak equipment',()=>{
  expect(kit('thief').map(i=>i.itemId)).toContain('thief_cloak')
  expect(kit('kislev_ranger').map(i=>i.itemId)).toContain('kislev_ranger_cloak')
 })
+
+it('recruits Drenok and Abdul with catalogue kit and keeps Gwen’s unknown knives explicit',()=>{
+ const kitFor=(id:string)=>hiredSwordStartingEquipment(id,findHiredSword(id)!.detail)
+ expect(kitFor('drenok_johansen_wielder_of_the_great_axe').map(i=>i.itemId)).toEqual(['icefang_axe','sabertooth_tiger_hide'])
+ expect(kitFor('abdul_alhazred_the_mad_sorcerer').map(i=>i.itemId)).toEqual(['nomad_robes','dagger','abdul_eye_pendant'])
+ expect(kitFor('busty_gwen')).toContainEqual({itemId:'gwen_rolling_pin',quantity:1})
+ expect(kitFor('busty_gwen')).toContainEqual({itemId:null,customName:'Knives',quantity:1})
+})

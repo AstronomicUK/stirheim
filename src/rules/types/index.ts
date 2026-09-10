@@ -94,6 +94,8 @@ export interface Weapon {
   ignoresArmourSaveExceptShield?: boolean;
   /** Modifier to the critical hit table roll from the weapon itself (Dark Elf Blade +1). */
   critTableRollModifier?: number;
+  /** Injury modifier from this particular weapon, combined with wielder skills. */
+  injuryRollModifier?: number;
   /** The saveModifier applies only when the weapon is wielded in both hands (Ogre Club "Crushing Attack"). */
   saveModifierTwoHandedOnly?: boolean;
   /** The strengthBonus applies only when charging while mounted (Lance). */

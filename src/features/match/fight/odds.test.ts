@@ -273,3 +273,37 @@ it('applies the Thief’s cloak to missile attacks only, including legacy equipm
  expect(computeOdds(setup(marksman,hidden,'bow',null)).weapons[0].input.hitThreshold).toBe(Number(computeOdds(setup(marksman,bare,'bow',null)).weapons[0].input.hitThreshold)+1)
  expect(computeOdds(setup(captain,hidden,'sword',null)).weapons[0].input.hitThreshold).toBe(computeOdds(setup(captain,bare,'sword',null)).weapons[0].input.hitThreshold)
 })
+
+
+it('uses Icefang’s strength, parry, injury bonus and Drenok’s Strongman',()=>{
+ const d=combatant('Drenok',[{itemId:'icefang_axe',quantity:1},{itemId:'sabertooth_tiger_hide',quantity:1}],{stats:{...base,S:4,I:4},skillIds:['strongman']})
+ const fight=setup(d,skaven,'icefang_axe',null)
+ const odds=computeOdds(fight)
+ expect(odds.weapons[0].input.injuryRollModifier).toBe(1)
+ expect(odds.weapons[0].input.woundThreshold).toBe(2)
+ expect(toDefender(d,fight.attackerKit).parryWeaponCount).toBe(1)
+ expect(odds.strikeOrder).toContain('Drenok strikes first: Initiative 4')
+ expect(computeOdds(setup(captain,d,'sword',null)).strikeOrder).toContain('Drenok strikes first: Initiative 4')
+ expect(computeOdds(setup({...d,skillIds:[]},skaven,'icefang_axe',null)).strikeOrder).toContain('always strikes last')
+ const bonus=setup({...d,skillIds:['strongman','strike_to_injure']},skaven,'icefang_axe',null)
+ expect(computeOdds(bonus).weapons[0].input.injuryRollModifier).toBe(2)
+})
+it('uses Tiger Hide as ordinary phase-specific armour and the Eye as a ward',()=>{
+ const hide=combatant('Drenok',[{itemId:'sabertooth_tiger_hide',quantity:1}])
+ expect(computeOdds(setup(captain,hide,'sword',null)).weapons[0].input.armourThreshold).toBe(6)
+ expect(computeOdds(setup(marksman,hide,'bow',null)).weapons[0].input.armourThreshold).toBe(5)
+ const eye=combatant('Abdul',[{itemId:null,customName:'Eye Pendant',quantity:1}])
+ expect(computeOdds(setup(captain,eye,'sword',null)).weapons[0].input.wardSaveThreshold).toBe(4)
+})
+it('adds Rolling Pin strength to Mighty Blow while retaining cudgel concussion',()=>{
+ const gwen=combatant('Gwen',[{itemId:'gwen_rolling_pin',quantity:1}],{stats:{...base,S:4},skillIds:['mighty_blow']})
+ const target=combatant('Tough',[],{stats:{...base,T:5}})
+ const input=computeOdds(setup(gwen,target,'gwen_rolling_pin',null)).weapons[0].input
+ expect(input.woundThreshold).toBe(3)
+ expect(input.concussion).toBe(true)
+})
+
+it('does not let Strongman cancel an unrelated one-handed strike-last weapon',()=>{
+ const fighter=combatant('Fighter',[{itemId:'broadsword',quantity:1}],{skillIds:['strongman'],stats:{...base,I:10}})
+ expect(computeOdds(setup(fighter,skaven,'broadsword',null)).strikeOrder).toContain('always strikes last')
+})

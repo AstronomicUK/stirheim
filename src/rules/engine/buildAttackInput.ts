@@ -274,7 +274,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const dodgeSkill = weapon.type === "ranged" ? findActiveEffect(defenderSkills, context, weapon.type, "extraSaveThreshold") : undefined;
 
   // ---- Injury roll modifiers ----
-  const injuryRollModifier = sumEffect(attackerSkills, context, weapon.type, "injuryRollModifier") + (vsTraitsApply ? weapon.vsTraits?.injury ?? 0 : 0);
+  const injuryRollModifier = (weapon.injuryRollModifier ?? 0) + sumEffect(attackerSkills, context, weapon.type, "injuryRollModifier") + (vsTraitsApply ? weapon.vsTraits?.injury ?? 0 : 0);
   const remapSkill = findActiveEffect(defenderSkills, context, weapon.type, "injuryChartRemap");
   const hardToKill = defender.activeTraitIds.includes("hard_to_kill");
   // Hard Head (Dwarf racial trait): ignores the special rules for maces, clubs, etc. — Concussion never applies.

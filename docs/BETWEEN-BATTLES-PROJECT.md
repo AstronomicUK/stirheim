@@ -24,7 +24,7 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,611 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,616 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
 
 Migrations through 67 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
@@ -424,3 +424,14 @@ Thief’s Cloak now applies -1 to enemy missile hit rolls only. Hunter’s Cloak
 Validation: **1,611 ordinary tests pass**, typechecked build and lint pass with existing warnings. Source-to-combat tests cover Aenur’s trait, actual critical faces and Strength/Mighty Blow interaction, Bo attacks after Frenzy and blocked off-hand selection, legacy aliases, missile-only cloak effects and shuriken reminders. A disposable 390px mobile battle exposes the Bo as the selected usable weapon without an off-hand selector or overflow (`/tmp/stirheim-hired-weapons-mobile-qa.mjs`). No migration, push or deployment.
 
 Remaining equipment inventory now lists 23 character/role entries; see `HIRED-KIT-REMAINING-2026-09-11.md`. Staff of Light dispel, other mapped-item special effects, unresolved source identities/maxima, Defend the Oasis scope and final combined release checks remain open.
+
+
+### Local milestone 52 — Drenok, Abdul and Gwen’s named equipment (#61/#74, not deployed)
+
+Reviewed `05-dramatis-personae.md:497–503,647–659,1160–1170`. The Icefang Axe is now a double-handed +2 Strength weapon with parry and +1 injury, combined correctly with skill modifiers. Sabertooth Tiger Hide gives ordinary 6+ melee / 5+ missile armour. The Eye Pendant gives an unmodifiable 4+ ward; its Undead Leadership prerequisite is explicitly reminded, not automatically rolled. Black Nomad Robes resolve to existing Nomad Robes (weather remains the existing tabletop system). Gwen’s Rolling Pin is a cudgel with +1 Strength and Concussion. Her unspecified plural “Knives” remain custom instead of guessing a throwing profile or quantity. An unrelated custom “rolling pin” does not automatically acquire Gwen’s special bonus; old copies can be reviewed through the existing equipment correction flow.
+
+Integrating Drenok also fixes #59’s Strongman omission in strike-order advice: either combatant’s double-handed strike-last penalty is removed when Strongman is present. Other strike-last weapons remain affected. This does not close #175’s broader selected-defender-weapon and first-strike ambiguity.
+
+Validation: **1,616 ordinary tests pass**, typechecked build and lint pass with existing warnings. Tests cover Strength and injury combinations, phase-specific armour/ward saves, source kit, Strongman on attacker/defender and an unrelated strike-last counterexample. The disposable 390px Icefang mobile check passes (`/tmp/stirheim-icefang-mobile-qa.mjs`). No migration, push or deployment.
+
+The unmapped equipment inventory now has 21 character/role entries. Broader character abilities are not automatically completed by mapping their kit. Continue remaining source/equipment checks, Staff of Light’s usage ledger and final combined release checks while the Oasis scope question remains pending.

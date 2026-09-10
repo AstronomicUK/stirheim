@@ -555,6 +555,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     const line = xpBySubject.get(group.id)
     const patch: ReportApplied['groups'][number]['patch'] = {}
     if (res && res.group.size !== group.size) patch.size = res.group.size
+    if (effects.groupStupidity.includes(group.id)) patch.campaign_state = { ...group.campaignState, permanentStupidity: true }
     if (line) {
       patch.xp = line.xpAfter
       for (const t of thresholdsCrossed('henchman', line.xpBefore, line.xpAfter, unitRules(group.unitTemplateId).advanceRate ?? 'normal')) pending.push({ subject_type: 'group', subject_id: group.id, threshold_xp: t })
@@ -761,11 +762,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const nonCampaign = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign
   if (nonCampaign) draft = { ...draft, veteranPool: [null, null], veteranPoolExtra: null, injurySkips: {}, groupInjuryDice: {} }
   const participants = participantsOf(ctx.roster, ctx.template)
-  const kit = deriveKit(draft, { roster: ctx.roster, itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
+  const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
+  const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? g.size) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
   if (nonCampaign) { kit.prompts = []; kit.pending = 0 }
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
-  const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
   const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
   const harpy = ctx.scenarioId === 'happy_harpy_hunting_grounds' ? harpyRewards(draft) : null
   const explorationRoster = harpy?.stragglerNow ? { ...ctx.roster, explorationDiscoveries: { catacombs: false, tunnels: false, ...ctx.roster.explorationDiscoveries, straggler: true } } : ctx.roster

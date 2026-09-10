@@ -122,6 +122,10 @@ export interface RosterHero {
 }
 
 export interface HenchmanCampaignState {
+  fanaticBattleMatch?: string;
+  fanaticSittingOut?: boolean;
+  fanaticSplitFrom?: string;
+  permanentStupidity?: boolean;
   upkeepOwedAfter?: string;
   upkeepPaidAfter?: string;
   cheapTrollFeed?: boolean;

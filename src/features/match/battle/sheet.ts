@@ -77,7 +77,7 @@ export function splitWarriors(roster: RosterWarband, sheet?: BattleLiveState): S
 
 /** Groups with at least one model; a wiped-out group is kept on the roster for history only. */
 export function fightingGroups(roster: RosterWarband): RosterHenchmanGroup[] {
-  return roster.henchmenGroups.filter((g) => g.size > 0)
+  return roster.henchmenGroups.filter((g) => g.size > 0 && !g.campaignState?.fanaticSittingOut)
 }
 
 /** Animals (Wardogs, Gnoblar Fighters) brought by fighting heroes; each is a model on the table. */

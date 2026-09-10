@@ -99,3 +99,31 @@ describe("Nurgle's Rot through the report", () => {
     expect(patch?.status).toBe('dead')
   })
 })
+
+
+describe('mandatory Fanatic mushroom effects', () => {
+  const group = (id: string, sittingOut = false): RosterWarband['henchmenGroups'][number] => ({ id, name: id, unitTemplateId: 'night_goblins_fanatics', size: 1, stats, xp: 0, levelUps: 0, statIncreases: {}, equipment: [], campaignState: { fanaticBattleMatch: 'm', fanaticSittingOut: sittingOut } })
+  const fanatics = { ...roster, henchmenGroups: [group('fed'), group('unfed', true), group('dead')] }
+  const context = { roster: fanatics, matchId: 'm', survivingGroupIds: new Set(['fed', 'unfed']), itemsUsed: {}, heroesOut: new Set<string>(), leaderId: null }
+  it('requires a roll only for a surviving supplied model, without a used-item checkbox', () => {
+    const kit = deriveKit(emptyDraft(), context)
+    expect(kit.pending).toBe(1)
+    expect(kit.prompts.map(p => p.holderId)).toEqual(['fed'])
+    expect(deriveKit(emptyDraft(), { ...context, matchId: 'other' }).prompts).toEqual([])
+  })
+  it('persists the individual effect through the complete report', () => {
+    const draft = setKitRoll(complete(emptyDraft()), 'mad_cap_mushrooms:fed:side_effect', 0, 1)
+    const d = deriveReport(draft, ctx({ roster: { ...roster, henchmenGroups: [group('fed'), group('unfed', true)] } }))
+    expect(d.report).not.toBeNull()
+    expect(d.report?.applied.groups.find(g => g.id === 'fed')?.patch.campaign_state?.permanentStupidity).toBe(true)
+    expect(d.report?.applied.groups.some(g => g.id === 'unfed')).toBe(false)
+  })
+  it('assigns permanent Stupidity to the individual group and never consumes a second dose', () => {
+    const draft = setKitRoll(emptyDraft(), 'mad_cap_mushrooms:fed:side_effect', 0, 1)
+    const effects = kitEffects(deriveKit(draft, context))
+    expect(effects.groupStupidity).toEqual(['fed'])
+    expect(effects.heroPatches).toEqual([])
+    expect(effects.removeItems).toEqual([])
+    expect(effects.lines[0]).toContain('rolled 1')
+  })
+})

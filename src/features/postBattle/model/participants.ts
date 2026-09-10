@@ -52,5 +52,6 @@ export function participantsOf(roster: RosterWarband, template: WarbandTemplate 
     reason,
     missNextGames: entry.role === 'hero' && entry.warrior.status === 'active' ? entry.warrior.flags.missNextGames : undefined,
   }))
+  for (const group of roster.henchmenGroups) if (group.size > 0 && group.campaignState?.fanaticSittingOut) satOut.push({ id: group.id, name: group.name, reason: 'No Mad Cap Mushrooms supplied', missNextGames: undefined })
   return { heroes, hiredSwords, groups: fightingGroups(roster), satOut, leaderId: findLeaderId(heroes, template) }
 }

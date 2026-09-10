@@ -24,6 +24,7 @@ export interface KitPromptInstance {
   modifierText?: string
   /** The hero the item belongs to (the stash for warband-wide items). */
   holderId: string | null
+  holderType?: 'group'
   holderName: string
   prompt: PostBattlePrompt
   /** Faces entered so far. */
@@ -46,6 +47,8 @@ export interface KitDerived {
 
 export interface KitContext {
   roster: RosterWarband
+  matchId?: string
+  survivingGroupIds?: ReadonlySet<string>
   /** Warrior id -> item ids marked as used on the battle sheet. */
   itemsUsed: Record<string, string[]>
   /** Heroes taken out of action this battle. */
@@ -94,7 +97,7 @@ export function summarise(itemName: string, holderName: string, outcome: PostBat
 export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
   const prompts: KitPromptInstance[] = []
   const heroes = new Map(ctx.roster.heroes.filter((h) => h.status === 'active').map((h) => [h.id, h]))
-  const add = (itemId: string, holderId: string | null, holderName: string, prompt: PostBattlePrompt, modifier = 0, modifierText?: string) => {
+  const add = (itemId: string, holderId: string | null, holderName: string, prompt: PostBattlePrompt, modifier = 0, modifierText?: string, holderType?: 'group') => {
     const key = itemId === 'rule' ? `rule:${prompt.key}:${holderId ?? 'warband'}` : `${itemId}:${holderId ?? 'stash'}:${prompt.key}`
     const rolls = draft.kit[key] ?? []
     const outcome = outcomeFor(prompt, rolls, modifier)
@@ -108,6 +111,7 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
       modifier: modifier || undefined,
       modifierText,
       holderId,
+      holderType,
       holderName,
       prompt,
       rolls,
@@ -145,6 +149,16 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
     add('rule', leader?.id ?? null, leader?.name ?? ctx.roster.name, prompt, modifier, parts.join('; ') || undefined)
   }
 
+  // A Fanatic's dose was consumed at battle start; its mandatory roll does not
+  // depend on an optional battle-sheet checkbox or consume a second dose.
+  for (const group of ctx.roster.henchmenGroups) {
+    if (!ctx.matchId || group.campaignState?.fanaticBattleMatch !== ctx.matchId || group.campaignState.fanaticSittingOut || group.size < 1) continue
+    if (ctx.survivingGroupIds && !ctx.survivingGroupIds.has(group.id)) continue
+    for (const prompt of itemEffect('mad_cap_mushrooms')?.postBattle ?? []) {
+      add('mad_cap_mushrooms', group.id, group.name, prompt, 0, undefined, 'group')
+    }
+  }
+
   // Items marked as used this battle.
   for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed)) {
     const hero = heroes.get(holderId)
@@ -167,6 +181,7 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
 
 /** The roster effects of every resolved prompt, grouped for the report builder. */
 export interface KitEffects {
+  groupStupidity: string[]
   heroPatches: { heroId: string; statDelta?: Partial<Record<StatKey, number>>; flag?: 'stupidity' | 'missNextGame' | 'addicted' | 'leaderSpawn'; itemId: string }[]
   /** Item rows to remove (by item id on the holder). */
   removeItems: { holderId: string | null; itemId: string }[]
@@ -176,14 +191,15 @@ export interface KitEffects {
 }
 
 export function kitEffects(kit: KitDerived): KitEffects {
-  const out: KitEffects = { heroPatches: [], removeItems: [], goldDelta: 0, shardsDelta: 0, lines: [] }
+  const out: KitEffects = { groupStupidity: [], heroPatches: [], removeItems: [], goldDelta: 0, shardsDelta: 0, lines: [] }
   for (const p of kit.prompts) {
     if (!p.outcome || !p.complete) continue
     const e = p.outcome.effect
     const gold = outcomeGold(p.outcome, p.extraRolls) ?? 0
     out.lines.push(`${p.itemName} (${p.holderName}): rolled ${p.rolls.join('+')}${p.modifier ? ` ${p.modifier > 0 ? '+' : ''}${p.modifier} (${p.modifierText})` : ''}: ${p.outcome.text}${p.summary && p.summary !== 'No lasting effect.' ? ` [${p.summary}]` : ''}`)
     if (!e) continue
-    if (p.holderId && (e.statDelta || e.flag)) out.heroPatches.push({ heroId: p.holderId, statDelta: e.statDelta, flag: e.flag, itemId: p.itemId })
+    if (p.holderType === 'group' && p.holderId && e.flag === 'stupidity') out.groupStupidity.push(p.holderId)
+    if (p.holderType !== 'group' && p.holderId && (e.statDelta || e.flag)) out.heroPatches.push({ heroId: p.holderId, statDelta: e.statDelta, flag: e.flag, itemId: p.itemId })
     if (e.removeItem) out.removeItems.push({ holderId: p.holderId, itemId: p.itemId })
     out.goldDelta += gold
     out.shardsDelta += e.shards ?? 0

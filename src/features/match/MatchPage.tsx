@@ -1,3 +1,4 @@
+import { FanaticSupplies } from './FanaticSupplies'
 import { TrapmasterSupplies } from './TrapmasterSupplies'
 // One match: who is playing, what scenario, when, and the actions its state allows. Kept live
 // through useMatchRealtime so acceptances, the start of the battle and the other table's tallies
@@ -291,7 +292,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
                       </Button>
                     </div>
                   ) : null}
-                  {(match.state === 'scheduled' || match.state === 'in_progress') && (p.mine || isGm) ? <TrapmasterSupplies warbandId={p.warband_id} matchId={match.id} scheduled={match.state === 'scheduled'} /> : null}
+                  {(match.state === 'scheduled' || match.state === 'in_progress') && (p.mine || isGm) ? <><TrapmasterSupplies warbandId={p.warband_id} matchId={match.id} scheduled={match.state === 'scheduled'} /><FanaticSupplies warbandId={p.warband_id} matchId={match.id} scheduled={match.state === 'scheduled'} /></> : null}
                   {showTallies ? <Tallies session={sessionFor(p.warband_id)} loading={sessions.isPending || events.isPending} /> : null}
                   {showReports ? <ReportStatus reported={reported} report={reportFor(p.warband_id)} canFile={toFile.some((f) => f.warband_id === p.warband_id)} to={`/matches/${match.id}/report/${p.warband_id}`} /> : null}
                 </ParticipantCard>

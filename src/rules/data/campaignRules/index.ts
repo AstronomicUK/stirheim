@@ -280,6 +280,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   merchant_trade_wagon: { gainsExperience: false, promotion: { never: true, note: "A wagon is not promoted." }, incomeCountsAs: 0, neverLeads: true, relation: { outsideMaxModels: true }, equipmentBans: ["allEquipment"] },
   merchant_magician: { neverLeads: true },
   merchant_blackguards: { neverLeads: true, promotion: { never: true, note: "Unreliable Hirelings: Blackguards never become heroes; roll again." } },
+  night_goblins_web_fanatics: { promotion: { never: true, note: "Loony: Fanatics re-roll Lad’s Got Talent." } },
   night_goblins_fanatics: { ...NO_XP, promotion: { never: true, note: "Fanatics are never promoted." } },
   night_goblins_cave_squigs: { ...ANIMAL, relation: { noMoreThan: { unitIds: ["night_goblins_warriors"], label: "the Night Goblins" } } },
   night_goblins_troll: TROLL,

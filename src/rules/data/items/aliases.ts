@@ -19,6 +19,7 @@
 
 import type { Item } from "../../types/items";
 import { WARBAND_TEMPLATES } from "../warbandTemplates";
+import { SCENARIO_REWARD_ITEMS } from "./scenarioRewards";
 import { ANIMAL_ITEMS } from "./animals";
 import { ARMOUR_ITEMS } from "./armour";
 import { BLACKPOWDER_ITEMS } from "./blackpowder";
@@ -30,7 +31,7 @@ import { WARBAND_SPECIAL_ITEMS } from "./warbandSpecial";
 
 // Built from the category files rather than ./index so that index.ts can re-export this module
 // without a circular import evaluating ITEMS before it exists.
-const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS, ...MATERIAL_VARIANT_ITEMS];
+const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS, ...MATERIAL_VARIANT_ITEMS, ...SCENARIO_REWARD_ITEMS];
 
 /**
  * Equipment-list names that are different words for a catalogue item. Keys are the names as written

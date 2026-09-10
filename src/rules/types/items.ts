@@ -33,4 +33,6 @@ export interface Item {
   armourSave?: number;
   /** Kept so old rosters still render, but no longer offered in the shop or builder (e.g. the generic "Gromril Weapon", replaced by per-weapon variants). */
   superseded?: boolean;
+  /** Awarded by a scenario, never offered as an ordinary shop purchase. */
+  scenarioRewardOnly?: boolean;
 }

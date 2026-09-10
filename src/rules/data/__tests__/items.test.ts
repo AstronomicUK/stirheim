@@ -17,6 +17,7 @@ import { RANGED_AND_CREATURE_WEAPONS } from "../weapons/ranged-and-creatures";
 import { MATERIAL_VARIANT_WEAPONS, isMaterialVariantBase } from "../weapons/materialVariants";
 import { WARBAND_SPECIAL_WEAPONS } from "../weapons/warbandSpecial";
 import { WARBAND_SPECIAL_ITEMS } from "../items/warbandSpecial";
+import { SCENARIO_REWARD_ITEMS } from "../items/scenarioRewards";
 import { MATERIAL_VARIANT_ITEMS } from "../items/materialVariants";
 import { SHOP_ITEMS } from "../items";
 import type { ItemCategory } from "../../types/items";
@@ -47,7 +48,7 @@ describe("item catalogue", () => {
       expect(item.price.text.length, `${item.id}: empty price text`).toBeGreaterThan(0);
       expect(item.availability.text.length, `${item.id}: empty availability text`).toBeGreaterThan(0);
       expect(item.source.publication.length, `${item.id}: empty publication`).toBeGreaterThan(0);
-      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|03-campaigns-magic-optional-rules|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
+      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|03-campaigns-magic-optional-rules|06-scenarios|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
       for (const rule of item.specialRules) {
         expect(rule.name.length, `${item.id}: unnamed special rule`).toBeGreaterThan(0);
       }
@@ -67,7 +68,7 @@ describe("item catalogue", () => {
     // material-variant generator; the floor here is a loose sanity check, not an exact count.
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(65);
     expect(WARBAND_SPECIAL_ITEMS.length).toBe(40);
-    expect(ITEMS.length).toBe(252 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length);
+    expect(ITEMS.length).toBe(252 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length + SCENARIO_REWARD_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);
     }

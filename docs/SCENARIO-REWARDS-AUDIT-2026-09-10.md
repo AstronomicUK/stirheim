@@ -57,3 +57,27 @@ Remaining scenarios still need individual source audit and implementation. Do no
 | A Stroll in the Garden | Full page reviewed: no separate treasure; existing extra exploration die and entire-pool reroll remain in Exploration and the report log. |
 
 Local browser verification now also files Farm rewards after a loss (+7 gc, +1 shard), checks reload/dependent reset/incomplete gating, and files a Monster Hunt artefact into the real local campaign ledger. Migration 46 unifies exploration/scenario discovery checks; six local database tests pass, including simultaneous discovery across both sources and duplicate-in-one-report rollback. Neither this migration nor the client changes have been deployed.
+
+## Additional local source paths, milestone 16
+
+- **Haunted Treasure variants:** both require the chest recovered to safety; all eight rows resolved separately and the artefact uses the shared ledger. Archive Pestilen states 5D6×5 gc. The [Town Cryer PDF, page 2](https://broheim.net/downloads/scenarios/cryofthebanshee.pdf) also omits the multiplier in the original table, so this version requires an explicit saved multiplier/reason rather than silently borrowing ×5.
+- **Protect the Prince:** winning protector 4D6; winning attackers after the Prince’s death 2D6 plus two treasure pieces. The outcome selects the correct branch.
+- **Burn the Witches:** defenders select only the named relics actually rescued, with no duplicates; attackers get D3+1 shards regardless of result.
+- **The Watchers:** one D6 and corresponding item per retained Swag counter. Full page reviewed; its catalogue summary incorrectly describes a different encounter, so implementation follows the rules body.
+- **Blood on the Pasturelands:** 0–6 stolen horses, less D3−1 after routing, floor zero; surviving mounts go to the stash.
+- **Defend the Village:** mandatory one reward D6 for winner, +1 for attacker, then the selected row’s separate gold/shard dice.
+- **Night of the Dead / Round-up at the Mordheim Corral:** actual safely recovered/retained shards, no duplicate reward roll for counters already resolved during battle. Night of the Dead’s optional victory-target D6+2 is not extra loot.
+- **Don’t Wake the Giant:** separately selected two chests and bag; distinct find rolls for each, including each container’s gems. Removing a recovered container removes its rewards.
+- **Ambush (Michael Reuvers):** starting D6 capped by defending Hero count; defender keeps initial less own Hero casualties, attacker captures per enemy Hero casualty capped at initial. Other Ambush versions remain separate.
+- **Gift of the Truthsayers:** possession condition, mandatory 2D6 (despite D6 table heading), own named gift table, separate 5D6 value when applicable. These are not the core six campaign-unique artefacts.
+- **Tomb Raid:** mandatory D3 find count and D6 per find, separate item quantity/value dice. A gemmed helmet remains one item.
+- **The Gauntlet:** loose D3 counters have their own count; the Great Treasure is explicitly selected by the players in the source and uses the explained agreed-prize adjustment.
+- **Full pages with no additional priced treasure:** Frenzied Mob, Eerie Downs, Black Fire Pass, Watchtower, Street Brawl, Boss Orc’s Ambush/Breakthrough, Grudge Match, It’s All Mine, Raid, Rescue, Archive Scourge and Purge, Scripts of Sigmar, Koleshire Keep, Restless Dead and Square of the Snake. Temporary arsenal/characters are not permanent awards. Rescue uses the existing captive record; linked/overlay scenarios and explicitly changed objectives retain explained adjustments. This does not newly automate unrelated special combat/injury consequences.
+
+Mobile Village test passed through real filing, including fixed initial row, attacker modifier, reload, and clearing dependent rolls when the side changes. The previous Farm/Monster artefact/full batch browser checks continue to pass. Source-specific tests cover the added outcome branches, duplicate relic rejection, routing horses, both Ambush versions, and independent Giant containers.
+
+- **Hunt the Heretic:** full page 1622–1675 reviewed. Winning Witch Hunter side receives D6×15 gc and D3 Blessed Water; winning Warlock side chooses each of D3 poison/drug doses. Changing the quantity clears choices; invalid or missing selections block filing.
+- **The Item Lost:** full page 5773–5820 reviewed. Actual retrieval is required. Nicodemus’s employers receive two shards; other retrievers keep the Wand of Phyrros or sell it for 100 gc, never both. Temporary Nicodemus is not recruited permanently.
+- **Mordheim’s Burning:** full page 2810–2875 reread. Corrected the earlier local interpretation: only the winning warband explores, with no winner bonus die. Explained overrides remain available; ordinary losing-side exploration defaults to zero. Triple sale income remains handled by the income step.
+
+Milestone 16 verification: 1,441 tests pass / 96 database-dependent skipped. Typechecked production build passes; lint has only three existing audit-probe warnings. Tomb Raid and Truthsayer rewards both file through real mobile touch interaction, persist quantities/value/raw rolls, and save the Truthsayer catalogue ID. Review rows now wrap long descriptions and the action bar reserves the full navigation height. Twelve named scenario items use short catalogue identities, source-linked tooltip rules and exclusion from ordinary shop stock; the catalogue and alias tests cover this. These items’ acquisition/tooltips do not claim additional combat automation.

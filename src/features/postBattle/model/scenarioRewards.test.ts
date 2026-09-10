@@ -176,3 +176,130 @@ describe('scenario magical artefacts', () => {
     expect(blocked.problems.join(' ')).toContain('already found')
   })
 })
+
+describe('scenario roles, rescued relics and printed reward ambiguity', () => {
+  it('Protect the Prince uses the selected outcome and ignores the other branch', () => {
+    expect(derive('protect_the_prince', {}).problems).toHaveLength(1)
+    expect(derive('protect_the_prince', { branch: 'escaped', finds: { purse: { discovery: null, dice: [1,2,3,4] } } }).gold).toBe(10)
+    const killed = derive('protect_the_prince', { branch: 'killed', finds: { purse: { discovery: null, dice: [1,2] } } })
+    expect(killed.gold).toBe(3); expect(killed.shards).toBe(2)
+    expect(derive('protect_the_prince', { branch: 'killed' }, { result: 'lost' }).shards).toBe(0)
+  })
+  it('Burn the Witches permits partial rescues and forbids duplicate or invented relics', () => {
+    const d = derive('burn_the_witches', { branch: 'defender', finds: { relics: { discovery: null, dice: [], items: ['Holy Relic', 'Blessed Water'] } } }, { result: 'lost' })
+    expect(d.problems).toEqual([]); expect(d.items).toHaveLength(2)
+    expect(derive('burn_the_witches', { branch: 'defender', finds: { relics: { discovery: null, dice: [], items: ['Holy Relic', 'Holy Relic'] } } }).problems).toHaveLength(1)
+    expect(derive('burn_the_witches', { branch: 'attacker', finds: { shards: { discovery: null, dice: [3] }, relics: { discovery: null, dice: [], items: ['Holy Relic'] } } }, { result: 'lost' }).shards).toBe(4)
+    expect(derive('burn_the_witches', { branch: 'attacker', finds: { shards: { discovery: null, dice: [3] }, relics: { discovery: null, dice: [], items: ['Holy Relic'] } } }).items).toEqual([])
+  })
+  it('uses the Archive multiplier automatically but requires a ruling for the broken Town Cryer formula', () => {
+    const rule = SCENARIO_REWARD_RULES.haunted_treasure
+    if (rule.kind !== 'hoard') throw Error('Expected hoard')
+    const finds = Object.fromEntries(rule.finds.map(f => [f.id, { discovery: f.threshold ? 1 : null, dice: typeof f.quantity === 'number' ? [] : Array(f.quantity.count).fill(2) }]))
+    const state = { conditions: { chest: true }, finds }
+    expect(derive('haunted_treasure_archive_pestilen', state).gold).toBe(50)
+    expect(derive('haunted_treasure', state).problems.join(' ')).toContain('agreed multiplier')
+    const ruled = derive('haunted_treasure', { ...state, finds: { ...finds, gold: { ...finds.gold, multiplier: 5, multiplierReason: 'Use the author’s Archive formula' } } })
+    expect(ruled.problems).toEqual([]); expect(ruled.gold).toBe(50); expect(ruled.notes.join(' ')).toContain('agreed multiplier ×5')
+    expect(derive('haunted_treasure', { ...state, conditions: { chest: false } }).gold).toBe(0)
+  })
+})
+
+describe('retained horses and fixed village/swag tables', () => {
+  it('routing loses D3−1 stolen horses without making the retained total negative', () => {
+    expect(derive('blood_on_the_pasturelands', { horses: 4, lostHorsesDie: 3 }, { routed: true }).items[0].quantity).toBe(2)
+    expect(derive('blood_on_the_pasturelands', { horses: 1, lostHorsesDie: 3 }, { routed: true }).items).toEqual([])
+    expect(derive('blood_on_the_pasturelands', { horses: 4, lostHorsesDie: 3 }, { routed: false }).items[0].quantity).toBe(4)
+    expect(derive('blood_on_the_pasturelands', { horses: 7 }).problems).toHaveLength(1)
+    expect(derive('blood_on_the_pasturelands', { horses: 2 }, { routed: true }).problems).toHaveLength(1)
+  })
+  it('each Swag counter awards its own exact table item', () => {
+    const d = derive('the_watchers', { repeated: [{ roll: 1, dice: [] }, { roll: 6, dice: [] }] }, { result: 'lost' })
+    expect(d.problems).toEqual([]); expect(d.items).toHaveLength(2)
+    expect(d.items[0].item_rules_id).toBe('lucky_charm')
+    expect(d.notes.join(' ')).toContain('Swag counter 2 (D6 6): Tome of Magic')
+  })
+  it('Village attacker bonus changes the outcome; the unmodified D6 and quantity dice remain distinct', () => {
+    expect(derive('defend_the_village', {}).problems).toHaveLength(1)
+    expect(derive('defend_the_village', { conditions: { attacker: true } }).problems).toHaveLength(1)
+    expect(derive('defend_the_village', { conditions: { attacker: true }, repeated: [{ roll: 4, dice: [3] }] }).shards).toBe(3)
+    expect(derive('defend_the_village', { conditions: { attacker: false }, repeated: [{ roll: 4, dice: [3] }] }).problems).toHaveLength(1)
+    expect(derive('defend_the_village', { conditions: { attacker: false }, repeated: [{ roll: 4, dice: [3,4] }] }).gold).toBe(7)
+    expect(derive('defend_the_village', { conditions: { attacker: true }, repeated: [{ roll: 6, dice: [2] }] }).shards).toBe(2)
+    expect(derive('defend_the_village', {}, { result: 'lost' }).problems).toEqual([])
+  })
+})
+
+describe('separate Ambush versions and the Giant’s containers', () => {
+  it('Reuvers Ambush caps initial D6 by Heroes and uses the appropriate side’s casualties', () => {
+    const state = { conditions: { defender: true }, startingDie: 6, defendingHeroes: 3 }
+    expect(derive('ambush_archive_pestilen_michael_reuvers', state, { heroesOut: ['one','two'] }).shards).toBe(1)
+    expect(derive('ambush_archive_pestilen_michael_reuvers', { ...state, conditions: { defender: false }, enemyHeroesOut: 2 }).shards).toBe(2)
+    expect(derive('ambush_archive_pestilen_michael_reuvers', { ...state, conditions: { defender: false }, enemyHeroesOut: 4 }).problems).toHaveLength(1)
+    expect(derive('ambush_archive_pestilen', state).shards).toBe(0)
+  })
+  it('Giant containers roll independently, ignore unrecovered loot and do not duplicate selected containers', () => {
+    const rule = SCENARIO_REWARD_RULES.don_t_wake_the_giant
+    if (rule.kind !== 'hoard') throw Error('Expected hoard')
+    const state = { containers: ['chest-1', 'bag', 'bag'] }
+    const rows = scenarioHoardFinds(rule, { ...base, scenarioRewards: state }, participants)
+    const finds = Object.fromEntries(rows.map(f => [f.id, { discovery: f.threshold ? 1 : null, dice: typeof f.quantity === 'number' ? [] : Array(f.quantity.count).fill(2) }]))
+    expect(derive('don_t_wake_the_giant', { ...state, finds }, { result: 'lost' }).gold).toBe(26)
+    expect(derive('don_t_wake_the_giant', { containers: ['bag'], finds }).gold).toBe(20)
+    expect(derive('don_t_wake_the_giant', { containers: [], finds }).gold).toBe(0)
+  })
+})
+
+describe('multi-die reward tables and variable find counts', () => {
+  it('Truthsayer uses both table dice and separate value dice, without core artefact uniqueness', () => {
+    expect(derive('gift_of_the_truthsayers', { conditions: { artefact: true }, repeated: [{ roll: 6, dice: [] }] }).problems).toHaveLength(1)
+    const valued = derive('gift_of_the_truthsayers', { conditions: { artefact: true }, repeated: [{ roll: null, tableDice: [1,2], dice: [1,2,3,4,5] }] })
+    expect(valued.problems).toEqual([]); expect(valued.items[0].custom_name).toBe('Truthsayer artefact (worth 15 gc)'); expect(valued.items[0].quantity).toBe(1); expect(valued.artefacts).toEqual([])
+    const spell = derive('gift_of_the_truthsayers', { conditions: { artefact: true }, repeated: [{ roll: null, tableDice: [5,5], dice: [6,6,6,6,6] }] })
+    expect(spell.items[0].item_rules_id).toBe('scenario_tome_of_the_truthsayers'); expect(spell.items[0].quantity).toBe(1)
+    expect(derive('gift_of_the_truthsayers', { conditions: { artefact: false } }).items).toEqual([])
+  })
+  it('Tomb Raid requires exactly the D3 number of finds and distinguishes quantity from value', () => {
+    expect(derive('tomb_raid', {}).problems).toHaveLength(1)
+    expect(derive('tomb_raid', { tableCountRoll: 3, repeated: [{ roll: 1, dice: [] }] }).problems).toHaveLength(1)
+    const d = derive('tomb_raid', { tableCountRoll: 3, repeated: [{ roll: 2, dice: [3] }, { roll: 3, dice: [5] }, { roll: 4, dice: [6] }] })
+    expect(d.problems).toEqual([]); expect(d.items.map(i => i.quantity)).toEqual([3,5,1]); expect(d.items[2].custom_name).toBe('Gem-encrusted helmet (worth 60 gc)')
+    expect(derive('tomb_raid', { tableCountRoll: 1, repeated: [{ roll: 2, dice: [4] }] }).problems).toHaveLength(1)
+    expect(derive('tomb_raid', {}, { result: 'lost' }).problems).toEqual([])
+  })
+})
+
+it('awards the Heretic winning side only, requiring one valid selection per rolled dose', () => {
+  const winning = derive('hunt_the_heretic', { branch: 'witch-hunter', finds: { gold: { discovery: null, dice: [4] }, water: { discovery: null, dice: [2] } } })
+  expect(winning.problems).toEqual([])
+  expect(winning.gold).toBe(60)
+  expect(winning.items[0].quantity).toBe(2)
+  expect(derive('hunt_the_heretic', {}, { result: 'lost' }).items).toEqual([])
+  expect(derive('hunt_the_heretic', { branch: 'warlock', finds: { doses: { discovery: null, dice: [3], items: ['Dark Venom'] } } }).problems).toHaveLength(1)
+  const poisons = derive('hunt_the_heretic', { branch: 'warlock', finds: { doses: { discovery: null, dice: [3], items: ['Dark Venom', 'Dark Venom', 'Crimson Shade'] } } })
+  expect(poisons.problems).toEqual([])
+  expect(poisons.items).toHaveLength(3)
+  expect(poisons.notes.join(' ')).toContain('1D3 rolled 3')
+})
+
+it('requires actual wand recovery and never awards both the wand and its sale/payment', () => {
+  expect(derive('the_item_lost', { conditions: { retrieved: false }, branch: 'sell' }).gold).toBe(0)
+  expect(derive('the_item_lost', { conditions: { retrieved: true }, branch: 'nicodemus' }).shards).toBe(2)
+  const sale = derive('the_item_lost', { conditions: { retrieved: true }, branch: 'sell' })
+  expect(sale.gold).toBe(100)
+  expect(sale.items).toEqual([])
+  const keep = derive('the_item_lost', { conditions: { retrieved: true }, branch: 'keep' })
+  expect(keep.gold).toBe(0)
+  expect(keep.items).toHaveLength(1)
+})
+
+it('saves scenario equipment by catalogue identity rather than oversized custom names', async () => {
+  const { SCENARIO_REWARD_ITEMS } = await import('../../../rules/data/items/scenarioRewards')
+  const { SHOP_ITEMS, findItem } = await import('../../../rules/data/items')
+  const { foundItemFromName } = await import('./exploration')
+  for (const item of SCENARIO_REWARD_ITEMS) {
+    expect(foundItemFromName(item.name)).toEqual({ item_rules_id: item.id, custom_name: null, quantity: 1 })
+    expect(findItem(item.id)?.description).toBeTruthy()
+    expect(SHOP_ITEMS.some(i => i.id === item.id)).toBe(false)
+  }
+})

@@ -178,7 +178,9 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   // Wizard’s Tower replaces exploration with the recovered-chest table.
   const scenarioSuggested = input.scenarioId === 'the_wizard_s_tower'
     ? { count: 0, keep: 0, capped: false, reason: 'The Wizard’s Tower: no exploration rolls after this battle; resolve recovered chests instead.' }
-    : suggested
+    : burning && !input.won
+      ? { count: 0, keep: 0, capped: false, reason: 'Mordheim’s Burning: only the winning warband may search for wyrdstone.' }
+      : suggested
   const override = draft.diceOverride
   const allowed: ExplorationDiceAllowed = override
     ? {
@@ -192,7 +194,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     override && override.count !== scenarioSuggested.count
       ? { label: 'Exploration dice', suggested: `${scenarioSuggested.count} (${scenarioSuggested.reason})`, used: String(override.count), reason: override.reason.trim() }
       : null
-  if (allowed.count <= 0) return { ...base, allowed, suggested: scenarioSuggested, skippedReason: input.scenarioId === 'the_wizard_s_tower' ? scenarioSuggested.reason : input.noExplorationReason ?? NO_HEROES }
+  if (allowed.count <= 0) return { ...base, allowed, suggested: scenarioSuggested, skippedReason: input.scenarioId === 'the_wizard_s_tower' || (burning && !input.won) ? scenarioSuggested.reason : input.noExplorationReason ?? NO_HEROES }
 
   const rolls: (number | null)[] = []
   for (let i = 0; i < allowed.count; i++) {

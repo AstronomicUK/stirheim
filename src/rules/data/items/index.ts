@@ -1,6 +1,7 @@
 // Full equipment catalogue (shopping/inventory view) — every "###" entry in
 // rules/02-weapons-armour-equipment.md across all six sections, one file per category.
 
+import { SCENARIO_REWARD_ITEMS } from "./scenarioRewards";
 import type { Item, ItemCategory } from "../../types/items";
 import { MELEE_ITEMS } from "./melee";
 import { MISSILE_ITEMS } from "./missile";
@@ -22,10 +23,11 @@ export const ITEMS: Item[] = [
   ...ANIMAL_ITEMS,
   ...WARBAND_SPECIAL_ITEMS,
   ...MATERIAL_VARIANT_ITEMS,
+  ...SCENARIO_REWARD_ITEMS,
 ];
 
 /** The catalogue as offered for purchase: superseded entries (generic gromril / ithilmar weapon) left out. */
-export const SHOP_ITEMS: Item[] = ITEMS.filter((item) => !item.superseded);
+export const SHOP_ITEMS: Item[] = ITEMS.filter((item) => !item.superseded && !item.scenarioRewardOnly);
 
 const BY_ID = new Map(ITEMS.map((item) => [item.id, item]));
 

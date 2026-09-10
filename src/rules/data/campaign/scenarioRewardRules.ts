@@ -10,28 +10,119 @@ export interface HoardFind {
   discoveryDice?: number
   quantityIsValue?: boolean
   unclaimedBeforeBattle?: boolean
+  multiplierRuling?: string
+  itemOptions?: string[]
+  chooseUpTo?: number
   quantity: number | { count: number; sides: number; bonus?: number; multiplier?: number }
 }
 export type ScenarioRewardRule =
   | { kind: 'none'; note: string }
+  | { kind: 'horses'; note: string }
+  | { kind: 'ambush'; note: string }
   | { kind: 'bounty'; note: string; label: string; goldEach: number; winnerOnly?: boolean; condition?: { id: string; question: string }; baseDice?: { count: number; multiplier: number } }
-  | { kind: 'repeated'; note: string; label: string; max?: number; table: { min: number; max: number; goldDice?: number; shards?: number; label: string }[] }
+  | { kind: 'repeated'; note: string; label: string; max?: number; requiredCount?: number; countSides?: number; tableDice?: number; condition?: { id: string; question: string }; winnerOnly?: boolean; attackerBonus?: number; table: { min: number; max: number; goldDice?: number; shardDice?: number; shards?: number; itemName?: string; itemQuantity?: HoardFind['quantity']; quantityIsValue?: boolean; label: string }[] }
   | { kind: 'counters'; max?: number; label?: string; note: string }
   | { kind: 'building'; note: string }
   | { kind: 'encounter'; note: string }
-  | { kind: 'hoard'; note: string; needsRescue?: boolean; winnerOnly?: boolean; condition?: { id: string; question: string }; finds: HoardFind[]; onceFinds?: HoardFind[]; repeatPerStandingHero?: boolean }
+  | { kind: 'hoard'; note: string; needsRescue?: boolean; winnerOnly?: boolean; condition?: { id: string; question: string }; finds: HoardFind[]; containers?: { id: string; label: string; finds: HoardFind[] }[]; branches?: { question: string; options: { id: string; label: string; finds: HoardFind[] }[] }; onceFinds?: HoardFind[]; repeatPerStandingHero?: boolean }
 const none: ScenarioRewardRule = { kind: 'none', note: 'This scenario has no additional treasure reward. Experience and normal exploration are resolved in their own steps.' }
 const gems: HoardFind = { id: 'gems', label: 'Gems worth 10 gc each', kind: 'item', itemName: 'Gem (worth 10 gc)', threshold: 5, quantity: { count: 1, sides: 3 } }
 const mansionExtras: HoardFind[] = [
   { id: 'gold', label: 'Gold crowns', kind: 'gold', quantity: { count: 5, sides: 6 } }, gems,
   { id: 'tome', label: 'Tome of Magic', kind: 'item', itemName: 'Tome of Magic', threshold: 4, quantity: 1 },
   { id: 'gromril', label: 'Gromril Sword', kind: 'item', itemName: 'Gromril Sword', threshold: 5, quantity: 1 },
-  { id: 'athame', label: 'Athame', kind: 'item', itemName: 'Athame (first attack each game: dagger; later attacks: fist; trade value 10 gc)', threshold: 4, quantity: 1 },
+  { id: 'athame', label: 'Athame', kind: 'item', itemName: 'Athame', threshold: 4, quantity: 1 },
   { id: 'herbs', label: 'Healing Herbs doses', kind: 'item', itemName: 'Healing Herbs', threshold: 4, quantity: { count: 1, sides: 3 } },
-  { id: 'scroll', label: 'Dispel Scroll', kind: 'item', itemName: 'Dispel Scroll (one use: cancel a successfully cast spell on 4+; trade value 25+2D6 gc)', threshold: 5, quantity: 1 },
+  { id: 'scroll', label: 'Dispel Scroll', kind: 'item', itemName: 'Dispel Scroll', threshold: 5, quantity: 1 },
 ]
 const initialBooty = (id: string, label: string, dice = false): HoardFind => ({ id, label, kind: 'item', itemName: label, quantity: dice ? { count: 1, sides: 3 } : 1, unclaimedBeforeBattle: true })
+const hauntedFinds: HoardFind[] = [
+  { id: 'gold', label: 'Gold crowns', kind: 'gold', quantity: { count: 5, sides: 6, multiplier: 5 } },
+  { id: 'shards', label: 'Wyrdstone shards', kind: 'shards', threshold: 4, quantity: { count: 1, sides: 3 } },
+  { id: 'relic', label: 'Holy Relic', kind: 'item', itemName: 'Holy Relic', threshold: 5, quantity: 1 },
+  { id: 'armour', label: 'Heavy armour', kind: 'item', itemName: 'Heavy armour', threshold: 5, quantity: 1 }, { ...gems, threshold: 4 },
+  { id: 'cloak', label: 'Elven Cloak', kind: 'item', itemName: 'Elven Cloak', threshold: 5, quantity: 1 },
+  { id: 'tome', label: 'Holy Tome', kind: 'item', itemName: 'Holy Tome', threshold: 5, quantity: 1 },
+  { id: 'artefact', label: 'Magical artefact', kind: 'artefact', threshold: 5, quantity: 1 },
+]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
+  mordheim_s_burning: { kind: 'none', note: 'Only the winner explores, without the winner’s bonus die. Wyrdstone sales yield triple gold; the experience and injury steps use this scenario’s special rules. There is no separate treasure table.' },
+  the_item_lost: { kind: 'hoard', winnerOnly: false, condition: { id: 'retrieved', question: 'Did your warband successfully retrieve the wand?' }, finds: [], branches: { question: 'How is the recovered wand resolved?', options: [
+    { id: 'nicodemus', label: 'Working for Nicodemus — return the wand', finds: [{ id: 'payment', label: 'Nicodemus’s payment', kind: 'shards', quantity: 2 }] },
+    { id: 'keep', label: 'Another warband — keep the wand', finds: [{ id: 'wand', label: 'Wand of Phyrros', kind: 'item', itemName: 'Wand of Phyrros', quantity: 1 }] },
+    { id: 'sell', label: 'Another warband — sell the wand', finds: [{ id: 'sale', label: 'Wand sale', kind: 'gold', quantity: 100 }] },
+  ] }, note: 'Nicodemus’s employers return the recovered wand for two shards. Other warbands may keep it or sell it for 100 gc. Winning by a rout does not itself establish possession; Nicodemus joins only for this battle.' },
+
+  hunt_the_heretic: { kind: 'hoard', finds: [], branches: { question: 'Whom did your warband support?', options: [
+    { id: 'witch-hunter', label: 'The Witch Hunter', finds: [
+      { id: 'gold', label: 'Witch Hunter payment', kind: 'gold', quantity: { count: 1, sides: 6, multiplier: 15 } },
+      { id: 'water', label: 'Blessed Water vials', kind: 'item', itemName: 'Blessed Water', quantity: { count: 1, sides: 3 } },
+    ] },
+    { id: 'warlock', label: 'The Warlock', finds: [
+      { id: 'doses', label: 'Poison or drug doses', kind: 'item', itemOptions: ['Black Lotus', 'Crimson Shade', 'Dark Venom', 'Healing Herbs', 'Mad Cap Mushrooms', 'Mandrake Root', 'Manticore Spoor', 'Reptile Venom', 'Spider Spittle'], quantity: { count: 1, sides: 3 } },
+    ] },
+  ] }, note: 'Only the winning side receives payment. Choose each of the Warlock’s rolled doses separately; these are supplies, not permanent characteristic improvements. An agreed supplement-only substance can be recorded through the explained adjustment.' },
+
+  the_gauntlet: { kind: 'counters', max: 3, label: 'Loose wyrdstone counters recovered', note: 'The central chamber contains D3 loose counters. The Great Treasure is explicitly chosen by the players before the game: record that agreed prize in the explained reward adjustment, separate from these loose shards.' },
+  gift_of_the_truthsayers: { kind: 'repeated', requiredCount: 1, max: 1, tableDice: 2, condition: { id: 'artefact', question: 'Did your warband possess the artefact at the end?' }, label: 'Truthsayer gift', note: 'The holder rolls 2D6 on this scenario’s own table. These gifts are distinct from the core campaign’s six magical artefacts.', table: [
+    { min: 2, max: 4, label: 'Valuable artefact', itemName: 'Truthsayer artefact (worth {amount} gc)', itemQuantity: { count: 5, sides: 6 }, quantityIsValue: true },
+    { min: 5, max: 6, label: 'Totem of Light', itemName: 'Totem of Light' },
+    { min: 7, max: 8, label: 'Silver Sickle', itemName: 'Silver Sickle' },
+    { min: 9, max: 9, label: 'Talisman of Light', itemName: 'Talisman of Light' },
+    { min: 10, max: 11, label: 'Tome of the Truthsayers', itemName: 'Tome of the Truthsayers' },
+    { min: 12, max: 12, label: 'Vambrace of Silver', itemName: 'Vambrace of Silver' },
+  ] },
+  tomb_raid: { kind: 'repeated', countSides: 3, max: 3, winnerOnly: true, label: 'Tomb treasure', note: 'The winner rolls D3 for the number of finds, then a separate D6 for each treasure. Further dice determine the quantity or jewellery value.', table: [
+    { min: 1, max: 1, label: 'Heavy armour', itemName: 'Heavy armour' },
+    { min: 2, max: 2, label: 'Scimitars', itemName: 'Scimitar', itemQuantity: { count: 1, sides: 3 } },
+    { min: 3, max: 3, label: 'Jambyias', itemName: 'Dagger', itemQuantity: { count: 1, sides: 6 } },
+    { min: 4, max: 4, label: 'Gem-encrusted helmet', itemName: 'Gem-encrusted helmet (worth {amount} gc)', itemQuantity: { count: 1, sides: 6, multiplier: 10 }, quantityIsValue: true },
+    { min: 5, max: 5, label: 'Shield', itemName: 'Shield' },
+    { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
+  ] },
+  scripts_of_sigmar: { kind: 'none', note: 'Neither linked mission specifies a priced treasure reward. Experience uses the selected mission; an agreed replacement for the Script is recorded as a scenario adjustment.' },
+  the_battle_at_koleshire_keep: { kind: 'none', note: 'The source gives no post-battle treasure payment. Jarsyn’s 80 gc and Skaggle’s 90 gc are starting recruitment costs, not rewards.' },
+  the_restless_dead: { kind: 'none', note: 'This wandering-undead encounter adds no separate treasure table. Any reward from an agreed underlying scenario must be recorded as an explained adjustment.' },
+  the_square_of_the_snake: none,
+  it_s_all_mine: none,
+  raid: none,
+  rescue: { kind: 'none', note: 'There is no additional treasure payment. Resolve the rescued warrior through the existing captive record; do not recruit a duplicate warrior.' },
+  scourge_and_purge_archive_pestilen: none,
+  romero_s_pride: { kind: 'none', note: 'This zombie incursion overlays a scenario chosen by the players and provides no separate treasure table. Record rewards from the agreed underlying scenario as an explained adjustment.' },
+  street_brawl: none,
+  ambush_archive_pestilen: none,
+  breakthrough_archive_pestilen: none,
+  grudge_match: none,
+  ambush_archive_pestilen_michael_reuvers: { kind: 'ambush', note: 'The defender starts with D6 shards, capped at their number of Heroes. They keep that amount minus their Hero casualties; the attacker gains one per enemy Hero taken out of action, capped at the same starting amount.' },
+  don_t_wake_the_giant: { kind: 'hoard', winnerOnly: false, note: 'Select only the two chests and/or the bag carried to safety. Each recovered container has its own treasure rolls; no winner requirement.', finds: [], containers: [
+    ...[1, 2].map(n => ({ id: `chest-${n}`, label: `Treasure chest ${n}`, finds: [
+      { id: 'gold', label: 'Gold crowns', kind: 'gold' as const, quantity: { count: 3, sides: 6 } },
+      { id: 'shards', label: 'Wyrdstone shards', kind: 'shards' as const, threshold: 5, quantity: { count: 1, sides: 3 } }, gems,
+      { id: 'map', label: 'Mordheim Map', kind: 'item' as const, itemName: 'Mordheim Map', threshold: 4, quantity: 1 },
+      { id: 'armour', label: 'Light armour', kind: 'item' as const, itemName: 'Light armour', threshold: 4, quantity: 1 },
+      { id: 'charm', label: 'Lucky Charm', kind: 'item' as const, itemName: 'Lucky Charm', threshold: 3, quantity: 1 },
+    ] })),
+    { id: 'bag', label: 'Bag of gold', finds: [{ id: 'gold', label: 'Gold crowns', kind: 'gold', quantity: { count: 1, sides: 6, multiplier: 10 } }, gems] },
+  ] },
+  defend_the_village: { kind: 'repeated', label: 'Village reward', max: 1, requiredCount: 1, winnerOnly: true, attackerBonus: 1, note: 'The winner rolls D6, adding +1 if they were the attacker: 1–2 nothing, 3–4 2D6 gc, 5–7 D3 shards.', table: [{ min: 1, max: 2, label: 'No payment' }, { min: 3, max: 4, goldDice: 2, label: 'Food, possessions and tools' }, { min: 5, max: 7, shardDice: 1, label: 'Wyrdstone' }] },
+  the_watchers: { kind: 'repeated', label: 'Swag counter', note: 'Roll once for each Swag counter still held at the end. Each result awards one item from the printed table, even if your warband lost.', table: ['Lucky Charm', 'Tears of Shallya', 'Crimson Shade', 'Dark Venom', 'Cathayan Silks', 'Tome of Magic'].map((name, i) => ({ min: i + 1, max: i + 1, itemName: name, label: name })) },
+  blood_on_the_pasturelands: { kind: 'horses', note: 'Add the horses successfully stolen, including those held by the winning warband when its opponent routed (six horses in total). If your warband routed, lose D3−1 of its stolen horses first.' },
+  the_frenzied_mob: { kind: 'none', note: 'The printed looted-building reward is experience; no additional gold or items are specified.' },
+  upon_the_eerie_downs: none,
+  through_black_fire_pass: none,
+  the_watchtower: { kind: 'none', note: 'There is no additional treasure reward. The defender’s arsenal weapons are loaned for this battle only.' },
+  night_of_the_dead: { kind: 'counters', label: 'Wyrdstone successfully brought to safety', note: 'Record the shards actually recovered. The source offers alternative victory conditions; do not add the optional D6+2 victory target as a second treasure award.' },
+  round_up_at_the_mordheim_corral: { kind: 'counters', note: 'Record the wyrdstone counters still held at the end, including any recovered after being dropped. Each successfully searched or tamed boar yields its D3 shards during the battle; do not roll or add them twice.' },
+  haunted_treasure_archive_pestilen: { kind: 'hoard', winnerOnly: false, condition: { id: 'chest', question: 'Did your warband recover the chest to safety?' }, note: 'The recovered chest gives 5D6×5 gc automatically. Roll separately for each other find, and check any magical artefact against the campaign record.', finds: hauntedFinds },
+  haunted_treasure: { kind: 'hoard', winnerOnly: false, condition: { id: 'chest', question: 'Did your warband recover the chest to safety?' }, note: 'Roll independently for each find. The Town Cryer gold line omits its multiplier; record the agreed ruling. The Archive Pestilen version explicitly uses ×5.', finds: hauntedFinds.map(f => f.id === 'gold' ? { ...f, multiplierRuling: 'The Town Cryer table prints “5D6× gc” without a multiplier. Record the value agreed at your table (the Archive Pestilen version uses ×5).' } : f) },
+  protect_the_prince: { kind: 'hoard', note: 'The successful protector gains 4D6 gc; the winning attackers after the Prince’s death gain 2D6 gc and jewellery equivalent to two treasure pieces.', finds: [], branches: { question: 'How did your warband win?', options: [
+    { id: 'escaped', label: 'Protected the Prince to safety', finds: [{ id: 'purse', label: 'Prince’s payment', kind: 'gold', quantity: { count: 4, sides: 6 } }] },
+    { id: 'killed', label: 'Killed the Prince', finds: [{ id: 'purse', label: 'Prince’s purse', kind: 'gold', quantity: { count: 2, sides: 6 } }, { id: 'jewellery', label: 'Jewellery (two treasure pieces)', kind: 'shards', quantity: 2 }] },
+  ] } },
+  burn_the_witches: { kind: 'hoard', winnerOnly: false, note: 'Defenders keep whichever relics they rescued (each named relic exists once). Attackers instead pilfer D3+1 shards, even if they lost.', finds: [], branches: { question: 'Which side did your warband play?', options: [
+    { id: 'defender', label: 'Defender — rescued relics', finds: [{ id: 'relics', label: 'Rescued relics', kind: 'item', itemOptions: ['Holy Tome', 'Holy Relic', 'Blessed Water'], chooseUpTo: 3, quantity: 0 }] },
+    { id: 'attacker', label: 'Attacker — pilfered wyrdstone', finds: [{ id: 'shards', label: 'Pilfered wyrdstone', kind: 'shards', quantity: { count: 1, sides: 3, bonus: 1 } }] },
+  ] } },
   monster_hunt: { kind: 'hoard', winnerOnly: false, condition: { id: 'lair', question: 'Did your warband control the monster’s lair at the end?' }, note: 'The warband controlling the lair searches every row separately, including both light-armour finds. The magical artefact uses the campaign’s unique-artefact record.', finds: [
     { id: 'gold', label: 'Gold crowns', kind: 'gold', quantity: { count: 5, sides: 6 } },
     { id: 'artefact', label: 'Magical artefact', kind: 'artefact', threshold: 6, quantity: 1 },
@@ -46,7 +137,7 @@ export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
     { id: 'jewellery', label: 'Jewellery worth D6×10 gc', kind: 'item', itemName: 'Jewellery (worth {amount} gc)', threshold: 5, quantity: { count: 1, sides: 6, multiplier: 10 }, quantityIsValue: true },
   ] },
   the_wizard_s_mansion: { kind: 'hoard', note: 'The winner gains the initial treasures not already found before the battle, then rolls independently for additional finds. Do not add equipment already issued to the defender again. The Wooden Man never leaves the mansion.', finds: [initialBooty('initial-mandrake', 'Mandrake Root', true), initialBooty('initial-shade', 'Crimson Shade', true), initialBooty('initial-charm', 'Lucky Charm'), initialBooty('initial-relic', 'Holy Relic'), initialBooty('initial-silk', 'Cathayan Silk Cloak'), ...mansionExtras] },
-  lost_temple_of_the_slann: { kind: 'hoard', repeatPerStandingHero: true, note: 'The winner gains initial booty not already found before the battle, once. Then each participating Hero not taken out of action searches the complete hoard table, up to six Heroes. The Temple Stone Guard never leaves the temple.', onceFinds: [initialBooty('initial-venom', 'Dark Venom', true), initialBooty('initial-shade', 'Crimson Shade', true), initialBooty('initial-relic', 'Holy Relic'), initialBooty('initial-charm', 'Lucky Charm'), initialBooty('initial-armour', 'Heavy armour')], finds: mansionExtras.map(f => f.id === 'gold' ? { ...f, quantity: { count: 3, sides: 6 } } : f.id === 'athame' ? { id: 'cloak', label: 'Cloak of Mists', kind: 'item', itemName: 'Cloak of Mists (Hero only; enemy attacks −1 to hit; enemy Initiative −1 to spot the hidden wearer)', threshold: 5, quantity: 1 } : f) },
+  lost_temple_of_the_slann: { kind: 'hoard', repeatPerStandingHero: true, note: 'The winner gains initial booty not already found before the battle, once. Then each participating Hero not taken out of action searches the complete hoard table, up to six Heroes. The Temple Stone Guard never leaves the temple.', onceFinds: [initialBooty('initial-venom', 'Dark Venom', true), initialBooty('initial-shade', 'Crimson Shade', true), initialBooty('initial-relic', 'Holy Relic'), initialBooty('initial-charm', 'Lucky Charm'), initialBooty('initial-armour', 'Heavy armour')], finds: mansionExtras.map(f => f.id === 'gold' ? { ...f, quantity: { count: 3, sides: 6 } } : f.id === 'athame' ? { id: 'cloak', label: 'Cloak of Mists', kind: 'item', itemName: 'Cloak of Mists', threshold: 5, quantity: 1 } : f) },
   wolf_hunt: { kind: 'bounty', note: 'Each slain wolf earns 10 gc, whether you won or lost. Bears earn no bounty. The accompanying Ranger is free only for this battle; retaining one requires normal recruitment.', label: 'Wolves slain by your warband', goldEach: 10 },
   the_rat_s_lair: { kind: 'bounty', note: 'Each vermin your warband takes out of action earns 5 gc. Winning is not required.', label: 'Vermin taken out of action by your warband', goldEach: 5 },
   river_watch: { kind: 'bounty', winnerOnly: true, condition: { id: 'defender', question: 'Was your warband the defender?' }, note: 'A victorious defender earns D6×20 gc plus 5 gc per enemy taken out of action. Attackers receive no scenario payment.', label: 'Enemies taken out of action by your warband', goldEach: 5, baseDice: { count: 1, multiplier: 20 } },
@@ -62,7 +153,7 @@ export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
   that_s_all_mine: none,
   jungle_skirmish_the_fog_of_war: none,
   island_hopping: none,
-  the_night_of_the_headless_one: { kind: 'hoard', winnerOnly: false, condition: { id: 'skull', question: 'Did your warrior carry the Skull off the opposite table edge?' }, note: 'Capturing the Skull by carrying it off the table awards the campaign relic. Merely winning by a rout does not. Future summoning must be resolved using the relic’s rules.', finds: [{ id: 'skull', label: 'Skull of the Headless One', kind: 'item', itemName: 'Skull of the Headless One (before each game D6: 1 lost; 2–5 ignored; 6 summon Headless One for that game, +125 rating; nominate a carrier who can lose the Skull)', quantity: 1 }] },
+  the_night_of_the_headless_one: { kind: 'hoard', winnerOnly: false, condition: { id: 'skull', question: 'Did your warrior carry the Skull off the opposite table edge?' }, note: 'Capturing the Skull by carrying it off the table awards the campaign relic. Merely winning by a rout does not. Future summoning must be resolved using the relic’s rules.', finds: [{ id: 'skull', label: 'Skull of the Headless One', kind: 'item', itemName: 'Skull of the Headless One', quantity: 1 }] },
   rat_attack: none,
   surrounded: none,
   scourge_and_purge: none,
@@ -98,9 +189,9 @@ export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
   ] },
   the_secrets_of_beujuntae: { kind: 'hoard', note: 'The winner opens the tomb. Roll 2D6 separately for each possible item, as stated above the source table; gold is automatic.', finds: [
     { id: 'gold', label: 'Gold crowns', kind: 'gold', quantity: { count: 2, sides: 6, bonus: 5 } },
-    { id: 'sickle', label: 'Magic Sickle (+1 WS)', kind: 'item', itemName: 'Magic Sickle (+1 WS)', threshold: 6, discoveryDice: 2, quantity: 1 },
+    { id: 'sickle', label: 'Magic Sickle (+1 WS)', kind: 'item', itemName: 'Magic Sickle', threshold: 6, discoveryDice: 2, quantity: 1 },
     { ...gems, threshold: 7, discoveryDice: 2, quantity: { count: 1, sides: 6 } },
-    { id: 'bone', label: 'Ancient Bone Armour (4+ save; otherwise light armour)', kind: 'item', itemName: 'Ancient Bone Armour (4+ save; otherwise light armour)', threshold: 8, discoveryDice: 2, quantity: 1 },
+    { id: 'bone', label: 'Ancient Bone Armour (4+ save; otherwise light armour)', kind: 'item', itemName: 'Ancient Bone Armour', threshold: 8, discoveryDice: 2, quantity: 1 },
   ] },
   the_mummy: { kind: 'hoard', winnerOnly: false, note: 'Once Ka-Hotep is vanquished, the warriors can loot his hoard. Roll separately for every row, including the two distinct light-armour finds.', condition: { id: 'mummy', question: 'Was Ka-Hotep vanquished, and did your warband secure his hoard?' }, finds: [
     { id: 'gold', label: 'Gold crowns', kind: 'gold', quantity: { count: 5, sides: 6 } },

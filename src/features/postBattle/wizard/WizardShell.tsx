@@ -61,7 +61,7 @@ export function WizardBar({ step, problems, onBack, onNext, onFile, filing = fal
   const last = step === STEP_IDS.length - 1
   const blocked = problems.length > 0
   return (
-    <div className="sticky bottom-[calc(3rem+env(safe-area-inset-bottom))] z-10 -mx-5 -mb-6 mt-auto flex flex-col gap-2 border-t border-border bg-surface/95 px-5 py-3 backdrop-blur lg:bottom-0 supports-[backdrop-filter]:bg-surface/85">
+    <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 -mb-6 mt-auto flex flex-col gap-2 border-t border-border bg-surface/95 px-5 py-3 backdrop-blur lg:bottom-0 supports-[backdrop-filter]:bg-surface/85">
       {fileError ? (
         <Notice tone="error" title="The report was not filed">
           {fileError}

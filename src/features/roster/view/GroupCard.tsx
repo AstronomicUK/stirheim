@@ -69,6 +69,7 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
             <p className="text-sm text-ink">{Array.from({ length: group.size }, (_, i) => modelLabel(group.model_names, i)).join(', ')}</p>
           </div>
         ) : null}
+        {group.campaign_state?.raidAbsences?.map((a,i)=><p key={i} className="text-sm font-medium">Raids surrender: {a.count} {a.count===1?'model misses':'models miss'} the next {a.games} {a.games===1?'battle':'battles'}.</p>)}
         {group.campaign_state?.permanentStupidity ? <p className="text-sm font-medium">Permanent Stupidity — Mad Cap Mushrooms</p> : null}
         {group.notes ? <p className="whitespace-pre-line text-sm text-ink-dim">{group.notes}</p> : null}
         {expanded ? (

@@ -913,3 +913,42 @@ describe('Harpy nest Straggler', () => {
     expect(deriveRawReport({ ...base, scenarioRewards: { harpy: { defeated: false } } }, c).problems.veterans).toEqual([])
   })
 })
+
+
+describe('Raids absence across later reports',()=>{
+ it('keeps absent group members on the roster when a fighting member dies, then returns them after two reports',()=>{
+  const band={...makeRoster(),heroes:[],hiredSwords:[],henchmenGroups:[{...group('watch',3),campaignState:{raidAbsences:[{count:1,games:2}]},equipment:[{itemId:'sword',quantity:3}]}]}
+  const context=ctx({roster:band,items:[]})
+  let draft=setResult(emptyDraft(),'lost');draft=setGroupOut(draft,'watch',1,2);draft=setGroupInjuryRoll(draft,'watch',0,1)
+  const first=derive(draft,context)
+  expect(first.participants.groups[0].size).toBe(2);expect(first.participants.groups[0].rosterSize).toBe(3)
+  expect(first.report?.applied.groups.find(g=>g.id==='watch')?.patch).toMatchObject({size:2,campaign_state:{raidAbsences:[{count:1,games:1}]}})
+  const after=rosterAfterReport(band,first.report!.applied)
+  expect(after.henchmenGroups[0].size).toBe(2);expect(participantsOf(after,template).groups[0].size).toBe(1)
+  const second=derive(setResult(emptyDraft(),'lost'),ctx({roster:after,items:[]}))
+  const returned=rosterAfterReport(after,second.report!.applied)
+  expect(returned.henchmenGroups[0].campaignState?.raidAbsences).toBeUndefined()
+  expect(participantsOf(returned,template).groups[0].size).toBe(2)
+ })
+ it('counts down hired swords and wholly absent groups without granting participation XP',()=>{
+  const band={...makeRoster(),heroes:[],hiredSwords:[sword('ogre',{flags:{missNextGames:2}})],henchmenGroups:[{...group('watch',2),campaignState:{raidAbsences:[{count:2,games:2}]}}]}
+  const first=derive(setResult(emptyDraft(),'lost'),ctx({roster:band,items:[]}))
+  expect(first.participants.groups).toEqual([]);expect(first.xp.lines).toEqual([])
+  expect(first.report?.applied.heroes.find(h=>h.id==='ogre')?.patch.flags?.missNextGames).toBe(1)
+  expect(first.report?.applied.groups.find(g=>g.id==='watch')?.patch.campaign_state?.raidAbsences).toEqual([{count:2,games:1}])
+ })
+})
+
+
+it('files Raids spoils, pursuit casualties and partial-group surrender together',()=>{
+ const band={...makeRoster(),heroes:[],hiredSwords:[],henchmenGroups:[{...group('watch',3),equipment:[{itemId:'sword',quantity:3}]}]}
+ const items:ItemRow[]=[{id:'raid-swords',warband_id:'w1',holder_type:'group',holder_id:'watch',item_rules_id:'sword',custom_name:null,quantity:3,notes:'',created_at:'',updated_at:''}]
+ const draft={...setResult(emptyDraft(),'lost'),scenarioRewards:{raids:{role:'raider' as const,setupConfirmed:true,jewellery:3,inhabitants:3,townsmen:0,burned:0,trackingDie:1,surrenderedGroups:{watch:1},ambushDie:2,ambush:[{selection:1,injury:1},{selection:1,injury:6}]}}}
+ const result=derive(draft,ctx({roster:band,items,scenarioId:'raids'}))
+ expect(result.report).not.toBeNull();expect(result.report?.applied.warband.gold_delta).toBe(15)
+ expect(result.report?.applied.scenario_effects?.raidCaptives).toEqual({gained:1,spent:0})
+ expect(result.report?.applied.groups.find(g=>g.id==='watch')?.patch).toMatchObject({size:2,campaign_state:{raidAbsences:[{count:1,games:2}]}})
+ expect(result.report?.applied.item_patches.find(i=>i.id==='raid-swords')?.quantity).toBe(2)
+ expect(result.report?.notes).toContain('Ambush selection 1')
+ expect(result.report?.notes).toContain('miss the next two battles')
+})

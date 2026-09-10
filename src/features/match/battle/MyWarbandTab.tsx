@@ -211,7 +211,7 @@ function MyGroupCard({ condition, group, template, sheet, edit, readOnly, onAsk 
   const [expanded, setExpanded] = useState(false)
   const out = groupOut(sheet, group.id)
   const by = takenOutBy(sheet, group.id)
-  const kit = perModelKit(group.equipment, group.size)
+  const kit = perModelKit(group.equipment, group.rosterSize ?? group.size)
   const tags: CardTag[] = [{ label: group.size === 1 ? '1 model' : `${group.size} models`, tone: 'neutral' }]
   if (out > 0) tags.push({ label: out >= group.size ? 'All out of action' : `${out} out of action`, tone: 'danger' })
 

@@ -51,11 +51,15 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
     </SelectField>)}
   </Card> : null
 
+  const raidAvailable=ctx.roster.scenarioEffects?.raidCaptives??0
+  const raidControls=raidAvailable>0 || (draft.exploration.raidCaptivesSpent??0)>0 ? <Card className="flex flex-col gap-3 px-4 py-3"><p className="font-medium">Raids resources</p><p className="text-sm">{raidAvailable} available from earlier battles. Each is spent once for one extra exploration die; the Raids rules call these captured resources “Slaves”. Resources captured in this battle become available next time.</p><NumberField label="Raids resources to spend" value={draft.exploration.raidCaptivesSpent??0} onChange={n=>update(d=>({...d,exploration:{...emptyExploration(),alliedWithWinner:d.exploration.alliedWithWinner,valorWitnesses:d.exploration.valorWitnesses,raidCaptivesSpent:n??0}}))}/></Card>:null
+
   if (ex.allowed === null || ex.allowed.count === 0) {
     return (
       <StepBody title="Exploration">
         {awardSummary}
         {slayerControls}
+        {raidControls}
         <PettyThief draft={draft} derived={derived} ctx={ctx} update={update} />
         <Notice tone="info" title="No exploration">
           {ex.skippedReason}
@@ -80,6 +84,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
     <StepBody title="Exploration">
         {awardSummary}
         {slayerControls}
+        {raidControls}
       <Intro>
         Suggested: {ex.suggested?.count ?? allowed.count} {(ex.suggested?.count ?? allowed.count) === 1 ? 'die' : 'dice'} ({ex.suggested?.reason ?? allowed.reason}). Surviving{' '}
         {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.{won ? '' : ' No winner’s die.'}

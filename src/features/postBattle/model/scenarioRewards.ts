@@ -1,3 +1,4 @@
+import {raidsRewards,type RaidsDraft,type RaidSurvivors} from './raidsRewards'
 import {stopThiefRewards,type StopThiefDraft} from './stopThiefRewards'
 import { rockRewards, type RockDraft, type RockRoster } from './rockRewards'
 import { encampmentRewards, type EncampmentDraft } from './encampmentRewards'
@@ -22,6 +23,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  raids?: RaidsDraft
   stopThief?: StopThiefDraft
   rock?: RockDraft
   encampment?: EncampmentDraft
@@ -79,7 +81,7 @@ export function canKeepHeraldSword(warbandId: string) {
   return ['possessed', 'undead', 'skaven'].includes(explorationFaction(warbandId)) || /undead|skaven|beastm[ae]n/i.test(findWarbandTemplate(warbandId)?.race ?? '')
 }
 export interface ScenarioRewardsResult { artefacts: { roll: number; overrideReason?: string }[]; gold: number; shards: number; items: FoundItem[]; notes: string[]; problems: string[] }
-export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { campaignId?: string; roster?: RockRoster; opponents?: { id: string; name?:string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
+export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { raidSurvivors?: RaidSurvivors; campaignId?: string; roster?: RockRoster; opponents?: { id: string; name?:string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
   let rule = ruleOverride ?? scenarioRewardRule(scenarioId)
   const state = draft.scenarioRewards ?? {}
   const rewards = { artefacts: [] as { roll: number; overrideReason?: string }[], gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
@@ -93,6 +95,7 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
   }
+  if(rule.kind==='raids')return {...rewards,...raidsRewards(state.raids??{},context?.raidSurvivors??{warriors:[],groups:[]})}
   if(rule.kind==='stop-thief')return {...rewards,...stopThiefRewards(state.stopThief??{},draft.result==='won',context?.roster?.id??'',[{id:context?.roster?.id??'',name:context?.roster?.name??'This warband'},...(context?.opponents??[]).map(o=>({id:o.id,name:o.name??'Opponent'}))])}
   if(rule.kind==='rock')return {...rewards,...rockRewards(state.rock??{},draft.result==='won',context?.roster??{warbandTemplateId:''})}
   if(rule.kind==='encampment')return {...rewards,...encampmentRewards(state.encampment??{},draft.result==='won',context?.opponents??[])}

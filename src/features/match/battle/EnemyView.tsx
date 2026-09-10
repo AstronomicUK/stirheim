@@ -175,7 +175,7 @@ function EnemyWarriorCard({ entry, template, out, condition }: { entry: SheetWar
 
 function EnemyGroupCard({ group, template, out, condition }: { group: RosterHenchmanGroup; template: WarbandTemplate | undefined; out: number; condition?: string }) {
   const [expanded, setExpanded] = useState(false)
-  const kit = perModelKit(group.equipment, group.size)
+  const kit = perModelKit(group.equipment, group.rosterSize ?? group.size)
   const tags: CardTag[] = [{ label: group.size === 1 ? '1 model' : `${group.size} models`, tone: 'neutral' }]
   if (condition) tags.push({ label: condition, tone: 'warn' })
   if (out > 0) tags.push({ label: `${out} out of action`, tone: 'danger' })

@@ -1,3 +1,4 @@
+import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 // Pure helpers behind the battle sheet: who is fighting, tally edits, the rout warning, and the
 // decision of when to adopt a sheet that arrived from the server (another device). No React, no
 // network, so it is unit-tested in node.
@@ -77,7 +78,7 @@ export function splitWarriors(roster: RosterWarband, sheet?: BattleLiveState): S
 
 /** Groups with at least one model; a wiped-out group is kept on the roster for history only. */
 export function fightingGroups(roster: RosterWarband): RosterHenchmanGroup[] {
-  return roster.henchmenGroups.filter((g) => g.size > 0 && !g.campaignState?.fanaticSittingOut)
+  return roster.henchmenGroups.filter((g) => g.size > 0 && !g.campaignState?.fanaticSittingOut).map(g=>{const absent=absentGroupModels(g);return absent?{...g,rosterSize:g.size,size:g.size-absent}:g}).filter(g=>g.size>0)
 }
 
 /** Animals (Wardogs, Gnoblar Fighters) brought by fighting heroes; each is a model on the table. */

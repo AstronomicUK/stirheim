@@ -100,7 +100,7 @@ export function Intro({ children }: { children: ReactNode }) {
 export function Row({ label, value, dim = false }: { label: ReactNode; value: ReactNode; dim?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
-      <span className={`shrink-0 ${dim ? 'text-ink-dim' : 'text-ink'}`}>{label}</span>
+      <span className={`min-w-0 break-words ${dim ? 'text-ink-dim' : 'text-ink'}`}>{label}</span>
       <span className="min-w-0 break-words text-right tabular-nums text-ink">{value}</span>
     </div>
   )

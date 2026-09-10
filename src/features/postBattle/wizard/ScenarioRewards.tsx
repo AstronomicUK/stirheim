@@ -1,3 +1,4 @@
+import {RaidsRewards} from './RaidsRewards'
 import { StopThiefRewards } from './StopThiefRewards'
 import { RockRewards } from './RockRewards'
 import { scenarioRewardContext } from '../model/derive'
@@ -50,6 +51,7 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
       <NumberField label="Unspoiled pies carried away by your warriors" allowEmpty value={state.recipe?.pies ?? null} onChange={pies => change(s => ({ ...s, recipe: { ...s.recipe, pies } }))} />
       {draft.result === 'won' ? <><NumberField label="Unspoiled pies claimed from the cart" allowEmpty value={state.recipe?.cartPies ?? null} onChange={cartPies => change(s => ({ ...s, recipe: { ...s.recipe, cartPies } }))} /><SelectField label="Is your warband turning Geefer in for the reward?" value={state.recipe?.turnsInGeefer === undefined ? '' : String(state.recipe.turnsInGeefer)} onChange={e => change(s => ({ ...s, recipe: { ...s.recipe, turnsInGeefer: e.target.value === '' ? undefined : e.target.value === 'true', dice: [] } }))}><option value="">Choose…</option><option value="true">Yes — we claim the payment</option><option value="false">No — another allied winner claims it</option></SelectField>{state.recipe?.turnsInGeefer ? <div className="flex flex-wrap gap-3">{Array.from({ length: 5 }, (_, i) => <DieField key={i} sides={6} rollable label={`Geefer payment: D6 ${i + 1}`} value={state.recipe?.dice?.[i] ?? null} onChange={v => change(s => ({ ...s, recipe: { ...s.recipe, dice: Array.from({ length: 5 }, (_, j) => i === j ? v : s.recipe?.dice?.[j] ?? null) } }))} />)}</div> : null}</> : null}
     </Card> : null}
+    {rule.kind==='raids'?<RaidsRewards state={state.raids??{}} survivors={derived.injuries.raidSurvivors??{warriors:[],groups:[]}} change={raids=>change(s=>({...s,raids}))}/>:null}
     {rule.kind==='stop-thief'?<StopThiefRewards state={state.stopThief??{}} won={draft.result==='won'} ownId={ctx.roster.id} warbands={[{id:ctx.roster.id,name:ctx.roster.name},...(ctx.opponents??[]).map(o=>({id:o.id,name:o.name??'Opponent'}))]} change={stopThief=>change(s=>({...s,stopThief}))}/>:null}
     {rule.kind==='rock'?<RockRewards state={state.rock??{}} roster={scenarioRewardContext(ctx,derived.injuries).roster} won={draft.result==='won'} change={rock=>change(s=>({...s,rock}))}/>:null}
     {rule.kind==='encampment'?<EncampmentRewards state={state.encampment??{}} won={draft.result==='won'} opponents={ctx.opponents??[]} change={encampment=>change(s=>({...s,encampment}))}/>:null}

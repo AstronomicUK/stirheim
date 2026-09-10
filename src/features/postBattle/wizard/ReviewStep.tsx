@@ -135,7 +135,8 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
       <Section title="Exploration">
         {report.exploration ? (
           <Card className="px-4 py-2">
-            <Row label={`Dice (${report.exploration.diceReason})`} value={report.exploration.rolls.join(', ')} />
+            <Row label="Dice" value={report.exploration.rolls.join(', ')} />
+            <p className="break-words pb-2 text-xs text-ink-dim">{report.exploration.diceReason}</p>
             <Row label="Total" value={report.exploration.total} dim />
             <Row label="Location" value={report.exploration.locationName ?? 'None'} />
             {report.exploration.subRoll !== null ? <Row label="Location D6" value={report.exploration.subRoll} dim /> : null}

@@ -1,3 +1,5 @@
+import {raidsRewards,type RaidSurvivors} from './raidsRewards'
+import {absentGroupModels,afterAbsenceBattle} from '../../../rules/resolve/groupAbsences'
 import { stopThiefRewards } from './stopThiefRewards'
 import { rockRewards } from './rockRewards'
 import { rockConscripts } from './rockConscripts'
@@ -65,6 +67,7 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  raidSurvivors?: RaidSurvivors
   campaignId?: string
   opponents?: {id:string;name:string}[]
   artefacts?: ArtefactDiscovery[]
@@ -114,6 +117,8 @@ export interface InjurySummary {
 }
 
 export interface InjuriesDerived {
+  raidSurvivors?: RaidSurvivors
+  raidOutcome?: ReturnType<typeof raidsRewards>
   heroes: { hero: RosterHero; resolution: HeroInjuryResolution }[]
   hiredSwords: { sword: RosterHiredSword; resolution: HiredSwordInjuryResolution }[]
   /** `dice` is the number rolled: models out of action unless the player overrode it. */
@@ -268,6 +273,18 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
     })
 
+  const raidSurvivors:RaidSurvivors|undefined=scenarioId==='raids'?{
+    warriors:[...participants.heroes.map(h=>({original:h,current:heroes.find(r=>r.hero.id===h.id)?.resolution.hero??h})),...participants.hiredSwords.map(h=>({original:h,current:hiredSwords.find(r=>r.sword.id===h.id)?.resolution.sword??h}))].filter(h=>h.current.status==='active').map(h=>({id:h.current.id,name:h.current.name,canSurrender:!out.has(h.original.id)})),
+    groups:participants.groups.map(g=>({group:groups.find(r=>r.group.id===g.id)?.resolution.group??g,canSurrender:Math.max(0,g.size-(draft.groupsOut[g.id]??0))}))
+  }:undefined
+  const raidOutcome=raidSurvivors?raidsRewards(draft.scenarioRewards?.raids??{},raidSurvivors):undefined
+  for(const [id,ambush] of Object.entries(raidOutcome?.ambushGroups??{})){
+    const existing=groups.find(g=>g.group.id===id),original=participants.groups.find(g=>g.id===id)!
+    const dead=(existing?.resolution.dead??0)+ambush.dead
+    const resolution={group:ambush.group,dead,complete:existing?.resolution.complete??true,line:{subjectType:'group' as const,subjectId:id,subjectName:original.name,rolls:[...(existing?.resolution.line?.rolls??[]),...ambush.rolls],dead}}
+    if(existing)existing.resolution=resolution;else groups.push({group:original,outOfAction:0,dice:0,resolution})
+  }
+
   const animalIds = new Set(draft.animalsOut)
   const animals = animalFighters(roster ?? { heroes: participants.heroes } as RosterWarband)
     .filter((a) => animalIds.has(a.id))
@@ -290,7 +307,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     if (a.dead === null) summary.pending += 1
     else if (a.dead) summary.henchmenDead += 1
   }
-  return { heroes, hiredSwords, groups, animals, summary, complete: summary.pending === 0 }
+  return { heroes, hiredSwords, groups, animals, summary, complete: summary.pending === 0,raidSurvivors,raidOutcome }
 }
 
 function alive(outcome: InjuryOutcome | null): boolean {
@@ -298,8 +315,9 @@ function alive(outcome: InjuryOutcome | null): boolean {
 }
 
 export function scenarioRewardContext(ctx:ReportContext,injuries:InjuriesDerived):ReportContext {
+  if(ctx.scenarioId==='raids')return {...ctx,raidSurvivors:injuries.raidSurvivors}
   if(ctx.scenarioId!=='assault_on_the_rock')return ctx
-  return {...ctx,roster:{...ctx.roster,heroes:ctx.roster.heroes.map(h=>injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero??h),hiredSwords:ctx.roster.hiredSwords.map(h=>injuries.hiredSwords.find(r=>r.sword.id===h.id)?.resolution.sword??h),henchmenGroups:ctx.roster.henchmenGroups.map(g=>injuries.groups.find(r=>r.group.id===g.id)?.resolution.group??g)}}
+  return {...ctx,roster:{...ctx.roster,heroes:ctx.roster.heroes.map(h=>injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero??h),hiredSwords:ctx.roster.hiredSwords.map(h=>injuries.hiredSwords.find(r=>r.sword.id===h.id)?.resolution.sword??h),henchmenGroups:ctx.roster.henchmenGroups.map(g=>{const resolved=injuries.groups.find(r=>r.group.id===g.id)?.resolution.group;return resolved?{...resolved,size:resolved.size+absentGroupModels(g)}:g})}}
 }
 
 export function deriveXp(draft: ReportDraft, participants: Participants, injuries: InjuriesDerived, ctx: ReportContext, locationAwards: import('./locationXp').LocationXpAward[] = []): XpDerived {
@@ -377,6 +395,9 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   if (ctx.scenarioId === 'the_wizard_s_tower') {
     problems.veterans.push(...towerTreasure(draft.towerChests).problems)
   }
+  const raidSpent=draft.exploration.raidCaptivesSpent??0
+  if(!Number.isSafeInteger(raidSpent)||raidSpent<0||raidSpent>(ctx.roster.scenarioEffects?.raidCaptives??0))problems.exploration.push('Choose an available number of previously captured Raids resources.')
+  if(raidSpent>0&&!exploration.record)problems.exploration.push('Complete exploration before spending Raids resources, or set their use back to zero.')
   problems.veterans.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template), scenarioRewardContext(ctx,injuries)).problems)
   if ((scenarioRewardRule(ctx.scenarioId) || ctx.scenarioId === 'the_wizard_s_tower') && (draft.battleGold || draft.battleWyrdstone || draft.scenarioItems?.length) && !draft.scenarioRewardOverrideReason?.trim()) problems.veterans.push('Explain the agreed adjustment outside this scenario’s normal rewards.')
   if (scenario.needsMission) problems.experience.push('Choose which scenario mission was played.')
@@ -576,7 +597,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
   // Heroes who missed this game: one fewer to miss.
   for (const sat of participants.satOut) {
     if (sat.missNextGames && sat.missNextGames > 0) {
-      const hero = ctx.roster.heroes.find((h) => h.id === sat.id)
+      const hero = ctx.roster.heroes.find((h) => h.id === sat.id) ?? ctx.roster.hiredSwords.find(h=>h.id===sat.id)
       if (!hero) continue
       const flags = { ...hero.flags }
       if (sat.missNextGames - 1 > 0) flags.missNextGames = sat.missNextGames - 1
@@ -598,13 +619,19 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     const res = groupRes.get(group.id)
     const line = xpBySubject.get(group.id)
     const patch: ReportApplied['groups'][number]['patch'] = {}
-    if (res && res.group.size !== group.size) patch.size = res.group.size
+    if (res && res.group.size !== group.size) patch.size = res.group.size + absentGroupModels(ctx.roster.henchmenGroups.find(g=>g.id===group.id)??group)
     if (effects.groupStupidity.includes(group.id)) patch.campaign_state = { ...group.campaignState, permanentStupidity: true }
     if (line) {
       patch.xp = line.xpAfter
       for (const t of thresholdsCrossed('henchman', line.xpBefore, line.xpAfter, unitRules(group.unitTemplateId).advanceRate ?? 'normal')) pending.push({ subject_type: 'group', subject_id: group.id, threshold_xp: t })
     }
     if (Object.keys(patch).length > 0) groups.push({ id: group.id, patch })
+  }
+
+  for(const group of ctx.roster.henchmenGroups)if(group.campaignState?.raidAbsences?.length){
+    const existing=groups.find(g=>g.id===group.id)
+    const campaign_state=afterAbsenceBattle({...group.campaignState,...existing?.patch.campaign_state})
+    if(existing)existing.patch.campaign_state=campaign_state;else groups.push({id:group.id,patch:{campaign_state}})
   }
 
   // Dependent companions cannot remain after their charmer or Merchant is lost.
@@ -807,12 +834,14 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (nonCampaign) draft = { ...draft, veteranPool: [null, null], veteranPoolExtra: null, injurySkips: {}, groupInjuryDice: {} }
   const participants = participantsOf(ctx.roster, ctx.template)
   const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
-  const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? g.size) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
+  const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? (g.size-absentGroupModels(g))) + absentGroupModels(g) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
   if (nonCampaign) { kit.prompts = []; kit.pending = 0 }
   const out = heroOoaIds(draft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
   const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
   const harpy = ctx.scenarioId === 'happy_harpy_hunting_grounds' ? harpyRewards(draft) : null
+  const raidRequested=draft.exploration.raidCaptivesSpent??0
+  const raidSpent=Number.isSafeInteger(raidRequested)&&raidRequested>=0&&raidRequested<=(ctx.roster.scenarioEffects?.raidCaptives??0)?raidRequested:0
   const explorationRoster = harpy?.stragglerNow ? { ...ctx.roster, explorationDiscoveries: { catacombs: false, tunnels: false, ...ctx.roster.explorationDiscoveries, straggler: true } } : ctx.roster
   const exploration = deriveExploration(draft.exploration, explorationRoster, {
     scenarioId: ctx.scenarioId,
@@ -824,11 +853,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     artefacts: ctx.artefacts,
     artefactsError: ctx.artefactsError,
     reportId: ctx.reportId,
-    allowWithoutSurvivors: !!slayer?.extraDice,
+    allowWithoutSurvivors: !!slayer?.extraDice || raidSpent>0,
     noExplorationReason: slayer ? `${slayer.note}. No qualifying exploration dice this battle.` : undefined,
     enemiesOut: Object.values(draft.enemiesOut).reduce((n, v) => n + (v ?? 0), 0),
-    extraDice: (ctx.map?.perks.explorationDice ?? 0) + (slayer?.extraDice ?? 0),
-    extraDiceNote: [ctx.map?.perks.explorationDiceSources.join(', '), slayer?.note].filter(Boolean).join('; '),
+    extraDice: (ctx.map?.perks.explorationDice ?? 0) + (slayer?.extraDice ?? 0) + raidSpent,
+    extraDiceNote: [ctx.map?.perks.explorationDiceSources.join(', '), slayer?.note,raidSpent?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra dice`:null].filter(Boolean).join('; '),
     maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
   const kidnapped = ctx.scenarioId === 'kidnapped' ? kidnappedRewards(draft.scenarioRewards?.kidnapped, { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h) }, ctx.items) : null
@@ -839,6 +868,21 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   if(thief&&!thief.problems.length){applied.scenario_item_transfers=thief.transfers;const state=draft.scenarioRewards!.stopThief!;applied.stop_thief_outcome={defender_id:state.defenderId!,recovered:state.recovered,returned_allies:state.returnedAllies}}
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
+  if(raidSpent>0&&exploration.record)applied.scenario_effects={...applied.scenario_effects,raidCaptives:{gained:0,spent:raidSpent}}
+  if(injuries.raidOutcome&&!injuries.raidOutcome.problems.length){
+    const raid=injuries.raidOutcome
+    applied.scenario_effects={...applied.scenario_effects,raidCaptives:{gained:raid.captives,spent:applied.scenario_effects?.raidCaptives?.spent??0}}
+    for(const id of raid.surrenderedWarriors){
+      const original=ctx.roster.heroes.find(h=>h.id===id)??ctx.roster.hiredSwords.find(h=>h.id===id)!,existing=applied.heroes.find(h=>h.id===id)
+      const flags={...original.flags,...existing?.patch.flags,missNextGames:Math.max(2,existing?.patch.flags?.missNextGames??original.flags.missNextGames??0)}
+      if(existing)existing.patch.flags=flags;else applied.heroes.push({id,patch:{flags}})
+    }
+    for(const [id,count] of Object.entries(raid.surrenderedGroups)){
+      const original=ctx.roster.henchmenGroups.find(g=>g.id===id)!,existing=applied.groups.find(g=>g.id===id)
+      const campaign_state={...original.campaignState,...existing?.patch.campaign_state},raidAbsences=[...(campaign_state.raidAbsences??[]),{count,games:2}]
+      if(existing)existing.patch.campaign_state={...campaign_state,raidAbsences};else applied.groups.push({id,patch:{campaign_state:{...campaign_state,raidAbsences}}})
+    }
+  }
   if(ctx.scenarioId==='assault_on_the_rock'&&draft.result==='won')applied.rock_tome_claim=true
   if(ctx.scenarioId==='encampment_raid') {
     const state=draft.scenarioRewards?.encampment??{}
@@ -869,7 +913,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if(!nonCampaign)for(const group of ctx.roster.henchmenGroups){
     const existing=applied.groups.find(g=>g.id===group.id)
     if(unitRules(group.unitTemplateId).upkeep&&(existing?.patch.size??group.size)>0){
-      const campaign_state={...group.campaignState,upkeepOwedAfter:ctx.matchId}
+      const campaign_state={...group.campaignState,...existing?.patch.campaign_state,upkeepOwedAfter:ctx.matchId}
       if(existing)existing.patch.campaign_state=campaign_state
       else applied.groups.push({id:group.id,patch:{campaign_state}})
     }
@@ -955,7 +999,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)), ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

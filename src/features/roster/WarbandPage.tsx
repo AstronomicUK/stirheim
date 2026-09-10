@@ -209,6 +209,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
 
       <RockTomeCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
+      {(detail.roster.scenarioEffects?.raidCaptives??0)>0?<Card className="flex flex-col gap-2 px-4 py-3"><p className="font-medium">Raids resources</p><p className="text-sm">{detail.roster.scenarioEffects!.raidCaptives} captured resources available. Each can be spent once for an extra exploration die after a future battle.</p></Card>:null}
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       <HiredRosterRepairCard detail={detail} canEdit={canEdit} />
       <HiredUpkeepCard detail={detail} canEdit={canEdit} />

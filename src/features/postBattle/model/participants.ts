@@ -1,3 +1,4 @@
+import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 // Who took part in the battle, as the report sees it, and which hero counts as the leader.
 //
 // Reuses the battle sheet's definition of "fighting" so the report counts exactly the warriors
@@ -50,8 +51,9 @@ export function participantsOf(roster: RosterWarband, template: WarbandTemplate 
     id: entry.warrior.id,
     name: entry.warrior.name,
     reason,
-    missNextGames: entry.role === 'hero' && entry.warrior.status === 'active' ? entry.warrior.flags.missNextGames : undefined,
+    missNextGames: entry.warrior.status === 'active' ? entry.warrior.flags.missNextGames : undefined,
   }))
-  for (const group of roster.henchmenGroups) if (group.size > 0 && group.campaignState?.fanaticSittingOut) satOut.push({ id: group.id, name: group.name, reason: 'No Mad Cap Mushrooms supplied', missNextGames: undefined })
+  for(const group of roster.henchmenGroups){const count=absentGroupModels(group);if(count>0)satOut.push({id:group.id,name:group.name,reason:`${count} ${count===1?'model misses':'models miss'} this game after Raids surrender`,missNextGames:undefined})}
+  for (const group of roster.henchmenGroups) if (group.size > 0 && group.campaignState?.fanaticSittingOut && absentGroupModels(group)===0) satOut.push({ id: group.id, name: group.name, reason: 'No Mad Cap Mushrooms supplied', missNextGames: undefined })
   return { heroes, hiredSwords, groups: fightingGroups(roster), satOut, leaderId: findLeaderId(heroes, template) }
 }

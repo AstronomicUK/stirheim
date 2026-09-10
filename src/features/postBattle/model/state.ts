@@ -77,6 +77,8 @@ export interface PirateRecruitDraft {
   people: { id: string; rolls: [number | null, number | null]; destination?: string; kitCost?: number | null; kitReason?: string }[]
 }
 export interface ExplorationDraft {
+  raidCaptivesSpent?: number
+
   pirateRecruits?: PirateRecruitDraft
 
   recruitDie?: number | null

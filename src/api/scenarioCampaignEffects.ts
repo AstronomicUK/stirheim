@@ -12,7 +12,7 @@ export async function fetchScenarioCampaignEffects(warbandId: string, excludeMat
     }
     if (data.length < 500) break
   }
-  if (!reports.some(r => r.effects && (r.effects.caravanTrade || r.effects.caravanTreachery))) return scenarioCampaignEffects([], [])
+  if (!reports.some(r => r.effects && (r.effects.caravanTrade || r.effects.caravanTreachery || r.effects.raidCaptives))) return scenarioCampaignEffects([], [])
   const starts: { id: string; startedAt: string }[] = []
   for (let offset = 0; ; offset += 500) {
     const { data, error } = await supabase.from('match_participants').select('match_id,matches!inner(started_at)').eq('warband_id', warbandId).order('match_id').range(offset, offset + 499)

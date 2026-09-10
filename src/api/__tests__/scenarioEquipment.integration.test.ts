@@ -17,6 +17,29 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
   const award = () => ({ holder_type: 'hero', holder_id: heroes[0], item_rules_id: 'chaos_armour', custom_name: null, quantity: 1, notes: 'Kidnapped reward' })
   const file = (extra: object) => player.rpc('submit_battle_report', { p_match_id: match, p_warband_id: warbands[0], p_report: { result: 'lost', won: false, routed: false, applied: { warband: { gold_delta: 5, wyrdstone_delta: 0 }, ...extra } } })
   const withdraw = () => player.rpc('withdraw_battle_report', { p_match_id: match, p_warband_id: warbands[0] })
+  it('spends Raids resources only in later battles and blocks withdrawal after use',async()=>{
+    await admin.from('matches').update({scenario_rules_id:'raids',started_at:'2026-09-01T12:00:00Z'}).eq('id',match)
+    const payload=(gained:number,spent:number)=>({result:'won',won:true,routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},scenario_effects:{raidCaptives:{gained,spent}}}})
+    const submit=(m:string,gained:number,spent:number)=>player.rpc('submit_battle_report',{p_match_id:m,p_warband_id:warbands[0],p_report:payload(gained,spent)})
+    expect((await submit(match,2,1)).error?.message).toContain('unavailable')
+    expect((await submit(match,2,0)).error).toBeNull()
+    const future=(await admin.from('matches').insert({campaign_id:campaign,created_by:owner,state:'awaiting_reports',scenario_rules_id:'skirmish',started_at:'2026-09-02T12:00:00Z'}).select('id').single()).data!.id
+    await admin.from('match_participants').insert(warbands.map(warband_id=>({match_id:future,warband_id})))
+    expect((await submit(future,1,0)).error?.message).toContain('Only a Raids report')
+    expect((await submit(future,0,3)).error?.message).toContain('unavailable')
+    expect((await submit(future,0,2)).error).toBeNull()
+    expect((await withdraw()).error?.message).toContain('later report')
+    expect((await player.rpc('withdraw_battle_report',{p_match_id:future,p_warband_id:warbands[0]})).error).toBeNull()
+    expect((await withdraw()).error).toBeNull()
+  })
+  it('does not allow a historical report to spend a later Raids award',async()=>{
+    await admin.from('matches').update({scenario_rules_id:'raids',started_at:'2026-09-03T12:00:00Z'}).eq('id',match)
+    expect((await file({scenario_effects:{raidCaptives:{gained:1,spent:0}}})).error).toBeNull()
+    const earlier=(await admin.from('matches').insert({campaign_id:campaign,created_by:owner,state:'awaiting_reports',scenario_rules_id:'skirmish',started_at:'2026-09-01T12:00:00Z'}).select('id').single()).data!.id
+    await admin.from('match_participants').insert(warbands.map(warband_id=>({match_id:earlier,warband_id})))
+    expect((await player.rpc('submit_battle_report',{p_match_id:earlier,p_warband_id:warbands[0],p_report:{result:'lost',won:false,routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},scenario_effects:{raidCaptives:{gained:0,spent:1}}}}})).error?.message).toContain('unavailable')
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(105)
+  })
   it('validates a Brigands survivor, logs its actual hire and protects the claimed report', async () => {
     expect((await file({scenario_free_hire:{choices:['warlock']}})).error).toBeNull()
     const report=(await admin.from('match_reports').select('id').eq('match_id',match).single()).data!

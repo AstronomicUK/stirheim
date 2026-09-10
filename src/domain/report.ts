@@ -114,7 +114,7 @@ export const pendingAdvanceRequestSchema = z.object({
 });
 export const reportAppliedSchema = z.object({
   pirate_mixed_upkeep_due: z.boolean().optional(),
-  scenario_effects: z.object({ caravanTreachery: z.number().int().min(1).max(6).optional(), caravanTrade: z.object({percent: z.union([z.literal(-20), z.literal(20)]), rounding: z.enum(["up", "down"])}).optional() }).optional(),
+  scenario_effects: z.object({ raidCaptives:z.object({gained:z.number().int().min(0),spent:z.number().int().min(0)}).optional(), caravanTreachery: z.number().int().min(1).max(6).optional(), caravanTrade: z.object({percent: z.union([z.literal(-20), z.literal(20)]), rounding: z.enum(["up", "down"])}).optional() }).optional(),
   rock_tome_claim: z.literal(true).optional(),
   encampment_capture: z.object({defender_id:z.string().uuid(),camp:z.string().min(1),treatment:z.enum(['destroy','occupy']),eligible:z.boolean()}).optional(),
   stop_thief_outcome: z.object({defender_id:z.string().uuid(),recovered:z.boolean().optional(),returned_allies:z.array(z.string().uuid()).optional()}).optional(),

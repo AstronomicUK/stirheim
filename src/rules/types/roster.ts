@@ -122,6 +122,7 @@ export interface RosterHero {
 }
 
 export interface HenchmanCampaignState {
+  raidAbsences?: {count:number;games:number}[];
   fanaticBattleMatch?: string;
   fanaticSittingOut?: boolean;
   fanaticSplitFrom?: string;
@@ -132,6 +133,8 @@ export interface HenchmanCampaignState {
 }
 
 export interface RosterHenchmanGroup {
+  /** Battle-only view: original size used to preserve per-model equipment. */
+  rosterSize?: number;
   campaignState?: HenchmanCampaignState;
   id: string;
   name: string;

@@ -105,4 +105,4 @@ export type AppliedInjuryJson = z.infer<typeof appliedInjurySchema>;
 export type WarriorFlagsJson = z.infer<typeof warriorFlagsSchema>;
 export type StatIncreasesJson = z.infer<typeof statIncreasesSchema>;
 
-export const henchmanCampaignStateSchema = z.object({fanaticBattleMatch:z.string().optional(),fanaticSittingOut:z.boolean().optional(),fanaticSplitFrom:z.string().optional(),permanentStupidity:z.boolean().optional(),upkeepOwedAfter:z.string().optional(),upkeepPaidAfter:z.string().optional(),cheapTrollFeed:z.boolean().optional()});
+export const henchmanCampaignStateSchema = z.object({raidAbsences:z.array(z.object({count:z.number().int().min(1).max(5),games:z.number().int().min(1).max(2)})).optional(),fanaticBattleMatch:z.string().optional(),fanaticSittingOut:z.boolean().optional(),fanaticSplitFrom:z.string().optional(),permanentStupidity:z.boolean().optional(),upkeepOwedAfter:z.string().optional(),upkeepPaidAfter:z.string().optional(),cheapTrollFeed:z.boolean().optional()});

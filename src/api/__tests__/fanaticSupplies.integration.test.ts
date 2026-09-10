@@ -33,6 +33,18 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Fanatic supply transactions
     expect(items.some(i => i.item_rules_id === 'mad_cap_mushrooms')).toBe(false)
     expect((await start()).error?.message).toContain('already')
   })
+  it('preserves one absent member when splitting and feeds only the returning fighter',async()=>{
+    const id=await seed(2)
+    await admin.from('henchman_groups').update({campaign_state:{raidAbsences:[{count:1,games:2}]}}).eq('id',id)
+    expect((await start()).error).toBeNull()
+    const groups=(await admin.from('henchman_groups').select('id,size,campaign_state').eq('warband_id',warbands[0])).data!
+    expect(groups).toHaveLength(2)
+    expect(groups.filter(g=>g.campaign_state.raidAbsences?.length)).toHaveLength(1)
+    expect(groups.find(g=>g.id===id)?.campaign_state).toMatchObject({raidAbsences:[{count:1,games:2}]})
+    expect(groups.find(g=>g.id===id)?.campaign_state.fanaticBattleMatch).toBeUndefined()
+    expect(groups.filter(g=>g.campaign_state.fanaticBattleMatch===match)).toHaveLength(1)
+    expect((await admin.from('items').select('quantity').eq('warband_id',warbands[0]).eq('item_rules_id','mad_cap_mushrooms').single()).data?.quantity).toBe(1)
+  })
   it('sits everyone out without doses', async () => {
     await seed(0)
     expect((await start()).error).toBeNull()

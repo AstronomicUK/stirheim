@@ -36,3 +36,13 @@ it('does not renew benefits or reorder penalties when an old report is resubmitt
   const r = scenarioCampaignEffects([second, first], [{ id: 'm2', startedAt: second.battleAt }])
   expect(r.trade).toBeUndefined(); expect(r.rareGamesRemaining).toBe(1)
 })
+
+
+it('keeps Raids resources between battles, excludes the current award and consumes each selected resource once',()=>{
+ const gain=report(1,{raidCaptives:{gained:3,spent:0}}),use=report(2,{raidCaptives:{gained:0,spent:2}})
+ expect(scenarioCampaignEffects([gain,use],[]).raidCaptives).toBe(1)
+ expect(scenarioCampaignEffects([gain,use],[],'m2').raidCaptives).toBe(3)
+ expect(scenarioCampaignEffects([gain,use],[],'m1').raidCaptives).toBeUndefined()
+ expect(scenarioCampaignEffects([gain],[]).raidCaptives).toBe(3)
+ expect(scenarioCampaignEffects([],[]).raidCaptives).toBeUndefined()
+})

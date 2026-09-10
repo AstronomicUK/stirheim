@@ -20,6 +20,7 @@ export type ScenarioRewardRule =
   | { kind: 'choice'; note: string; question: string; options: { id: string; label: string; rule: ScenarioRewardRule }[] }
   | { kind: 'none'; note: string }
   | { kind: 'rock'; note: string }
+  | { kind: 'raids'; note: string }
   | { kind: 'stop-thief'; note: string }
   | { kind: 'encampment'; note: string }
   | { kind: 'forbidden-square'; note: string }
@@ -72,6 +73,7 @@ const TOMB_TREASURE_TABLE: Extract<ScenarioRewardRule, { kind: 'repeated' }>['ta
   ]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
   assault_on_the_rock: {kind:'rock',note:'Record actual room searches and conscripted Sisters. The winning warband resolves the recovered tome according to its faction. Record the ordinary tome-carrier XP separately under scenario objectives.'},
+  raids:{kind:'raids',note:'Record actual jewellery, captured townsfolk, surrender and the post-raid pursuit. Captured resources can be spent in future exploration.'},
   stop_thief: {kind:'stop-thief',note:'Recover the actual stolen equipment or record the defending winner’s sale at half value; attacking winners roll 2D6 valuables.'},
   encampment_raid: {kind:'encampment',note:'The victorious attacker claims the defender’s existing equipment stash and records whether the camp is destroyed or occupied. Optional settlement housing consequences are recorded separately.'},
   the_forbidden_square: {kind:'forbidden-square',note:'Archive scenario: record actual placed/scored counters and the agreed ownership of recovered weapon counters.'},

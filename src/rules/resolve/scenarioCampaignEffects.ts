@@ -1,7 +1,7 @@
 /** Rebuilt from applied reports, so withdrawn reports leave no phantom consequences. */
-export interface ScenarioCampaignEffect { caravanTreachery?: number; caravanTrade?: { percent: -20 | 20; rounding: 'up' | 'down' } }
+export interface ScenarioCampaignEffect { raidCaptives?: { gained: number; spent: number }; caravanTreachery?: number; caravanTrade?: { percent: -20 | 20; rounding: 'up' | 'down' } }
 export interface ScenarioEffectReport { id: string; matchId: string; campaignId: string; submittedAt: string; battleAt?: string; effects?: ScenarioCampaignEffect }
-export interface ScenarioCampaignState { caravanBannedCampaigns: string[]; rarePenalty: number; rareGamesRemaining: number; trade?: { percent: -20 | 20; rounding: 'up' | 'down' }; notes: string[] }
+export interface ScenarioCampaignState { raidCaptives?: number; caravanBannedCampaigns: string[]; rarePenalty: number; rareGamesRemaining: number; trade?: { percent: -20 | 20; rounding: 'up' | 'down' }; notes: string[] }
 export function scenarioCampaignEffects(reports: ScenarioEffectReport[], starts: { id: string; startedAt: string }[], excludeMatchId?: string): ScenarioCampaignState {
   const time = (r: ScenarioEffectReport) => r.battleAt ?? r.submittedAt
   const ordered = [...reports].sort((a, b) => time(a).localeCompare(time(b)) || a.id.localeCompare(b.id))
@@ -11,6 +11,7 @@ export function scenarioCampaignEffects(reports: ScenarioEffectReport[], starts:
   const out: ScenarioCampaignState = { caravanBannedCampaigns: [], rarePenalty: 0, rareGamesRemaining: 0, notes: [] }
   for (let i = 0; i < history.length; i++) {
     const r = history[i], e = r.effects
+    if(e?.raidCaptives)out.raidCaptives=(out.raidCaptives??0)+e.raidCaptives.gained-e.raidCaptives.spent
     if (e?.caravanTreachery) {
       if (!out.caravanBannedCampaigns.includes(r.campaignId)) out.caravanBannedCampaigns.push(r.campaignId)
       const later = history.slice(i + 1).length
@@ -21,6 +22,7 @@ export function scenarioCampaignEffects(reports: ScenarioEffectReport[], starts:
       if (!nextBattle) out.trade = e.caravanTrade
     }
   }
+  if((out.raidCaptives??0)>0)out.notes.push(`Raids: ${out.raidCaptives} captured resource${out.raidCaptives===1?'':'s'} available; each may be spent once for an extra exploration die in a future battle.`)
   if (out.rareGamesRemaining > 0) { out.rarePenalty = -1; out.notes.push(`Caravan betrayal: −1 on rare-item searches for ${out.rareGamesRemaining} more game${out.rareGamesRemaining === 1 ? '' : 's'}.`) }
   if (out.trade) out.notes.push(`A Friend in the Business: equipment ${out.trade.percent < 0 ? '20% cheaper' : '20% dearer'} until the next battle starts; round each purchase ${out.trade.rounding}.`)
   return out

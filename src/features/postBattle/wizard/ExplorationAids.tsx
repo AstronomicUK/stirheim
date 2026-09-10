@@ -11,9 +11,11 @@ import { heroOoaIds } from '../model/derive'
 import { applyExplorationAid } from '../model/state'
 import type { StepProps } from './bits'
 
-export function ExplorationAidsCard({ draft, ctx, update, rolls }: Pick<StepProps, 'draft' | 'ctx' | 'update'> & { rolls: (number | null)[] }) {
+export function ExplorationAidsCard({ draft, ctx, derived, update, rolls }: Pick<StepProps, 'draft' | 'ctx' | 'derived' | 'update'> & { rolls: (number | null)[] }) {
   const spent = draft.exploration.aids ?? []
-  const aids = explorationAids(ctx.roster, {
+  const participatingGroups = new Set(derived.participants.groups.map(g => g.id))
+  const groupsAfter = new Map(derived.injuries.groups.map(g => [g.group.id, g.resolution.group]))
+  const aids = explorationAids({...ctx.roster, heroes:derived.participants.heroes, henchmenGroups:ctx.roster.henchmenGroups.filter(g=>participatingGroups.has(g.id)).map(g=>groupsAfter.get(g.id) ?? g)}, {
     houseRules: ctx.houseRules ?? defaultCampaignHouseRules(),
     heroesOutOfAction: [...heroOoaIds(draft)],
     preBattle: ctx.preBattle ?? {},
@@ -23,7 +25,7 @@ export function ExplorationAidsCard({ draft, ctx, update, rolls }: Pick<StepProp
   return (
     <Section title="Re-rolls and modifiers" aside={`${aids.length}`}>
       {aids.map((aid) => (
-        <AidRow key={aid.key} aid={aid} left={aidUsesLeft(aid, spent)} rolls={rolls} onUse={(use) => update((d) => applyExplorationAid(d, use))} />
+        <AidRow key={aid.key} aid={aid} left={aidUsesLeft(aid, spent)} spent={spent} rolls={rolls} onUse={(use) => update((d) => applyExplorationAid(d, use))} />
       ))}
       {spent.length > 0 ? (
         <ul className="flex flex-col gap-0.5 text-xs text-ink-dim">
@@ -38,7 +40,7 @@ export function ExplorationAidsCard({ draft, ctx, update, rolls }: Pick<StepProp
   )
 }
 
-function AidRow({ aid, left, rolls, onUse }: { aid: ExplorationAid; left: number; rolls: (number | null)[]; onUse: (use: AidUse) => void }) {
+function AidRow({ aid, left, rolls, spent, onUse }: { spent: AidUse[]; aid: ExplorationAid; left: number; rolls: (number | null)[]; onUse: (use: AidUse) => void }) {
   const [dieIndex, setDieIndex] = useState<number | null>(null)
   const [next, setNext] = useState<number | null>(null)
   const [test, setTest] = useState<[number | null, number | null]>([null, null])
@@ -53,6 +55,8 @@ function AidRow({ aid, left, rolls, onUse }: { aid: ExplorationAid; left: number
     if (dieIndex === null || from === null) return
     const use: AidUse = {
       aidKey: aid.key,
+      kind: aid.kind,
+      ...((aid.kind === 'rollTwoKeepOne' || aid.kind === 'rerollKeepEither') && next !== null ? {alternativeRoll:next} : {}),
       label: aid.label,
       dieIndex,
       from,
@@ -60,7 +64,7 @@ function AidRow({ aid, left, rolls, onUse }: { aid: ExplorationAid; left: number
       ...(aid.requiresTest && testDone ? { test: { rolls: [test[0]!, test[1]!] as [number, number], passed: testPassed === true } } : {}),
     }
     try {
-      validateAidUse(aid, use)
+      validateAidUse(aid, use, spent)
       setError(null)
       onUse(use)
       setDieIndex(null)
@@ -123,15 +127,15 @@ function AidRow({ aid, left, rolls, onUse }: { aid: ExplorationAid; left: number
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-end gap-3">
-                    <DieField label="New roll" sides={6} value={next} onChange={setNext} />
-                    <Button variant="secondary" onClick={() => apply(rollDie(6))}>
+                    <DieField label={aid.kind === 'rollTwoKeepOne' ? "Second die (choose either)" : "New roll"} sides={6} value={next} onChange={setNext} />
+                    <Button variant="secondary" onClick={() => { const value = rollDie(6); if (aid.kind === 'rerollKeepEither' || aid.kind === 'rollTwoKeepOne') setNext(value); else apply(value) }}>
                       Roll for me
                     </Button>
                     <Button disabled={next === null} onClick={() => next !== null && apply(next)}>
-                      {aid.kind === 'rerollKeepEither' ? 'Keep the new roll' : 'Apply'}
+                      {(aid.kind === 'rerollKeepEither' || aid.kind === 'rollTwoKeepOne') ? 'Keep the new roll' : 'Apply'}
                     </Button>
-                    {aid.kind === 'rerollKeepEither' ? (
-                      <Button variant="ghost" onClick={() => next !== null && apply(from)}>
+                    {(aid.kind === 'rerollKeepEither' || aid.kind === 'rollTwoKeepOne') ? (
+                      <Button variant="ghost" disabled={next === null} onClick={() => next !== null && apply(from)}>
                         Keep {from}
                       </Button>
                     ) : null}

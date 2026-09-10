@@ -81,6 +81,7 @@ export interface ExplorationDerived {
   rewardsApply: boolean
   gold: DiceAmount
   extraShards: DiceAmount
+  itemQuantityPrompts: { key: string; name: string; expression: string; value: number | null }[]
   suggestedItems: FoundItem[]
   items: FoundItem[]
   textNotes: string[]
@@ -140,6 +141,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     rewardsApply: false,
     gold: empty,
     extraShards: empty,
+    itemQuantityPrompts: [],
     suggestedItems: [],
     items: [],
     textNotes: [],
@@ -220,7 +222,23 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (gold.value === null) problems.push(`Enter the gold found (${gold.expressions.join(' + ')} gc).`)
   if (extraShards.value === null) problems.push(`Enter the shards found at the location (${extraShards.expressions.join(' + ')}).`)
 
-  const suggestedItems = rewards.filter((r) => r.kind === 'item' && r.itemName).map((r) => foundItemFromName(r.itemName!))
+  const itemQuantityPrompts: ExplorationDerived['itemQuantityPrompts'] = []
+  const suggestedItems: FoundItem[] = []
+  for (const [index, reward] of rewards.entries()) {
+    if (reward.kind !== 'item' || !reward.itemName) continue
+    let quantity: number | null = typeof reward.amount === 'number' ? reward.amount : 1
+    if (typeof reward.amount === 'string') {
+      const key = `${location!.id}:${draft.subRoll ?? 'fixed'}:${index}`
+      quantity = maxFinds ? safeMax(reward.amount) : draft.itemQuantities?.[key] ?? null
+      itemQuantityPrompts.push({key,name:reward.itemName,expression:reward.amount,value:quantity})
+      const range = minMax(reward.amount)
+      if (quantity === null || !Number.isInteger(quantity) || quantity < range.min || quantity > range.max) {
+        problems.push(`${reward.itemName}: enter the quantity rolled on ${reward.amount} (${range.min}–${range.max}).`)
+        continue
+      }
+    }
+    if (quantity > 0) suggestedItems.push(foundItemFromName(reward.itemName, quantity))
+  }
   const items = draft.items ?? suggestedItems
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
   const notes: string[] = []
@@ -229,6 +247,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (needsTest) notes.push(draft.testPassed ? `${testSubjectLabel}${needsTest.stat} test passed.` : draft.testPassed === false ? `${testSubjectLabel}${needsTest.stat} test failed: ${needsTest.prompt}` : '')
   if (missNextGameHeroId) notes.push(`${testSubject!.name} misses the next game through sickness.`)
   notes.push(...textNotes)
+  for (const prompt of itemQuantityPrompts) if (prompt.value !== null) notes.push(`${prompt.name}: ${prompt.expression} quantity ${prompt.value}${maxFinds ? ` (maximum find: ${input.maxFinds!.districtName})` : ""}.`)
   if (maxFinds && (gold.expressions.length > 0 || extraShards.expressions.length > 0)) notes.push(`${input.maxFinds!.districtName}: the maximum was taken for what the location gives (${[...gold.expressions.map((e) => `${e} gc`), ...extraShards.expressions.map((e) => `${e} shards`)].join(', ')}).`)
   if (draft.notes.trim() !== '') notes.push(draft.notes.trim())
 
@@ -237,7 +256,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     const discarded = rolls.map((v, i) => (kept.includes(i) ? null : v)).filter((v): v is number => v !== null)
     notes.push(`Rolled ${rolls.length} dice (${(rolls as number[]).join(', ')}); kept ${keptRolls.join(', ')}, discarded ${discarded.join(', ')}.`)
   }
-  for (const use of draft.aids ?? []) notes.push(`Die ${use.dieIndex + 1}: ${use.from} re-rolled to ${use.to} with ${use.label}${use.test ? ` (Ld test ${use.test.rolls[0]}+${use.test.rolls[1]} passed)` : ''}`)
+  for (const use of draft.aids ?? []) notes.push(`Die ${use.dieIndex + 1}: ${use.from} ${use.kind === 'rollTwoKeepOne' ? `and ${use.alternativeRoll ?? "another die"}; chose` : use.kind === 'modify' ? "modified to" : "re-rolled to"} ${use.to} with ${use.label}${use.test ? ` (Ld test ${use.test.rolls[0]}+${use.test.rolls[1]} passed)` : ''}`)
   const totalShards = result.shards + (extraShards.value ?? 0) + bonuses.shards
   notes.push(...bonuses.notes)
   const record: ExplorationRecord | null =
@@ -277,6 +296,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     rewardsApply,
     gold,
     extraShards,
+    itemQuantityPrompts,
     suggestedItems,
     items,
     textNotes,

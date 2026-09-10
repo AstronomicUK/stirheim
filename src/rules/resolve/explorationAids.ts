@@ -8,7 +8,7 @@ import type { CampaignHouseRules, RosterHero, RosterItem, RosterWarband } from "
 import { warbandRules } from "../data/campaignRules";
 import { RulesError } from "./errors";
 
-export type AidKind = "reroll" | "modify" | "rerollKeepEither";
+export type AidKind = "reroll" | "modify" | "rerollKeepEither" | "rollTwoKeepOne";
 
 export interface ExplorationAid {
   /** Stable within a report: `${source}:${holderId}`. */
@@ -27,6 +27,8 @@ export interface ExplorationAid {
 
 export interface AidUse {
   aidKey: string;
+  kind?: AidKind;
+  alternativeRoll?: number;
   /** For the report: "Mordheim Map (Vague)". */
   label: string;
   dieIndex: number;
@@ -109,8 +111,12 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
   }
   const rule = warbandRules(warband.warbandTemplateId).exploration;
   if (rule?.rollTwoKeepOneWith) {
-    const seer = warband.heroes.find((h) => h.status === "active" && h.unitTemplateId === rule.rollTwoKeepOneWith && !down.has(h.id));
-    if (seer) out.push({ key: `keepone:${seer.id}`, label: seer.name, kind: "rerollKeepEither", uses: 1, holderId: seer.id, holderName: seer.name, note: rule.note });
+    const seer = warband.heroes.find((h) => h.status === "active" && h.unitTemplateId === rule.rollTwoKeepOneWith && !down.has(h.id) && !(h.flags.missNextGames && h.flags.missNextGames > 0));
+    if (seer) out.push({ key: `keepone:${seer.id}`, label: seer.name, kind: "rollTwoKeepOne", uses: 1, holderId: seer.id, holderName: seer.name, note: rule.note });
+  }
+  for (const group of warband.henchmenGroups) {
+    if (group.unitTemplateId !== 'hochland_bandits_poacher' || group.size < 1) continue;
+    out.push({key:`trailblazers:${group.id}`,label:'Trailblazers',kind:'reroll',uses:group.size,holderId:group.id,holderName:group.name,note:'One exploration D6 reroll per surviving Poacher. Accept the new result.'});
   }
   if (opts.mapModifyOne) out.push({ key: "district:modify", label: opts.mapModifyOne.districtName, kind: "modify", uses: 1, holderId: null, holderName: "the warband", note: `${opts.mapModifyOne.districtName}: during the Exploration Procedure you may modify one dice by +1 or -1.` });
   return out;
@@ -122,7 +128,9 @@ export function aidUsesLeft(aid: ExplorationAid, spent: readonly AidUse[]): numb
 }
 
 /** Check one use against its aid before the draft records it. */
-export function validateAidUse(aid: ExplorationAid, use: AidUse): void {
+export function validateAidUse(aid: ExplorationAid, use: AidUse, spent: readonly AidUse[] = []): void {
+  if (aidUsesLeft(aid, spent) === 0) throw new RulesError('aid.spent', 'This exploration aid has already been used.');
+  assertNoSecondReroll({...use,kind:aid.kind}, spent);
   if (!Number.isInteger(use.to) || use.to < 1 || use.to > 6) throw new RulesError("aid.invalidDie", `Not a valid D6 result: ${use.to}`);
   if (aid.kind === "modify" && Math.abs(use.to - use.from) !== 1) throw new RulesError("aid.modifyByOne", "Tarot Cards move a die by exactly one");
   if (aid.requiresTest && !use.test?.passed) throw new RulesError("aid.testFailed", `${aid.label} needs a passed ${aid.requiresTest.stat} test first`);
@@ -131,4 +139,13 @@ export function validateAidUse(aid: ExplorationAid, use: AidUse): void {
 /** 2D6 equal to or under the Leadership passes. */
 export function leadershipTest(rolls: [number, number], ld: number): boolean {
   return rolls[0] + rolls[1] <= ld;
+}
+
+/** A different source does not let the same die be rerolled again. Two-dice choices are not rerolls. */
+export function assertNoSecondReroll(use: AidUse, spent: readonly AidUse[]): void {
+  const kindOf = (u: AidUse): AidKind => u.kind ?? (/^keepone:/.test(u.aidKey) ? 'rollTwoKeepOne' : /^(tarot:|district:)/.test(u.aidKey) ? 'modify' : 'reroll');
+  const reroll = (u: AidUse) => ['reroll','rerollKeepEither'].includes(kindOf(u));
+  if (reroll(use) && spent.some(previous => previous.dieIndex === use.dieIndex && reroll(previous))) {
+    throw new RulesError('aid.alreadyRerolled', 'This die has already been rerolled. Choose a different die.');
+  }
 }

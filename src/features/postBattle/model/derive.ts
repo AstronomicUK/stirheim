@@ -1,3 +1,4 @@
+import { battleTreasureAwards } from '../../../rules/resolve/battleTreasure'
 import { ONE_BATTLE_HIRES, requiresBattleGap } from '../../../rules/resolve/hiredSwordRules'
 import { isDramatisPersona } from '../../../rules/data/campaign/hiredSwords'
 import { resolvePersonaInjury } from './injuries'
@@ -555,7 +556,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     heroes,
     groups,
     warband: {
-      wyrdstone_delta: draft.battleWyrdstone + (record?.shards ?? 0) + effects.shardsDelta + (abundanceShards(draft, ctx) ?? 0),
+      wyrdstone_delta: draft.battleWyrdstone + battleTreasureAwards(participants.heroes, heroOoaIds(draft), draft.enemiesOut).reduce((sum, award) => sum + award.shards, 0) + (record?.shards ?? 0) + effects.shardsDelta + (abundanceShards(draft, ctx) ?? 0),
       gold_delta: draft.battleGold + (record?.goldFound ?? 0) + effects.goldDelta,
       veteran_pool: veteranPoolOf(draft),
     },
@@ -584,6 +585,11 @@ function ooaLines(draft: ReportDraft, participants: Participants, takenOutBy: Re
 
 function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext): string {
   const parts: string[] = []
+  if (ctx && !(ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign)) {
+    for (const award of battleTreasureAwards(participantsOf(ctx.roster,ctx.template).heroes, heroOoaIds(draft), draft.enemiesOut)) {
+      parts.push(`${award.name}: +${award.shards} wyrdstone/treasure from ${award.rule}.`)
+    }
+  }
   if (draft.scenarioMission) parts.push(`Scenario mission: ${draft.scenarioMission}.`)
   if (draft.scenarioGardenRerolled) parts.push('A Stroll in the Garden: re-rolled the entire exploration pool.')
   if (draft.scenarioNonCampaign) parts.push('Sword of the Herald: agreed non-campaign mode; no injuries, experience or exploration applied. Scenario rewards only.')

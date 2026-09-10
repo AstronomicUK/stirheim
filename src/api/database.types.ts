@@ -1462,10 +1462,15 @@ export type Database = {
         Args: { p_district_id: string; p_match_id: string }
         Returns: undefined
       }
+      unpaid_match_hires: {
+        Args: { p_match_id: string }
+        Returns: { id: string; name: string; warband_id: string; warband_name: string }[]
+      }
       start_match: {
         Args: {
           p_combat_mode?: Database["public"]["Enums"]["combat_mode"]
           p_match_id: string
+          p_unpaid_ids?: string[]
         }
         Returns: Database["public"]["Enums"]["match_state"]
       }

@@ -47,7 +47,34 @@ describe("exploration aids", () => {
 
   it("the Augur rolls two dice and keeps one", () => {
     const w = warband([hero("aug", [], "sisters_of_sigmar_augur")], "sisters_of_sigmar");
-    expect(explorationAids(w, base)[0]).toMatchObject({ kind: "rerollKeepEither", key: "keepone:aug" });
+    expect(explorationAids(w, base)[0]).toMatchObject({ kind: "rollTwoKeepOne", key: "keepone:aug" });
     expect(explorationAids(w, { ...base, heroesOutOfAction: ["aug"] })).toEqual([]);
   });
+});
+
+describe('warband exploration specialists (#104, #106)', () => {
+  it('gives a standing Mountain Guide a choice of two results, not a reroll', () => {
+    const guide = hero('guide', [], 'maneaters_mountain_guide'); const roster = warband([guide], 'maneaters');
+    expect(explorationAids(roster, base)).toEqual([expect.objectContaining({kind:'rollTwoKeepOne',uses:1,holderId:'guide'})]);
+    expect(explorationAids(roster, {...base,heroesOutOfAction:['guide']})).toEqual([]);
+    guide.flags.missNextGames = 1;
+    expect(explorationAids(roster, base)).toEqual([]);
+  });
+  it('offers one Trailblazers reroll per remaining Poacher, never per group', () => {
+    const roster = warband([], 'hochland_bandits');
+    roster.henchmenGroups = [{id:'poachers',name:'Poachers',unitTemplateId:'hochland_bandits_poacher',size:2,stats,xp:0,levelUps:0,statIncreases:{},equipment:[]}];
+    expect(explorationAids(roster, base)[0]).toMatchObject({kind:'reroll',uses:2});
+    roster.henchmenGroups[0].size = 1;
+    expect(explorationAids(roster, base)[0].uses).toBe(1);
+    roster.henchmenGroups[0].size = 0;
+    expect(explorationAids(roster, base)).toEqual([]);
+  });
+});
+
+it('does not reroll the same die using another aid, but permits a Guide choice before a reroll', () => {
+  const aid = {key:'poacher',label:'Trailblazers',kind:'reroll' as const,uses:2,holderId:null,holderName:'Poachers',note:''};
+  const use = {aidKey:'poacher',label:'Trailblazers',dieIndex:0,from:2,to:4};
+  expect(() => validateAidUse(aid,use,[{...use,aidKey:'rabbit:hero',kind:'reroll'}])).toThrow(/already been rerolled/);
+  expect(() => validateAidUse(aid,use,[{...use,aidKey:'keepone:guide',kind:'rollTwoKeepOne'}])).not.toThrow();
+  expect(() => validateAidUse(aid,{...use,dieIndex:1},[{...use,kind:'reroll'}])).not.toThrow();
 });

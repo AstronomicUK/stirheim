@@ -709,3 +709,31 @@ it('persists single-battle departures and clears the rehire gap after the next b
  const report2=buildReport(withDice(completeDraft(),c2),c2)
  expect(rosterAfterReport(next,report2.applied).hiredSwords[0].flags.mustMissNextBattle).toBe(false)
 })
+
+describe('automatic treasure and quantity rewards (#108, #109, #188)', () => {
+  it('files earned treasure in the roster change and report log', () => {
+    const roster = makeRoster()
+    roster.heroes[0].unitTemplateId = 'halflings_thief_hero'
+    roster.heroes[1].skillIds = ['survivors_of_strigos_strigany_skills_light_fingers']
+    const context = ctx({roster})
+    const draft = withDice(setEnemiesOut(setResult(emptyDraft(),'lost'),'champion',3),context)
+    const report = buildReport(draft,context)
+    expect(report.applied.warband.wyrdstone_delta).toBe((report.exploration?.shards ?? 0) + 2)
+    expect(report.notes).toContain('Cutpurse')
+    expect(report.notes).toContain('Light Fingers (once this game)')
+  })
+  it('requires the Smithy D3 quantity and saves the result instead of one halberd', () => {
+    let draft = setExplorationSubRoll(setExplorationRolls(setResult(emptyDraft(),'won'),[2,2,2,6]),4)
+    let result = deriveReport(draft,ctx())
+    expect(result.exploration.location?.id).toBe('smithy')
+    expect(result.problems.exploration.join(' ')).toContain('quantity rolled on D3')
+    expect(result.report).toBeNull()
+    const key = result.exploration.itemQuantityPrompts[0].key
+    draft = {...draft,exploration:{...draft.exploration,itemQuantities:{[key]:3}}}
+    result = deriveReport(draft,ctx())
+    expect(result.report?.applied.stash_items).toContainEqual({item_rules_id:'halberd',custom_name:null,quantity:3})
+    expect(result.report?.exploration?.notes.join(' ')).toContain('D3 quantity 3')
+    expect(deriveReport({...draft,exploration:{...draft.exploration,itemQuantities:{[key]:4}}},ctx()).report).toBeNull()
+    expect(setExplorationSubRoll(draft,5).exploration.itemQuantities).toEqual({})
+  })
+})

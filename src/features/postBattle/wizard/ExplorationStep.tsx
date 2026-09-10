@@ -1,3 +1,5 @@
+import { battleTreasureAwards } from '../../../rules/resolve/battleTreasure'
+import { heroOoaIds } from '../model/derive'
 import { useState } from 'react'
 import { findItem } from '../../../rules/data/items'
 import { rollDice, rollDie } from '../../../rules/resolve/dice'
@@ -29,10 +31,13 @@ type TestChoice = 'passed' | 'failed' | 'pending'
 export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
   const ex = derived.exploration
   const [newItem, setNewItem] = useState('')
+  const awards = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign ? [] : battleTreasureAwards(derived.participants.heroes, heroOoaIds(draft), draft.enemiesOut)
+  const awardSummary = awards.length ? <Notice tone="info" title="Extra treasure earned"><ul>{awards.map(a=><li key={`${a.subjectId}:${a.rule}`}>{a.name}: +{a.shards} wyrdstone/treasure — {a.rule}.</li>)}</ul>Added automatically; do not include this in manually recorded battle loot.</Notice> : null
 
   if (ex.allowed === null || ex.allowed.count === 0) {
     return (
       <StepBody title="Exploration">
+        {awardSummary}
         <Notice tone="info" title="No exploration">
           {ex.skippedReason}
         </Notice>
@@ -54,6 +59,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
 
   return (
     <StepBody title="Exploration">
+        {awardSummary}
       <Intro>
         Suggested: {ex.suggested?.count ?? allowed.count} {(ex.suggested?.count ?? allowed.count) === 1 ? 'die' : 'dice'} ({ex.suggested?.reason ?? allowed.reason}). Surviving{' '}
         {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.{won ? '' : ' No winner’s die.'}
@@ -132,7 +138,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
         </Section>
       ) : null}
 
-      <ExplorationAidsCard draft={draft} ctx={ctx} update={update} rolls={ex.rolls} />
+      <ExplorationAidsCard draft={draft} derived={derived} ctx={ctx} update={update} rolls={ex.rolls} />
 
       <AbundanceCard draft={draft} ctx={ctx} update={update} />
 
@@ -244,6 +250,10 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
 
       {ex.result && ex.rewardsApply ? (
         <Section title="Items found" aside="Go to the stash">
+          {ex.itemQuantityPrompts.map(prompt => <div key={prompt.key} className="flex items-end gap-2">
+            <NumberField label={`${prompt.name} — quantity (${prompt.expression})`} value={prompt.value} allowEmpty onChange={value => update(d => ({...d,exploration:{...d.exploration,items:null,itemQuantities:{...d.exploration.itemQuantities,[prompt.key]:value}}}))} />
+            <Button variant="secondary" onClick={() => { const value = rollDice(prompt.expression).total; update(d => ({...d,exploration:{...d.exploration,items:null,itemQuantities:{...d.exploration.itemQuantities,[prompt.key]:value}}})) }}>Roll quantity</Button>
+          </div>)}
           <Card className="flex flex-col gap-3 px-4 py-3">
             {items.length === 0 ? <p className="text-sm text-ink-dim">Nothing. Add anything the text gives you.</p> : null}
             {items.map((item, i) => (

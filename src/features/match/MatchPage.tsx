@@ -15,6 +15,8 @@ import {
   useMatchRealtime,
   useRespondToChallenge,
   useStartMatch,
+  unpaidMatchHires,
+  type UnpaidMatchHire,
   type BattleSessionView,
   type MatchSummary,
 } from '../../api/matches'
@@ -93,6 +95,8 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   const [returning, setReturning] = useState<ReportView | null>(null)
   const [returnNote, setReturnNote] = useState('')
 
+  const [unpaid, setUnpaid] = useState<UnpaidMatchHire[] | null>(null)
+  const [checkingUpkeep, setCheckingUpkeep] = useState(false)
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
   const [modeChoice, setModeChoice] = useState<CombatMode | null>(null)
   const settings = campaign.data?.settings
@@ -124,6 +128,16 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
     } catch (e) {
       setError(e instanceof Error ? e.message : fallback)
     }
+  }
+
+  async function prepareStart() {
+    setCheckingUpkeep(true)
+    await run(async () => {
+      const hires = await unpaidMatchHires(match.id)
+      if (hires.length) setUnpaid(hires)
+      else await start.mutateAsync({ matchId: match.id, combatMode })
+    }, 'Could not check upkeep before the battle.')
+    setCheckingUpkeep(false)
   }
 
   const sessionFor = (warbandId: string): BattleSessionView | undefined => shownSessions.find((s) => s.warband_id === warbandId)
@@ -187,9 +201,9 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
               </Card>
               <Button
                 block
-                disabled={!actions.canStart}
-                pending={start.isPending}
-                onClick={() => void run(() => start.mutateAsync({ matchId: match.id, combatMode }), 'Could not start the battle.')}
+                disabled={!actions.canStart || checkingUpkeep}
+                pending={start.isPending || checkingUpkeep}
+                onClick={() => void prepareStart()}
               >
                 Start battle
               </Button>
@@ -340,6 +354,16 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
           </Button>
         </div>
       ) : null}
+
+      <Sheet open={unpaid !== null} onClose={() => setUnpaid(null)} title="Upkeep is unpaid" footer={<Button block variant="danger" pending={start.isPending} onClick={() => void run(async () => {
+        await start.mutateAsync({ matchId: match.id, combatMode, unpaidIds: unpaid?.map(h => h.id) ?? [] })
+        setUnpaid(null)
+      }, 'Could not start the battle. Review upkeep and try again.')}>Dismiss listed characters and start battle</Button>}>
+        <p className="text-sm">Starting now removes these unpaid hired characters and any required companions from their active warbands. Their histories are kept. Return to the warband to pay upkeep if you want them to take part.</p>
+        <ul className="my-3 space-y-2">{unpaid?.map(h => <li key={h.id}>{h.name} — {h.warband_name}</li>)}</ul>
+        {error ? <Notice tone="error">{error}</Notice> : null}
+        <Button variant="secondary" onClick={() => setUnpaid(null)}>Go back without starting</Button>
+      </Sheet>
 
       <Sheet
         open={confirm === 'end'}

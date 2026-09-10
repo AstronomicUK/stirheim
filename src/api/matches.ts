@@ -239,9 +239,15 @@ export async function respondToChallenge(matchId: string, warbandId: string, acc
   return data
 }
 
-export async function startMatch({ matchId, combatMode }: { matchId: string; combatMode?: CombatMode }): Promise<MatchState> {
-  const { data, error } = await supabase.rpc('start_match', combatMode ? { p_match_id: matchId, p_combat_mode: combatMode } : { p_match_id: matchId })
-  if (error) throw new Error(error.message)
+export interface UnpaidMatchHire { id: string; name: string; warband_id: string; warband_name: string }
+export async function unpaidMatchHires(matchId: string): Promise<UnpaidMatchHire[]> {
+  const { data, error } = await supabase.rpc('unpaid_match_hires', { p_match_id: matchId })
+  if (error) throw error
+  return data ?? []
+}
+export async function startMatch({ matchId, combatMode, unpaidIds }: { matchId: string; combatMode?: CombatMode; unpaidIds?: string[] }): Promise<MatchState> {
+  const { data, error } = await supabase.rpc('start_match', { p_match_id: matchId, ...(combatMode ? { p_combat_mode: combatMode } : {}), ...(unpaidIds ? { p_unpaid_ids: unpaidIds } : {}) })
+  if (error) throw error
   return data
 }
 
@@ -528,7 +534,8 @@ export function useRespondToChallenge() {
 
 export function useStartMatch() {
   const invalidate = useInvalidateMatches()
-  return useMutation({ mutationFn: startMatch, onSuccess: invalidate })
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: startMatch, onSuccess: async () => { await invalidate(); await qc.invalidateQueries({ queryKey: ['warbands'] }) } })
 }
 
 export function useEndMatch() {

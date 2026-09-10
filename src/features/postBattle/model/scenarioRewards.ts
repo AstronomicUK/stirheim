@@ -1,3 +1,4 @@
+import { forbiddenSquareRewards, type ForbiddenSquareDraft } from './forbiddenSquareRewards'
 import { gatheringRewardProblems } from '../../../rules/resolve/gatheringControl'
 import { brigandsRewards, type BrigandsDraft } from './brigandsRewards'
 import { huntersRewards, type HuntersDraft } from './huntersRewards'
@@ -19,6 +20,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  forbiddenSquare?: ForbiddenSquareDraft
   gathering?: import("../../../rules/resolve/gatheringControl").GatheringReward
   brigands?: BrigandsDraft
   hunters?: HuntersDraft
@@ -86,6 +88,7 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
   }
+  if(rule.kind==='forbidden-square')return {...rewards,...forbiddenSquareRewards(state.forbiddenSquare??{},[context?.roster?.id??'',...(context?.opponents??[]).map(o=>o.id)],context?.roster?.id??'')}
   if(rule.kind==='gathering') {const g=state.gathering??{};rewards.problems.push(...gatheringRewardProblems(g,draft.result==='won',[context?.roster?.id??'',...(context?.opponents??[]).map(o=>o.id)]));rewards.notes.push(`Gathering of the Horde: ${g.ending==='rout'?'horde routed':g.ending?`${g.ending==='dirk'?'Dirk':'Valnor'} taken out`:'ending pending'}. ${draft.result==='won'&&g.controllerId?`Executioner’s Square controller: ${g.controllerId===context?.roster?.id?context?.roster?.name??'this warband':context?.opponents?.find(o=>o.id===g.controllerId)?.name??'the agreed winning warband'}. ${g.reason??''}`:'No extra treasure.'}`);return rewards}
   if (rule.kind === 'brigands') return {...rewards,...brigandsRewards(state.brigands??{},draft.result==='won',!!context?.campaignId)}
   if (rule.kind === 'hunters') return {...rewards,...huntersRewards(state.hunters??{},draft.result==='won',context?.opponents?new Set(context.opponents.map(o=>o.id)).size+1:6)}

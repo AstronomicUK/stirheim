@@ -8,6 +8,7 @@ import { conditionalHireDepartures } from '../../../rules/resolve/hiredSwordRule
 import { pettyThief } from './pettyThief'
 import { locationRecruits } from './locationRecruits'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
+import { forbiddenSquareRewards } from './forbiddenSquareRewards'
 import { brigandsRewards } from './brigandsRewards'
 import { scenarioRewards } from './scenarioRewards'
 import { towerTreasure } from './scenarioTreasure'
@@ -825,6 +826,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
+  if(ctx.scenarioId==='the_forbidden_square') {const score=draft.scenarioRewards?.forbiddenSquare;if(score?.placed!=null&&score.scored!=null&&score.role)applied.scenario_counter_score={placed:score.placed,scored:score.scored,role:score.role};const transfers=forbiddenSquareRewards(draft.scenarioRewards?.forbiddenSquare??{},[ctx.roster.id,...(ctx.opponents??[]).map(o=>o.id)],ctx.roster.id).transfers;if(transfers.length)applied.scenario_item_transfers=transfers}
   if(ctx.scenarioId==='gathering_of_the_horde'&&draft.scenarioRewards?.gathering?.ending) applied.gathering_control={...draft.scenarioRewards.gathering,ending:draft.scenarioRewards.gathering.ending}
   if(ctx.scenarioId==='brigands_in_the_pasturelands') {const hire=brigandsRewards(draft.scenarioRewards?.brigands??{},draft.result==='won',!!ctx.campaignId).freeHire; if(hire) applied.scenario_free_hire={choices:[hire]} }
   if (harpy?.stragglerNext || (harpy?.stragglerNow && !exploration.record)) applied.scenario_benefits = ['harpy_straggler']

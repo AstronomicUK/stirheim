@@ -70,6 +70,14 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
     const t=await transferFixture();await admin.from('matches').update({scenario_rules_id:'skirmish'}).eq('id',match)
     expect((await file({scenario_item_transfers:[t]})).error?.message).toContain('does not permit')
   })
+  it('checks shared Forbidden Square setup and combined scores across reports',async()=>{
+    await admin.from('matches').update({scenario_rules_id:'the_forbidden_square'}).eq('id',match)
+    expect((await file({scenario_counter_score:{placed:14,scored:11,role:'infiltrator'}})).error).toBeNull()
+    const other=(placed:number,scored:number)=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[1],p_report:{result:'won',won:true,routed:false,applied:{heroes:[],groups:[],warband:{gold_delta:0,wyrdstone_delta:0},scenario_counter_score:{placed,scored,role:'cultist'}}}})
+    expect((await other(15,3)).error?.message).toContain('disagree')
+    expect((await other(14,4)).error?.message).toContain('Combined counter')
+    expect((await other(14,3)).error).toBeNull()
+  })
   it('saves warrior rewards and owned equipment, then restores them exactly on withdrawal', async () => {
     expect((await file({ heroes: [{ id: heroes[0], patch: { skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { ...stats, S: 4 } } }], awarded_items: [award()] })).error).toBeNull()
     expect((await admin.from('heroes').select('skills,spells,notes,stats').eq('id', heroes[0]).single()).data).toMatchObject({ skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { S: 4 } })

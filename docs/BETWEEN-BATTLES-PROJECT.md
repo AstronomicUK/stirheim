@@ -18,11 +18,11 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 ## Current checkpoint — 10 September, ongoing local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **95 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **96 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
 
 This continuation completed Mule Train, Down at the Docks and both Caravan versions, individual Fanatic supplies/lasting Stupidity, and Pirate mixed-crew upkeep. Milestones 23–27 below contain the source and implementation details.
 
-Remaining scenario paths (8): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Encampment Raid; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
+Remaining scenario paths (7): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Encampment Raid; Stop Thief; Raids; Rawhide.
 
 Other open work: remaining bespoke hired-character kit/legacy cases and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks. Guardian interception and Medicine Chest injury-reroll consumption do not have fully automated workflows; retain their documented limits. Do not close the broader tracker entries on the strength of partial milestones.
 
@@ -263,3 +263,9 @@ All 124 local database tests and typecheck pass, including five added transfer/r
 Source `06-scenarios.md:3811–4000` reviewed. Reports record whether Dirk/Valnor was taken out or the game ended by routing. Winning reports choose an agreed winning controller of Executioner’s Square; multi-warband hordes require a written agreement because the source does not divide control among allied warbands. The map waits for all reports to be applied, confirms matching endings/controller and replaces prior footholds with that controller. Disagreements remain visible as map notices instead of guessing. A rout uses only ordinary map outcomes. Withdrawal removes the derived reward. Control is applied even if the battle was not assigned a district; report mutations now invalidate cached map data. No additional treasure is invented. Existing explicit scenario XP interpretation/objective controls remain available.
 
 Fifty-eight focused reward/map tests and typecheck pass. Mobile filing preserves the controller through reload; the signed-in map API verifies no premature takeover, actual control after the other report, and removal on withdrawal. Coverage: 95/103 scenario reward paths, eight remaining. No new migration or deployment.
+
+### Local milestone 37 — Archive Forbidden Square (#72)
+
+Source `06-scenarios.md:1139–1227` reviewed. Uses the actual setup counter count with no artificial eight-counter ceiling. Infiltrators gain shards carried through the gate; cultists’ sacrificed counters count for scoring but do not enter their stash. The source does not explicitly settle permanent weapon-counter ownership, so a required table agreement chooses original owners or actual recovered ownership. Only selected existing weapon copies are transferred, with named reasons; placement alone does not delete equipment. The shared transfer picker is reusable by the remaining scenarios.
+
+Migration 55 checks agreement on the setup total and prevents combined applied report scores from exceeding it. Forty-three focused tests and typecheck pass; all 125 local database tests pass. Mobile filing saves 14 starting counters, 11 carried shards and one recovered existing sword through reload, verifies the actual source/recipient quantities, rejects an overclaimed opposing score and restores both inventories on withdrawal. Coverage: 96/103 reward paths, seven remain. No production migration or deployment.

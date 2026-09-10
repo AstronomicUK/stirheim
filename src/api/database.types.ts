@@ -1244,6 +1244,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      set_trap_order: { Args: { p_match_id: string; p_hero_id: string; p_extra: number }; Returns: undefined }
+      use_trap_supply: { Args: { p_match_id: string; p_hero_id: string }; Returns: number }
+
       hunt_snake: { Args: { p_warband_id: string; p_hero_id: string; p_match_id: string; p_die: number; p_danger_die?: number | null; p_hit_outcome?: string | null; p_hit_rolls?: string | null }; Returns: Json }
 
       campaign_artefact_ledger: { Args: { p_campaign_id: string }; Returns: Json }

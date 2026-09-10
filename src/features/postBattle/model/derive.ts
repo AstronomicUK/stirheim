@@ -630,6 +630,10 @@ function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext):
   if (ctx?.scenarioId === 'the_wizard_s_tower') {
     parts.push(...towerTreasure(draft.towerChests).notes)
   }
+  if (ctx) for (const hero of ctx.roster.heroes) if (hero.flags.trapSupplyMatch === ctx.matchId) {
+    const bought = hero.flags.trapSupplyBought ?? 0, remaining = hero.flags.trapSupplyRemaining ?? 0
+    parts.push(`${hero.name}: 1 free Trap + ${bought} extra bought for ${bought * 5} gc at battle start; ${1 + bought - remaining} used, ${remaining} left at the end. Payment already recorded before the battle.`)
+  }
   if (ctx) parts.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template), ctx).notes)
   if (draft.scenarioRewardOverrideReason?.trim()) parts.push(`Agreed scenario reward adjustment: ${draft.scenarioRewardOverrideReason.trim()}`)
   if (draft.scenarioMission) parts.push(`Scenario mission: ${draft.scenarioMission}.`)

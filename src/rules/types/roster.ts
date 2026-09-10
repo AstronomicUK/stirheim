@@ -43,6 +43,7 @@ export interface WarriorFlags {
   luthorRole?: 'crimson' | 'wizard' | 'archer';
   hireGroupId?: string;
   hireCompanion?: boolean;
+  returningFavourReportId?: string;
   upkeepOwedAfter?: string;
   contractCheckOwed?: boolean;
   mustMissNextBattle?: boolean;
@@ -145,6 +146,7 @@ export interface RosterHiredSword {
 }
 
 export interface RosterWarband {
+  explorationDiscoveries?: import('../resolve/explorationDiscoveries').ExplorationDiscoveries;
   id: string;
   name: string;
   warbandTemplateId: string;

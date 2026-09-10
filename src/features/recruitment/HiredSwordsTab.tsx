@@ -1,3 +1,4 @@
+import { isDramatisPersona } from '../../rules/data/campaign/hiredSwords'
 import { HIRED_EQUIPMENT_CHOICES } from '../../rules/resolve/hiredEquipmentChoices'
 import { halfPriceHireSource, halved, type PerkSource } from '../../rules/resolve/mapAdvantages'
 import { useMemo, useState } from 'react'
@@ -146,6 +147,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
         <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
           {shownOptions.map((option) => {
             const { entry, eligibility } = option
+
             const blocked = !canEdit || eligibility.kind === 'blocked'
             return (
               <li key={entry.id}>
@@ -314,6 +316,8 @@ interface HireSheetProps {
 function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps) {
   const { roster } = detail
   const { entry, eligibility } = option
+  const availableFavour = !isDramatisPersona(entry.id) && roster.explorationDiscoveries?.freeHireReportId && !roster.hiredSwords.some(h => h.flags.returningFavourReportId === roster.explorationDiscoveries?.freeHireReportId) ? roster.explorationDiscoveries.freeHireReportId : undefined
+  const [useFavour, setUseFavour] = useState(false)
   const [name, setName] = useState('')
   const equipmentChoices = HIRED_EQUIPMENT_CHOICES[entry.id]
   const [equipmentChoice, setEquipmentChoice] = useState(equipmentChoices?.[0]?.id)
@@ -327,8 +331,8 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
   const fullFee = (entry.hireCost.base ?? 0) + (randomFee ? feeDice.reduce<number>((sum, value) => sum + (value ?? 0), 0) : 0)
   const listedFee = halfFrom ? halved(fullFee) : fullFee
   const [feeOverride, setFeeOverride] = useState<Override | null>(null)
-  const cost = (overrideReady(feeOverride) ? feeOverride.amount : listedFee) + scoutCost
-  const feeBlocks = (feeOverride !== null && !overrideReady(feeOverride)) || (randomFee && feeDice.some(v => v === null) && !overrideReady(feeOverride))
+  const cost = useFavour ? 0 : (overrideReady(feeOverride) ? feeOverride.amount : listedFee) + scoutCost
+  const feeBlocks = !useFavour && ((feeOverride !== null && !overrideReady(feeOverride)) || (randomFee && feeDice.some(v => v === null) && !overrideReady(feeOverride)))
   const restricted = eligibility.kind === 'restricted'
   const needsConditions = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer', 'khar_mel_the_djinn'].includes(entry.id)
   const [conditionsMet, setConditionsMet] = useState(false)
@@ -338,9 +342,9 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
   async function confirm() {
     const id = crypto.randomUUID()
     const trimmed = name.trim()
-    const note = overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : randomFee ? `Ninja hire fee: 70 + 3D6 (${feeDice.join(' + ')}) = ${fullFee} gc.` : null
+    const note = useFavour ? 'Returning a Favour: one free Hired Sword for the next battle; ordinary upkeep afterwards.' : overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : randomFee ? `Ninja hire fee: 70 + 3D6 (${feeDice.join(' + ')}) = ${fullFee} gc.` : null
     const result = await commit(
-      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, equipmentChoice, ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
+      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, equipmentChoice, ...(useFavour ? { returningFavourReportId: availableFavour } : {}), ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
       (w) => w,
       reasonWith('recruitment', note),
     )
@@ -354,18 +358,19 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
       title={entry.name}
       description={`${entry.hireCost.text} to hire · upkeep ${upkeepText(entry)} · ${entry.source}`}
       footer={
-        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks || (needsConditions && !conditionsMet) || (shardFee && roster.wyrdstone < shardCost)} onClick={() => void confirm()}>
-          {shardFee ? 'Hire for 1 wyrdstone shard' : restricted ? `Hire anyway for ${cost} gc` : `Hire for ${cost} gc`}
+        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks || (needsConditions && !conditionsMet) || (shardFee && !useFavour && roster.wyrdstone < shardCost)} onClick={() => void confirm()}>
+          {shardFee && !useFavour ? `Hire for ${shardCost} wyrdstone shards` : restricted ? `Hire anyway for ${cost} gc` : `Hire for ${cost} gc`}
         </Button>
       }
     >
       <div className="flex flex-col gap-4 pb-2">
         <RestrictionNotice entry={entry} eligibility={eligibility} />
+        {availableFavour ? <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={useFavour} onChange={e=>setUseFavour(e.target.checked)} />Use Returning a Favour: hire free for the next battle</label> : null}
         {needsConditions ? <label className="flex gap-2 text-sm"><input type="checkbox" checked={conditionsMet} onChange={e => setConditionsMet(e.target.checked)} />The required audience, search or summoning conditions in this character’s rules have been met.</label> : null}
-        {shardFee ? <Notice tone="info">{entry.name} requires {shardCost} wyrdstone/treasure to hire. Treasury: {roster.wyrdstone} shards.</Notice> : null}
+        {shardFee && !useFavour ? <Notice tone="info">{entry.name} requires {shardCost} wyrdstone/treasure to hire. Treasury: {roster.wyrdstone} shards.</Notice> : null}
         {entry.id === 'luthor_wolfenbaum' ? <SelectField label="Luthor’s role — check the role’s hiring restrictions below" value={luthorRole} onChange={e=>setLuthorRole(e.target.value as typeof luthorRole)}><option value="crimson">Crimson Blade of Reikland</option><option value="wizard">Dark Wizard Extraordinaire</option><option value="archer">Master Archer of Drakwald</option></SelectField> : null}
         {entry.id === 'maglah_khan_s_horde'  ? <SelectField label="Hobgoblin Scouts (45 gc each to hire, 20 gc upkeep each)" value={String(scouts)} onChange={e => setScouts(Number(e.target.value))}>{[2,3,4,5].filter(n => n >= existingScouts).map(n => <option key={n} value={n}>{n} Scouts</option>)}</SelectField> : null}
-        {randomFee ? <div className="flex flex-wrap gap-2">{feeDice.map((die,index) => <DieField key={index} label={`Hire fee die ${index + 1}`} sides={6} value={die} onChange={v => setFeeDice(previous => previous.map((value,i) => i === index ? v : value))} rollable />)}</div> : null}
+        {randomFee && !useFavour ? <div className="flex flex-wrap gap-2">{feeDice.map((die,index) => <DieField key={index} label={`Hire fee die ${index + 1}`} sides={6} value={die} onChange={v => setFeeDice(previous => previous.map((value,i) => i === index ? v : value))} rollable />)}</div> : null}
         {equipmentChoices ? <SelectField label="Starting equipment" value={equipmentChoice} onChange={e => setEquipmentChoice(e.target.value)}>{equipmentChoices.map(choice => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</SelectField> : null}
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">

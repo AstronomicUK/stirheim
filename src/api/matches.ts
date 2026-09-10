@@ -1,3 +1,4 @@
+import { fetchExplorationDiscoveries } from './explorationDiscoveries'
 // Matches: scheduling, challenges, lifecycle transitions and the live battle sheet. Transitions
 // go through the SQL functions in supabase/migrations/20260904000006_match_functions.sql; reads
 // are PostgREST selects under RLS; the sheet is kept live with Supabase Realtime.
@@ -182,12 +183,13 @@ export async function fetchBattleSessions(matchId: string): Promise<BattleSessio
 }
 
 /** Full roster of any participant (members may read each other's warbands). */
-export async function fetchMatchRoster(warbandId: string): Promise<{ warband: WarbandRow; roster: RosterWarband; heroes: HeroRow[]; groups: HenchmanGroupRow[]; items: ItemRow[] }> {
-  const [warband, heroes, groups, items] = await Promise.all([
+export async function fetchMatchRoster(warbandId: string, excludeMatchId?: string): Promise<{ warband: WarbandRow; roster: RosterWarband; heroes: HeroRow[]; groups: HenchmanGroupRow[]; items: ItemRow[] }> {
+  const [warband, heroes, groups, items, discoveries] = await Promise.all([
     supabase.from('warbands').select('*').eq('id', warbandId).maybeSingle(),
     supabase.from('heroes').select('*').eq('warband_id', warbandId).order('sort_order'),
     supabase.from('henchman_groups').select('*').eq('warband_id', warbandId).order('sort_order'),
     supabase.from('items').select('*').eq('warband_id', warbandId),
+    fetchExplorationDiscoveries(warbandId, excludeMatchId),
   ])
   const err = warband.error ?? heroes.error ?? groups.error ?? items.error
   if (err) throw new Error(err.message)
@@ -196,7 +198,7 @@ export async function fetchMatchRoster(warbandId: string): Promise<{ warband: Wa
   const h = (heroes.data ?? []) as HeroRow[]
   const g = (groups.data ?? []) as HenchmanGroupRow[]
   const i = (items.data ?? []) as ItemRow[]
-  return { warband: w, heroes: h, groups: g, items: i, roster: toRosterWarband(w, h, g, i) }
+  return { warband: w, heroes: h, groups: g, items: i, roster: { ...toRosterWarband(w, h, g, i), explorationDiscoveries: discoveries } }
 }
 
 // ---- transitions ----
@@ -478,7 +480,7 @@ export function useRevertBattleEvent(matchId: string | undefined) {
 }
 
 export function useMatchRoster(matchId: string | undefined, warbandId: string | undefined) {
-  return useQuery({ queryKey: matchKeys.roster(matchId, warbandId), queryFn: () => fetchMatchRoster(warbandId!), enabled: Boolean(matchId && warbandId) })
+  return useQuery({ queryKey: matchKeys.roster(matchId, warbandId), queryFn: () => fetchMatchRoster(warbandId!, matchId), enabled: Boolean(matchId && warbandId) })
 }
 
 /**

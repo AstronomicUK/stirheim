@@ -61,3 +61,13 @@ describe('Conditional location rewards (#187)', () => {
    expect(deriveExploration(draft,warband,{...input,artefacts:[discovery],reportId:'original'}).record).not.toBeNull();
    expect(deriveExploration(draft,warband,{...input,artefacts:undefined}).problems.join(' ')).toContain('Waiting');
  });
+
+ it('Shattered Building always gives shards and only adds the wardog after the Leadership pass', () => {
+   const party=Array.from({length:5},(_,i)=>makeHero({id:String(i)}));const warband={...roster,heroes:party};
+   for (const testPassed of [false,true,null]) {
+     const result=deriveExploration({...emptyExploration(),rolls:[5,5,5,5,5],extraShards:2,testPassed},warband,{won:false,eligibleHeroes:party});
+     expect(result.extraShards.value).toBe(2);
+     expect(result.items.some(item=>item.item_rules_id==='wardogs')).toBe(testPassed===true);
+     expect(result.record!==null).toBe(testPassed!==null);
+   }
+ });

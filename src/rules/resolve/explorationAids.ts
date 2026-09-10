@@ -116,6 +116,7 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
   for (const hire of warband.hiredSwords) {
     if (hire.hiredSwordId === 'elf_ranger' && hire.status === 'active') out.push({key:`seeker:${hire.id}`,label:'Seeker',kind:'modify',uses:1,holderId:hire.id,holderName:hire.name,note:'Elf Ranger: modify one exploration die by +1 or −1.'});
   }
+  if (warband.explorationDiscoveries?.catacombs) out.push({key:'discovery:catacombs',label:'Entrance to the Catacombs',kind:'reroll',uses:1,holderId:null,holderName:'the warband',note:'Permanent discovery: reroll one exploration die. Finding another entrance does not grant another reroll.'});
   const rule = warbandRules(warband.warbandTemplateId).exploration;
   if (rule?.rollTwoKeepOneWith) {
     const seer = warband.heroes.find((h) => h.status === "active" && h.unitTemplateId === rule.rollTwoKeepOneWith && !down.has(h.id) && !(h.flags.missNextGames && h.flags.missNextGames > 0));

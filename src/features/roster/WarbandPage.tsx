@@ -208,6 +208,14 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       <HiredRosterRepairCard detail={detail} canEdit={canEdit} />
       <HiredUpkeepCard detail={detail} canEdit={canEdit} />
+      {detail.roster.explorationDiscoveries && (detail.roster.explorationDiscoveries.catacombs || detail.roster.explorationDiscoveries.straggler || detail.roster.explorationDiscoveries.tunnels || detail.roster.explorationDiscoveries.freeHireReportId) ? <Card className="flex flex-col gap-2 px-4 py-3">
+        <h3 className="font-semibold">Exploration discoveries</h3>
+        {detail.roster.explorationDiscoveries.catacombs ? <p className="text-sm">Entrance to the Catacombs: permanently reroll one exploration die. Further entrances do not stack.</p> : null}
+        {detail.roster.explorationDiscoveries.straggler ? <p className="text-sm">Straggler’s information: at your next exploration, roll one extra die and discard one.</p> : null}
+        {detail.roster.explorationDiscoveries.tunnels ? <p className="text-sm">Catacombs: next battle, deploy up to three fighters at ground level at the end of your first turn, more than 8″ from enemies. Rat Ogres and Possessed cannot use the tunnels.</p> : null}
+        {detail.roster.explorationDiscoveries.freeHireReportId && !detail.roster.hiredSwords.some(h=>h.flags.returningFavourReportId===detail.roster.explorationDiscoveries?.freeHireReportId) ? <p className="text-sm">Returning a Favour: recruit one eligible Hired Sword free for the next battle. Afterwards, dismiss them or pay normal upkeep.</p> : null}
+      </Card> : null}
+
       <CaptiveCard detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
       <PitFightCard detail={detail} canEdit={canEdit} onError={setActionError} />
       {rating.notes.length > 0 ? (

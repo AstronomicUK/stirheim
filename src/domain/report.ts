@@ -64,6 +64,7 @@ export const henchmanInjuryLineSchema = z.object({
 export type HenchmanInjuryLine = z.infer<typeof henchmanInjuryLineSchema>;
 
 export const explorationRecordSchema = z.object({
+  benefits: z.array(z.enum(['straggler'])).optional(),
   artefact: z.object({roll:z.number().int().min(1).max(6),overrideReason:z.string().optional()}).optional(),
   diceAllowed: z.number().int().min(0),
   diceReason: z.string(),

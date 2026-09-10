@@ -1,3 +1,4 @@
+import { fetchExplorationDiscoveries } from './explorationDiscoveries'
 // Warband reads and writes. Reads are plain PostgREST selects filtered by RLS; every write goes
 // through one of the two SQL functions in supabase/migrations/20260904000004_roster_functions.sql
 // so multi-row changes are atomic and carry an audit reason.
@@ -70,11 +71,12 @@ export async function fetchMyWarbands(userId: string): Promise<WarbandSummary[]>
 }
 
 export async function fetchWarband(id: string): Promise<WarbandDetail> {
-  const [warband, heroes, groups, items] = await Promise.all([
+  const [warband, heroes, groups, items, discoveries] = await Promise.all([
     supabase.from('warbands').select('*').eq('id', id).maybeSingle(),
     supabase.from('heroes').select('*').eq('warband_id', id).order('sort_order').order('created_at'),
     supabase.from('henchman_groups').select('*').eq('warband_id', id).order('sort_order').order('created_at'),
     supabase.from('items').select('*').eq('warband_id', id).order('created_at'),
+    fetchExplorationDiscoveries(id),
   ])
   const firstError = warband.error ?? heroes.error ?? groups.error ?? items.error
   if (firstError) throw new Error(firstError.message)
@@ -83,7 +85,7 @@ export async function fetchWarband(id: string): Promise<WarbandDetail> {
   const h = (heroes.data ?? []) as HeroRow[]
   const g = (groups.data ?? []) as HenchmanGroupRow[]
   const i = (items.data ?? []) as ItemRow[]
-  return { warband: w, heroes: h, groups: g, items: i, roster: toRosterWarband(w, h, g, i) }
+  return { warband: w, heroes: h, groups: g, items: i, roster: { ...toRosterWarband(w, h, g, i), explorationDiscoveries: discoveries } }
 }
 
 export function useMyWarbands(userId: string | undefined) {

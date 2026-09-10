@@ -1,3 +1,4 @@
+import { isDramatisPersona } from '../data/campaign/hiredSwords'
 import { findWarbandTemplate } from "../data/warbandTemplates";
 import { parseDice, rollDice } from './dice';
 import { HIRED_EQUIPMENT_CHOICES } from "./hiredEquipmentChoices";
@@ -446,6 +447,7 @@ function copyItems(items: RosterItem[]): RosterItem[] {
 }
 
 export interface HireHiredSwordOptions {
+  returningFavourReportId?: string;
   /** Display name; defaults to the entry name ("Dwarf Troll Slayer"). */
   name?: string;
   scouts?: number;
@@ -523,11 +525,13 @@ export function hireHiredSword(
     throw new RulesError(DUPLICATE_HIRED_SWORD, `The warband already has a ${entry.name}; you can only have one of each type of Hired Sword`);
   }
   if (warband.hiredSwords.some(s => s.hiredSwordId === hiredSwordId && s.flags.mustMissNextBattle)) throw new RulesError('recruitment.contractGap', `${entry.name} cannot return until this warband has fought a battle without them.`);
+  const favour = opts.returningFavourReportId;
+  if (favour && (isDramatisPersona(hiredSwordId) || warband.explorationDiscoveries?.freeHireReportId !== favour || warband.hiredSwords.some(h => h.flags.returningFavourReportId === favour))) throw new RulesError('recruitment.favourUnavailable', 'This Returning a Favour reward is not available for this hire.');
   const specialFree = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer'].includes(hiredSwordId);
-  const shardCost = hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? 1 : Number(entry.hireCost.text.match(/^(\d+)\s+(?:wyrdstone|treasures?)/i)?.[1] ?? 0);
+  const shardCost = favour ? 0 : hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? 1 : Number(entry.hireCost.text.match(/^(\d+)\s+(?:wyrdstone|treasures?)/i)?.[1] ?? 0);
   const shardFee = shardCost > 0;
-  const feeRoll = entry.hireCost.dice && opts.feeOverride === undefined ? rollDice(parseDice(entry.hireCost.dice), opts.rng ?? Math.random) : null;
-  const cost = opts.feeOverride ?? (entry.hireCost.base === null ? (specialFree || shardFee ? 0 : null) : entry.hireCost.base + (feeRoll?.total ?? 0));
+  const feeRoll = entry.hireCost.dice && !favour && opts.feeOverride === undefined ? rollDice(parseDice(entry.hireCost.dice), opts.rng ?? Math.random) : null;
+  const cost = favour ? 0 : opts.feeOverride ?? (entry.hireCost.base === null ? (specialFree || shardFee ? 0 : null) : entry.hireCost.base + (feeRoll?.total ?? 0));
   if (cost === null) {
     throw new RulesError(
       "recruitment.hiredSwordNotForGold",
@@ -584,6 +588,7 @@ export function hireHiredSword(
   }
   const upkeep = entry.upkeep?.text ?? "no upkeep listed";
   const spellNote = spellIds.length > 0 ? `; spells rolled: ${spellIds.map((sid) => SPELL_LORES.flatMap(l => l.spells).find(sp => sp.id === sid)?.name ?? sid).join(", ")}${hiredSwordId === 'khar_mel_the_djinn' ? ` (D3 starting count: ${spellIds.length})` : ''}` : "";
+  if (favour) hiredSword.flags = { ...hiredSword.flags, returningFavourReportId: favour };
   return {
     value: { ...warband, gold: warband.gold - cost - scoutCost, wyrdstone: warband.wyrdstone - shardCost, hiredSwords: [...warband.hiredSwords, hiredSword, ...companions] },
     events: [

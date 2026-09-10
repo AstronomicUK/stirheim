@@ -1,3 +1,4 @@
+import { explorationFaction } from '../../../rules/resolve/explorationDiscoveries'
 import type { ArtefactDiscovery } from '../../../api/artefacts'
 import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
 // Exploration for the report (core rulebook, "Income"):
@@ -167,7 +168,10 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
   const burning = input.scenarioId === 'mordheim_s_burning'
   const garden = input.scenarioId === 'a_stroll_in_the_garden'
-  const suggested = explorationDiceAllowed(roster, { won: input.won && !burning, heroesOutOfAction, extraDice: (input.extraDice ?? 0) + (garden ? 1 : 0), extraDiceNote: [input.extraDiceNote, garden ? 'A Stroll in the Garden: one additional die; may reroll the entire pool once' : '', burning ? 'Mordheim’s Burning: no winner’s extra die' : ''].filter(Boolean).join('; ') })
+  const normal = explorationDiceAllowed(roster, { won: input.won && !burning, heroesOutOfAction, extraDice: (input.extraDice ?? 0) + (garden ? 1 : 0), extraDiceNote: [input.extraDiceNote, garden ? 'A Stroll in the Garden: one additional die; may reroll the entire pool once' : '', burning ? 'Mordheim’s Burning: no winner’s extra die' : ''].filter(Boolean).join('; ') })
+  const suggested = roster.explorationDiscoveries?.straggler
+    ? { ...normal, count: normal.count + 1, capped: true, reason: `${normal.reason}; Straggler: roll one more die and discard one (keep ${normal.keep})` }
+    : normal
   // Wizard’s Tower replaces exploration with the recovered-chest table.
   const scenarioSuggested = input.scenarioId === 'the_wizard_s_tower'
     ? { count: 0, keep: 0, capped: false, reason: 'The Wizard’s Tower: no exploration rolls after this battle; resolve recovered chests instead.' }
@@ -226,7 +230,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const testSubject = needsTest?.pickHero ? (input.eligibleHeroes.find((h) => h.id === draft.testSubjectId) ?? null) : null
   if (needsTest?.pickHero && !testSubject) problems.push(`${location?.name}: choose which Hero was sent.`)
   if (needsTest && testPassed === null) problems.push(`${location?.name}: record whether the test was passed.`)
-  const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || testPassed === true || (location?.id === 'tavern' && testPassed === false))
+  const rewardsApply = outcome !== null && !needsSubRoll && (!needsTest || testPassed === true || location?.id === 'shattered_building' || (location?.id === 'tavern' && testPassed === false))
   // Well (03:671-675): a Hero who fails the test misses the next game through sickness.
   const missNextGameHeroId = needsTest?.failEffect === 'missNextGame' && draft.testPassed === false && testSubject ? testSubject.id : null
   const rewards = rewardsApply ? outcome!.rewards.filter(reward => {
@@ -278,10 +282,12 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     if (discovery && !draft.artefactOverrideReason?.trim()) problems.push(`${artefact!.name} was already found by ${discovery.warbandName}. Roll again or explain the agreed override.`)
     if (artefact) suggestedItems.push(foundItemFromName(artefact.name))
   }
+  if (location?.id === 'shattered_building' && testPassed === true) suggestedItems.push({ item_rules_id: 'wardogs', custom_name: null, quantity: 1 })
   const items = draft.items ?? suggestedItems
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
   const notes: string[] = []
   if (artefact) notes.push(`Magical artefact D6 ${draft.artefactRoll}: ${artefact.name}.${draft.artefactOverrideReason?.trim() ? ` Agreed override: ${draft.artefactOverrideReason.trim()}` : ''}`)
+  if (location?.id === 'shattered_building') notes.push(`Shattered Building: D3 shards are found regardless of the Leadership test.${testPassed === true ? ' The wardog joins; assign it from the stash to a Hero.' : testPassed === false ? ' The wardog does not join.' : ''}`)
   if (tavernAutoPass) notes.push('Tavern: this warband automatically passes the Leadership test; 4D6 gc.')
   if (location && outcome && !needsSubRoll && outcome.text !== location.rules) notes.push(`${location.name} D6 ${draft.subRoll}: ${outcome.text}`)
   const testSubjectLabel = testSubject ? `${testSubject.name}'s ` : ''
@@ -303,6 +309,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const record: ExplorationRecord | null =
     problems.length === 0
       ? {
+          ...(location?.id === 'straggler' && explorationFaction(roster.warbandTemplateId) === 'other' ? { benefits: ['straggler' as const] } : {}),
           ...(artefact ? {artefact:{roll:draft.artefactRoll!, ...(draft.artefactOverrideReason?.trim() ? {overrideReason:draft.artefactOverrideReason.trim()} : {})}} : {}),
           diceAllowed: allowed.count,
           diceReason: allowed.reason,

@@ -79,7 +79,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
       <Intro>
         Suggested: {ex.suggested?.count ?? allowed.count} {(ex.suggested?.count ?? allowed.count) === 1 ? 'die' : 'dice'} ({ex.suggested?.reason ?? allowed.reason}). Surviving{' '}
         {ex.eligibleHeroes.length === 1 ? 'hero' : 'heroes'}: {survivors}.{won ? '' : ' No winner’s die.'}
-        {ex.suggested?.capped ? ' You may keep and score only six of them: pick which once they are all rolled.' : ''} Roll a different number if a skill, item, map bonus or house rule says so; the change is logged.
+        {ex.suggested?.capped ? ` Keep and score ${ex.suggested.keep} dice: pick which once they are all rolled.` : ''} Roll a different number if a skill, item, map bonus or house rule says so; the change is logged.
       </Intro>
       <Card className="flex flex-col gap-3 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
@@ -129,7 +129,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
       </Section>
 
       {allowed.capped ? (
-        <Section title="Keep six">
+        <Section title={`Keep ${allowed.keep}`}>
           <Card className="flex flex-col gap-3 px-4 py-3">
             <p className="text-sm text-ink-dim">
               You rolled {allowed.count}; the rulebook lets you keep and score only {allowed.keep} of them, even though you were entitled to roll more. Tap the ones to keep ({ex.kept.length} of {allowed.keep} chosen).
@@ -174,7 +174,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
             <Card className="flex flex-col gap-3 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-headline text-lg text-ink">{ex.location.name}</h3>
-                {ex.rewardsApply ? <Tag tone="brass">Resolved</Tag> : <Tag tone="warn">To resolve</Tag>}
+                {ex.record !== null ? <Tag tone="brass">Resolved</Tag> : <Tag tone="warn">To resolve</Tag>}
               </div>
               <p className="text-sm italic leading-relaxed text-ink-dim">{ex.location.flavour}</p>
               <Markdown source={ex.location.rules} className="text-sm" />

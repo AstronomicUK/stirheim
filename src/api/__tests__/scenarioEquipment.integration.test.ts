@@ -27,6 +27,49 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
     expect((await admin.from('heroes').insert(hire)).error).not.toBeNull()
     expect((await withdraw()).error?.message).toContain('free hire')
   })
+  async function transferFixture(quantity=2){
+    expect((await admin.from('matches').update({scenario_rules_id:'stop_thief'}).eq('id',match)).error).toBeNull()
+    const source=(await admin.from('items').insert({warband_id:warbands[1],holder_type:'hero',holder_id:heroes[1],item_rules_id:'sword',quantity,notes:'Original named blade'}).select('*').single()).data!
+    return {item_id:source.id,from_warband_id:warbands[1],quantity:1,expected:source,reason:'Recovered the stolen blade'}
+  }
+  it('transfers one existing copy, logs it, and restores both rosters on withdrawal',async()=>{
+    const t=await transferFixture()
+    expect((await file({scenario_item_transfers:[t]})).error).toBeNull()
+    expect((await admin.from('items').select('quantity').eq('id',t.item_id).single()).data?.quantity).toBe(1)
+    expect((await admin.from('items').select('quantity,notes').eq('warband_id',warbands[0]).eq('holder_type','stash')).data).toEqual([{quantity:1,notes:'Original named blade'}])
+    expect((await withdraw()).error).toBeNull()
+    expect((await admin.from('items').select('quantity,holder_id').eq('id',t.item_id).single()).data).toEqual({quantity:2,holder_id:heroes[1]})
+    expect((await admin.from('items').select('id').eq('warband_id',warbands[0]).eq('holder_type','stash')).data).toEqual([])
+  })
+  it('restores a completely transferred source stack with the original identity',async()=>{
+    const t=await transferFixture(1)
+    expect((await file({scenario_item_transfers:[t]})).error).toBeNull()
+    expect((await admin.from('items').select('id').eq('id',t.item_id)).data).toEqual([])
+    expect((await withdraw()).error).toBeNull()
+    expect((await admin.from('items').select('id,quantity').eq('id',t.item_id).single()).data).toEqual({id:t.item_id,quantity:1})
+  })
+  it('rejects stale source snapshots and duplicate claims without changing either roster',async()=>{
+    const t=await transferFixture()
+    expect((await file({scenario_item_transfers:[t,t]})).error?.message).toContain('only once')
+    await admin.from('items').update({notes:'Later change'}).eq('id',t.item_id)
+    expect((await file({scenario_item_transfers:[t]})).error?.message).toContain('source equipment changed')
+    expect((await admin.from('items').select('quantity').eq('id',t.item_id).single()).data?.quantity).toBe(2)
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(100)
+  })
+  it('protects later source and destination changes before undoing a transfer',async()=>{
+    const t=await transferFixture()
+    expect((await file({scenario_item_transfers:[t]})).error).toBeNull()
+    await admin.from('items').update({quantity:3}).eq('id',t.item_id)
+    expect((await withdraw()).error?.message).toContain('source equipment changed')
+    await admin.from('items').update({quantity:1}).eq('id',t.item_id)
+    await admin.from('items').update({notes:'Later recipient edit'}).eq('warband_id',warbands[0]).eq('holder_type','stash')
+    expect((await withdraw()).error?.message).toContain('scenario equipment has changed')
+    expect((await admin.from('items').select('quantity').eq('id',t.item_id).single()).data?.quantity).toBe(1)
+  })
+  it('does not allow transfers in unrelated scenarios',async()=>{
+    const t=await transferFixture();await admin.from('matches').update({scenario_rules_id:'skirmish'}).eq('id',match)
+    expect((await file({scenario_item_transfers:[t]})).error?.message).toContain('does not permit')
+  })
   it('saves warrior rewards and owned equipment, then restores them exactly on withdrawal', async () => {
     expect((await file({ heroes: [{ id: heroes[0], patch: { skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { ...stats, S: 4 } } }], awarded_items: [award()] })).error).toBeNull()
     expect((await admin.from('heroes').select('skills,spells,notes,stats').eq('id', heroes[0]).single()).data).toMatchObject({ skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { S: 4 } })

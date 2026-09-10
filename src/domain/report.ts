@@ -115,6 +115,7 @@ export const pendingAdvanceRequestSchema = z.object({
 export const reportAppliedSchema = z.object({
   pirate_mixed_upkeep_due: z.boolean().optional(),
   scenario_effects: z.object({ caravanTreachery: z.number().int().min(1).max(6).optional(), caravanTrade: z.object({percent: z.union([z.literal(-20), z.literal(20)]), rounding: z.enum(["up", "down"])}).optional() }).optional(),
+  encampment_capture: z.object({defender_id:z.string().uuid(),camp:z.string().min(1),treatment:z.enum(['destroy','occupy']),eligible:z.boolean()}).optional(),
   scenario_item_transfers: z.array(z.object({item_id:z.string().uuid(),from_warband_id:z.string().uuid(),quantity:z.number().int().min(1),expected:z.record(z.string(),z.unknown()),reason:z.string().min(1)})).optional(),
   scenario_counter_score: z.object({placed:z.number().int().min(0),scored:z.number().int().min(0),role:z.enum(["cultist","infiltrator"])}).optional(),
   gathering_control: z.object({ending:z.enum(["dirk","valnor","rout"]),controllerId:z.string().uuid().optional(),reason:z.string().optional()}).optional(),

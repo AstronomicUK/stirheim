@@ -1,3 +1,4 @@
+import { encampmentRewards } from './encampmentRewards'
 import { groupEquipmentLosses } from './groupEquipmentLosses'
 import { mixedPirateCrew } from '../../../rules/resolve/mixedHireUpkeep'
 import { caravanRewards } from './caravanRewards'
@@ -826,6 +827,14 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
+  if(ctx.scenarioId==='encampment_raid') {
+    const state=draft.scenarioRewards?.encampment??{}
+    const reward=encampmentRewards(state,draft.result==='won',ctx.opponents??[])
+    if(state.role==='attacker'&&state.captured&&!reward.problems.length) {
+      applied.encampment_capture={defender_id:state.defenderId!,camp:state.camp!.trim(),treatment:state.treatment!,eligible:!!state.eligible}
+      applied.scenario_item_transfers=reward.transfers
+    }
+  }
   if(ctx.scenarioId==='the_forbidden_square') {const score=draft.scenarioRewards?.forbiddenSquare;if(score?.placed!=null&&score.scored!=null&&score.role)applied.scenario_counter_score={placed:score.placed,scored:score.scored,role:score.role};const transfers=forbiddenSquareRewards(draft.scenarioRewards?.forbiddenSquare??{},[ctx.roster.id,...(ctx.opponents??[]).map(o=>o.id)],ctx.roster.id).transfers;if(transfers.length)applied.scenario_item_transfers=transfers}
   if(ctx.scenarioId==='gathering_of_the_horde'&&draft.scenarioRewards?.gathering?.ending) applied.gathering_control={...draft.scenarioRewards.gathering,ending:draft.scenarioRewards.gathering.ending}
   if(ctx.scenarioId==='brigands_in_the_pasturelands') {const hire=brigandsRewards(draft.scenarioRewards?.brigands??{},draft.result==='won',!!ctx.campaignId).freeHire; if(hire) applied.scenario_free_hire={choices:[hire]} }

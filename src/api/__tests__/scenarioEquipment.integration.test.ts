@@ -78,6 +78,30 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
     expect((await other(14,4)).error?.message).toContain('Combined counter')
     expect((await other(14,3)).error).toBeNull()
   })
+  it('captures the full camp stash, detects new omitted stacks, and restores it on withdrawal',async()=>{
+    await admin.from('matches').update({scenario_rules_id:'encampment_raid'}).eq('id',match)
+    const source=(await admin.from('items').insert({warband_id:warbands[1],holder_type:'stash',item_rules_id:'sword',quantity:3,notes:'Defender stash'}).select('*').single()).data!
+    const capture={defender_id:warbands[1],camp:'Sigmarhaven hut',treatment:'occupy',eligible:true}
+    const transfer={item_id:source.id,from_warband_id:warbands[1],quantity:3,expected:source,reason:'Camp captured'}
+    const submit=(transfers:object[],claimed=capture)=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:{result:'won',won:true,routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},encampment_capture:claimed,scenario_item_transfers:transfers}}})
+    expect((await submit([transfer],{...capture,eligible:false})).error?.message).toContain('eligibility')
+    const added=(await admin.from('items').insert({warband_id:warbands[1],holder_type:'stash',item_rules_id:'helmet',quantity:1}).select('*').single()).data!
+    expect((await submit([transfer])).error?.message).toContain('complete defender stash changed')
+    expect((await admin.from('items').select('quantity').eq('id',source.id).single()).data?.quantity).toBe(3)
+    const second={item_id:added.id,from_warband_id:warbands[1],quantity:1,expected:added,reason:'Camp captured'}
+    expect((await submit([transfer,second])).error).toBeNull()
+    expect((await admin.from('items').select('id').eq('warband_id',warbands[1]).eq('holder_type','stash')).data).toEqual([])
+    expect((await admin.from('items').select('item_rules_id').eq('warband_id',warbands[0]).eq('holder_type','stash')).data).toHaveLength(2)
+    expect((await withdraw()).error).toBeNull()
+    expect((await admin.from('items').select('quantity').eq('id',source.id).single()).data?.quantity).toBe(3)
+    expect((await admin.from('items').select('quantity').eq('id',added.id).single()).data?.quantity).toBe(1)
+  })
+  it('protects an empty captured stash from a second claim in the same battle',async()=>{
+    await admin.from('matches').update({scenario_rules_id:'encampment_raid'}).eq('id',match)
+    const report={result:'won',won:true,routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},encampment_capture:{defender_id:warbands[1],camp:'Empty camp',treatment:'destroy',eligible:false},scenario_item_transfers:[]}}
+    expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:report})).error).toBeNull()
+    expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[1],p_report:{...report,applied:{...report.applied,encampment_capture:{...report.applied.encampment_capture,defender_id:warbands[0]}}}})).error?.message).toContain('already been claimed')
+  })
   it('saves warrior rewards and owned equipment, then restores them exactly on withdrawal', async () => {
     expect((await file({ heroes: [{ id: heroes[0], patch: { skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { ...stats, S: 4 } } }], awarded_items: [award()] })).error).toBeNull()
     expect((await admin.from('heroes').select('skills,spells,notes,stats').eq('id', heroes[0]).single()).data).toMatchObject({ skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { S: 4 } })

@@ -16,6 +16,7 @@ export function ExperienceStep({ draft, derived, update, match, ctx }: StepProps
   const byId = new Map(lines.map((l) => [l.subjectId, l]))
   const { participants } = derived
   const scenario = scenarioAftermath(match.scenario_rules_id, draft.scenarioMission, draft.scenarioUseBody)
+  if(ctx.scenarioId==='brigands_in_the_pasturelands') {const amount=draft.scenarioRewards?.brigands?.role==='defender'?2:1;scenario.defaults={survival:amount,leader:amount,kill:1}}
   const scenarioExperience = scenario.selected?.text
   const scenarioTitle = match.scenario_rules_id ? findScenario(match.scenario_rules_id)?.title : undefined
   const noXp = (id: string) => !byId.has(id)

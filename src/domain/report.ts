@@ -109,6 +109,7 @@ export const pendingAdvanceRequestSchema = z.object({
   threshold_xp: z.number().int().min(1),
 });
 export const reportAppliedSchema = z.object({
+  scenario_artefacts: z.array(z.object({roll:z.number().int().min(1).max(6),overrideReason:z.string().optional()})).optional(),
   petty_thief: z.object({target_id:z.string().uuid(),roll:z.number().int().min(5).max(6),squire_id:z.string().uuid(),selection_roll:z.number().int().min(1),transferred:z.number().int().min(0).max(1).optional()}).optional(),
   new_groups: z.array(z.object({id:z.string().uuid(),name:z.string().min(1),unit_type_rules_id:z.string().min(1),size:z.number().int().min(1).max(5),stats:statsSchema,xp:z.number().int().min(0),level_ups:z.number().int().min(0)})).optional(),
   heroes: z.array(heroReportPatchSchema),

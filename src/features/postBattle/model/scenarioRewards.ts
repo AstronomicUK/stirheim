@@ -1,9 +1,15 @@
-import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
+import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
+import type { ArtefactDiscovery } from '../../../api/artefacts'
+import { scenarioRewardRule, type ScenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
 import type { ReportDraft, FoundItem } from './state'
 import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  unclaimedBooty?: Record<string, boolean | undefined>
+  bountyCount?: number | null
+  bountyDice?: (number | null)[]
+  repeated?: { roll: number | null; dice: (number | null)[] }[]
   conditions?: Record<string, boolean | undefined>
   counters?: number | null
   buildingHeroes?: string[]
@@ -11,18 +17,53 @@ export interface ScenarioRewardDraft {
   enemyStarting?: number | null
   enemyHeroesOut?: number | null
   princeSurvived?: boolean
-  finds?: Record<string, { discovery: number | null; discoveryDice?: (number | null)[]; dice: (number | null)[] }>
+  finds?: Record<string, { discovery: number | null; artefactRoll?: number | null; artefactOverrideReason?: string; discoveryDice?: (number | null)[]; dice: (number | null)[] }>
 }
 const valid = (n: number | null | undefined, min: number, max = Number.MAX_SAFE_INTEGER): n is number => n != null && Number.isSafeInteger(n) && n >= min && n <= max
-export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants) {
+export function scenarioHoardFinds(rule: Extract<ScenarioRewardRule, { kind: 'hoard' }>, draft: ReportDraft, participants: Participants) {
+  if (!rule.repeatPerStandingHero) return rule.finds
+  const heroes = participants.heroes.filter(h => !draft.heroesOut.includes(h.id)).slice(0, 6)
+  return [...(rule.onceFinds ?? []), ...heroes.flatMap(h => rule.finds.map(f => ({ ...f, id: `${h.id}:${f.id}`, label: `${h.name} — ${f.label}` })))]
+}
+export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }) {
   const rule = scenarioRewardRule(scenarioId)
   const state = draft.scenarioRewards ?? {}
-  const rewards = { gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
+  const rewards = { artefacts: [] as { roll: number; overrideReason?: string }[], gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
   if (!rule) return rewards
-  if (rule.kind === 'counters') {
+  if (rule.kind === 'bounty') {
+    if (rule.winnerOnly && draft.result !== 'won') { rewards.notes.push('No winning-warband bounty.'); return rewards }
+    if (rule.condition) {
+      const met = state.conditions?.[rule.condition.id]
+      if (met === undefined) { rewards.problems.push(rule.condition.question); return rewards }
+      rewards.notes.push(`${rule.condition.question} ${met ? 'Yes' : 'No; no bounty.'}`)
+      if (!met) return rewards
+    }
+    if (!valid(state.bountyCount, 0)) rewards.problems.push(`Enter ${rule.label.toLowerCase()}.`)
+    else { rewards.gold = state.bountyCount * rule.goldEach; rewards.notes.push(`${rule.label}: ${state.bountyCount} × ${rule.goldEach} gc = ${rewards.gold} gc.`) }
+    if (rule.baseDice) {
+      const dice = state.bountyDice ?? []
+      if (dice.length !== rule.baseDice.count || dice.some(d => !valid(d, 1, 6))) rewards.problems.push('Enter the base payment dice.')
+      else { const gold = dice.reduce<number>((sum, d) => sum + d!, 0) * rule.baseDice.multiplier; rewards.gold += gold; rewards.notes.push(`Base payment: ${rule.baseDice.count}D6 rolled ${dice.join(', ')} × ${rule.baseDice.multiplier} = ${gold} gc.`) }
+    }
+  } else if (rule.kind === 'repeated') {
+    const entries = state.repeated ?? []
+    if (rule.max && entries.length > rule.max) { rewards.problems.push(`At most ${rule.max} ${rule.label.toLowerCase()} rewards are available.`); return rewards }
+    entries.forEach((entry, i) => {
+      const row = rule.table.length === 1 ? rule.table[0] : valid(entry.roll, 1, 6) ? rule.table.find(r => entry.roll! >= r.min && entry.roll! <= r.max) : undefined
+      const label = `${rule.label} ${i + 1}`
+      if (!row) { rewards.problems.push(`${label}: enter its D6 result.`); return }
+      if (row.goldDice) {
+        if (entry.dice.length !== row.goldDice || entry.dice.some(d => !valid(d, 1, 6))) { rewards.problems.push(`${label}: enter all ${row.goldDice}D6 gold dice.`); return }
+        const gold = entry.dice.reduce<number>((sum, d) => sum + d!, 0)
+        rewards.gold += gold
+        rewards.notes.push(`${label}${rule.table.length > 1 ? ` (D6 ${entry.roll})` : ''}: ${row.label}; ${row.goldDice}D6 rolled ${entry.dice.join(', ')}; +${gold} gc.`)
+      } else { rewards.shards += row.shards ?? 0; rewards.notes.push(`${label} (D6 ${entry.roll}): ${row.label}; ${row.shards ? `+${row.shards} wyrdstone` : 'nothing found'}.`) }
+    })
+    if (!entries.length) rewards.notes.push(`No ${rule.label.toLowerCase()} rewards recorded.`)
+  } else if (rule.kind === 'counters') {
     const count = state.counters ?? 0
     if (!valid(count, 0, rule.max)) rewards.problems.push(`Enter the number of counters held at the end${rule.max ? ` (0–${rule.max})` : ''}.`)
-    else { rewards.shards = count; rewards.notes.push(`Scenario counters held at the end: ${count}; +${count} wyrdstone.`) }
+    else { rewards.shards = count; rewards.notes.push(`${rule.label ?? 'Scenario counters held at the end'}: ${count}; +${count} wyrdstone.`) }
   } else if (rule.kind === 'building') {
     const ids = [...new Set(state.buildingHeroes ?? [])]
     const eligible = participants.heroes.filter(h => !draft.heroesOut.includes(h.id))
@@ -50,7 +91,12 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     }
     if (rule.needsRescue && state.princeSurvived === undefined) { rewards.problems.push('Record whether the merchant’s son survived.'); return rewards }
     if (rule.needsRescue && !state.princeSurvived) { rewards.notes.push('The Lost Prince: the merchant’s son died; no reward.'); return rewards }
-    for (const find of rule.finds) {
+    for (const find of scenarioHoardFinds(rule, draft, participants)) {
+      if (find.unclaimedBeforeBattle) {
+        const unclaimed = state.unclaimedBooty?.[find.id]
+        if (unclaimed === undefined) { rewards.problems.push(`${find.label}: record whether it was found before the battle.`); continue }
+        if (!unclaimed) { rewards.notes.push(`${find.label}: already found before the battle; no second award.`); continue }
+      }
       const entry = state.finds?.[find.id]
       const discoveryCount = find.discoveryDice ?? 1
       const discoveryDice = discoveryCount === 1 ? [entry?.discovery ?? null] : entry?.discoveryDice ?? []
@@ -59,6 +105,18 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
       if (find.threshold) {
         if (discoveryDice.length !== discoveryCount || discoveryDice.some(d => !valid(d, 1, 6))) { rewards.problems.push(`${find.label}: enter the separate discovery ${discoveryCount}D6.`); continue }
         if (discovery < find.threshold) { rewards.notes.push(`${find.label}: discovery ${discoveryNote}, needed ${find.threshold}+; not found.`); continue }
+      }
+      if (find.kind === 'artefact') {
+        const artefact = MAGICAL_ARTEFACTS.find(a => a.band.min === entry?.artefactRoll)
+        if (!artefact) { rewards.problems.push(`${find.label}: roll on the Magical Artefacts table.`); continue }
+        if (!context?.artefacts) rewards.problems.push(context?.artefactsError ? `Cannot check campaign artefacts: ${context.artefactsError}` : 'Waiting for the campaign artefact record.')
+        const previous = context?.artefacts?.find(a => a.roll === entry!.artefactRoll && (!context.reportId || a.reportId !== context.reportId))
+        const reason = entry?.artefactOverrideReason?.trim()
+        if ((previous || rewards.artefacts.some(a => a.roll === entry!.artefactRoll)) && !reason) rewards.problems.push(`${artefact.name} was already found. Reroll or record the agreed duplicate override.`)
+        rewards.artefacts.push({ roll: entry!.artefactRoll!, ...(reason ? { overrideReason: reason } : {}) })
+        rewards.items.push(foundItemFromName(artefact.name))
+        rewards.notes.push(`${find.label}: discovery ${discoveryNote}; artefact D6 ${entry!.artefactRoll}: ${artefact.name}.${reason ? ` Agreed override: ${reason}` : ''}`)
+        continue
       }
       let amount: number
       let diceNote = ''

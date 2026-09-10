@@ -1,12 +1,12 @@
 import { SCENARIO_REWARD_RULES } from '../../../rules/data/campaign/scenarioRewardRules'
 import { describe, it, expect } from 'vitest'
-import { emptyDraft } from './state'
-import { scenarioRewards } from './scenarioRewards'
+import { emptyDraft, type ReportDraft } from './state'
+import { scenarioHoardFinds, scenarioRewards } from './scenarioRewards'
 import type { Participants } from './participants'
 import type { RosterHero } from '../../../rules/types/roster'
 const participants: Participants = { heroes: ['one','two','three','four'].map(id => ({ id, name: id } as RosterHero)), hiredSwords: [], groups: [], satOut: [], leaderId: 'one' }
 const base = { ...emptyDraft(), result: 'won' as const }
-const derive = (id: string, state: typeof base.scenarioRewards, changes: Partial<typeof base> = {}) => scenarioRewards({ ...base, ...changes, scenarioRewards: state }, id, participants)
+const derive = (id: string, state: typeof base.scenarioRewards, changes: Partial<ReportDraft> = {}) => scenarioRewards({ ...base, ...changes, scenarioRewards: state }, id, participants)
 
 describe('scenario-earned treasure', () => {
   it('caps objective-building rewards and rejects non-participants, hires and casualties', () => {
@@ -90,4 +90,89 @@ describe('scenario-earned treasure', () => {
     expect(derive('bar_room_brawl', { conditions: { sam: false } }).gold).toBe(0)
   })
 
+})
+
+describe('scenario bounties and individually looted rewards', () => {
+  it('pays wolf and vermin bounties even after losing, requiring a valid count', () => {
+    expect(derive('wolf_hunt', { bountyCount: 3 }, { result: 'lost' }).gold).toBe(30)
+    expect(derive('the_rat_s_lair', { bountyCount: 7 }, { result: 'lost' }).gold).toBe(35)
+    expect(derive('wolf_hunt', {}).problems).toHaveLength(1)
+    expect(derive('wolf_hunt', { bountyCount: -1 }).problems).toHaveLength(1)
+    expect(derive('wolf_hunt', { bountyCount: 1.5 }).problems).toHaveLength(1)
+  })
+  it('River Watch pays only a winning defender and records the base roll separately', () => {
+    const state = { conditions: { defender: true }, bountyCount: 3, bountyDice: [4] }
+    expect(derive('river_watch', state).gold).toBe(95)
+    expect(derive('river_watch', state).notes.join(' ')).toContain('4 × 20 = 80 gc')
+    expect(derive('river_watch', state, { result: 'lost' }).gold).toBe(0)
+    expect(derive('river_watch', { ...state, conditions: { defender: false } }).gold).toBe(0)
+    expect(derive('river_watch', { ...state, bountyDice: [7] }).problems).toHaveLength(1)
+  })
+  it('farm buildings preserve different outcomes and ignore stale gold on a shard result', () => {
+    const state = { repeated: [{ roll: 1, dice: [] }, { roll: 3, dice: [2, 5] }, { roll: 6, dice: [6, 6] }] }
+    const d = derive('battle_for_the_farm', state, { result: 'lost' })
+    expect(d.problems).toEqual([]); expect(d.gold).toBe(7); expect(d.shards).toBe(1)
+    expect(d.notes.join(' ')).toContain('Looted building 2 (D6 3): Valuables; 2D6 rolled 2, 5')
+    expect(derive('battle_for_the_farm', { repeated: [{ roll: 3, dice: [] }] }).problems).toHaveLength(1)
+    expect(derive('battle_for_the_farm', { repeated: [{ roll: null, dice: [1, 2] }] }).problems).toHaveLength(1)
+  })
+  it('Gubbinz use individual gold rolls, cap non-sacred counters at five, and remove deleted rewards', () => {
+    expect(derive('dem_s_my_gubbinz', { repeated: [{ roll: null, dice: [2, 3] }, { roll: null, dice: [6, 4] }] }).gold).toBe(15)
+    expect(derive('dem_s_my_gubbinz', { repeated: [{ roll: null, dice: [2, 3] }] }).gold).toBe(5)
+    expect(derive('dem_s_my_gubbinz', { repeated: Array(6).fill({ roll: null, dice: [1, 1] }) }).problems).toHaveLength(1)
+  })
+  it('Ogham jewels retain their value as a single stash reward', () => {
+    const d = derive('the_ogham_stones', { finds: { jewels: { discovery: null, dice: [1, 2, 3, 4, 5] } } })
+    expect(d.gold).toBe(0); expect(d.items).toEqual([{ item_rules_id: null, custom_name: 'Ogham gems and jewels (worth 15 gc)', quantity: 1 }])
+  })
+})
+
+describe('treasure already issued and repeated temple searches', () => {
+  it('requires the pre-battle discovery history and never grants issued kit twice', () => {
+    const rule = SCENARIO_REWARD_RULES.the_wizard_s_mansion
+    if (rule.kind !== 'hoard') throw Error('Expected hoard')
+    const finds = Object.fromEntries(rule.finds.map(f => [f.id, { discovery: f.threshold ? 1 : null, dice: typeof f.quantity === 'number' ? [] : Array(f.quantity.count).fill(2) }]))
+    expect(derive('the_wizard_s_mansion', { finds }).problems).toHaveLength(5)
+    const unclaimedBooty = Object.fromEntries(rule.finds.filter(f => f.unclaimedBeforeBattle).map(f => [f.id, false]))
+    const d = derive('the_wizard_s_mansion', { finds, unclaimedBooty: { ...unclaimedBooty, 'initial-mandrake': true } })
+    expect(d.problems).toEqual([]); expect(d.gold).toBe(10)
+    expect(d.items).toHaveLength(1); expect(d.items[0].quantity).toBe(2)
+    expect(d.notes.join(' ')).toContain('Lucky Charm: already found before the battle; no second award')
+  })
+  it('Temple repeats the full table per standing participating Hero but initial booty only once', () => {
+    const rule = SCENARIO_REWARD_RULES.lost_temple_of_the_slann
+    if (rule.kind !== 'hoard') throw Error('Expected hoard')
+    const draft = { ...base, heroesOut: ['two', 'four'] }
+    const rows = scenarioHoardFinds(rule, draft, participants)
+    expect(rows.filter(f => f.id.endsWith(':gold'))).toHaveLength(2)
+    expect(rows.filter(f => f.unclaimedBeforeBattle)).toHaveLength(5)
+    const finds = Object.fromEntries(rows.map(f => [f.id, { discovery: f.threshold ? 1 : null, dice: typeof f.quantity === 'number' ? [] : Array(f.quantity.count).fill(2) }]))
+    const unclaimedBooty = Object.fromEntries(rows.filter(f => f.unclaimedBeforeBattle).map(f => [f.id, false]))
+    const d = scenarioRewards({ ...draft, scenarioRewards: { finds, unclaimedBooty } }, 'lost_temple_of_the_slann', participants)
+    expect(d.problems).toEqual([]); expect(d.gold).toBe(12)
+    expect(scenarioRewards({ ...draft, heroesOut: ['one','two','four'], scenarioRewards: { finds, unclaimedBooty } }, 'lost_temple_of_the_slann', participants).gold).toBe(6)
+  })
+  it('caps Temple searches at six and does not retain the guardian as loot', () => {
+    const rule = SCENARIO_REWARD_RULES.lost_temple_of_the_slann
+    if (rule.kind !== 'hoard') throw Error('Expected hoard')
+    const rows = scenarioHoardFinds(rule, base, { ...participants, heroes: Array.from({ length: 8 }, (_, i) => ({ id: String(i), name: String(i) } as RosterHero)) })
+    expect(rows.filter(f => f.id.endsWith(':gold'))).toHaveLength(6)
+    expect(rows.some(f => /guard/i.test(f.label))).toBe(false)
+  })
+})
+
+describe('scenario magical artefacts', () => {
+  it('requires a resolved unique artefact and does not reuse stale rolls after a failed discovery', () => {
+    const rule = SCENARIO_REWARD_RULES.monster_hunt
+    if (rule.kind !== 'hoard') throw Error('Expected hoard')
+    const finds = Object.fromEntries(rule.finds.map(f => [f.id, { discovery: f.threshold ? 1 : null, dice: typeof f.quantity === 'number' ? [] : Array(f.quantity.count).fill(2), artefactRoll: 1 }]))
+    const d = { ...base, scenarioRewards: { conditions: { lair: true }, finds } }
+    expect(scenarioRewards(d, 'monster_hunt', participants).artefacts).toEqual([])
+    finds.artefact.discovery = 6
+    expect(scenarioRewards(d, 'monster_hunt', participants).problems).toContain('Waiting for the campaign artefact record.')
+    const ok = scenarioRewards(d, 'monster_hunt', participants, { artefacts: [] })
+    expect(ok.problems).toEqual([]); expect(ok.artefacts).toEqual([{ roll: 1 }]); expect(ok.items).toHaveLength(1)
+    const blocked = scenarioRewards(d, 'monster_hunt', participants, { artefacts: [{ roll: 1, reportId: 'other', warbandId: 'other', warbandName: 'Earlier find', foundAt: '' }] })
+    expect(blocked.problems.join(' ')).toContain('already found')
+  })
 })

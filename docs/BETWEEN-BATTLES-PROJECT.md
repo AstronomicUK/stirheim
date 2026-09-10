@@ -127,3 +127,11 @@ Source clarification for #119: Terry Maltman’s original [Night Goblins v3.21 P
 Chaos Centaur and Cursed Hillman no longer silently receive Human maximum characteristics. A characteristic advance requires a recorded table ruling, starting from an editable published profile. The ruling is saved on the hire and in the advancement resolution; deferred skill choices preserve it. Ordinary new-skill results need no unnecessary ruling. This uses Tom’s approved player-override approach while the printed racial profile remains unconfirmed.
 
 Thirty focused advancement tests and typecheck pass. The real mobile flow also passed: missing ruling blocks progression, agreed values and reason persist, and the characteristic increase saves correctly. Existing scenario, advancement-gate, Returning a Favour and Troll-upkeep browser checks still pass. No push or deployment.
+
+### Local milestone 15 — scenario rewards and shared artefacts (#72/#190)
+
+Added bounty, per-building/per-counter loot, initial-booty history, repeated Hero temple searches, and Monster Hunt artefacts. Reviewed more full scenario pages, including objective-only scenarios, and added explicit normal reward paths. See the expanded scenario source matrix. In particular, pre-battle equipment is not awarded twice, sacrificed shards do not enter the treasury, and the Skull requires actual capture rather than a rout win.
+
+Eighteen focused reward tests pass. Mobile browser checks file Farm rewards after a loss and a Monster Hunt artefact, with reload persistence, dependent-reset gates and saved logs. Six local artefact database tests pass, including cross-source concurrency and duplicate-in-one-report rollback. Migration 46 applied locally only. The whole 103-scenario audit remains open, along with the other outstanding batch scope; no push or deployment.
+
+Milestone 15 full regression: **1,428 tests pass / 96 database-dependent tests skipped** in the ordinary suite; six artefact transaction tests passed separately. Production build passes with existing warnings; lint retains only the three existing audit-probe warnings.

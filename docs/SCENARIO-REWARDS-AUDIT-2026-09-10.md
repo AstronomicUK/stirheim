@@ -32,3 +32,28 @@ Unit/report tests cover caps, invalid/out-of-range dice, stale failed finds, non
 The same browser check verifies #87 with a participating Hero: untouched advancement blocks Next through reload; rolling a skill enables deferral; Wizard’s Tower then skips exploration, resolves a chest, and files +6 gc with the Hero’s XP applied. No browser errors.
 
 Remaining scenarios still need individual source audit and implementation. Do not close #72 or imply the whole app has lost its old unrestricted reward form yet. Scenario XP distribution, special recruit rewards, campaign artefacts and trading/next-game consequences remain separate outstanding cases where not already implemented elsewhere.
+
+## Additional local source paths, milestone 15
+
+| Scenario | Source / reward |
+| --- | --- |
+| Wolf Hunt | `06-scenarios.md:1986–2066`: 10 gc per slain wolf, either result; bears excluded. Free Ranger is explicitly temporary, not a permanent award. |
+| The Rat’s Lair | `6166–6215`: 5 gc per vermin taken out of action, either result. |
+| River Watch | `1740–1788`: winning defender only, D6×20 plus 5 gc per enemy taken out of action. |
+| Ogham Stones | `6117–6161`: winning warband receives gems/jewels valued at 5D6 gc; kept as a valued stash item. |
+| Battle for the Farm | `1431–1498`: separate looted-building entries; recorded D6 1 nothing, 2–5 2D6 gc, 6 one shard. Each building once. |
+| Dem’s My Gubbinz | `3446–3475`: 2D6 separately per held non-sacred counter; at most five. |
+| The Pool | `4862–4904`: held shard counters; D3+3 supplied (maximum six). |
+| Ambush (Town Cryer 5) | `2976–3016`: shards carried off or still held by Heroes; each defending Hero started with D3. |
+| Forbidden Square | `3709–3804`: stolen shards only, maximum eight from D6+2; offered shards vanish and must not enter the treasury. |
+| Rat Attack, Surrounded, Scourge & Purge | Full corresponding pages reviewed: experience rewards, no additional treasure. Existing XP discrepancies remain distinct from this treasure audit. |
+| Lair of the Snake, That’s All Mine, Jungle Skirmish, Island Hopping | Full pages reviewed: no additional treasure reward. |
+| Script of Sigmar | Both linked missions reviewed: experience, no priced loot. A player-agreed replacement objective uses the explained adjustment. River deaths/equipment loss are not newly automated by this reward change. |
+| Night of the Headless One | Explicit carried-off-skull condition; campaign relic saved with the printed future summoning rules. Winning by rout alone does not grant it. This records the item, not automatic future summoning/combat. |
+| Wizard’s Mansion | `6737–6811`: each initial item must be declared not previously found before being awarded; no duplication of issued kit. Then all additional hoard rows separately. Wooden Man excluded; Athame and Scroll retain source effects/trade values. |
+| Lost Temple of the Slann | Initial booty once; full additional table per standing participating Hero, capped at six. Guardian excluded. Cloak/Scroll retain source effects. |
+| Monster Hunt | `4552–4741`, Treasure Hoard: controlling-lair condition, every row including both light armours; D3+1 shards; valued jewellery; artefact table shares the campaign ledger. |
+| Death in the Mists, Blood Hunt, Lost in the Bogs | Full pages reviewed: no additional treasure. Blood Hunt’s free Persona is explicitly temporary. |
+| A Stroll in the Garden | Full page reviewed: no separate treasure; existing extra exploration die and entire-pool reroll remain in Exploration and the report log. |
+
+Local browser verification now also files Farm rewards after a loss (+7 gc, +1 shard), checks reload/dependent reset/incomplete gating, and files a Monster Hunt artefact into the real local campaign ledger. Migration 46 unifies exploration/scenario discovery checks; six local database tests pass, including simultaneous discovery across both sources and duplicate-in-one-report rollback. Neither this migration nor the client changes have been deployed.

@@ -330,7 +330,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   if (ctx.scenarioId === 'the_wizard_s_tower') {
     problems.veterans.push(...towerTreasure(draft.towerChests).problems)
   }
-  problems.veterans.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template)).problems)
+  problems.veterans.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template), ctx).problems)
   if ((scenarioRewardRule(ctx.scenarioId) || ctx.scenarioId === 'the_wizard_s_tower') && (draft.battleGold || draft.battleWyrdstone || draft.scenarioItems?.length) && !draft.scenarioRewardOverrideReason?.trim()) problems.veterans.push('Explain the agreed adjustment outside this scenario’s normal rewards.')
   if (scenario.needsMission) problems.experience.push('Choose which scenario mission was played.')
   if (scenario.conflict && draft.scenarioUseBody === undefined) problems.experience.push('Choose the agreed interpretation of this scenario’s conflicting award values.')
@@ -388,7 +388,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems ?? [],
     warband: { gold_delta: draft.battleGold, wyrdstone_delta: draft.battleWyrdstone, veteran_pool: null },
   }
-  const treasure = scenarioRewards(draft, ctx.scenarioId, participants)
+  const treasure = scenarioRewards(draft, ctx.scenarioId, participants, ctx)
   const xpBySubject = new Map(xp.lines.map((l) => [l.subjectId, l]))
   const heroes: ReportApplied['heroes'] = []
   const pending: ReportApplied['pending_advances'] = []
@@ -594,6 +594,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     },
     pending_advances: pending,
     remove_item_ids: [...new Set(removeItemIds)],
+    ...(treasure.artefacts.length ? { scenario_artefacts: treasure.artefacts } : {}),
     stash_items: [...treasure.items, ...(record?.itemsFound ?? []), ...(draft.scenarioItems ?? [])],
     item_patches: [...itemPatchesFor(ctx, draft).filter((p) => !kitRemovals.some((k) => k.id === p.id)), ...kitRemovals],
   }
@@ -625,7 +626,7 @@ function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext):
   if (ctx?.scenarioId === 'the_wizard_s_tower') {
     parts.push(...towerTreasure(draft.towerChests).notes)
   }
-  if (ctx) parts.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template)).notes)
+  if (ctx) parts.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template), ctx).notes)
   if (draft.scenarioRewardOverrideReason?.trim()) parts.push(`Agreed scenario reward adjustment: ${draft.scenarioRewardOverrideReason.trim()}`)
   if (draft.scenarioMission) parts.push(`Scenario mission: ${draft.scenarioMission}.`)
   if (draft.scenarioGardenRerolled) parts.push('A Stroll in the Garden: re-rolled the entire exploration pool.')

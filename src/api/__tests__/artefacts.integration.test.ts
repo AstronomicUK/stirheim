@@ -45,4 +45,18 @@ describe.skipIf(!enabled)('campaign artefact ledger (#190)', () => {
   expect((await admin.from('match_reports').update({exploration:{artefact:{roll:1}}}).eq('id',first.data!.id)).error).toBeNull()
   expect((await anonymous.rpc('campaign_artefact_ledger',{p_campaign_id:campaign})).error).not.toBeNull()
  })
+ it('serializes scenario and exploration discoveries against the same ledger',async()=> {
+  const results=await Promise.all([report(0),admin.from('match_reports').insert({match_id:match,warband_id:warbands[1],submitted_by:playerId,applied:{scenario_artefacts:[{roll:1}]}})])
+  expect(results.filter(r=>!r.error)).toHaveLength(1)
+  expect(results.find(r=>r.error)?.error?.message).toContain('already been found')
+  expect((await player.rpc('campaign_artefact_ledger',{p_campaign_id:campaign})).data).toHaveLength(1)
+ })
+ it('rejects unexplained duplicate artefacts within a single report and rolls the ledger back',async()=> {
+  const row={match_id:match,warband_id:warbands[0],submitted_by:playerId,exploration:{artefact:{roll:2}},applied:{scenario_artefacts:[{roll:2}]}}
+  expect((await admin.from('match_reports').insert(row)).error?.message).toContain('twice in this report')
+  expect((await player.rpc('campaign_artefact_ledger',{p_campaign_id:campaign})).data).toEqual([])
+  expect((await admin.from('match_reports').insert({...row,applied:{scenario_artefacts:[{roll:2,overrideReason:'Agreed duplicate reward'}]}})).error).toBeNull()
+  expect((await player.rpc('campaign_artefact_ledger',{p_campaign_id:campaign})).data).toHaveLength(1)
+ })
+
 })

@@ -360,7 +360,7 @@ describe("hiredSwordEquipment (#74)", () => {
     const kit = hiredSwordEquipment(detail);
     const names = kit.map((i) => i.customName ?? i.itemId);
     expect(names).not.toContain("-1M)");
-    expect(names.some((n) => n?.includes("-1M"))).toBe(true); // the bracketed detail travels with whichever piece it belongs to, not as its own item
+    expect(names).toContain("imperial_tactician_plate_armour"); // the complete source line resolves as one usable item
     expect(kit).toHaveLength(4); // Two-handed sword, plate armour (...), Helmet, Dagger
   });
 

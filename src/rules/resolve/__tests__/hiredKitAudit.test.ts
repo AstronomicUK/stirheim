@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { findHiredSword } from '../../data/campaign/hiredSwords'
-import { findItem } from '../../data/items'
+import { findItem, SHOP_ITEMS } from '../../data/items'
 import { resolveEquipmentName } from '../../data/items/aliases'
 import { HIRED_EQUIPMENT_CHOICES } from '../hiredEquipmentChoices'
 import { hiredSwordEquipment, hiredSwordStartingEquipment } from '../recruitment'
@@ -54,4 +54,13 @@ it('resolves the remaining explicit ordinary Persona kit without turning wardrob
  expect(actual('the_headless_horseman')).toContainEqual({itemId:'duelling_pistol',quantity:2})
  expect(resolveEquipmentName('Cavalry Spear')?.id).toBe('spear')
  for(const id of ['bertha_bestraufrung_high_matriarch_of_the_sisterhood','countess_marianna_chevaux_vampire_assassin','dijin_katal_the_renegade_assassin','the_dark_jester_in_mordheim'])for(const item of actual(id))if(item.itemId)expect(findItem(item.itemId),item.itemId).toBeDefined()
+})
+
+
+it('gives the Tactician usable plate without adding a purchasable or lamellar substitute', () => {
+ const actual=hiredSwordStartingEquipment('imperial_tactician',findHiredSword('imperial_tactician')!.detail)
+ expect(actual).toContainEqual({itemId:'imperial_tactician_plate_armour',quantity:1})
+ expect(actual).toHaveLength(4)
+ expect(SHOP_ITEMS.some(i=>i.id==='imperial_tactician_plate_armour')).toBe(false)
+ expect(resolveEquipmentName('plate armour (4+ save, -1M)')?.armourSave).toBe(4)
 })

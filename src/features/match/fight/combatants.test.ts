@@ -219,3 +219,17 @@ describe('combatantsOf', () => {
     expect(combatantsOf(roster, undefined, roster.name, setGroupOut(emptyBattleLiveState(), 'Watchmen', 1, 2)).map((c) => c.out)).toEqual([false, false])
   })
 })
+
+
+it('uses the Tactician’s actual 4+ plate save for new and legacy kit, with its unconditional movement reminder', () => {
+  for (const equipment of [
+    [item('imperial_tactician_plate_armour')],
+    [{itemId: null, customName: 'plate armour (4+ save, -1M)', quantity: 1}],
+  ]) {
+    const kit = loadoutOf(equipment)
+    expect(kit.armour.type).toBe('gromril')
+    expect(kit.ignored).toEqual([])
+    expect(kit.assumptions.join(' ')).toContain('even without a shield')
+  }
+  expect(loadoutOf([{itemId: null, customName: 'unidentified magical plate', quantity: 1}]).armour.type).toBe('none')
+})

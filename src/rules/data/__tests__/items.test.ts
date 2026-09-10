@@ -48,7 +48,7 @@ describe("item catalogue", () => {
       expect(item.price.text.length, `${item.id}: empty price text`).toBeGreaterThan(0);
       expect(item.availability.text.length, `${item.id}: empty availability text`).toBeGreaterThan(0);
       expect(item.source.publication.length, `${item.id}: empty publication`).toBeGreaterThan(0);
-      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|03-campaigns-magic-optional-rules|06-scenarios|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
+      expect(item.source.file, `${item.id}: bad source file ref`).toMatch(/^(02-weapons-armour-equipment|03-campaigns-magic-optional-rules|04-hired-swords|06-scenarios|warbands\/[0-9a-z-]+)\.md:\d+-\d+$/);
       for (const rule of item.specialRules) {
         expect(rule.name.length, `${item.id}: unnamed special rule`).toBeGreaterThan(0);
       }
@@ -59,7 +59,7 @@ describe("item catalogue", () => {
     expect(MELEE_ITEMS.length).toBe(65);
     expect(MISSILE_ITEMS.length).toBe(22);
     expect(BLACKPOWDER_ITEMS.length).toBe(17);
-    expect(ARMOUR_ITEMS.length).toBe(18);
+    expect(ARMOUR_ITEMS.length).toBe(19);
     // 116 after #66 added the Jewelsmith's four gems plus the Alchemist's Notebook and Training
     // Manual — exploration-chart treasures that used to land as untyped, unpriced stash lines.
     expect(MISC_ITEMS.length).toBe(116);
@@ -68,7 +68,7 @@ describe("item catalogue", () => {
     // material-variant generator; the floor here is a loose sanity check, not an exact count.
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(65);
     expect(WARBAND_SPECIAL_ITEMS.length).toBe(40);
-    expect(ITEMS.length).toBe(252 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length + SCENARIO_REWARD_ITEMS.length);
+    expect(ITEMS.length).toBe(253 + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length + SCENARIO_REWARD_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);
     }

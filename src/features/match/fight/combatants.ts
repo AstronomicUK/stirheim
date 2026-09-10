@@ -5,7 +5,7 @@ import { GUARDIAN_RULES } from '../../../rules/resolve/hiredCompanions'
 
 import { leaderTemplate } from '../../../rules/resolve/roster'
 import { unitRules } from '../../../rules/data/campaignRules'
-import { findItem } from '../../../rules/data/items'
+import { findItem, resolveEquipmentName } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
 import { WEAPONS, findWeapon } from '../../../rules/data/weapons'
@@ -360,17 +360,16 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
   const out = emptyLoadout()
   let toughenedLeathers = false
   for (const entry of equipment) {
-    if (!entry.itemId) {
-      out.ignored.push(entry.customName ?? 'Unnamed item')
-      continue
-    }
-    const item = findItem(entry.itemId)
+    // Recognise the exact published plate-armour line on older hires without rewriting their kit.
+    const legacyPlate = !entry.itemId && resolveEquipmentName(entry.customName ?? '')?.id === 'imperial_tactician_plate_armour'
+    const item = findItem(entry.itemId ?? (legacyPlate ? 'imperial_tactician_plate_armour' : ''))
     if (!item) {
-      out.ignored.push(entry.itemId)
+      out.ignored.push(entry.itemId ?? entry.customName ?? 'Unnamed item')
       continue
     }
     const effect = itemEffect(item.id)
     if (item.id === 'toughened_leathers') toughenedLeathers = true
+    if (item.id === 'imperial_tactician_plate_armour') out.assumptions.push('Plate armour: reduce Movement by 1 while worn, even without a shield. The saved characteristic remains the unarmoured value.')
 
     // ---- Weapons ----
     let weapon = item.weaponId ? findWeapon(item.weaponId) : undefined

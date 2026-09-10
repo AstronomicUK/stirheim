@@ -9,6 +9,18 @@ import type { Item } from "../../types/items";
 
 export const ARMOUR_ITEMS: Item[] = [
   {
+    id: "imperial_tactician_plate_armour",
+    name: "Imperial Tactician’s plate armour",
+    category: "armour",
+    price: { base: null, text: "Included in the Imperial Tactician’s equipment" },
+    availability: { kind: "special", text: "Imperial Tactician starting equipment" },
+    description: "Plate armour: 4+ save, -1 Movement.",
+    specialRules: [{ name: "Movement penalty", text: "Wearing this plate armour reduces Movement by 1, whether or not a shield is carried." }],
+    armourSave: 4,
+    scenarioRewardOnly: true,
+    source: { publication: "Fanatic Online 94", file: "04-hired-swords.md:2487-2503" },
+  },
+  {
     id: "barding",
     name: "Barding",
     category: "armour",

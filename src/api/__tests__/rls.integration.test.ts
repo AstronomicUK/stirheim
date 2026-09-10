@@ -1,3 +1,4 @@
+import { isolatedCampaign } from './isolatedCampaign'
 // Row Level Security integration tests against the LOCAL Supabase stack.
 //
 // Skipped unless SUPABASE_LOCAL=1 (npm run test:integration). Needs `supabase start` and a
@@ -14,9 +15,9 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 
 const GM = { email: 'gm@stirheim.test', password: 'stirheim-dev', id: '11111111-1111-4111-8111-111111111111' }
 const PLAYER = { email: 'player@stirheim.test', password: 'stirheim-dev', id: '22222222-2222-4222-8222-222222222222' }
-const REIKLAND_WATCH = 'aaaaaaaa-0000-4000-8000-000000000001'
-const CLAWS_OF_ESHIN = 'aaaaaaaa-0000-4000-8000-000000000002'
-const CAMPAIGN = 'dddddddd-0000-4000-8000-000000000001'
+const REIKLAND_WATCH = crypto.randomUUID()
+const CLAWS_OF_ESHIN = crypto.randomUUID()
+const CAMPAIGN = crypto.randomUUID()
 
 function client(): SupabaseClient {
   return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })
@@ -34,6 +35,7 @@ describe.skipIf(!enabled)('row level security', () => {
   let gm: SupabaseClient
   let player: SupabaseClient
   let admin: SupabaseClient
+  let fixture: Awaited<ReturnType<typeof isolatedCampaign>>
   const created = { warbands: [] as string[], matches: [] as string[] }
 
   beforeAll(async () => {
@@ -44,6 +46,7 @@ describe.skipIf(!enabled)('row level security', () => {
     gm = await signedIn(GM)
     player = await signedIn(PLAYER)
     admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    fixture = await isolatedCampaign(admin, { campaign: CAMPAIGN, reikland: REIKLAND_WATCH, skaven: CLAWS_OF_ESHIN })
   })
 
   afterAll(async () => {
@@ -52,6 +55,7 @@ describe.skipIf(!enabled)('row level security', () => {
     if (created.warbands.length) await admin.from('warbands').delete().in('id', created.warbands)
     await admin.from('warbands').update({ gold: 35, name: 'Reikland Watch' }).eq('id', REIKLAND_WATCH)
     await admin.from('warbands').update({ gold: 20, name: 'Claws of Eshin' }).eq('id', CLAWS_OF_ESHIN)
+    await fixture?.cleanup()
   })
 
   it('anonymous users read nothing', async () => {
@@ -74,6 +78,7 @@ describe.skipIf(!enabled)('row level security', () => {
     const { data, error } = await player
       .from('warbands')
       .select('id, name, heroes(id), henchman_groups(id), items(id)')
+      .in('id', [REIKLAND_WATCH, CLAWS_OF_ESHIN])
       .order('name')
     expect(error).toBeNull()
     expect(data?.map((w) => w.name)).toEqual(['Claws of Eshin', 'Reikland Watch'])
@@ -136,7 +141,7 @@ describe.skipIf(!enabled)('row level security', () => {
   })
 
   it('campaign_preview shows name, GM and size for a valid code, case- and dash-insensitively', async () => {
-    const { data, error } = await player.rpc('campaign_preview', { p_invite_code: ' TEST2026 ' })
+    const { data, error } = await player.rpc('campaign_preview', { p_invite_code: ` ${fixture.inviteCode.replaceAll('-', '').toUpperCase()} ` })
     expect(error).toBeNull()
     expect(data).toEqual([
       { campaign_id: CAMPAIGN, name: 'Ruins of the Stir', gm_display_name: 'Tom (GM)', member_count: 2, archived: false },
@@ -153,14 +158,14 @@ describe.skipIf(!enabled)('row level security', () => {
       .single()
     created.warbands.push(wb!.id)
 
-    const joined = await player.rpc('join_campaign', { p_invite_code: 'test-2026', p_warband_id: wb!.id })
+    const joined = await player.rpc('join_campaign', { p_invite_code: fixture.inviteCode, p_warband_id: wb!.id })
     expect(joined.error).toBeNull()
     expect(joined.data).toMatchObject({ campaign_id: CAMPAIGN, warband_id: wb!.id, user_id: PLAYER.id, left_at: null })
 
-    const again = await player.rpc('join_campaign', { p_invite_code: 'test-2026', p_warband_id: wb!.id })
+    const again = await player.rpc('join_campaign', { p_invite_code: fixture.inviteCode, p_warband_id: wb!.id })
     expect(again.error?.message).toMatch(/already in a campaign/)
 
-    const notMine = await player.rpc('join_campaign', { p_invite_code: 'test-2026', p_warband_id: REIKLAND_WATCH })
+    const notMine = await player.rpc('join_campaign', { p_invite_code: fixture.inviteCode, p_warband_id: REIKLAND_WATCH })
     expect(notMine.error?.message).toMatch(/warband you own/)
 
     const badCode = await player.rpc('join_campaign', { p_invite_code: 'zzzz-zzzz', p_warband_id: wb!.id })
@@ -177,7 +182,7 @@ describe.skipIf(!enabled)('row level security', () => {
 
   it('campaign settings are GM-only and carry the house-rule defaults', async () => {
     const { data } = await player.from('campaigns').select('settings, invite_code').eq('id', CAMPAIGN).single()
-    expect(data?.invite_code).toBe('test-2026')
+    expect(data?.invite_code).toBe(fixture.inviteCode)
     expect(data?.settings).toMatchObject({
       startingGold: 500,
       houseRules: { strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true },

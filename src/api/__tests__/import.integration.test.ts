@@ -1,3 +1,4 @@
+import { isolatedCampaign } from './isolatedCampaign'
 // import_battle_records against the LOCAL stack (SUPABASE_LOCAL=1): the GM imports historical
 // matches (supabase/migrations/20260904000010_import.sql); a member and an outsider are refused;
 // an unknown participant rolls the whole import back.
@@ -12,10 +13,10 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 
 const PLAYER = { email: 'player@stirheim.test', password: 'stirheim-dev', id: '22222222-2222-4222-8222-222222222222' }
 const GM = { email: 'gm@stirheim.test', password: 'stirheim-dev', id: '11111111-1111-4111-8111-111111111111' }
-const CAMPAIGN = 'dddddddd-0000-4000-8000-000000000001'
-const REIKLAND_WATCH = 'aaaaaaaa-0000-4000-8000-000000000001'
-const CLAWS_OF_ESHIN = 'aaaaaaaa-0000-4000-8000-000000000002'
-const OUTSIDER_WARBAND = 'f9f9f9f9-0000-4000-8000-000000000001'
+const CAMPAIGN = crypto.randomUUID()
+const REIKLAND_WATCH = crypto.randomUUID()
+const CLAWS_OF_ESHIN = crypto.randomUUID()
+const OUTSIDER_WARBAND = crypto.randomUUID()
 
 function client(): SupabaseClient {
   return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })
@@ -48,9 +49,11 @@ describe.skipIf(!enabled)('import_battle_records', () => {
   let player: SupabaseClient
   let gm: SupabaseClient
   let admin: SupabaseClient
+  let fixture: Awaited<ReturnType<typeof isolatedCampaign>>
 
   beforeAll(async () => {
     admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    fixture = await isolatedCampaign(admin, { campaign: CAMPAIGN, reikland: REIKLAND_WATCH, skaven: CLAWS_OF_ESHIN })
     player = client()
     gm = client()
     const a = await player.auth.signInWithPassword(PLAYER)
@@ -64,6 +67,7 @@ describe.skipIf(!enabled)('import_battle_records', () => {
   afterAll(async () => {
     await admin.from('matches').delete().eq('campaign_id', CAMPAIGN).eq('created_via', 'import')
     await admin.from('warbands').delete().eq('id', OUTSIDER_WARBAND)
+    await fixture?.cleanup()
   })
 
   it('refuses a member who is not the GM, writing nothing', async () => {

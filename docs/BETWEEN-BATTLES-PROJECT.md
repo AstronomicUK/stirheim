@@ -16,6 +16,22 @@ Keep existing approved player overrides. #72 removes arbitrary treasure from the
 
 Implement cohesive local milestones, documenting source rules and meaningful tests. Keep tracker entries open until their complete scope is verified. Review mobile layouts and the full saved post-battle/recruitment/start-battle journey with disposable local data. Do not alter existing live player histories or the CoC–Dwarves battle for testing.
 
+## Current checkpoint — 10 September, timed continuation
+
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **92 of 103 scenarios**, up from 88 at the start of this continuation. This count does not claim complete automation of every later effect attached to a reward.
+
+This continuation completed Mule Train, Down at the Docks and both Caravan versions, individual Fanatic supplies/lasting Stupidity, and Pirate mixed-crew upkeep. Milestones 23–27 below contain the source and implementation details.
+
+Remaining scenario paths (11): The Hunters Become the Hunted; Defend the Oasis; Assault on the Rock; The Thing in the Woods; Gathering of the Horde; Encampment Raid; Brigands in the Pasturelands; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
+
+Other open work: remaining bespoke hired-character kit/legacy cases and the unresolved Ogre Slaver identity; Pirate Straggler/Prisoner recruitment alternatives; matching recruited henchmen’s equipment after casualties; historical discovery ordering when old reports are amended; final combined report/recruitment/battle-start checks. Guardian interception and Medicine Chest injury-reroll consumption do not have fully automated workflows; retain their documented limits. Do not close the broader tracker entries on the strength of partial milestones.
+
+Validated checkpoint: **1,488 ordinary tests pass; all 114 local database tests pass; typechecked production build passes.** Lint retains only the three pre-existing audit-probe unused-import warnings; the build retains existing CSS/bundle warnings. Browser checks in this continuation cover mobile Fanatic supplies, Mule payments, Docks cargo, both Caravan consequences, Pirate upkeep and Petty Thief’s actual cross-warband shard transfer; desktop Caravan report/trading/discount-expiry checks also pass. Petty Thief’s dice survive reload, the source loses one shard, and the recipient receives it in addition to ordinary exploration income.
+
+Five older database suites now create independent disposable seed-shaped campaigns/rosters. Their assertions are unchanged in meaning; mutable shared QA balances, membership and added warriors no longer contaminate these tests, and their cleanup no longer resets shared rosters. No database reset was used. All production migrations and the single final push/deployment remain outstanding by design.
+
+The following milestone sections are chronological history; earlier “remaining” lists and test totals describe those earlier checkpoints.
+
 ## Progress
 
 - Baseline: production commit 2f7c750, verification commit 20037d4; 1,365 unit tests pass. Existing uncommitted audit documents predate this project and must be preserved.

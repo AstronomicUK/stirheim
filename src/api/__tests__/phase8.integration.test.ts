@@ -1,3 +1,4 @@
+import { isolatedCampaign } from './isolatedCampaign'
 // Phase 8 SQL functions against the LOCAL stack (SUPABASE_LOCAL=1): update_roster with client
 // ids, resolve_pending_advance and record_trade (supabase/migrations/20260904000008_advances_trading.sql).
 
@@ -12,15 +13,15 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const PLAYER = { email: 'player@stirheim.test', password: 'stirheim-dev', id: '22222222-2222-4222-8222-222222222222' }
 const GM = { email: 'gm@stirheim.test', password: 'stirheim-dev', id: '11111111-1111-4111-8111-111111111111' }
 const STRANGER = { email: 'stranger-phase8@stirheim.test', password: 'stirheim-dev' }
-const CAMPAIGN = 'dddddddd-0000-4000-8000-000000000001'
-const REIKLAND_WATCH = 'aaaaaaaa-0000-4000-8000-000000000001'
-const CLAWS_OF_ESHIN = 'aaaaaaaa-0000-4000-8000-000000000002'
-const CAPTAIN = 'bbbbbbbb-0000-4000-8000-000000000001'
-const SKRITCH = 'bbbbbbbb-0000-4000-8000-000000000011'
-const QUEEK = 'bbbbbbbb-0000-4000-8000-000000000012'
-const NEW_HERO = 'f8f8f8f8-0000-4000-8000-000000000001'
-const NEW_GROUP = 'f8f8f8f8-0000-4000-8000-000000000002'
-const NEW_ITEM = 'f8f8f8f8-0000-4000-8000-000000000003'
+const CAMPAIGN = crypto.randomUUID()
+const REIKLAND_WATCH = crypto.randomUUID()
+const CLAWS_OF_ESHIN = crypto.randomUUID()
+const CAPTAIN = crypto.randomUUID()
+const SKRITCH = crypto.randomUUID()
+const QUEEK = crypto.randomUUID()
+const NEW_HERO = crypto.randomUUID()
+const NEW_GROUP = crypto.randomUUID()
+const NEW_ITEM = crypto.randomUUID()
 const STATS = { M: 6, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 5 }
 
 function client(): SupabaseClient {
@@ -32,11 +33,13 @@ describe.skipIf(!enabled)('phase 8 functions', () => {
   let gm: SupabaseClient
   let stranger: SupabaseClient
   let admin: SupabaseClient
+  let fixture: Awaited<ReturnType<typeof isolatedCampaign>>
   let strangerId: string | undefined
   let matchId: string | undefined
 
   beforeAll(async () => {
     admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    fixture = await isolatedCampaign(admin, { campaign: CAMPAIGN, reikland: REIKLAND_WATCH, skaven: CLAWS_OF_ESHIN, captain: CAPTAIN, skritch: SKRITCH, queek: QUEEK })
     const created = await admin.auth.admin.createUser({ email: STRANGER.email, password: STRANGER.password, email_confirm: true })
     if (created.error) throw created.error
     strangerId = created.data.user.id
@@ -59,6 +62,7 @@ describe.skipIf(!enabled)('phase 8 functions', () => {
     await admin.from('heroes').update({ level_ups: 8, stats: { M: 6, WS: 4, BS: 4, S: 4, T: 3, W: 1, I: 5, A: 1, Ld: 7 } }).eq('id', SKRITCH)
     await admin.from('warbands').update({ gold: 20, wyrdstone: 2 }).eq('id', CLAWS_OF_ESHIN)
     if (strangerId) await admin.auth.admin.deleteUser(strangerId)
+    await fixture?.cleanup()
   })
 
   it('update_roster honours a client id on insert so items can reference the new warrior in the same batch', async () => {

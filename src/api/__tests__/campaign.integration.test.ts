@@ -1,3 +1,4 @@
+import { isolatedCampaign } from './isolatedCampaign'
 // Campaign helpers against the LOCAL stack (SUPABASE_LOCAL=1): profile embeds, invite code
 // regeneration, leaving, and settings being GM-only.
 
@@ -10,7 +11,9 @@ const anonKey = process.env.SUPABASE_ANON_KEY ?? ''
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const PLAYER = { email: 'player@stirheim.test', password: 'stirheim-dev', id: '22222222-2222-4222-8222-222222222222' }
 const GM = { email: 'gm@stirheim.test', password: 'stirheim-dev', id: '11111111-1111-4111-8111-111111111111' }
-const CAMPAIGN = 'dddddddd-0000-4000-8000-000000000001'
+const CAMPAIGN = crypto.randomUUID()
+const REIKLAND_WATCH = crypto.randomUUID()
+const CLAWS_OF_ESHIN = crypto.randomUUID()
 
 function client(): SupabaseClient {
   return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })
@@ -20,6 +23,7 @@ describe.skipIf(!enabled)('campaign helpers', () => {
   let player: SupabaseClient
   let gm: SupabaseClient
   let admin: SupabaseClient
+  let fixture: Awaited<ReturnType<typeof isolatedCampaign>>
   const createdCampaigns: string[] = []
   const createdWarbands: string[] = []
 
@@ -30,12 +34,13 @@ describe.skipIf(!enabled)('campaign helpers', () => {
     const b = await gm.auth.signInWithPassword(GM)
     if (a.error || b.error) throw a.error ?? b.error
     admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    fixture = await isolatedCampaign(admin, { campaign: CAMPAIGN, reikland: REIKLAND_WATCH, skaven: CLAWS_OF_ESHIN })
   })
 
   afterAll(async () => {
     if (createdCampaigns.length) await admin.from('campaigns').delete().in('id', createdCampaigns)
     if (createdWarbands.length) await admin.from('warbands').delete().in('id', createdWarbands)
-    await admin.from('campaigns').update({ invite_code: 'test-2026' }).eq('id', CAMPAIGN)
+    await fixture?.cleanup()
   })
 
   it('embeds GM and member display names through the profile foreign keys', async () => {
@@ -66,7 +71,7 @@ describe.skipIf(!enabled)('campaign helpers', () => {
     const asGm = await gm.rpc('regenerate_invite_code', { p_campaign_id: CAMPAIGN })
     expect(asGm.error).toBeNull()
     expect(asGm.data).toMatch(/^[a-z2-9]{4}-[a-z2-9]{4}$/)
-    expect(asGm.data).not.toBe('test-2026')
+    expect(asGm.data).not.toBe(fixture.inviteCode)
     const preview = await player.rpc('campaign_preview', { p_invite_code: asGm.data })
     expect(preview.data?.[0]?.name).toBe('Ruins of the Stir')
   })

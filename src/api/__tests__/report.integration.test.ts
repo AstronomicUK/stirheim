@@ -1,3 +1,4 @@
+import { isolatedCampaign } from './isolatedCampaign'
 // submit_battle_report / withdraw_battle_report against the LOCAL stack (SUPABASE_LOCAL=1).
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -9,11 +10,11 @@ const anonKey = process.env.SUPABASE_ANON_KEY ?? ''
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const PLAYER = { email: 'player@stirheim.test', password: 'stirheim-dev', id: '22222222-2222-4222-8222-222222222222' }
 const GM = { email: 'gm@stirheim.test', password: 'stirheim-dev', id: '11111111-1111-4111-8111-111111111111' }
-const CAMPAIGN = 'dddddddd-0000-4000-8000-000000000001'
-const REIKLAND_WATCH = 'aaaaaaaa-0000-4000-8000-000000000001'
-const CLAWS_OF_ESHIN = 'aaaaaaaa-0000-4000-8000-000000000002'
-const SKRITCH = 'bbbbbbbb-0000-4000-8000-000000000011'
-const VERMINKIN = 'cccccccc-0000-4000-8000-000000000011'
+const CAMPAIGN = crypto.randomUUID()
+const REIKLAND_WATCH = crypto.randomUUID()
+const CLAWS_OF_ESHIN = crypto.randomUUID()
+const SKRITCH = crypto.randomUUID()
+const VERMINKIN = crypto.randomUUID()
 
 function client(): SupabaseClient {
   return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })
@@ -23,6 +24,7 @@ describe.skipIf(!enabled)('post-battle reports', () => {
   let player: SupabaseClient
   let gm: SupabaseClient
   let admin: SupabaseClient
+  let fixture: Awaited<ReturnType<typeof isolatedCampaign>>
   let matchId: string
   /** Claws of Eshin's veteran pool before any report in this file (other suites may have set it). */
   let poolBefore: number | null = null
@@ -34,6 +36,7 @@ describe.skipIf(!enabled)('post-battle reports', () => {
     const b = await gm.auth.signInWithPassword(GM)
     if (a.error || b.error) throw a.error ?? b.error
     admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    fixture = await isolatedCampaign(admin, { campaign: CAMPAIGN, reikland: REIKLAND_WATCH, skaven: CLAWS_OF_ESHIN, skritch: SKRITCH, verminkin: VERMINKIN })
     const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN], p_scenario_rules_id: 'skirmish' })
     matchId = m.data as string
     await gm.rpc('start_match', { p_match_id: matchId })
@@ -49,6 +52,7 @@ describe.skipIf(!enabled)('post-battle reports', () => {
     await admin.from('henchman_groups').update({ size: 4, xp: 0, level_ups: 0 }).eq('id', VERMINKIN)
     await admin.from('warbands').update({ wyrdstone: 2, gold: 20, veteran_pool: null }).eq('id', CLAWS_OF_ESHIN)
     await admin.from('items').delete().eq('warband_id', CLAWS_OF_ESHIN).eq('custom_name', 'Tarnished locket')
+    await fixture?.cleanup()
   })
 
   const report = {

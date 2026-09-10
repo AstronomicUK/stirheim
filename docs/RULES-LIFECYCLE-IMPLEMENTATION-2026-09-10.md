@@ -18,3 +18,5 @@ Still open, not claimed complete:
 - #184: optional mounts/earned bodyguards, snake hunting, explicit choice of retained Scout.
 
 Existing player XP histories and resolved advances are preserved. Approved player overrides remain available. Two additive database functions support cross-roster and single-roster event saves; no table or existing player data is removed.
+
+Deployed: commit `3c057b8`, production deploy `6aa2725819c1752d425a71c2`. Both event-saving database migrations applied. The live WarbandPage, BattlePage, PostBattlePage, HiredSwordsTab and recruitment assets match the tested files byte-for-byte.

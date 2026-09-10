@@ -418,3 +418,21 @@ describe('Rewards of the Shadowlord', () => {
     expect(rolledFromDraft(draft, 'New skill')?.mode).toBe('reward')
   })
 })
+
+
+it('requires a recorded maximum-profile ruling for uncertain hired swords and preserves it on the hire',()=>{
+ const sword:RosterHiredSword={id:NEW_ID,hiredSwordId:'chaos_centaur',name:'Centaur',stats:{...captain.stats,S:3},xp:2,levelUps:0,skillIds:[],spellIds:[],flags:{},injuries:[],equipment:[],status:'active'}
+ const subject={kind:'hiredSword' as const,sword},context={...ctx,roster:{...roster,hiredSwords:[sword]}}
+ const draft=rolled(3,3)
+ expect(planHero(draft,subject,context).need).toBe('maxima')
+ const agreed={...draft,subRoll:1,stat:'S' as const,agreedRacialMaxima:{M:9,WS:7,BS:6,S:5,T:5,W:4,I:6,A:4,Ld:9},agreedRacialMaximaReason:'Campaign agreed Beastman limits with M9'}
+ expect(planHero(agreed,subject,context).need).toBe('maxima')
+ const confirmed={...agreed,maximaRulingConfirmed:true}
+ const plan=planHero(confirmed,subject,context)
+ expect(plan.result?.next.hiredSwords[0].flags.agreedRacialMaxima?.M).toBe(9)
+ expect(plan.result?.resolution.text).toContain('Campaign agreed')
+ expect(hiredSwordMaxima(plan.result!.next.hiredSwords[0],roster.warbandTemplateId).requiresRuling).not.toBe(true)
+ const saved=rolledFromDraft(confirmed,'Stat gain')
+ expect(draftFromRolled(saved as unknown as Record<string,unknown>,NEW_ID)?.agreedRacialMaxima).toEqual(agreed.agreedRacialMaxima)
+ expect(planHero(rolled(5,6),subject,context).need).toBe('skill')
+})

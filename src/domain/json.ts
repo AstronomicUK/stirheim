@@ -55,6 +55,8 @@ export const warriorFlagsSchema = z.object({
   magicLoreId: z.string().optional(),
   chaosMark: z.string().optional(),
   retainedScoutId: z.string().optional(),
+  agreedRacialMaxima: statsSchema.optional(),
+  agreedRacialMaximaReason: z.string().optional(),
   missNextGames: z.number().int().min(0).optional(),
   oldBattleWound: z.boolean().optional(),
   singleHandedWeaponsOnly: z.boolean().optional(),

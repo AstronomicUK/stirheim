@@ -7,7 +7,7 @@
 // Rule judgements made here (the resolvers in src/rules/resolve/advances.ts make the rest):
 // - Hired swords roll on the hero table. They are given a RosterHero shape for the resolvers: skill
 //   tables are read from the named tables and unique skills in their entry, and racial maxima come from a keyword match on the entry name ("Ogre Bodyguard"),
-//   falling back to Human rather than the warband's race.
+//   using Human for human hires; unresolved nonhuman profiles require a recorded ruling.
 // - A hero whose rolled characteristic is at its racial maximum picks a skill instead; when both
 //   offered stats of a "choose" result are maxed the resolver's any-other-stat fallback is shown
 //   alongside "a skill instead".
@@ -18,6 +18,7 @@
 //   holding a spell the hero already knows, or the Wizard -> Type of Magic row whose label is
 //   "<warband name> <unit name>" or the unit name alone.
 
+import { statsSchema } from '../../domain/json'
 import type { PendingAdvanceRow } from '../../domain'
 import { findHiredSword } from '../../rules/data/campaign/hiredSwords'
 import { findRacialMaximum } from '../../rules/data/campaign/experience'
@@ -160,6 +161,7 @@ function groupAsHero(group: RosterHenchmanGroup): RosterHero {
 }
 
 export interface MaximaInfo {
+  requiresRuling?: boolean;
   maxima: Stats
   /** RACIAL_MAXIMUMS profile name. */
   profile: string
@@ -185,7 +187,9 @@ export function heroMaxima(hero: RosterHero, warbandTemplateId: string): MaximaI
  * ("Ogre Bodyguard" -> Ogre), otherwise Human.
  */
 export function hiredSwordMaxima(sword: RosterHiredSword, warbandTemplateId: string): MaximaInfo {
+  if(sword.flags.agreedRacialMaxima && sword.flags.agreedRacialMaximaReason?.trim()) return {maxima:sword.flags.agreedRacialMaxima,profile:'Agreed profile',note:sword.flags.agreedRacialMaximaReason}
   const entryName = findHiredSword(sword.hiredSwordId)?.name ?? sword.name
+  if(['chaos_centaur','cursed_hillman'].includes(sword.hiredSwordId))return {maxima:humanMaxima(),profile:'Not established',note:'No confirmed published maximum profile is available for this hire. Record the table’s ruling before applying a characteristic advance.',requiresRuling:true}
   const match = resolveRacialProfile(hiredSwordAsHero(sword, entryName), warbandTemplateId)
   if (match.value.matchedBy === 'unitOverride' || match.value.matchedBy === 'unitName') {
     return { maxima: match.value.maxima, profile: match.value.profile, note: `Racial maximums taken from the ${entryName} entry.` }
@@ -231,6 +235,9 @@ export type AdvanceStep = 'roll' | 'choose' | 'review'
 export const ADVANCE_STEPS: readonly AdvanceStep[] = ['roll', 'choose', 'review']
 
 export interface AdvanceDraft {
+  maximaRulingConfirmed?: boolean
+  agreedRacialMaxima?: Stats
+  agreedRacialMaximaReason?: string
   spellLoreId?: string
   /** The two D6 as rolled. */
   dice: [number | null, number | null]
@@ -344,6 +351,8 @@ export function setStep(draft: AdvanceDraft, step: AdvanceStep): AdvanceDraft {
 
 /** What "Pick later" stores on the pending row: the dice as rolled, so the choice can be made later. */
 export interface AdvanceRolled {
+  agreedRacialMaxima?: Stats
+  agreedRacialMaximaReason?: string
   version: 1
   dice: [number, number]
   subRoll?: number
@@ -361,6 +370,7 @@ export function rolledFromDraft(draft: AdvanceDraft, rollText: string): AdvanceR
   if (draft.rerolled.length > 0) out.rerolled = [...draft.rerolled]
   if (draft.mode === 'spell') out.mode = 'spell'
   if (draft.mode === 'reward') out.mode = 'reward'
+  if(draft.maximaRulingConfirmed&&draft.agreedRacialMaxima&&draft.agreedRacialMaximaReason?.trim()){out.agreedRacialMaxima=draft.agreedRacialMaxima;out.agreedRacialMaximaReason=draft.agreedRacialMaximaReason.trim()}
   return out
 }
 
@@ -370,7 +380,9 @@ export function draftFromRolled(rolled: Record<string, unknown> | null | undefin
   const [a, b] = rolled.dice
   if (typeof a !== 'number' || typeof b !== 'number') return null
   const draft = emptyDraft(newHeroId, newHeroName)
+  const agreed=statsSchema.safeParse(rolled.agreedRacialMaxima)
   return {
+    ...(agreed.success&&typeof rolled.agreedRacialMaximaReason==='string'&&rolled.agreedRacialMaximaReason.trim()?{agreedRacialMaxima:agreed.data,agreedRacialMaximaReason:rolled.agreedRacialMaximaReason,maximaRulingConfirmed:true}:{}),
     ...draft,
     dice: [a, b],
     subRoll: typeof rolled.subRoll === 'number' ? rolled.subRoll : null,
@@ -540,7 +552,7 @@ export interface StatOption {
   reason: string | null
 }
 
-export type HeroNeed = 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
+export type HeroNeed = 'maxima' | 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
 
 export interface HeroPlan {
   lores?: SpellLore[]
@@ -608,7 +620,9 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   const isSword = subject.kind === 'hiredSword'
   const hero = isSword ? hiredSwordAsHero(subject.sword) : subject.hero
   const warbandTemplateId = ctx.roster.warbandTemplateId
-  const maxima = isSword ? hiredSwordMaxima(subject.sword, warbandTemplateId) : heroMaxima(hero, warbandTemplateId)
+  let maxima = isSword ? hiredSwordMaxima(subject.sword, warbandTemplateId) : heroMaxima(hero, warbandTemplateId)
+  const maximaRuling=maxima.requiresRuling && draft.maximaRulingConfirmed && draft.agreedRacialMaxima && draft.agreedRacialMaximaReason?.trim() && STAT_KEYS.every(k=>Number.isInteger(draft.agreedRacialMaxima![k])&&draft.agreedRacialMaxima![k]>=0)
+  if(maximaRuling)maxima={maxima:draft.agreedRacialMaxima!,profile:'Agreed profile',note:draft.agreedRacialMaximaReason!.trim()}
   const homeLore = loreForHero(hero, ctx.template)
   const lores = isSword && subject.sword.hiredSwordId === 'dark_mage' ? SPELL_LORES.filter(l => ['dark_mage_magic', 'lesser_magic'].includes(l.id)) : homeLore ? [homeLore] : []
   const lore = lores.find(l => l.id === draft.spellLoreId) ?? homeLore
@@ -643,8 +657,11 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   }
 
   const finish = (next: RosterHero, events: ResolutionEvent[], parts: Omit<ResolutionParts, keyof typeof base>): AdvanceResult => {
+    if(maximaRuling) next={...next,flags:{...next.flags,agreedRacialMaxima:draft.agreedRacialMaxima,agreedRacialMaximaReason:draft.agreedRacialMaximaReason!.trim()}}
     const roster = isSword ? replaceHiredSword(ctx.roster, heroToHiredSword(subject.sword, next)) : replaceHero(ctx.roster, next)
-    return { next: roster, events, resolution: buildResolution({ ...base, ...parts }) }
+    const resolution=buildResolution({ ...base, ...parts })
+    if(maximaRuling){const note=`Agreed racial maxima: ${STAT_KEYS.map(k=>`${k} ${maxima.maxima[k]}`).join(', ')}. ${maxima.note}`;resolution.text+=` ${note}`;events=[...events,{kind:'warning',message:note}]}
+    return { next: roster, events, resolution }
   }
 
   const skillRoute = (reason: string | null, allowSpell: boolean, subRoll?: number): HeroPlan => {
@@ -718,6 +735,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     return { ...plan, need: 'roll', error: errorMessage(e) }
   }
   plan.roll = roll
+  if(maxima.requiresRuling && roll.kind!=='newSkill')return {...plan,need:'maxima'}
 
   switch (roll.kind) {
     case 'newSkill':

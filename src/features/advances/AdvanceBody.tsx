@@ -1,3 +1,4 @@
+import { RACIAL_MAXIMUMS } from '../../rules/data/campaign/experience'
 // The step content of one advance (roll, choose, review) and its pickers, shared by the bottom
 // sheet on the Advancements screen and by the Advances step of the post-battle wizard.
 
@@ -13,7 +14,7 @@ import type { RewardPlan } from '../../rules/resolve/rewards'
 import { skillName } from '../roster/view/lookups'
 import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import type { AvailableSkillTable } from '../../rules/resolve/advances'
-import { Button, DieField, Notice, SegmentedControl, SelectField, TextField } from '../../ui'
+import { Button, DieField, NumberField, Notice, SegmentedControl, SelectField, TextField } from '../../ui'
 import { Card, Tag } from '../roster/view/bits'
 import {
   ADVANCE_STEPS,
@@ -158,6 +159,14 @@ function MaximaNote({ plan }: { plan: HeroPlan | GroupPlan }) {
 }
 
 function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPlan> & { hero: RosterHero | null; chooseSpell: PerkSource | null }) {
+  if(plan.need==='maxima')return <Block title="Agree the maximum characteristics">
+    <p className="text-sm">The source does not establish a maximum profile for this hire. Choose a profile as a starting point, adjust it if needed, and record the ruling agreed at the table. It will be saved with this hire and in the advancement log.</p>
+    <SelectField label="Start from a published profile" value="" onChange={e=>{const row=RACIAL_MAXIMUMS.find(r=>r.profile===e.target.value);if(row)update(d=>({...d,agreedRacialMaxima:{...row.stats}}))}}><option value="">Choose a starting profile…</option>{RACIAL_MAXIMUMS.map(r=><option key={r.profile} value={r.profile}>{r.profile}</option>)}</SelectField>
+    {draft.agreedRacialMaxima?<div className="grid grid-cols-3 gap-2">{STAT_ORDER.map(k=><NumberField key={k} label={`${k} maximum`} value={draft.agreedRacialMaxima![k]} onChange={n=>update(d=>({...d,agreedRacialMaxima:{...d.agreedRacialMaxima!,[k]:n??0}}))}/>)}</div>:null}
+    <TextField label="Agreed ruling and source, if known" value={draft.agreedRacialMaximaReason??''} onChange={e=>update(d=>({...d,agreedRacialMaximaReason:e.target.value}))}/>
+    <Button disabled={!draft.agreedRacialMaxima||!draft.agreedRacialMaximaReason?.trim()} onClick={()=>update(d=>({...d,maximaRulingConfirmed:true}))}>Use this agreed profile</Button>
+  </Block>
+
   if (plan.need === 'subRoll' || (plan.roll?.kind === 'statSubRoll' && plan.subStat === null)) {
     return (
       <Block title="Roll again (D6)">

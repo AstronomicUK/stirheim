@@ -155,6 +155,7 @@ export interface AdvancesDerived {
 }
 
 export interface DerivedReport {
+  recruits: ReturnType<typeof locationRecruits>
   participants: Participants
   /** Kit after the battle: drugs' side effects, ruined clothes, maps and wishes. */
   kit: KitDerived
@@ -826,7 +827,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     const line=xp.lines.find(l=>l.subjectId===departure.id)
     if(line)line.advancesEarned=0
   }
-  const recruits = locationRecruits(draft, ctx, exploration, injuries)
+  const recruits = locationRecruits(draft, ctx, exploration, injuries, ctx.roster.gold + applied.warband.gold_delta)
+  if (recruits.awardedItems.length) applied.awarded_items = [...(applied.awarded_items ?? []), ...recruits.awardedItems]
   const summoned = ritualZombies(draft, ctx, injuries, recruits)
   if (recruits.newGroups.length || summoned.newGroups.length) applied.new_groups = [...recruits.newGroups, ...summoned.newGroups]
   for (const row of recruits.groupPatches) {
@@ -889,7 +891,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     }
   }
 
-  return { participants, kit, advances, survivingHeroes, injuries, xp, exploration, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
+  return { participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
 }
 
 /** The finished report, or an error naming what is still missing. */

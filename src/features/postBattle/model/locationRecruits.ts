@@ -1,3 +1,4 @@
+import { pirateRecruits } from './pirateRecruits'
 import type { ReportApplied } from '../../../domain'
 import { explorationFaction } from '../../../rules/resolve/explorationDiscoveries'
 import { resolveRacialProfile } from '../../../rules/resolve/advances'
@@ -11,11 +12,12 @@ import type { ReportContext, InjuriesDerived } from './derive'
 import type { ExplorationDerived } from './exploration'
 import type { ReportDraft } from './state'
 
-export function locationRecruits(draft:ReportDraft, ctx:ReportContext, ex:ExplorationDerived, injuries:InjuriesDerived) {
+export function locationRecruits(draft:ReportDraft, ctx:ReportContext, ex:ExplorationDerived, injuries:InjuriesDerived, budget=ctx.roster.gold) {
+ if(ctx.roster.warbandTemplateId==='pirates'&&draft.exploration.pirateRecruits&&['straggler','prisoners'].includes(ex.location?.id??'')) return pirateRecruits(draft,ctx,injuries,ex.location!.id,budget)
  const faction=explorationFaction(ctx.roster.warbandTemplateId)
  const zombie=faction==='undead'&&['straggler','prisoners'].includes(ex.location?.id??'')
  const human=faction==='other'&&ex.location?.id==='prisoners'
- const kind=zombie?'zombie':human?'human':null
+ const kind: 'zombie' | 'human' | null=zombie?'zombie':human?'human':null
  const needsDie=zombie&&ex.location?.id==='prisoners'
  const count=needsDie?(Number.isInteger(draft.exploration.recruitDie)&&draft.exploration.recruitDie!>=1&&draft.exploration.recruitDie!<=3?draft.exploration.recruitDie!:null):kind?1:0
  const roster={...ctx.roster,heroes:ctx.roster.heroes.map(h=>injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero??h),henchmenGroups:ctx.roster.henchmenGroups.map(g=>injuries.groups.find(r=>r.group.id===g.id)?.resolution.group??g)}
@@ -28,7 +30,7 @@ export function locationRecruits(draft:ReportDraft, ctx:ReportContext, ex:Explor
   return race.profile==='Human'&&race.matchedBy!=='fallback'
  })
  const newUnit=zombie?ctx.template?.henchmanTemplates.find(u=>/zombie/i.test(u.name)):undefined
- const out={kind,needsDie,count,groups,newUnit,problems:[] as string[],goldCost:0,listedCost:0 as number|null,newGroups:[] as NonNullable<ReportApplied['new_groups']>,groupPatches:[] as ReportApplied['groups'],itemPatches:[] as ReportApplied['item_patches'],notes:[] as string[]}
+ const out={kind,needsDie,count,groups,newUnit,problems:[] as string[],goldCost:0,listedCost:0 as number|null,newGroups:[] as NonNullable<ReportApplied['new_groups']>,groupPatches:[] as ReportApplied['groups'],itemPatches:[] as ReportApplied['item_patches'],notes:[] as string[],awardedItems:[] as NonNullable<ReportApplied['awarded_items']>}
  if(!kind) return out
  if(count===null){out.problems.push('Roll D3 for the number of rescued prisoners raised as Zombies.');return out}
  const choice=draft.exploration.recruitChoice

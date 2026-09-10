@@ -246,7 +246,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
 
   const faction = explorationFaction(roster.warbandTemplateId)
   if (rewardsApply && location?.id === 'straggler' && faction === 'skaven') rewards = [{kind:'gold',amount:'2D6',text:'Straggler sold: 2D6 gc.'}]
-  if (rewardsApply && location?.id === 'prisoners' && (faction === 'skaven' || faction === 'other')) rewards = [{kind:'gold',amount:faction==='skaven'?'3D6':'2D6',text:faction==='skaven'?'Prisoners sold: 3D6 gc.':'Prisoners escorted to safety: 2D6 gc.'}]
+  if (rewardsApply && !(roster.warbandTemplateId === 'pirates' && draft.pirateRecruits) && location?.id === 'prisoners' && (faction === 'skaven' || faction === 'other')) rewards = [{kind:'gold',amount:faction==='skaven'?'3D6':'2D6',text:faction==='skaven'?'Prisoners sold: 3D6 gc.':'Prisoners escorted to safety: 2D6 gc.'}]
   if (location?.id === 'graveyard' && ['witch_hunters','sisters_of_sigmar'].includes(roster.warbandTemplateId)) rewards = []
   const xp = locationXp(location?.id, roster.warbandTemplateId, draft, input.rewardHeroes ?? roster.heroes, input.leaderId)
   problems.push(...xp.problems)
@@ -320,7 +320,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const record: ExplorationRecord | null =
     problems.length === 0
       ? {
-          ...(location?.id === 'straggler' && explorationFaction(roster.warbandTemplateId) === 'other' ? { benefits: ['straggler' as const] } : {}),
+          ...(location?.id === 'straggler' && explorationFaction(roster.warbandTemplateId) === 'other' && !(roster.warbandTemplateId === 'pirates' && draft.pirateRecruits) ? { benefits: ['straggler' as const] } : {}),
           ...(artefact ? {artefact:{roll:draft.artefactRoll!, ...(draft.artefactOverrideReason?.trim() ? {overrideReason:draft.artefactOverrideReason.trim()} : {})}} : {}),
           ...(xp.awards.length ? {xpAwards:xp.awards} : {}),
           diceAllowed: allowed.count,

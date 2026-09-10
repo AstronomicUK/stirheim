@@ -8,6 +8,7 @@ export interface HoardFind {
   itemName?: string
   threshold?: number
   discoveryDice?: number
+  unitValueMultiplier?: number
   quantityIsValue?: boolean
   unclaimedBeforeBattle?: boolean
   multiplierRuling?: string
@@ -16,11 +17,14 @@ export interface HoardFind {
   quantity: number | { count: number; sides: number; bonus?: number; multiplier?: number }
 }
 export type ScenarioRewardRule =
+  | { kind: 'choice'; note: string; question: string; options: { id: string; label: string; rule: ScenarioRewardRule }[] }
   | { kind: 'none'; note: string }
+  | { kind: 'recipe'; note: string }
+  | { kind: 'ferry'; note: string }
   | { kind: 'horses'; note: string }
   | { kind: 'ambush'; note: string }
   | { kind: 'bounty'; note: string; label: string; goldEach: number; winnerOnly?: boolean; condition?: { id: string; question: string }; baseDice?: { count: number; multiplier: number } }
-  | { kind: 'repeated'; note: string; label: string; max?: number; requiredCount?: number; countSides?: number; tableDice?: number; condition?: { id: string; question: string }; winnerOnly?: boolean; attackerBonus?: number; table: { min: number; max: number; goldDice?: number; shardDice?: number; shards?: number; itemName?: string; itemQuantity?: HoardFind['quantity']; quantityIsValue?: boolean; label: string }[] }
+  | { kind: 'repeated'; bonusFinds?: HoardFind[]; note: string; label: string; max?: number; requiredCount?: number; extraPerWarband?: number; countSides?: number; tableDice?: number; condition?: { id: string; question: string }; winnerOnly?: boolean; attackerBonus?: number; table: { min: number; max: number; goldDice?: number; goldBonus?: number; shardDice?: number; shards?: number; itemName?: string; itemOptions?: string[]; itemQuantity?: HoardFind['quantity']; quantityIsValue?: boolean; label: string }[] }
   | { kind: 'counters'; max?: number; label?: string; note: string }
   | { kind: 'building'; note: string }
   | { kind: 'encounter'; note: string }
@@ -45,7 +49,46 @@ const hauntedFinds: HoardFind[] = [
   { id: 'tome', label: 'Holy Tome', kind: 'item', itemName: 'Holy Tome', threshold: 5, quantity: 1 },
   { id: 'artefact', label: 'Magical artefact', kind: 'artefact', threshold: 5, quantity: 1 },
 ]
+const TOMB_TREASURE_TABLE: Extract<ScenarioRewardRule, { kind: 'repeated' }>['table'] = [
+    { min: 1, max: 1, label: 'Heavy armour', itemName: 'Heavy armour' },
+    { min: 2, max: 2, label: 'Scimitars', itemName: 'Scimitar', itemQuantity: { count: 1, sides: 3 } },
+    { min: 3, max: 3, label: 'Jambyias', itemName: 'Dagger', itemQuantity: { count: 1, sides: 6 } },
+    { min: 4, max: 4, label: 'Gem-encrusted helmet', itemName: 'Gem-encrusted helmet (worth {amount} gc)', itemQuantity: { count: 1, sides: 6, multiplier: 10 }, quantityIsValue: true },
+    { min: 5, max: 5, label: 'Shield', itemName: 'Shield' },
+    { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
+  ]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
+  the_recipe: { kind: 'recipe', note: 'The nominated winning warband turns Geefer in for 5D6 gc. Unspoiled pies are worth 1 gc each to a losing warband or half their number, rounded up, to a winner. Winners also collect pies left in the cart; routed warbands keep the pies they carried away.' },
+  bounty_hunting: { kind: 'repeated', winnerOnly: true, requiredCount: 6, extraPerWarband: 1, label: 'Bandit bounty', note: 'Six bandits plus one per warband involved. Each head has its own D6+5 gc bounty. The winner also captures six crossbows, D3 swords and 2D6 daggers; the rations have no value.', table: [{ min: 1, max: 6, label: 'Bandit surrendered to the authorities', goldDice: 1, goldBonus: 5 }], bonusFinds: [
+    { id: 'crossbows', label: 'Captured crossbows', kind: 'item', itemName: 'Crossbow', quantity: 6 },
+    { id: 'swords', label: 'Captured swords', kind: 'item', itemName: 'Sword', quantity: { count: 1, sides: 3 } },
+    { id: 'daggers', label: 'Captured daggers', kind: 'item', itemName: 'Dagger', quantity: { count: 2, sides: 6 } },
+  ] },
+
+  the_bodyguards: { kind: 'choice', question: 'Which reward is your warband claiming?', note: 'Record the qualifying outcome, not just who won. The defender is paid if the merchant survives; an attacker is paid for returning the merchant or his head to the overlord.', options: [
+    { id: 'none', label: 'No qualifying reward', rule: { kind: 'none', note: 'No merchant payment or equipment reward claimed.' } },
+    { id: 'defender', label: 'Defender — merchant survived', rule: { kind: 'repeated', requiredCount: 1, max: 1, tableDice: 2, label: 'Merchant gift', note: 'The surviving merchant pays 7D6+20 gc and one gift from his own table.', bonusFinds: [{ id: 'payment', label: 'Merchant payment', kind: 'gold', quantity: { count: 7, sides: 6, bonus: 20 } }], table: [
+      { min: 2, max: 2, label: 'Holy or Unholy Relic', itemOptions: ['Holy Relic', 'Unholy Relic'] },
+      { min: 3, max: 5, label: 'Cathayan Silk Clothes', itemName: 'Cathayan Silks' },
+      { min: 6, max: 8, label: 'Ithilmar Armour', itemName: 'Ithilmar Armour' },
+      { min: 9, max: 10, label: 'Elven Cloak', itemName: 'Elven Cloak' },
+      { min: 11, max: 12, label: 'Gromril Armour', itemName: 'Gromril Armour' },
+    ] } },
+    { id: 'attacker', label: 'Attacker — returned merchant or head', rule: { kind: 'repeated', requiredCount: 1, max: 1, tableDice: 2, label: 'Overlord gift', note: 'The warband returning the merchant or his head receives 4D6+15 gc and one gift.', bonusFinds: [{ id: 'payment', label: 'Overlord payment', kind: 'gold', quantity: { count: 4, sides: 6, bonus: 15 } }], table: [
+      { min: 2, max: 2, label: 'Throwing Knives', itemName: 'Throwing Knives' },
+      { min: 3, max: 5, label: 'Crossbow Pistol', itemName: 'Crossbow Pistol' },
+      { min: 6, max: 8, label: 'Hunting Arrows', itemName: 'Hunting Arrows' },
+      { min: 9, max: 10, label: 'Repeater Crossbow', itemName: 'Repeater Crossbow' },
+      { min: 11, max: 12, label: 'Hunting Rifle', itemName: 'Hunting Rifle' },
+    ] } },
+  ] },
+
+  protect_hornsby_s_ferry: { kind: 'ferry', note: 'Attacker victory: 3D6 gc each. Helping rough up the Hornsbys: 2D6 gc even after a loss. Successful defence with an unharmed family: 5D6 gc, less 2D6 patrol fees if the turn limit ended the battle; allied defenders agree their shares.' },
+  defend_the_tomb: { kind: 'repeated', winnerOnly: true, requiredCount: 3, max: 3, label: 'Tomb treasure', table: TOMB_TREASURE_TABLE, note: 'The winner receives D6×10 gc, D3 gems valued at D6×5 gc each, and exactly three treasure-table rolls.', bonusFinds: [
+    { id: 'gold', label: 'Tomb gold', kind: 'gold', quantity: { count: 1, sides: 6, multiplier: 10 } },
+    { id: 'gems', label: 'Tomb gems', kind: 'item', itemName: 'Gem (worth {amount} gc)', quantity: { count: 1, sides: 3 }, unitValueMultiplier: 5 },
+  ] },
+
   mordheim_s_burning: { kind: 'none', note: 'Only the winner explores, without the winner’s bonus die. Wyrdstone sales yield triple gold; the experience and injury steps use this scenario’s special rules. There is no separate treasure table.' },
   the_item_lost: { kind: 'hoard', winnerOnly: false, condition: { id: 'retrieved', question: 'Did your warband successfully retrieve the wand?' }, finds: [], branches: { question: 'How is the recovered wand resolved?', options: [
     { id: 'nicodemus', label: 'Working for Nicodemus — return the wand', finds: [{ id: 'payment', label: 'Nicodemus’s payment', kind: 'shards', quantity: 2 }] },
@@ -72,14 +115,7 @@ export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
     { min: 10, max: 11, label: 'Tome of the Truthsayers', itemName: 'Tome of the Truthsayers' },
     { min: 12, max: 12, label: 'Vambrace of Silver', itemName: 'Vambrace of Silver' },
   ] },
-  tomb_raid: { kind: 'repeated', countSides: 3, max: 3, winnerOnly: true, label: 'Tomb treasure', note: 'The winner rolls D3 for the number of finds, then a separate D6 for each treasure. Further dice determine the quantity or jewellery value.', table: [
-    { min: 1, max: 1, label: 'Heavy armour', itemName: 'Heavy armour' },
-    { min: 2, max: 2, label: 'Scimitars', itemName: 'Scimitar', itemQuantity: { count: 1, sides: 3 } },
-    { min: 3, max: 3, label: 'Jambyias', itemName: 'Dagger', itemQuantity: { count: 1, sides: 6 } },
-    { min: 4, max: 4, label: 'Gem-encrusted helmet', itemName: 'Gem-encrusted helmet (worth {amount} gc)', itemQuantity: { count: 1, sides: 6, multiplier: 10 }, quantityIsValue: true },
-    { min: 5, max: 5, label: 'Shield', itemName: 'Shield' },
-    { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
-  ] },
+  tomb_raid: { kind: 'repeated', countSides: 3, max: 3, winnerOnly: true, label: 'Tomb treasure', note: 'The winner rolls D3 for the number of finds, then a separate D6 for each treasure. Further dice determine the quantity or jewellery value.', table: TOMB_TREASURE_TABLE },
   scripts_of_sigmar: { kind: 'none', note: 'Neither linked mission specifies a priced treasure reward. Experience uses the selected mission; an agreed replacement for the Script is recorded as a scenario adjustment.' },
   the_battle_at_koleshire_keep: { kind: 'none', note: 'The source gives no post-battle treasure payment. Jarsyn’s 80 gc and Skaggle’s 90 gc are starting recruitment costs, not rewards.' },
   the_restless_dead: { kind: 'none', note: 'This wandering-undead encounter adds no separate treasure table. Any reward from an agreed underlying scenario must be recorded as an explained adjustment.' },

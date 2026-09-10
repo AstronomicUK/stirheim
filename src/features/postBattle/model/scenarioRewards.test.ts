@@ -303,3 +303,51 @@ it('saves scenario equipment by catalogue identity rather than oversized custom 
     expect(SHOP_ITEMS.some(i => i.id === item.id)).toBe(false)
   }
 })
+
+it('combines Defend the Tomb’s three finds with separate gold and individually valued gems', () => {
+  const state = { repeated: [{ roll: 1, dice: [] }, { roll: 5, dice: [] }, { roll: 6, dice: [] }], finds: { gold: { discovery: null, dice: [4] }, gems: { discovery: null, dice: [2], unitValueDice: [1, 6] } } }
+  const result = derive('defend_the_tomb', state)
+  expect(result.problems).toEqual([])
+  expect(result.gold).toBe(40)
+  expect(result.items).toHaveLength(5)
+  expect(result.items.filter(i => i.custom_name?.startsWith('Gem ('))).toEqual([
+    { item_rules_id: null, custom_name: 'Gem (worth 5 gc)', quantity: 1 },
+    { item_rules_id: null, custom_name: 'Gem (worth 30 gc)', quantity: 1 },
+  ])
+  expect(derive('defend_the_tomb', { ...state, repeated: state.repeated.slice(1) }).problems).toHaveLength(1)
+  expect(derive('defend_the_tomb', { ...state, finds: { ...state.finds, gems: { discovery: null, dice: [3], unitValueDice: [1, 6] } } }).problems).toHaveLength(1)
+  expect(derive('defend_the_tomb', state, { result: 'lost' }).items).toEqual([])
+})
+
+it('uses Bodyguards’ role-specific payment and table, requiring an explicit relic choice', () => {
+  const attacker = derive('the_bodyguards', { branch: 'attacker', repeated: [{ roll: null, tableDice: [6, 6], dice: [] }], finds: { payment: { discovery: null, dice: [1, 2, 3, 4] } } })
+  expect(attacker.problems).toEqual([])
+  expect(attacker.gold).toBe(25)
+  expect(attacker.items[0].item_rules_id).toBe('hunting_rifle')
+  const defender = { branch: 'defender', repeated: [{ roll: null, tableDice: [1, 1], dice: [] }], finds: { payment: { discovery: null, dice: [1, 1, 1, 1, 1, 1, 1] } } }
+  expect(derive('the_bodyguards', defender).problems).toHaveLength(1)
+  const chosen = derive('the_bodyguards', { ...defender, repeated: [{ ...defender.repeated[0], itemChoice: 'Unholy Relic' }] })
+  expect(chosen.problems).toEqual([])
+  expect(chosen.gold).toBe(27)
+  expect(chosen.items).toHaveLength(1)
+  expect(derive('the_bodyguards', { branch: 'none', finds: defender.finds }).gold).toBe(0)
+})
+
+it('derives Bounty Hunting heads from actual participant count and rolls each bounty separately', () => {
+  const draft = { ...base, scenarioRewards: { repeated: Array.from({ length: 10 }, () => ({ roll: null, dice: [2] })), finds: { swords: { discovery: null, dice: [2] }, daggers: { discovery: null, dice: [3, 4] } } } }
+  const result = scenarioRewards(draft, 'bounty_hunting', participants, { opponents: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] })
+  expect(result.problems).toEqual([])
+  expect(result.gold).toBe(70)
+  expect(result.items.map(i => i.quantity)).toEqual([6, 2, 7])
+  expect(scenarioRewards(draft, 'bounty_hunting', participants, { opponents: [{ id: 'a' }] }).problems).toHaveLength(1)
+  expect(scenarioRewards(draft, 'bounty_hunting', participants).problems).toHaveLength(1)
+})
+
+it('pays Recipe pies at the correct outcome rate, keeps routed pies and pays only the nominated winner for Geefer', () => {
+  const recipe = { pies: 3, cartPies: 2, turnsInGeefer: true, dice: [1, 2, 3, 4, 5] }
+  expect(derive('the_recipe', { recipe })).toMatchObject({ gold: 18, problems: [] })
+  expect(derive('the_recipe', { recipe }, { result: 'lost', routed: true })).toMatchObject({ gold: 3, problems: [] })
+  expect(derive('the_recipe', { recipe: { ...recipe, turnsInGeefer: false } }).gold).toBe(3)
+  expect(derive('the_recipe', { recipe: { ...recipe, pies: 24 } }).problems).toHaveLength(1)
+  expect(derive('the_recipe', { recipe: { ...recipe, dice: [1] } }).problems).toHaveLength(1)
+})

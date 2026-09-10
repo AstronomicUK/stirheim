@@ -1,3 +1,4 @@
+import { RockTomeCard } from './view/RockTomeCard'
 import { PirateUpkeepCard } from './view/PirateUpkeepCard'
 import { HenchmanUpkeepCard } from './view/HenchmanUpkeepCard'
 import { useMemo, useState } from 'react'
@@ -207,6 +208,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       ) : null}
       {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
 
+      <RockTomeCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       <HiredRosterRepairCard detail={detail} canEdit={canEdit} />
       <HiredUpkeepCard detail={detail} canEdit={canEdit} />

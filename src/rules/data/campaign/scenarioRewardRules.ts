@@ -19,6 +19,7 @@ export interface HoardFind {
 export type ScenarioRewardRule =
   | { kind: 'choice'; note: string; question: string; options: { id: string; label: string; rule: ScenarioRewardRule }[] }
   | { kind: 'none'; note: string }
+  | { kind: 'rock'; note: string }
   | { kind: 'encampment'; note: string }
   | { kind: 'forbidden-square'; note: string }
   | { kind: 'gathering'; note: string }
@@ -69,6 +70,7 @@ const TOMB_TREASURE_TABLE: Extract<ScenarioRewardRule, { kind: 'repeated' }>['ta
     { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
   ]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
+  assault_on_the_rock: {kind:'rock',note:'Record actual room searches and conscripted Sisters. The winning warband resolves the recovered tome according to its faction. Record the ordinary tome-carrier XP separately under scenario objectives.'},
   encampment_raid: {kind:'encampment',note:'The victorious attacker claims the defender’s existing equipment stash and records whether the camp is destroyed or occupied. Optional settlement housing consequences are recorded separately.'},
   the_forbidden_square: {kind:'forbidden-square',note:'Archive scenario: record actual placed/scored counters and the agreed ownership of recovered weapon counters.'},
   gathering_of_the_horde: {kind:'gathering',note:'Control of Executioner’s Square follows the defeat of Dirk or Valnor. Record the agreed controller of a victorious allied horde.'},

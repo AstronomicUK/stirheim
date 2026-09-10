@@ -2,6 +2,8 @@
 import type { Item } from "../../types/items"
 
 export const SCENARIO_REWARD_ITEMS: Item[] = [
+  {id:'scenario_rock_tome',name:'Tome from the Rock',category:'misc',price:{base:null,text:'Scenario reward'},availability:{kind:'special',text:'Assault on the Rock'},description:'Grants one reader two spells from their own list, Lesser Magic, or a combination. Sisters of Sigmar, Witch Hunters and warbands containing a Priest of Morr cannot use it. Apply both lessons from the warband screen.',specialRules:[],scenarioRewardOnly:true,source:{publication:'Town Cryer 22',file:'06-scenarios.md:3023-3082'}},
+  {id:'scenario_rock_tome_read',name:'Tome from the Rock (read)',category:'misc',price:{base:null,text:'Bound to its reader'},availability:{kind:'special',text:'Assault on the Rock'},description:'This copy has already taught its two spells and is bound to its recorded reader. It grants no further lessons.',specialRules:[],scenarioRewardOnly:true,source:{publication:'Town Cryer 22',file:'06-scenarios.md:3023-3082'}},
 {
   "id": "scenario_smuggled_gems",
   "name": "Smuggled Gems",

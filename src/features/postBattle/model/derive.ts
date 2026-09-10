@@ -1,3 +1,5 @@
+import { rockRewards } from './rockRewards'
+import { rockConscripts } from './rockConscripts'
 import { encampmentRewards } from './encampmentRewards'
 import { groupEquipmentLosses } from './groupEquipmentLosses'
 import { mixedPirateCrew } from '../../../rules/resolve/mixedHireUpkeep'
@@ -294,6 +296,11 @@ function alive(outcome: InjuryOutcome | null): boolean {
   return outcome !== 'dead' && outcome !== 'retired'
 }
 
+export function scenarioRewardContext(ctx:ReportContext,injuries:InjuriesDerived):ReportContext {
+  if(ctx.scenarioId!=='assault_on_the_rock')return ctx
+  return {...ctx,roster:{...ctx.roster,heroes:ctx.roster.heroes.map(h=>injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero??h),hiredSwords:ctx.roster.hiredSwords.map(h=>injuries.hiredSwords.find(r=>r.sword.id===h.id)?.resolution.sword??h),henchmenGroups:ctx.roster.henchmenGroups.map(g=>injuries.groups.find(r=>r.group.id===g.id)?.resolution.group??g)}}
+}
+
 export function deriveXp(draft: ReportDraft, participants: Participants, injuries: InjuriesDerived, ctx: ReportContext, locationAwards: import('./locationXp').LocationXpAward[] = []): XpDerived {
   const underdogAvailable = underdogBonusFor(ctx.myRating, ctx.opponentRating)
   const underdogApplied = draft.underdog ? underdogAvailable : 0
@@ -369,7 +376,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   if (ctx.scenarioId === 'the_wizard_s_tower') {
     problems.veterans.push(...towerTreasure(draft.towerChests).problems)
   }
-  problems.veterans.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template), ctx).problems)
+  problems.veterans.push(...scenarioRewards(draft, ctx.scenarioId, participantsOf(ctx.roster, ctx.template), scenarioRewardContext(ctx,injuries)).problems)
   if ((scenarioRewardRule(ctx.scenarioId) || ctx.scenarioId === 'the_wizard_s_tower') && (draft.battleGold || draft.battleWyrdstone || draft.scenarioItems?.length) && !draft.scenarioRewardOverrideReason?.trim()) problems.veterans.push('Explain the agreed adjustment outside this scenario’s normal rewards.')
   if (scenario.needsMission) problems.experience.push('Choose which scenario mission was played.')
   if (scenario.conflict && draft.scenarioUseBody === undefined) problems.experience.push('Choose the agreed interpretation of this scenario’s conflicting award values.')
@@ -424,7 +431,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
 }
 
 function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Participants, injuries: InjuriesDerived, xp: XpDerived, exploration: ExplorationDerived, kit: KitDerived): ReportApplied {
-  const treasure = scenarioRewards(draft, ctx.scenarioId, participants, ctx)
+  const treasure = scenarioRewards(draft, ctx.scenarioId, participants, scenarioRewardContext(ctx,injuries))
   if (ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign) return {
     heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: [...(draft.scenarioItems ?? []), ...treasure.items],
     warband: { gold_delta: draft.battleGold + treasure.gold, wyrdstone_delta: draft.battleWyrdstone + treasure.shards, veteran_pool: null },
@@ -824,9 +831,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
   const kidnapped = ctx.scenarioId === 'kidnapped' ? kidnappedRewards(draft.scenarioRewards?.kidnapped, { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h) }, ctx.items) : null
-  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
+  const rock = ctx.scenarioId==='assault_on_the_rock'?rockRewards(draft.scenarioRewards?.rock??{},draft.result==='won',scenarioRewardContext(ctx,injuries).roster):null
+  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? []), ...(rock?.xpAwards??[])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
+  if(ctx.scenarioId==='assault_on_the_rock'&&draft.result==='won')applied.rock_tome_claim=true
   if(ctx.scenarioId==='encampment_raid') {
     const state=draft.scenarioRewards?.encampment??{}
     const reward=encampmentRewards(state,draft.result==='won',ctx.opponents??[])
@@ -893,6 +902,9 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     if (existing && original) existing.quantity = (existing.quantity ?? original.quantity) + (row.quantity! - original.quantity)
     else applied.item_patches.push(row)
   }
+  const conscripts = rockConscripts(ctx.scenarioId==='assault_on_the_rock'?draft.scenarioRewards?.rock?.conscripts??[]:[],rosterAfterReport(ctx.roster,applied),ctx.template)
+  if(conscripts.newGroups.length)applied.new_groups=[...(applied.new_groups??[]),...conscripts.newGroups]
+  if(conscripts.awardedItems.length)applied.awarded_items=[...(applied.awarded_items??[]),...conscripts.awardedItems]
   applied.warband.gold_delta -= recruits.goldCost
   if (recruits.goldCost > 0 && ctx.roster.gold + applied.warband.gold_delta < 0) recruits.problems.push('The treasury cannot afford identical equipment for the free recruit.')
   if (exploration.record) exploration.record.notes.push(...recruits.notes)
@@ -909,7 +921,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if(ctx.scenarioId==='the_hunters_become_the_hunted'&&draft.result==='won'&&(!Number.isInteger(draft.scenarioRewards?.hunters?.alive)||draft.scenarioRewards!.hunters!.alive!<0||draft.scenarioRewards!.hunters!.alive!>2))problems.outcome.push('Record the number of Cold Ones alive (0–2) for survivor experience.')
   problems.experience.push(...(kidnapped?.problems ?? []))
   problems.outcome.push(...(harpy?.problems ?? []))
-  problems.veterans.push(...summoned.problems)
+  problems.veterans.push(...summoned.problems, ...conscripts.problems, ...(rock?.problems??[]))
   problems.exploration.push(...recruits.problems, ...theft.problems)
   const maglahLoss=injuries.hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
   let retainedScoutNote=''
@@ -939,7 +951,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)), ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

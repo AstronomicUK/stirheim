@@ -102,6 +102,25 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
     expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:report})).error).toBeNull()
     expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[1],p_report:{...report,applied:{...report.applied,encampment_capture:{...report.applied.encampment_capture,defender_id:warbands[0]}}}})).error?.message).toContain('already been claimed')
   })
+  it('allows only one winning Rock tome reward, releasing the claim on withdrawal',async()=>{
+    await admin.from('matches').update({scenario_rules_id:'assault_on_the_rock'}).eq('id',match)
+    const report={result:'won',won:true,routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},rock_tome_claim:true,stash_items:[{item_rules_id:'scenario_rock_tome',custom_name:null,quantity:1}]}}
+    const submit=(warband:string)=>player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warband,p_report:report})
+    expect((await submit(warbands[0])).error).toBeNull()
+    expect((await submit(warbands[1])).error?.message).toContain('already been claimed')
+    expect((await withdraw()).error).toBeNull()
+    expect((await submit(warbands[1])).error).toBeNull()
+  })
+  it('protects stash rewards after later use and still withdraws unchanged rewards',async()=>{
+    expect((await file({stash_items:[{item_rules_id:'scenario_rock_tome',custom_name:null,quantity:1}]})).error).toBeNull()
+    const book=(await admin.from('items').select('*').eq('warband_id',warbands[0]).eq('item_rules_id','scenario_rock_tome').single()).data!
+    expect((await admin.from('items').update({item_rules_id:'scenario_rock_tome_read',holder_type:'hero',holder_id:heroes[0],notes:'Read both spells'}).eq('id',book.id)).error).toBeNull()
+    expect((await withdraw()).error?.message).toContain('scenario equipment has changed')
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(105)
+    expect((await admin.from('items').update({item_rules_id:book.item_rules_id,holder_type:book.holder_type,holder_id:book.holder_id,notes:book.notes}).eq('id',book.id)).error).toBeNull()
+    expect((await withdraw()).error).toBeNull()
+    expect((await admin.from('items').select('id').eq('id',book.id)).data).toEqual([])
+  })
   it('saves warrior rewards and owned equipment, then restores them exactly on withdrawal', async () => {
     expect((await file({ heroes: [{ id: heroes[0], patch: { skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { ...stats, S: 4 } } }], awarded_items: [award()] })).error).toBeNull()
     expect((await admin.from('heroes').select('skills,spells,notes,stats').eq('id', heroes[0]).single()).data).toMatchObject({ skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { S: 4 } })

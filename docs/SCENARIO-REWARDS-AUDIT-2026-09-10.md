@@ -157,3 +157,14 @@ The optional housing system is not implemented: camp benefits and the defender�
 Migration 56 is applied locally only. Four new resolver regressions and two transaction regressions; full validation **1,539 ordinary tests pass / 127 DB tests skipped there; all 127 local DB tests pass separately**. Typechecked build and lint pass with the same existing warnings. Actual mobile report form at 390×844 persists camp/eligibility/stash review across reload, files two existing swords into the attacker stash, and restores the original stack on withdrawal, with no page errors or horizontal overflow. Script: `/tmp/stirheim-encampment-mobile-qa.mjs` (also current `/tmp/stirheim-rules-qa.mjs`). Source changes remain local.
 
 There are now 97 explicit reward paths; the six without an implemented path are Defend the Oasis, Assault on the Rock, The Thing in the Woods, Stop Thief, Raids and Rawhide. Broader optional camp consequences remain a stated limitation of the new Encampment Raid path. Next work should prioritise those remaining scenario paths, including actual source-owned currencies/items for Stop Thief/Rawhide, rather than count incidental kit fixes as scenario completions.
+
+
+### Local milestone 41 — Assault on the Rock rewards and safe tome use (#72, not deployed)
+
+The TC22 reward flow now records actual room searches, winner-specific rewards, and surviving conscripted Sisters with their declared equipment. Sisters receive 100gc and eligible Matriarch XP; Witch Hunters receive 50gc and recorded Augur/Matriarch kill XP; eligible book destroyers allocate the actual D6 XP. Ordinary winners receive one distinct tome. Reading teaches two validated spells to one eligible reader in a single saved action and retains the used book, preventing reuse. Ordinary objective XP remains separate. Migration 57 prevents a second winner claiming the book reward in the same battle.
+
+The combined mobile report/read/withdraw test exposed unsafe withdrawal after a stash reward had been used. Migration 58 now snapshots all newly awarded stash items, so later movement, use, sale or changes block withdrawal instead of leaving subsequent benefits behind. Unchanged rewards remain withdrawable. Both migrations are local only.
+
+Validation: all 129 local database tests pass. The latest ordinary suite passed 1,554 tests; build/typecheck and lint passed with the existing warnings. Actual mobile report journeys verify Sister recruitment/equipment and Witch Hunter rewards with successful withdrawal; the ordinary tome journey verifies two learned spells, saved used-book ownership, persistence through reload, and refusal to withdraw after use. No production changes.
+
+Scenario reward coverage is now 98/103. Remaining: Defend the Oasis, The Thing in the Woods, Stop Thief, Raids and Rawhide. Broader optional systems and bespoke hired-sword limitations remain open; this count does not imply complete automation of every scenario rule.

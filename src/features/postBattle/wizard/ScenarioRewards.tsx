@@ -1,3 +1,5 @@
+import { RockRewards } from './RockRewards'
+import { scenarioRewardContext } from '../model/derive'
 import { EncampmentRewards } from './EncampmentRewards'
 import { ForbiddenSquareRewards } from './ForbiddenSquareRewards'
 import { GatheringRewards } from './GatheringRewards'
@@ -23,7 +25,7 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
   if (!rule) return null
   if (ctx.scenarioId === 'happy_harpy_hunting_grounds' && (draft.result !== 'won' || !draft.scenarioRewards?.harpy?.defeated)) return <Section title="Scenario rewards"><p className="text-sm text-ink-dim">No nest rewards: these require victory and all three Harpies defeated before the rival warbands routed.</p></Section>
   const state = draft.scenarioRewards ?? {}
-  const reward = scenarioRewards(draft, ctx.scenarioId, derived.participants, ctx, ruleOverride)
+  const reward = scenarioRewards(draft, ctx.scenarioId, derived.participants, scenarioRewardContext(ctx,derived.injuries), ruleOverride)
   function change(fn: (s: ScenarioRewardDraft) => ScenarioRewardDraft) {
     update(d => ({ ...d, scenarioRewards: fn(d.scenarioRewards ?? {}) }))
   }
@@ -47,6 +49,7 @@ export function ScenarioRewards({ draft, derived, update, ctx, ruleOverride }: P
       <NumberField label="Unspoiled pies carried away by your warriors" allowEmpty value={state.recipe?.pies ?? null} onChange={pies => change(s => ({ ...s, recipe: { ...s.recipe, pies } }))} />
       {draft.result === 'won' ? <><NumberField label="Unspoiled pies claimed from the cart" allowEmpty value={state.recipe?.cartPies ?? null} onChange={cartPies => change(s => ({ ...s, recipe: { ...s.recipe, cartPies } }))} /><SelectField label="Is your warband turning Geefer in for the reward?" value={state.recipe?.turnsInGeefer === undefined ? '' : String(state.recipe.turnsInGeefer)} onChange={e => change(s => ({ ...s, recipe: { ...s.recipe, turnsInGeefer: e.target.value === '' ? undefined : e.target.value === 'true', dice: [] } }))}><option value="">Choose…</option><option value="true">Yes — we claim the payment</option><option value="false">No — another allied winner claims it</option></SelectField>{state.recipe?.turnsInGeefer ? <div className="flex flex-wrap gap-3">{Array.from({ length: 5 }, (_, i) => <DieField key={i} sides={6} rollable label={`Geefer payment: D6 ${i + 1}`} value={state.recipe?.dice?.[i] ?? null} onChange={v => change(s => ({ ...s, recipe: { ...s.recipe, dice: Array.from({ length: 5 }, (_, j) => i === j ? v : s.recipe?.dice?.[j] ?? null) } }))} />)}</div> : null}</> : null}
     </Card> : null}
+    {rule.kind==='rock'?<RockRewards state={state.rock??{}} roster={scenarioRewardContext(ctx,derived.injuries).roster} won={draft.result==='won'} change={rock=>change(s=>({...s,rock}))}/>:null}
     {rule.kind==='encampment'?<EncampmentRewards state={state.encampment??{}} won={draft.result==='won'} opponents={ctx.opponents??[]} change={encampment=>change(s=>({...s,encampment}))}/>:null}
     {rule.kind==='forbidden-square'?<ForbiddenSquareRewards state={state.forbiddenSquare??{}} warbands={ctx.opponents??[]} change={forbiddenSquare=>change(s=>({...s,forbiddenSquare}))}/>:null}
     {rule.kind==='gathering'?<GatheringRewards value={state.gathering??{}} won={draft.result==='won'} warbands={[{id:ctx.roster.id,name:ctx.roster.name},...(ctx.opponents??[])]} change={gathering=>change(s=>({...s,gathering}))}/>:null}

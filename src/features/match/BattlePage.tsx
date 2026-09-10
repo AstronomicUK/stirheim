@@ -1,3 +1,4 @@
+import {CurseReminder} from '../roster/view/CurseReminder'
 import { useBattleTurns } from '../../api/battleTurns'
 import { TurnControls } from './battle/TurnControls'
 // The one screen a player keeps open on their phone during the game: their own tally sheet, the
@@ -290,6 +291,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
 
   return (
     <>
+      <CurseReminder names={[...roster.heroes,...roster.hiredSwords].filter(h=>h.flags.lycanthrope&&h.status==='active').map(h=>h.name).concat(roster.henchmenGroups.flatMap(g=>g.campaignState?.lycanthropes?.map(m=>`${m.name} (${g.name})`)??[]))}/>
       <TopStrip
         scenario={scenario}
         warbands={[{ name: roster.name, mine: true }, ...others.map((p) => ({ name: p.warband_name, mine: false }))]}

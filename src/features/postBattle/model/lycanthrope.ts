@@ -45,6 +45,7 @@ export interface TransformationItemDecision {itemId:string;fate:'destroyed'|'wea
 export function transformationEquipment(items:readonly TransformationItem[],decisions:readonly TransformationItemDecision[]){
  const problems:string[]=[],losses:{itemId:string;quantity:number}[]=[],notes:string[]=[],seen=new Set<string>()
  for(const d of decisions){
+  if(!['destroyed','weapon-lost','weapon-recovered','not-worn'].includes(d.fate)){problems.push('Choose what happened to each carried item.');continue}
   const item=items.find(i=>i.id===d.itemId)
   if(!item||seen.has(d.itemId)||!Number.isSafeInteger(item.quantity)||item.quantity<1){problems.push('Review each original carried equipment stack once.');continue}
   seen.add(d.itemId)

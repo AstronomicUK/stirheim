@@ -1,3 +1,4 @@
+import {CurseReminder} from './CurseReminder'
 import { useState } from 'react'
 import { hiredSwordGainsExperience } from '../../../rules/resolve/hiredSwordRules'
 import { injuryRecordKind } from '../../../rules/resolve/injuryHistory'
@@ -62,6 +63,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
         <StatLine stats={hero.stats} raised={drift.raised} lowered={drift.lowered} />
         <XpBar xp={hero.xp} levelUps={hero.level_ups} role={hero.is_hired_sword ? "henchman" : "hero"} rate={unitRules(hero.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={hero.is_hired_sword ? !!hero.flags.hireCompanion || !hiredSwordGainsExperience(hero.hired_sword_rules_id ?? "") : !unitGainsExperience(hero.unit_type_rules_id)} />
       </button>
+      {hero.flags.lycanthrope?<CurseReminder names={[hero.name]}/>:null}
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
         <ItemLines items={equipment} detailed={expanded} ownerRules={rules} />

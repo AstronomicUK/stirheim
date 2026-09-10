@@ -979,3 +979,63 @@ it('files a Medicine Chest reroll with both dice and one real consumed copy',()=
  expect(result.report?.injuries[0].rolls).toEqual([22,41])
  expect(result.report?.applied.heroes[0].patch.stats?.M).toBe(4)
 })
+
+
+it('records a surviving Balewolf casualty’s cure without losing unrelated flags or equipment',()=>{
+ const patient=hero('patient',{xp:51,stats:{...stats,M:3},flags:{causesFear:true},injuries:[{injuryCode:'leg_wound',name:'Old leg wound',rolled:{d66:22},effect:'-1 M'}]})
+ const band={...makeRoster(),heroes:[patient],hiredSwords:[],henchmenGroups:[]}
+ let d=setHeroOut(setResult(emptyDraft(),'lost'),'patient',true);d=addHeroInjuryRoll(d,'patient',22)
+ d.woods={victims:{patient:{source:'balewolf',manSized:true,nonMutant:true,die:6,cure:{stats,clearFlags:[],confirmed:true,reason:'Healthy M4 confirmed against the original record.'}}}}
+ const result=derive(d,ctx({roster:band,items:[],scenarioId:'the_thing_in_the_woods'}))
+ expect(result.report).not.toBeNull();const patch=result.report?.applied.heroes.find(h=>h.id==='patient')?.patch
+ expect(patch?.stats?.M).toBe(4);expect(patch?.injuries).toEqual([]);expect(patch?.flags).toMatchObject({causesFear:true,lycanthrope:{contractedAfter:'m1'}})
+ expect(result.report?.notes).toContain('Balewolf curse D6 6')
+})
+it('keeps Fear of the Dark escapees out of attack-casualty and injury rolls',()=>{
+ const band={...makeRoster(),heroes:[hero('runner',{xp:51})],hiredSwords:[],henchmenGroups:[]}
+ const d=setHeroOut(setResult(emptyDraft(),'lost'),'runner',true);d.woods={victims:{runner:{source:'dark'}}}
+ const result=derive(d,ctx({roster:band,items:[],scenarioId:'the_thing_in_the_woods'}))
+ expect(result.report).not.toBeNull();expect(result.report?.ooa).toEqual([]);expect(result.report?.injuries[0].rolls).toEqual([])
+ expect(result.report?.injuries[0]).toMatchObject({effect:expect.stringContaining('Fear of the Dark')})
+ expect(result.survivingHeroes.map(h=>h.id)).toContain('runner')
+})
+it('retains a named cursed subset in its original henchman XP group',()=>{
+ const band={...makeRoster(),heroes:[],hiredSwords:[],henchmenGroups:[group('watch',3)]}
+ let d=setGroupOut(setResult(emptyDraft(),'lost'),'watch',1,3);d=setGroupInjuryRoll(d,'watch',0,6)
+ d.woods={groups:{watch:{reviewed:true,victims:[{id:'named',name:'Otto',manSized:true,nonMutant:true,die:6}]}}}
+ const result=derive(d,ctx({roster:band,items:[],scenarioId:'the_thing_in_the_woods'}))
+ expect(result.report).not.toBeNull();expect(result.report?.applied.groups.find(g=>g.id==='watch')?.patch).toMatchObject({size:3,campaign_state:{lycanthropes:[{id:'named',name:'Otto',contractedAfter:'m1'}]}})
+ expect(result.report?.applied.new_groups??[]).toEqual([])
+})
+it('resolves a later feral departure and puts the actual recovered weapon in the stash',()=>{
+ const blade='12345678-1234-4234-8234-123456789012',mail='12345678-1234-4234-8234-123456789013'
+ const patient=hero('wolf',{xp:51,flags:{lycanthrope:{contractedAfter:'old'}},equipment:[{itemId:'sword',quantity:1},{itemId:'light_armour',quantity:1}]})
+ const band={...makeRoster(),heroes:[patient],hiredSwords:[],henchmenGroups:[]}
+ const items:ItemRow[]=[{id:blade,warband_id:'w1',holder_type:'hero',holder_id:'wolf',item_rules_id:'sword',custom_name:null,quantity:1,notes:'',created_at:'',updated_at:''},{id:mail,warband_id:'w1',holder_type:'hero',holder_id:'wolf',item_rules_id:'light_armour',custom_name:null,quantity:1,notes:'',created_at:'',updated_at:''}]
+ const d=setResult(emptyDraft(),'lost');d.woods={returns:{wolf:{transformed:true,die:1,gearReviewed:true,gear:[{itemId:blade,fate:'weapon-recovered'},{itemId:mail,fate:'destroyed'}]}}}
+ const result=derive(d,ctx({roster:band,items,scenarioId:'skirmish'}))
+ expect(result.report).not.toBeNull();expect(result.report?.applied.heroes.find(h=>h.id==='wolf')?.patch.status).toBe('retired')
+ expect(result.report?.applied.remove_item_ids).toEqual(expect.arrayContaining([blade,mail]))
+ expect(result.report?.applied.awarded_items).toContainEqual({holder_type:'stash',holder_id:null,item_rules_id:'sword',custom_name:null,quantity:1,notes:''})
+ expect(result.report?.applied.pending_advances).toEqual([])
+})
+it('removes only the transformed member’s kit share on a feral group departure',()=>{
+ const blade='12345678-1234-4234-8234-123456789012'
+ const band={...makeRoster(),heroes:[],hiredSwords:[],henchmenGroups:[{...group('watch',3),campaignState:{lycanthropes:[{id:'one',name:'Otto',contractedAfter:'old'}]},equipment:[{itemId:'sword',quantity:3}]}]}
+ const items:ItemRow[]=[{id:blade,warband_id:'w1',holder_type:'group',holder_id:'watch',item_rules_id:'sword',custom_name:null,quantity:3,notes:'',created_at:'',updated_at:''}]
+ const d=setResult(emptyDraft(),'lost');d.woods={groups:{watch:{returns:{one:{transformed:true,die:1,gearReviewed:true,quantities:{[blade]:1},gear:[{itemId:blade,fate:'weapon-recovered'}]}}}}}
+ const result=derive(d,ctx({roster:band,items,scenarioId:'skirmish'}))
+ expect(result.report).not.toBeNull();expect(result.report?.applied.groups.find(g=>g.id==='watch')?.patch).toMatchObject({size:2,campaign_state:{lycanthropes:[]}})
+ expect(result.report?.applied.item_patches).toContainEqual({id:blade,quantity:2})
+ expect(result.report?.applied.awarded_items?.[0].quantity).toBe(1)
+})
+
+it('does not advertise an advance for the last group member leaving feral',()=>{
+ const band={...makeRoster(),heroes:[],hiredSwords:[],henchmenGroups:[{...group('watch',1),xp:1,campaignState:{lycanthropes:[{id:'one',name:'Otto',contractedAfter:'old'}]},equipment:[]}]}
+ const d=setResult(emptyDraft(),'lost');d.woods={groups:{watch:{returns:{one:{transformed:true,die:1,gearReviewed:true}}}}}
+ const result=derive(d,ctx({roster:band,items:[],scenarioId:'skirmish'}))
+ expect(result.report).not.toBeNull()
+ expect(result.report?.applied.groups.find(g=>g.id==='watch')?.patch.size).toBe(0)
+ expect(result.report?.applied.pending_advances).toEqual([])
+ expect(result.xp.lines.find(l=>l.subjectId==='watch')?.advancesEarned).toBe(0)
+})

@@ -120,6 +120,7 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  woods?: import('./lycanthropeReport').WoodsDraft
   plantCasualties?: Record<string, boolean>
   groupEquipmentLosses?: Record<string, number | null>
   retainedScoutId?: string

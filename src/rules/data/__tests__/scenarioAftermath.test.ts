@@ -44,3 +44,9 @@ it('uses Rawhide modern +1 awards and keeps historical awards out of objectives'
  expect(result.bonuses.map(b=>[b.label,b.amount])).toEqual([['Saving the Wyrdstone',1],['Successful Ambush',1],['Getting Away',1],['Stopping a Wagon',1]])
  expect(scenarioObjectives('rawhide').wyrdstone).not.toContain('**+20 xp**')
 })
+
+it('adds the Thing-OOA objective separately from the normal enemy-OOA award',()=>{
+ const result=scenarioAftermath('the_thing_in_the_woods')
+ expect(result.defaults).toEqual({survival:1,leader:1,kill:1})
+ expect(result.bonuses.find(b=>/takes a thing/i.test(b.label))?.amount).toBe(1)
+})

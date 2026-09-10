@@ -16,19 +16,17 @@ Keep existing approved player overrides. #72 removes arbitrary treasure from the
 
 Implement cohesive local milestones, documenting source rules and meaningful tests. Keep tracker entries open until their complete scope is verified. Review mobile layouts and the full saved post-battle/recruitment/start-battle journey with disposable local data. Do not alter existing live player histories or the CoC–Dwarves battle for testing.
 
-## Current checkpoint — 10 September, local batch
+## Current checkpoint — 11 September, local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **100 of 103 scenarios**. This measures explicit reward paths, not the percentage of implementation effort finished or complete automation of every related campaign rule.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **102 of 103 scenarios**. This measures reward paths, not complete automation of every related campaign rule.
 
-The latest continuation completed Pirate discovery recruitment; casualty kit before replacement recruitment; historical discovery ordering; Hunters Become the Hunted; Brigands in the Pasturelands; Gathering of the Horde; and the Archive Forbidden Square. It also added reviewed corrections for older hired-character equipment, resolved remaining ordinary Persona kit and added checked cross-warband equipment transfer infrastructure. See milestones 28–37 below.
+Rawhide, Medicine Chest rerolls and The Thing in the Woods aftermath are now locally verified (milestones 45–48). The remaining scenario path is Defend the Oasis.
 
-Remaining scenario paths (3): Defend the Oasis; The Thing in the Woods; Rawhide. Raids is verified locally (milestone 43). Assault on the Rock and Stop Thief are now verified locally (milestones 41–42). Encampment Raid now has checked equipment transfer and a recorded camp decision; optional housing effects and treasury interpretation remain explicit limitations (milestone 39).
+Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, Guardian interception, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Other open work: remaining bespoke hired-character equipment/effects and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks and tracker reconciliation. Guardian interception and Medicine Chest injury-reroll consumption are not fully automated. Do not close broader tracker entries based on partial milestones.
+Validation: **1,599 ordinary tests and all 152 local database tests pass**; typechecked build and lint pass with existing warnings. The latest focused 79 tests pass following the final exploration eligibility correction. Mobile checks use disposable local records and actual 390px viewport constraints.
 
-Validated checkpoint: **1,568 ordinary tests pass; all 135 local database tests pass; typechecked production build passes.** Lint retains three pre-existing audit-probe warnings; build retains the existing CSS/bundle warnings. Actual mobile checks cover each new scenario path, free outlaw recruitment and reviewed equipment correction; map-control and transfer withdrawal were verified against saved local records. All new test data was disposable.
-
-Migrations through 61 have been applied to the local database only. No push, Netlify deployment or production migration has occurred. Source changes are locally committed; the pre-existing dirty audit/tracker documents remain intact.
+Migrations through 67 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
 Pending scope question: Defend the Oasis relies on Khemri’s wider water/carrying-capacity/exploration/trading system. An asynchronous question asks whether this batch should provide scenario-specific recorded support or expand into the full Khemri campaign system. No response was received at this checkpoint; other scenario work is independent. The original [Town Cryer compilation](https://broheim.net/downloads/campaigns/khemri/Khemri%20Town%20Cryer%20Compilation.pdf), PDF pages 5–7 and 38, confirms that these are campaign systems rather than just a gold reward. Do not silently claim full Khemri support.
 
@@ -386,3 +384,14 @@ Added a persisted curse field to warrior flags and a named cursed-member subset 
 Eight focused curse/cure/equipment/group tests pass; typecheck and lint pass (existing warnings only). **The helpers are not yet wired into reporting or battle UI. Coverage remains 101/103.** No database migration, push or deployment for this foundation.
 
 Next integration: add report draft choices and injury-step controls for actual Balewolf casualties/eligibility/D6, including individual group survivors; apply reviewed Hero/Persona cures before XP/advancement projection; keep named group curse subsets in existing campaign state. For every previously cursed participant in later battles, record actual transformation and the return D6, and review actual worn equipment/dropped weapons with quantity-safe item patches. Apply feral departures before new advances are planned. Provide the Balewolf rule/profile reminder in roster/battle views without claiming automated monster AI or automatic wound-triggered transformation. Fear of the Dark escapees require no Serious Injury roll; preserve the source distinction from actual attack casualties. Generic Experience controls already handle the named extra Thing-OOA award in addition to ordinary enemy-OOA XP; verify it explicitly. Complete model/DB/mobile persistence/withdrawal tests before adding this scenario to the reward coverage count. Defend the Oasis scope question and remaining hired kit/Guardian/release checks are still outstanding.
+
+
+### Local milestone 48 — The Thing in the Woods report integration (not deployed)
+
+The report now distinguishes Fear of the Dark escapees from attack casualties, records curse eligibility and D6, and applies the reviewed healthy profile on a curse result of 6. Previously cursed warriors record actual later transformations, return rolls and the fate of their original equipment. Named cursed henchmen remain in their original XP group; permanent feral departures remove only that member and their reviewed equipment share. Recovered original weapons return to the stash. Departing heroes cannot explore or receive pending advances. The extra Thing kill XP remains cumulative with ordinary enemy kill XP.
+
+Roster and battle views show the curse profile and rules. Transformation triggers, monster movement and combat remain tabletop decisions; this does not claim automated Balewolf combat. Migration 67 locks and checks the original equipment snapshot before applying losses, so a stale report cannot overwrite changed equipment. It is applied locally only.
+
+Validation: 1,599 ordinary tests and all 152 local database tests passed; the latest focused 79 tests also pass after excluding feral departures from exploration. Typechecked build and lint passed with existing warnings. Disposable 390px mobile checks verify curse acquisition/healthy-profile review through reload and withdrawal, and a later named henchman transformation with one recovered sword, persisted group reduction and complete withdrawal restoration. Scripts: `/tmp/stirheim-lycanthrope-cure-mobile-qa.mjs` and `/tmp/stirheim-lycanthrope-group-mobile-qa.mjs`.
+
+Reward-path coverage is now **102/103**. Defend the Oasis still awaits the recorded scope decision; bespoke hired equipment/effects, Guardian and final combined release checks remain outstanding. No push or production deployment.

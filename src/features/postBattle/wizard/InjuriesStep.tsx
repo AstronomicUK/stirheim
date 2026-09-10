@@ -1,3 +1,4 @@
+import {LycanthropeAftermath} from './LycanthropeAftermath'
 import {MedicineChest} from './MedicineChest'
 import type {ReactNode} from 'react'
 import { setPlantCasualty } from '../model/state'
@@ -51,6 +52,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       <Intro>
         {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes and Dramatis Personae roll D66; ordinary hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
       </Intro>
+      <LycanthropeAftermath draft={draft} derived={derived} ctx={ctx} update={update}/>
       {hunters&&!nothing?<Section title="Carnivorous plant casualties"><Card className="flex flex-col gap-2 px-4 py-3">
         <p className="text-sm">Mark each model taken out by a plant. It rolls D6 instead of its ordinary injury roll: 1 is eaten and removed; 2–6 survives.</p>
         {[...heroes.map(h=>({id:h.hero.id,name:h.hero.name})),...hiredSwords.map(h=>({id:h.sword.id,name:h.sword.name})),...groups.flatMap(g=>Array.from({length:g.outOfAction},(_,index)=>({id:`${g.group.id}:${index}`,name:`${g.group.name} — ${modelLabel(g.group.modelNames,index)}`})))].map(h=><label key={h.id} className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={plant(h.id)} onChange={e=>{const checked=e.target.checked;update(d=>setPlantCasualty(d,h.id,checked))}}/>{h.name}</label>)}
@@ -58,7 +60,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       {maglah&&scouts.length>1?<Card className="p-4"><SelectField label="Hobgoblin Scout who stays after Maglah’s departure" value={draft.retainedScoutId??maglah.sword.flags.retainedScoutId??''} onChange={e=>update(d=>({...d,retainedScoutId:e.target.value}))}><option value="">Choose the Scout who stays</option>{scouts.map(s=><option key={s.id} value={s.id}>{s.name} ({s.xp} XP)</option>)}</SelectField></Card>:null}
       {nothing ? (
         <Card className="px-4 py-3">
-          <p className="text-sm text-ink">No casualties. Everyone walks back to camp.</p>
+          <p className="text-sm text-ink">No warriors were taken out of action. Resolve any curse aftermath above.</p>
         </Card>
       ) : null}
       {heroes.length > 0 ? (

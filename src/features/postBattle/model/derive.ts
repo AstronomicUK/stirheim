@@ -1,3 +1,4 @@
+import {woodsCasualtyDraft,woodsInjuryDraft,lycanthropeReport,applyLycanthropeReport} from './lycanthropeReport'
 import {medicineChestUses} from './medicineChest'
 import {rawhideReport} from './rawhideReport'
 import {raidsRewards,type RaidSurvivors} from './raidsRewards'
@@ -171,6 +172,7 @@ export interface AdvancesDerived {
 }
 
 export interface DerivedReport {
+  lycanthrope: ReturnType<typeof lycanthropeReport>
   equipmentLosses: ReturnType<typeof groupEquipmentLosses>
   recruits: ReturnType<typeof locationRecruits>
   participants: Participants
@@ -494,7 +496,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     const patch: ReportApplied['heroes'][number]['patch'] = {}
     if (res) {
       if (res.sword.status !== sword.status) patch.status = res.sword.status
-      if (res.heroFlow) {
+      if (res.heroFlow || res.sword.flags.lycanthrope) {
         patch.stats = res.sword.stats
         patch.injuries = res.sword.injuries
         patch.flags = res.sword.flags
@@ -837,11 +839,14 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const nonCampaign = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign
   if (nonCampaign) draft = { ...draft, veteranPool: [null, null], veteranPoolExtra: null, injurySkips: {}, groupInjuryDice: {} }
   const participants = participantsOf(ctx.roster, ctx.template)
-  const injuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : draft, participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
-  const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? (g.size-absentGroupModels(g))) + absentGroupModels(g) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(draft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
+  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
+  const lycanthrope=lycanthropeReport(draft,ctx,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
+  const injuries=lycanthrope.injuries
+  const casualtyDraft=woodsCasualtyDraft(draft,ctx.scenarioId)
+  const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? (g.size-absentGroupModels(g))) + absentGroupModels(g) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(casualtyDraft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
   if (nonCampaign) { kit.prompts = []; kit.pending = 0 }
-  const out = heroOoaIds(draft)
-  const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id))
+  const out = heroOoaIds(casualtyDraft)
+  const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id) && (injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero.status??h.status)==='active')
   const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
   const harpy = ctx.scenarioId === 'happy_harpy_hunting_grounds' ? harpyRewards(draft) : null
   const raidRequested=draft.exploration.raidCaptivesSpent??0
@@ -969,13 +974,14 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (exploration.record) exploration.record.notes.push(...recruits.notes)
   const theft = pettyThief(draft, ctx, participants)
   if (theft.transfer) applied.petty_thief = theft.transfer
-  const departingIds=new Set(applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id))
+  const lycanthropeEquipmentProblems=applyLycanthropeReport(lycanthrope,applied,ctx)
+  const departingIds=new Set([...applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id),...applied.groups.filter(g=>g.patch.size===0).map(g=>g.id)])
   applied.pending_advances=applied.pending_advances.filter(a=>!departingIds.has(a.subject_id))
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
-  problems.injuries.push(...equipmentLosses.problems,...medicine.problems)
+  problems.injuries.push(...equipmentLosses.problems,...medicine.problems,...lycanthrope.problems,...lycanthropeEquipmentProblems)
   if(ctx.scenarioId==='brigands_in_the_pasturelands'&&!['attacker','defender'].includes(draft.scenarioRewards?.brigands?.role??''))problems.outcome.push('Choose your Brigands role for experience.')
   if(ctx.scenarioId==='the_hunters_become_the_hunted'&&draft.result==='won'&&(!Number.isInteger(draft.scenarioRewards?.hunters?.alive)||draft.scenarioRewards!.hunters!.alive!<0||draft.scenarioRewards!.hunters!.alive!>2))problems.outcome.push('Record the number of Cold Ones alive (0–2) for survivor experience.')
   problems.experience.push(...(kidnapped?.problems ?? []))
@@ -1006,17 +1012,17 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       result: draft.result,
       routed: draft.routed,
       xp_log: xp.lines,
-      ooa: ooaLines(draft, participants, ctx.takenOutBy),
+      ooa: ooaLines(casualtyDraft, participants, ctx.takenOutBy),
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }
   }
 
-  return { participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, equipmentLosses, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
+  return { lycanthrope, participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, equipmentLosses, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
 }
 
 /** The finished report, or an error naming what is still missing. */

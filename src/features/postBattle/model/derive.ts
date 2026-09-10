@@ -1,3 +1,4 @@
+import {rawhideReport} from './rawhideReport'
 import {raidsRewards,type RaidSurvivors} from './raidsRewards'
 import {absentGroupModels,afterAbsenceBattle} from '../../../rules/resolve/groupAbsences'
 import { stopThiefRewards } from './stopThiefRewards'
@@ -67,6 +68,8 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  rawhideCargo?: import('../../../api/rawhide').RawhideCargo
+  rawhideEnded?: boolean
   raidSurvivors?: RaidSurvivors
   campaignId?: string
   opponents?: {id:string;name:string}[]
@@ -866,6 +869,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const rock = ctx.scenarioId==='assault_on_the_rock'?rockRewards(draft.scenarioRewards?.rock??{},draft.result==='won',scenarioRewardContext(ctx,injuries).roster):null
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? []), ...(rock?.xpAwards??[]),...(thief?.retrievedLeaderXp&&thiefLeader?[{id:thiefLeader.id,name:thiefLeader.name,amount:1,reason:"Stop Thief: recovered the stolen item"}]:[])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  const rawhide=ctx.scenarioId==='rawhide'?rawhideReport(draft.scenarioRewards?.rawhide??{},ctx.rawhideCargo,ctx.roster.id,!!ctx.rawhideEnded,ctx.reportId):null
+  if(rawhide?.settlement&&!rawhide.problems.length)applied.rawhide_settlement=rawhide.settlement
   if(thief&&!thief.problems.length){applied.scenario_item_transfers=thief.transfers;const state=draft.scenarioRewards!.stopThief!;applied.stop_thief_outcome={defender_id:state.defenderId!,recovered:state.recovered,returned_allies:state.returnedAllies}}
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
   if(raidSpent>0&&exploration.record)applied.scenario_effects={...applied.scenario_effects,raidCaptives:{gained:0,spent:raidSpent}}
@@ -935,7 +940,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   }
   const recruitItems = ctx.items.filter(i=>!applied.remove_item_ids.includes(i.id)).map(i=>({...i,...applied.item_patches.find(p=>p.id===i.id)})).filter(i=>i.quantity>0)
   const recruitContext = {...ctx, items:recruitItems, roster:rosterAfterReport(ctx.roster,applied)}
-  const recruits = locationRecruits(draft, recruitContext, exploration, injuries, ctx.roster.gold + applied.warband.gold_delta)
+  const recruits = locationRecruits(draft, recruitContext, exploration, injuries, ctx.roster.gold + applied.warband.gold_delta + (applied.rawhide_settlement?.gold_delta??0))
   if (recruits.awardedItems.length) applied.awarded_items = [...(applied.awarded_items ?? []), ...recruits.awardedItems]
   const summoned = ritualZombies(draft, ctx, injuries, recruits)
   if (recruits.newGroups.length || summoned.newGroups.length) applied.new_groups = [...recruits.newGroups, ...summoned.newGroups]
@@ -954,7 +959,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if(conscripts.newGroups.length)applied.new_groups=[...(applied.new_groups??[]),...conscripts.newGroups]
   if(conscripts.awardedItems.length)applied.awarded_items=[...(applied.awarded_items??[]),...conscripts.awardedItems]
   applied.warband.gold_delta -= recruits.goldCost
-  if (recruits.goldCost > 0 && ctx.roster.gold + applied.warband.gold_delta < 0) recruits.problems.push('The treasury cannot afford identical equipment for the free recruit.')
+  if (recruits.goldCost > 0 && ctx.roster.gold + applied.warband.gold_delta + (applied.rawhide_settlement?.gold_delta??0) < 0) recruits.problems.push('The treasury cannot afford identical equipment for the free recruit.')
   if (exploration.record) exploration.record.notes.push(...recruits.notes)
   const theft = pettyThief(draft, ctx, participants)
   if (theft.transfer) applied.petty_thief = theft.transfer

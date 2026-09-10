@@ -952,3 +952,14 @@ it('files Raids spoils, pursuit casualties and partial-group surrender together'
  expect(result.report?.notes).toContain('Ambush selection 1')
  expect(result.report?.notes).toContain('miss the next two battles')
 })
+
+
+it('files Rawhide cargo separately from ordinary exploration and gold rewards',()=>{
+ const band={...makeRoster(),heroes:[],hiredSwords:[],henchmenGroups:[],wyrdstone:3}
+ const draft={...setResult(emptyDraft(),'won'),scenarioRewards:{rawhide:{outcome:'escaped' as const}}}
+ const result=derive(draft,ctx({roster:band,items:[],scenarioId:'rawhide',rawhideEnded:true,rawhideCargo:{declared:true,revealed:true,locked:true,warband_id:'w1',wagon:2,gold:100,wyrdstone:3,sale_value:160,rounding:'down',valuation_note:'100 coins plus three shards worth 60 gc.'}}))
+ expect(result.report).not.toBeNull()
+ expect(result.report?.applied.warband.gold_delta).toBe(0)
+ expect(result.report?.applied.rawhide_settlement).toEqual({outcome:'escaped',gold_delta:108,wyrdstone_delta:-3})
+ expect(result.report?.notes).toContain('208 gc')
+})

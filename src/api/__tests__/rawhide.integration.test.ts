@@ -94,4 +94,17 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Rawhide private declarations'
   expect(await balances()).toEqual([{gold:100,wyrdstone:3},{gold:100,wyrdstone:3}])
  })
 
+ it('keeps the battle open until its declared cargo is settled',async()=>{
+  expect((await declare()).error).toBeNull();await end()
+  expect((await admin.from('matches').update({state:'completed'}).eq('id',match)).error?.message).toContain('Settle the declared Rawhide')
+  expect((await settle('escaped')).error).toBeNull()
+  expect((await admin.from('matches').update({state:'completed'}).eq('id',match)).error).toBeNull()
+ })
+ it('persists calculated display amounts instead of trusting submitted totals',async()=>{
+  expect((await declare()).error).toBeNull();await end()
+  const result=await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:{won:true,result:'won',routed:false,applied:{warband:{gold_delta:0,wyrdstone_delta:0},rawhide_settlement:{outcome:'escaped',gold_delta:9999,wyrdstone_delta:9999}}}})
+  expect(result.error).toBeNull()
+  expect((await admin.from('match_reports').select('applied').eq('match_id',match).single()).data?.applied.rawhide_settlement).toEqual({outcome:'escaped',gold_delta:108,wyrdstone_delta:-3})
+ })
+
 })

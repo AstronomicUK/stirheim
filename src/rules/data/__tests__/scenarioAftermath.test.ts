@@ -37,3 +37,10 @@ describe('scenario aftermath', () => {
     expect(scenarioExperienceOptions('the_battle_at_koleshire_keep')).toEqual([])
   })
 })
+
+it('uses Rawhide modern +1 awards and keeps historical awards out of objectives',()=>{
+ const result=scenarioAftermath('rawhide')
+ expect(result.defaults).toEqual({survival:1,leader:1,kill:1})
+ expect(result.bonuses.map(b=>[b.label,b.amount])).toEqual([['Saving the Wyrdstone',1],['Successful Ambush',1],['Getting Away',1],['Stopping a Wagon',1]])
+ expect(scenarioObjectives('rawhide').wyrdstone).not.toContain('**+20 xp**')
+})

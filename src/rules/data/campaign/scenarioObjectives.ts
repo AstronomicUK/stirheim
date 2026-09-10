@@ -179,7 +179,7 @@ const OBJECTIVES: Record<string, ScenarioObjectives> = {
     "treasure": true
   },
   "rawhide": {
-    "wyrdstone": "-   **+20 xp** to the Marienburger leader if he gets the Wyrdstone off the board.\n-   **+5 xp** for each driver that gets off the board with their wagon intact.\n-   **+D6 xp** for each surviving member.\n-   **+5 xp** to the person that stops a wagon.\n-   **+20 xp** for the ambusher leader if they stop the Wyrdstone from leaving the board.\n-   **+5 xp** for each wounding hit on a living opponent (not wagons).",
+    "wyrdstone": "The merchant declares all remaining gold and wyrdstone in one wagon, or four empty wagons, before battle. Resolve the actual declared cargo in Scenario rewards. Use the modern named +1 awards in Experience; the historical 20/5 XP appendix is not used.",
     "treasure": false
   },
   "the_battle_at_koleshire_keep": {

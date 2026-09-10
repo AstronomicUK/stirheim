@@ -1,24 +1,22 @@
-// The map itself: the campaign map image with an SVG overlay of the thirty districts, panned and
-// zoomed with a mouse, a wheel or two fingers. Circles are filled in the controller's ink; small
-// dots around a circle mark every foothold; a ring marks the selected district; districts a chosen
-// warband can reach are lit, the rest dimmed.
+// Pan/zoom map with separate ownership and reachability displays. Ownership uses light ink
+// and contested hatching; reachable districts use numbered markers independent of warband colour.
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, districtMapY, findDistrict, type MapDistrict } from '../../rules/data/map/districts'
+import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { MAP_DISTRICTS, MAP_VIEW_HEIGHT, districtMapY, findDistrict, type MapDistrict } from '../../rules/data/map/districts'
 import type { DistrictView } from './model'
+
+export type MapDisplay = 'control' | 'reach'
+const REACH_COLOUR = '#087f75'
 
 export const MAP_IMAGE_SRC = '/map/mordheim-campaign-map.jpg'
 
 export interface MapCanvasProps {
+  mode?: MapDisplay
   views: Map<string, DistrictView>
   selectedId: string | null
   onSelect: (districtId: string | null) => void
   /** When set, districts outside this set are dimmed. */
   reachable?: Set<string> | null
-  /** Districts the chosen warband has explored (drawn with a dashed ring). */
-  explored?: Set<string> | null
-  /** The chosen warband's ink, for the reach highlight. */
-  highlightColour?: string
 }
 
 interface Transform {
@@ -40,7 +38,10 @@ function clamp(t: Transform, width: number, height: number): Transform {
   return { k, x: Math.min(maxX, Math.max(minX, t.x)), y: Math.min(maxY, Math.max(minY, t.y)) }
 }
 
-export function MapCanvas({ views, selectedId, onSelect, reachable = null, explored = null, highlightColour = '#9a6f1f' }: MapCanvasProps) {
+export function MapCanvas({ views, selectedId, onSelect, mode = 'control', reachable = null }: MapCanvasProps) {
+  const patternId = useId().replace(/:/g, '')
+  const showingReach = mode === 'reach' && reachable !== null
+  const available = showingReach ? MAP_DISTRICTS.filter((d) => reachable.has(d.id)) : []
   const frame = useRef<HTMLDivElement>(null)
   const [t, setT] = useState<Transform>({ x: 0, y: 0, k: 1 })
   const [size, setSize] = useState({ width: 1, height: 1 })
@@ -71,7 +72,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
         return clamp({ k, x: cx - (cx - cur.x) * ratio, y: cy - (cy - cur.y) * ratio }, size.width, size.height)
       })
     },
-    [size.width, size.height],
+    [size.width, size.height, setT],
   )
 
   function local(e: { clientX: number; clientY: number }) {
@@ -186,7 +187,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
     onPointerUp(e)
   }
 
-  const dim = (id: string) => (reachable ? !reachable.has(id) : false)
+  const dim = (id: string) => showingReach && !reachable!.has(id)
 
   return (
     <div className="flex flex-col gap-2">
@@ -202,37 +203,35 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
         onPointerLeave={() => setHover(null)}
       >
         <div className="absolute inset-0 origin-top-left" style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})` }}>
-          <img src={MAP_IMAGE_SRC} alt="The Mordheim Campaign Map: thirty districts of the ruined city" className="block h-full w-full" draggable={false} />
+          <img src={MAP_IMAGE_SRC} alt="The Mordheim Campaign Map: thirty districts of the ruined city" className="block h-full w-full transition-opacity" style={{ opacity: showingReach ? 0.45 : 1 }} draggable={false} />
           <svg viewBox={`0 0 100 ${MAP_VIEW_HEIGHT}`} className="absolute inset-0 h-full w-full" role="list" aria-label="Districts">
-            {MAP_LINKS.map(([a, b]) => {
-              const da = findDistrict(a)!
-              const db = findDistrict(b)!
-              const lit = reachable ? reachable.has(a) && reachable.has(b) : false
-              return <line key={`${a}-${b}`} x1={da.x} y1={districtMapY(da)} x2={db.x} y2={districtMapY(db)} stroke={lit ? highlightColour : '#241f1a'} strokeOpacity={lit ? 0.7 : 0.12} strokeWidth={lit ? 0.35 : 0.2} />
-            })}
+            <defs><pattern id={patternId} width="1.5" height="1.5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="1.5" height="1.5" fill="#f8f3e8" fillOpacity="0.65" /><line x1="0" y1="0" x2="0" y2="1.5" stroke="#655f56" strokeWidth="0.5" strokeOpacity="0.65" /></pattern></defs>
             {MAP_DISTRICTS.map((d) => {
               const v = views.get(d.id)
               const r = BASE_RADIUS * d.scale
               const selected = d.id === selectedId
-              const fill = v?.controller?.colour ?? null
-              const isExplored = explored?.has(d.id) ?? false
+              const contested = (v?.footholds.length ?? 0) > 1
+              const canFight = showingReach && reachable!.has(d.id)
+              const number = available.findIndex((entry) => entry.id === d.id) + 1
+              const fill = showingReach ? canFight ? REACH_COLOUR : '#f8f3e8' : contested ? `url(#${patternId})` : v?.controller?.colour ?? '#f8f3e8'
+              const status = showingReach ? canFight ? `In reach, option ${number}` : 'Out of reach' : v?.controller ? `Controlled by ${v.controller.name}` : contested ? `Contested: ${v!.footholds.map((w) => w.name).join(', ')}` : 'Unoccupied'
               return (
-                <g key={d.id} role="listitem" opacity={dim(d.id) ? 0.35 : 1}>
+                <g key={d.id} role="listitem" opacity={dim(d.id) && !selected ? 0.25 : 1}>
+                  {canFight && <circle cx={d.x} cy={districtMapY(d)} r={r + 0.35} fill="none" stroke="#ffffff" strokeWidth={1.5} pointerEvents="none" />}
                   <circle
                     cx={d.x}
                     cy={districtMapY(d)}
                     r={r}
-                    fill={fill ?? '#f8f3e8'}
-                    fillOpacity={fill ? 0.42 : 0.08}
-                    stroke={selected ? '#241f1a' : fill ?? '#241f1a'}
-                    strokeOpacity={selected ? 1 : fill ? 0.9 : 0.45}
-                    strokeWidth={selected ? 0.55 : 0.28}
-                    strokeDasharray={isExplored && !fill ? '0.6 0.4' : undefined}
+                    fill={fill}
+                    fillOpacity={showingReach ? canFight ? 0.25 : 0.06 : contested ? 1 : v?.controller ? 0.22 : 0.04}
+                    stroke={selected ? '#2563eb' : canFight ? REACH_COLOUR : '#655f56'}
+                    strokeOpacity={selected || canFight ? 1 : 0.4}
+                    strokeWidth={selected ? 0.9 : canFight ? 0.75 : 0.18}
                     className="cursor-pointer"
                     role="button"
                     aria-pressed={selected}
                     tabIndex={0}
-                    aria-label={`${d.name}${v?.controller ? `, controlled by ${v.controller.name}` : ''}`}
+                    aria-label={`${d.name}, ${status}`}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
@@ -240,8 +239,8 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
                       }
                     }}
                   />
-                  {reachable?.has(d.id) ? <circle cx={d.x} cy={districtMapY(d)} r={r + 0.6} fill="none" stroke={highlightColour} strokeOpacity={0.9} strokeWidth={0.3} pointerEvents="none" /> : null}
-                  {(v?.footholds ?? []).map((w, i, all) => {
+                  {canFight && <g pointerEvents="none" aria-hidden="true"><circle cx={d.x} cy={districtMapY(d)} r={1.65} fill={REACH_COLOUR} stroke="white" strokeWidth={0.3} /><text x={d.x} y={districtMapY(d) + 0.1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={2.4} fontWeight="700">{number}</text></g>}
+                  {(!showingReach && contested ? v?.footholds ?? [] : []).map((w, i, all) => {
                     const angle = -Math.PI / 2 + (i / Math.max(all.length, 1)) * Math.PI * 2
                     return <circle key={w.id} cx={d.x + Math.cos(angle) * (r - 0.7)} cy={districtMapY(d) + Math.sin(angle) * (r - 0.7)} r={0.55} fill={w.colour} stroke="#f8f3e8" strokeWidth={0.15} pointerEvents="none" />
                   })}
@@ -261,7 +260,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
                   style={{ left: Math.max(100, Math.min(size.width - 100, hover.x)), top: Math.max(45, hover.y - 10), maxWidth: Math.min(240, size.width - 16), whiteSpace: 'normal' }}
                 >
                   {d.name}
-                  {v?.controller ? ` — ${v.controller.name}` : ''}
+                  {showingReach ? reachable!.has(d.id) ? ' — In reach' : ' — Out of reach' : v?.controller ? ` — ${v.controller.name}` : (v?.footholds.length ?? 0) > 1 ? ' — Contested' : ' — Unoccupied'}
                 </div>
               )
             })()
@@ -278,7 +277,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
           </button>
         </div>
       </div>
-      <p className="text-xs text-ink-dim">Drag to pan, scroll or pinch to zoom, tap a district for its details. Filled circles are controlled; the dots around a circle are footholds.</p>
+      <p className="text-xs text-ink-dim">Drag to pan, scroll or pinch to zoom, tap a district for its details. {showingReach ? 'Numbered teal districts are in reach. Faded districts are out of reach. Blue outlines mark your selection.' : 'Light colours show control; striped districts are contested. Blue outlines mark your selection.'}</p>
     </div>
   )
 }

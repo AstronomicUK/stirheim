@@ -15,6 +15,7 @@ const hooks = vi.hoisted(() => ({
 vi.mock('react', async (importOriginal) => ({
   ...await importOriginal<typeof import('react')>(),
   useEffect: vi.fn(),
+  useId: () => 'map-test',
   useCallback: (fn: unknown) => fn,
   useRef: (value: unknown) => ({ current: hooks.refIndex++ === 0 ? {
     setPointerCapture: hooks.capture,

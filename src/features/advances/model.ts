@@ -6,8 +6,7 @@
 //
 // Rule judgements made here (the resolvers in src/rules/resolve/advances.ts make the rest):
 // - Hired swords roll on the hero table. They are given a RosterHero shape for the resolvers: skill
-//   tables are read from the core table names in their entry's "Skills" text (all five when none
-//   is named), and racial maxima come from a keyword match on the entry name ("Ogre Bodyguard"),
+//   tables are read from the named tables and unique skills in their entry, and racial maxima come from a keyword match on the entry name ("Ogre Bodyguard"),
 //   falling back to Human rather than the warband's race.
 // - A hero whose rolled characteristic is at its racial maximum picks a skill instead; when both
 //   offered stats of a "choose" result are maxed the resolver's any-other-stat fallback is shown
@@ -111,11 +110,11 @@ export function subjectName(subject: AdvanceSubject): string {
 // Hired swords and henchman groups as heroes, for the resolvers that want a RosterHero
 // ---------------------------------------------------------------------------------------------
 
-/** Core skill tables named in the hired sword's "Skills" text; all five when it names none. */
+/** Core skill tables named in the hired sword's "Skills" text; no unrestricted fallback when none are named. */
 export function hiredSwordSkillTables(sword: RosterHiredSword): string[] {
   const text = findHiredSword(sword.hiredSwordId)?.detail?.skills ?? ''
   const named = CORE_SKILL_TABLE_IDS.filter((id) => new RegExp(`\\b${id}\\b`, 'i').test(text))
-  return named.length > 0 ? named : [...CORE_SKILL_TABLE_IDS]
+  return [...named, ...(/\bcavalry\b/i.test(text) ? ['cavalry'] : []), ...(findHiredSword(sword.hiredSwordId)?.detail?.uniqueSkills ? [`hired_${sword.hiredSwordId}_skills`] : [])]
 }
 
 /** A hired sword in the shape learnSkill / applyStatIncrease expect. `name` can be overridden for profile matching. */

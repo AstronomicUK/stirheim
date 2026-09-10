@@ -222,11 +222,12 @@ export function warbandRestriction(entry: HiredSwordSummary, template: WarbandTe
 
 /** Why this hired sword can or cannot be hired by the warband right now. */
 export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWarband, template: WarbandTemplate | undefined, bans?: CampaignBans): Eligibility {
+  if (roster.hiredSwords.some(s => s.hiredSwordId === entry.id && s.flags.mustMissNextBattle)) return { kind: 'blocked', reason: 'Must fight a battle without this hire before they can return.' }
   if (isBanned(bans, 'hiredSwords', entry.id)) return { kind: 'blocked', reason: 'Banned in this campaign.' }
-  if (roster.hiredSwords.some((s) => s.hiredSwordId === entry.id && s.status === 'active')) {
+  if (roster.hiredSwords.some((s) => s.hiredSwordId === entry.id && s.status === 'active') && !(entry.id === 'hobgoblin_scout' && roster.hiredSwords.some(s => s.hiredSwordId === 'maglah_khan_s_horde' && s.status === 'active') && roster.hiredSwords.filter(s => s.hiredSwordId === entry.id && s.status === 'active').length < 5)) {
     return { kind: 'blocked', reason: `Already in the warband; you can only have one of each type of Hired Sword.` }
   }
-  if (entry.hireCost.base === null && !['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'nicodemus_the_cursed_pilgrim', 'dark_emissary', 'truthsayer'].includes(entry.id)) {
+  if (entry.hireCost.base === null && !/^\d+\s+(?:wyrdstone|treasures?)/i.test(entry.hireCost.text) && !['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'nicodemus_the_cursed_pilgrim', 'dark_emissary', 'truthsayer'].includes(entry.id)) {
     if (['priest_of_morr', 'wolf_priest_of_ulric'].includes(entry.id)) return { kind: 'blocked', reason: 'Recruit this priest from Heroes: he replaces an existing hero slot in an eligible warband.' }
     return { kind: 'blocked', reason: `Not hired for a plain fee (${entry.hireCost.text}); add by hand from the roster if the rules allow it.` }
   }

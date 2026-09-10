@@ -97,8 +97,13 @@ export function warbandRating(warband: RosterWarband, template?: WarbandTemplate
     breakdown.push({ subjectId: animal.id, name: `${animal.name} (${animal.holderName})`, points: animal.kind.ratingPoints, reason: `${animal.kind.ratingPoints} (animal fighting as a warrior)` });
   }
 
+  const ratedHireGroups = new Set<string>();
   for (const hs of warband.hiredSwords) {
     if (hs.status !== "active") continue;
+    if (hs.hiredSwordId === 'ulli_and_marquand' && hs.flags.hireGroupId) {
+      if (ratedHireGroups.has(hs.flags.hireGroupId)) continue;
+      ratedHireGroups.add(hs.flags.hireGroupId);
+    }
     const entry = findHiredSword(hs.hiredSwordId);
     const rating = parseHiredSwordRating(entry?.detail?.rating);
     if (!rating.parsed) {
@@ -106,7 +111,7 @@ export function warbandRating(warband: RosterWarband, template?: WarbandTemplate
         `${hs.name}: could not read the rating from the ${entry?.name ?? hs.hiredSwordId} entry; counted as ${RATING_POINTS_PER_WARRIOR} + xp`,
       );
     }
-    const points = rating.base + (rating.perXp ? hs.xp : 0);
+    const points = hs.hiredSwordId === 'snake_charmer' ? 5 + (hs.flags.hireCompanion ? 0 : hs.xp) : rating.base + (rating.perXp ? hs.xp : 0);
     breakdown.push({
       subjectId: hs.id,
       name: hs.name,

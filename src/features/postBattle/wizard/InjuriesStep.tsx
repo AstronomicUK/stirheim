@@ -42,7 +42,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
   return (
     <StepBody title="Serious injuries">
       <Intro>
-        {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes roll D66; hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
+        {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes and Dramatis Personae roll D66; ordinary hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
       </Intro>
       {nothing ? (
         <Card className="px-4 py-3">
@@ -74,9 +74,15 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         </Section>
       ) : null}
       {hiredSwords.length > 0 ? (
-        <Section title="Hired swords (D6)">
+        <Section title="Hired swords and Dramatis Personae">
           {hiredSwords.map(({ sword, resolution }) => (
-            <Card key={sword.id} className="flex flex-col gap-3 px-4 py-3">
+            resolution.heroFlow ? <HeroInjuryCard key={sword.id} name={sword.name} type="Dramatis Persona · D66" resolution={resolution.heroFlow}
+              skip={draft.injurySkips[sword.id]} onSkip={reason => update(d => setInjurySkip(d, sword.id, reason))}
+              onD66={d66 => update(d => addHeroInjuryRoll(d, sword.id, d66))}
+              onSubRoll={(index,v) => update(d => v === null ? d : setHeroInjurySubRoll(d,sword.id,index,v))}
+              onDistrictRoll={(index,v) => update(d => v === null ? d : setHeroDistrictRoll(d,sword.id,index,v))}
+              onCount={v => update(d => v === null ? d : setHeroInjuryCount(d,sword.id,v))}
+              onReset={() => update(d => resetHeroInjury(d,sword.id))} /> : <Card key={sword.id} className="flex flex-col gap-3 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{sword.name}</p>
@@ -275,7 +281,7 @@ interface HeroInjuryCardProps {
   onReset: () => void
 }
 
-function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
+export function HeroInjuryCard({ name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
   const { steps, pending, outcome } = resolution
   const lastApplied = [...steps].reverse().find((s) => !s.rerolled)

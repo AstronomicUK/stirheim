@@ -38,6 +38,11 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  hireGroupId?: string;
+  hireCompanion?: boolean;
+  upkeepOwedAfter?: string;
+  contractCheckOwed?: boolean;
+  mustMissNextBattle?: boolean;
   /** Permanent reductions earned by rolling a known spell again. Keyed by spell id. */
   spellDifficultyReductions?: Record<string, number>;
   /** Chosen starting lore, retained when later books add spells from other lores. */
@@ -133,7 +138,7 @@ export interface RosterHiredSword {
   flags: WarriorFlags;
   /** Equipment is fixed by the hired sword's entry and cannot be bought or sold. */
   equipment: RosterItem[];
-  status: "active" | "dead" | "left";
+  status: "active" | "dead" | "left" | "captured" | "retired";
 }
 
 export interface RosterWarband {

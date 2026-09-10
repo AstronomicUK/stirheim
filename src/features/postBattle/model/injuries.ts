@@ -166,6 +166,7 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
 
 export interface HiredSwordInjuryResolution {
   sword: RosterHiredSword
+  heroFlow?: HeroInjuryResolution
   outcome: InjuryOutcome | null
   line: HeroInjuryLine | null
 }
@@ -223,4 +224,11 @@ export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: nu
     complete,
     line: complete && outOfAction > 0 ? { subjectType: 'group', subjectId: group.id, subjectName: group.name, rolls: entered, dead } : null,
   }
+}
+
+/** Personae suffer serious injuries just like Heroes; preserve every resulting field. */
+export function resolvePersonaInjury(sword: RosterHiredSword, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null): HiredSwordInjuryResolution {
+  const hero: RosterHero = { ...sword, unitTemplateId: `hired_sword:${sword.hiredSwordId}`, skillTableIds: [], status: sword.status === 'left' ? 'retired' : sword.status }
+  const result = resolveHeroInjuryFlow(hero, flow, matchId, perks)
+  return { sword: { ...sword, stats: result.hero.stats, xp: sword.xp, injuries: result.hero.injuries, flags: result.hero.flags, equipment: result.hero.equipment, status: result.hero.status }, heroFlow: result, outcome: result.outcome, line: result.line ? { ...result.line, subjectType: 'hiredSword' } : null }
 }

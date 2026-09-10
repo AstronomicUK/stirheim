@@ -351,7 +351,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   "hired_sword:shadow_warrior": { racialProfile: "Elf" },
   "hired_sword:aenur_the_sword_of_twilight": { racialProfile: "Elf" },
   "hired_sword:veskit_high_executioner_of_clan_eshin": { racialProfile: "Skaven" },
-  "hired_sword:ulli_and_marquand": { racialProfile: "Dwarf" },
+  "hired_sword:ulli_and_marquand": { racialProfile: "Human" },
   "hired_sword:ninja_gnoblar": { racialProfile: "Goblin" },
 };
 

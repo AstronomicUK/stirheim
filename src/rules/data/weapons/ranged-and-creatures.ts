@@ -35,6 +35,7 @@
 import type { Weapon } from "../../types";
 
 export const RANGED_AND_CREATURE_WEAPONS: Weapon[] = [
+  { id: "snake_bite", name: "Snake bite (Black Lotus)", type: "melee", strength: "user", critCategory: "unarmed", concussion: false, poisoned: true, autoWoundOnNaturalSixToHit: true, special: [], rangedProfile: null },
   // ---- Missile Weapons ----
   { id: "belaying_pins", name: "Belaying Pins", type: "ranged", strength: "user", strengthBonus: -1, critCategory: "missile", concussion: false, saveModifier: -1, special: ["thrownWeaponNoRangePenalty", "movingPenaltyStillApplies"], rangedProfile: { shortRange: 6, maxRange: 6, shotsPerTurn: 1 } },
   { id: "blowpipe", name: "Blowpipe", type: "ranged", strength: 1, critCategory: "missile", concussion: false, saveModifier: -1, noCriticals: true, autoWoundOnNaturalSixToHit: true, poisoned: true, special: ["stealthyFiringWhileHidden"], rangedProfile: { shortRange: 4, maxRange: 8, shotsPerTurn: 1 } },

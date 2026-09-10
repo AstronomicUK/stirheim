@@ -12,8 +12,7 @@
 // - "Survives" is awarded after the injury step: a hero whose injury roll came up Dead, or who
 //   had to retire, does not "live to fight again" and gets nothing. Captured heroes may be ransomed
 //   back, so they keep their experience.
-// - Hired swords earn as heroes (docs/PLANNING.md, Phase 7): survive, enemies out of action and
-//   the underdog bonus; their advances use the Heroes table, so hero thresholds apply.
+// - Hired swords earn experience and cross thresholds as Henchmen; only the advance roll uses the Heroes table.
 // - The underdog bonus goes to every surviving warrior and group ("its warriors"), once, using the
 //   highest-rated opponent when there were several.
 // - Scenario-specific awards are entered by the player as extra lines with a reason.
@@ -23,7 +22,7 @@
 import type { XpLine } from '../../../domain'
 import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { underdogBonus, type AdvanceRate } from '../../../rules/data/campaign/experience'
-import { isDramatisPersona } from '../../../rules/data/campaign/hiredSwords'
+import { hiredSwordGainsExperience } from '../../../rules/resolve/hiredSwordRules'
 import { pendingAdvances } from '../../../rules/resolve/advances'
 import type { CharacterRole } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../../rules/types/roster'
@@ -90,24 +89,24 @@ export function warriorXpLine(
   alive: boolean,
   ctx: XpContext,
 ): XpLine | null {
-  if (!alive) return null
+  if (!alive || before.flags.hireCompanion) return null
   const unitId = 'unitTemplateId' in before ? before.unitTemplateId : null
   if (!unitGainsExperience(unitId)) return null
   // "Special characters do not earn Experience points, although they suffer serious injuries, just
   // like Heroes" — a Dramatis Persona has no unitTemplateId either, so unitGainsExperience(null)
-  // can't catch this on its own; ordinary hired swords still earn as heroes (docs/PLANNING.md).
-  if ('hiredSwordId' in before && isDramatisPersona(before.hiredSwordId)) return null
+  // can't catch this on its own; the hired entry's explicit XP exclusions apply as well.
+  if ('hiredSwordId' in before && !hiredSwordGainsExperience(before.hiredSwordId)) return null
   const awards: Award[] = [{ amount: ctx.scenarioAwards?.survival ?? 1, reason: 'survived the battle' }]
-  if (ctx.won && ctx.leaderId === before.id) awards.push({ amount: ctx.scenarioAwards?.leader ?? 1, reason: 'winning leader' })
+  if (subjectType === 'hero' && ctx.won && ctx.leaderId === before.id) awards.push({ amount: ctx.scenarioAwards?.leader ?? 1, reason: 'winning leader' })
   const kills = ctx.enemiesOut[before.id] ?? 0
   const zombies = Math.min(kills, Math.max(0, ctx.zombieKills?.[before.id] ?? 0))
   const enemies = kills - zombies + Math.min(1, zombies)
-  if (enemies > 0) awards.push({ amount: enemies * (ctx.scenarioAwards?.kill ?? 1), reason: `${enemies === 1 ? 'enemy' : 'enemies'} out of action` })
+  if (subjectType === 'hero' && enemies > 0) awards.push({ amount: enemies * (ctx.scenarioAwards?.kill ?? 1), reason: `${enemies === 1 ? 'enemy' : 'enemies'} out of action` })
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   const injuryXp = after.xp - before.xp
   if (injuryXp !== 0) awards.push({ amount: injuryXp, reason: 'from the Serious Injuries chart' })
   for (const extra of ctx.extras[before.id] ?? []) awards.push({ amount: extra.amount, reason: extra.reason })
-  return toLine(subjectType, before, 'hero', awards, unitRules(unitId).advanceRate ?? 'normal')
+  return toLine(subjectType, before, subjectType === 'hiredSword' ? 'henchman' : 'hero', awards, unitRules(unitId).advanceRate ?? 'normal')
 }
 
 /** A henchman group's line: +1 for surviving as long as a model remains, plus underdog and extras. */

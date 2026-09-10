@@ -1,3 +1,6 @@
+import { findWarbandTemplate } from "../data/warbandTemplates";
+import { parseDice, rollDice } from './dice';
+import { hiredSwordStartingSkills } from './hiredSwordRules';
 // Recruitment resolvers — hiring heroes and henchmen from the warband template, hiring and paying
 // hired swords, and dismissing warriors. Rulebook "Recruiting new warriors" / "Veterans" (data in
 // data/campaign/trading) and the Hired Swords rules (data/campaign/hiredSwords).
@@ -422,7 +425,7 @@ export function dismissWarrior(warband: RosterWarband, subjectId: string): Resol
     return {
       value: {
         ...warband,
-        hiredSwords: warband.hiredSwords.map((s) => (s.id === hs.id ? { ...s, status: "left" } : s)),
+        hiredSwords: departingHiredSword(warband, hs.id),
       },
       events: [
         {
@@ -444,6 +447,8 @@ function copyItems(items: RosterItem[]): RosterItem[] {
 export interface HireHiredSwordOptions {
   /** Display name; defaults to the entry name ("Dwarf Troll Slayer"). */
   name?: string;
+  scouts?: number;
+  luthorRole?: 'crimson' | 'wizard' | 'archer';
   /** Pay this instead of the listed hire fee (conditional fees; the UI records why). */
   feeOverride?: number;
   /** Injectable for tests; defaults to Math.random. */
@@ -479,9 +484,12 @@ export function hiredSwordEquipment(detail: HiredSwordDetail | undefined): Roste
         out.push({ itemId: null, customName: first.replace(KIT_PREAMBLE, "").trim(), quantity: 1 });
       } else {
         for (const piece of splitKit(listed)) {
-          const item = resolveEquipmentName(piece) ?? resolveEquipmentName(piece.replace(/\s*\([^)]*\)\s*$/, "").trim());
-          if (item) out.push({ itemId: item.id, quantity: 1 });
-          else out.push({ itemId: null, customName: piece, quantity: 1 });
+          const quantityMatch = piece.match(/^(?:(\d+)|((?:two|three|four|five))|(?:a )?pair of)\s+(.+)$/i);
+          const quantity = quantityMatch ? Number(quantityMatch[1] ?? (({ two: 2, three: 3, four: 4, five: 5 } as Record<string, number>)[quantityMatch[2]?.toLowerCase() ?? ''] ?? 2)) : 1;
+          const itemName = quantityMatch?.[3] ?? piece;
+          const item = resolveEquipmentName(itemName) ?? resolveEquipmentName(itemName.replace(/\s*\([^)]*\)\s*$/, "").trim());
+          if (item) out.push({ itemId: item.id, quantity });
+          else out.push({ itemId: null, customName: itemName, quantity });
         }
       }
       // Keep the explanatory sentences as a note on the last item so the rules travel with the kit.
@@ -522,12 +530,17 @@ export function hireHiredSword(
   if (warband.hiredSwords.some((s) => s.id === id)) {
     throw new RulesError("recruitment.duplicateId", `A hired sword with id "${id}" already exists`);
   }
-  if (warband.hiredSwords.some((s) => s.hiredSwordId === hiredSwordId && s.status === "active")) {
+  const activeScouts = warband.hiredSwords.filter(s => s.hiredSwordId === 'hobgoblin_scout' && s.status === 'active').length;
+  const hasMaglah = warband.hiredSwords.some(s => s.hiredSwordId === 'maglah_khan_s_horde' && s.status === 'active');
+  if (warband.hiredSwords.some((s) => s.hiredSwordId === hiredSwordId && s.status === "active") && !(hiredSwordId === 'hobgoblin_scout' && hasMaglah && activeScouts < 5)) {
     throw new RulesError(DUPLICATE_HIRED_SWORD, `The warband already has a ${entry.name}; you can only have one of each type of Hired Sword`);
   }
+  if (warband.hiredSwords.some(s => s.hiredSwordId === hiredSwordId && s.flags.mustMissNextBattle)) throw new RulesError('recruitment.contractGap', `${entry.name} cannot return until this warband has fought a battle without them.`);
   const specialFree = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer'].includes(hiredSwordId);
-  const shardFee = hiredSwordId === 'nicodemus_the_cursed_pilgrim';
-  const cost = opts.feeOverride ?? entry.hireCost.base ?? (specialFree || shardFee ? 0 : null);
+  const shardCost = hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? 1 : Number(entry.hireCost.text.match(/^(\d+)\s+(?:wyrdstone|treasures?)/i)?.[1] ?? 0);
+  const shardFee = shardCost > 0;
+  const feeRoll = entry.hireCost.dice && opts.feeOverride === undefined ? rollDice(parseDice(entry.hireCost.dice), opts.rng ?? Math.random) : null;
+  const cost = opts.feeOverride ?? (entry.hireCost.base === null ? (specialFree || shardFee ? 0 : null) : entry.hireCost.base + (feeRoll?.total ?? 0));
   if (cost === null) {
     throw new RulesError(
       "recruitment.hiredSwordNotForGold",
@@ -539,7 +552,11 @@ export function hireHiredSword(
     throw new RulesError("recruitment.hiredSwordNoProfile", `${entry.name} has no stat profile in the data`);
   }
   assertGold(warband, cost, entry.name);
-  if (shardFee && warband.wyrdstone < 1) throw new RulesError('recruitment.shardFee', 'Nicodemus requires one wyrdstone shard to join.');
+  if (warband.wyrdstone < shardCost) throw new RulesError('recruitment.shardFee', `${entry.name} requires ${shardCost} wyrdstone/treasure to join.`);
+  const scoutTotal = opts.scouts ?? 2;
+  if (hiredSwordId === 'maglah_khan_s_horde' && (!Number.isInteger(scoutTotal) || scoutTotal < Math.max(2, activeScouts) || scoutTotal > 5)) throw new RulesError('recruitment.scouts', 'Maglah requires two to five Hobgoblin Scouts.');
+  const scoutCost = hiredSwordId === 'maglah_khan_s_horde' ? Math.max(0, scoutTotal - activeScouts) * (findHiredSword('hobgoblin_scout')!.hireCost.base!) : 0;
+  assertGold(warband, cost + scoutCost, entry.name);
   const spellIds = rollHiredSwordSpells(hiredSwordId, opts.rng ?? Math.random);
 
   const hiredSword: RosterHiredSword = {
@@ -549,30 +566,55 @@ export function hireHiredSword(
     stats: { ...profile.stats },
     xp: 0,
     levelUps: 0,
-    skillIds: hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? ['sorcery', 'fearsome'] : hiredSwordId === 'the_fallen_sister' ? ['warrior_wizard'] : [],
+    skillIds: [...new Set([...hiredSwordStartingSkills(hiredSwordId), ...(hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? ['sorcery', 'fearsome'] : hiredSwordId === 'the_fallen_sister' ? ['warrior_wizard'] : [])])],
     spellIds,
     injuries: [],
     flags: {},
-    equipment: hiredSwordEquipment(entry.detail),
+    equipment: startingHireEquipment(entry.id, entry.detail, opts.luthorRole),
     status: "active",
   };
 
+  const companions: RosterHiredSword[] = [];
+  if (hiredSwordId === 'ulli_and_marquand') {
+    hiredSword.name = opts.name ? `${opts.name}: Marquand` : 'Marquand Volker';
+    hiredSword.flags = { hireGroupId: id };
+    hiredSword.equipment = [{ itemId: 'sword', quantity: 1 }, { itemId: 'light_armour', quantity: 1 }, { itemId: 'throwing_knives_stars', quantity: 1 }];
+    hiredSword.skillIds = ['step_aside', 'knife_fighter', 'lightning_reflexes'];
+    const second = entry.detail!.profiles[1];
+    companions.push({ ...hiredSword, id: crypto.randomUUID(), name: 'Ulli Leitpold', stats: { ...second.stats }, flags: { hireGroupId: id, hireCompanion: true }, skillIds: ['strongman', 'unstoppable_charge', 'combat_master'], equipment: [{ itemId: 'double_handed_weapon', quantity: 1 }, { itemId: 'light_armour', quantity: 1 }] });
+  }
+  if (hiredSwordId === 'snake_charmer') {
+    hiredSword.flags = { hireGroupId: id };
+    hiredSword.equipment = [{ itemId: 'dagger', quantity: 1 }, { itemId: 'sword', quantity: 1 }];
+    const snake = entry.detail!.profiles.find(p => p.name === 'Snake')!;
+    for (let i = 1; i <= 3; i++) companions.push({ ...hiredSword, id: crypto.randomUUID(), name: `Snake ${i}`, stats: { ...snake.stats }, flags: { hireGroupId: id, hireCompanion: true }, skillIds: [], spellIds: [], equipment: [] });
+  }
+  if (hiredSwordId === 'maglah_khan_s_horde') {
+    let withScouts = { ...warband, gold: warband.gold - cost, hiredSwords: [...warband.hiredSwords, hiredSword] };
+    for (let i = activeScouts; i < scoutTotal; i++) {
+      const recruited = hireHiredSword(withScouts, 'hobgoblin_scout', crypto.randomUUID(), { rng: opts.rng });
+      companions.push(recruited.value.hiredSwords[recruited.value.hiredSwords.length - 1]);
+      withScouts = recruited.value;
+    }
+  }
   const upkeep = entry.upkeep?.text ?? "no upkeep listed";
   const spellNote = spellIds.length > 0 ? `; spells rolled: ${spellIds.map((sid) => SPELL_LORES.flatMap(l => l.spells).find(sp => sp.id === sid)?.name ?? sid).join(", ")}${hiredSwordId === 'khar_mel_the_djinn' ? ` (D3 starting count: ${spellIds.length})` : ''}` : "";
   return {
-    value: { ...warband, gold: warband.gold - cost, wyrdstone: warband.wyrdstone - (shardFee ? 1 : 0), hiredSwords: [...warband.hiredSwords, hiredSword] },
+    value: { ...warband, gold: warband.gold - cost - scoutCost, wyrdstone: warband.wyrdstone - shardCost, hiredSwords: [...warband.hiredSwords, hiredSword, ...companions] },
     events: [
       {
         kind: "hiredSword.hired",
         subjectId: id,
-        message: `Hired ${hiredSword.name} for ${cost} gc (upkeep ${upkeep} after each battle); treasury now ${warband.gold - cost} gc${spellNote}`,
-        data: { hiredSwordId, cost, upkeep: entry.upkeep?.base ?? null },
+        message: `Hired ${hiredSword.name} for ${cost + scoutCost} gc${shardCost ? ` and ${shardCost} wyrdstone/treasure` : ""}${scoutCost ? ` including ${scoutTotal - activeScouts} Hobgoblin Scouts` : ""} (upkeep ${upkeep} after each battle); treasury now ${warband.gold - cost - scoutCost} gc${spellNote}`,
+        data: { hiredSwordId, cost, feeRoll, scoutCost, upkeep: entry.upkeep?.base ?? null },
       },
     ],
   };
 }
 
 export interface PayUpkeepOptions {
+  contractRoll?: number;
+  mariannaHelpedAndSurvived?: boolean;
   /** Pay this instead of the listed upkeep (e.g. a Troll Slayer in a warband with Elves: 20 gc). */
   amountOverride?: number;
 }
@@ -584,7 +626,7 @@ export interface PayUpkeepResult {
 }
 
 /** Pay a hired sword's post-battle upkeep, or lose him if the treasury cannot cover it. */
-export function payUpkeep(
+function resolveUpkeepPayment(
   warband: RosterWarband,
   hiredSwordRosterId: string,
   opts: PayUpkeepOptions = {},
@@ -595,13 +637,27 @@ export function payUpkeep(
     throw new RulesError("recruitment.notActive", `${hs.name} has already ${hs.status === "dead" ? "died" : "left"}; no upkeep is due`);
   }
   const entry = findHiredSword(hs.hiredSwordId);
-  if (hs.hiredSwordId === 'nicodemus_the_cursed_pilgrim' && opts.amountOverride === undefined) {
-    const paid = warband.wyrdstone >= 1;
-    return { value: { paid, warband: { ...warband, wyrdstone: warband.wyrdstone - (paid ? 1 : 0), hiredSwords: warband.hiredSwords.map(s => s.id === hs.id && !paid ? { ...s, status: 'left' } : s) } }, events: [{ kind: 'hiredSword.upkeep', subjectId: hs.id, message: paid ? `${hs.name} is paid one wyrdstone shard.` : `${hs.name} leaves: no wyrdstone shard to pay him.` }] };
+  if (hs.flags.contractCheckOwed) {
+    const roll = opts.contractRoll;
+    if (!roll || !Number.isInteger(roll) || roll < 1 || roll > 6) throw new RulesError('recruitment.contractRoll', 'Roll the end-of-battle contract check first.');
+    const marianna = hs.hiredSwordId === 'countess_marianna_chevaux_vampire_assassin';
+    const leaves = marianna ? roll <= 3 || (roll === 6 && opts.mariannaHelpedAndSurvived === false) : roll === 1;
+    if (marianna && roll === 6 && opts.mariannaHelpedAndSurvived === undefined) throw new RulesError('recruitment.marianna', 'Finish the encounter with Serutat’s minions, then record whether the warband took a minion out of action and Marianna survived.');
+    if (leaves) return { value: { paid: true, warband: {...warband,hiredSwords:departingHiredSword(warband,hs.id)} }, events: [{kind:'hiredSword.left',subjectId:hs.id,message:`${hs.name} leaves after the contract check (D6 ${roll}); no further upkeep paid.`}] };
+    if (marianna && roll === 6) return {value:{paid:true,warband},events:[{kind:'hiredSword.upkeep',subjectId:hs.id,message:`${hs.name} survived with the warband’s help and fights the next battle for free (contract D6 6).`}]};
   }
-  const upkeep = opts.amountOverride ?? entry?.upkeep?.base ?? null;
 
-  if (upkeep === null || upkeep <= 0) {
+  const upkeepShards = ['nicodemus_the_cursed_pilgrim', 'clan_skryre_rat_ogre'].includes(hs.hiredSwordId) ? 1 : Number(entry?.upkeep?.text.match(/^(\d+)\s+(?:wyrdstone|treasures?)/i)?.[1] ?? 0);
+  if (upkeepShards > 0 && opts.amountOverride === undefined) {
+    const paid = warband.wyrdstone >= upkeepShards;
+    return { value: { paid, warband: { ...warband, wyrdstone: warband.wyrdstone - (paid ? upkeepShards : 0), hiredSwords: warband.hiredSwords.map(s => s.id === hs.id && !paid ? { ...s, status: 'left' } : s) } }, events: [{ kind: 'hiredSword.upkeep', subjectId: hs.id, message: paid ? `${hs.name} is paid ${upkeepShards} wyrdstone/treasure.` : `${hs.name} leaves: no wyrdstone shard to pay him.` }] };
+  }
+  const withElves = /elf|elves/i.test(findWarbandTemplate(warband.warbandTemplateId)?.race ?? '') || warband.hiredSwords.some(s => s.status === 'active' && /elf|shadow_warrior|aenur/.test(s.hiredSwordId));
+  const upkeep = opts.amountOverride ?? (hs.hiredSwordId === 'dwarf_troll_slayer' && withElves ? 20 : hs.hiredSwordId === 'snake_charmer' ? 10 + 5 * warband.hiredSwords.filter(s => s.flags.hireGroupId === hs.flags.hireGroupId && s.flags.hireCompanion && s.status === 'active').length : entry?.upkeep?.base ?? null);
+
+  if (upkeep === null && entry?.upkeep) throw new RulesError('recruitment.specialUpkeep', `${hs.name}: ${entry.upkeep.text}. Record the agreed payment through Hired Swords.`);
+  if (upkeep !== null && (!Number.isInteger(upkeep) || upkeep < 0)) throw new RulesError('recruitment.invalidUpkeep', 'Enter a non-negative whole number for upkeep.');
+  if (upkeep === null || upkeep === 0) {
     return {
       value: { warband, paid: true },
       events: [
@@ -633,7 +689,7 @@ export function payUpkeep(
     value: {
       warband: {
         ...warband,
-        hiredSwords: warband.hiredSwords.map((s) => (s.id === hs.id ? { ...s, status: "left" } : s)),
+        hiredSwords: departingHiredSword(warband, hs.id),
       },
       paid: false,
     },
@@ -687,4 +743,47 @@ export function payHenchmanUpkeep(warband: RosterWarband, groupId: string, opts:
     value: { warband: { ...warband, henchmenGroups: warband.henchmenGroups.map((g) => (g.id === groupId ? { ...g, size: 0 } : g)) }, paid: false },
     events: [{ kind: "henchmen.left", subjectId: group.id, message: `${group.name} could not be paid ${due} gc upkeep and leave the warband`, data: { upkeep: due } }],
   };
+}
+
+/** A retinue leaves with its employer; Maglah's rules allow one Scout to remain. */
+export function departingHiredSword(warband: RosterWarband, id: string): RosterHiredSword[] {
+  const hire = warband.hiredSwords.find(s => s.id === id);
+  if (!hire) return warband.hiredSwords;
+  const remainingScout = warband.hiredSwords.find(s => s.hiredSwordId === 'hobgoblin_scout' && s.status === 'active');
+  return warband.hiredSwords.map(s => {
+    const grouped = hire.flags.hireGroupId && (!hire.flags.hireCompanion || hire.hiredSwordId === 'ulli_and_marquand') && s.flags.hireGroupId === hire.flags.hireGroupId;
+    const retinue = hire.hiredSwordId === 'maglah_khan_s_horde' && s.hiredSwordId === 'hobgoblin_scout' && s.id !== remainingScout?.id;
+    return s.status === 'active' && (s.id === id || grouped || retinue) ? { ...s, status: 'left' } : s;
+  });
+}
+
+function startingHireEquipment(id: string, detail: HiredSwordDetail | undefined, role?: HireHiredSwordOptions['luthorRole']): RosterItem[] {
+  const kit = (ids: string[]): RosterItem[] => ids.map(itemId => ({itemId,quantity:1}));
+  if(id==='chameleon_skink') return kit(['dagger','blowpipe','buckler']);
+  if(id==='dark_emissary') return [
+    {itemId:null,customName:'Staff of Darkness',quantity:1,notes:'+1 to casting rolls.'},
+    {itemId:null,customName:'The Spiral',quantity:1,notes:'5+ save which cannot be reduced.'},
+  ];
+  if(id==='truthsayer') return [
+    {itemId:'halberd',quantity:1,notes:'Staff of Light: also dispels one enemy spell per turn on 4+.'},
+    {itemId:null,customName:'The Triskele',quantity:1,notes:'4+ save which cannot be reduced.'},
+  ];
+  if(id==='luthor_wolfenbaum') {
+    if(!role) throw new RulesError('recruitment.luthorRole','Choose Luthor’s role before hiring him.');
+    if(role==='crimson') return [{itemId:'sword',quantity:1,notes:'Custom sword: may instead be wielded two-handed for +1 Strength.'},...kit(['dagger','heavy_armour','helmet'])];
+    if(role==='archer') return [...kit(['longbow','dagger','hunting_arrows','heavy_armour','dark_venom'])];
+    return [{itemId:null,customName:'Fish-slapping staff',quantity:1,notes:'A natural 6 to hit strikes at double Strength (8).'},...kit(['heavy_armour','lucky_charm','garlic']),{itemId:null,customName:'Bugman’s Beer',quantity:1,notes:'Luthor is immune to Fear.'},{itemId:null,customName:'Clay orbs of Tilean Fire',quantity:1,notes:'8-inch range; no long-range penalty; S2 hits. May throw in melee. A hit target must roll under Initiative next turn or cannot charge or shoot that turn.'}];
+  }
+  return hiredSwordEquipment(detail);
+}
+
+export function payUpkeep(warband: RosterWarband, id: string, opts: PayUpkeepOptions = {}): Resolution<PayUpkeepResult> {
+  const result = resolveUpkeepPayment(warband,id,opts);
+  if (!result.value.paid) return result;
+  const next = result.value.warband;
+  return {...result,value:{...result.value,warband:{...next,hiredSwords:next.hiredSwords.map(s=>{
+    if(s.id!==id) return s;
+    const {upkeepOwedAfter:_owed,contractCheckOwed:_check,...flags}=s.flags;
+    return {...s,flags};
+  })}},events:opts.contractRoll ? [...result.events,{kind:'hiredSword.contract',subjectId:id,message:`End-of-battle contract check: D6 ${opts.contractRoll}.`}] : result.events};
 }

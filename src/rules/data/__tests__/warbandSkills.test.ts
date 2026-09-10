@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { HIRED_SWORDS } from "../campaign/hiredSwords";
 import { WARBAND_TEMPLATES } from "../warbandTemplates";
 import { WARBAND_SKILL_TABLES, findWarbandSkill, skillTablesForWarband } from "../campaign/warbandSkills";
 
 describe("warband skill tables", () => {
   it("has the expected number of tables and skills", () => {
-    expect(WARBAND_SKILL_TABLES.length).toBe(54);
-    expect(WARBAND_SKILL_TABLES.reduce((n, t) => n + t.skills.length, 0)).toBe(266);
+    const warbandOnly = WARBAND_SKILL_TABLES.filter(t => t.warbandId !== "optional_cavalry" && !t.warbandId.startsWith("hired_sword:"));
+    expect(warbandOnly.length).toBe(54);
+    expect(WARBAND_SKILL_TABLES.filter(t => t.warbandId.startsWith("hired_sword:"))).toHaveLength(HIRED_SWORDS.filter(h => h.detail?.uniqueSkills).length);
+    expect(warbandOnly.reduce((n, t) => n + t.skills.length, 0)).toBe(266);
   });
 
   it("only references warband ids that exist in WARBAND_TEMPLATES", () => {
-    const templateIds = new Set(WARBAND_TEMPLATES.map((w) => w.id));
+    const templateIds = new Set([...WARBAND_TEMPLATES.map((w) => w.id), "optional_cavalry", ...HIRED_SWORDS.map(h => `hired_sword:${h.id}`)]);
     for (const t of WARBAND_SKILL_TABLES) {
       expect(templateIds.has(t.warbandId), `${t.id}: unknown warband ${t.warbandId}`).toBe(true);
     }
@@ -34,7 +37,7 @@ describe("warband skill tables", () => {
     for (const t of WARBAND_SKILL_TABLES) {
       expect(t.name.length, t.id).toBeGreaterThan(0);
       expect(t.source.publication.length, t.id).toBeGreaterThan(0);
-      expect(t.source.file, t.id).toMatch(/^warbands\/[a-z0-9-]+\.md:\d+-\d+$/);
+      expect(t.source.file, t.id).toMatch(/^(?:warbands\/)?[a-z0-9-]+\.md:\d+-\d+$/);
       expect(t.skills.length, t.id).toBeGreaterThan(0);
       for (const s of t.skills) {
         expect(s.name.trim().length, s.id).toBeGreaterThan(0);

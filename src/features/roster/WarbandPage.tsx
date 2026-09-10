@@ -25,6 +25,9 @@ import { WarbandHistory } from './view/WarbandHistory'
 import { ImportFixups } from './view/ImportFixups'
 import { ImportQuestions } from './view/ImportQuestions'
 import { GrimoireCard } from './view/GrimoireCard'
+import { HiredRosterRepairCard } from './view/HiredRosterRepairCard'
+import { HiredUpkeepCard } from './view/HiredUpkeepCard'
+import { CaptiveCard } from './view/CaptiveCard'
 import { PitFightCard } from './view/PitFightCard'
 import { PendingBattleCard } from './view/PendingBattleCard'
 import { usePageTitle } from '../onboarding/usePageTitle'
@@ -203,6 +206,9 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
 
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
+      <HiredRosterRepairCard detail={detail} canEdit={canEdit} />
+      <HiredUpkeepCard detail={detail} canEdit={canEdit} />
+      <CaptiveCard detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
       <PitFightCard detail={detail} canEdit={canEdit} onError={setActionError} />
       {rating.notes.length > 0 ? (
         <Notice tone="info" title="Rating notes">

@@ -33,6 +33,9 @@ export function ReviewStep({ derived, ctx, mine, amend }: StepProps) {
   return (
     <>
       <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} />
+      {report.applied.heroes.some(h => h.patch.flags?.upkeepOwedAfter || (h.patch.status === 'left' && ctx.roster.hiredSwords.some(s => s.id === h.id))) ? <Notice tone="info" title="Hired-character contracts">
+        <ul>{report.applied.heroes.filter(h => h.patch.flags?.upkeepOwedAfter || (h.patch.status === 'left' && ctx.roster.hiredSwords.some(s => s.id === h.id))).map(h => <li key={h.id}>{ctx.roster.hiredSwords.find(s => s.id === h.id)?.name}: {h.patch.status === 'left' ? h.patch.flags?.mustMissNextBattle ? 'leaves after this battle; fight one battle without them before rehiring.' : 'leaves after this battle.' : 'upkeep is due after this battle; a payment reminder will appear on the warband screen.'}</li>)}</ul>
+      </Notice> : null}
       {amend ? (
         <Card className="flex flex-col gap-2 px-4 py-3">
           <TextArea label="Why the report is being amended" value={amend.note} onChange={(e) => amend.onNote(e.target.value)} rows={3} placeholder="e.g. the Captain's injury was rolled on the wrong table" />

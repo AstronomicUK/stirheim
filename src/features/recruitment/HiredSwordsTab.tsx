@@ -5,15 +5,13 @@ import { overrideNote, overrideReady, reasonWith, type Override } from '../../do
 import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, payHenchmanUpkeep, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
-import { Button, Markdown, Notice, NumberField, Sheet, TextField, OverrideField, SelectField } from '../../ui'
+import { Button, DieField, Markdown, Notice, NumberField, Sheet, TextField, OverrideField, SelectField } from '../../ui'
 import { StatHeader, StatLine } from '../roster/shared/StatLine'
 import { Card, ItemLines, KeyValue, RuleList, Section, Tag } from '../roster/view/bits'
 import {
   findHiredSwordEntry,
   gradeLabel,
   hiredSwordOptions,
-  upkeepDue,
-  upkeepSummary,
   upkeepText,
   type Eligibility,
   type HiredSwordOption,
@@ -214,8 +212,13 @@ function UpkeepSheet({ detail, hiredSword: hs, onClose, onDone }: SwordSheetProp
   const [override, setOverride] = useState<number | null>(null)
   const { commit, error, pending } = useCommit(detail)
   const overrideInvalid = override !== null && (Number.isNaN(override) || override < 0)
-  const due = upkeepDue(entry, overrideInvalid ? null : override)
-  const willLeave = due > 0 && roster.gold < due
+  let preview: ReturnType<typeof payUpkeep> | null = null
+  let paymentError = ''
+  try { preview = payUpkeep(roster, hs.id, overrideInvalid || override === null ? {} : {amountOverride:override}) }
+  catch(e) { paymentError = e instanceof Error ? e.message : 'Review the contract on the warband screen.' }
+  const due = preview ? roster.gold - preview.value.warband.gold : 0
+  const shards = preview ? roster.wyrdstone - preview.value.warband.wyrdstone : 0
+  const willLeave = preview !== null && !preview.value.paid
 
   const [overrideReason, setOverrideReason] = useState('')
   const reasonMissing = override !== null && !overrideInvalid && overrideReason.trim() === ''
@@ -242,8 +245,8 @@ function UpkeepSheet({ detail, hiredSword: hs, onClose, onDone }: SwordSheetProp
       title="Pay upkeep"
       description={`${hs.name} · ${entry?.name ?? hs.hiredSwordId}`}
       footer={
-        <Button block variant={willLeave ? 'danger' : 'primary'} pending={pending} disabled={overrideInvalid || reasonMissing} onClick={() => void confirm()}>
-          {willLeave ? 'Cannot pay: let him go' : due > 0 ? `Pay ${due} gc` : 'Record no upkeep due'}
+        <Button block variant={willLeave ? 'danger' : 'primary'} pending={pending} disabled={overrideInvalid || reasonMissing || !preview} onClick={() => void confirm()}>
+          {willLeave ? 'Cannot pay: let him go' : shards > 0 ? `Pay ${shards} wyrdstone / treasure` : due > 0 ? `Pay ${due} gc` : 'Record no upkeep due'}
         </Button>
       }
     >
@@ -261,7 +264,7 @@ function UpkeepSheet({ detail, hiredSword: hs, onClose, onDone }: SwordSheetProp
           error={overrideInvalid ? 'Enter a whole number of gold crowns' : undefined}
         />
         {override !== null ? <TextField label="Why a different amount" value={overrideReason} autoComplete="off" onChange={(e) => setOverrideReason(e.target.value)} error={reasonMissing ? 'Say why; it goes in the log' : undefined} /> : null}
-        <Notice tone={willLeave ? 'warn' : 'info'}>{upkeepSummary(hs, entry, roster.gold, overrideInvalid ? null : override)}</Notice>
+        <Notice tone={willLeave ? 'warn' : 'info'}>{paymentError || preview?.events.map(e=>e.message).join(' ')}</Notice>
         {error ? <Notice tone="error">{error}</Notice> : null}
       </div>
     </Sheet>
@@ -311,23 +314,30 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
   const { roster } = detail
   const { entry, eligibility } = option
   const [name, setName] = useState('')
+  const [luthorRole,setLuthorRole]=useState<'crimson'|'wizard'|'archer'>('crimson')
   const { commit, error, pending } = useCommit(detail)
-  const fullFee = entry.hireCost.base ?? 0
+  const existingScouts = roster.hiredSwords.filter(s => s.hiredSwordId === 'hobgoblin_scout' && s.status === 'active').length
+  const [scouts, setScouts] = useState(Math.max(2, existingScouts))
+  const scoutCost = entry.id === 'maglah_khan_s_horde' ? Math.max(0, scouts - existingScouts) * 45 : 0
+  const [feeDice, setFeeDice] = useState<(number | null)[]>([null, null, null])
+  const randomFee = entry.id === 'ninja'
+  const fullFee = (entry.hireCost.base ?? 0) + (randomFee ? feeDice.reduce<number>((sum, value) => sum + (value ?? 0), 0) : 0)
   const listedFee = halfFrom ? halved(fullFee) : fullFee
   const [feeOverride, setFeeOverride] = useState<Override | null>(null)
-  const cost = overrideReady(feeOverride) ? feeOverride.amount : listedFee
-  const feeBlocks = feeOverride !== null && !overrideReady(feeOverride)
+  const cost = (overrideReady(feeOverride) ? feeOverride.amount : listedFee) + scoutCost
+  const feeBlocks = (feeOverride !== null && !overrideReady(feeOverride)) || (randomFee && feeDice.some(v => v === null) && !overrideReady(feeOverride))
   const restricted = eligibility.kind === 'restricted'
   const needsConditions = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer', 'khar_mel_the_djinn'].includes(entry.id)
   const [conditionsMet, setConditionsMet] = useState(false)
-  const shardFee = entry.id === 'nicodemus_the_cursed_pilgrim'
+  const shardCost = entry.id === 'nicodemus_the_cursed_pilgrim' ? 1 : Number(entry.hireCost.text.match(/^(\d+)\s+(?:wyrdstone|treasures?)/i)?.[1] ?? 0)
+  const shardFee = shardCost > 0
 
   async function confirm() {
     const id = crypto.randomUUID()
     const trimmed = name.trim()
-    const note = overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : null
+    const note = overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : randomFee ? `Ninja hire fee: 70 + 3D6 (${feeDice.join(' + ')}) = ${fullFee} gc.` : null
     const result = await commit(
-      () => hireHiredSword(roster, entry.id, id, { ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom ? { feeOverride: listedFee } : {}) }),
+      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
       (w) => w,
       reasonWith('recruitment', note),
     )
@@ -341,7 +351,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
       title={entry.name}
       description={`${entry.hireCost.text} to hire · upkeep ${upkeepText(entry)} · ${entry.source}`}
       footer={
-        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks || (needsConditions && !conditionsMet) || (shardFee && roster.wyrdstone < 1)} onClick={() => void confirm()}>
+        <Button block variant={restricted ? 'danger' : 'primary'} pending={pending} disabled={feeBlocks || (needsConditions && !conditionsMet) || (shardFee && roster.wyrdstone < shardCost)} onClick={() => void confirm()}>
           {shardFee ? 'Hire for 1 wyrdstone shard' : restricted ? `Hire anyway for ${cost} gc` : `Hire for ${cost} gc`}
         </Button>
       }
@@ -349,7 +359,10 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
       <div className="flex flex-col gap-4 pb-2">
         <RestrictionNotice entry={entry} eligibility={eligibility} />
         {needsConditions ? <label className="flex gap-2 text-sm"><input type="checkbox" checked={conditionsMet} onChange={e => setConditionsMet(e.target.checked)} />The required audience, search or summoning conditions in this character’s rules have been met.</label> : null}
-        {shardFee ? <Notice tone="info">Nicodemus takes one wyrdstone shard when hired, and another after each battle, including his first. Treasury: {roster.wyrdstone} shards.</Notice> : null}
+        {shardFee ? <Notice tone="info">{entry.name} requires {shardCost} wyrdstone/treasure to hire. Treasury: {roster.wyrdstone} shards.</Notice> : null}
+        {entry.id === 'luthor_wolfenbaum' ? <SelectField label="Luthor’s role — check the role’s hiring restrictions below" value={luthorRole} onChange={e=>setLuthorRole(e.target.value as typeof luthorRole)}><option value="crimson">Crimson Blade of Reikland</option><option value="wizard">Dark Wizard Extraordinaire</option><option value="archer">Master Archer of Drakwald</option></SelectField> : null}
+        {entry.id === 'maglah_khan_s_horde'  ? <SelectField label="Hobgoblin Scouts (45 gc each to hire, 20 gc upkeep each)" value={String(scouts)} onChange={e => setScouts(Number(e.target.value))}>{[2,3,4,5].filter(n => n >= existingScouts).map(n => <option key={n} value={n}>{n} Scouts</option>)}</SelectField> : null}
+        {randomFee ? <div className="flex flex-wrap gap-2">{feeDice.map((die,index) => <DieField key={index} label={`Hire fee die ${index + 1}`} sides={6} value={die} onChange={v => setFeeDice(previous => previous.map((value,i) => i === index ? v : value))} rollable />)}</div> : null}
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire fee" value={`${cost} gc`} />

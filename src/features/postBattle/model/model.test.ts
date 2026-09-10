@@ -662,3 +662,19 @@ describe('injury overrides', () => {
     expect(d.report?.ooa[0]).toMatchObject({ subjectId: 'watch', count: 2 })
   })
 })
+
+it('persists single-battle departures and clears the rehire gap after the next battle',()=>{
+ const completeDraft=()=>setVeteranDie(setVeteranDie(setResult(emptyDraft(),'won'),0,3),1,4)
+ const roster=makeRoster()
+ roster.hiredSwords=[sword('aenur',{hiredSwordId:'aenur_the_sword_of_twilight'})]
+ const c=ctx({roster})
+ const draft=withDice(completeDraft(),c)
+ const report=buildReport(draft,c)
+ const checked=battleReportSchema.parse(report)
+ expect(checked.applied.heroes.find(h=>h.id==='aenur')?.patch).toMatchObject({status:'left',flags:{mustMissNextBattle:true}})
+ const next=rosterAfterReport(roster,checked.applied)
+ expect(next.hiredSwords[0]).toMatchObject({status:'left',flags:{mustMissNextBattle:true}})
+ const c2=ctx({roster:next,matchId:'m2'})
+ const report2=buildReport(withDice(completeDraft(),c2),c2)
+ expect(rosterAfterReport(next,report2.applied).hiredSwords[0].flags.mustMissNextBattle).toBe(false)
+})

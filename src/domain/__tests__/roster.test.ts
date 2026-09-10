@@ -192,15 +192,15 @@ describe("hired swords", () => {
     ]);
   });
 
-  it("maps captured and retired to left; active, dead and left pass through", () => {
+  it("preserves captured and retired states for Dramatis Personae", () => {
     expect(toRosterHiredSwordStatus("active")).toBe("active");
     expect(toRosterHiredSwordStatus("dead")).toBe("dead");
     expect(toRosterHiredSwordStatus("left")).toBe("left");
-    expect(toRosterHiredSwordStatus("captured")).toBe("left");
-    expect(toRosterHiredSwordStatus("retired")).toBe("left");
+    expect(toRosterHiredSwordStatus("captured")).toBe("captured");
+    expect(toRosterHiredSwordStatus("retired")).toBe("retired");
 
     const out = toRosterWarband(reiklandWatch, [{ ...ogre, status: "captured" }], [], []);
-    expect(out.hiredSwords[0]!.status).toBe("left");
+    expect(out.hiredSwords[0]!.status).toBe("captured");
   });
 
   it("a hero who left is kept as retired", () => {

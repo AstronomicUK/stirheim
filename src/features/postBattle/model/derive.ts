@@ -1,3 +1,6 @@
+import { ONE_BATTLE_HIRES, requiresBattleGap } from '../../../rules/resolve/hiredSwordRules'
+import { isDramatisPersona } from '../../../rules/data/campaign/hiredSwords'
+import { resolvePersonaInjury } from './injuries'
 // From the draft and the roster to the BattleReport the server applies. Everything here is pure
 // and recomputed on every edit; `report` is null until every step is complete.
 //
@@ -199,6 +202,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
         if (die === 6) res.sword = { ...res.sword, xp: res.sword.xp + 1 }
         return { sword, resolution: res }
       }
+      if (isDramatisPersona(sword.hiredSwordId) && skip === undefined) return { sword, resolution: resolvePersonaInjury(sword, draft.heroInjuries[sword.id] ?? { rolls: [], countRoll: null }, matchId, perks) }
       return { sword, resolution: skip !== undefined ? skippedSword(sword, skip) : resolveHiredSwordInjury(sword, draft.swordInjuries[sword.id] ?? null) }
     })
   const groups = participants.groups
@@ -390,10 +394,22 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     const res = swordRes.get(sword.id)
     const line = xpBySubject.get(sword.id)
     const patch: ReportApplied['heroes'][number]['patch'] = {}
-    if (res && res.sword.status !== sword.status) patch.status = res.sword.status
+    if (res) {
+      if (res.sword.status !== sword.status) patch.status = res.sword.status
+      if (res.heroFlow) {
+        patch.stats = res.sword.stats
+        patch.injuries = res.sword.injuries
+        patch.flags = res.sword.flags
+        if (res.sword.equipment.length === 0 && sword.equipment.length > 0) removeItemIds.push(...heldItemIds(ctx.items, sword.id))
+      }
+    }
+    if ((res?.sword.status ?? sword.status) === 'active') {
+      patch.flags = { ...(patch.flags ?? sword.flags), upkeepOwedAfter: ONE_BATTLE_HIRES.includes(sword.hiredSwordId) || (sword.flags.hireCompanion && (sword.hiredSwordId !== 'ulli_and_marquand' || participants.hiredSwords.some(other => other.flags.hireGroupId === sword.flags.hireGroupId && !other.flags.hireCompanion && (swordRes.get(other.id)?.sword.status ?? other.status) === 'active'))) ? undefined : ctx.matchId, mustMissNextBattle: requiresBattleGap(sword.hiredSwordId), contractCheckOwed: sword.hiredSwordId === 'old_prospector' || (sword.hiredSwordId === 'countess_marianna_chevaux_vampire_assassin' && !res) }
+      if (ONE_BATTLE_HIRES.includes(sword.hiredSwordId)) patch.status = 'left'
+    }
     if (line) {
       patch.xp = line.xpAfter
-      for (const t of thresholdsCrossed('hero', line.xpBefore, line.xpAfter)) pending.push({ subject_type: 'hero', subject_id: sword.id, threshold_xp: t })
+      for (const t of thresholdsCrossed('henchman', line.xpBefore, line.xpAfter)) pending.push({ subject_type: 'hero', subject_id: sword.id, threshold_xp: t })
     }
     if (Object.keys(patch).length > 0) heroes.push({ id: sword.id, patch })
   }
@@ -510,7 +526,31 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     if (Object.keys(patch).length > 0) groups.push({ id: group.id, patch })
   }
 
+  // Snakes cannot remain as independent hires after the charmer is lost.
+  for (const sword of ctx.roster.hiredSwords.filter(s => s.hiredSwordId === 'snake_charmer' && !s.flags.hireCompanion)) {
+    const status = heroes.find(h => h.id === sword.id)?.patch.status ?? sword.status
+    if (status !== 'active') for (const companion of ctx.roster.hiredSwords.filter(s => s.flags.hireCompanion && s.flags.hireGroupId === sword.flags.hireGroupId)) {
+      const patch = heroes.find(h => h.id === companion.id)
+      if ((patch?.patch.status ?? companion.status) !== 'active') continue
+      if (patch) patch.patch.status = 'left'
+      else heroes.push({id: companion.id, patch: {status: 'left'}})
+    }
+  }
+
+  const maglah = ctx.roster.hiredSwords.find(s=>s.hiredSwordId==='maglah_khan_s_horde' && s.status==='active')
+  if(maglah && ['dead','left','retired'].includes(heroes.find(h=>h.id===maglah.id)?.patch.status ?? 'active')) {
+    const scouts=ctx.roster.hiredSwords.filter(s=>s.hiredSwordId==='hobgoblin_scout' && (heroes.find(h=>h.id===s.id)?.patch.status ?? s.status)==='active')
+    for(const scout of scouts.slice(1)) {
+      const patch=heroes.find(h=>h.id===scout.id)
+      if(patch)patch.patch.status='left'
+      else heroes.push({id:scout.id,patch:{status:'left'}})
+    }
+  }
+
   const record = exploration.record
+  for (const sword of ctx.roster.hiredSwords) {
+    if (sword.status === 'left' && sword.flags.mustMissNextBattle) heroes.push({ id: sword.id, patch: { flags: { ...sword.flags, mustMissNextBattle: false } } })
+  }
   return {
     heroes,
     groups,
@@ -599,7 +639,7 @@ export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied)
         levelUps: p.level_ups ?? s.levelUps,
         injuries: p.injuries ?? s.injuries,
         flags: p.flags ?? s.flags,
-        status: p.status === undefined ? s.status : p.status === 'dead' ? 'dead' : p.status === 'active' ? 'active' : 'left',
+        status: p.status ?? s.status,
       }
     }),
     henchmenGroups: roster.henchmenGroups.map((g) => {

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { hiredSwordGainsExperience } from '../../../rules/resolve/hiredSwordRules'
+import { injuryRecordKind } from '../../../rules/resolve/injuryHistory'
 import type { HeroRow } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterItem } from '../../../rules/types/roster'
@@ -21,6 +23,8 @@ export interface WarriorCardProps {
 /** One hero or hired sword as read at the table. Tapping the head toggles rules and item detail. */
 export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const lastingInjuries = hero.injuries.filter(injury => injuryRecordKind(injury, hero.flags, hero.injuries) === 'lasting')
+  const injuryEvents = hero.injuries.filter(injury => injuryRecordKind(injury, hero.flags, hero.injuries) !== 'lasting')
   const status = statusLabel(hero.status)
   const inactive = hero.status !== 'active'
   const typeName = hero.is_hired_sword
@@ -56,7 +60,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
           </div>
         </div>
         <StatLine stats={hero.stats} raised={drift.raised} lowered={drift.lowered} />
-        <XpBar xp={hero.xp} levelUps={hero.level_ups} role="hero" rate={unitRules(hero.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={!unitGainsExperience(hero.unit_type_rules_id)} />
+        <XpBar xp={hero.xp} levelUps={hero.level_ups} role={hero.is_hired_sword ? "henchman" : "hero"} rate={unitRules(hero.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={hero.is_hired_sword ? !!hero.flags.hireCompanion || !hiredSwordGainsExperience(hero.hired_sword_rules_id ?? "") : !unitGainsExperience(hero.unit_type_rules_id)} />
       </button>
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
@@ -110,11 +114,11 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
           </div>
         ) : null}
 
-        {hero.injuries.length > 0 ? (
+        {lastingInjuries.length > 0 ? (
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-wider text-ink-dim">Injuries</p>
             <ul className="flex flex-col gap-0.5 text-sm">
-              {hero.injuries.map((inj, i) => (
+              {lastingInjuries.map((inj, i) => (
                 <li key={`${inj.injuryCode}-${i}`} className="text-ink">
                   <HoverCard label={inj.name} title={inj.name}>
                     <span className="whitespace-pre-line">{HERO_INJURIES.find(result => result.code === inj.injuryCode)?.text ?? (inj.effect || 'No additional injury rules recorded.')}</span>
@@ -124,6 +128,14 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
             </ul>
           </div>
         ) : null}
+
+        {injuryEvents.length > 0 ? <details className="text-sm text-ink-dim">
+          <summary className="cursor-pointer">Injury events and recovery history ({injuryEvents.length})</summary>
+          <ul className="mt-2 flex flex-col gap-2">{injuryEvents.map((inj, i) => <li key={`${inj.injuryCode}-${i}`}>
+            <span className="font-semibold">{inj.name}{injuryRecordKind(inj, hero.flags, hero.injuries) === 'pending' ? ' — awaiting resolution' : ''}</span>
+            <p>{inj.effect}</p>
+          </li>)}</ul>
+        </details> : null}
 
         {hero.notes ? <p className="whitespace-pre-line text-sm text-ink-dim">{hero.notes}</p> : null}
 

@@ -192,10 +192,10 @@ describe('hiredSwordEligibility', () => {
     expect(hiredSwordEligibility(slayer, warband({ hiredSwords: [hiredSword('hs1', slayer.id, 'left')] }), REIKLAND).kind).toBe('allowed')
   })
 
-  it('blocks entries that are not hired for gold', () => {
+  it('allows source-defined treasure fees', () => {
     const prospector = findHiredSwordEntry('old_prospector')!
     expect(prospector.hireCost.base).toBeNull()
-    expect(hiredSwordEligibility(prospector, warband(), REIKLAND)).toMatchObject({ kind: 'blocked', reason: expect.stringContaining('2 treasures') })
+    expect(hiredSwordEligibility(prospector, warband(), REIKLAND)).toMatchObject({ kind: 'ok' })
   })
 
   it('lists every hired sword once, sorted by name, with the Reikland outcomes expected', () => {

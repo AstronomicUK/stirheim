@@ -43,6 +43,11 @@ export const appliedInjuriesSchema = z.array(appliedInjurySchema);
 
 /** heroes.flags */
 export const warriorFlagsSchema = z.object({
+  hireGroupId: z.string().optional(),
+  hireCompanion: z.boolean().optional(),
+  upkeepOwedAfter: z.string().optional(),
+  contractCheckOwed: z.boolean().optional(),
+  mustMissNextBattle: z.boolean().optional(),
   spellDifficultyReductions: z.record(z.string(), z.number().int().nonnegative()).optional(),
   magicLoreId: z.string().optional(),
   chaosMark: z.string().optional(),

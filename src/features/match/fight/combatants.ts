@@ -177,14 +177,15 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         id: warrior.id,
         kind: 'hiredSword',
         name: warrior.name,
-        typeName: hiredSwordName(warrior.hiredSwordId),
+        typeName: warrior.hiredSwordId === 'snake_charmer' && warrior.flags.hireCompanion ? 'Snake' : hiredSwordName(warrior.hiredSwordId),
+        ...(warrior.hiredSwordId === 'snake_charmer' && warrior.flags.hireCompanion ? { weaponIds: ['snake_bite'] } : {}),
         warbandId: roster.id,
         warbandName,
         stats: warrior.stats,
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
         // Hired swords are not members of the warband, so its racial rules do not apply to them.
-        traitIds: warriorTraits(warrior, detail?.specialRules ?? [], boostTraits, undefined),
+        traitIds: warriorTraits(warrior, warrior.hiredSwordId === 'snake_charmer' ? (detail?.specialRules ?? []).filter(rule => warrior.flags.hireCompanion ? ['Animals','Venomous'].includes(rule.name) : !['Animals','Venomous'].includes(rule.name)) : detail?.specialRules ?? [], boostTraits, undefined),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })

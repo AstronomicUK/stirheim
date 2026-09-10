@@ -50,18 +50,16 @@ export function toRosterHeroStatus(status: WarriorStatus): RosterHero["status"] 
 }
 
 /**
- * Hired swords either fight, die, or are gone. A captured or retired hired sword is no longer on
- * the payroll, so both become "left".
+ * Preserve captured and retired personae so their injury outcomes remain resolvable.
  */
 export function toRosterHiredSwordStatus(status: WarriorStatus): RosterHiredSword["status"] {
   switch (status) {
     case "active":
     case "dead":
     case "left":
-      return status;
     case "captured":
     case "retired":
-      return "left";
+      return status;
   }
 }
 

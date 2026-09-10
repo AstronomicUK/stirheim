@@ -18,17 +18,17 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 ## Current checkpoint — 10 September, local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **97 of 103 scenarios**. This measures explicit reward paths, not the percentage of implementation effort finished or complete automation of every related campaign rule.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **99 of 103 scenarios**. This measures explicit reward paths, not the percentage of implementation effort finished or complete automation of every related campaign rule.
 
 The latest continuation completed Pirate discovery recruitment; casualty kit before replacement recruitment; historical discovery ordering; Hunters Become the Hunted; Brigands in the Pasturelands; Gathering of the Horde; and the Archive Forbidden Square. It also added reviewed corrections for older hired-character equipment, resolved remaining ordinary Persona kit and added checked cross-warband equipment transfer infrastructure. See milestones 28–37 below.
 
-Remaining scenario paths (6): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Stop Thief; Raids; Rawhide. Encampment Raid now has checked equipment transfer and a recorded camp decision; optional housing effects and treasury interpretation remain explicit limitations (milestone 39).
+Remaining scenario paths (4): Defend the Oasis; The Thing in the Woods; Raids; Rawhide. Assault on the Rock and Stop Thief are now verified locally (milestones 41–42). Encampment Raid now has checked equipment transfer and a recorded camp decision; optional housing effects and treasury interpretation remain explicit limitations (milestone 39).
 
 Other open work: remaining bespoke hired-character equipment/effects and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks and tracker reconciliation. Guardian interception and Medicine Chest injury-reroll consumption are not fully automated. Do not close broader tracker entries based on partial milestones.
 
-Validated checkpoint: **1,539 ordinary tests pass; all 127 local database tests pass; typechecked production build passes.** Lint retains three pre-existing audit-probe warnings; build retains the existing CSS/bundle warnings. Actual mobile checks cover each new scenario path, free outlaw recruitment and reviewed equipment correction; map-control and transfer withdrawal were verified against saved local records. All new test data was disposable.
+Validated checkpoint: **1,559 ordinary tests pass; all 132 local database tests pass; typechecked production build passes.** Lint retains three pre-existing audit-probe warnings; build retains the existing CSS/bundle warnings. Actual mobile checks cover each new scenario path, free outlaw recruitment and reviewed equipment correction; map-control and transfer withdrawal were verified against saved local records. All new test data was disposable.
 
-Migrations through 56 have been applied to the local database only. No push, Netlify deployment or production migration has occurred. Source changes are locally committed; the pre-existing dirty audit/tracker documents remain intact.
+Migrations through 59 have been applied to the local database only. No push, Netlify deployment or production migration has occurred. Source changes are locally committed; the pre-existing dirty audit/tracker documents remain intact.
 
 Pending scope question: Defend the Oasis relies on Khemri’s wider water/carrying-capacity/exploration/trading system. An asynchronous question asks whether this batch should provide scenario-specific recorded support or expand into the full Khemri campaign system. No response was received at this checkpoint; other scenario work is independent. The original [Town Cryer compilation](https://broheim.net/downloads/campaigns/khemri/Khemri%20Town%20Cryer%20Compilation.pdf), PDF pages 5–7 and 38, confirms that these are campaign systems rather than just a gold reward. Do not silently claim full Khemri support.
 

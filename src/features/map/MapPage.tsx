@@ -9,6 +9,7 @@ import { useMapEvents, type MapAdjustmentRow } from '../../api/map'
 import { useSession } from '../../app/session'
 import { findDistrict, MAP_DISTRICTS } from '../../rules/data/map/districts'
 import { advantagesFor, deriveMapState, gateToll, reachFor, standings } from '../../rules/resolve/mapCampaign'
+import { useIsDesktop } from '../../ui/useMediaQuery'
 import { Notice, PageHeader, SelectField, Spinner, TwoColumn } from '../../ui'
 import { formatRelativeTime } from '../campaign/activity'
 import { Card, Disclosure, Section, Tag, TextLink } from '../campaign/bits'
@@ -44,6 +45,7 @@ export function MapPage() {
 
 function MapView({ detail }: { detail: CampaignDetail }) {
   const { campaign, members, former_members, settings } = detail
+  const desktop = useIsDesktop()
   const user = useSession((s) => s.user)
   const isGm = user?.id === campaign.gm_id
   const events = useMapEvents(campaign.id)
@@ -58,6 +60,7 @@ function MapView({ detail }: { detail: CampaignDetail }) {
   const reach = useMemo(() => (viewAs ? reachFor(state, viewAs) : null), [state, viewAs])
   const table = useMemo(() => standings(state, members.map((m) => m.warband_id)), [state, members])
   const selected = selectedId ? views.get(selectedId) : undefined
+  const districtPanel = selected ? <DistrictPanel key={selected.district.id} view={selected} views={views} warbands={warbands.filter((w) => members.some((m) => m.warband_id === w.id))} campaignId={campaign.id} isGm={isGm} userId={user?.id} archived={campaign.archived} onSelect={setSelectedId} /> : null
 
   return (
     <>
@@ -78,13 +81,7 @@ function MapView({ detail }: { detail: CampaignDetail }) {
         stickyRail={false}
         rail={
           <>
-            {selected ? (
-              <DistrictPanel view={selected} views={views} warbands={warbands.filter((w) => members.some((m) => m.warband_id === w.id))} campaignId={campaign.id} isGm={isGm} userId={user?.id} archived={campaign.archived} onSelect={setSelectedId} />
-            ) : (
-              <Card className="px-4 py-3">
-                <p className="text-sm leading-relaxed text-ink-dim">Tap a district on the map for its advantage, who holds it and how to book a battle there.</p>
-              </Card>
-            )}
+            {desktop && (districtPanel ?? <Card className="px-4 py-3"><p className="text-sm text-ink-dim">Tap a district on the map for its details.</p></Card>)}
             <Section title="Standings">
               <Card className="flex flex-col divide-y divide-border px-4">
                 {table.length === 0 ? <p className="py-3 text-sm text-ink-dim">Nobody has enrolled yet.</p> : null}
@@ -129,6 +126,7 @@ function MapView({ detail }: { detail: CampaignDetail }) {
             </div>
           ) : null}
           <MapCanvas views={views} selectedId={selectedId} onSelect={setSelectedId} reachable={reach?.reachable ?? null} explored={reach?.explored ?? null} highlightColour={chosen?.colour} />
+          {!desktop && districtPanel}
           {events.isPending ? <Spinner label="Loading the battles" /> : null}
         </div>
 

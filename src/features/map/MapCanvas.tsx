@@ -3,7 +3,7 @@
 // dots around a circle mark every foothold; a ring marks the selected district; districts a chosen
 // warband can reach are lit, the rest dimmed.
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { MAP_DISTRICTS, MAP_LINKS, MAP_VIEW_HEIGHT, districtMapY, findDistrict, type MapDistrict } from '../../rules/data/map/districts'
 import type { DistrictView } from './model'
 
@@ -46,7 +46,8 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
   const [size, setSize] = useState({ width: 1, height: 1 })
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const drag = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null)
-  const pinch = useRef<{ dist: number; k: number; cx: number; cy: number } | null>(null)
+  const pinch = useRef<{ dist: number; k: number; cx: number; cy: number; tx: number; ty: number } | null>(null)
+  const gestureMoved = useRef(false)
   const [dragging, setDragging] = useState(false)
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null)
 
@@ -81,38 +82,48 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
   // With the pointer captured to the frame (needed so drags keep tracking off the edge), the browser
   // retargets click/pointerup's `e.target` to the frame itself rather than whatever circle is under
   // the pointer — so district hit-testing has to be done in map space here instead of trusting e.target.
-  function districtAt(px: number, py: number): MapDistrict | null {
+  function districtAt(px: number, py: number, touch = false): MapDistrict | null {
     const svgX = ((px - t.x) / t.k / size.width) * 100
     const svgY = ((py - t.y) / t.k / size.height) * MAP_VIEW_HEIGHT
     let best: { d: MapDistrict; dist: number } | null = null
     for (const d of MAP_DISTRICTS) {
-      const r = BASE_RADIUS * d.scale
+      const r = Math.max(BASE_RADIUS * d.scale, touch ? 22 * 100 / (size.width * t.k) : 0)
       const dist = Math.hypot(svgX - d.x, svgY - districtMapY(d))
       if (dist <= r && (!best || dist < best.dist)) best = { d, dist }
     }
     return best?.d ?? null
   }
 
-  function onWheel(e: ReactWheelEvent<HTMLDivElement>) {
-    e.preventDefault()
-    const p = local(e)
-    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y)
-  }
+  useEffect(() => {
+    const el = frame.current
+    if (!el) return
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const r = el.getBoundingClientRect()
+      zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top)
+    }
+    el.addEventListener('wheel', wheel, { passive: false })
+    return () => el.removeEventListener('wheel', wheel)
+  }, [zoomAt])
 
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     // Controls need native clicks; never enroll their pointers in map gestures.
-    if ((e.target as Element).closest('button')) return
+    if ((e.target as Element).closest('button') || (e.button !== undefined && e.button !== 0)) return
+    if (pointers.current.size >= 2) return
     frame.current?.setPointerCapture(e.pointerId)
     const p = local(e)
     pointers.current.set(e.pointerId, p)
     if (pointers.current.size === 1) {
+      gestureMoved.current = false
+      setHover(null)
       drag.current = { x: p.x, y: p.y, tx: t.x, ty: t.y, moved: false }
       setDragging(true)
     }
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()]
-      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), k: t.k, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }
+      pinch.current = { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), k: t.k, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, tx: t.x, ty: t.y }
       drag.current = null
+      gestureMoved.current = true
     }
   }
 
@@ -130,19 +141,21 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
     if (pinch.current && pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()]
       const dist = Math.hypot(a.x - b.x, a.y - b.y)
-      const target = pinch.current.k * (dist / pinch.current.dist)
-      setT((cur) => {
-        const k = Math.min(MAX_K, Math.max(MIN_K, target))
-        const ratio = k / cur.k
-        return clamp({ k, x: pinch.current!.cx - (pinch.current!.cx - cur.x) * ratio, y: pinch.current!.cy - (pinch.current!.cy - cur.y) * ratio }, size.width, size.height)
-      })
+      // Snapshot gesture data before queuing a React update: pointerup may clear the refs.
+      const start = pinch.current
+      const cx = (a.x + b.x) / 2
+      const cy = (a.y + b.y) / 2
+      const k = Math.min(MAX_K, Math.max(MIN_K, start.k * dist / start.dist))
+      const ratio = k / start.k
+      setT(clamp({ k, x: cx - (start.cx - start.tx) * ratio, y: cy - (start.cy - start.ty) * ratio }, size.width, size.height))
       return
     }
     if (drag.current) {
       const dx = p.x - drag.current.x
       const dy = p.y - drag.current.y
-      if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true
-      setT((cur) => clamp({ k: cur.k, x: drag.current!.tx + dx, y: drag.current!.ty + dy }, size.width, size.height))
+      if (Math.abs(dx) + Math.abs(dy) > 5) { drag.current.moved = true; gestureMoved.current = true }
+      const { tx, ty } = drag.current
+      setT((cur) => clamp({ k: cur.k, x: tx + dx, y: ty + dy }, size.width, size.height))
     }
   }
 
@@ -152,17 +165,28 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
     pointers.current.delete(e.pointerId)
     if (pointers.current.size < 2) pinch.current = null
     if (pointers.current.size === 0) {
-      const moved = drag.current?.moved ?? false
+      const moved = gestureMoved.current || (drag.current?.moved ?? false)
       drag.current = null
       setDragging(false)
       if (!moved) {
         const p = local(e)
-        const district = districtAt(p.x, p.y)
+        const district = districtAt(p.x, p.y, e.pointerType === 'touch')
         onSelect(district ? (district.id === selectedId ? null : district.id) : null)
+        setHover(null)
       }
+    } else if (pointers.current.size === 1) {
+      const [remaining] = [...pointers.current.values()]
+      drag.current = { x: remaining.x, y: remaining.y, tx: t.x, ty: t.y, moved: true }
     }
   }
 
+  function onPointerCancel(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!pointers.current.has(e.pointerId)) return
+    gestureMoved.current = true
+    onPointerUp(e)
+  }
+
+  const selectedDistrict = selectedId ? findDistrict(selectedId) : undefined
   const dim = (id: string) => (reachable ? !reachable.has(id) : false)
 
   return (
@@ -170,12 +194,12 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
       <div
         ref={frame}
         className="relative w-full touch-none select-none overflow-hidden rounded-md border border-border bg-surface-high"
-        style={{ aspectRatio: `100 / ${MAP_VIEW_HEIGHT}`, cursor: dragging ? 'grabbing' : 'grab' }}
-        onWheel={onWheel}
+        style={{ aspectRatio: `100 / ${MAP_VIEW_HEIGHT}`, cursor: dragging ? 'grabbing' : 'grab', WebkitTapHighlightColor: 'transparent' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onLostPointerCapture={onPointerCancel}
         onPointerLeave={() => setHover(null)}
       >
         <div className="absolute inset-0 origin-top-left" style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})` }}>
@@ -206,6 +230,8 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
                     strokeWidth={selected ? 0.55 : 0.28}
                     strokeDasharray={isExplored && !fill ? '0.6 0.4' : undefined}
                     className="cursor-pointer"
+                    role="button"
+                    aria-pressed={selected}
                     tabIndex={0}
                     aria-label={`${d.name}${v?.controller ? `, controlled by ${v.controller.name}` : ''}`}
                     onKeyDown={(e) => {
@@ -233,7 +259,7 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
               return (
                 <div
                   className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-border bg-surface-low px-2 py-1 text-xs text-ink shadow-sm"
-                  style={{ left: hover.x, top: hover.y - 10 }}
+                  style={{ left: Math.max(100, Math.min(size.width - 100, hover.x)), top: Math.max(45, hover.y - 10), maxWidth: Math.min(240, size.width - 16), whiteSpace: 'normal' }}
                 >
                   {d.name}
                   {v?.controller ? ` — ${v.controller.name}` : ''}
@@ -253,6 +279,10 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
           </button>
         </div>
       </div>
+      {selectedDistrict && <div role="status" className="rounded-md border border-border bg-surface-low px-3 py-2 text-sm text-ink">
+        <strong>{selectedDistrict.name}</strong>
+        <p className="mt-1 text-xs text-ink-dim">{views.get(selectedDistrict.id)?.controller ? `Controlled by ${views.get(selectedDistrict.id)!.controller!.name}` : 'Not controlled'}</p>
+      </div>}
       <p className="text-xs text-ink-dim">Drag to pan, scroll or pinch to zoom, tap a district for its details. Filled circles are controlled; the dots around a circle are footholds.</p>
     </div>
   )

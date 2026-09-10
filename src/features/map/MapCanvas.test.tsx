@@ -83,9 +83,43 @@ describe('MapCanvas pointer ownership', () => {
     expect(hooks.transform.mock.calls[0][0]({ x: 0, y: 0, k: 2 })).toEqual({ x: -100, y: -100, k: 2 })
     frame.props.onPointerDown(event(false, 2, 1100, 700))
     frame.props.onPointerMove(event(false, 2, 1300, 700))
-    expect(hooks.transform.mock.calls[1][0]({ x: 0, y: 0, k: 1 }).k).toBe(2)
+    expect(hooks.transform.mock.calls[1][0].k).toBe(2)
     frame.props.onPointerUp(event(false, 2))
     expect(onSelect).not.toHaveBeenCalled()
     expect(hooks.capture.mock.calls).toEqual([[1], [2]])
+  })
+})
+
+
+describe('MapCanvas gesture completion', () => {
+  it('can apply a deferred drag update after the gesture refs have been cleared', () => {
+    const { frame, event, onSelect } = setup()
+    frame.props.onPointerDown(event(false, 1, 1000, 800))
+    frame.props.onPointerMove(event(false, 1, 900, 700))
+    const update = hooks.transform.mock.calls[0][0]
+    frame.props.onPointerUp(event(false, 1, 900, 700))
+    expect(update({ x: 0, y: 0, k: 2 })).toEqual({ x: -100, y: -100, k: 2 })
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('does not turn a completed pinch into a district tap and keeps its zoom result', () => {
+    const { frame, event, onSelect } = setup()
+    frame.props.onPointerDown(event(false, 1, 1000, 800))
+    frame.props.onPointerDown(event(false, 2, 1200, 800))
+    frame.props.onPointerMove(event(false, 2, 1400, 800))
+    const update = hooks.transform.mock.calls[0][0]
+    frame.props.onPointerUp(event(false, 2, 1400, 800))
+    frame.props.onPointerUp(event(false, 1, 1000, 800))
+    expect(update).toEqual({ k: 2, x: -1000, y: -800 })
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('never selects on cancellation or lost capture', () => {
+    const { frame, event, onSelect } = setup()
+    frame.props.onPointerDown(event(false))
+    frame.props.onPointerCancel(event(false))
+    frame.props.onPointerDown(event(false))
+    frame.props.onLostPointerCapture(event(false))
+    expect(onSelect).not.toHaveBeenCalled()
   })
 })

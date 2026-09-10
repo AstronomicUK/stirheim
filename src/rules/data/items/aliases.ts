@@ -22,6 +22,7 @@ import { WARBAND_TEMPLATES } from "../warbandTemplates";
 import { ANIMAL_ITEMS } from "./animals";
 import { ARMOUR_ITEMS } from "./armour";
 import { BLACKPOWDER_ITEMS } from "./blackpowder";
+import { MATERIAL_VARIANT_ITEMS } from "./materialVariants";
 import { MELEE_ITEMS } from "./melee";
 import { MISC_ITEMS } from "./misc";
 import { MISSILE_ITEMS } from "./missile";
@@ -29,7 +30,7 @@ import { WARBAND_SPECIAL_ITEMS } from "./warbandSpecial";
 
 // Built from the category files rather than ./index so that index.ts can re-export this module
 // without a circular import evaluating ITEMS before it exists.
-const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS];
+const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, ...ARMOUR_ITEMS, ...MISC_ITEMS, ...ANIMAL_ITEMS, ...WARBAND_SPECIAL_ITEMS, ...MATERIAL_VARIANT_ITEMS];
 
 /**
  * Equipment-list names that are different words for a catalogue item. Keys are the names as written
@@ -47,6 +48,18 @@ const ITEMS: Item[] = [...MELEE_ITEMS, ...MISSILE_ITEMS, ...BLACKPOWDER_ITEMS, .
  */
 export const EQUIPMENT_ALIASES: Record<string, string> = {
   "Battle Axe": "axe",
+  "Scimitar": "sword",
+  "Scimitar (counts as a Sword)": "sword",
+  "Repeating Crossbow": "repeater_crossbow",
+  "Dark Cloak (counts as Elven Cloak)": "elven_cloak",
+  "Ninja Robe (counts as Hardened Leathers)": "toughened_leathers",
+  "Mining Pick": "double_handed_weapon",
+  "Pick (two-handed weapon)": "double_handed_weapon",
+  "Pickaxe (uses rules of a 'axe' for combat)": "axe",
+  "Two-handed sword": "double_handed_weapon",
+  "Torches": "torch",
+  "Rope and Grapple": "rope_and_hook",
+  "cloak (acts as a Buckler in close combat)": "buckler",
   "Two-handed weapon": "double_handed_weapon",
   "Hochland Long Rifle": "hunting_rifle",
   "Long rifle": "hunting_rifle",

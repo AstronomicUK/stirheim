@@ -20,6 +20,7 @@ import {
   upkeepSummary,
   veteranQuote,
   warbandDescriptors,
+  warbandRestriction,
 } from './helpers'
 
 const REIKLAND = findWarbandTemplate('mercenaries_reikland')!
@@ -255,5 +256,26 @@ describe('names and messages', () => {
     expect(errorMessage(new RulesError('x', 'Too poor'))).toBe('Too poor')
     expect(errorMessage(new Error('boom'))).toBe('boom')
     expect(errorMessage('nope', 'Fallback')).toBe('Fallback')
+  })
+})
+
+describe('warband-specific hiring restrictions (#119)', () => {
+  it.each([
+    ['outlaws_of_stirwood_forest', 'bounty_hunter'],
+    ['outlaws_of_stirwood_forest', 'dark_elf_assassin'],
+    ['pit_fighters', 'elf_ranger'],
+    ['grave_robbers', 'roadwarden'],
+    ['grave_robbers', 'bounty_hunter'],
+  ])('warns for %s hiring %s without disabling player overrides', (warband, hire) => {
+    const template = findWarbandTemplate(warband)!
+    const entry = findHiredSwordEntry(hire)!
+    expect(template).toBeDefined()
+    expect(entry).toBeDefined()
+    expect(warbandRestriction(entry, template)?.kind).toBe('restricted')
+  })
+  it('allows the Crow Master exception for the Cursed Cavalcade', () => {
+    const template = findWarbandTemplate('the_cursed_cavalcade')!
+    expect(warbandRestriction(findHiredSwordEntry('crow_master_the')!, template)?.kind).toBe('allowed')
+    expect(warbandRestriction(findHiredSwordEntry('warlock')!, template)?.kind).toBe('restricted')
   })
 })

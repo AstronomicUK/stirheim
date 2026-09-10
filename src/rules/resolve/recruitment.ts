@@ -1,5 +1,6 @@
 import { findWarbandTemplate } from "../data/warbandTemplates";
 import { parseDice, rollDice } from './dice';
+import { HIRED_EQUIPMENT_CHOICES } from "./hiredEquipmentChoices";
 import { hiredSwordStartingSkills } from './hiredSwordRules';
 // Recruitment resolvers — hiring heroes and henchmen from the warband template, hiring and paying
 // hired swords, and dismissing warriors. Rulebook "Recruiting new warriors" / "Veterans" (data in
@@ -448,6 +449,7 @@ export interface HireHiredSwordOptions {
   /** Display name; defaults to the entry name ("Dwarf Troll Slayer"). */
   name?: string;
   scouts?: number;
+  equipmentChoice?: string;
   luthorRole?: 'crimson' | 'wizard' | 'archer';
   /** Pay this instead of the listed hire fee (conditional fees; the UI records why). */
   feeOverride?: number;
@@ -456,66 +458,51 @@ export interface HireHiredSwordOptions {
 }
 
 /** Prose the entries open with before they list anything: "A Warlock carries", "He wears". */
-const KIT_PREAMBLE = /^(?:the\s+[\w' -]+?|a\s+[\w' -]+?|an\s+[\w' -]+?|he|she|they)\s+(?:carries|carry|wears|wear|is equipped with|are equipped with|has|have)\s+/i;
+const KIT_PREAMBLE = /^(?:(?:in addition[ ,]+)?(?:(?:the|a|an)\s+)?[\w’' -]+?\s+)?(?:carries|carry|wears|wear|wields|is armed with|is equipped with|are equipped with|starts with|has|have)\s+/i;
 
-/** Sentences after the kit list that explain rather than list ("The spiked gauntlet counts as…"). */
-const KIT_PROSE = /\b(?:counts as an|cannot|may not|if you are using|when mounted|and no,|his save|note that)\b/i;
-
-/**
- * The catalogue items a hired sword arrives with, read out of the entry's Weapons/Armour (or
- * Equipment) sentence: "Elf Bow, Sword and Elven Cloak." is three items, not one line of prose.
- * Anything the catalogue cannot name is still kept, as a custom line, so nothing is quietly lost.
- */
+/** Parse equipment statements, retaining unexplained or unique gear as named custom items. */
 export function hiredSwordEquipment(detail: HiredSwordDetail | undefined): RosterItem[] {
-  const text = detail?.weaponsArmour?.trim() || detail?.equipment?.trim() || "";
+  const text = (detail?.weaponsArmour?.trim() || detail?.equipment?.trim() || '').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');
+  const firstParagraph = text.split(/\n+/)[0] ?? '';
+  const sentences = firstParagraph.split(/(?<=[.!])\s+/);
   const out: RosterItem[] = [];
-  // Only the first paragraph ever lists kit; a later paragraph is always prose about how it's used
-  // (a Skills note, a weapon restriction, a wolf-form clause) and would otherwise be shredded into
-  // nonsense "items" by the splitter below.
-  const [line] = text.split(/\n+/);
-  if (line) {
-    // Only the first sentence lists kit; the rest explains it.
-    const [first = "", ...rest] = line.split(/(?<=\.)\s+/);
-    const listed = first.replace(KIT_PREAMBLE, "").replace(/\.$/, "").trim();
-    if (listed.length > 0) {
-      // A line offering a choice ("Two Axes or a Double-Handed Axe") is one decision, not a list:
-      // it stays as written, for the hiring player to settle.
-      if (/\b(?:either|or)\b/i.test(listed)) {
-        out.push({ itemId: null, customName: first.replace(KIT_PREAMBLE, "").trim(), quantity: 1 });
-      } else {
-        for (const piece of splitKit(listed)) {
-          const quantityMatch = piece.match(/^(?:(\d+)|((?:two|three|four|five))|(?:a )?pair of)\s+(.+)$/i);
-          const quantity = quantityMatch ? Number(quantityMatch[1] ?? (({ two: 2, three: 3, four: 4, five: 5 } as Record<string, number>)[quantityMatch[2]?.toLowerCase() ?? ''] ?? 2)) : 1;
-          const itemName = quantityMatch?.[3] ?? piece;
-          const item = resolveEquipmentName(itemName) ?? resolveEquipmentName(itemName.replace(/\s*\([^)]*\)\s*$/, "").trim());
-          if (item) out.push({ itemId: item.id, quantity });
-          else out.push({ itemId: null, customName: itemName, quantity });
-        }
-      }
-      // Keep the explanatory sentences as a note on the last item so the rules travel with the kit.
-      const note = rest.filter((sentence) => KIT_PROSE.test(sentence)).join(" ").trim();
-      if (note && out.length > 0) out[out.length - 1] = { ...out[out.length - 1], notes: note };
+  for (const [index,sentence] of sentences.entries()) {
+    const candidate=sentence.replace(/^While in man-form,\s*/i,'').replace(/\s+but wears no armour[.!]?$/i, '');
+    if (/^Head or no head,/i.test(candidate)) continue;
+    if (/\b(?:never carry|cannot use|may not use|may only be armed|made from raw magic|no need for weapons|no weapons or armour|never wear)\b/i.test(candidate)) continue;
+    if (index > 0 && !KIT_PREAMBLE.test(candidate)) {
+      if(out.length)out[out.length-1]={...out[out.length-1],notes:[out[out.length-1].notes,sentence].filter(Boolean).join(' ')};
+      continue;
+    }
+    const listed=candidate.replace(KIT_PREAMBLE,'').replace(/[.!]$/,'').trim();
+    if(!listed || /\b(?:never carry|cannot use|may not use|may only be armed|made from raw magic)\b/i.test(listed)) continue;
+    if(/\b(?:either|or)\b/i.test(listed)) {out.push({itemId:null,customName:candidate.replace(KIT_PREAMBLE, ''),quantity:1});continue;}
+    for(const piece of splitKit(listed)) {
+      if (/^(?:no armour|that is all)$/i.test(piece)) continue;
+      const match=piece.match(/^(?:(\d+)|((?:one|two|three|four|five))|(?:a )?(?:pair|brace) of)\s+(.+)$/i);
+      const quantity=match?Number(match[1]??(({one:1,two:2,three:3,four:4,five:5} as Record<string,number>)[match[2]?.toLowerCase()??'']??2)):1;
+      const name=(match?.[3]??piece).replace(/^(?:wears|carries|wields|has)\s+/i,'').replace(/^(?:a|an|the)\s+/i,'').replace(/\s+as well$/i,'');
+      const item=resolveEquipmentName(name)??resolveEquipmentName(name.replace(/\s*\([^)]*\)\s*$/,'').trim());
+      out.push(item?{itemId:item.id,quantity}:{itemId:null,customName:name,quantity});
     }
   }
   return out;
 }
 
-/**
- * "Sword, Dagger, and an Elven Cloak" -> three names, without the articles or the Oxford "and". A
- * comma inside a parenthetical ("plate armour (4+ save, -1M)") is not a list separator, so it's
- * masked before splitting and restored after — otherwise a bracketed aside splits into two items.
- */
+/** Split list separators only outside parentheses; Rope & Hook is one catalogue item. */
 function splitKit(listed: string): string[] {
-  let depth = 0;
-  const masked = listed.replace(/[(),]/g, (ch) => {
-    if (ch === "(") depth++;
-    else if (ch === ")") depth = Math.max(0, depth - 1);
-    return ch === "," && depth > 0 ? "\uE000" : ch;
-  });
-  return masked
-    .split(/,\s*|\s+and\s+/i)
-    .map((piece) => piece.replace(/\uE000/g, ",").trim().replace(/^(?:and\s+)?(?:(?:a|an|the)\s+)?/i, "").trim())
-    .filter((piece) => piece.length > 0 && !/^\(/.test(piece));
+  const text=listed.replace(/Needle and Thread/gi, 'Needle \uE002 Thread').replace(/\bRope\s*(?:&|and)\s*(?:Hook|Grapple)\b/gi,'Rope \uE002 Hook');
+  let depth=0,part=''; const parts:string[]=[];
+  for(let i=0;i<text.length;i++) {
+    const char=text[i];
+    if(char==='(')depth++;
+    if(char===')')depth=Math.max(0,depth-1);
+    const word=depth===0?text.slice(i).match(/^\s+and\s+/i):null;
+    if(depth===0&&(char===','||char==='&'||word)) {parts.push(part);part='';if(word)i+=word[0].length-1;}
+    else part+=char;
+  }
+  parts.push(part);
+  return parts.map(p=>p.replace(/\uE002/g,'&').trim().replace(/^(?:and\s+)?(?:(?:a|an|the)\s+)?/i,'').trim()).filter(p=>p&&!p.startsWith('('));
 }
 
 /** Hire a hired sword from HIRED_SWORDS: pays the hire fee, one of each type only. */
@@ -570,7 +557,7 @@ export function hireHiredSword(
     spellIds,
     injuries: [],
     flags: {},
-    equipment: startingHireEquipment(entry.id, entry.detail, opts.luthorRole),
+    equipment: hiredSwordStartingEquipment(entry.id, entry.detail, opts.luthorRole, opts.equipmentChoice),
     status: "active",
   };
 
@@ -578,14 +565,12 @@ export function hireHiredSword(
   if (hiredSwordId === 'ulli_and_marquand') {
     hiredSword.name = opts.name ? `${opts.name}: Marquand` : 'Marquand Volker';
     hiredSword.flags = { hireGroupId: id };
-    hiredSword.equipment = [{ itemId: 'sword', quantity: 1 }, { itemId: 'light_armour', quantity: 1 }, { itemId: 'throwing_knives_stars', quantity: 1 }];
     hiredSword.skillIds = ['step_aside', 'knife_fighter', 'lightning_reflexes'];
     const second = entry.detail!.profiles[1];
     companions.push({ ...hiredSword, id: crypto.randomUUID(), name: 'Ulli Leitpold', stats: { ...second.stats }, flags: { hireGroupId: id, hireCompanion: true }, skillIds: ['strongman', 'unstoppable_charge', 'combat_master'], equipment: [{ itemId: 'double_handed_weapon', quantity: 1 }, { itemId: 'light_armour', quantity: 1 }] });
   }
   if (hiredSwordId === 'snake_charmer') {
     hiredSword.flags = { hireGroupId: id };
-    hiredSword.equipment = [{ itemId: 'dagger', quantity: 1 }, { itemId: 'sword', quantity: 1 }];
     const snake = entry.detail!.profiles.find(p => p.name === 'Snake')!;
     for (let i = 1; i <= 3; i++) companions.push({ ...hiredSword, id: crypto.randomUUID(), name: `Snake ${i}`, stats: { ...snake.stats }, flags: { hireGroupId: id, hireCompanion: true }, skillIds: [], spellIds: [], equipment: [] });
   }
@@ -757,8 +742,20 @@ export function departingHiredSword(warband: RosterWarband, id: string): RosterH
   });
 }
 
-function startingHireEquipment(id: string, detail: HiredSwordDetail | undefined, role?: HireHiredSwordOptions['luthorRole']): RosterItem[] {
+export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail | undefined, role?: HireHiredSwordOptions['luthorRole'], equipmentChoice?: string): RosterItem[] {
+  const choices = HIRED_EQUIPMENT_CHOICES[id];
+  if (choices) {
+    const chosen = equipmentChoice === undefined ? choices[0] : choices.find(choice => choice.id === equipmentChoice);
+    if (!chosen) throw new RulesError('recruitment.equipmentChoice', 'Choose one of the listed equipment options.');
+    return chosen.equipment.map(item => ({ ...item }));
+  }
   const kit = (ids: string[]): RosterItem[] => ids.map(itemId => ({itemId,quantity:1}));
+  if(id==='cursed_hillman') return [...kit(['axe', 'dagger', 'longbow']), {itemId:null,customName:'Heavy fur cloak',quantity:1,notes:'5+ armour save against ranged attacks; 6+ in close combat. Equipment is left behind in wolf form and recovered after the battle.'}];
+  if(id==='duellist') return kit(['duelling_pistol', 'sword', 'dagger', 'buckler']);
+  if(id==='knight_of_the_white_wolf') return kit(['heavy_armour', 'wolfcloak', 'horsemans_hammer']);
+  if(id==='johann_the_knife') return [{itemId:'throwing_knives_stars',quantity:1},{itemId:'sword',quantity:2,notes:'His long daggers count as two swords in close combat.'}];
+  if(id==='ulli_and_marquand') return kit(['sword', 'light_armour', 'throwing_knives_stars']);
+  if(id==='snake_charmer') return kit(['dagger', 'sword']);
   if(id==='chameleon_skink') return kit(['dagger','blowpipe','buckler']);
   if(id==='dark_emissary') return [
     {itemId:null,customName:'Staff of Darkness',quantity:1,notes:'+1 to casting rolls.'},

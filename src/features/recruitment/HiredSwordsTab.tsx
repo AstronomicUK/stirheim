@@ -1,8 +1,9 @@
+import { HIRED_EQUIPMENT_CHOICES } from '../../rules/resolve/hiredEquipmentChoices'
 import { halfPriceHireSource, halved, type PerkSource } from '../../rules/resolve/mapAdvantages'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
-import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, payHenchmanUpkeep, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
+import { dismissWarrior, henchmanUpkeepDue, hireHiredSword, hiredSwordEquipment, hiredSwordStartingEquipment, payHenchmanUpkeep, payUpkeep, type HenchmanUpkeepLine } from '../../rules/resolve/recruitment'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHiredSword } from '../../rules/types/roster'
 import { Button, DieField, Markdown, Notice, NumberField, Sheet, TextField, OverrideField, SelectField } from '../../ui'
@@ -314,6 +315,8 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
   const { roster } = detail
   const { entry, eligibility } = option
   const [name, setName] = useState('')
+  const equipmentChoices = HIRED_EQUIPMENT_CHOICES[entry.id]
+  const [equipmentChoice, setEquipmentChoice] = useState(equipmentChoices?.[0]?.id)
   const [luthorRole,setLuthorRole]=useState<'crimson'|'wizard'|'archer'>('crimson')
   const { commit, error, pending } = useCommit(detail)
   const existingScouts = roster.hiredSwords.filter(s => s.hiredSwordId === 'hobgoblin_scout' && s.status === 'active').length
@@ -337,7 +340,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
     const trimmed = name.trim()
     const note = overrideReady(feeOverride) ? overrideNote('Hire fee', `${listedFee} gc`, `${feeOverride.amount} gc`, feeOverride.reason) : randomFee ? `Ninja hire fee: 70 + 3D6 (${feeDice.join(' + ')}) = ${fullFee} gc.` : null
     const result = await commit(
-      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
+      () => hireHiredSword(roster, entry.id, id, { scouts, luthorRole, equipmentChoice, ...(trimmed ? { name: trimmed } : {}), ...(overrideReady(feeOverride) ? { feeOverride: feeOverride.amount } : halfFrom || randomFee ? { feeOverride: listedFee } : {}) }),
       (w) => w,
       reasonWith('recruitment', note),
     )
@@ -363,6 +366,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
         {entry.id === 'luthor_wolfenbaum' ? <SelectField label="Luthor’s role — check the role’s hiring restrictions below" value={luthorRole} onChange={e=>setLuthorRole(e.target.value as typeof luthorRole)}><option value="crimson">Crimson Blade of Reikland</option><option value="wizard">Dark Wizard Extraordinaire</option><option value="archer">Master Archer of Drakwald</option></SelectField> : null}
         {entry.id === 'maglah_khan_s_horde'  ? <SelectField label="Hobgoblin Scouts (45 gc each to hire, 20 gc upkeep each)" value={String(scouts)} onChange={e => setScouts(Number(e.target.value))}>{[2,3,4,5].filter(n => n >= existingScouts).map(n => <option key={n} value={n}>{n} Scouts</option>)}</SelectField> : null}
         {randomFee ? <div className="flex flex-wrap gap-2">{feeDice.map((die,index) => <DieField key={index} label={`Hire fee die ${index + 1}`} sides={6} value={die} onChange={v => setFeeDice(previous => previous.map((value,i) => i === index ? v : value))} rollable />)}</div> : null}
+        {equipmentChoices ? <SelectField label="Starting equipment" value={equipmentChoice} onChange={e => setEquipmentChoice(e.target.value)}>{equipmentChoices.map(choice => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</SelectField> : null}
         <TextField label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} placeholder={entry.name} autoComplete="off" />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire fee" value={`${cost} gc`} />
@@ -373,7 +377,7 @@ function HireSheet({ detail, option, halfFrom, onClose, onDone }: HireSheetProps
           <KeyValue label="Upkeep" value={upkeepText(entry)} />
           <KeyValue label="Treasury after" value={`${roster.gold - cost} gc`} />
         </div>
-        <HiredSwordDetail detail={entry.detail} />
+        <HiredSwordDetail detail={entry.detail} equipment={hiredSwordStartingEquipment(entry.id, entry.detail, luthorRole, equipmentChoice)} />
         {error ? <Notice tone="error">{error}</Notice> : null}
       </div>
     </Sheet>
@@ -385,14 +389,14 @@ function RestrictionNotice({ entry, eligibility }: { entry: HiredSwordSummary; e
   if (eligibility.kind === 'restricted') {
     return (
       <Notice tone="warn" title="The rules read as excluding this warband">
-        {text}
+        {eligibility.reason || text}
       </Notice>
     )
   }
   if (eligibility.kind === 'check') {
     return (
       <Notice tone="info" title="Check the restriction">
-        {text || eligibility.reason}
+        {eligibility.reason || text}
       </Notice>
     )
   }
@@ -405,10 +409,10 @@ function RestrictionNotice({ entry, eligibility }: { entry: HiredSwordSummary; e
 }
 
 /** Stats, equipment, skills, special rules and background — shared with the Dramatis Personae preview, since a persona's write-up is the same shape as a Hired Sword's. */
-export function HiredSwordDetail({ detail }: { detail: HiredSwordSummary['detail'] }) {
+export function HiredSwordDetail({ detail, equipment }: { detail: HiredSwordSummary['detail']; equipment?: ReturnType<typeof hiredSwordEquipment> }) {
   if (!detail) return <p className="text-sm text-ink-dim">No write-up in the rules data.</p>
   const profile = detail.profiles[0]
-  const kit = hiredSwordEquipment(detail)
+  const kit = equipment ?? hiredSwordEquipment(detail)
   return (
     <div className="flex flex-col gap-4">
       {profile ? (

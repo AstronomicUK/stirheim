@@ -247,10 +247,17 @@ describe("hireHiredSword / payUpkeep", () => {
       stats: { M: 3, WS: 4, BS: 3, S: 3, T: 4, W: 1, I: 2, A: 1, Ld: 9 },
     });
     expect(r.value.hiredSwords[0].equipment).toEqual([
-      { itemId: null, customName: "Two Axes or a Double-Handed Axe (the hiring player may choose).", quantity: 1 },
+      { itemId: "axe", quantity: 2 },
     ]);
     expect(r.events[0].message).toContain("10 gc");
     expect(wb).toEqual(before);
+  });
+
+  it("saves the selected starting kit when hiring, including the Ogre's armour", () => {
+    const slayer = hireHiredSword(makeWarband(), "dwarf_troll_slayer", "grim", { equipmentChoice: "double" }).value.hiredSwords[0];
+    expect(slayer.equipment).toEqual([{itemId: "double_handed_weapon", quantity: 1}]);
+    const ogre = hireHiredSword(makeWarband(), "ogre_bodyguard", "ogre", { equipmentChoice: "sword-axe" }).value.hiredSwords[0];
+    expect(ogre.equipment).toEqual([{itemId: "sword", quantity: 1}, {itemId: "axe", quantity: 1}, {itemId: "light_armour", quantity: 1}]);
   });
 
   it("refuses a duplicate of the same type while one is active, but allows a replacement after one leaves", () => {

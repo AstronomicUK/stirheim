@@ -41,7 +41,7 @@ describe("campaign rules data", () => {
 
   it("points relations, hired swords and racial rows at things that exist", () => {
     const unitIds = new Set(WARBAND_TEMPLATES.flatMap((t) => [...t.heroTemplates, ...t.henchmanTemplates].map((u) => u.id)));
-    const swordIds = new Set(HIRED_SWORDS.map((h) => h.id));
+    const swordIds = new Set([...HIRED_SWORDS, ...DRAMATIS_PERSONAE].map((h) => h.id));
     for (const [id, rule] of Object.entries(UNIT_RULES)) {
       for (const ref of [...(rule.relation?.noMoreThan?.unitIds ?? []), ...(rule.relation?.onlyWith?.unitIds ?? []), ...(rule.relation?.exclusiveWith?.unitIds ?? [])]) {
         expect(unitIds.has(ref), `${id} -> ${ref}`).toBe(true);

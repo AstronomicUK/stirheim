@@ -217,6 +217,7 @@ export function warbandRestriction(entry: HiredSwordSummary, template: WarbandTe
     const hay = `${entry.name} ${entry.id.replace(/_/g, ' ')}`.toLowerCase()
     if (rules.denyKeywords.some((k) => new RegExp(`\\b${k}`, 'i').test(hay))) return { kind: 'restricted', reason: rules.note }
   }
+  if (Array.isArray(rules.allow) && rules.allow.includes(entry.id)) return { kind: 'allowed', reason: rules.note }
   return null
 }
 

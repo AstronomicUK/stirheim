@@ -679,6 +679,23 @@ describe('scenario aftermath', () => {
     expect(deriveReport({ ...draft, towerChests: [] }, c).report?.applied.warband.gold_delta).toBe(0)
   })
 
+  it('files earned chest items and totals, logs dice, and requires reasons for extra loot', () => {
+    const draft: ReportDraft = { ...setExplorationRolls(setResult(emptyDraft(), 'won'), [1,2,3,4]), scenarioRewards: { finds: {
+      gold: { discovery: null, dice: [1,2,3] }, shards: { discovery: 5, dice: [3] },
+      armour: { discovery: 1, dice: [] }, sword: { discovery: 3, dice: [] }, gems: { discovery: 1, dice: [] },
+    } } }
+    const c = ctx({ scenarioId: 'hidden_treasure' })
+    const d = deriveReport(draft, c)
+    expect(d.report?.applied.warband.gold_delta).toBe(6)
+    expect(d.report?.applied.warband.wyrdstone_delta).toBe(3 + d.exploration.totalShards)
+    expect(d.report?.applied.stash_items).toContainEqual({ item_rules_id: 'sword', custom_name: null, quantity: 1 })
+    expect(d.report?.notes).toContain('3D6 rolled 1, 2, 3')
+    expect(deriveReport({ ...draft, battleGold: 10 }, c).report).toBeNull()
+    expect(deriveReport({ ...draft, battleGold: 10, scenarioRewardOverrideReason: 'Agreed bounty' }, c).report?.applied.warband.gold_delta).toBe(16)
+    expect(deriveReport({ ...draft, scenarioRewards: {} }, c).report).toBeNull()
+    expect(battleReportSchema.safeParse(d.report).success).toBe(true)
+  })
+
   it('Herald non-campaign mode applies only the explicitly recorded object rewards', () => {
     const draft = { ...setGroupOut(setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true), 'watch', 2, 3), scenarioNonCampaign: true, battleGold: 30, battleWyrdstone: 2, scenarioItems: [{ item_rules_id: 'sword', custom_name: null, quantity: 1 }] }
     const d = deriveReport(draft, ctx({ scenarioId: 'the_sword_of_the_herald', itemsUsed: { captain: ['sword'] } }))

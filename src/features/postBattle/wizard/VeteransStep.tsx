@@ -1,3 +1,5 @@
+import { ScenarioRewards } from './ScenarioRewards'
+import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
 import { TowerRewards } from './TowerRewards'
 import { rollDice, rollDie } from '../../../rules/resolve/dice'
 import { useState } from 'react'
@@ -16,7 +18,8 @@ export function VeteransStep({ draft, derived, update, ctx }: StepProps) {
   const [quantity, setQuantity] = useState<number | null>(1)
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
   const tower = ctx.scenarioId === 'the_wizard_s_tower'
-  const RewardContainer = tower ? 'details' : 'div'
+  const bespoke = tower || !!scenarioRewardRule(ctx.scenarioId)
+  const RewardContainer = bespoke ? 'details' : 'div'
   const nonCampaign = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign
   const [a, b] = draft.veteranPool
   const veteranDice = ctx.map?.perks.veteranDice ?? []
@@ -55,17 +58,18 @@ export function VeteransStep({ draft, derived, update, ctx }: StepProps) {
         </Card>
       </Section></>}
       {tower ? <TowerRewards draft={draft} update={update} /> : null}
+      <ScenarioRewards draft={draft} derived={derived} update={update} ctx={ctx} />
       <RewardContainer>
-      {tower ? <summary className="cursor-pointer text-sm text-brass">Record an agreed reward adjustment</summary> : null}
-      <Section title={tower ? "Agreed reward adjustment" : "Picked up during the battle"}>
-        {tower ? <TextArea label="Reason for adjusting scenario rewards" value={draft.scenarioRewardOverrideReason ?? ''} onChange={e => update(d => ({ ...d, scenarioRewardOverrideReason: e.target.value }))} hint="Only for an agreed exception beyond the chest table. Leave the amounts below at zero for the normal rules." /> : null}
+      {bespoke ? <summary className="cursor-pointer text-sm text-brass">Record an agreed reward adjustment</summary> : null}
+      <Section title={bespoke ? "Agreed reward adjustment" : "Picked up during the battle"}>
+        {bespoke ? <TextArea label="Reason for adjusting scenario rewards" value={draft.scenarioRewardOverrideReason ?? ''} onChange={e => update(d => ({ ...d, scenarioRewardOverrideReason: e.target.value }))} hint="Only for an agreed exception beyond the scenario rules. Leave the amounts below at zero for the normal rules." /> : null}
         {scenario.rewardRules.length > 0 ? <details className="text-sm text-ink-dim"><summary className="cursor-pointer text-brass">Scenario reward rules</summary>{scenario.rewardRules.map((r, i) => <div key={i} className="mt-3"><p className="font-semibold">{r.name}</p><Markdown source={r.text} /></div>)}</details> : null}
         <div className="grid grid-cols-2 gap-3">
           <NumberField label="Wyrdstone shards" value={draft.battleWyrdstone} onChange={(v) => update((d) => setBattleWyrdstone(d, Number.isNaN(v ?? Number.NaN) ? 0 : (v ?? 0)))} hint="Scenario objectives, from the sheet." />
           <NumberField label="Gold crowns" value={draft.battleGold} onChange={(v) => update((d) => setBattleGold(d, Number.isNaN(v ?? Number.NaN) ? 0 : (v ?? 0)))} hint="Loot the scenario paid out." />
         </div>
         <p className="text-sm text-ink-dim">Record the rewards earned under those conditions, including any dice rolled, in the report notes. Items below go into your stash when the report is applied.</p>
-        {!tower && scenario.goldDice.length > 0 ? <div className="flex flex-wrap gap-2">{scenario.goldDice.map(expression => <Button key={expression} variant="secondary" onClick={() => {
+        {!bespoke && scenario.goldDice.length > 0 ? <div className="flex flex-wrap gap-2">{scenario.goldDice.map(expression => <Button key={expression} variant="secondary" onClick={() => {
           const rolled = rollDice(expression)
           update(d => ({ ...setBattleGold(d, d.battleGold + rolled.total), notes: [d.notes, `Scenario reward ${expression}: rolled ${rolled.rolls.join(', ')}; added ${rolled.total} gc.`].filter(Boolean).join('\n') }))
         }}>Add earned {expression} gc reward</Button>)}</div> : null}

@@ -16,21 +16,21 @@ Keep existing approved player overrides. #72 removes arbitrary treasure from the
 
 Implement cohesive local milestones, documenting source rules and meaningful tests. Keep tracker entries open until their complete scope is verified. Review mobile layouts and the full saved post-battle/recruitment/start-battle journey with disposable local data. Do not alter existing live player histories or the CoC–Dwarves battle for testing.
 
-## Current checkpoint — 10 September, ongoing local batch
+## Current checkpoint — 10 September, local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **96 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **96 of 103 scenarios**. This measures explicit reward paths, not the percentage of implementation effort finished or complete automation of every related campaign rule.
 
-This continuation completed Mule Train, Down at the Docks and both Caravan versions, individual Fanatic supplies/lasting Stupidity, and Pirate mixed-crew upkeep. Milestones 23–27 below contain the source and implementation details.
+The latest continuation completed Pirate discovery recruitment; casualty kit before replacement recruitment; historical discovery ordering; Hunters Become the Hunted; Brigands in the Pasturelands; Gathering of the Horde; and the Archive Forbidden Square. It also added reviewed corrections for older hired-character equipment, resolved remaining ordinary Persona kit and added checked cross-warband equipment transfer infrastructure. See milestones 28–37 below.
 
 Remaining scenario paths (7): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Encampment Raid; Stop Thief; Raids; Rawhide.
 
-Other open work: remaining bespoke hired-character kit/legacy cases and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks. Guardian interception and Medicine Chest injury-reroll consumption do not have fully automated workflows; retain their documented limits. Do not close the broader tracker entries on the strength of partial milestones.
+Other open work: remaining bespoke hired-character equipment/effects and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks and tracker reconciliation. Guardian interception and Medicine Chest injury-reroll consumption are not fully automated. Do not close broader tracker entries based on partial milestones.
 
-Validated checkpoint: **1,488 ordinary tests pass; all 114 local database tests pass; typechecked production build passes.** Lint retains only the three pre-existing audit-probe unused-import warnings; the build retains existing CSS/bundle warnings. Browser checks in this continuation cover mobile Fanatic supplies, Mule payments, Docks cargo, both Caravan consequences, Pirate upkeep Petty Thief’s actual cross-warband shard transfer, and Possessed/Undead Straggler rewards; desktop Caravan report/trading/discount-expiry checks also pass. Petty Thief’s dice survive reload, the source loses one shard, and the recipient receives it in addition to ordinary exploration income. The Possessed Straggler grants the named leader +1 XP in the saved experience log; the Undead choice creates one real Zombie with its acquisition in the saved exploration log. Both choices persist through reload.
+Validated checkpoint: **1,533 ordinary tests pass; all 125 local database tests pass; typechecked production build passes.** Lint retains three pre-existing audit-probe warnings; build retains the existing CSS/bundle warnings. Actual mobile checks cover each new scenario path, free outlaw recruitment and reviewed equipment correction; map-control and transfer withdrawal were verified against saved local records. All new test data was disposable.
 
-Five older database suites now create independent disposable seed-shaped campaigns/rosters. Their assertions are unchanged in meaning; mutable shared QA balances, membership and added warriors no longer contaminate these tests, and their cleanup no longer resets shared rosters. No database reset was used. All production migrations and the single final push/deployment remain outstanding by design.
+Migrations through 55 have been applied to the local database only. No push, Netlify deployment or production migration has occurred. Source changes are locally committed; the pre-existing dirty audit/tracker documents remain intact.
 
-The earlier timed continuation stopped before Tom’s 60-minute limit. Work has since resumed with authorization; milestones 28 onward record the newer checks. The pre-existing dirty audit/tracker documents remain intact.
+Pending scope question: Defend the Oasis relies on Khemri’s wider water/carrying-capacity/exploration/trading system. An asynchronous question asks whether this batch should provide scenario-specific recorded support or expand into the full Khemri campaign system. No response was received at this checkpoint; other scenario work is independent. The original [Town Cryer compilation](https://broheim.net/downloads/campaigns/khemri/Khemri%20Town%20Cryer%20Compilation.pdf), PDF pages 5–7 and 38, confirms that these are campaign systems rather than just a gold reward. Do not silently claim full Khemri support.
 
 The following milestone sections are chronological history; earlier “remaining” lists and test totals describe those earlier checkpoints.
 

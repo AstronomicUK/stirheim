@@ -1,3 +1,4 @@
+import { brigandsRewards, type BrigandsDraft } from './brigandsRewards'
 import { huntersRewards, type HuntersDraft } from './huntersRewards'
 import { caravanRewards, type CaravanDraft } from './caravanRewards'
 import type { ScenarioCampaignState } from '../../../rules/resolve/scenarioCampaignEffects'
@@ -17,6 +18,7 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  brigands?: BrigandsDraft
   hunters?: HuntersDraft
   caravan?: CaravanDraft
   docks?: DocksDraft
@@ -82,6 +84,7 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     if (!context?.opponents) { rewards.problems.push('Load the battle participants before calculating the bandit count.'); return rewards }
     rule = { ...rule, requiredCount: (rule.requiredCount ?? 0) + rule.extraPerWarband * (new Set(context.opponents.map(o => o.id)).size + 1) }
   }
+  if (rule.kind === 'brigands') return {...rewards,...brigandsRewards(state.brigands??{},draft.result==='won',!!context?.campaignId)}
   if (rule.kind === 'hunters') return {...rewards,...huntersRewards(state.hunters??{},draft.result==='won',context?.opponents?new Set(context.opponents.map(o=>o.id)).size+1:6)}
   if (rule.kind === 'caravan') {
     const caravan = caravanRewards(state.caravan ?? {}, scenarioId === 'the_caravan_archive_pestilen', draft.result, context?.campaignId, context?.roster?.scenarioEffects)

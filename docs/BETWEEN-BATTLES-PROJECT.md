@@ -18,11 +18,11 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 ## Current checkpoint — 10 September, ongoing local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **93 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
+**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **94 of 103 scenarios**. This count does not claim complete automation of every later effect attached to a reward.
 
 This continuation completed Mule Train, Down at the Docks and both Caravan versions, individual Fanatic supplies/lasting Stupidity, and Pirate mixed-crew upkeep. Milestones 23–27 below contain the source and implementation details.
 
-Remaining scenario paths (10): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Gathering of the Horde; Encampment Raid; Brigands in the Pasturelands; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
+Remaining scenario paths (9): Defend the Oasis; Assault on the Rock; The Thing in the Woods; Gathering of the Horde; Encampment Raid; Stop Thief; Raids; Rawhide; The Forbidden Square (Archive).
 
 Other open work: remaining bespoke hired-character kit/legacy cases and the unresolved Ogre Slaver identity; final combined report/recruitment/battle-start checks. Guardian interception and Medicine Chest injury-reroll consumption do not have fully automated workflows; retain their documented limits. Do not close the broader tracker entries on the strength of partial milestones.
 
@@ -233,3 +233,9 @@ Combined checkpoint: 1,506 ordinary tests pass / 118 DB-dependent skipped; all 1
 Source `reference/rules/06-scenarios.md:5703–5766` reviewed. Actual Beastmaster starting/retained counters grant shards, separate slain-plant D6 rolls grant gold, and the winner records live/dead Cold Ones, kept mounts and sales. The ambiguous price for two live animals requires a recorded per-animal/per-lot ruling. Winning survivors receive XP per Cold One alive through the normal advancement gates. Plant victims use the scenario D6 injury rule (1 eaten, 2–6 survives), including individual group casualties and equipment loss. Changing the cause clears only that model’s old roll.
 
 Typecheck and 102 focused tests pass. The mobile browser files an actual report with an eaten Captain and lost sword, surviving Champion XP, 127 gc from Cold Ones/plants, retained shards and persisted inputs through reload. No new migration. Coverage: 93/103 explicit scenario reward paths, ten remaining. Local only.
+
+### Local milestone 32 — Brigands in the Pasturelands (#72)
+
+Source `reference/rules/06-scenarios.md:1566–1620` reviewed. Role is required before XP: attackers receive 1 survival/winning-leader XP, defenders 2. Winning attackers enter separate henchman/Hero bounty dice and actual Captured injury bonuses; duplicate Hero names and missing dice block filing. Winning defenders choose one actual still-standing Highwayman, Warlock or Pit Fighter, or decline. Filing grants a named free recruitment entitlement, separate from Returning a Favour. Recruit completes normal equipment/name setup, waives the ordinary warband restriction for that reward and keeps upkeep. Campaign bans/duplicates remain enforced. Borrowed battle-only gear is not added permanently.
+
+Six reward/recruitment/XP tests pass; typecheck passes; all 119 local database tests pass. Mobile browser filing verifies both roles, 69 gc bounty, reload persistence and actual free Warlock recruitment. Migration 53 validates the selected outlaw, records the completed hire in the report and protects a claimed report from withdrawal. The existing unique claim index prevents reuse. Coverage: 94/103 explicit scenario reward paths, nine remaining. Local only; no production migration or deployment.

@@ -8,6 +8,7 @@ import { conditionalHireDepartures } from '../../../rules/resolve/hiredSwordRule
 import { pettyThief } from './pettyThief'
 import { locationRecruits } from './locationRecruits'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
+import { brigandsRewards } from './brigandsRewards'
 import { scenarioRewards } from './scenarioRewards'
 import { towerTreasure } from './scenarioTreasure'
 import type { ArtefactDiscovery } from '../../../api/artefacts'
@@ -298,6 +299,7 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
   const extras = { ...draft.xpExtras }
   for (const award of locationAwards) extras[award.id] = [...(extras[award.id] ?? []), {amount:award.amount,reason:award.reason}]
   const xpCtx = { won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
+  if(ctx.scenarioId==='brigands_in_the_pasturelands') { const amount=draft.scenarioRewards?.brigands?.role==='defender'?2:1; xpCtx.scenarioAwards={survival:amount,leader:amount,kill:1} }
   const heroAfter = new Map(injuries.heroes.map((h) => [h.hero.id, h.resolution]))
   const swordAfter = new Map(injuries.hiredSwords.map((s) => [s.sword.id, s.resolution]))
   const groupAfter = new Map(injuries.groups.map((g) => [g.group.id, g.resolution]))
@@ -823,6 +825,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
   if (ctx.scenarioId === 'the_caravan' || ctx.scenarioId === 'the_caravan_archive_pestilen') applied.scenario_effects = caravanRewards(draft.scenarioRewards?.caravan ?? {}, ctx.scenarioId === 'the_caravan_archive_pestilen', draft.result, ctx.campaignId, ctx.roster.scenarioEffects).effects
+  if(ctx.scenarioId==='brigands_in_the_pasturelands') {const hire=brigandsRewards(draft.scenarioRewards?.brigands??{},draft.result==='won',!!ctx.campaignId).freeHire; if(hire) applied.scenario_free_hire={choices:[hire]} }
   if (harpy?.stragglerNext || (harpy?.stragglerNow && !exploration.record)) applied.scenario_benefits = ['harpy_straggler']
   if (kidnapped) {
     for (const row of kidnapped.heroes) {
@@ -890,6 +893,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.injuries.push(...equipmentLosses.problems)
+  if(ctx.scenarioId==='brigands_in_the_pasturelands'&&!['attacker','defender'].includes(draft.scenarioRewards?.brigands?.role??''))problems.outcome.push('Choose your Brigands role for experience.')
   if(ctx.scenarioId==='the_hunters_become_the_hunted'&&draft.result==='won'&&(!Number.isInteger(draft.scenarioRewards?.hunters?.alive)||draft.scenarioRewards!.hunters!.alive!<0||draft.scenarioRewards!.hunters!.alive!>2))problems.outcome.push('Record the number of Cold Ones alive (0–2) for survivor experience.')
   problems.experience.push(...(kidnapped?.problems ?? []))
   problems.outcome.push(...(harpy?.problems ?? []))

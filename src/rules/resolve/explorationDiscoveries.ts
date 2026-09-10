@@ -5,11 +5,12 @@ export interface ExplorationDiscoveries {
   catacombs: boolean
   straggler: boolean
   tunnels: boolean
+  freeHireRewards?: { id: string; choices: string[]; label: string }[]
   freeHireReportId?: string
 }
 export interface DiscoveryReport {
   id: string
-  applied?: { scenario_benefits?: string[] }
+  applied?: { scenario_benefits?: string[]; scenario_free_hire?: {choices: string[]} }
   exploration: { locationId?: string | null; benefits?: string[] } | null
 }
 export interface DatedDiscoveryReport extends DiscoveryReport {
@@ -34,6 +35,7 @@ export function explorationDiscoveries(reports: DiscoveryReport[]): ExplorationD
     if (report.applied?.scenario_benefits?.includes('harpy_straggler')) straggler = true
   }
   return {
+    freeHireRewards: reports.filter(r=>r.applied?.scenario_free_hire).map(r=>({id:`${r.id}:brigands`,choices:r.applied!.scenario_free_hire!.choices,label:'Brigands in the Pasturelands'})),
     catacombs: reports.some(r => r.exploration?.locationId === 'entrance_to_the_catacombs'),
     straggler,
     tunnels: latest?.exploration?.locationId === 'catacombs',
@@ -46,4 +48,11 @@ export function explorationFaction(warbandId: string): 'skaven' | 'possessed' | 
   if (warbandId === 'cult_of_the_possessed') return 'possessed'
   if (warbandId === 'the_undead') return 'undead'
   return 'other'
+}
+
+export function availableFreeHires(roster: {explorationDiscoveries?: ExplorationDiscoveries; hiredSwords: {flags: {returningFavourReportId?: string}}[]}, hiredSwordId: string) {
+  const rewards = [...(roster.explorationDiscoveries?.freeHireRewards ?? []).filter(r => r.choices.includes(hiredSwordId))]
+  const favour = roster.explorationDiscoveries?.freeHireReportId
+  if (favour) rewards.push({ id: favour, choices: [hiredSwordId], label: 'Returning a Favour' })
+  return rewards.filter(r => !roster.hiredSwords.some(h => h.flags.returningFavourReportId === r.id))
 }

@@ -1,6 +1,7 @@
 // Pure helpers for the recruitment screen: unit listings with counts and limits, hired-sword
 // eligibility, upkeep wording, default names and error messages. No React, no Supabase.
 
+import { availableFreeHires } from '../../rules/resolve/explorationDiscoveries'
 import { findHiredSword, HIRED_SWORDS } from '../../rules/data/campaign/hiredSwords'
 import { isBanned } from '../../rules/resolve/houseRules'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
@@ -243,6 +244,7 @@ export function hiredSwordEligibility(entry: HiredSwordSummary, roster: RosterWa
 }
 
 export interface HiredSwordOption {
+  ordinaryEligibility?: Eligibility
   entry: HiredSwordSummary
   eligibility: Eligibility
 }
@@ -251,7 +253,11 @@ export interface HiredSwordOption {
 export function hiredSwordOptions(roster: RosterWarband, template: WarbandTemplate | undefined, bans?: CampaignBans): HiredSwordOption[] {
   return [...HIRED_SWORDS]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((entry) => ({ entry, eligibility: hiredSwordEligibility(entry, roster, template, bans) }))
+    .map((entry) => {
+      const eligibility = hiredSwordEligibility(entry, roster, template, bans)
+      if (eligibility.kind !== 'blocked' && availableFreeHires(roster, entry.id).some(r=>r.id.endsWith(':brigands'))) return {entry, ordinaryEligibility:eligibility, eligibility:{kind:'allowed' as const, reason:'Brigands reward: this surviving outlaw may join free, with normal upkeep.'}}
+      return {entry, eligibility}
+    })
 }
 
 export function findHiredSwordEntry(hiredSwordId: string): HiredSwordSummary | undefined {

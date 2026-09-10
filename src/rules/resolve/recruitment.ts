@@ -1,3 +1,4 @@
+import { availableFreeHires } from './explorationDiscoveries'
 import { DWARF_HIRES, ELF_HIRES } from './mixedHireUpkeep'
 import { isDramatisPersona } from '../data/campaign/hiredSwords'
 import { findWarbandTemplate } from "../data/warbandTemplates";
@@ -539,7 +540,7 @@ export function hireHiredSword(
   }
   if (warband.hiredSwords.some(s => s.hiredSwordId === hiredSwordId && s.flags.mustMissNextBattle)) throw new RulesError('recruitment.contractGap', `${entry.name} cannot return until this warband has fought a battle without them.`);
   const favour = opts.returningFavourReportId;
-  if (favour && (isDramatisPersona(hiredSwordId) || warband.explorationDiscoveries?.freeHireReportId !== favour || warband.hiredSwords.some(h => h.flags.returningFavourReportId === favour))) throw new RulesError('recruitment.favourUnavailable', 'This Returning a Favour reward is not available for this hire.');
+  if (favour && (isDramatisPersona(hiredSwordId) || !availableFreeHires(warband, hiredSwordId).some(r=>r.id===favour) || warband.hiredSwords.some(h => h.flags.returningFavourReportId === favour))) throw new RulesError('recruitment.favourUnavailable', 'This free recruitment reward is not available for this hire.');
   const specialFree = ['bertha_bestraufrung_high_matriarch_of_the_sisterhood', 'dark_emissary', 'truthsayer'].includes(hiredSwordId);
   const shardCost = favour ? 0 : hiredSwordId === 'nicodemus_the_cursed_pilgrim' ? 1 : Number(entry.hireCost.text.match(/^(\d+)\s+(?:wyrdstone|treasures?)/i)?.[1] ?? 0);
   const shardFee = shardCost > 0;

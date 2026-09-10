@@ -17,6 +17,16 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
   const award = () => ({ holder_type: 'hero', holder_id: heroes[0], item_rules_id: 'chaos_armour', custom_name: null, quantity: 1, notes: 'Kidnapped reward' })
   const file = (extra: object) => player.rpc('submit_battle_report', { p_match_id: match, p_warband_id: warbands[0], p_report: { result: 'lost', won: false, routed: false, applied: { warband: { gold_delta: 5, wyrdstone_delta: 0 }, ...extra } } })
   const withdraw = () => player.rpc('withdraw_battle_report', { p_match_id: match, p_warband_id: warbands[0] })
+  it('validates a Brigands survivor, logs its actual hire and protects the claimed report', async () => {
+    expect((await file({scenario_free_hire:{choices:['warlock']}})).error).toBeNull()
+    const report=(await admin.from('match_reports').select('id').eq('match_id',match).single()).data!
+    const hire={warband_id:warbands[0],name:'Earned outlaw',is_hired_sword:true,status:'active',hired_sword_rules_id:'warlock',stats,flags:{returningFavourReportId:`${report.id}:brigands`}}
+    expect((await admin.from('heroes').insert({...hire,hired_sword_rules_id:'highwayman'})).error?.message).toContain('not available')
+    expect((await admin.from('heroes').insert(hire)).error).toBeNull()
+    expect((await admin.from('match_reports').select('notes').eq('id',report.id).single()).data?.notes).toContain('Earned outlaw')
+    expect((await admin.from('heroes').insert(hire)).error).not.toBeNull()
+    expect((await withdraw()).error?.message).toContain('free hire')
+  })
   it('saves warrior rewards and owned equipment, then restores them exactly on withdrawal', async () => {
     expect((await file({ heroes: [{ id: heroes[0], patch: { skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { ...stats, S: 4 } } }], awarded_items: [award()] })).error).toBeNull()
     expect((await admin.from('heroes').select('skills,spells,notes,stats').eq('id', heroes[0]).single()).data).toMatchObject({ skills: [], spells: ['test-spell'], notes: 'Reward applied', stats: { S: 4 } })

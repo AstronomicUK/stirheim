@@ -27,3 +27,7 @@ Sources: local warbands `grade-1b-part2.md`, `grade-1c.md`, `grade-2a-part1.md`.
 Full unit suite, typechecked production build and lint run for this batch. Detailed final counts and deployment evidence are recorded below after shipping. Tests cover actual recruitment results, every configured equipment choice's catalogue IDs, parser regressions and warband restrictions. Local DB integration tests are skipped by the ordinary unit command; this batch changes no schema or database write protocol.
 
 Validation result: **1,365 tests passed**, 78 local integration tests skipped; typechecked production build passed. Lint has only the three pre-existing unused-import warnings in the reconciliation probe. Build retains the existing CSS and bundle-size warnings.
+
+## Deployment verification
+
+Implementation commit `2f7c750` pushed to `origin/main`. Netlify production deployment `6aa2808e6bbf56761736abf5` is live. The production homepage selects `index-CyPUSKcq.js`; this file and `HiredSwordsTab-CB8GD-Pg.js`, `recruitment-YqdUOZMJ.js`, and `lookups-Btp4rX-x.js` all matched the local tested build byte for byte. No authenticated production roster was edited for this batch. Browser interaction testing of the new selector is not claimed.

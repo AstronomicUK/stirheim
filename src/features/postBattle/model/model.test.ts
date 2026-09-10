@@ -3,7 +3,7 @@ import { battleReportSchema, emptyBattleLiveState, heroReportPatchSchema, type I
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { deriveExploration } from './exploration'
-import { buildReport, deriveReport, type ReportContext } from './derive'
+import { buildReport as buildRawReport, deriveReport as deriveRawReport, type ReportContext } from './derive'
 import { resolveGroupInjuries, resolveHeroInjuryFlow, resolveHiredSwordInjury } from './injuries'
 import { participantsOf } from './participants'
 import {
@@ -34,6 +34,29 @@ import {
 } from './state'
 import { rosterAfterReport } from './derive'
 import { emptyDraft as emptyAdvanceDraft, setDice } from '../../advances/model'
+
+/** Unrelated report tests complete their earned rolls explicitly; advancement-gate tests use the raw derivation below. */
+function rollEarnedAdvances(draft: ReportDraft, context: ReportContext): ReportDraft {
+  for (let pass = 0; pass < 12; pass++) {
+    const next = deriveRawReport(draft, context).advances.items.find(item => !item.complete)
+    if (!next) return draft
+    if (next.subject?.kind !== 'group') {
+      draft = updateAdvance(seedAdvance(draft, next.key, emptyAdvanceDraft('test-promotion')), next.key, a => setDice(a, 1, 1))
+      draft = setAdvanceMode(draft, next.key, 'pickLater')
+    } else {
+      let resolved = false
+      for (const [one, two] of [[1,1], [3,3], [2,3], [4,4]]) {
+        const candidate = updateAdvance(seedAdvance(draft, next.key, emptyAdvanceDraft('test-promotion')), next.key, a => setDice(a, one, two))
+        const planned = deriveRawReport(candidate, context).advances.items.find(item => item.key === next.key)!
+        if (planned.complete) { draft = candidate; resolved = true; break }
+      }
+      if (!resolved) throw new Error('Fixture must supply a legal group advance')
+    }
+  }
+  throw new Error('Fixture advancement limit exceeded')
+}
+function deriveReport(draft: ReportDraft, context: ReportContext) { return deriveRawReport(rollEarnedAdvances(draft, context), context) }
+function buildReport(draft: ReportDraft, context: ReportContext) { return buildRawReport(rollEarnedAdvances(draft, context), context) }
 
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 8 }
 
@@ -505,22 +528,23 @@ describe('the finished report', () => {
 })
 
 describe('advances in the wizard', () => {
+  const derive = (draft: ReportDraft) => deriveRawReport(withDice(draft, ctx()), ctx())
   function wonDraft(): ReportDraft {
     return setEnemiesOut(setResult(emptyDraft(), 'won'), 'captain', 2)
   }
 
-  it('lists every advance earned; untouched ones are left for later and do not block filing', () => {
+  it('lists every advance earned; untouched rolls block filing', () => {
     const d = derive(wonDraft())
     expect(d.advances.items.map((i) => i.key)).toEqual(expect.arrayContaining([advanceKey('captain', 24), advanceKey('champion', 8), advanceKey('ogre', 2), advanceKey('watch', 2)]))
-    expect(d.advances.items.every((i) => i.complete)).toBe(true)
-    expect(d.problems.advances).toEqual([])
-    expect(d.report).not.toBeNull()
-    expect(d.advances.items.find((i) => i.key === advanceKey('captain', 24))?.summary).toMatch(/left for Advancements/)
+    expect(d.advances.items.every((i) => i.complete)).toBe(false)
+    expect(d.problems.advances.length).toBeGreaterThan(0)
+    expect(d.report).toBeNull()
+    expect(d.advances.items.find((i) => i.key === advanceKey('captain', 24))?.summary).toMatch(/before completing the report/)
     // The roster the advances are planned against already carries the report's experience.
     expect(d.advances.rosterAfter.heroes.find((h) => h.id === 'captain')?.xp).toBe(24)
   })
 
-  it('a rolled advance blocks filing until its choice is made, picked later, or the advance is left for later', () => {
+  it('allows a rolled skill choice to be deferred, but rejects legacy whole-advance deferral', () => {
     const key = advanceKey('captain', 24)
     let draft = seedAdvance(wonDraft(), key, emptyAdvanceDraft('dddddddd-0000-4000-8000-000000000009'))
     // 1 + 1 = 2: New skill on the hero table, so a skill has to be chosen.
@@ -529,17 +553,24 @@ describe('advances in the wizard', () => {
     const item = d.advances.items.find((i) => i.key === key)!
     expect(item.plan?.total).toBe(2)
     expect(item.complete).toBe(false)
-    expect(d.problems.advances).toHaveLength(1)
+    expect(d.problems.advances.length).toBeGreaterThan(0)
     expect(d.report).toBeNull()
 
     d = derive(setAdvanceMode(draft, key, 'pickLater'))
     expect(d.advances.items.find((i) => i.key === key)).toMatchObject({ complete: true })
     expect(d.advances.items.find((i) => i.key === key)?.summary).toMatch(/skill to pick later/)
-    expect(d.report).not.toBeNull()
+    expect(d.report).toBeNull()
 
     d = derive(setAdvanceMode(draft, key, 'later'))
-    expect(d.advances.items.find((i) => i.key === key)?.summary).toMatch(/to roll later/)
-    expect(d.report).not.toBeNull()
+    expect(d.advances.items.find((i) => i.key === key)).toMatchObject({ mode: 'now', complete: false })
+    expect(d.report).toBeNull()
+  })
+
+  it('accepts a finished set of rolls with only skill selections deferred', () => {
+    const draft = rollEarnedAdvances(wonDraft(), ctx())
+    expect(derive(draft).report).not.toBeNull()
+    expect(derive(draft).problems.advances).toEqual([])
+    expect(() => buildRawReport(wonDraft(), ctx())).toThrow(/advance/)
   })
 
   it('rosterAfterReport applies the patches without touching anything else', () => {

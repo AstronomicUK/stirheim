@@ -13,7 +13,7 @@ const stats = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 const template = findWarbandTemplate('mercenaries_reikland')
 
 function hero(id: string, unit = 'mercenaries_reikland_champions'): RosterHero {
-  return { id, name: id, unitTemplateId: unit, stats, xp: 5, levelUps: 0, skillTableIds: [], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [{ itemId: 'sword', quantity: 1 }], status: 'active' }
+  return { id, name: id, unitTemplateId: unit, stats, xp: 20, levelUps: 0, skillTableIds: [], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [{ itemId: 'sword', quantity: 1 }], status: 'active' }
 }
 
 function roster(): RosterWarband {

@@ -11,7 +11,7 @@ import { itemEffect } from '../../../rules/data/itemRules'
 
 const stats = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 8 }
 const hero = (id: string, unit: string, equipment: RosterHero['equipment'] = [], over: Partial<RosterHero> = {}): RosterHero => ({
-  id, name: id, unitTemplateId: unit, stats, xp: 0, levelUps: 0, skillTableIds: [], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment, status: 'active', ...over,
+  id, name: id, unitTemplateId: unit, stats, xp: 20, levelUps: 0, skillTableIds: [], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment, status: 'active', ...over,
 })
 const REIKLAND = findWarbandTemplate('mercenaries_reikland')!
 const roster: RosterWarband = {

@@ -129,7 +129,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
             </ul>
           </Card>
         ) : null}
-        <p className="text-xs text-ink-dim">Rolled advances are applied right after the report is filed; anything left for later waits under Advancements.</p>
+        <p className="text-xs text-ink-dim">Rolled advances are applied right after the report is filed. Any deferred skill or spell choice waits under Advancements and must be chosen before the next battle.</p>
       </Section>
 
       <Section title="Exploration">

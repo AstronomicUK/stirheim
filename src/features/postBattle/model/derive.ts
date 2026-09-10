@@ -663,7 +663,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     const key = advanceKey(request.subject_id, request.threshold_xp)
     const subject = findSubject(roster, request.subject_type, request.subject_id)
     const stored = draft.advances[key]
-    const mode = draft.advanceModes[key] ?? 'now'
+    const mode = draft.advanceModes[key] === 'pickLater' ? 'pickLater' : 'now'
     if (!subject || (subject.kind !== 'group' && subject.kind !== 'hiredSword' && subject.hero.status !== 'active') || (subject.kind === 'hiredSword' && subject.sword.status !== 'active')) {
       const name = subject ? subjectName(subject) : 'A warrior no longer on the roster'
       items.push({ key, request, subject, name, draft: stored ?? emptyAdvanceDraft(UNSEEDED_HERO_ID), seeded: Boolean(stored), mode: 'later', plan: null, step: 'roll', complete: true, summary: `${name}: advance at ${request.threshold_xp} xp left pending (out of the fight).` })
@@ -676,22 +676,18 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     const step = effectiveStep(advDraft, plan)
     let complete: boolean
     let summary: string
-    if (mode === 'later') {
-      complete = true
-      summary = `${name}: advance at ${request.threshold_xp} xp to roll later.`
-    } else if (mode === 'pickLater') {
+    if (mode === 'pickLater') {
       complete = subject.kind !== 'group' && plan.need === 'skill' && plan.roll !== null
       summary = complete ? `${name}: rolled ${plan.total}, ${plan.roll?.text.toLowerCase() ?? 'new skill'}; skill to pick later.` : `${name}: roll the advance first.`
     } else if (plan.total === null) {
-      // Untouched: left pending, exactly as before the wizard could roll advances.
-      complete = true
-      summary = `${name}: advance at ${request.threshold_xp} xp not rolled here; left for Advancements.`
+      complete = false
+      summary = `${name}: roll the advance earned at ${request.threshold_xp} xp before completing the report.`
     } else {
       complete = plan.result !== null
       summary = plan.result ? `${name}: ${plan.result.resolution.text}` : `${name}: rolled ${plan.total}, choice still to make.`
       if (plan.result) roster = plan.result.next
     }
-    if (!complete) problems.push(`${name}: finish the choice for the advance, pick the skill later, or leave the whole advance for later.`)
+    if (!complete) problems.push(`${name}: roll the advance and finish its result. Only a rolled skill or spell choice may be picked later.`)
     items.push({ key, request, subject, name, draft: advDraft, seeded: Boolean(stored), mode, plan, step, complete, summary })
   }
   return { items, rosterAfter: roster, problems }

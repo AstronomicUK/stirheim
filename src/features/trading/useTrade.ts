@@ -1,3 +1,4 @@
+import type { ReportView } from '../../api/reports'
 // One trading action = one record_trade call. A tab runs a resolver on the loaded roster, hands
 // the result here, and this diffs it against the loaded rows and posts the batch. There is no
 // local cart: after each call the queries refetch, so the screen always shows what the database holds.
@@ -85,4 +86,10 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
     error,
     clearError: () => setError(null),
   }
+}
+
+/** Shared by Recruit and Trading Post; both consume the same saved search allowance. */
+export function heroesOutInReport(reports: ReportView[] | undefined, warbandId: string | undefined): string[] {
+  const mine = reports?.find(report => report.warband_id === warbandId)
+  return mine?.ooa.filter(line => line.subjectType === 'hero' || line.subjectType === 'hiredSword').map(line => line.subjectId) ?? []
 }

@@ -16,21 +16,20 @@ import { eligibleSearchers, phaseSummary } from './helpers'
 import { SellTab } from './SellTab'
 import { SellWyrdstoneTab } from './SellWyrdstoneTab'
 import { StashTab } from './StashTab'
-import { CharactersTab } from './CharactersTab'
-import { useMatchReports, type ReportView } from '../../api/reports'
-import { phaseInfo, useTrade, type PhaseInfo } from './useTrade'
+import { ActionsSection } from './CharactersTab'
+import { useMatchReports } from '../../api/reports'
+import { phaseInfo, useTrade, heroesOutInReport, type PhaseInfo } from './useTrade'
 import { useMapPerks } from '../map/useMapPerks'
 import { MapPerksCard } from '../map/MapPerksCard'
 import { usePageTitle } from '../onboarding/usePageTitle'
 
-type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash' | 'characters'
+type Tab = 'wyrdstone' | 'buy' | 'sell' | 'stash'
 
 const TABS: IconTab<Tab>[] = [
   { value: 'wyrdstone', label: 'Sell wyrdstone', icon: 'wyrdstone' },
   { value: 'buy', label: 'Buy', icon: 'buy' },
   { value: 'sell', label: 'Sell', icon: 'sell' },
   { value: 'stash', label: 'Stash', icon: 'stash' },
-  { value: 'characters', label: 'Dramatis Personae', icon: 'characters' },
 ]
 
 export function TradingPage() {
@@ -150,19 +149,12 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
       {tab === 'buy' ? <BuyTab trade={trade} /> : null}
       {tab === 'sell' ? <SellTab trade={trade} /> : null}
       {tab === 'stash' ? <StashTab trade={trade} /> : null}
-      {tab === 'characters' ? <CharactersTab trade={trade} /> : null}
+      <ActionsSection trade={trade} searchers={eligibleSearchers(detail.roster, phase.heroesSearched, phase.heroesOutOfAction)} />
     </>
   )
 }
 
-/** Heroes this warband's filed report for the match lists as out of action. */
-function heroesOutInReport(reports: ReportView[] | undefined, warbandId: string | undefined): string[] {
-  const mine = reports?.find((r) => r.warband_id === warbandId)
-  if (!mine) return []
-  return mine.ooa.filter((line) => line.subjectType === 'hero' || line.subjectType === 'hiredSword').map((line) => line.subjectId)
-}
-
 /** Buy, sell and move show the error inside their sheet; the wyrdstone tab has no sheet. */
 function sheetOwnsError(tab: Tab): boolean {
-  return tab !== 'wyrdstone' && tab !== 'characters'
+  return tab !== 'wyrdstone'
 }

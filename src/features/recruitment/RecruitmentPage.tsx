@@ -1,3 +1,4 @@
+import { PersonaeRecruitment } from './PersonaeRecruitment'
 // Recruitment between battles: hire heroes and henchmen from the warband template, hire and pay
 // hired swords, dismiss warriors. Every action runs a src/rules/resolve/recruitment resolver on the
 // loaded roster and sends the diff through useUpdateRoster with reason 'recruitment' (useCommit).
@@ -47,12 +48,13 @@ export function RecruitmentPage() {
   return <RecruitView detail={query.data} />
 }
 
-type Tab = 'heroes' | 'henchmen' | 'hired'
+type Tab = 'heroes' | 'henchmen' | 'hired' | 'personae'
 
 const TABS: IconTab<Tab>[] = [
   { value: 'heroes', label: 'Heroes', icon: 'heroes' },
   { value: 'henchmen', label: 'Henchmen', icon: 'henchmen' },
   { value: 'hired', label: 'Hired swords', icon: 'hired' },
+  { value: 'personae', label: 'Dramatis Personae', icon: 'characters' },
 ]
 
 function RecruitView({ detail }: { detail: WarbandDetail }) {
@@ -131,7 +133,9 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
 
       <IconTabs<Tab> label="Who to recruit" tabs={TABS} value={tab} onChange={setTab} />
 
-      {tab === 'hired' ? (
+      {tab === 'personae' ? (
+        <PersonaeRecruitment detail={detail} canEdit={canEdit} perks={perks} />
+      ) : tab === 'hired' ? (
         <HiredSwordsTab detail={detail} template={template} canEdit={canEdit} onDone={done} bans={bans} perks={perks} />
       ) : !template ? (
         <Notice tone="warn" title="Warband type not in the rules data">

@@ -60,7 +60,6 @@ export function CharactersTab({ trade }: { trade: TradeContext }) {
           ? `${searchers.length} ${searchers.length === 1 ? 'hero' : 'heroes'} can look this sequence.`
           : 'No post-battle sequence is in progress, so a search here is not counted against a hero.'}
       </p>
-      <ActionsSection trade={trade} searchers={searchers} />
       <Section title="Dramatis Personae" aside={`${rows.length}`}>
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="flex-1">
@@ -310,7 +309,7 @@ function SearchSheet({ persona, eligibility, trade, searchers, alreadyHired, onC
 
 
 /** Things a hero may do instead of searching: brew poison, rob travellers, run a con, sell from the Trade Wagon. */
-function ActionsSection({ trade, searchers }: { trade: TradeContext; searchers: RosterHero[] }) {
+export function ActionsSection({ trade, searchers }: { trade: TradeContext; searchers: RosterHero[] }) {
   const { roster, phase, run, pending, canTrade } = trade
   const able = roster.heroes.filter((h) => h.status === 'active' && actionsFor(h).length > 0)
   const [picked, setPicked] = useState<{ hero: RosterHero; action: BetweenBattleAction } | null>(null)

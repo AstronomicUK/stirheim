@@ -71,8 +71,6 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
         {mode === 'pickLater' ? (
           <Tag tone="brass">Pick later</Tag>
         ) : plan.total === null ? (
-          // complete is true here too (so the wizard isn't blocked by an advance nobody has to roll here), but
-          // nothing has actually happened yet — showing "Done" would tell the player it's already been applied.
           <Tag tone="warn">Not rolled</Tag>
         ) : item.complete ? (
           <Tag tone="brass">Done</Tag>

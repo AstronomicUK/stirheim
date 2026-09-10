@@ -1,3 +1,4 @@
+import {absentGroupModels} from '../../rules/resolve/groupAbsences'
 import { useWarband } from '../../api/warbands'
 import { Card } from '../roster/view/bits'
 
@@ -7,12 +8,14 @@ export function FanaticSupplies({ warbandId, matchId, scheduled }: { warbandId: 
   if (!roster) return null
   const groups = roster.henchmenGroups.filter(g => ['night_goblins_fanatics', 'night_goblins_web_fanatics'].includes(g.unitTemplateId) && g.size > 0)
   if (!groups.length) return null
-  const count = groups.reduce((n, g) => n + g.size, 0)
-  const doses = [...roster.stash, ...groups.flatMap(g => g.equipment)].filter(i => i.itemId === 'mad_cap_mushrooms').reduce((n, i) => n + i.quantity, 0)
+  const absent=groups.reduce((n,g)=>n+absentGroupModels(g),0)
+  const count = groups.reduce((n, g) => n + g.size-absentGroupModels(g), 0)
+  const doses = [...roster.stash, ...groups.filter(g=>g.size>absentGroupModels(g)).flatMap(g => g.equipment)].filter(i => i.itemId === 'mad_cap_mushrooms').reduce((n, i) => n + i.quantity, 0)
   return <Card className="flex flex-col gap-2 px-4 py-3">
     <p className="font-medium">Fanatic mushroom supplies</p>
     {scheduled ? <>
-      <p className="text-sm">{count} Fanatics need one dose each. {doses} doses are available in their kit and the stash.</p>
+      {absent>0?<p className="text-sm">{absent} Fanatics are absent following Raids surrender and do not need doses for this battle.</p>:null}
+      <p className="text-sm">{count} available Fanatics need one dose each. {doses} doses are available in their kit and the stash.</p>
       <p className="text-sm text-ink-dim">Starting the battle consumes the available doses. Any Fanatic without a dose sits out. Buy Mad Cap Mushrooms before starting if you want everyone to fight.</p>
       {groups.some(g => g.size > 1) ? <p className="text-xs text-ink-dim">Fanatics will be recorded individually, keeping their equipment and experience, so supplies and permanent effects apply to the correct model.</p> : null}
     </> : groups.filter(g => g.campaignState?.fanaticBattleMatch === matchId).map(g => <p key={g.id} className="text-sm">{g.name}: {g.campaignState?.fanaticSittingOut ? 'sitting out — no mushroom dose' : 'supplied — fighting this battle'}{g.campaignState?.permanentStupidity ? ' · Permanent Stupidity' : ''}</p>)}

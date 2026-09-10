@@ -17,7 +17,7 @@ export function SnakeHunt({ detail, charmer }: { detail: WarbandDetail; charmer:
   const [rolls, setRolls] = useState('')
   const action = useMutation({
     mutationFn: async () => {
-      const r = await supabase.rpc('hunt_snake', { p_warband_id: detail.warband.id, p_hero_id: charmer.id, p_match_id: latest.data!.match_id, p_die: die!, p_danger_die: danger, p_hit_outcome: outcome || null, p_hit_rolls: rolls || null })
+      const r = await supabase.rpc('hunt_snake', { p_warband_id: detail.warband.id, p_hero_id: charmer.id, p_match_id: latest.data!.match_id, p_die: die!, p_danger_die: danger ?? undefined, p_hit_outcome: outcome || undefined, p_hit_rolls: rolls || undefined })
       if (r.error) throw new Error(r.error.message)
       return r.data
     },

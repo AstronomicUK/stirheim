@@ -9,13 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      battle_turns: {
-        Row: { match_id: string; turn_order: string[]; active_index: number; round: number; round_limit: number | null; recovered: boolean; finished: boolean; revision: number; recoveries: Json; updated_at: string }
-        Insert: { match_id: string; turn_order: string[]; active_index?: number; round?: number; round_limit?: number | null; recovered?: boolean; finished?: boolean; revision?: number; recoveries?: Json; updated_at?: string }
-        Update: { round?: number }
-        Relationships: []
-      }
-
       audit_log: {
         Row: {
           action: string
@@ -231,6 +224,53 @@ export type Database = {
           },
         ]
       }
+      battle_turns: {
+        Row: {
+          active_index: number
+          finished: boolean
+          match_id: string
+          recovered: boolean
+          recoveries: Json
+          revision: number
+          round: number
+          round_limit: number | null
+          turn_order: string[]
+          updated_at: string
+        }
+        Insert: {
+          active_index?: number
+          finished?: boolean
+          match_id: string
+          recovered?: boolean
+          recoveries?: Json
+          revision?: number
+          round?: number
+          round_limit?: number | null
+          turn_order: string[]
+          updated_at?: string
+        }
+        Update: {
+          active_index?: number
+          finished?: boolean
+          match_id?: string
+          recovered?: boolean
+          recoveries?: Json
+          revision?: number
+          round?: number
+          round_limit?: number | null
+          turn_order?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_turns_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_aliases: {
         Row: {
           alias: string
@@ -256,6 +296,52 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_artefacts: {
+        Row: {
+          artefact_roll: number
+          campaign_id: string
+          first_report_id: string | null
+          first_warband_id: string | null
+          found_at: string
+        }
+        Insert: {
+          artefact_roll: number
+          campaign_id: string
+          first_report_id?: string | null
+          first_warband_id?: string | null
+          found_at?: string
+        }
+        Update: {
+          artefact_roll?: number
+          campaign_id?: string
+          first_report_id?: string | null
+          first_warband_id?: string | null
+          found_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_artefacts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_artefacts_first_report_id_fkey"
+            columns: ["first_report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_artefacts_first_warband_id_fkey"
+            columns: ["first_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
             referencedColumns: ["id"]
           },
         ]
@@ -855,9 +941,10 @@ export type Database = {
           district_decided_by: string | null
           district_id: string | null
           id: string
-          matchmaking_round_id: string | null
           matchmaking_bye_warband_id: string | null
+          matchmaking_round_id: string | null
           notes: string
+          scenario_randomly_chosen: boolean
           scenario_rules_id: string | null
           scheduled_for: string | null
           started_at: string | null
@@ -875,9 +962,10 @@ export type Database = {
           district_decided_by?: string | null
           district_id?: string | null
           id?: string
-          matchmaking_round_id?: string | null
           matchmaking_bye_warband_id?: string | null
+          matchmaking_round_id?: string | null
           notes?: string
+          scenario_randomly_chosen?: boolean
           scenario_rules_id?: string | null
           scheduled_for?: string | null
           started_at?: string | null
@@ -895,9 +983,10 @@ export type Database = {
           district_decided_by?: string | null
           district_id?: string | null
           id?: string
-          matchmaking_round_id?: string | null
           matchmaking_bye_warband_id?: string | null
+          matchmaking_round_id?: string | null
           notes?: string
+          scenario_randomly_chosen?: boolean
           scenario_rules_id?: string | null
           scheduled_for?: string | null
           started_at?: string | null
@@ -905,13 +994,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "matches_matchmaking_bye_warband_id_fkey"
-            columns: ["matchmaking_bye_warband_id"]
-            isOneToOne: false
-            referencedRelation: "warbands"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "matches_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -931,6 +1013,13 @@ export type Database = {
             columns: ["custom_scenario_id"]
             isOneToOne: false
             referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_matchmaking_bye_warband_id_fkey"
+            columns: ["matchmaking_bye_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
             referencedColumns: ["id"]
           },
         ]
@@ -999,6 +1088,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      rawhide_cargo: {
+        Row: {
+          declared_at: string
+          gold: number
+          match_id: string
+          reserved_at: string | null
+          rounding: string
+          sale_value: number
+          settled_report_id: string | null
+          valuation_note: string
+          wagon: number | null
+          warband_id: string
+          wyrdstone: number
+        }
+        Insert: {
+          declared_at?: string
+          gold: number
+          match_id: string
+          reserved_at?: string | null
+          rounding: string
+          sale_value: number
+          settled_report_id?: string | null
+          valuation_note?: string
+          wagon?: number | null
+          warband_id: string
+          wyrdstone: number
+        }
+        Update: {
+          declared_at?: string
+          gold?: number
+          match_id?: string
+          reserved_at?: string | null
+          rounding?: string
+          sale_value?: number
+          settled_report_id?: string | null
+          valuation_note?: string
+          wagon?: number | null
+          warband_id?: string
+          wyrdstone?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rawhide_cargo_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rawhide_cargo_settled_report_id_fkey"
+            columns: ["settled_report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rawhide_cargo_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_revisions: {
         Row: {
@@ -1114,6 +1267,7 @@ export type Database = {
           created_at: string
           heroes_searched: string[]
           match_id: string
+          pirate_surcharge_paid: boolean
           updated_at: string
           warband_id: string
           wyrdstone_sold: boolean
@@ -1122,6 +1276,7 @@ export type Database = {
           created_at?: string
           heroes_searched?: string[]
           match_id: string
+          pirate_surcharge_paid?: boolean
           updated_at?: string
           warband_id: string
           wyrdstone_sold?: boolean
@@ -1130,6 +1285,7 @@ export type Database = {
           created_at?: string
           heroes_searched?: string[]
           match_id?: string
+          pirate_surcharge_paid?: boolean
           updated_at?: string
           warband_id?: string
           wyrdstone_sold?: boolean
@@ -1244,19 +1400,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      pirate_upkeep_status: { Args: { p_warband_id: string }; Returns: Json }
-      pay_pirate_upkeep: { Args: { p_warband_id: string; p_amount?: number; p_reason?: string | null }; Returns: undefined }
-      set_trap_order: { Args: { p_match_id: string; p_hero_id: string; p_extra: number }; Returns: undefined }
-      use_trap_supply: { Args: { p_match_id: string; p_hero_id: string }; Returns: number }
-
-      hunt_snake: { Args: { p_warband_id: string; p_hero_id: string; p_match_id: string; p_die: number; p_danger_die?: number | null; p_hit_outcome?: string | null; p_hit_rolls?: string | null }; Returns: Json }
-
-      campaign_artefact_ledger: { Args: { p_campaign_id: string }; Returns: Json }
-      battle_turn_action: {
-        Args: { p_match_id: string; p_action: string; p_revision: number; p_order?: string[]; p_limit?: number }
-        Returns: Json
-      }
-
       agree_match_district: {
         Args: {
           p_district_id: string
@@ -1286,6 +1429,24 @@ export type Database = {
           p_turn: number
         }
         Returns: string
+      }
+      assert_raid_captive_ledger: {
+        Args: { p_include: boolean; p_report_id: string; p_warband_id: string }
+        Returns: undefined
+      }
+      battle_turn_action: {
+        Args: {
+          p_action: string
+          p_limit?: number
+          p_match_id: string
+          p_order?: string[]
+          p_revision: number
+        }
+        Returns: Json
+      }
+      campaign_artefact_ledger: {
+        Args: { p_campaign_id: string }
+        Returns: Json
       }
       campaign_preview: {
         Args: { p_invite_code: string }
@@ -1321,7 +1482,24 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
       }
+      fanatic_member_campaign_state: {
+        Args: { p_number: number; p_parent: string; p_state: Json }
+        Returns: Json
+      }
       generate_invite_code: { Args: never; Returns: string }
+      get_rawhide_cargo: { Args: { p_match_id: string }; Returns: Json }
+      hunt_snake: {
+        Args: {
+          p_danger_die?: number
+          p_die: number
+          p_hero_id: string
+          p_hit_outcome?: string
+          p_hit_rolls?: string
+          p_match_id: string
+          p_warband_id: string
+        }
+        Returns: Json
+      }
       import_battle_records: {
         Args: { p_campaign_id: string; p_matches: Json }
         Returns: number
@@ -1400,6 +1578,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      pay_pirate_upkeep: {
+        Args: { p_amount?: number; p_reason?: string; p_warband_id: string }
+        Returns: undefined
+      }
+      pirate_mixed_hires: {
+        Args: { p_warband_id: string }
+        Returns: {
+          id: string
+          race: string
+        }[]
+      }
+      pirate_surcharge_due: { Args: { p_warband_id: string }; Returns: string }
+      pirate_upkeep_status: { Args: { p_warband_id: string }; Returns: Json }
+      prepare_fanatic_supplies: {
+        Args: { p_match_id: string }
+        Returns: undefined
+      }
+      prepare_trap_supplies: {
+        Args: { p_match_id: string }
+        Returns: undefined
+      }
       propose_match_district: {
         Args: {
           p_district_id: string
@@ -1423,9 +1622,34 @@ export type Database = {
         Args: { p_campaign_id: string }
         Returns: string
       }
+      resolve_captive_rosters: {
+        Args: {
+          p_advances?: Json
+          p_expected: Json
+          p_first: string
+          p_first_changes: Json
+          p_first_updated: string
+          p_reason: string
+          p_second: string
+          p_second_changes: Json
+          p_second_updated: string
+        }
+        Returns: undefined
+      }
       resolve_pending_advance: {
         Args: { p_advance_id: string; p_changes: Json; p_resolution: Json }
         Returns: number
+      }
+      resolve_roster_event: {
+        Args: {
+          p_advances: Json
+          p_changes: Json
+          p_expected: Json
+          p_reason: string
+          p_updated: string
+          p_warband_id: string
+        }
+        Returns: undefined
       }
       respond_to_challenge: {
         Args: { p_accept: boolean; p_match_id: string; p_warband_id: string }
@@ -1453,12 +1677,13 @@ export type Database = {
       }
       schedule_match: {
         Args: {
-          p_matchmaking_round_id?: string
-          p_matchmaking_bye_warband_id?: string
           p_campaign_id: string
           p_custom_scenario_id?: string
           p_district_id?: string
+          p_matchmaking_bye_warband_id?: string
+          p_matchmaking_round_id?: string
           p_notes?: string
+          p_scenario_randomly_chosen?: boolean
           p_scenario_rules_id?: string
           p_scheduled_for?: string
           p_warband_ids: string[]
@@ -1473,9 +1698,20 @@ export type Database = {
         Args: { p_district_id: string; p_match_id: string }
         Returns: undefined
       }
-      unpaid_match_hires: {
-        Args: { p_match_id: string }
-        Returns: { id: string; name: string; warband_id: string; warband_name: string }[]
+      set_rawhide_cargo: {
+        Args: {
+          p_match_id: string
+          p_rounding?: string
+          p_sale_value?: number
+          p_valuation_note?: string
+          p_wagon?: number
+          p_warband_id: string
+        }
+        Returns: undefined
+      }
+      set_trap_order: {
+        Args: { p_extra: number; p_hero_id: string; p_match_id: string }
+        Returns: undefined
       }
       start_match: {
         Args: {
@@ -1502,8 +1738,21 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: undefined
       }
+      unpaid_match_hires: {
+        Args: { p_match_id: string }
+        Returns: {
+          id: string
+          name: string
+          warband_id: string
+          warband_name: string
+        }[]
+      }
       update_roster: {
         Args: { p_changes: Json; p_reason: string; p_warband_id: string }
+        Returns: number
+      }
+      use_trap_supply: {
+        Args: { p_hero_id: string; p_match_id: string }
         Returns: number
       }
       withdraw_battle_prompt: {

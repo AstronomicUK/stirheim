@@ -186,7 +186,6 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
     onPointerUp(e)
   }
 
-  const selectedDistrict = selectedId ? findDistrict(selectedId) : undefined
   const dim = (id: string) => (reachable ? !reachable.has(id) : false)
 
   return (
@@ -279,10 +278,6 @@ export function MapCanvas({ views, selectedId, onSelect, reachable = null, explo
           </button>
         </div>
       </div>
-      {selectedDistrict && <div role="status" className="rounded-md border border-border bg-surface-low px-3 py-2 text-sm text-ink">
-        <strong>{selectedDistrict.name}</strong>
-        <p className="mt-1 text-xs text-ink-dim">{views.get(selectedDistrict.id)?.controller ? `Controlled by ${views.get(selectedDistrict.id)!.controller!.name}` : 'Not controlled'}</p>
-      </div>}
       <p className="text-xs text-ink-dim">Drag to pan, scroll or pinch to zoom, tap a district for its details. Filled circles are controlled; the dots around a circle are footholds.</p>
     </div>
   )

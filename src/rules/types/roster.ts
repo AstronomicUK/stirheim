@@ -38,6 +38,8 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  /** Balewolf curse acquired after a particular battle; the normal profile remains the roster profile. */
+  lycanthrope?: {contractedAfter:string};
   /** Story Teller upgrade purchased instead of Wizard at recruitment. */
   chronicler?: boolean;
   luthorRole?: 'crimson' | 'wizard' | 'archer';
@@ -122,6 +124,8 @@ export interface RosterHero {
 }
 
 export interface HenchmanCampaignState {
+  /** Individually named cursed members; the rest of the group is unaffected. */
+  lycanthropes?: {id:string;name:string;contractedAfter:string}[];
   raidAbsences?: {count:number;games:number}[];
   fanaticBattleMatch?: string;
   fanaticSittingOut?: boolean;

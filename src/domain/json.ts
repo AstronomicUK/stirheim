@@ -43,6 +43,7 @@ export const appliedInjuriesSchema = z.array(appliedInjurySchema);
 
 /** heroes.flags */
 export const warriorFlagsSchema = z.object({
+  lycanthrope: z.object({contractedAfter:z.string()}).optional(),
   chronicler: z.boolean().optional(),
   luthorRole: z.enum(['crimson','wizard','archer']).optional(),
   hireGroupId: z.string().optional(),
@@ -105,4 +106,4 @@ export type AppliedInjuryJson = z.infer<typeof appliedInjurySchema>;
 export type WarriorFlagsJson = z.infer<typeof warriorFlagsSchema>;
 export type StatIncreasesJson = z.infer<typeof statIncreasesSchema>;
 
-export const henchmanCampaignStateSchema = z.object({raidAbsences:z.array(z.object({count:z.number().int().min(1).max(5),games:z.number().int().min(1).max(2)})).optional(),fanaticBattleMatch:z.string().optional(),fanaticSittingOut:z.boolean().optional(),fanaticSplitFrom:z.string().optional(),permanentStupidity:z.boolean().optional(),upkeepOwedAfter:z.string().optional(),upkeepPaidAfter:z.string().optional(),cheapTrollFeed:z.boolean().optional()});
+export const henchmanCampaignStateSchema = z.object({lycanthropes:z.array(z.object({id:z.string(),name:z.string(),contractedAfter:z.string()})).max(5).optional(),raidAbsences:z.array(z.object({count:z.number().int().min(1).max(5),games:z.number().int().min(1).max(2)})).optional(),fanaticBattleMatch:z.string().optional(),fanaticSittingOut:z.boolean().optional(),fanaticSplitFrom:z.string().optional(),permanentStupidity:z.boolean().optional(),upkeepOwedAfter:z.string().optional(),upkeepPaidAfter:z.string().optional(),cheapTrollFeed:z.boolean().optional()});

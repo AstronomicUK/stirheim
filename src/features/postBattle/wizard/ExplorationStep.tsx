@@ -1,3 +1,4 @@
+import { PettyThief } from './PettyThief'
 import { LocationRecruits } from './LocationRecruits'
 import { LocationExperience } from './LocationExperience'
 import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
@@ -55,6 +56,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
       <StepBody title="Exploration">
         {awardSummary}
         {slayerControls}
+        <PettyThief draft={draft} derived={derived} ctx={ctx} update={update} />
         <Notice tone="info" title="No exploration">
           {ex.skippedReason}
         </Notice>
@@ -279,6 +281,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
         </Card>
       </Section> : null}
 
+      <PettyThief draft={draft} derived={derived} ctx={ctx} update={update} />
       <LocationRecruits draft={draft} derived={derived} ctx={ctx} update={update} />
       <LocationExperience draft={draft} derived={derived} ctx={ctx} update={update} />
       {ex.result && ex.rewardsApply ? (

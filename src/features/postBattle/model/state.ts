@@ -110,6 +110,8 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  pettyThiefRoll?: number | null
+  pettyThiefSelection?: number | null
   scenarioMission?: string
   scenarioGardenRerolled?: boolean
   /** Explicit per-report resolution of contradictory printed award values. */

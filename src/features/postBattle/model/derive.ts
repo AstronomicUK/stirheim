@@ -1,3 +1,4 @@
+import { pettyThief } from './pettyThief'
 import { locationRecruits } from './locationRecruits'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
 import { scenarioRewards } from './scenarioRewards'
@@ -51,6 +52,7 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  opponents?: {id:string;name:string}[]
   artefacts?: ArtefactDiscovery[]
   artefactsError?: string
   reportId?: string
@@ -777,9 +779,11 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   applied.warband.gold_delta -= recruits.goldCost
   if (recruits.goldCost > 0 && ctx.roster.gold + applied.warband.gold_delta < 0) recruits.problems.push('The treasury cannot afford identical equipment for the free recruit.')
   if (exploration.record) exploration.record.notes.push(...recruits.notes)
+  const theft = pettyThief(draft, ctx, participants)
+  if (theft.transfer) applied.petty_thief = theft.transfer
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
-  problems.exploration.push(...recruits.problems)
+  problems.exploration.push(...recruits.problems, ...theft.problems)
   problems.advances.push(...advances.problems)
   const firstIncomplete = STEP_IDS.findIndex((id) => problems[id].length > 0)
   const firstIncompleteStep = firstIncomplete === -1 ? null : firstIncomplete
@@ -800,7 +804,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: battleNotes(draft, kit, ctx),
+      notes: [battleNotes(draft, kit, ctx), ...theft.notes].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

@@ -1,3 +1,4 @@
+import { KidnappedRewards } from './KidnappedRewards'
 import { useState } from 'react'
 import type { XpLine } from '../../../domain'
 import { nextAdvanceAt } from '../../../rules/resolve/advances'
@@ -10,7 +11,7 @@ import { unitGainsExperience } from '../../../rules/data/campaignRules'
 import { scenarioAftermath, type ScenarioAward } from '../../../rules/data/campaign/scenarioAftermath'
 import { findScenario } from '../../../rules/data/campaign/scenarios'
 
-export function ExperienceStep({ draft, derived, update, match }: StepProps) {
+export function ExperienceStep({ draft, derived, update, match, ctx }: StepProps) {
   const { lines, underdogAvailable } = derived.xp
   const byId = new Map(lines.map((l) => [l.subjectId, l]))
   const { participants } = derived
@@ -57,6 +58,7 @@ export function ExperienceStep({ draft, derived, update, match }: StepProps) {
         <p className="text-sm text-ink-dim">Each hero earns at most +1 XP for all Zombies taken out. Record how many of their total kills were Zombies.</p>
         {participants.heroes.filter(h => (draft.enemiesOut[h.id] ?? 0) > 0).map(h => <NumberField key={h.id} label={`${h.name}: Zombie kills`} value={draft.scenarioZombieKills?.[h.id] ?? 0} onChange={v => update(d => ({ ...d, scenarioZombieKills: { ...d.scenarioZombieKills, [h.id]: Math.min(d.enemiesOut[h.id] ?? 0, Math.max(0, Math.trunc(v ?? 0))) } }))} />)}
       </Section> : null}
+      {match.scenario_rules_id === 'kidnapped' ? <KidnappedRewards draft={draft} derived={derived} ctx={ctx} update={update} /> : null}
       <Section title="Awards" aside={owed > 0 ? `${owed} ${owed === 1 ? 'advance' : 'advances'} owed` : undefined}>
         {lines.length === 0 ? <p className="text-sm text-ink-dim">Nobody earns experience this time.</p> : null}
         {lines.map((line) => (

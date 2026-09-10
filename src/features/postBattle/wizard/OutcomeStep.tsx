@@ -1,4 +1,4 @@
-import { Notice, SegmentedControl } from '../../../ui'
+import { Notice, SegmentedControl, SelectField, TextField } from '../../../ui'
 import { Card } from '../../roster/view/bits'
 import { setResult, setRouted, type ReportResult } from '../model'
 import { Intro, Row, SwitchRow, type StepProps } from './bits'
@@ -26,6 +26,7 @@ export function OutcomeStep({ draft, derived, update, mine, opponents, opponentR
     <StepBody title="How did it go?">
       <Intro>Each side files its own report. Experience and exploration use the played scenario’s rules.</Intro>
       {ctx.scenarioId === 'the_sword_of_the_herald' ? <SwitchRow label="Agreed non-campaign mode" description="The referee’s optional mode: no injuries, XP or exploration. Only rewards for removing the sword and Star Stone splinters may be recorded." checked={draft.scenarioNonCampaign ?? false} onChange={v => update(d => ({ ...d, scenarioNonCampaign: v }))} /> : null}
+      {ctx.scenarioId === 'stake_out' ? <Card className="flex flex-col gap-3 px-4 py-3"><p className="text-sm">Stake-Out gives fixed wyrdstone income but does not specify whether normal exploration also applies. Record your table’s interpretation before proceeding.</p><SelectField label="Agreed Stake-Out exploration" value={draft.scenarioRewards?.stakeOut?.mode ?? ''} onChange={e => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, stakeOut: { ...d.scenarioRewards?.stakeOut, mode: e.target.value as 'income-only' | 'also-explore' } } }))}><option value="">Choose…</option><option value="income-only">Printed income replaces exploration</option><option value="also-explore">Printed income plus normal exploration</option></SelectField><TextField label="Stake-Out table ruling" value={draft.scenarioRewards?.stakeOut?.reason ?? ''} onChange={e => update(d => ({ ...d, scenarioRewards: { ...d.scenarioRewards, stakeOut: { ...d.scenarioRewards?.stakeOut, reason: e.target.value } } }))} /></Card> : null}
       {opponentReports.length > 0 ? (
         <Card className="px-4 py-2">
           {opponentReports.map((r) => (

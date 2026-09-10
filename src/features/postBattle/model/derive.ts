@@ -1,3 +1,4 @@
+import { kidnappedRewards } from './kidnappedRewards'
 import { conditionalHireDepartures } from '../../../rules/resolve/hiredSwordRules'
 import { pettyThief } from './pettyThief'
 import { locationRecruits } from './locationRecruits'
@@ -334,6 +335,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   if ((scenarioRewardRule(ctx.scenarioId) || ctx.scenarioId === 'the_wizard_s_tower') && (draft.battleGold || draft.battleWyrdstone || draft.scenarioItems?.length) && !draft.scenarioRewardOverrideReason?.trim()) problems.veterans.push('Explain the agreed adjustment outside this scenario’s normal rewards.')
   if (scenario.needsMission) problems.experience.push('Choose which scenario mission was played.')
   if (scenario.conflict && draft.scenarioUseBody === undefined) problems.experience.push('Choose the agreed interpretation of this scenario’s conflicting award values.')
+  if (ctx.scenarioId === 'stake_out' && (!['income-only', 'also-explore'].includes(draft.scenarioRewards?.stakeOut?.mode ?? '') || !draft.scenarioRewards?.stakeOut?.reason?.trim())) problems.outcome.push('Record the agreed Stake-Out exploration interpretation and table ruling.')
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
   if (kit.pending > 0) problems.injuries.push(`${kit.pending} ${kit.pending === 1 ? 'roll' : 'rolls'} for kit after the battle still to make.`)
   if (!injuries.complete) {
@@ -384,11 +386,11 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
 }
 
 function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Participants, injuries: InjuriesDerived, xp: XpDerived, exploration: ExplorationDerived, kit: KitDerived): ReportApplied {
-  if (ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign) return {
-    heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems ?? [],
-    warband: { gold_delta: draft.battleGold, wyrdstone_delta: draft.battleWyrdstone, veteran_pool: null },
-  }
   const treasure = scenarioRewards(draft, ctx.scenarioId, participants, ctx)
+  if (ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign) return {
+    heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: [...(draft.scenarioItems ?? []), ...treasure.items],
+    warband: { gold_delta: draft.battleGold + treasure.gold, wyrdstone_delta: draft.battleWyrdstone + treasure.shards, veteran_pool: null },
+  }
   const xpBySubject = new Map(xp.lines.map((l) => [l.subjectId, l]))
   const heroes: ReportApplied['heroes'] = []
   const pending: ReportApplied['pending_advances'] = []
@@ -655,17 +657,29 @@ export function abundanceShards(draft: ReportDraft, ctx: ReportContext): number 
 }
 
 /** The roster as it will stand once the report's patches are applied (advances not yet rolled). */
-export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied): RosterWarband {
+export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied, originalItems?: readonly ItemRow[]): RosterWarband {
+  const itemPatches = new Map(applied.item_patches.map(i => [i.id, i]))
+  const removed = new Set(applied.remove_item_ids)
+  const remainingItems = originalItems?.filter(i => !removed.has(i.id)).map(i => ({ ...i, ...itemPatches.get(i.id) })).filter(i => i.quantity > 0) ?? []
+  const equipmentFor = (id: string, existing: RosterWarband['heroes'][number]['equipment']) => {
+    const changed = originalItems?.some(i => i.holder_id === id && (removed.has(i.id) || itemPatches.has(i.id))) || applied.item_patches.some(i => i.holder_id === id)
+    const kept = changed && originalItems ? remainingItems.filter(i => i.holder_id === id).map(i => ({ itemId: i.item_rules_id, customName: i.custom_name ?? undefined, quantity: i.quantity, notes: i.notes })) : existing
+    return [...kept, ...(applied.awarded_items ?? []).filter(i => i.holder_id === id).map(i => ({ itemId: i.item_rules_id, customName: i.custom_name ?? undefined, quantity: i.quantity, notes: i.notes }))]
+  }
   const heroPatches = new Map(applied.heroes.map((h) => [h.id, h.patch]))
   const groupPatches = new Map(applied.groups.map((g) => [g.id, g.patch]))
   return {
     ...roster,
     heroes: roster.heroes.map((h) => {
       const p = heroPatches.get(h.id)
-      if (!p) return h
+      if (!p) return { ...h, equipment: equipmentFor(h.id, h.equipment) }
       return {
         ...h,
+        equipment: equipmentFor(h.id, h.equipment),
         stats: p.stats ?? h.stats,
+        skillIds: p.skills ?? h.skillIds,
+        spellIds: p.spells ?? h.spellIds,
+        notes: p.notes ?? h.notes,
         xp: p.xp ?? h.xp,
         levelUps: p.level_ups ?? h.levelUps,
         injuries: p.injuries ?? h.injuries,
@@ -689,7 +703,7 @@ export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied)
     henchmenGroups: [...roster.henchmenGroups.map((g) => {
       const p = groupPatches.get(g.id)
       if (!p) return g
-      return { ...g, ...(p.campaign_state?{campaignState:p.campaign_state}:{}), size: p.size ?? g.size, xp: p.xp ?? g.xp, levelUps: p.level_ups ?? g.levelUps }
+      return { ...g, ...(p.campaign_state?{campaignState:p.campaign_state}:{}), stats: p.stats ?? g.stats, size: p.size ?? g.size, xp: p.xp ?? g.xp, levelUps: p.level_ups ?? g.levelUps }
     }), ...(applied.new_groups ?? []).map(g => ({id:g.id,name:g.name,unitTemplateId:g.unit_type_rules_id,size:g.size,stats:g.stats,xp:g.xp,levelUps:g.level_ups,statIncreases:{},equipment:[]}))],
   }
 }
@@ -700,7 +714,7 @@ export function rosterAfterReport(roster: RosterWarband, applied: ReportApplied)
  * planned from an empty draft.
  */
 export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: ReportApplied): AdvancesDerived {
-  let roster = rosterAfterReport(ctx.roster, applied)
+  let roster = rosterAfterReport(ctx.roster, applied, ctx.items)
   const items: WizardAdvance[] = []
   const problems: string[] = []
   for (const request of applied.pending_advances) {
@@ -749,7 +763,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const slayer = ctx.roster.warbandTemplateId === 'dwarf_slayer_cult' ? slayerExploration(draft, participants) : null
   const exploration = deriveExploration(draft.exploration, ctx.roster, {
     scenarioId: ctx.scenarioId,
-    disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : undefined,
+    disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : ctx.scenarioId === 'stake_out' && draft.scenarioRewards?.stakeOut?.mode === 'income-only' ? 'Stake-Out: the table agreed to use the printed fixed income instead of exploration.' : undefined,
     won: draft.result === 'won',
     eligibleHeroes: slayer?.eligibleHeroes ?? survivingHeroes,
     leaderId: participants.leaderId,
@@ -764,8 +778,23 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     extraDiceNote: [ctx.map?.perks.explorationDiceSources.join(', '), slayer?.note].filter(Boolean).join('; '),
     maxFinds: ctx.map?.perks.explorationMaxFinds ?? null,
   })
-  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, exploration.record?.xpAwards)
+  const kidnapped = ctx.scenarioId === 'kidnapped' ? kidnappedRewards(draft.scenarioRewards?.kidnapped, { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h) }, ctx.items) : null
+  const xp = nonCampaign ? { lines: [], underdogAvailable: 0, underdogApplied: 0 } : deriveXp(draft, participants, injuries, ctx, [...(exploration.record?.xpAwards ?? []), ...(kidnapped?.xpAwards ?? [])])
   const applied = buildApplied(draft, ctx, participants, injuries, xp, exploration, kit)
+  if (kidnapped) {
+    for (const row of kidnapped.heroes) {
+      const existing = applied.heroes.find(h => h.id === row.id)
+      if (existing) existing.patch = { ...existing.patch, ...row.patch, flags: { ...existing.patch.flags, ...row.patch.flags } }
+      else applied.heroes.push(row)
+    }
+    applied.awarded_items = kidnapped.awardedItems
+    applied.remove_item_ids = [...new Set([...applied.remove_item_ids, ...kidnapped.removeIds])]
+    for (const row of kidnapped.itemPatches) {
+      const existing = applied.item_patches.find(i => i.id === row.id)
+      if (existing) Object.assign(existing, row)
+      else applied.item_patches.push(row)
+    }
+  }
   if(!nonCampaign)for(const group of ctx.roster.henchmenGroups){
     const existing=applied.groups.find(g=>g.id===group.id)
     if(unitRules(group.unitTemplateId).upkeep&&(existing?.patch.size??group.size)>0){
@@ -801,11 +830,12 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (exploration.record) exploration.record.notes.push(...recruits.notes)
   const theft = pettyThief(draft, ctx, participants)
   if (theft.transfer) applied.petty_thief = theft.transfer
-  const departingIds=new Set(applied.heroes.filter(h=>h.patch.status==='left').map(h=>h.id))
+  const departingIds=new Set(applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id))
   applied.pending_advances=applied.pending_advances.filter(a=>!departingIds.has(a.subject_id))
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
   const advances = deriveAdvances(draft, ctx, applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
+  problems.experience.push(...(kidnapped?.problems ?? []))
   problems.exploration.push(...recruits.problems, ...theft.problems)
   const maglahLoss=injuries.hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
   let retainedScoutNote=''
@@ -835,7 +865,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [battleNotes(draft, kit, ctx), ...theft.notes, retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [battleNotes(draft, kit, ctx), ...theft.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

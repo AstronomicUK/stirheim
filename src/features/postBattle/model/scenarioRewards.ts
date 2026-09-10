@@ -1,3 +1,6 @@
+import type { KidnappedDraft } from './kidnappedRewards'
+import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
+import { explorationFaction } from '../../../rules/resolve/explorationDiscoveries'
 import { ferryRewards, type FerryRewardDraft } from './ferryRewards'
 import { MAGICAL_ARTEFACTS } from '../../../rules/data/campaign/exploration'
 import type { ArtefactDiscovery } from '../../../api/artefacts'
@@ -7,6 +10,9 @@ import type { Participants } from './participants'
 import { foundItemFromName } from './exploration'
 
 export interface ScenarioRewardDraft {
+  kidnapped?: KidnappedDraft
+  herald?: { splinters?: number | null; sword?: 'none' | 'sell' | 'keep'; keepReason?: string }
+  stakeOut?: { mode?: 'income-only' | 'also-explore'; reason?: string; die?: number | null }
   ferry?: FerryRewardDraft
   recipe?: { pies?: number | null; cartPies?: number | null; turnsInGeefer?: boolean; dice?: (number | null)[] }
   tableCountRoll?: number | null
@@ -45,8 +51,11 @@ export function scenarioHoardFinds(rule: Extract<ScenarioRewardRule, { kind: 'ho
   const heroes = participants.heroes.filter(h => !draft.heroesOut.includes(h.id)).slice(0, 6)
   return [...(rule.onceFinds ?? []), ...heroes.flatMap(h => finds.map(f => ({ ...f, id: `${h.id}:${f.id}`, label: `${h.name} — ${f.label}` })))]
 }
+export function canKeepHeraldSword(warbandId: string) {
+  return ['possessed', 'undead', 'skaven'].includes(explorationFaction(warbandId)) || /undead|skaven|beastm[ae]n/i.test(findWarbandTemplate(warbandId)?.race ?? '')
+}
 export interface ScenarioRewardsResult { artefacts: { roll: number; overrideReason?: string }[]; gold: number; shards: number; items: FoundItem[]; notes: string[]; problems: string[] }
-export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { opponents?: { id: string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
+export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | undefined, participants: Participants, context?: { roster?: { warbandTemplateId: string }; opponents?: { id: string }[]; artefacts?: ArtefactDiscovery[]; artefactsError?: string; reportId?: string }, ruleOverride?: ScenarioRewardRule): ScenarioRewardsResult {
   let rule = ruleOverride ?? scenarioRewardRule(scenarioId)
   const state = draft.scenarioRewards ?? {}
   const rewards = { artefacts: [] as { roll: number; overrideReason?: string }[], gold: 0, shards: 0, items: [] as FoundItem[], notes: [] as string[], problems: [] as string[] }
@@ -62,6 +71,26 @@ export function scenarioRewards(draft: ReportDraft, scenarioId: string | null | 
     chosen.notes.unshift(`${rule.question} ${branch.label}.`)
     return chosen
   } else if (rule.kind === 'none') { rewards.notes.push(rule.note)
+  } else if (rule.kind === 'kidnapped') {
+    if (state.kidnapped?.outcome === 'rescued') { rewards.gold = 50; rewards.notes.push('Kidnapped: victim rescued off the table; 50 gc reward.') }
+  } else if (rule.kind === 'herald') {
+    const herald = state.herald ?? {}
+    const max = Math.min(5, context?.opponents ? new Set(context.opponents.map(o => o.id)).size + 1 : 5)
+    if (!valid(herald.splinters, 0, max)) rewards.problems.push(`Record 0–${max} Star Stone splinters carried off the table.`)
+    else { rewards.shards = herald.splinters * 3; rewards.notes.push(`Star Stone splinters carried off: ${herald.splinters} ×3 = ${rewards.shards} wyrdstone.`) }
+    if (!['none', 'sell', 'keep'].includes(herald.sword ?? '')) rewards.problems.push('Record whether your warband recovered the sword, and whether it was kept or handed over.')
+    else if (herald.sword === 'sell') { rewards.gold = 100; rewards.notes.push('Recovered Sword of the Herald handed over for 100 gc; no sword added to the stash.') }
+    else if (herald.sword === 'keep') {
+      if (!canKeepHeraldSword(context?.roster?.warbandTemplateId ?? '') && !herald.keepReason?.trim()) rewards.problems.push('This warband is not in the printed sword-retention list. Hand it over, or record the referee’s agreed exception.')
+      else { rewards.items.push(foundItemFromName('Sword of the Herald')); rewards.notes.push(`Recovered Sword of the Herald kept; no sale payment.${herald.keepReason?.trim() ? ` Referee’s exception: ${herald.keepReason.trim()}` : ''}`) }
+    } else rewards.notes.push('This warband did not recover the Sword of the Herald.')
+  } else if (rule.kind === 'stake-out') {
+    const income = state.stakeOut ?? {}
+    if (!['income-only', 'also-explore'].includes(income.mode ?? '') || !income.reason?.trim()) rewards.problems.push('Record the agreed Stake-Out exploration interpretation on the Outcome step.')
+    else rewards.notes.push(`Stake-Out interpretation: ${income.mode === 'income-only' ? 'printed income replaces exploration' : 'printed income plus normal exploration'}. Table ruling: ${income.reason.trim()}`)
+    if (draft.result === 'draw') rewards.notes.push('No printed draw income; any agreed draw reward is recorded separately.')
+    else if (!valid(income.die, 1, 6)) rewards.problems.push('Roll the D6 for Stake-Out income.')
+    else { rewards.shards = income.die + (draft.result === 'won' ? 1 : 0); rewards.notes.push(`Stake-Out income: D6 ${income.die}${draft.result === 'won' ? ' +1 for winning' : ''} = ${rewards.shards} wyrdstone.`) }
   } else if (rule.kind === 'recipe') {
     const recipe = state.recipe ?? {}, won = draft.result === 'won'
     const carried = recipe.pies, cart = won ? recipe.cartPies : 0

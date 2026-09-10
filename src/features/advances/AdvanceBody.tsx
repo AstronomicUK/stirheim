@@ -1,3 +1,4 @@
+import { ShadowlordRewardFields } from './ShadowlordRewardFields'
 import { RACIAL_MAXIMUMS } from '../../rules/data/campaign/experience'
 // The step content of one advance (roll, choose, review) and its pickers, shared by the bottom
 // sheet on the Advancements screen and by the Advances step of the post-battle wizard.
@@ -8,10 +9,7 @@ import type { StatKey } from '../../rules/types/common'
 import type { Spell, SpellLore } from '../../rules/types/magic'
 import type { RosterHero } from '../../rules/types/roster'
 import { STAT_ORDER } from '../roster/shared/stats'
-import { findItem } from '../../rules/data/items'
-import { POSSESSED_MUTATION_IDS } from '../../rules/data/campaign/rewards'
 import type { RewardPlan } from '../../rules/resolve/rewards'
-import { skillName } from '../roster/view/lookups'
 import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import type { AvailableSkillTable } from '../../rules/resolve/advances'
 import { Button, DieField, NumberField, Notice, SegmentedControl, SelectField, TextField } from '../../ui'
@@ -447,98 +445,8 @@ function SkillOrSpellPicker({ draft, tables, lore, spells, knownSpellIds, update
   )
 }
 
-/** The pilgrimage to the Pit: 2D6 on the Rewards table, then whatever the result asks for. */
 function RewardPicker({ draft, plan, hero, update }: { draft: AdvanceDraft; plan: RewardPlan | null; hero: RosterHero | null; update: (edit: (d: AdvanceDraft) => AdvanceDraft) => void }) {
-  const choices = draft.reward
-  const row = plan?.row ?? null
-  return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm leading-relaxed text-ink-dim">
-        Instead of a skill, the warrior makes the pilgrimage to the Pit and beseeches the Shadowlord. Roll 2D6 on the Rewards table (rulebook optional
-        rule). The advance is spent whatever comes of it.
-      </p>
-      <div className="flex flex-wrap items-end gap-3">
-        <DieField label="First D6" sides={6} value={choices.dice[0]} onChange={(v) => update((d) => setReward(d, { dice: [v, d.reward.dice[1]] }))} />
-        <DieField label="Second D6" sides={6} value={choices.dice[1]} onChange={(v) => update((d) => setReward(d, { dice: [d.reward.dice[0], v] }))} />
-        <Button variant="secondary" onClick={() => update((d) => setReward(d, { dice: [rollDie(6), rollDie(6)] }))}>
-          Roll for me
-        </Button>
-      </div>
-      {row && plan ? (
-        <Card className="flex flex-col gap-1 px-4 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-ink-dim">Rolled {plan.total}</p>
-          <p className="text-sm font-medium text-ink">{row.title}</p>
-          <p className="text-sm leading-relaxed text-ink-dim">{row.text}</p>
-        </Card>
-      ) : null}
-      {plan?.need === 'mutationD6' ? (
-        <Block title="Mutation: roll a D6">
-          <DieField label="D6" sides={6} value={choices.mutationD6} onChange={(v) => update((d) => setReward(d, { mutationD6: v, lostStat: null, mutationId: null }))} rollable />
-        </Block>
-      ) : null}
-      {plan?.need === 'lostStat' && hero ? (
-        <Block title="Atrophy: a characteristic loses a point">
-          <div className="flex flex-wrap gap-2">
-            {STAT_ORDER.map((k) => (
-              <Button key={k} variant="secondary" disabled={hero.stats[k] <= 1} onClick={() => update((d) => setReward(d, { lostStat: k }))}>
-                {k} {hero.stats[k]} → {Math.max(1, hero.stats[k] - 1)}
-              </Button>
-            ))}
-          </div>
-        </Block>
-      ) : null}
-      {plan?.need === 'mutation' ? (
-        <Block title="Choose the mutation">
-          <ul className="flex flex-col gap-1.5">
-            {POSSESSED_MUTATION_IDS.map((id) => {
-              const item = findItem(id)
-              return (
-                <li key={id}>
-                  <button type="button" onClick={() => update((d) => setReward(d, { mutationId: id }))} className="flex w-full flex-col gap-1 rounded-md border border-border bg-surface-low px-3 py-2.5 text-left hover:border-ink-dim">
-                    <span className="text-sm text-ink">{item?.name.replace(/^Mutation: /, '') ?? id}</span>
-                    <span className="text-xs leading-relaxed text-ink-dim">{item?.description}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </Block>
-      ) : null}
-      {plan?.need === 'weaponForm' ? (
-        <Block title="The Daemon Weapon's form">
-          <TextField label="Form" value={choices.weaponForm} autoComplete="off" placeholder="sword, axe, spear…" onChange={(e) => update((d) => setReward(d, { weaponForm: e.target.value }))} />
-        </Block>
-      ) : null}
-      {plan?.need === 'skillsD6' ? (
-        <Block title="Possessed: roll a D6 for the D3 skills lost">
-          <DieField label="D6" sides={6} value={choices.skillsD6} onChange={(v) => update((d) => setReward(d, { skillsD6: v, lostSkillIds: [] }))} rollable />
-        </Block>
-      ) : null}
-      {plan?.need === 'lostSkills' && hero ? (
-        <Block title={`Choose ${plan.skillsToLose} ${plan.skillsToLose === 1 ? 'skill' : 'skills'} to lose`}>
-          <div className="flex flex-wrap gap-2">
-            {hero.skillIds.map((id) => {
-              const on = choices.lostSkillIds.includes(id)
-              return (
-                <Button
-                  key={id}
-                  variant={on ? 'primary' : 'secondary'}
-                  onClick={() => update((d) => setReward(d, { lostSkillIds: on ? d.reward.lostSkillIds.filter((x) => x !== id) : [...d.reward.lostSkillIds, id] }))}
-                >
-                  {skillName(id)}
-                </Button>
-              )
-            })}
-          </div>
-        </Block>
-      ) : null}
-      {plan?.result ? (
-        <Notice tone={row?.kind === 'wrath' ? 'warn' : 'info'}>
-          {plan.result.events.map((e) => e.message).join(' ')}
-        </Notice>
-      ) : null}
-    </div>
-  )
+  return <ShadowlordRewardFields choices={draft.reward} plan={plan} hero={hero} change={patch => update(d => setReward(d, patch))} introduction="Instead of a skill, the warrior makes the pilgrimage to the Pit and beseeches the Shadowlord. Roll 2D6 on the Rewards table (rulebook optional rule). The advance is spent whatever comes of it." />
 }
 
 function SkillPicker({ tables, selected, onSelect }: { tables: AvailableSkillTable[]; selected: string | null; onSelect: (id: string) => void }) {

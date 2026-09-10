@@ -155,6 +155,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
           <Row label="Wyrdstone" value={applied.warband.wyrdstone_delta >= 0 ? `+${applied.warband.wyrdstone_delta}` : applied.warband.wyrdstone_delta} />
           <Row label="Gold" value={applied.warband.gold_delta >= 0 ? `+${applied.warband.gold_delta} gc` : `${applied.warband.gold_delta} gc`} />
           <Row label="Veteran pool" value={report.veteran_pool_roll ?? 'Not rolled'} dim />
+          {(applied.awarded_items ?? []).map((item, i) => <Row key={`award-${i}`} label={report.xp_log.find(h => h.subjectId === item.holder_id)?.subjectName ?? 'Awarded equipment'} value={itemLabel(item)} />)}
           <Row label="Into the stash" value={applied.stash_items.length === 0 ? 'Nothing' : applied.stash_items.map(itemLabel).join(', ')} dim />
           {removedItems.length > 0 ? <Row label="Lost" value={removedItems.join(', ')} dim /> : null}
         </Card>

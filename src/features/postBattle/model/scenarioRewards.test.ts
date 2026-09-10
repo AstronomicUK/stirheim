@@ -351,3 +351,23 @@ it('pays Recipe pies at the correct outcome rate, keeps routed pies and pays onl
   expect(derive('the_recipe', { recipe: { ...recipe, pies: 24 } }).problems).toHaveLength(1)
   expect(derive('the_recipe', { recipe: { ...recipe, dice: [1] } }).problems).toHaveLength(1)
 })
+
+it('uses the recorded Stake-Out ruling and printed win/loss income without inventing draw income', () => {
+  const stakeOut = { mode: 'income-only' as const, reason: 'Agreed before the battle', die: 4 }
+  expect(derive('stake_out', { stakeOut })).toMatchObject({ shards: 5, problems: [] })
+  expect(derive('stake_out', { stakeOut }, { result: 'lost' }).shards).toBe(4)
+  expect(derive('stake_out', { stakeOut }, { result: 'draw' }).shards).toBe(0)
+  expect(derive('stake_out', { stakeOut: { ...stakeOut, reason: '' } }).problems).toHaveLength(1)
+})
+
+it('limits Herald splinters by player count and requires a referee exception for an ineligible sword keeper', () => {
+  const state = { herald: { splinters: 2, sword: 'sell' as const } }
+  expect(scenarioRewards({ ...base, scenarioRewards: state }, 'the_sword_of_the_herald', participants, { opponents: [{ id: 'opponent' }] })).toMatchObject({ gold: 100, shards: 6, items: [], problems: [] })
+  expect(scenarioRewards({ ...base, scenarioRewards: { herald: { ...state.herald, splinters: 3 } } }, 'the_sword_of_the_herald', participants, { opponents: [{ id: 'opponent' }] }).problems).toHaveLength(1)
+  const keep = { ...base, scenarioRewards: { herald: { splinters: 0, sword: 'keep' as const } } }
+  expect(scenarioRewards(keep, 'the_sword_of_the_herald', participants, { roster: { warbandTemplateId: 'mercenaries_reikland' } }).problems).toHaveLength(1)
+  const undead = scenarioRewards(keep, 'the_sword_of_the_herald', participants, { roster: { warbandTemplateId: 'the_undead' } })
+  expect(undead.items[0].item_rules_id).toBe('scenario_sword_of_the_herald')
+  expect(undead.gold).toBe(0)
+  expect(scenarioRewards({ ...keep, scenarioRewards: { herald: { ...keep.scenarioRewards.herald, keepReason: 'Referee’s altered sword rules' } } }, 'the_sword_of_the_herald', participants).problems).toEqual([])
+})

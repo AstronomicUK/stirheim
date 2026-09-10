@@ -19,6 +19,9 @@ export interface HoardFind {
 export type ScenarioRewardRule =
   | { kind: 'choice'; note: string; question: string; options: { id: string; label: string; rule: ScenarioRewardRule }[] }
   | { kind: 'none'; note: string }
+  | { kind: 'kidnapped'; note: string }
+  | { kind: 'herald'; note: string }
+  | { kind: 'stake-out'; note: string }
   | { kind: 'recipe'; note: string }
   | { kind: 'ferry'; note: string }
   | { kind: 'horses'; note: string }
@@ -58,6 +61,10 @@ const TOMB_TREASURE_TABLE: Extract<ScenarioRewardRule, { kind: 'repeated' }>['ta
     { min: 6, max: 6, label: 'Monkey’s Paw', itemName: "Monkey's Paw" },
   ]
 export const SCENARIO_REWARD_RULES: Record<string, ScenarioRewardRule> = {
+  kidnapped: { kind: 'kidnapped', note: 'Resolve the victim’s fate on the Experience step: holding the living victim grants 1 XP; rescuing grants D6 XP and 50 gc; sacrificing grants D6 XP and optional Shadowlord rewards for up to two Heroes.' },
+  the_sword_of_the_herald: { kind: 'herald', note: 'Each Star Stone splinter carried off is worth three wyrdstone. The recovered sword may be kept by Possessed, Undead, Beastmen or Skaven, or handed over for 100 gc. These rewards also apply in the referee’s non-campaign mode.' },
+  stagecoash_ambush: { kind: 'none', note: 'No extra gold or treasure reward is specified. Loaned mounts, the stage driver and one-off hired swords are for this battle only; do not add them as permanent rewards.' },
+  stake_out: { kind: 'stake-out', note: 'Printed income: D6 wyrdstone for the loser, D6+1 for the winner. Use the exploration interpretation agreed at the start of this report. The source gives no draw income; an agreed draw award uses the explained adjustment.' },
   the_recipe: { kind: 'recipe', note: 'The nominated winning warband turns Geefer in for 5D6 gc. Unspoiled pies are worth 1 gc each to a losing warband or half their number, rounded up, to a winner. Winners also collect pies left in the cart; routed warbands keep the pies they carried away.' },
   bounty_hunting: { kind: 'repeated', winnerOnly: true, requiredCount: 6, extraPerWarband: 1, label: 'Bandit bounty', note: 'Six bandits plus one per warband involved. Each head has its own D6+5 gc bounty. The winner also captures six crossbows, D3 swords and 2D6 daggers; the rations have no value.', table: [{ min: 1, max: 6, label: 'Bandit surrendered to the authorities', goldDice: 1, goldBonus: 5 }], bonusFinds: [
     { id: 'crossbows', label: 'Captured crossbows', kind: 'item', itemName: 'Crossbow', quantity: 6 },

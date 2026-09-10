@@ -242,5 +242,25 @@ export const SCENARIO_REWARD_ITEMS: Item[] = [
       "file": "06-scenarios.md:6389-6389"
     },
     "armourSave": 4
+  },
+  {
+    "id": "scenario_sword_of_the_herald",
+    "name": "Sword of the Herald",
+    "category": "melee",
+    "price": {
+      "base": null,
+      "text": "Scenario reward; hand over for 100 gc"
+    },
+    "availability": {
+      "kind": "special",
+      "text": "Scenario reward only"
+    },
+    "description": "\n#### What does the big green sword do?\n\nThe Sword of the Herald counts as a chaos weapon and it adds +1 S and +1 to all rolls to hit (you still must roll a critical hit as normal). Additionally the warrior holding it must make a leadership test in each recovery phase. The warrior must use his own leadership. If the warrior carrying the sword fails the test he has become possessed by the Daemon in the sword and may do nothing during that turn. The referee will move a warrior that failed the test during the Wyrdstone zombie turn. The referee may use the possessed warrior in any way he (or she) sees fit including charging any warrior on the table. While the warrior is possessed by the sword, the warrior will shout that he (or she) is the Herald of the Shadowlord and will prove it through trial by combat. The referee should make it very clear to all the players that there is a raving madman in fog. If the possessed warrior passes the leadership test in a successive turn, then control of the warrior is returned to the player controlling the warriors' warband.\n\n#### After the game what can I do with it?\n\nThat depends on your warband. But the choices are either to equip a hero with it or pass it up the hierarchy that the warband belongs to.\n\n#### If you want to equip it.\n\nPossessed, Undead, Beastmen and Skaven warbands may equip it on any hero. Once the Sword is equipped, the warrior will never surrender the blade to any other members of the warband. Additionally, if a warrior equipped with the Sword of the Herald ever suffers an Out Of Action result through play, the warrior is removed from the table as normal, but the sword token should be placed on the table where the warrior fell. The blade can then be retrieved by any other warrior. The above Warbands may trade it off, as described below if they so choose.\n\n#### If you want to pass it to your betters...\n\nAll other Warbands will try to get rid of such a weapon steeped in evil and will attempt to trade it off or pass it to their holy representatives such as priests of Sigmar to destroy it. For this the Warband will receive 100 gc's.",
+    "specialRules": [],
+    "scenarioRewardOnly": true,
+    "source": {
+      "publication": "Town Cryer #13",
+      "file": "06-scenarios.md:6470-6485"
+    }
   }
 ]

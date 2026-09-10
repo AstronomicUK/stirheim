@@ -91,3 +91,14 @@ Milestone 16 verification: 1,441 tests pass / 96 database-dependent skipped. Typ
 - **The Recipe (2308–2397):** only the nominated winning warband claims Geefer’s 5D6; intact carried pies survive routing. Losing pies pay 1 gc each, winning carried/cart pies pay half rounded up. Total bounded by the scenario’s 24-pie maximum.
 
 Full suite: **1,448 passing / 96 database-dependent skipped**; typechecked build passes. Mobile Defend the Tomb, Bodyguards role reset/relic choice, Bounty participant count and Ferry shared payment all file correctly and retain their logs. Source map has 82 explicit entries including Wizard’s Tower; 21 scenarios remain without a complete reward implementation. Newly reviewed but not yet implemented campaign consequences include Encampment Raid’s captured stash/camp and Gathering’s control of Executioner’s Square; Balewolf lycanthropy is a separate injury consequence. Do not mark those complete based only on absence of a gold table.
+
+## Milestone 18 source review
+
+| Scenario | Source lines in `reference/rules/06-scenarios.md` | Applied path and limits |
+| --- | --- | --- |
+| Stagecoach Ambush | 5126–5180 | No extra quantified reward; one-off hires/mounts remain temporary. |
+| Stake-Out | 5185–5240, original Broheim PDF pp. 4–5 | D6 loser/D6+1 winner income. Printed exploration ambiguity requires a recorded table reading; no invented draw award. |
+| Sword of the Herald | 6396–6485 | Three shards per actual splinter, bounded by setup; recovered sword 100 gc or eligible retention. Optional non-campaign mode still receives these rewards. Source rules are in its item tooltip; this acquisition work does not introduce automatic sword-binding or capture combat behavior. |
+| Kidnapped | 4297–4381 | Living victim +1 XP; rescued victim D6 XP +50 gc; sacrificed victim D6 XP and up to two optional Shadowlord rolls. Named XP allocation, direct hero equipment/skills/stats and logged consequences. |
+
+Local mobile filing passed for Stake-Out, Herald and Kidnapped. Migration 47 is local only; direct equipment transaction/undo tests pass. The all-scenario audit remains open.

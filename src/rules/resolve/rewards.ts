@@ -66,7 +66,7 @@ function itemName(item: RosterItem): string {
 }
 
 /** Work out what a roll on the Rewards table does to `hero`, or what is still needed. */
-export function planReward(roster: RosterWarband, hero: RosterHero, choices: RewardChoices): RewardPlan {
+export function planReward(roster: RosterWarband, hero: RosterHero, choices: RewardChoices, spendsAdvance = true): RewardPlan {
   const [a, b] = choices.dice;
   const plan: RewardPlan = { total: null, row: null, need: null, skillsToLose: null, result: null };
   if (!isDie(a) || !isDie(b)) return { ...plan, need: "dice" };
@@ -88,11 +88,11 @@ export function planReward(roster: RosterWarband, hero: RosterHero, choices: Rew
       return done(next, [{ kind: "statusChange", subjectId: hero.id, message: `${hero.name} is mutated beyond recognition and vanishes into the ruins${lost.length ? `, taking ${lost.join(", ")} with him` : ""}.`, data: { status: "retired" } }], `${hero.name} vanishes with his kit.`);
     }
     case "nothing":
-      return done(hero, [{ kind: "note", subjectId: hero.id, message: `${hero.name}'s pleas go unanswered; the advance is spent.` }], "The advance is spent.");
+      return done(hero, [{ kind: "note", subjectId: hero.id, message: `${hero.name}'s pleas go unanswered${spendsAdvance ? "; the advance is spent" : ""}.` }], spendsAdvance ? "The advance is spent." : "The pleas go unanswered.");
     case "mutation": {
       if (!isDie(choices.mutationD6)) return { ...plan, need: "mutationD6" };
       if (choices.mutationD6 === 1) {
-        if (!choices.lostStat) return { ...plan, need: "lostStat" };
+        if (!choices.lostStat || !Object.hasOwn(hero.stats, choices.lostStat) || hero.stats[choices.lostStat] <= 1) return { ...plan, need: "lostStat" };
         const stat = choices.lostStat;
         const before = hero.stats[stat];
         const after = Math.max(1, before - 1);
@@ -117,7 +117,7 @@ export function planReward(roster: RosterWarband, hero: RosterHero, choices: Rew
     case "possessed": {
       if (!isDie(choices.skillsD6)) return { ...plan, need: "skillsD6" };
       const toLose = Math.min(d3Of(choices.skillsD6), hero.skillIds.length);
-      const chosen = choices.lostSkillIds.filter((id) => hero.skillIds.includes(id));
+      const chosen = [...new Set(choices.lostSkillIds.filter((id) => hero.skillIds.includes(id)))];
       if (chosen.length < toLose) return { ...plan, need: "lostSkills", skillsToLose: toLose };
       const keep = hero.equipment.filter((i) => i.itemId && (POSSESSED_ALLOWED_ITEM_IDS as readonly string[]).includes(i.itemId));
       const moved = hero.equipment.filter((i) => !keep.includes(i));

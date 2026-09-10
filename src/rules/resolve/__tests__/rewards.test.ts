@@ -82,3 +82,9 @@ describe("Rewards of the Shadowlord", () => {
     expect(planReward(roster, oneSkill, choices({ dice: [6, 6], skillsD6: 6, lostSkillIds: ["resilient"] })).result?.hero.skillIds).toEqual([]);
   });
 });
+
+it('keeps a free scenario reward separate from spent advances and rejects duplicate skill sacrifices', () => {
+  expect(planReward(roster, magister, choices({ dice: [2, 3] }), false).result?.summary).not.toContain('advance')
+  expect(planReward(roster, magister, choices({ dice: [6, 6], skillsD6: 4, lostSkillIds: ['step_aside', 'step_aside'] })).need).toBe('lostSkills')
+  expect(planReward(roster, magister, choices({ dice: [3, 4], mutationD6: 1, lostStat: 'W' })).need).toBe('lostStat')
+})

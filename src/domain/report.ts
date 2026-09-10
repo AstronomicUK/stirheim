@@ -87,6 +87,9 @@ export const heroReportPatchSchema = z.object({
   id: z.string(),
   patch: z.object({
     stats: statsSchema.optional(),
+    skills: z.array(z.string()).optional(),
+    spells: z.array(z.string()).optional(),
+    notes: z.string().optional(),
     xp: z.number().int().min(0).optional(),
     level_ups: z.number().int().min(0).optional(),
     injuries: z.array(appliedInjurySchema).optional(),
@@ -98,6 +101,7 @@ export const groupReportPatchSchema = z.object({
   id: z.string(),
   patch: z.object({
     campaign_state: henchmanCampaignStateSchema.optional(),
+    stats: statsSchema.optional(),
     size: z.number().int().min(0).optional(),
     xp: z.number().int().min(0).optional(),
     level_ups: z.number().int().min(0).optional(),
@@ -109,6 +113,7 @@ export const pendingAdvanceRequestSchema = z.object({
   threshold_xp: z.number().int().min(1),
 });
 export const reportAppliedSchema = z.object({
+  awarded_items: z.array(z.object({holder_type:z.enum(["stash","hero","group"]),holder_id:z.string().uuid().nullable(),item_rules_id:z.string().nullable(),custom_name:z.string().max(80).nullable(),quantity:z.number().int().min(1),notes:z.string().optional()})).optional(),
   scenario_artefacts: z.array(z.object({roll:z.number().int().min(1).max(6),overrideReason:z.string().optional()})).optional(),
   petty_thief: z.object({target_id:z.string().uuid(),roll:z.number().int().min(5).max(6),squire_id:z.string().uuid(),selection_roll:z.number().int().min(1),transferred:z.number().int().min(0).max(1).optional()}).optional(),
   new_groups: z.array(z.object({id:z.string().uuid(),name:z.string().min(1),unit_type_rules_id:z.string().min(1),size:z.number().int().min(1).max(5),stats:statsSchema,xp:z.number().int().min(0),level_ups:z.number().int().min(0)})).optional(),
@@ -125,7 +130,7 @@ export const reportAppliedSchema = z.object({
   /** Found items go to the stash. */
   stash_items: z.array(z.object({ item_rules_id: z.string().nullable(), custom_name: z.string().nullable(), quantity: z.number().int().min(1) })).default([]),
   /** Item rows changed in place: consumables used up (quantity) and maps spent (notes). A quantity of 0 removes the row. */
-  item_patches: z.array(z.object({ id: z.string(), quantity: z.number().int().min(0).optional(), notes: z.string().optional() })).default([]),
+  item_patches: z.array(z.object({ id: z.string(), quantity: z.number().int().min(0).optional(), notes: z.string().optional(), holder_type:z.enum(["stash","hero","group"]).optional(), holder_id:z.string().uuid().nullable().optional() })).default([]),
 });
 export type ReportApplied = z.infer<typeof reportAppliedSchema>;
 

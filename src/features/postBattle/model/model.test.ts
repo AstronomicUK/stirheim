@@ -637,6 +637,16 @@ describe('scenario aftermath', () => {
     expect(d.report?.applied.groups.find(g => g.id === 'watch')?.patch).toMatchObject({ size: 2, xp: 7 })
   })
 
+  it('applies the agreed Stake-Out exploration interpretation before the reward step', () => {
+    const draft = { ...setResult(emptyDraft(), 'won'), scenarioRewards: { stakeOut: { mode: 'income-only' as const, reason: 'Table ruling', die: 3 } } }
+    const fixed = deriveReport(draft, ctx({ scenarioId: 'stake_out' }))
+    expect(fixed.exploration.record).toBeNull()
+    expect(fixed.exploration.skippedReason).toContain('fixed income')
+    const both = deriveReport({ ...draft, scenarioRewards: { stakeOut: { ...draft.scenarioRewards.stakeOut, mode: 'also-explore' } } }, ctx({ scenarioId: 'stake_out' }))
+    expect(both.exploration.allowed?.count).toBe(4)
+    expect(deriveReport(setResult(emptyDraft(), 'won'), ctx({ scenarioId: 'stake_out' })).problems.outcome).toHaveLength(1)
+  })
+
   it('uses scenario exploration counts without removing reasoned player adjustments', () => {
     const won = setResult(emptyDraft(), 'won')
     expect(deriveReport(won, ctx({ scenarioId: 'mordheim_s_burning' })).exploration.suggested?.count).toBe(3)
@@ -697,10 +707,10 @@ describe('scenario aftermath', () => {
   })
 
   it('Herald non-campaign mode applies only the explicitly recorded object rewards', () => {
-    const draft = { ...setGroupOut(setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true), 'watch', 2, 3), scenarioNonCampaign: true, battleGold: 30, battleWyrdstone: 2, scenarioItems: [{ item_rules_id: 'sword', custom_name: null, quantity: 1 }] }
+    const draft = { ...setGroupOut(setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true), 'watch', 2, 3), scenarioNonCampaign: true, scenarioRewards: { herald: { splinters: 2, sword: 'sell' as const } }, scenarioRewardOverrideReason: 'Referee’s additional prize', battleGold: 30, battleWyrdstone: 2, scenarioItems: [{ item_rules_id: 'sword', custom_name: null, quantity: 1 }] }
     const d = deriveReport(draft, ctx({ scenarioId: 'the_sword_of_the_herald', itemsUsed: { captain: ['sword'] } }))
     expect(d.problems).toEqual({ outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] })
-    expect(d.report?.applied).toEqual({ heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems, warband: { gold_delta: 30, wyrdstone_delta: 2, veteran_pool: null } })
+    expect(d.report?.applied).toEqual({ heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems, warband: { gold_delta: 130, wyrdstone_delta: 8, veteran_pool: null } })
     expect(d.report?.xp_log).toEqual([])
     expect(d.report?.injuries).toEqual([])
     expect(d.report?.exploration).toBeNull()
@@ -823,4 +833,48 @@ it('creates the rolled Zombie reward as a new zero-experience group and preserve
  expect(report.applied.new_groups![0]).toMatchObject({id,size:2,xp:0,level_ups:0})
  expect(battleReportSchema.parse(report).applied.new_groups).toEqual(report.applied.new_groups)
  expect(rosterAfterReport(c.roster,report.applied).henchmenGroups.find(g=>g.id===id)?.size).toBe(2)
+})
+
+describe('Kidnapped victim rewards', () => {
+  const context = () => ctx({ scenarioId: 'kidnapped' })
+  const victimDraft = (kidnapped: NonNullable<NonNullable<ReportDraft['scenarioRewards']>['kidnapped']>): ReportDraft => ({ ...setResult(emptyDraft(), 'lost'), scenarioRewards: { kidnapped } })
+  it('requires a fate and exact XP allocation, including a living Hero who sat out', () => {
+    expect(deriveRawReport(victimDraft({}), context()).problems.experience.join()).toContain('fate')
+    expect(deriveRawReport(victimDraft({ outcome: 'held', xp: {} }), context()).problems.experience.join()).toContain('Allocate all 1')
+    const result = deriveRawReport(victimDraft({ outcome: 'held', xp: { youngblood: 1 } }), context())
+    expect(result.problems.experience).toEqual([])
+    expect(result.xp.lines.find(l => l.subjectId === 'youngblood')).toMatchObject({ amount: 1 })
+  })
+  it('grants the rescue payment and makes reward XP advances mandatory', () => {
+    const c = context(), draft = withDice(victimDraft({ outcome: 'rescued', xpDie: 2, xp: { marksman: 2 } }), c)
+    const result = deriveRawReport(draft, c)
+    expect(result.problems.experience).toEqual([])
+    expect(result.xp.lines.find(l => l.subjectId === 'marksman')?.reasons.join()).toContain('Kidnapped')
+    expect(result.advances.items.some(a => a.request.subject_id === 'marksman')).toBe(true)
+    expect(result.problems.advances.length).toBeGreaterThan(0)
+    const complete = deriveReport(draft, c)
+    expect(complete.report?.applied.warband.gold_delta).toBe(50)
+    expect(complete.report?.notes).toContain('Victim rescued')
+  })
+  it('awards Chaos Armour to its Hero and exposes it to subsequent advancement planning', () => {
+    const c = context(), draft = victimDraft({ outcome: 'sacrificed', sacrificeReason: 'Agreed alternate ritual', xpDie: 1, xp: { captain: 1 }, shadowlord: { champion: { dice: [4, 5], mutationD6: null, lostStat: null, mutationId: null, weaponForm: '', skillsD6: null, lostSkillIds: [] } } })
+    const result = derive(withDice(draft, c), c)
+    expect(result.problems.experience).toEqual([])
+    expect(result.report?.applied.awarded_items).toEqual([expect.objectContaining({ holder_id: 'champion', item_rules_id: 'chaos_armour', quantity: 1 })])
+    expect(result.advances.rosterAfter.heroes.find(h => h.id === 'champion')?.equipment.some(i => i.itemId === 'chaos_armour')).toBe(true)
+  })
+  it('retires a wrath victim with their kit and removes newly earned pending advances', () => {
+    const c = context(), result = derive(victimDraft({ outcome: 'sacrificed', sacrificeReason: 'Agreed ritual', xpDie: 1, xp: { marksman: 1 }, shadowlord: { marksman: { dice: [1, 1], mutationD6: null, lostStat: null, mutationId: null, weaponForm: '', skillsD6: null, lostSkillIds: [] } } }), c)
+    expect(result.report?.applied.heroes.find(h => h.id === 'marksman')?.patch.status).toBe('retired')
+    expect(result.report?.applied.remove_item_ids).toContain('item-marksman-sword')
+    expect(result.report?.applied.pending_advances.some(a => a.subject_id === 'marksman')).toBe(false)
+  })
+  it('moves a Possessed hero’s original kit into the stash and persists lost skills', () => {
+    const c = context(); c.roster.heroes[1].skillIds = ['dodge']
+    const result = derive(victimDraft({ outcome: 'sacrificed', sacrificeReason: 'Agreed ritual', xpDie: 1, xp: { captain: 1 }, shadowlord: { champion: { dice: [6, 6], mutationD6: null, lostStat: null, mutationId: null, weaponForm: '', skillsD6: 1, lostSkillIds: ['dodge'] } } }), c)
+    expect(result.report?.applied.item_patches).toContainEqual({ id: 'item-champion-sword', holder_type: 'stash', holder_id: null })
+    expect(result.report?.applied.heroes.find(h => h.id === 'champion')?.patch.skills).toEqual([])
+    expect(result.advances.rosterAfter.heroes.find(h => h.id === 'champion')?.equipment).toEqual([])
+    expect(result.advances.rosterAfter.heroes.find(h => h.id === 'champion')?.flags.daemonPossessed).toBe(true)
+  })
 })

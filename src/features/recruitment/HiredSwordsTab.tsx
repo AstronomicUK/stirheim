@@ -1,3 +1,4 @@
+import { SnakeHunt } from './SnakeHunt'
 import { OPTIONAL_HIRED_MOUNTS, sharedUpkeepOwner } from '../../rules/resolve/recruitment'
 import { GroupUpkeepSheet } from './GroupUpkeepSheet'
 import { RetainedScout } from '../roster/view/RetainedScout'
@@ -85,6 +86,7 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
                           Upkeep <span className="text-sm text-ink">{noOwnUpkeep ? hs.flags.merchantGuardian ? 'None' : 'Shared contract' : upkeepText(entry)}</span>
                         </span>
                       </div>
+                      {hs.hiredSwordId === 'snake_charmer' && !hs.flags.hireCompanion && canEdit ? <SnakeHunt detail={detail} charmer={hs} /> : null}
                       {hs.hiredSwordId==='maglah_khan_s_horde'&&canEdit?<RetainedScout detail={detail} hire={hs}/>:null}
                       <StatLine stats={hs.stats} compact className="text-xs" />
                       {canEdit ? (

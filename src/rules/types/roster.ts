@@ -43,6 +43,8 @@ export interface WarriorFlags {
   luthorRole?: 'crimson' | 'wizard' | 'archer';
   hireGroupId?: string;
   hireCompanion?: boolean;
+  snakeHuntAfter?: string;
+  snakeHuntLog?: string;
   merchantGuardian?: boolean;
   returningFavourReportId?: string;
   upkeepOwedAfter?: string;

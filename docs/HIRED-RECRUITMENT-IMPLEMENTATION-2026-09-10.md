@@ -35,3 +35,7 @@ Implementation commit `2f7c750` pushed to `origin/main`. Netlify production depl
 ## Between Battles local follow-up: selected mounts and Guardian
 
 Source `04-hired-swords.md:503,548,657,2544`: explicit optional mount choices for Freelancer/Highwayman/Roadwarden; Knight uses a Warhorse already in the stash and adds five rating. Source `04-hired-swords.md:368–378,1850–1860`: earning Guardian creates the separate equipped Merchant bodyguard, with no experience, no separate upkeep and dependent departure. Guardian restrictions remain explicit in its equipment note/trait rather than inheriting merchant abilities. Shared companion upkeep cannot be charged twice from the recruit card. Verified mobile hire and advancement persistence; full ordinary suite passes. No deployment. Snake replacement remains outstanding.
+
+## Snake Hunter acquisition (local)
+
+`04-hired-swords.md:1545–1568`: one post-game hunt by a Charmer not taken out; D6 strictly under Initiative, maximum five snakes; failure danger D6, on 1 resolve S3 hit. Recruitment now records these, creates the correct companion and shared contract on success, and requires the tabletop damage dice/outcome for the S3 hit. The transaction prevents duplicate simultaneous attempts and logs the result in the battle report. Four local DB tests and a mobile save/reload flow pass. No production migration or deployment.

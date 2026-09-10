@@ -1244,6 +1244,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      hunt_snake: { Args: { p_warband_id: string; p_hero_id: string; p_match_id: string; p_die: number; p_danger_die?: number | null; p_hit_outcome?: string | null; p_hit_rolls?: string | null }; Returns: Json }
+
       campaign_artefact_ledger: { Args: { p_campaign_id: string }; Returns: Json }
       battle_turn_action: {
         Args: { p_match_id: string; p_action: string; p_revision: number; p_order?: string[]; p_limit?: number }

@@ -32,7 +32,7 @@ export function ReviewStep({ derived, ctx, mine, amend }: StepProps) {
   }
   return (
     <>
-      <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} />
+      <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} explorationSkippedReason={derived.exploration.skippedReason} />
       {report.applied.heroes.some(h => h.patch.flags?.upkeepOwedAfter || (h.patch.status === 'left' && ctx.roster.hiredSwords.some(s => s.id === h.id))) ? <Notice tone="info" title="Hired-character contracts">
         <ul>{report.applied.heroes.filter(h => h.patch.flags?.upkeepOwedAfter || (h.patch.status === 'left' && ctx.roster.hiredSwords.some(s => s.id === h.id))).map(h => <li key={h.id}>{ctx.roster.hiredSwords.find(s => s.id === h.id)?.name}: {h.patch.status === 'left' ? h.patch.flags?.mustMissNextBattle ? 'leaves after this battle; fight one battle without them before rehiring.' : 'leaves after this battle.' : 'upkeep is due after this battle; a payment reminder will appear on the warband screen.'}</li>)}</ul>
       </Notice> : null}
@@ -55,7 +55,7 @@ function removedItemLabels(report: BattleReport, ctx: StepProps['ctx']): string[
   })
 }
 
-export function ReportSummary({ report, warbandName, removedItems, advanceLines = [] }: { report: BattleReport; warbandName: string; removedItems: string[]; advanceLines?: string[] }) {
+export function ReportSummary({ report, warbandName, removedItems, advanceLines = [], explorationSkippedReason }: { report: BattleReport; warbandName: string; removedItems: string[]; advanceLines?: string[]; explorationSkippedReason?: string | null }) {
   const { applied } = report
   return (
     <StepBody title="Review">
@@ -146,7 +146,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
             ))}
           </Card>
         ) : (
-          <p className="text-sm text-ink-dim">No exploration: no hero survived without going out of action.</p>
+          <p className="text-sm text-ink-dim">{explorationSkippedReason ?? 'No exploration recorded for this battle.'}</p>
         )}
       </Section>
 

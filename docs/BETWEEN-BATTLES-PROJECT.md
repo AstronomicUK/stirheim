@@ -65,3 +65,11 @@ The actual mobile browser flow now verifies both directions of the persisted all
 Fixed the found Persona hire path which previously omitted Luthor's mandatory role option (and therefore threw instead of recruiting him). Both hire paths persist `luthorRole`; the unit sheet shows the selected role's source rules; the false Wizard gains his Beer fear immunity but no spells. Equipment is still role-specific. Existing Luthors without a saved role are not guessed or rewritten. Wider #61/#119 work remains open.
 
 Latest full validation: **1,385 unit tests pass / 86 DB tests skipped** in the ordinary suite, with the 14 previously mentioned local DB tests separately passing. Build and lint pass with the same existing warnings. Local browser recruitment/upkeep plus shared-search/Luthor flows pass without page errors. No push or deploy.
+
+### Local milestone 7 — scenario rewards continued (#72/#189, not deployed)
+
+The Wizard’s Tower now resolves each recovered chest through its actual D6 table: 1–2 nothing, 3–5 3D6 gc, 6 6D6 gc. Both players can claim recovered chests. Raw treasure/gold dice are saved in the draft, incomplete rolls block filing, totals are derived once, and each chest is described in the report log. Extra loot is a collapsed, reason-required agreed adjustment. Removing a chest removes its reward; changing the result clears the old gold dice. This completes one scenario’s normal reward path, not the all-scenario #72 audit.
+
+Corrected two source-rule exploration errors: Wizard’s Tower has no exploration; Mordheim’s Burning removes the winner’s bonus die but does not prevent losing warbands from exploring. Both retain explained exploration adjustments. Review now shows the actual skip reason instead of always claiming no surviving hero. Sources: local scraped scenario pages, Treasures and Exploration sections respectively.
+
+Validation: 1,387 tests pass, 86 DB-dependent tests skipped; typechecked build passes with existing warnings. New report tests cover lost-warband chest rewards, illusions, both gold tiers, incomplete rolls, removal, explained adjustments, and scenario exploration counts. Browser verification of the new chest form remains outstanding. Nothing pushed or deployed. All other remaining work listed above stays open.

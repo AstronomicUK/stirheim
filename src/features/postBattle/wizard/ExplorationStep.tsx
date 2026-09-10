@@ -56,7 +56,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
         <Notice tone="info" title="No exploration">
           {ex.skippedReason}
         </Notice>
-        {ctx.scenarioId === 'mordheim_s_burning' && ex.eligibleHeroes.length > 0 ? <Button variant="secondary" onClick={() => update(d => setExplorationDiceOverride(d, { count: 1, reason: '' }))}>Record an agreed exploration adjustment</Button> : null}
+        {ctx.scenarioId === 'the_wizard_s_tower' && ex.eligibleHeroes.length > 0 ? <Button variant="secondary" onClick={() => update(d => setExplorationDiceOverride(d, { count: 1, reason: '' }))}>Record an agreed exploration adjustment</Button> : null}
         <p className="text-xs text-ink-dim">Rulebook: "Roll a D6 for each Hero in your warband who survives without going out of action." Hired swords and henchmen do not search.</p>
       </StepBody>
     )

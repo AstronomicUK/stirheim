@@ -106,6 +106,8 @@ export interface ReportDraft {
   scenarioGardenRerolled?: boolean
   /** Explicit per-report resolution of contradictory printed award values. */
   scenarioUseBody?: boolean
+  towerChests?: import('./scenarioTreasure').TowerChest[]
+  scenarioRewardOverrideReason?: string
   scenarioItems?: FoundItem[]
   scenarioInjuryDice?: Record<string, number | null>
   scenarioNonCampaign?: boolean

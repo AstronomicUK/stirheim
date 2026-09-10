@@ -167,22 +167,25 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const heroesOutOfAction = roster.heroes.filter((h) => !eligible.has(h.id)).map((h) => h.id)
   const burning = input.scenarioId === 'mordheim_s_burning'
   const garden = input.scenarioId === 'a_stroll_in_the_garden'
-  let suggested = explorationDiceAllowed(roster, { won: input.won && !burning, heroesOutOfAction, extraDice: (input.extraDice ?? 0) + (garden ? 1 : 0), extraDiceNote: [input.extraDiceNote, garden ? 'A Stroll in the Garden: one additional die; may reroll the entire pool once' : '', burning ? 'Mordheim’s Burning: no winner’s extra die' : ''].filter(Boolean).join('; ') })
-  if (burning && !input.won) suggested = { count: 0, keep: 0, capped: false, reason: 'Mordheim’s Burning: only the winning warband may explore.' }
+  const suggested = explorationDiceAllowed(roster, { won: input.won && !burning, heroesOutOfAction, extraDice: (input.extraDice ?? 0) + (garden ? 1 : 0), extraDiceNote: [input.extraDiceNote, garden ? 'A Stroll in the Garden: one additional die; may reroll the entire pool once' : '', burning ? 'Mordheim’s Burning: no winner’s extra die' : ''].filter(Boolean).join('; ') })
+  // Wizard’s Tower replaces exploration with the recovered-chest table.
+  const scenarioSuggested = input.scenarioId === 'the_wizard_s_tower'
+    ? { count: 0, keep: 0, capped: false, reason: 'The Wizard’s Tower: no exploration rolls after this battle; resolve recovered chests instead.' }
+    : suggested
   const override = draft.diceOverride
   const allowed: ExplorationDiceAllowed = override
     ? {
         count: override.count,
         keep: Math.min(override.count, EXPLORATION_MAX_DICE),
         capped: override.count > EXPLORATION_MAX_DICE,
-        reason: `${suggested.reason}; changed to ${override.count}${override.reason.trim() ? `: ${override.reason.trim()}` : ''}`,
+        reason: `${scenarioSuggested.reason}; changed to ${override.count}${override.reason.trim() ? `: ${override.reason.trim()}` : ''}`,
       }
-    : suggested
+    : scenarioSuggested
   const adjustment: ReportAdjustment | null =
-    override && override.count !== suggested.count
-      ? { label: 'Exploration dice', suggested: `${suggested.count} (${suggested.reason})`, used: String(override.count), reason: override.reason.trim() }
+    override && override.count !== scenarioSuggested.count
+      ? { label: 'Exploration dice', suggested: `${scenarioSuggested.count} (${scenarioSuggested.reason})`, used: String(override.count), reason: override.reason.trim() }
       : null
-  if (allowed.count <= 0) return { ...base, allowed, suggested, skippedReason: burning ? suggested.reason : input.noExplorationReason ?? NO_HEROES }
+  if (allowed.count <= 0) return { ...base, allowed, suggested: scenarioSuggested, skippedReason: input.scenarioId === 'the_wizard_s_tower' ? scenarioSuggested.reason : input.noExplorationReason ?? NO_HEROES }
 
   const rolls: (number | null)[] = []
   for (let i = 0; i < allowed.count; i++) {
@@ -199,11 +202,11 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   if (adjustment && adjustment.reason === '') problems.push('Say why the number of exploration dice was changed.')
   if (!complete) {
     problems.push(`Enter all ${allowed.count} exploration dice.`)
-    return { ...base, allowed, suggested, adjustment, rolls, needsKeepChoice, kept, problems }
+    return { ...base, allowed, suggested: scenarioSuggested, adjustment, rolls, needsKeepChoice, kept, problems }
   }
   if (needsKeepChoice && kept.length !== allowed.keep) {
     problems.push(`Choose ${allowed.keep} of the ${rolls.length} dice to keep (${kept.length} chosen so far).`)
-    return { ...base, allowed, suggested, adjustment, rolls, complete, needsKeepChoice, kept, problems }
+    return { ...base, allowed, suggested: scenarioSuggested, adjustment, rolls, complete, needsKeepChoice, kept, problems }
   }
   const keptRolls = kept.map((i) => rolls[i] as number)
 
@@ -319,7 +322,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   return {
     ...base,
     allowed,
-    suggested,
+    suggested: scenarioSuggested,
     adjustment,
     rolls,
     complete,

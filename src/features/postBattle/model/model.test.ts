@@ -629,7 +629,8 @@ describe('scenario aftermath', () => {
     expect(d.xp.lines.find(x => x.subjectId === 'captain')).toBeUndefined()
     expect(d.xp.lines.find(x => x.subjectId === 'champion')?.amount).toBe(6)
     expect(d.xp.lines.find(x => x.subjectId === 'watch')?.amount).toBe(6)
-    expect(d.exploration.record).toBeNull()
+    expect(d.exploration.allowed?.count).toBe(1)
+    draft = setExplorationRolls(draft, [1])
     for (const advance of d.advances.items) draft = setAdvanceMode(draft, advance.key, 'later')
     d = deriveReport(draft, c)
     expect(d.report?.applied.remove_item_ids).toContain('item-captain-sword')
@@ -639,9 +640,43 @@ describe('scenario aftermath', () => {
   it('uses scenario exploration counts without removing reasoned player adjustments', () => {
     const won = setResult(emptyDraft(), 'won')
     expect(deriveReport(won, ctx({ scenarioId: 'mordheim_s_burning' })).exploration.suggested?.count).toBe(3)
+    expect(deriveReport(setResult(emptyDraft(), 'lost'), ctx({ scenarioId: 'mordheim_s_burning' })).exploration.suggested?.count).toBe(3)
     expect(deriveReport(won, ctx({ scenarioId: 'a_stroll_in_the_garden' })).exploration.suggested?.count).toBe(5)
     const override = setExplorationDiceOverride(setResult(emptyDraft(), 'lost'), { count: 2, reason: 'Agreed scenario adaptation' })
     expect(deriveReport(override, ctx({ scenarioId: 'mordheim_s_burning' })).exploration.allowed?.count).toBe(2)
+  })
+
+  it('Wizard’s Tower replaces exploration with chest rewards but permits an explained adaptation', () => {
+    const c = ctx({ scenarioId: 'the_wizard_s_tower' })
+    for (const result of ['won', 'lost', 'draw'] as const) {
+      const d = deriveReport(setResult(emptyDraft(), result), c)
+      expect(d.exploration.allowed?.count).toBe(0)
+      expect(d.exploration.skippedReason).toMatch(/recovered chests/)
+      expect(d.exploration.record).toBeNull()
+    }
+    const adjusted = setExplorationDiceOverride(setResult(emptyDraft(), 'won'), { count: 2, reason: 'Agreed campaign adaptation' })
+    const d = deriveReport(setExplorationRolls(adjusted, [1, 2]), c)
+    expect(d.exploration.record?.rolls).toEqual([1, 2])
+    expect(d.exploration.adjustment?.suggested).toMatch(/^0 /)
+    expect(d.exploration.adjustment?.reason).toBe('Agreed campaign adaptation')
+  })
+
+  it('files each Wizard’s Tower chest once and rejects incomplete rewards or unexplained extra loot', () => {
+    const c = ctx({ scenarioId: 'the_wizard_s_tower' })
+    const draft = { ...setResult(emptyDraft(), 'lost'), towerChests: [
+      { result: 1, goldDice: [] }, { result: 4, goldDice: [2, 3, 4] }, { result: 6, goldDice: [1, 2, 3, 4, 5, 6] },
+    ] }
+    const d = deriveReport(draft, c)
+    expect(d.report?.applied.warband.gold_delta).toBe(30)
+    expect(d.report?.notes).toContain('Illusions — no reward')
+    expect(d.report?.notes).toContain('3D6 rolled 2, 3, 4 — 9 gc')
+    expect(d.report?.notes).toContain('6D6 rolled 1, 2, 3, 4, 5, 6 — 21 gc')
+    expect(deriveReport({ ...draft, towerChests: [{ result: 6, goldDice: [1, 2, 3] }] }, c).report).toBeNull()
+    expect(deriveReport({ ...draft, battleGold: 5 }, c).report).toBeNull()
+    const adjusted = deriveReport({ ...draft, battleGold: 5, scenarioRewardOverrideReason: 'Agreed campaign bonus' }, c)
+    expect(adjusted.report?.applied.warband.gold_delta).toBe(35)
+    expect(adjusted.report?.notes).toContain('Agreed campaign bonus')
+    expect(deriveReport({ ...draft, towerChests: [] }, c).report?.applied.warband.gold_delta).toBe(0)
   })
 
   it('Herald non-campaign mode applies only the explicitly recorded object rewards', () => {

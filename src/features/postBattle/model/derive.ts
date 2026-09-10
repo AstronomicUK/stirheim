@@ -1,3 +1,4 @@
+import { towerTreasure } from './scenarioTreasure'
 import type { ArtefactDiscovery } from '../../../api/artefacts'
 import { slayerExploration } from './slayerExploration'
 import { battleTreasureAwards } from '../../../rules/resolve/battleTreasure'
@@ -314,6 +315,10 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
+  if (ctx.scenarioId === 'the_wizard_s_tower') {
+    problems.veterans.push(...towerTreasure(draft.towerChests).problems)
+    if ((draft.battleGold || draft.battleWyrdstone || draft.scenarioItems?.length) && !draft.scenarioRewardOverrideReason?.trim()) problems.veterans.push('Explain the agreed reward adjustment outside the Wizard’s Tower chest table.')
+  }
   if (scenario.needsMission) problems.experience.push('Choose which scenario mission was played.')
   if (scenario.conflict && draft.scenarioUseBody === undefined) problems.experience.push('Choose the agreed interpretation of this scenario’s conflicting award values.')
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
@@ -562,7 +567,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     groups,
     warband: {
       wyrdstone_delta: draft.battleWyrdstone + battleTreasureAwards(participants.heroes, heroOoaIds(draft), draft.enemiesOut).reduce((sum, award) => sum + award.shards, 0) + (record?.shards ?? 0) + effects.shardsDelta + (abundanceShards(draft, ctx) ?? 0),
-      gold_delta: draft.battleGold + (record?.goldFound ?? 0) + effects.goldDelta,
+      gold_delta: draft.battleGold + (ctx.scenarioId === 'the_wizard_s_tower' ? towerTreasure(draft.towerChests).gold : 0) + (record?.goldFound ?? 0) + effects.goldDelta,
       veteran_pool: veteranPoolOf(draft),
     },
     pending_advances: pending,
@@ -594,6 +599,10 @@ function battleNotes(draft: ReportDraft, kit?: KitDerived, ctx?: ReportContext):
     for (const award of battleTreasureAwards(participantsOf(ctx.roster,ctx.template).heroes, heroOoaIds(draft), draft.enemiesOut)) {
       parts.push(`${award.name}: +${award.shards} wyrdstone/treasure from ${award.rule}.`)
     }
+  }
+  if (ctx?.scenarioId === 'the_wizard_s_tower') {
+    parts.push(...towerTreasure(draft.towerChests).notes)
+    if (draft.scenarioRewardOverrideReason?.trim()) parts.push(`Agreed scenario reward adjustment: ${draft.scenarioRewardOverrideReason.trim()}`)
   }
   if (draft.scenarioMission) parts.push(`Scenario mission: ${draft.scenarioMission}.`)
   if (draft.scenarioGardenRerolled) parts.push('A Stroll in the Garden: re-rolled the entire exploration pool.')

@@ -109,11 +109,27 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
       out.push({ key: `tarot:${holder.id}`, label: "Tarot Cards", kind: "modify", uses: 1, holderId: holder.id, holderName: holder.name, note: `${holder.name} read the cards before the battle and passed: modify one die by +1 or -1.` });
     }
   }
+  for (const hero of [...warband.heroes, ...warband.hiredSwords]) {
+    if (hero.status !== 'active') continue;
+    if (hero.skillIds.includes('wyrdstone_hunter') && !down.has(hero.id)) out.push({ key: `wyrdstone-hunter:${hero.id}`, label: 'Wyrdstone Hunter', kind: 'reroll', uses: 1, holderId: hero.id, holderName: hero.name, note: 'A Hero searching the ruins may reroll one exploration die. Accept the second result.' });
+    if (hero.skillIds.some(id => [
+      'dwarf_treasure_hunters_dwarf_skills_resource_hunter',
+      'dwarf_rangers_dwarf_skills_resource_hunter',
+      'black_dwarfs_skills_resource_hunter',
+    ].includes(id))) out.push({ key: `resource-hunter:${hero.id}`, label: 'Resource Hunter', kind: 'modify', uses: 1, holderId: hero.id, holderName: hero.name, note: 'Modify one exploration die by +1 or −1.' });
+    const learnedSeeker = hero.skillIds.includes('wood_elves_of_athel_loren_special_skills_seeker');
+    const nativeSeeker = warband.warbandTemplateId === 'survivors_of_strigos' && 'unitTemplateId' in hero && hero.unitTemplateId === 'seer' && !down.has(hero.id);
+    if (learnedSeeker || nativeSeeker) out.push({ key: `seeker:${hero.id}`, label: 'Seeker', kind: 'modify', uses: 1, holderId: hero.id, holderName: hero.name, note: nativeSeeker ? 'The Seer participated and was not taken out of action: modify one exploration die by +1 or −1.' : 'Modify one exploration die by +1 or −1.' });
+  }
   for (const hero of warband.heroes) {
     if (hero.unitTemplateId !== 'cursed_cavalcade_twisted_scholar' || !hero.flags.chronicler || hero.status !== 'active' || hero.flags.magicLoreId || hero.spellIds.length) continue;
     out.push({ key: `chronicler:${hero.id}`, label: 'Story Teller', kind: 'rerollKeepEither', uses: 1, holderId: hero.id, holderName: hero.name, note: 'Chronicler: reroll one exploration die and choose which of the two results to keep.' });
   }
   for (const hire of warband.hiredSwords) {
+    if (hire.status !== 'active') continue;
+    if (hire.hiredSwordId === 'kislev_ranger' && !down.has(hire.id)) out.push({key:`seeker:${hire.id}`,label:'Seeker',kind:'modify',uses:1,holderId:hire.id,holderName:hire.name,note:'Kislev Ranger, not taken out of action: modify one exploration die by +1 or −1.'});
+    if (hire.hiredSwordId === 'tomb_robber') out.push({key:`explorer:${hire.id}`,label:'Explorer',kind:'modify',uses:1,holderId:hire.id,holderName:hire.name,note:'Tomb Robber: modify one exploration die by +1 or −1.'});
+    if ((hire.hiredSwordId === 'old_prospector' && !hire.skillIds.includes('wyrdstone_hunter')) && !down.has(hire.id)) out.push({key:`wyrdstone-hunter:${hire.id}`,label:'Wyrdstone Hunter',kind:'reroll',uses:1,holderId:hire.id,holderName:hire.name,note:'Reroll one exploration die. Accept the second result.'});
     if (hire.hiredSwordId === 'elf_ranger' && hire.status === 'active') out.push({key:`seeker:${hire.id}`,label:'Seeker',kind:'modify',uses:1,holderId:hire.id,holderName:hire.name,note:'Elf Ranger: modify one exploration die by +1 or −1.'});
   }
   if (warband.explorationDiscoveries?.catacombs) out.push({key:'discovery:catacombs',label:'Entrance to the Catacombs',kind:'reroll',uses:1,holderId:null,holderName:'the warband',note:'Permanent discovery: reroll one exploration die. Finding another entrance does not grant another reroll.'});
@@ -151,7 +167,7 @@ export function leadershipTest(rolls: [number, number], ld: number): boolean {
 
 /** A different source does not let the same die be rerolled again. Two-dice choices are not rerolls. */
 export function assertNoSecondReroll(use: AidUse, spent: readonly AidUse[]): void {
-  const kindOf = (u: AidUse): AidKind => u.kind ?? (/^keepone:/.test(u.aidKey) ? 'rollTwoKeepOne' : /^(tarot:|district:)/.test(u.aidKey) ? 'modify' : 'reroll');
+  const kindOf = (u: AidUse): AidKind => u.kind ?? (/^keepone:/.test(u.aidKey) ? 'rollTwoKeepOne' : /^(tarot:|district:|seeker:|explorer:|resource-hunter:)/.test(u.aidKey) ? 'modify' : 'reroll');
   const reroll = (u: AidUse) => ['reroll','rerollKeepEither'].includes(kindOf(u));
   if (reroll(use) && spent.some(previous => previous.dieIndex === use.dieIndex && reroll(previous))) {
     throw new RulesError('aid.alreadyRerolled', 'This die has already been rerolled. Choose a different die.');

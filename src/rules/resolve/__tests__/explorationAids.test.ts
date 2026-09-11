@@ -89,3 +89,57 @@ it('does not reroll the same die using another aid, but permits a Guide choice b
    roster.hiredSwords[0].status = 'dead';
    expect(explorationAids(roster,base)).toEqual([]);
  });
+
+
+describe('native exploration skills (#66)', () => {
+  it.each(['dwarf_treasure_hunters_dwarf_skills_resource_hunter', 'dwarf_rangers_dwarf_skills_resource_hunter', 'black_dwarfs_skills_resource_hunter', 'wood_elves_of_athel_loren_special_skills_seeker'])('offers a single adjustment for %s', skill => {
+    const bearer = {...hero('bearer', []), skillIds: [skill]};
+    const aids = explorationAids(warband([bearer]), base);
+    expect(aids).toHaveLength(1);
+    expect(aids[0]).toMatchObject({kind:'modify',uses:1,holderId:'bearer'});
+    const use = {aidKey:aids[0].key,label:aids[0].label,dieIndex:0,from:3,to:4};
+    expect(() => validateAidUse(aids[0], use)).not.toThrow();
+    expect(() => validateAidUse(aids[0], {...use,to:5})).toThrow(/exactly one/);
+    expect(() => validateAidUse(aids[0], use, [use])).toThrow(/already been used/);
+    expect(explorationAids(warband([{...bearer,status:'dead'}]), base)).toEqual([]);
+  });
+  it('requires the Strigany Seer to survive the battle and identifies the correct warband', () => {
+    const seer = hero('seer', [], 'seer');
+    expect(explorationAids(warband([seer], 'survivors_of_strigos'), base)).toEqual([expect.objectContaining({key:'seeker:seer',kind:'modify'})]);
+    expect(explorationAids(warband([seer], 'survivors_of_strigos'), {...base,heroesOutOfAction:['seer']})).toEqual([]);
+    expect(explorationAids(warband([seer]), base)).toEqual([]);
+  });
+  it('does not mistake a legacy Seeker adjustment for a reroll', () => {
+    const aid = {key:'map:hero',label:'Map',kind:'reroll' as const,uses:1,holderId:'hero',holderName:'Hero',note:''};
+    expect(() => validateAidUse(aid, {aidKey:aid.key,label:aid.label,dieIndex:0,from:4,to:2}, [{aidKey:'seeker:hero',label:'Seeker',dieIndex:0,from:3,to:4}])).not.toThrow();
+  });
+});
+
+
+describe('hired exploration specialists and Wyrdstone Hunter', () => {
+  it('applies the Kislev OOA restriction without inventing one for the Tomb Robber', () => {
+    const roster = warband([]);
+    roster.hiredSwords = [makeHiredSword({id:'kislev',hiredSwordId:'kislev_ranger'}), makeHiredSword({id:'tomb',hiredSwordId:'tomb_robber'})];
+    expect(explorationAids(roster, base).map(a=>a.key)).toEqual(['seeker:kislev','explorer:tomb']);
+    expect(explorationAids(roster, {...base,heroesOutOfAction:['kislev','tomb']}).map(a=>a.key)).toEqual(['explorer:tomb']);
+    roster.hiredSwords[1].status = 'left';
+    expect(explorationAids(roster, {...base,heroesOutOfAction:['kislev']})).toEqual([]);
+  });
+  it('offers Wyrdstone Hunter to a searching Hero and the Prospector, enforcing the second-result rule', () => {
+    const roster = warband([{...hero('hunter', []),skillIds:['wyrdstone_hunter']}]);
+    roster.hiredSwords = [makeHiredSword({id:'prospector',hiredSwordId:'old_prospector',skillIds:['wyrdstone_hunter']})];
+    const aids = explorationAids(roster, base);
+    expect(aids).toHaveLength(2);
+    expect(aids.every(a=>a.kind==='reroll' && a.uses===1)).toBe(true);
+    expect(explorationAids(roster, {...base,heroesOutOfAction:['hunter','prospector']})).toEqual([]);
+    const previous = {aidKey:aids[0].key,label:aids[0].label,kind:'reroll' as const,dieIndex:0,from:3,to:2};
+    expect(() => validateAidUse(aids[1], {...previous,aidKey:aids[1].key,from:2,to:5}, [previous])).toThrow(/already been rerolled/);
+  });
+});
+
+
+it('honours Resource Hunter learned by a Dwarf Pathfinder', () => {
+  const roster = warband([]);
+  roster.hiredSwords = [makeHiredSword({hiredSwordId:'dwarf_pathfinder',skillIds:['dwarf_rangers_dwarf_skills_resource_hunter']})];
+  expect(explorationAids(roster, base)).toEqual([expect.objectContaining({label:'Resource Hunter',kind:'modify',uses:1})]);
+});

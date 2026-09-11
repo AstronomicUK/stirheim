@@ -3428,3 +3428,7 @@ Added explicit unarmedProfile metadata for Raging Peasants (Improvised tools, pr
 ### #156 strike-priority conditions — 11 September
 
 Charge and Strike First now share the same priority and resolve against one another by Initiative, rather than declaring the defender first and suggesting an unconditional roll-off. When-charged weapon tags no longer grant first-turn priority to an attacker merely because it is round one. Two Strike Last combatants also proceed to Initiative instead of restoring a charge bonus. Source01:799–801 and relevant weapon clauses02:88,99,647 checked. Thirty-seven odds tests and typecheck/build/lint passed (existing warnings only). Local only. #156 remains partial: advice still reads all carried defender melee weapons; explicit defender hand selection and weapon-specific exceptions still need work.
+
+### Priority combat batch regression checkpoint — 11 September, morning
+
+Full ordinary suite after the accumulated combat/Rout changes: **1,763 passed; 169 database tests skipped**. The skipped database suite is not represented as passed; this batch has introduced no migrations. Latest application build and lint passed with existing warnings. All changes remain local and production is still the earlier second-feedback release. #156 status reconciled to partial rather than open; no umbrella combat ticket was marked fully complete on the strength of these partial fixes.

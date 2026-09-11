@@ -77,6 +77,7 @@ export function combatantFromTemplate(side: TemplateSide, name?: string): Combat
     warbandName: template.name,
     stats,
     equipment,
+    unarmedProfile: unitRules(unit.id).unarmedProfile,
     skillIds: side.skillIds,
     skillTableIds: unit.skillTableIds,
     traitIds: traits,

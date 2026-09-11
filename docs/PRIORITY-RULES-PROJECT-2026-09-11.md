@@ -124,3 +124,9 @@ Next combat: #156 strike-order selection/conditions, #149 Rapier Barrage, #150 S
 Read Serpent Staff source02:597–605: its alternative is not merely WS4/S4. Bearer forgoes ALL normal attacks AND parries that round; staff makes exactly one attack and always strikes first. Existing data only tag alternativeStaffAttackWs4S4; do not expose a partial mode without suppressing offhand/bonus attacks and persisting lost parry eligibility. Ordinary staff is two-handed and can parry. Standalone clause is not dependent on full deferred Khemri campaign systems.
 
 Source1c:224–237 confirms Raging Peasants fight unarmed without penalties; monks additionally gain +1Attack unarmed. Generic naturalWeapons currently displays “Teeth and claws”, inappropriate for peasants’ improvised tools. Extend weapon display/profile metadata before adding these to #163. No source change retained in this checkpoint; next turn resume substantive combat fixes, keeping these constraints.
+
+## Combat milestone 16 — #163 Cathayan unarmed fallback (local)
+
+Explicit unarmedProfile metadata flows roster hero/group +simulator→loadoutFor. RagingPeasants Improvised tools S3/A1, WarriorMonks Open-hand fighting S3/A2 including printed bonus. No ordinary fist penalties or inventory mutation; equipped weapons retained. Source1c:213–229. Fifty-five combatant/simulator tests +typecheck/build/lint pass. No deployment. Dragon Monk critical5+ and quarterstaff/unarmed split not yet covered; #163 stays partial.
+
+Next meaningful scope: #156 selected defender weapons, #149 Barrage or #150 full staff alternative (constraints above), rather than more isolated reminder edits. Bribery/abandonment and remaining psychology require larger state flows.

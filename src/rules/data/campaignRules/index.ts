@@ -65,6 +65,8 @@ export interface UnitCampaignRules {
   excludeRaceTraits?: boolean;
   /** Explicit natural weapons: use printed Strength/Attacks, without ordinary fist penalties. */
   naturalWeapons?: boolean;
+  /** Unarmed fighting that replaces ordinary fist penalties, without adding inventory. */
+  unarmedProfile?: { name: string; bonusAttacks?: number };
   /** Casualty contribution to Rout tests; does not reduce the starting model count. */
   routCasualtyWeight?: number;
   /** Per-model contribution to the starting Rout count (default 1). */
@@ -266,7 +268,8 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   tomb_guardians_skeleton_warrior: UNDEAD_HENCHMAN,
   tomb_guardians_tomb_scorpion: { ...ANIMAL, excludeRaceTraits: true },
   // 1c
-  battle_monks_raging_peasants: { ...NO_XP, routCasualtyWeight: 0, promotion: { never: true, note: "Raging Peasants are a mob, never promoted." } },
+  battle_monks_warrior_monks: { unarmedProfile: { name: "Open-hand fighting", bonusAttacks: 1 } },
+  battle_monks_raging_peasants: { ...NO_XP, unarmedProfile: { name: "Improvised tools" }, routCasualtyWeight: 0, promotion: { never: true, note: "Raging Peasants are a mob, never promoted." } },
   black_dwarfs_informers: { excludeRaceTraits: true, promotion: { never: true, note: "Informers are never made heroes; roll again." } },
   bretonnian_knight_errant: { equipmentBans: ["helmets"] },
   bretonnian_battle_pilgrims: { promotion: { never: true, note: "Low Caste: Pilgrims are never knighted; roll again." } },

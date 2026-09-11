@@ -62,3 +62,18 @@ it('Fearsome is visible on a custom unit only while the skill is selected', () =
   expect(combatantFromTemplate({ ...side, skillIds: ['fearsome'] })?.traitIds).toContain('causes_fear')
   expect(combatantFromTemplate({ ...side, skillIds: [] })?.traitIds).not.toContain('causes_fear')
 })
+
+
+it.each([
+  ['battle_monks_raging_peasants', 'Improvised tools', 0],
+  ['battle_monks_warrior_monks', 'Open-hand fighting', 1],
+])('uses the appropriate unarmed profile for %s without changing equipped weapons', (unitId, name, bonus) => {
+  const side = { ...defaultTemplateSide('battle_monks_of_cathay'), unitId: String(unitId), itemIds: [] }
+  const c = combatantFromTemplate(side)!
+  const kit = loadoutFor(c)
+  expect(kit.melee[0].name).toBe(name)
+  expect(kit.melee[0].bonusAttacks ?? 0).toBe(bonus)
+  expect(kit.melee[0].strength).toBe('user')
+  const equipped = combatantFromTemplate({ ...side, itemIds: ['sword'] })!
+  expect(loadoutFor(equipped).melee.map(w => w.id)).toEqual(['sword'])
+})

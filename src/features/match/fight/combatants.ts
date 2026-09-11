@@ -37,6 +37,7 @@ export interface Combatant {
   equipment: RosterItem[]
   skillIds: string[]
   traitIds: string[]
+  unarmedProfile?: { name: string; bonusAttacks?: number }
   /** Already out of action according to the live sheet. */
   out: boolean
   /** Wounds lost so far according to the live sheet (multi-Wound models). */
@@ -190,6 +191,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         warbandName,
         stats: boosts.leaderLd && leaderUnitId && warrior.unitTemplateId === leaderUnitId ? { ...warrior.stats, Ld: warrior.stats.Ld + boosts.leaderLd } : warrior.stats,
         equipment: warrior.equipment,
+        unarmedProfile: unitRules(warrior.unitTemplateId).unarmedProfile,
         skillIds: warrior.skillIds,
         skillTableIds: warrior.skillTableIds,
         traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? []), ...boostTraits], entry.warrior.isLarge),
@@ -235,6 +237,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       warbandName,
       stats: group.stats,
       equipment: kit.items,
+      unarmedProfile: unitRules(group.unitTemplateId).unarmedProfile,
       skillIds: [],
       traitIds: unique(traits),
       out: sheet ? groupOut(sheet, group.id) >= group.size : false,
@@ -280,7 +283,10 @@ const NATURAL_WEAPONS: Weapon = {
 export function loadoutFor(c: Combatant): Loadout {
   if (c.weaponIds) return loadoutOfWeapons(c.weaponIds)
   const kit = loadoutOf(c.equipment)
-  if (c.traitIds.includes('natural_weapons') && kit.melee.length === 0) kit.melee.push(NATURAL_WEAPONS)
+  if (kit.melee.length === 0) {
+    if (c.unarmedProfile) kit.melee.push({ ...NATURAL_WEAPONS, ...c.unarmedProfile })
+    else if (c.traitIds.includes('natural_weapons')) kit.melee.push(NATURAL_WEAPONS)
+  }
   return kit
 }
 

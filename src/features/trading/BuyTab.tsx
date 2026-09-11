@@ -1,3 +1,4 @@
+import { leaderReplacementPurchaseBlock } from '../../rules/resolve/leaderReplacement'
 import { hasHaggle, hagglePrice } from '../../rules/resolve/haggle'
 import { scenarioPurchasePrice } from '../../rules/resolve/scenarioCampaignEffects'
 import { useMemo, useState } from 'react'
@@ -176,7 +177,8 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const rareMaxQty = isRare ? (braceAmount !== null ? 2 : 1) : null
   const withinRareCap = rareMaxQty === null || quantity <= rareMaxQty
 
-  const canBuy = haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
+  const replacementBlock = leaderReplacementPurchaseBlock(roster, total ?? 1)
+  const canBuy = !replacementBlock && haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -255,6 +257,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
       <div className="flex flex-col gap-4 py-2">
         {item.description ? <p className="text-sm leading-relaxed text-ink-dim">{item.description}</p> : null}
         {mapHalf && listedTotal !== null ? <Notice tone="info">{mapHalf.districtName}: half price, {computed} gc instead of {listedTotal} gc (map advantage).</Notice> : null}
+        {replacementBlock ? <Notice tone="warn">{replacementBlock}</Notice> : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
         {roster.scenarioEffects?.notes.map(note => <p key={note} className="text-sm text-ink-dim">{note}</p>)}
         {pricing.notes.length > 0 ? (

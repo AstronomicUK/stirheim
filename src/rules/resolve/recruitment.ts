@@ -1,3 +1,4 @@
+import { leaderReplacementPurchaseBlock } from './leaderReplacement';
 import { availableFreeHires } from './explorationDiscoveries'
 import { DWARF_HIRES, ELF_HIRES } from './mixedHireUpkeep'
 import { isDramatisPersona } from '../data/campaign/hiredSwords'
@@ -160,6 +161,8 @@ export function canRecruit(
   const block = recruitmentBlock(warband, template, unit, count);
   if (block) return { ok: false, reason: block };
   const cost = (unit.cost ?? 0) * count;
+  const replacementBlock = leaderReplacementPurchaseBlock(warband, cost, unit.id);
+  if (replacementBlock) return { ok: false, reason: replacementBlock };
   if (warband.gold < cost) {
     return { ok: false, reason: `${count > 1 ? `${count} ` : ""}${unit.name} costs ${cost} gc but the treasury holds ${warband.gold} gc` };
   }
@@ -191,6 +194,8 @@ export function recruitHero(
   const block = recruitmentBlock(warband, template, unit, 1);
   if (block) throw new RulesError("recruitment.notAllowed", block);
   const cost = opts.costOverride ?? ((unit.cost ?? 0) + (startingMagicFor(unit.id, template, opts.magicChoiceId)?.extraCost ?? 0));
+  const replacementBlock = leaderReplacementPurchaseBlock(warband, cost, unit.id);
+  if (replacementBlock) throw new RulesError("recruitment.replaceLeader", replacementBlock);
   assertGold(warband, cost, `A ${unit.name}`);
   const freeDagger = freeDaggerLine(template, unit);
 
@@ -315,6 +320,8 @@ export function recruitHenchmen(
 
   const hireCost = opts.costOverride ?? (unit.cost ?? 0) * size;
   const totalCost = hireCost + veteranCost;
+  const replacementBlock = leaderReplacementPurchaseBlock(warband, totalCost, unit.id);
+  if (replacementBlock) throw new RulesError("recruitment.replaceLeader", replacementBlock);
   assertGold(warband, totalCost, `${size} ${unit.name}${veteranCost ? " with veteran experience" : ""}`);
 
   const events: ResolutionEvent[] = [];

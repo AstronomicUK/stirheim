@@ -1,3 +1,4 @@
+import { leaderReplacementPurchaseBlock } from './leaderReplacement';
 // Trading resolvers — prices, rare-item searches, buying, selling and moving equipment, and the
 // once-per-phase bookkeeping of the post battle sequence (rulebook Trading section; data in
 // data/campaign/trading and data/items).
@@ -216,6 +217,8 @@ export function buyItem(
   }
   const cost = totalPrice ?? price * quantity;
   if (!Number.isInteger(cost) || cost < 0) throw new RulesError("trading.invalidPrice", "Purchase total must be a non-negative whole number of gold crowns");
+  const replacementBlock = leaderReplacementPurchaseBlock(warband, cost);
+  if (replacementBlock) throw new RulesError("trading.replaceLeader", replacementBlock);
   if (cost > warband.gold) {
     throw new RulesError("trading.insufficientGold", `${item.name} x${quantity} costs ${cost} gc but the warband has ${warband.gold} gc`);
   }

@@ -633,11 +633,11 @@ export const WARBANDS: WarbandTemplate[] = [
           { name: "Sword", cost: "10 gc" },
           { name: "Choppa (Counts as a Morning star)", cost: "10 gc" },
           { name: "Spear", cost: "10 gc" },
-          { name: "Double-handed weapon (Boyz and Nuttaz only)", cost: "15 gc" },
+          { name: "Double-handed weapon (Boyz and Nuttaz only)", cost: "15 gc", onlyUnitTemplateIds: ["black_orcs_orc_boy", "black_orcs_orc_nutta"] },
         ],
         missileWeapons: [
           { name: "Bow", cost: "10 gc" },
-          { name: "Crossbow (Shootaz only)", cost: "25 gc" },
+          { name: "Crossbow (Shootaz only)", cost: "25 gc", onlyUnitTemplateIds: ["black_orcs_orc_shoota"] },
         ],
         armour: [
           { name: "Shield", cost: "5 gc" },

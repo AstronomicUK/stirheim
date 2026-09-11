@@ -34,3 +34,29 @@ it('does not warn that a held creation-only item is being purchased again', () =
   expect(itemRestrictionWarnings(r, item, holder(h)).join(' ')).toContain('when the warband is created')
   expect(itemRestrictionWarnings(r, item, holder(h), { alreadyHeld: true }).join(' ')).not.toContain('when the warband is created')
 })
+
+
+it('respects Bergjaeger-only longbows while retaining Weapons Expert access', () => {
+  for (const unit of ['averlander_captain', 'averlander_sergeant', 'averlander_youngblood']) {
+    const r = roster('averlander_mercenaries', hero(unit))
+    expect(warning(r, 'longbow'), unit).toContain('not on')
+  }
+  expect(warning(roster('averlander_mercenaries', hero('averlander_bergjaeger')), 'longbow')).toBeNull()
+  expect(warning(roster('averlander_mercenaries', hero('averlander_youngblood', ['weapons_expert'])), 'longbow')).toBeNull()
+})
+it('respects Shootaz crossbows and Boyz/Nuttaz two-handed weapons, including promoted units', () => {
+  for (const unit of ['black_orcs_orc_shoota', 'black_orcs_orc_boy', 'black_orcs_orc_nutta', 'black_orcs_youngun']) {
+    const r = roster('black_orcs', hero(unit))
+    const crossbow = warning(r, 'crossbow')
+    const doubleHanded = warning(r, 'double_handed_weapon')
+    if (unit === 'black_orcs_orc_shoota') expect(crossbow).toBeNull()
+    else expect(crossbow).toContain('not on')
+    if (['black_orcs_orc_boy', 'black_orcs_orc_nutta'].includes(unit)) expect(doubleHanded).toBeNull()
+    else expect(doubleHanded).toContain('not on')
+    const groupHolder: ItemHolder = { kind: 'henchmanGroup', unitTemplateId: unit, equipment: [], size: 2 }
+    expect(equipmentListWarning(r, findItem('crossbow')!, groupHolder) === null).toBe(crossbow === null)
+  }
+  const proven = roster('black_orcs', hero('black_orcs_youngun', ['black_orcs_skills_proven_warrior']))
+  expect(warning(proven, 'crossbow')).toBeNull()
+  expect(warning(proven, 'double_handed_weapon')).toBeNull()
+})

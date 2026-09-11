@@ -1654,7 +1654,7 @@ export const WARBANDS: WarbandTemplate[] = [
         ],
         missileWeapons: [
           { name: "Bow", cost: "10 gc" },
-          { name: "Long bow", cost: "15 gc (Bergjaeger only)" },
+          { name: "Long bow", cost: "15 gc (Bergjaeger only)", onlyUnitTemplateIds: ["averlander_bergjaeger"] },
         ],
         armour: [
           { name: "Light armour", cost: "20 gc" },

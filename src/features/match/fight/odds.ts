@@ -319,6 +319,11 @@ export function strikeOrder(setup: FightSetup): string {
   const dI = d.stats.I + Math.max(0, ...dWeapons.map(initiative), 0) + Math.min(0, ...dWeapons.map(initiative), 0)
   if (aLast.length && !dLast.length) return `${d.name} strikes first: ${a.name}'s ${aLast[0].name} always strikes last.`
   if (dLast.length && !aLast.length) return `${a.name} strikes first: ${d.name}'s ${dLast[0].name} always strikes last.`
+  // The Tilean Pike explicitly beats a charging spear in the opening round
+  // (02:550-554), overriding the usual charge/Strike First Initiative tie.
+  if (setup.context.charging && !dLast.length && dWeapons.some(w => w.id === 'pike_tileans') && aWeapons.some(w => w.id === 'spear')) {
+    return `${d.name} strikes first: the Tilean Pike takes priority over a charging Spear.`
+  }
   const aFirstWeapon = firstTurn ? aWeapons.find(w => w.special.includes('strikesFirstFirstTurn')) : undefined
   const dFirstWeapon = firstTurn ? dWeapons.find(w => w.special.includes('strikesFirstFirstTurn') || (setup.context.charging && w.special.includes('strikesFirstWhenCharged'))) : undefined
   const aFirst = !aLast.length && (setup.context.charging || Boolean(aFirstWeapon))

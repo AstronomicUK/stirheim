@@ -445,3 +445,14 @@ it('Merchant Pike gains Initiative only in the opening round (#156)', () => {
   expect(computeOdds(againstPike).strikeOrder).toContain('Equal Initiative (3 each)')
   expect(relevantToggles(captain, 'melee', againstPike.primary, againstPike.defenderKit).some(t => t.field === 'firstTurnOfCombat')).toBe(true)
 })
+
+it('Tilean Pike explicitly beats a faster charging Spear, but later rounds use Initiative (#156)', () => {
+  const pikeman = combatant('Pikeman', [{ itemId: 'pike_tileans', quantity: 1 }], { stats: { ...base, I: 1, A: 4 }, traitIds: ['frenzy'] })
+  const spearman = combatant('Spearman', [{ itemId: 'spear', quantity: 1 }], { stats: { ...base, I: 6 } })
+  const fight = setup(spearman, pikeman, 'spear', null)
+  expect(computeOdds({ ...fight, context: { ...fight.context, charging: true } }).strikeOrder).toContain('Pikeman strikes first: the Tilean Pike takes priority')
+  expect(computeOdds(fight).strikeOrder).toContain('Spearman strikes first: Initiative 6')
+  const ordinaryCharge = setup(captain, pikeman, 'sword', null)
+  expect(computeOdds({ ...ordinaryCharge, context: { ...ordinaryCharge.context, charging: true } }).strikeOrder).toContain('Captain strikes first: Initiative 3')
+  expect(computeOdds(setup(pikeman, spearman, 'pike_tileans', null)).attacks).toBe(1)
+})

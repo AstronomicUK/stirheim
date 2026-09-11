@@ -369,7 +369,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
 
   return {
     firePermissionThreshold: weapon.type === "ranged" && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
-    hitThreshold,
+    hitThreshold: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") ? 5 : hitThreshold,
+    temperamentalPigeon: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") || undefined,
     automaticHits: weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
     automaticHitReason: weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
     woundThreshold: weapon.special.includes("entangleInsteadOfWound") ? IMPOSSIBLE : woundThreshold,
@@ -391,7 +392,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     critTriggerFaces,
     critTable,
     critTableRollModifier,
-    rerollToHit,
+    rerollToHit: !weapon.special.includes("temperamentalD6ToHitInsteadOfBS") && rerollToHit,
     woundHighestOfTwo: woundHighestOfTwo || undefined,
     barrageOnFailedWound: weapon.special.includes("barrageExtraAttacksOnFailedWound") || undefined,
     autoWoundOnNaturalSixToHit: !weapon.special.includes("entangleInsteadOfWound") && autoWound,

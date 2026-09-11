@@ -597,3 +597,20 @@ describe('Blessing of the Lady permission', () => {
     expect(state.woundsLost).toBe(0)
   })
 })
+
+describe('Temperamental pigeon launch', () => {
+  it('distinguishes a backfire from harmless failure and never rerolls the launch as a to-hit roll', () => {
+    const shot = plan('Pigeon Bomb', { temperamentalPigeon: true, hitThreshold: 5, rerollToHit: true })
+    const backfire = applyRoll(startPhase([shot], 1, 0), 1)
+    expect(backfire.outcomes).toEqual(['backfire'])
+    expect(backfire.woundsLost).toBe(0)
+    expect(backfire.log.at(-1)?.text).toContain('firer and everyone within 1½ inches')
+    const harmless = applyRoll(startPhase([shot], 1, 0), 4)
+    expect(harmless.outcomes).toEqual(['miss'])
+    expect(harmless.pending).toBeNull()
+    expect(harmless.log.at(-1)?.text).toContain('harmlessly')
+    const hit = applyRoll(startPhase([shot], 1, 0), 5)
+    expect(hit.pending?.kind).toBe('wound')
+    expect(hit.log.at(-1)?.text).toContain('every other model within 1½ inches')
+  })
+})

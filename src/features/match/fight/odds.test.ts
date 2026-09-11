@@ -635,3 +635,19 @@ describe('Blessing shooting odds', () => {
     expect(blessedTable.ooaGrid[3][2]).toBeCloseTo(normalTable.ooaGrid[3][2] / 2)
   })
 })
+
+describe('Pigeon Bomb fixed launch table', () => {
+  it('ignores Ballistic Skill, shooting modifiers and ordinary hit rerolls', () => {
+    const bomber = combatant('Bomber', [{ itemId: 'hersten_wenkler_pigeon_bombs', quantity: 1 }], { stats: { ...base, BS: 6 }, traitIds: ['blessed_sight'] })
+    const initial = setup(bomber, skaven, 'hersten_wenkler_pigeon_bombs', null)
+    const accurate = computeOdds(initial)
+    const poor = computeOdds({ ...initial, attacker: { ...bomber, stats: { ...base, BS: 1 } }, context: { ...initial.context, cover: true, longRange: true, largeTarget: true } })
+    for (const odds of [accurate, poor]) {
+      expect(odds.weapons[0].input.hitThreshold).toBe(5)
+      expect(odds.weapons[0].input.rerollToHit).toBe(false)
+      expect(odds.weapons[0].pHit).toBeCloseTo(1 / 3)
+      expect(odds.notes.join(' ')).toContain('selected target only')
+    }
+    expect(accurate.chain.outOfAction).toBeCloseTo(poor.chain.outOfAction)
+  })
+})

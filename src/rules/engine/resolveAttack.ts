@@ -36,6 +36,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Pigeon launch table: 5–6 on target, 2–4 harmless, 1 explodes at the firer. */
+  temperamentalPigeon?: boolean;
   /** Per-shot permission roll, before rolling to hit (Blessing of the Lady). */
   firePermissionThreshold?: number;
   /** Bolas hits entangle rather than inflicting wounds. */

@@ -9,7 +9,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -35,11 +35,12 @@ export interface AttackPlan {
   rot?: boolean
 }
 
-export type Outcome = 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
+export type Outcome = 'backfire' | 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { backfire: 0, cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
+  backfire: 'Exploded at the firer — resolve the blast at the table',
   cannotFire: 'Unable to fire',
   entangled: 'Entangled',
   miss: 'Missed',
@@ -184,10 +185,10 @@ function beginAttack(state: RollState, permissionGranted = false): RollState {
   return {
     ...fresh,
     pending: {
-      kind: 'hit',
+      kind: plan.input.temperamentalPigeon ? 'pigeonLaunch' : 'hit',
       who: 'attacker',
-      label: `${attackName(state)}: to hit`,
-      detail: t === IMPOSSIBLE ? 'Cannot hit' : `Needs ${thresholdText(t)}`,
+      label: plan.input.temperamentalPigeon ? 'Pigeon launch D6' : `${attackName(state)}: to hit`,
+      detail: plan.input.temperamentalPigeon ? '5–6: on target; 2–4: harmless; 1: explodes at the firer. Ballistic Skill and shooting modifiers do not apply.' : t === IMPOSSIBLE ? 'Cannot hit' : `Needs ${thresholdText(t)}`,
     },
   }
 }
@@ -263,10 +264,15 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       return allowed ? beginAttack(next, true) : finishAttack(next, 'cannotFire')
     }
 
+    case 'pigeonLaunch':
     case 'hit':
     case 'hitReroll': {
+      if (input.temperamentalPigeon && roll < 5) {
+        const detail = roll === 1 ? 'The bomb explodes in the firer’s hands. At the table, resolve one Strength 4 hit on the firer and everyone within 1½ inches. This target result does not apply those wounds.' : 'The bomb explodes harmlessly in the air before reaching the target.'
+        return finishAttack(log(state, `Pigeon launch: rolled ${roll}${rollTag}. ${detail}`, roll === 1 ? 'bad' : 'neutral'), roll === 1 ? 'backfire' : 'miss')
+      }
       if (passes(roll, input.hitThreshold)) {
-        const s = log({ ...state, cur: { ...state.cur, hitRoll: roll } }, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Hit.`, 'good')
+        const s = log({ ...state, cur: { ...state.cur, hitRoll: roll } }, input.temperamentalPigeon ? `Pigeon launch: rolled ${roll}${rollTag}. Lands on target. Resolve this target’s Strength 4 hit here and every other model within 1½ inches at the table.` : `${attackName(state)}: rolled ${roll}${rollTag} to hit. Hit.`, 'good')
         // Dodge explicitly precedes equipment, including the first-hit Lucky Charm (03:557).
         if (input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) return afterHit(s)
         return offerCharmOrContinue(s)

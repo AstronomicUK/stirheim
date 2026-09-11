@@ -473,7 +473,7 @@ export interface ContextToggle {
 
 export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout, offHand?: Weapon | null, defender?: Combatant): ContextToggle[] {
   const toggles: ContextToggle[] = []
-  if (attacker.traitIds.includes('stupidity')) toggles.push({ field: 'failedStupidity', label: 'Failed Stupidity test', hint: 'No melee or shooting attacks until the start of this warrior’s next turn. Clear this after the next test is passed.' })
+  if (attacker.traitIds.includes('stupidity')) toggles.push({ field: 'failedStupidity', label: 'Failed Stupidity test', hint: 'No attacks or spells until the start of this warrior’s next own turn, when a new test is due. In the Battle Sheet this result is saved; untick to record a correction.' })
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
     if (primary.id === 'serpent_staff') toggles.push({ field: 'serpentStaffPower', label: 'Serpent Staff power', hint: 'One WS4 / S4 attack, striking first, instead of all normal attacks and parries this combat phase.' })

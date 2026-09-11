@@ -1,3 +1,4 @@
+import { combatantsOf } from '../fight/combatants'
 // Casting, at the table. Pick the wizard, pick the spell, switch on whatever he is spending, and
 // walk the dice: 2D6 against the Difficulty, a re-roll if he has one to spend, then the enemy's
 // chance to dispel. Every roll is shown as dice rather than described, and the result of each step
@@ -8,7 +9,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {useBattleTurns} from '../../../api/battleTurns'
 import {useBattleDispels,recordStaffDispel,dispelKey,type StaffDispelInput} from '../../../api/battleDispels'
 import type { BattleLiveState } from '../../../domain'
-import { castsThisTurn, rerollsSpent, withCast, withRollAttempt } from '../../../domain'
+import { warbandTurnKey, failedStupidityThisTurn, castsThisTurn, rerollsSpent, withCast, withRollAttempt } from '../../../domain'
 import {
   applyCastRoll,
   availableRerolls,
@@ -99,7 +100,11 @@ export function CastTab({ matchId, roster, template, others, sessions=[], sheet,
   const spentIds = rerollsSpent(sheet, caster.heroId, sheet.turn)
   const usedUp = [...new Set([...spentIds.game.filter((id) => caster.rerolls.find((r) => r.id === id)?.limit === 'perGame'), ...spentIds.turn])]
 
+  const casterTraits = caster ? combatantsOf(roster, template, roster.name, sheet).find(w => w.id === caster.heroId)?.traitIds ?? [] : []
+  const stupidityBlocked = Boolean(caster && casterTraits.includes('stupidity') && !casterTraits.includes('deathwish') && failedStupidityThisTurn(sheet, caster.heroId, warbandTurnKey(roster.id, sheet.turn, turns.data)))
+
   function begin(spell: Spell) {
+    if (stupidityBlocked) return
     castTurn.current=turns.data
     attempt.current = { id: crypto.randomUUID(), at: new Date().toISOString(), turn: sheet.turn }
     const started = startCast(caster!, spell, {
@@ -226,6 +231,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], sheet,
           ) : (
             <p className="text-sm font-semibold text-ink">{caster.name}</p>
           )}
+          {stupidityBlocked ? <Notice tone="warn" title="Failed Stupidity test">This warrior cannot cast until the start of their next own turn. The recorded result can be corrected in the attack panel.</Notice> : null}
           <p className="text-xs text-ink-dim">Known spells and prayers</p>
           {already.length > 0 ? (
             <Notice tone="warn" title="Already cast this turn">
@@ -247,7 +253,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], sheet,
                     </HoverCard>
                     <p className="text-xs text-ink-dim">{selected.lore.name} · {difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
                   </div>
-                  <Button variant="secondary" disabled={selected.blocks.length > 0 || (needsSharedTurns && selected.lore.id!=='prayers_of_sigmar') || enemies.isPending || turns.isPending || dispels.isPending || !!enemies.error || turns.isError || dispels.isError} onClick={() => begin(spell)}>
+                  <Button variant="secondary" disabled={stupidityBlocked || selected.blocks.length > 0 || (needsSharedTurns && selected.lore.id!=='prayers_of_sigmar') || enemies.isPending || turns.isPending || dispels.isPending || !!enemies.error || turns.isError || dispels.isError} onClick={() => begin(spell)}>
                     {selected.kind === 'prayer' ? 'Recite' : 'Cast'}
                   </Button>
                 </div>

@@ -1,3 +1,8 @@
+import { recruitHero, canRecruit } from '../recruitment';
+import { currentLeader, validateRoster } from '../roster';
+import { warriorFlagsSchema } from '../../../domain/json';
+import { findLeaderId } from '../../../features/postBattle/model/participants';
+import { availableSkills } from '../advances';
 import { describe, expect, it } from "vitest";
 import { findWarbandTemplate } from "../../data/warbandTemplates";
 import type { RosterHero, RosterWarband } from "../../types/roster";
@@ -60,11 +65,7 @@ it('identifies a genuine Leadership/Experience tie without silently deciding by 
   expect(successionOptions({ ...w, heroes: w.heroes.map(h => h.id === 'b' ? { ...h, xp: 9 } : h) }, template)?.tiedIds).toEqual([]);
 });
 
-it('keeps a temporary Gnoblar leader a Gnoblar and hands leadership to a replacement Ogre Hunter', async () => {
-  const { recruitHero, canRecruit } = await import('../recruitment');
-  const { currentLeader, validateRoster } = await import('../roster');
-  const { warriorFlagsSchema } = await import('../../../domain/json');
-  const { findLeaderId } = await import('../../../features/postBattle/model/participants');
+it('keeps a temporary Gnoblar leader a Gnoblar and hands leadership to a replacement Ogre Hunter', () => {
   const template = findWarbandTemplate('ogre_hunting_party')!;
   const gnoblar = hero('g', 'ogre_hunting_party_sabre_baiter', { xp: 8, skillTableIds: ['combat'], skillIds: ['dodge'], flags: { oldBattleWound: true } });
   const original = { ...warband(template.id, [hero('dead', 'ogre_hunting_party_ogre_hunter', { status: 'dead' }), gnoblar]), gold: 1000 };
@@ -94,8 +95,7 @@ it('includes promoted Gnoblar Fighters and Flingers in temporary succession', ()
   expect(successionOptions(w, template)?.candidates.map(c => c.hero.id)).toEqual(['f', 'g', 't']);
 });
 
-it('grants a Merchant successor the Merchant skill list without importing other leader skill lists', async () => {
-  const { availableSkills } = await import('../advances');
+it('grants a Merchant successor the Merchant skill list without importing other leader skill lists', () => {
   const template = findWarbandTemplate('merchant_caravans')!;
   const apprentice = hero('a', 'merchant_apprentice', { skillTableIds: ['combat', 'shooting'], skillIds: ['dodge'] });
   const w = warband(template.id, [apprentice]);

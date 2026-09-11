@@ -6,7 +6,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
+import { warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -146,6 +146,10 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
     : 0
   const turns = useBattleTurns(matchId)
   const phaseKey = combatPhaseKey(sheet.turn, turns.data)
+  const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
+  const individualStupidity = Boolean(attacker && (attacker.kind !== 'henchman' || (attacker.groupSize ?? 1) <= 1))
+  const [groupStupidity, setGroupStupidity] = useState<{ id: string; turnKey: string; failed: boolean } | null>(null)
+  const psychologyLoading = Boolean(attacker?.traitIds.includes('stupidity') && (turns.isPending || turns.isError))
   const [seenPhase, setSeenPhase] = useState(phaseKey)
   if (seenPhase !== phaseKey) { setSeenPhase(phaseKey); setRolling(false); setRollSetup(null); setStaffCorrection('') }
   const staffUse = attacker ? serpentStaffUse(sheet, attacker.id, phaseKey) : undefined
@@ -166,6 +170,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   // Read from the shared log, not a toggle — this is exactly the "the battle sheet doesn't do
   // either of these" report, so it needs to just happen rather than rely on a checkbox.
   active.serpentStaffPower = Boolean(staffUse)
+  if (attacker) active.failedStupidity = attacker.traitIds.includes('stupidity') && !attacker.traitIds.includes('deathwish') && (individualStupidity ? failedStupidityThisTurn(sheet, attacker.id, ownTurnKey) : groupStupidity?.id === attacker.id && groupStupidity.turnKey === ownTurnKey && groupStupidity.failed)
   const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn, turns.data?.recoveries).get(defender.id) : undefined
   if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
   if (defenderCondition === 'Stunned') active.targetStunned = true
@@ -221,6 +226,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
 
   return (
     <>
+      {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
       {/* Attacker and defender face each other, with the dice between them. */}
       <div className="relative grid grid-cols-2 items-stretch gap-3 lg:gap-8">
         <FightBox icon="battle" title="Attacker" tone="brass">
@@ -288,8 +294,15 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Situation</legend>
                   {toggleList.map((t) => (
                     <label key={t.field} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={t.hint}>
-                      <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" checked={toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => setToggles((s) => ({ ...s, [t.field]: e.target.checked }))} />
-                      <span>{t.label}{t.field === 'longRange' && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.hint}</span> : null}</span>
+                      <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" disabled={t.field === 'failedStupidity' && (readOnly || (individualStupidity && (!edit || psychologyLoading)))} checked={t.field === 'failedStupidity' ? Boolean(active.failedStupidity) : toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => {
+                        const checked = e.target.checked
+                        if (t.field === 'failedStupidity' && attacker && !readOnly) {
+                          if (individualStupidity && edit) edit(s => recordStupidityResult(s, attacker.id, ownTurnKey, attacker.name, checked, sheet.turn))
+                          else setGroupStupidity({ id: attacker.id, turnKey: ownTurnKey, failed: checked })
+                        }
+                        else setToggles(s => ({ ...s, [t.field]: checked }))
+                      }} />
+                      <span>{t.label}{(t.field === 'longRange' || t.field === 'failedStupidity') && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.field === 'failedStupidity' && !individualStupidity ? "This group has several models. Apply this only to the model currently attacking; record each model’s test at the table. This choice is not saved for the whole group." : t.hint}</span> : null}</span>
                     </label>
                   ))}
                 </fieldset>
@@ -384,7 +397,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={!odds || !attacker || !defender || odds.attacks < 1}
+          disabled={psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -423,7 +436,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={needsInterception || readOnly || Boolean(staffUse?.used)} onClick={() => { setRollSetup(odds); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={psychologyLoading || needsInterception || readOnly || Boolean(active.failedStupidity) || Boolean(staffUse?.used)} onClick={() => { setRollSetup(odds); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}

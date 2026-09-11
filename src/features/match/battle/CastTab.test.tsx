@@ -26,3 +26,16 @@ it('records the displayed shared round instead of the stale stored sheet turn, i
   expect(castsThisTurn(restored, 'wizard', 2)).toHaveLength(1)
   expect(castsThisTurn(restored, 'wizard', 3)).toHaveLength(0)
 })
+
+it('blocks casting after a stored Stupidity failure without recording a spell attempt', async () => {
+  const { recordStupidityResult } = await import('../../../domain')
+  const stored = recordStupidityResult(emptyBattleLiveState(), 'wizard', 'legacy:1', 'Wizard', true)
+  const edit = vi.fn()
+  const roster = { id: 'w', warbandTemplateId: 'mercenaries_reikland', name: 'Test', heroes: [{ id: 'wizard', name: 'Wizard', unitTemplateId: 'mercenaries_reikland_captain', stats: { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }, status: 'active', flags: { stupidity: true }, injuries: [], skillIds: [], spellIds: ['fires_of_uzhul'], skillTableIds: [], equipment: [] }], hiredSwords: [], henchmenGroups: [], stash: [] } as any
+  const tree = CastTab({ matchId: 'test', roster, template: undefined, others: [], sheet: stored, readOnly: false, edit })
+  const button = nodes(tree).find(n => n.props.onClick && nodes(n).some(child => child.props.children === 'Cast'))
+  expect(button!.props.disabled).toBe(true)
+  button!.props.onClick()
+  expect(edit).not.toHaveBeenCalled()
+  expect(stored.casts).toEqual([])
+})

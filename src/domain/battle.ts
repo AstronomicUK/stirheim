@@ -100,6 +100,8 @@ export const battleLiveStateSchema = z.object({
   rollAttempts: z.array(rollAttemptSchema).default([]),
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
+  /** Recorded Stupidity outcomes last through opponents’ turns until this warband’s next turn. */
+  stupidityResults: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), failed: z.boolean() })).default([]),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });
@@ -200,4 +202,27 @@ export function battleTotals(state: BattleLiveState): BattleTotals {
  */
 export function routThreshold(startingModels: number): number {
   return Math.ceil(startingModels / 4);
+}
+
+
+/** The most recent own turn, including opponents' intervening turns across a round boundary. */
+export function warbandTurnKey(warbandId: string, legacyTurn: number, turns?: { round: number; active_index: number; turn_order: string[] } | null): string {
+  const index = turns?.turn_order.indexOf(warbandId) ?? -1;
+  if (!turns || index < 0) return `legacy:${legacyTurn}`;
+  return `${warbandId}:${turns.round - (turns.active_index < index ? 1 : 0)}`;
+}
+
+export function failedStupidityThisTurn(state: BattleLiveState, warriorId: string, turnKey: string): boolean {
+  return state.stupidityResults.some(result => result.warriorId === warriorId && result.turnKey === turnKey && result.failed);
+}
+
+/** A player's declaration/correction, not a claim that the app rolled a Leadership test. */
+export function recordStupidityResult(state: BattleLiveState, warriorId: string, turnKey: string, name: string, failed: boolean, turn = state.turn): BattleLiveState {
+  if (failedStupidityThisTurn(state, warriorId, turnKey) === failed) return state;
+  const results = state.stupidityResults.filter(result => result.warriorId !== warriorId || result.turnKey !== turnKey);
+  return withRollAttempt({ ...state, stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
+    id: crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
+    label: `${name}: ${failed ? 'failed Stupidity test recorded' : 'failed Stupidity effect cleared'}`,
+    rolls: [failed ? 'Recorded by the player. Cannot attack or cast until the start of their next own turn; resolve the Stupidity movement roll at the table.' : 'Cleared by the player as a correction or agreed table decision. No new dice roll is implied.'],
+  });
 }

@@ -71,3 +71,26 @@ it("distinguishes player combat phases and records deliberate staff corrections"
   expect(corrected.rollAttempts[1].rolls[0]).toContain('after its attack was marked used');
   expect(corrected.rollAttempts[1].rolls[0]).toContain('Wrong warrior selected');
 });
+
+it('keeps a recorded Stupidity failure through opponents’ turns and clears its effect on the next own turn', async () => {
+  const { warbandTurnKey, failedStupidityThisTurn, recordStupidityResult } = await import('../battle');
+  const order = ['first', 'mine', 'last'];
+  const key = (round: number, active_index: number) => warbandTurnKey('mine', round, { round, active_index, turn_order: order });
+  const initial = emptyBattleLiveState();
+  const failed = recordStupidityResult(initial, 'wizard', key(1, 1), 'Wizard', true);
+  const saved = parseBattleLiveState(JSON.parse(JSON.stringify(failed)));
+  expect(failedStupidityThisTurn(saved, 'wizard', key(1, 1))).toBe(true);
+  expect(failedStupidityThisTurn(saved, 'wizard', key(1, 2))).toBe(true);
+  expect(failedStupidityThisTurn(saved, 'wizard', key(2, 0))).toBe(true);
+  expect(failedStupidityThisTurn(saved, 'wizard', key(2, 1))).toBe(false);
+  expect(failedStupidityThisTurn(saved, 'other', key(1, 1))).toBe(false);
+  expect(recordStupidityResult(saved, 'wizard', key(1, 1), 'Wizard', true)).toBe(saved);
+  const corrected = recordStupidityResult(saved, 'wizard', key(1, 1), 'Wizard', false);
+  expect(failedStupidityThisTurn(corrected, 'wizard', key(1, 1))).toBe(false);
+  expect(corrected.rollAttempts).toHaveLength(2);
+  expect(corrected.rollAttempts[0].rolls[0]).toContain('Recorded by the player');
+  expect(corrected.rollAttempts[1].rolls[0]).toContain('No new dice roll is implied');
+  expect(initial.stupidityResults).toEqual([]);
+  expect(parseBattleLiveState({ turn: 1 }).stupidityResults).toEqual([]);
+  expect(warbandTurnKey('mine', 3)).toBe('legacy:3');
+});

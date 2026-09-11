@@ -62,7 +62,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], sheet,
     () => enemies.warbands.flatMap((w) => [...w.roster.heroes,...w.roster.hiredSwords].filter(h=>h.status==='active' && !sessions.some(session=>session.warband_id===w.roster.id && isHeroOut(session.live_state,h.id))).flatMap(h=>dispelsFor(h as RosterHero)).filter(source=>source.limit!=='perTurn' || (!!turns.data && !turns.data.finished && !!dispels.data && !dispels.data.some(d=>d.source_hero_id===source.ownerId && d.round===turns.data!.round && d.active_warband_id===turns.data!.turn_order[turns.data!.active_index])))),
     [enemies.warbands,turns.data,dispels.data,sessions],
   )
-  const needsSharedTurns=!turns.data && enemies.warbands.some(w=>[...w.roster.heroes,...w.roster.hiredSwords].some(h=>h.status==='active' && dispelsFor(h as RosterHero).some(source=>source.id==='staff_of_light')))
+  const needsSharedTurns=!turns.data && casters.some(c=>c.spells.some(s=>profileForSpell(c,s.spell.id).lore.id!=='prayers_of_sigmar')) && enemies.warbands.some(w=>[...w.roster.heroes,...w.roster.hiredSwords].some(h=>h.status==='active' && dispelsFor(h as RosterHero).some(source=>source.id==='staff_of_light')))
   const [casterId, setCasterId] = useState<string | null>(casters[0]?.heroId ?? null)
   const caster = casters.find((c) => c.heroId === casterId) ?? casters[0]
   const [state, setState] = useState<CastState | null>(null)
@@ -247,7 +247,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], sheet,
                     </HoverCard>
                     <p className="text-xs text-ink-dim">{selected.lore.name} · {difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
                   </div>
-                  <Button variant="secondary" disabled={selected.blocks.length > 0 || needsSharedTurns || enemies.isPending || turns.isPending || dispels.isPending || !!enemies.error || turns.isError || dispels.isError} onClick={() => begin(spell)}>
+                  <Button variant="secondary" disabled={selected.blocks.length > 0 || (needsSharedTurns && selected.lore.id!=='prayers_of_sigmar') || enemies.isPending || turns.isPending || dispels.isPending || !!enemies.error || turns.isError || dispels.isError} onClick={() => begin(spell)}>
                     {selected.kind === 'prayer' ? 'Recite' : 'Cast'}
                   </Button>
                 </div>

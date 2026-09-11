@@ -282,3 +282,14 @@ it('derives Maximilian’s Religious Fervour without giving it to other hired wa
  expect(fighters[0].traitIds).toContain('frenzy')
  expect(fighters[1].traitIds).not.toContain('frenzy')
 })
+
+it('resolves exact legacy staff and hammer names without permanent magic bonuses',()=>{
+ for(const name of ['Rune Staff','Hammer of Sigmar']){
+  const kit=loadoutOf([{itemId:null,customName:name,quantity:1}])
+  expect(kit.melee).toHaveLength(1)
+  expect(kit.melee[0]).toMatchObject({strength:'user',concussion:true})
+  expect(kit.melee[0].strengthBonus).toBeUndefined()
+  expect(kit.melee[0].parry).toBeUndefined()
+  expect(kit.melee[0].vsTraits).toBeUndefined()
+ }
+})

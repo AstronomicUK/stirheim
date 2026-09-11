@@ -6,8 +6,6 @@ Generated from current starting equipment and combat loadout mapping. These are 
 |---|---|
 | Clan Skryre Rat Ogre | Jaws; claws; small Warpfire Thrower on its mechanical left arm |
 | Mule Skinner | whip |
-| Norse Shaman | Rune Staff |
-| Warrior Priest Of Sigmar | Hammer of Sigmar |
 | Coachman | Whip |
 | Pyromaniac | Fireworks |
 | Dwarf Slayer Pirate | many many Pistols |
@@ -35,3 +33,5 @@ Staff of Light implementation notes: `CastTab.tsx` currently gathers dispel sour
 Milestone 55 completes the Staff of Light’s shared per-player-turn allowance, named source selection and persisted roll log; the implementation notes above are now historical. Other dispel items are not automatically implemented by this change. Remaining kit inventory is still 18 entries.
 
 Milestone 56 maps Maximilian’s Holy Weapon and Religious Fervour/Frenzy, with an explicit calculator control for Frenzy ending. Seventeen unmapped character/role entries remain. His other conditional psychology/aura abilities are still separate open work.
+
+Milestone 57 resolves Rune Staff and Hammer of Sigmar as named ordinary bludgeoning equipment; no additional magical weapon profile is specified in their entries. Fifteen unmapped character/role entries remain. The Norse armour exception and selected Sigmar prayer dispel protection are also fixed independently of the agreed prayer-lore classification.

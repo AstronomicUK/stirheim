@@ -106,3 +106,9 @@ it('gives Maximilian his named holy weapon and Strongman at recruitment',()=>{
  expect(hiredSwordStartingSkills('maximilian_the_mad')).toContain('strongman')
  expect(hiredSwordStartingEquipment('maximilian_the_mad',detail)).toEqual([{itemId:'maximilian_holy_weapon',quantity:1}])
 })
+
+it('keeps named priest and shaman weapons distinct from cast magic',()=>{
+ const priest=hiredSwordStartingEquipment('warrior_priest_of_sigmar',findHiredSword('warrior_priest_of_sigmar')!.detail)
+ expect(priest.map(i=>i.itemId)).toEqual(['priest_hammer_of_sigmar','light_armour','shield'])
+ for(const weapon of ['sword','axe']) expect(hiredSwordStartingEquipment('norse_shaman',findHiredSword('norse_shaman')!.detail,undefined,weapon).map(i=>i.itemId)).toEqual(['norse_rune_staff',weapon])
+})

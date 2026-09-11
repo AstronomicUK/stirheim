@@ -291,3 +291,23 @@ it('offers flat-threshold dispelling for an automatic spell without inventing a 
  expect(applyCastRoll(cast,[4]).outcome).toBe('dispelled')
  expect(applyCastRoll(cast,[2]).outcome).toBe('automatic')
 })
+
+it('honours explicit Norse and Skink armour exceptions without changing prayer classification',()=>{
+ for(const [unit,lore,spell] of [['norse_shaman','norse_runes','howl_of_the_north'],['lizardmen_skink_priest','lizardman_magic','chotecs_wrath']]){
+  const p=casterProfile({hero:hero({unitTemplateId:unit,spellIds:[spell,'vision_of_torment'],equipment:[{itemId:'light_armour',quantity:1},{itemId:'holy_tome',quantity:1}],skillIds:['sorcery']}),loreId:lore})!
+  const own=profileForSpell(p,spell)
+  expect(own.kind).toBe('spell')
+  expect(own.blocks).toEqual([])
+  expect(own.modifiers.map(m=>m.id)).toContain('sorcery')
+  expect(own.modifiers.map(m=>m.id)).not.toContain('holy_tome')
+  expect(profileForSpell(p,'vision_of_torment').blocks).toHaveLength(1)
+ }
+})
+it('does not offer spell-only staff or runestone protection against a selected Sigmar prayer',()=>{
+ const p=casterProfile({hero:hero({spellIds:['hearts_of_steel','howl_of_the_north']}),loreId:'prayers_of_sigmar'})!
+ const sources=[{id:'staff_of_light',name:'Staff of Light',detail:'',against:{threshold:4}},{id:'elven_runestones',name:'Elven Runestones',detail:'',against:'difficulty' as const}]
+ const prayer=p.spells.find(s=>s.spell.id==='hearts_of_steel')!.spell
+ const rune=p.spells.find(s=>s.spell.id==='howl_of_the_north')!.spell
+ expect(applyCastRoll(startCast(p,prayer,{enemyDispel:sources}),[6,6]).pending).toBeNull()
+ expect(applyCastRoll(startCast(p,rune,{enemyDispel:sources}),[6,6]).pending?.kind).toBe('dispel')
+})

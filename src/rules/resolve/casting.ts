@@ -60,6 +60,8 @@ export interface DispelSource {
   ownerId?: string;
   ownerName?: string;
   limit?: "perTurn";
+  /** Only explicit prayer-affecting protection can oppose Sigmar prayers. */
+  affectsPrayers?: boolean;
   id: string;
   name: string;
   detail: string;
@@ -282,8 +284,10 @@ function castingRules(hero: RosterHero, lore: SpellLore): Omit<CasterProfile, 's
   const kind: CasterKind = (PRAYER_LORE_IDS as readonly string[]).includes(lore.id) ? 'prayer' : 'spell';
   const kit = casterKit(hero, kind);
   const blocks: string[] = [];
+  // Explicit source exceptions are independent of Tom’s four prayer-lores policy (#58).
+  const armourPermittedByLore=lore.id==='norse_runes' || (lore.id==='lizardman_magic' && hero.unitTemplateId==='lizardmen_skink_priest');
   const innateWarriorWizard = hero.unitTemplateId === 'restless_dead_variant_liche' || ('hiredSwordId' in hero && hero.hiredSwordId === 'the_fallen_sister');
-  if (kind === "spell" && !hero.skillIds.includes('warrior_wizard') && !innateWarriorWizard) {
+  if (kind === "spell" && !hero.skillIds.includes('warrior_wizard') && !innateWarriorWizard && !armourPermittedByLore) {
     const worn = armourBlockingCasting(hero);
     if (worn.length > 0) blocks.push(`A wizard may not use magic wearing armour, a shield or a buckler. Carrying: ${worn.join(", ")}.`);
   }
@@ -403,7 +407,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     outcome: null,
     secondSpellOffered: false,
     done: false,
-    enemyDispel: options.enemyDispel ?? [],
+    enemyDispel: (options.enemyDispel ?? []).filter(source=>profile.lore.id!=='prayers_of_sigmar' || source.affectsPrayers===true),
   };
 
   if (spell.difficulty === null) {

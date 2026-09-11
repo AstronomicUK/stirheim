@@ -27,7 +27,7 @@ export const HIRED_EQUIPMENT_CHOICES: Record<string, HiredEquipmentChoice[]> = {
     choice('clubs', 'Two hammers or clubs', [item('club_mace_or_hammer', 2)]),
   ],
   norse_shaman: ['sword', 'axe'].map(weapon => choice(weapon, `Rune Staff and ${weapon}`, [
-    { itemId: null, customName: 'Rune Staff', quantity: 1 }, item(weapon),
+    item('norse_rune_staff'), item(weapon),
   ])),
   witch_hunter: ['duelling_pistol', 'crossbow_pistol'].map(weapon => choice(weapon,
     weapon === 'duelling_pistol' ? 'Duelling pistol, sword and dagger' : 'Crossbow pistol, sword and dagger',

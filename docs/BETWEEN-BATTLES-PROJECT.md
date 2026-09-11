@@ -24,7 +24,7 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,631 ordinary tests pass; the last separate local database run passed all 156 tests**; an additional Frenzy-ended regression passes in the 80-test focused run. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 56. Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,636 ordinary tests pass; the last separate local database run passed all 156 tests**. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 57. Mobile checks use disposable local records and actual 390px viewport constraints.
 
 Migrations through 68 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
@@ -473,3 +473,14 @@ Reviewed `05-dramatis-personae.md:753–763`. Maximilian’s named Holy Weapon n
 Religious Fervour now supplies Maximilian’s Frenzy. A calculator control, shown only for frenzied melee attackers, lets the player state that Frenzy has ended after being knocked down/stunned. It removes doubled Attacks without rewriting printed stats. This is an explicit current-calculation control, not automatic persistent injury/psychology tracking. His wider conditional Hatred, Leadership and nearby Fear-immunity rules remain separate work; this milestone does not close all Maximilian abilities.
 
 Validation: the full ordinary suite passed **1,631 tests**, then all **80 focused combat/recruitment tests** passed after adding the Frenzy-ended regression. Typechecked build and lint pass with existing warnings. The disposable 390px mobile check (`/tmp/stirheim-maximilian-mobile-qa.mjs`) confirms the named weapon, occupied off-hand and usable Frenzy-ended control without overflow or page errors. No migration, push or deployment. Last separate database run remains 156 passing tests. Unmapped equipment inventory now lists 17 character/role entries.
+
+
+### Local milestone 57 — named staff/hammer and explicit casting exceptions (#61/#74; #179/#180 follow-ups, not deployed)
+
+The Norse Shaman’s Rune Staff and the hired Warrior Priest’s Hammer of Sigmar now have named equipment entries and usable ordinary bludgeoning profiles. The source lists no additional weapon bonus. The Rune Staff uses the app’s existing Staff→Club interpretation; the hammer follows the normal hammer rule. Neither inherits Sigmarite Warhammer bonuses or a permanently active Hammer of Sigmar prayer. Both Norse sword/axe recruitment choices remain intact, and exact legacy names are recognised. Sources: `04-hired-swords.md:1338–1342,1642–1646` and `02-weapons-armour-equipment.md:213–231`.
+
+Reviewing Norse casting also resolves #179’s explicit armour exceptions: Norse Runes and the Skink Priest’s Lizardman lore may be cast while armoured. They remain spell-classified, distinct from Tom’s settled four prayer lores; unrelated known spells still receive ordinary armour restrictions and prayer-only equipment bonuses are not granted. The Norse source explicitly retains protection against spells. Source: `03-campaigns-magic-optional-rules.md:2234` and `04-hired-swords.md:1342`.
+
+#180 follow-up: selected Sigmar prayers now filter out spell-only dispel sources (including Staff of Light and Runestones). This follows the explicit Sigmar rule at `03:2889`; no broader immunity was invented for other lores. Such prayers do not require shared turn order merely because the enemy owns a staff. An explicit future prayer-affecting source can opt in.
+
+Validation: **1,636 ordinary tests pass**; typechecked build and lint pass with existing warnings. The disposable 390px mobile check (`/tmp/stirheim-norse-prayer-mobile-qa.mjs`) recites a Sigmar prayer against an opposing staff without a dispel or turn-order prerequisite, then starts shared round 2 and casts an armoured Norse rune which correctly offers that staff’s dispel. No overflow or page errors. Last database suite remains 156 passing tests; there is no database change in this milestone. No push or deployment. Unmapped equipment inventory now lists 15 character/role entries.

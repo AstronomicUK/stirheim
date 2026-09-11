@@ -673,3 +673,15 @@ it('the Swivel Gun cannot fire after movement even with Nimble and never gains e
     expect(computeOdds({ ...initial, context: { ...initial.context, movedThisTurn: true } }).attacks).toBe(0)
   }
 })
+
+it('includes the Swivel misfire six as an extra 1/36 automatic hit at increased Strength', () => {
+  const gunner = combatant('Gunner', [{ itemId: 'swivel_gun', quantity: 1 }])
+  const tough = { ...skaven, stats: { ...skaven.stats, T: 4 } }
+  const initial = setup(gunner, tough, 'swivel_gun_chain_shot', null)
+  const odds = computeOdds(initial)
+  expect(odds.weapons[0].pHit).toBeCloseTo(0.5 + 1 / 36)
+  expect(odds.weapons[0].pWound).toBeCloseTo(0.5 * 0.5 + 1 / 36 * 2 / 3)
+  const blessed = computeOdds({ ...initial, ladyBlessing: true })
+  expect(blessed.chain.outOfAction).toBeCloseTo(odds.chain.outOfAction / 2)
+  expect(blessed.chain.anyHit).toBeCloseTo(odds.chain.anyHit / 2)
+})

@@ -3744,3 +3744,10 @@ The carried Swivel Gun now reduces its bearer's Battle Sheet Movement and Initia
 Added the printed six-result misfire resolver and persistent physical-weapon firing records. The foundation distinguishes destruction, battle-long jamming, an extra reload turn, harmless clicks, and a successful +1 Strength shot; BOOM self-hits explicitly cannot cause critical hits. Shared weapon keys prevent changing ammunition from bypassing reload. Pending app misfire dice survive reload, edited confirmation preserves the original, and explained corrections retain history. Experimental weapons reload after non-BOOM results.
 
 Five focused domain tests plus build/typecheck/lint passed (existing warnings). This is foundation only: it is not yet connected to the firing UI, automatic damage, roster weapon removal or displayed probabilities. Existing partial tracker statuses remain. Source: reference/rules/03-campaigns-magic-optional-rules.md:4319–4331 and Experimental weapon clauses in 02. No migration or deployment.
+
+
+### #69/#71/#154 — Swivel Gun misfire rolls and target odds (local, 11 September)
+
+A natural 1 to hit with a Swivel Gun now opens the mandatory misfire table in the roller. A 6 automatically hits at +1 Strength with the corresponding wound/save profile; 1–5 cause no hit on the intended target and explain the separate consequences. BOOM explicitly calls for a non-critical Strength 4 self-hit and weapon destruction. Target probabilities include the strengthened 1-in-36 hit branch and the Blessing permission check, preserving distinct damage profiles through the critical/wound calculation.
+
+Full ordinary tests: 1873 passed, 176 database skipped. Build/typecheck/lint passed with existing warnings. Disposable mobile QA verified natural 1 → misfire 6 → Chain Shot at Strength 5 wounding Toughness 4 on 3+. Durable firing/jam/reload state and automatic self-damage/destruction are still not wired into this roller; those consequences remain explicitly table-managed. The to-hit-reroll interaction is also explicitly manual pending a source ruling. These tracker items remain partial; no deployment.

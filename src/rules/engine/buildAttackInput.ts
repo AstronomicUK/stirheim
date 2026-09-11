@@ -370,8 +370,13 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const wardCandidates = [defender.wardSaveThreshold, missileWard].filter((t): t is number => t !== null && t !== undefined);
   const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 
+  // Swivel Guns fire one shot. Multi-barrel Experimental weapons need shared jam/destruction state separately.
+  const misfireEnhanced = weapon.type === "ranged" && weapon.special.includes("cumbersomeMinus1InitiativeMinus1Movement") && !rerollToHit
+    ? buildAttackInput({ attacker, defender, context: { ...context, firePermissionThreshold: undefined }, customSkills, houseRules, weapon: { ...weapon, strength: attackStrength + 1, strengthBonus: 0, special: weapon.special.filter(tag => tag !== "cumbersomeMinus1InitiativeMinus1Movement") } })
+    : undefined;
   const pigeonBlast = context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs";
   return {
+    misfireEnhanced,
     firePermissionThreshold: !pigeonBlast && weapon.type === "ranged" && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
     hitThreshold: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") ? 5 : hitThreshold,
     temperamentalPigeon: !pigeonBlast && weapon.special.includes("temperamentalD6ToHitInsteadOfBS") || undefined,

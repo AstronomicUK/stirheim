@@ -628,3 +628,18 @@ it('offers Dodge before Lucky Charm for automatic line and blast hits', () => {
     expect(state.pending?.kind).toBe('wound')
   }
 })
+
+it('rolls mandatory misfires on a one and uses the enhanced hit profile only for KA-BOOM', () => {
+  const shot = plan('Swivel Gun', { misfireEnhanced: input({ woundThreshold: 3 }) })
+  let state = applyRoll(startPhase([shot], 1, 0), 1)
+  expect(state.pending?.kind).toBe('misfire')
+  const exploded = applyRoll(state, 1)
+  expect(exploded.outcomes).toEqual(['misfireExplosion'])
+  expect(exploded.woundsLost).toBe(0)
+  expect(exploded.log.at(-1)?.text).toContain('cannot cause a critical')
+  expect(applyRoll(state, 2).outcomes).toEqual(['misfire'])
+  state = applyRoll(state, 6)
+  expect(state.pending?.kind).toBe('wound')
+  state = applyRoll(state, 3)
+  expect(state.pending?.kind).toBe('save')
+})

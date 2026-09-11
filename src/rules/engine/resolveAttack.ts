@@ -4,6 +4,7 @@
 // wound actually produces an Injury roll depends on how many Wounds the target has left, which is
 // only known inside the phase aggregation — so that step lives in turnAggregate.ts.
 
+import { mixRangedAttacks } from "./mixRangedAttacks";
 import { probabilityAtLeast, type Threshold, IMPOSSIBLE } from "./dice";
 import { injuryDistributionForWounds, type InjuryBand, type InjuryModifiers } from "./injury";
 import { critDistribution, type CritTableKey, type CritResult } from "./crit";
@@ -36,6 +37,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Mandatory single-shot misfire: the 6 result hits at the enhanced profile. */
+  misfireEnhanced?: AttackInput;
   /** Pigeon launch table: 5–6 on target, 2–4 harmless, 1 explodes at the firer. */
   temperamentalPigeon?: boolean;
   /** Per-shot permission roll, before rolling to hit (Blessing of the Lady). */
@@ -319,9 +322,19 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
   if (input.firePermissionThreshold !== undefined) {
     const permission = probabilityAtLeast(input.firePermissionThreshold);
     const resolved = resolveSingleAttack({ ...input, firePermissionThreshold: undefined });
-    return { ...resolved, pHit: resolved.pHit * permission, pWound: resolved.pWound * permission,
+    return { ...resolved,
+      branches: resolved.branches ? [{ probability: permission, attack: resolved }, { probability: 1 - permission, attack: resolveSingleAttack({ ...input, firePermissionThreshold: undefined, misfireEnhanced: undefined, hitThreshold: IMPOSSIBLE, automaticHits: false, autoHitKnockedDown: false }) }] : undefined,
+      pHit: resolved.pHit * permission, pWound: resolved.pWound * permission,
       pWoundNormal: resolved.pWoundNormal * permission, pWoundTriggerEligible: resolved.pWoundTriggerEligible * permission,
       hitFaces: resolved.hitFaces?.map(face => ({ ...face, probability: face.probability * permission + (face.face === 0 ? 1 - permission : 0) })) };
+  }
+
+  if (input.misfireEnhanced) {
+    const ordinary = resolveSingleAttack({ ...input, misfireEnhanced: undefined });
+    const conditioned = { ...ordinary, pHit: ordinary.pHit * 6 / 5, pWound: ordinary.pWound * 6 / 5, pWoundNormal: ordinary.pWoundNormal * 6 / 5, pWoundTriggerEligible: ordinary.pWoundTriggerEligible * 6 / 5, hitFaces: undefined };
+    const enhanced = resolveSingleAttack({ ...input.misfireEnhanced, misfireEnhanced: undefined, firePermissionThreshold: undefined, automaticHits: true, autoWoundOnNaturalSixToHit: false });
+    const miss = resolveSingleAttack({ ...input, misfireEnhanced: undefined, hitThreshold: IMPOSSIBLE, automaticHits: false });
+    return mixRangedAttacks([{ probability: 5 / 6, attack: conditioned }, { probability: 1 / 36, attack: enhanced }, { probability: 5 / 36, attack: miss }]);
   }
 
   if (input.entangleInsteadOfWound) input = { ...input, woundThreshold: IMPOSSIBLE, autoWoundOnNaturalSixToHit: false, autoOutOfActionStunned: false };

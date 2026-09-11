@@ -1,3 +1,4 @@
+import { blackpowderMisfire } from "../../../rules/resolve/blackpowderMisfire"
 // Walking real dice through one phase of attacks: to hit, parry, to wound, critical, saves,
 // injury. The engine's AttackInput already holds every threshold and flag, so this only has to
 // apply the rulebook's order of play and remember what has been used up (the one critical per
@@ -9,7 +10,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -35,11 +36,13 @@ export interface AttackPlan {
   rot?: boolean
 }
 
-export type Outcome = 'backfire' | 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
+export type Outcome = 'misfireExplosion' | 'misfire' | 'backfire' | 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { backfire: 0, cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { misfire: 0, misfireExplosion: 0, backfire: 0, cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
+  misfire: 'Misfired — the target was not hit',
+  misfireExplosion: 'Weapon destroyed — resolve its Strength 4 self-hit at the table',
   backfire: 'Exploded at the firer — resolve the blast at the table',
   cannotFire: 'Unable to fire',
   entangled: 'Entangled',
@@ -265,9 +268,19 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       return allowed ? beginAttack(next, true) : finishAttack(next, 'cannotFire')
     }
 
+    case 'misfire': {
+      const result = blackpowderMisfire(roll)
+      const next = log(state, `Misfire: rolled ${roll}${rollTag}. ${result.name}: ${result.detail}`, result.fires ? 'good' : 'bad')
+      if (!result.fires) return finishAttack(next, result.weaponDestroyed ? 'misfireExplosion' : 'misfire')
+      const enhanced = input.misfireEnhanced!
+      const changed = { ...next, plans: next.plans.map((p, index) => index === next.index ? { ...p, input: { ...enhanced, firePermissionThreshold: undefined, misfireEnhanced: undefined } } : p), cur: { ...next.cur, hitRoll: 1 } }
+      if (enhanced.dodgeThreshold !== undefined && enhanced.dodgeThreshold !== IMPOSSIBLE) return afterHit(changed)
+      return offerCharmOrContinue(changed)
+    }
     case 'pigeonLaunch':
     case 'hit':
     case 'hitReroll': {
+      if (roll === 1 && input.misfireEnhanced) return { ...log(state, `${attackName(state)}: rolled 1${rollTag} to hit. Roll on the mandatory Blackpowder Misfire table.`, 'bad'), pending: { kind: 'misfire', who: 'attacker', label: 'Blackpowder misfire D6', detail: '1: destroyed and S4 self-hit; 2: jammed; 3: extra reload turn; 4–5: no shot; 6: hit at +1 Strength.' } }
       if (input.temperamentalPigeon && roll < 5) {
         const detail = roll === 1 ? 'The bomb explodes in the firer’s hands. At the table, resolve one Strength 4 hit on the firer and everyone within 1½ inches. This target result does not apply those wounds.' : 'The bomb explodes harmlessly in the air before reaching the target.'
         return finishAttack(log(state, `Pigeon launch: rolled ${roll}${rollTag}. ${detail}`, roll === 1 ? 'bad' : 'neutral'), roll === 1 ? 'backfire' : 'miss')

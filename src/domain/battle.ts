@@ -102,7 +102,7 @@ export const battleLiveStateSchema = z.object({
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
   pigeonLaunches: z.array(z.object({
-    id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), permissionNote: z.string().optional(), ownTurn: z.number().int().min(0), at: z.string(), reason: z.string().default(''),
+    id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), permissionRequired: z.boolean().optional(), permissionOriginal: z.number().int().min(1).max(6).optional(), permissionDie: z.number().int().min(1).max(6).optional(), permissionNote: z.string().optional(), ownTurn: z.number().int().min(0), at: z.string(), reason: z.string().default(''),
     original: z.number().int().min(1).max(6).optional(), die: z.number().int().min(1).max(6).optional(),
     intendedTarget: z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() }),
     targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })).optional(),

@@ -401,3 +401,15 @@ it('failed Fear when charged requires sixes, with exemptions and no shooting pen
   expect(relevantToggles(captain, 'melee', fight.primary, fight.defenderKit, null, scary).some(t => t.field === 'failedFearWhenCharged')).toBe(true)
   expect(relevantToggles(captain, 'melee', fight.primary, fight.defenderKit, null, skaven).some(t => t.field === 'failedFearWhenCharged')).toBe(false)
 })
+
+
+it('resolves charge versus Strike First by Initiative, and when-charged weapons only when charged (#156)', () => {
+  const spearman = combatant('Spearman', [{ itemId: 'spear', quantity: 1 }], { stats: { ...base, I: 2 } })
+  const charge = setup(captain, spearman, 'sword', null)
+  expect(computeOdds({ ...charge, context: { ...charge.context, charging: true } }).strikeOrder).toContain('Captain strikes first: Initiative 3')
+  const faster = { ...spearman, stats: { ...spearman.stats, I: 5 } }
+  expect(computeOdds({ ...charge, defender: faster, context: { ...charge.context, charging: true } }).strikeOrder).toContain('Spearman strikes first: Initiative 5')
+  const corbin = combatant('Guard', [{ itemId: 'bec_de_corbin', quantity: 1 }], { stats: { ...base, I: 2 } })
+  const counter = setup(corbin, captain, 'bec_de_corbin', null)
+  expect(computeOdds({ ...counter, context: { ...counter.context, firstTurnOfCombat: true } }).strikeOrder).toContain('Captain strikes first: Initiative 3')
+})

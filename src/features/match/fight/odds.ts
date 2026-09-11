@@ -310,7 +310,6 @@ export function strikeOrder(setup: FightSetup): string {
   const d = setup.defender
   const aWeapons = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
   const dWeapons = setup.defenderKit.melee
-  const first = (ws: Weapon[]) => ws.some((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))
   const last = (ws: Weapon[], c: Combatant, kit: Loadout) => ws.filter(w => w.special.includes('strikesLast') && !(w.special.includes('twoHanded') && [...c.skillIds,...kit.skillIds].includes('strongman')))
   const aLast = last(aWeapons,a,setup.attackerKit)
   const dLast = last(dWeapons,d,setup.defenderKit)
@@ -319,12 +318,15 @@ export function strikeOrder(setup: FightSetup): string {
   const firstTurn = setup.context.charging || setup.context.firstTurnOfCombat
   if (aLast.length && !dLast.length) return `${d.name} strikes first: ${a.name}'s ${aLast[0].name} always strikes last.`
   if (dLast.length && !aLast.length) return `${a.name} strikes first: ${d.name}'s ${dLast[0].name} always strikes last.`
-  if (setup.context.charging) {
-    if (firstTurn && first(dWeapons)) return `${d.name} strikes first despite the charge (${dWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}); a Strike First charger would roll off.`
-    return `${a.name} strikes first: charging.`
-  }
-  if (firstTurn && first(aWeapons) && !first(dWeapons)) return `${a.name} strikes first in the first turn (${aWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}).`
-  if (firstTurn && first(dWeapons) && !first(aWeapons)) return `${d.name} strikes first in the first turn (${dWeapons.find((w) => w.special.includes('strikesFirstFirstTurn') || w.special.includes('strikesFirstWhenCharged'))!.name}).`
+  const aFirstWeapon = firstTurn ? aWeapons.find(w => w.special.includes('strikesFirstFirstTurn')) : undefined
+  const dFirstWeapon = firstTurn ? dWeapons.find(w => w.special.includes('strikesFirstFirstTurn') || (setup.context.charging && w.special.includes('strikesFirstWhenCharged'))) : undefined
+  const aFirst = !aLast.length && (setup.context.charging || Boolean(aFirstWeapon))
+  const dFirst = !dLast.length && Boolean(dFirstWeapon)
+  if (aFirst && !dFirst) return setup.context.charging
+    ? `${a.name} strikes first: charging.`
+    : `${a.name} strikes first in the first turn (${aFirstWeapon!.name}).`
+  if (dFirst && !aFirst) return `${d.name} strikes first in the first turn (${dFirstWeapon!.name}).`
+  // Chargers and Strike First weapons have the same priority; Initiative breaks their tie.
   const aNote = aI !== a.stats.I ? ` (${a.stats.I}${aI - a.stats.I > 0 ? '+' : ''}${aI - a.stats.I} from the weapon)` : ''
   const dNote = dI !== d.stats.I ? ` (${d.stats.I}${dI - d.stats.I > 0 ? '+' : ''}${dI - d.stats.I} from the weapon)` : ''
   if (aI > dI) return `${a.name} strikes first: Initiative ${aI}${aNote} against ${dI}${dNote}.`

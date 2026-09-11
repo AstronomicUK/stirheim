@@ -130,3 +130,9 @@ Source1c:224–237 confirms Raging Peasants fight unarmed without penalties; mon
 Explicit unarmedProfile metadata flows roster hero/group +simulator→loadoutFor. RagingPeasants Improvised tools S3/A1, WarriorMonks Open-hand fighting S3/A2 including printed bonus. No ordinary fist penalties or inventory mutation; equipped weapons retained. Source1c:213–229. Fifty-five combatant/simulator tests +typecheck/build/lint pass. No deployment. Dragon Monk critical5+ and quarterstaff/unarmed split not yet covered; #163 stays partial.
 
 Next meaningful scope: #156 selected defender weapons, #149 Barrage or #150 full staff alternative (constraints above), rather than more isolated reminder edits. Bribery/abandonment and remaining psychology require larger state flows.
+
+## Combat milestone 17 — #156 charge/Strike First ties (local)
+
+strikeOrder now resolves equal charge/StrikeFirst priority by Initiative per01:799–801; when-charged tags don't give the attacker a blanket first-round priority. Both StrikeLast falls through to Initiative. Thirty-seven odds tests +typecheck/build/lint pass. No deployment. #156 still partial: dWeapons=all carried defender melee weapons, UI has no explicit hand selection yet; weapon-specific Pike/Whip exceptions remain.
+
+#149 source02:585–595 read: Barrage triggers on HIT but FAILED WOUND, not a missed hit (data tag misleading). Each follow-up at-1tohit, cap6+, continues on hit/failedwound; requires exact infinite-tail probability +live additional rolls while respecting remaining parries/critical limit. Do not implement as a simple reroll or fixed extra attack.

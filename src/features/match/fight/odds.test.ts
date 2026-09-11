@@ -651,3 +651,16 @@ describe('Pigeon Bomb fixed launch table', () => {
     expect(accurate.chain.outOfAction).toBeCloseTo(poor.chain.outOfAction)
   })
 })
+
+it('resolves a declared Pigeon blast as one automatic S4 hit without another launch or blessing test', () => {
+  const bomber = combatant('Bomber', [{ itemId: 'hersten_wenkler_pigeon_bombs', quantity: 1 }])
+  const initial = setup(bomber, skaven, 'hersten_wenkler_pigeon_bombs', null)
+  const odds = computeOdds({ ...initial, ladyBlessing: true, context: { ...initial.context, pigeonBlastHit: true, movedThisTurn: true } })
+  expect(odds.attacks).toBe(1)
+  expect(odds.weapons[0].input.automaticHitReason).toBe('pigeonBlast')
+  expect(odds.weapons[0].input.temperamentalPigeon).toBeFalsy()
+  expect(odds.weapons[0].input.firePermissionThreshold).toBeUndefined()
+  expect(odds.weapons[0].pHit).toBe(1)
+  expect(odds.weapons[0].strength).toBe(4)
+  expect(odds.chain.anyHit).toBe(1)
+})

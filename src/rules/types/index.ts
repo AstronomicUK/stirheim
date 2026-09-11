@@ -315,6 +315,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** Resolve one already-declared Pigeon Bomb blast victim, without relaunching. */
+  pigeonBlastHit?: boolean;
   /** Required permission test before each ordinary missile shot. */
   firePermissionThreshold?: number;
   /** Serpent Staff command: replace all normal attacks with its single WS4/S4 attack. */

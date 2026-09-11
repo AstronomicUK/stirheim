@@ -15,7 +15,7 @@ export function startPigeonLaunch(sheet: BattleLiveState, launch: Omit<PigeonLau
   const saved: PigeonLaunch = { ...launch, die: undefined, targets: undefined, intendedTarget: { ...launch.intendedTarget } }
   return withRollAttempt({ ...sheet, pigeonLaunches: [...sheet.pigeonLaunches, saved] }, {
     id: launch.id, at: launch.at, turn: sheet.turn, kind: 'attack', status: 'incomplete', label: `${launch.shooterName}: Pigeon Bomb launch in progress`,
-    rolls: [...(launch.reason.trim() ? [`Additional launch: ${launch.reason.trim()}.`] : []), `Intended target: ${launch.intendedTarget.name}.`, launch.original === undefined ? 'Awaiting the tabletop launch D6.' : `App rolled ${launch.original}. Awaiting confirmation; edits will be recorded.`],
+    rolls: [...(launch.permissionNote ? [launch.permissionNote] : []), ...(launch.reason.trim() ? [`Additional launch: ${launch.reason.trim()}.`] : []), `Intended target: ${launch.intendedTarget.name}.`, launch.original === undefined ? 'Awaiting the tabletop launch D6.' : `App rolled ${launch.original}. Awaiting confirmation; edits will be recorded.`],
   })
 }
 
@@ -26,7 +26,7 @@ export function confirmPigeonLaunch(sheet: BattleLiveState, id: string, die: num
   const outcome = die === 1 ? 'Backfire: the firer and everyone within 1½ inches take one Strength 4 hit.' : die >= 5 ? 'On target: the target and everyone within 1½ inches take one Strength 4 hit.' : 'The bomb explodes harmlessly in the air. Nobody is hit.'
   return withRollAttempt({ ...sheet, pigeonLaunches: sheet.pigeonLaunches.map(l => l.id === id ? { ...l, die, targets: die >= 2 && die <= 4 ? [] : undefined } : l) }, {
     id, at: launch.at, turn: sheet.turn, kind: 'attack', status: 'complete', label: `${launch.shooterName}: Pigeon Bomb launch`,
-    rolls: [...(launch.reason.trim() ? [`Additional launch: ${launch.reason.trim()}.`] : []), `Intended target: ${launch.intendedTarget.name}.`, launch.original === undefined ? `Tabletop launch D6 entered: ${die}.` : launch.original === die ? `App rolled ${die}.` : `App rolled ${launch.original}; player changed it to ${die}.`, outcome],
+    rolls: [...(launch.permissionNote ? [launch.permissionNote] : []), ...(launch.reason.trim() ? [`Additional launch: ${launch.reason.trim()}.`] : []), `Intended target: ${launch.intendedTarget.name}.`, launch.original === undefined ? `Tabletop launch D6 entered: ${die}.` : launch.original === die ? `App rolled ${die}.` : `App rolled ${launch.original}; player changed it to ${die}.`, outcome],
   })
 }
 

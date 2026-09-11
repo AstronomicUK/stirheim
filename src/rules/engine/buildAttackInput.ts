@@ -78,6 +78,7 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
  * - `maxAttacks` (Fist: 1) caps the result.
  */
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = [], chargeBonusAvailable = true): number {
+  if (context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs") return 1;
   if (context.failedStupidity && character.traits.includes("stupidity") && !character.traits.includes("deathwish")) return 0;
   if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
   // A blunderbuss shot places one hit on each model in its line, not extra
@@ -367,12 +368,13 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const wardCandidates = [defender.wardSaveThreshold, missileWard].filter((t): t is number => t !== null && t !== undefined);
   const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 
+  const pigeonBlast = context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs";
   return {
-    firePermissionThreshold: weapon.type === "ranged" && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
+    firePermissionThreshold: !pigeonBlast && weapon.type === "ranged" && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
     hitThreshold: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") ? 5 : hitThreshold,
-    temperamentalPigeon: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") || undefined,
-    automaticHits: weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
-    automaticHitReason: weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
+    temperamentalPigeon: !pigeonBlast && weapon.special.includes("temperamentalD6ToHitInsteadOfBS") || undefined,
+    automaticHits: pigeonBlast || weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
+    automaticHitReason: pigeonBlast ? "pigeonBlast" : weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
     woundThreshold: weapon.special.includes("entangleInsteadOfWound") ? IMPOSSIBLE : woundThreshold,
     entangleInsteadOfWound: weapon.special.includes("entangleInsteadOfWound") || undefined,
     armourThreshold,

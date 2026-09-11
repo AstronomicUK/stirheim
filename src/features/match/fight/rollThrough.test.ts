@@ -614,3 +614,17 @@ describe('Temperamental pigeon launch', () => {
     expect(hit.log.at(-1)?.text).toContain('every other model within 1½ inches')
   })
 })
+
+it('offers Dodge before Lucky Charm for automatic line and blast hits', () => {
+  for (const automaticHitReason of ['pigeonBlast', 'blunderbussLine'] as const) {
+    const attack = { ...plan('Blast', { automaticHits: true, automaticHitReason, dodgeThreshold: 5 }), luckyCharm: 4 }
+    let state = startPhase([attack], 1, 0, 0, true)
+    expect(state.pending?.kind).toBe('dodge')
+    expect(state.charmUsed).toBe(false)
+    expect(applyRoll(state, 5).outcomes).toEqual(['dodged'])
+    state = applyRoll(state, 1)
+    expect(state.pending?.kind).toBe('luckyCharm')
+    state = applyRoll(state, 1)
+    expect(state.pending?.kind).toBe('wound')
+  }
+})

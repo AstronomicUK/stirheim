@@ -77,7 +77,7 @@ export const RANGED_AND_CREATURE_WEAPONS: Weapon[] = [
   // TODO: Hand-held Mortar scatters 2D6" on a miss and hits everything within 1.5" of the landing spot.
   { id: "hand_held_mortar", name: "Hand-held Mortar", type: "ranged", strength: 4, critCategory: "missile", concussion: false, saveModifier: 2, moveOrFire: true, special: ["prepareShotReloadEveryOtherTurn", "scatter2D6OnMiss", "experimentalBlackpowderRulesAlwaysOn", "explosiveRadius1AndHalfIn"], rangedProfile: { shortRange: 12, maxRange: 24, shotsPerTurn: 1 } },
   { id: "handgun", name: "Handgun", type: "ranged", strength: 4, critCategory: "missile", concussion: false, saveModifier: 2, moveOrFire: true, special: ["prepareShotReloadEveryOtherTurn"], rangedProfile: { shortRange: 12, maxRange: 24, shotsPerTurn: 1 } },
-  // Flat launch D6 is resolved by the engine; multi-model blast and backfire wounds remain table-managed.
+  // Flat launch D6 is resolved by the engine; the Battle Sheet persists and resolves each blast victim.
   { id: "hersten_wenkler_pigeon_bombs", name: "Hersten-Wenkler Pigeon Bombs", type: "ranged", strength: 4, critCategory: "missile", concussion: false, moveOrFire: true, special: ["temperamentalD6ToHitInsteadOfBS", "explosiveRadiusOnLanding", "suppyReplenishesEachGame"], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } },
   { id: "hochland_long_rifle", name: "Hochland Long Rifle", type: "ranged", strength: 4, critCategory: "missile", concussion: false, saveModifier: 2, moveOrFire: true, special: ["prepareShotReloadEveryOtherTurn", "pickAnyTargetInSight"], rangedProfile: { shortRange: 24, maxRange: 48, shotsPerTurn: 1 } },
   // TODO: double-barrelled mechanic (two S4 hits per successful to-hit roll).

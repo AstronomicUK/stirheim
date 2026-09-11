@@ -368,6 +368,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 
   return {
+    firePermissionThreshold: weapon.type === "ranged" && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
     hitThreshold,
     automaticHits: weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
     automaticHitReason: weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,

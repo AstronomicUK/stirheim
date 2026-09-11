@@ -582,3 +582,18 @@ describe('Bolas non-damaging hits', () => {
     expect(state.woundsLost).toBe(0)
   })
 })
+
+describe('Blessing of the Lady permission', () => {
+  it('ends a failed shot before hit, wound or saves and tests each subsequent shot', () => {
+    let state = startPhase([plan('Bow', { firePermissionThreshold: 4 }), plan('Bow', { firePermissionThreshold: 4 })], 1, 0)
+    expect(state.pending?.kind).toBe('firePermission')
+    state = applyRoll(state, 3)
+    expect(state.outcomes).toEqual(['cannotFire'])
+    expect(state.pending?.kind).toBe('firePermission')
+    state = applyRoll(state, 4)
+    expect(state.pending?.kind).toBe('hit')
+    state = applyRoll(state, 1)
+    expect(state.outcomes).toEqual(['cannotFire', 'miss'])
+    expect(state.woundsLost).toBe(0)
+  })
+})

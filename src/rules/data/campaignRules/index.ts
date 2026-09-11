@@ -417,7 +417,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
         label: "Blessing of the Lady",
         unitId: "leader",
         test: "Ld",
-        text: "Before the game the leader makes a Leadership test. Passed, the Lady's blessing curses the enemy's black powder: each shot needs a D6 roll of 4+ to fire.",
+        text: "Before the game the leader makes a Leadership test. Passed, each enemy blackpowder shot needs 4+ on a D6 to fire. Other missile weapons also need 4+ when targeting a Questing Knight or Knight Errant.",
       },
     ],
   },

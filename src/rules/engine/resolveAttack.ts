@@ -36,6 +36,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Per-shot permission roll, before rolling to hit (Blessing of the Lady). */
+  firePermissionThreshold?: number;
   /** Bolas hits entangle rather than inflicting wounds. */
   entangleInsteadOfWound?: boolean;
   barrageOnFailedWound?: boolean;
@@ -310,6 +312,14 @@ const OUT_OF_ACTION_DIST: Severity4Distribution = { none: 0, knockedDown: 0, stu
 
 /** Pure function: resolves everything about a single attack except which attack (if any) consumes the phase's one crit and how many Wounds the target has left — that's the aggregation step in turnAggregate.ts. */
 export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
+  if (input.firePermissionThreshold !== undefined) {
+    const permission = probabilityAtLeast(input.firePermissionThreshold);
+    const resolved = resolveSingleAttack({ ...input, firePermissionThreshold: undefined });
+    return { ...resolved, pHit: resolved.pHit * permission, pWound: resolved.pWound * permission,
+      pWoundNormal: resolved.pWoundNormal * permission, pWoundTriggerEligible: resolved.pWoundTriggerEligible * permission,
+      hitFaces: resolved.hitFaces?.map(face => ({ ...face, probability: face.probability * permission + (face.face === 0 ? 1 - permission : 0) })) };
+  }
+
   if (input.entangleInsteadOfWound) input = { ...input, woundThreshold: IMPOSSIBLE, autoWoundOnNaturalSixToHit: false, autoOutOfActionStunned: false };
   // A stunned target is taken out of action by the first hit in hand-to-hand combat, full stop —
   // no to-hit, wound, save or injury roll, and independent of how many Wounds it has left, so this

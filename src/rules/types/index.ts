@@ -315,6 +315,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** Required permission test before each ordinary missile shot. */
+  firePermissionThreshold?: number;
   /** Serpent Staff command: replace all normal attacks with its single WS4/S4 attack. */
   serpentStaffPower?: boolean;
   /** Failed Fear after being charged: needs sixes to hit this round. */

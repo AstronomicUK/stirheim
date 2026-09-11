@@ -619,3 +619,19 @@ it('a carried Torch is a club at minus one to hit and frightens identified anima
   expect(findWeapon('gromril_torch')).toBeUndefined()
   expect(findWeapon('ithilmar_torch')).toBeUndefined()
 })
+
+describe('Blessing shooting odds', () => {
+  it('includes permission in hit, wound and OOA probabilities and sensitivity tables', () => {
+    const plain = setup(marksman, skaven, 'bow', null)
+    const blessed = { ...plain, ladyBlessing: true }
+    const before = computeOdds(plain)
+    const after = computeOdds(blessed)
+    expect(after.weapons[0].pHit).toBeCloseTo(before.weapons[0].pHit / 2)
+    expect(after.weapons[0].pWound).toBeCloseTo(before.weapons[0].pWound / 2)
+    expect(after.chain.outOfAction).toBeCloseTo(before.chain.outOfAction / 2)
+    const normalTable = computeOddsSensitivity(plain)
+    const blessedTable = computeOddsSensitivity(blessed)
+    expect(blessedTable.woundRows[0].values[2]).toBeCloseTo(normalTable.woundRows[0].values[2] / 2)
+    expect(blessedTable.ooaGrid[3][2]).toBeCloseTo(normalTable.ooaGrid[3][2] / 2)
+  })
+})

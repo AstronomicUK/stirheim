@@ -1,3 +1,4 @@
+import { ladyBlessingActive, ladyBlessingReason } from '../../../rules/resolve/ladyBlessing'
 import { LineShotControls } from './LineShotControls'
 import { useBattleTurns } from '../../../api/battleTurns'
 // The attack calculator: pick one of your warriors and one enemy model, see the exact odds for
@@ -195,12 +196,14 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const defenderUsed = defender && defenderSession ? itemsUsedBy(defenderSession.live_state, defender.id) : []
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
+  const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
+  const ladyTest = primary && defender ? ladyBlessingReason(primary, roster.id, defender.warbandId, defender.unitTemplateId, blessedWarbands) : undefined
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
   const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}:${lineSelection?.targetKey ?? ''}` : ''
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: lineTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ ladyBlessing: Boolean(ladyTest), attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: lineTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -272,6 +275,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   </option>
                 ))}
               </SelectField>
+              {ladyTest && isLineWeapon ? <p className="text-xs">{ladyTest} Resolve this once for the whole line at the table before declaring it; the per-target rolls do not repeat the test.</p> : null}
               {isLineWeapon ? <LineShotControls key={`${attacker.id}:${primary.id}`} attacker={attacker} weaponId={primary.id as 'blunderbuss' | 'chaos_dwarf_blunderbuss'} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} mayFire={!psychologyLoading && !active.failedStupidity && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onResolve={(shot, target) => {
                 setLineSelection({ shotId: shot.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
                 const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
@@ -955,6 +959,7 @@ function kitNames(c: Combatant): string {
 /** One side of the fight: a headed box so the two read as facing each other on a phone. */
 /** The big heading for a roll step, read from across a table: the phase, not the weapon or the reroll count. */
 const ROLL_KIND_HEADING: Record<RollKind, string> = {
+  firePermission: 'Blessing of the Lady',
   hit: 'To Hit',
   hitReroll: 'To Hit',
   luckyCharm: 'Lucky Charm',

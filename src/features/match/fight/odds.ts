@@ -16,6 +16,7 @@ import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import type { Combatant, Loadout } from './combatants'
 
 export interface FightSetup {
+  ladyBlessing?: boolean
   attacker: Combatant
   attackerKit: Loadout
   defender: Combatant
@@ -198,7 +199,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const offHand = setup.offHand ? pick(setup.offHand) : null
   const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
-  const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
+  const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
   const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context).map(({ weapon, count: full }) => {
@@ -272,7 +273,7 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
   const offHand = setup.offHand ? pick(setup.offHand) : null
   const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
-  const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
+  const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   const perWeapon = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context)
   const n = perWeapon.reduce((s, x) => s + x.count, 0)
@@ -409,6 +410,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
   if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
+    if (w.input.firePermissionThreshold) notes.push('Blessing of the Lady: this shot needs 4+ before rolling to hit. That permission roll is included in these odds.')
     if (w.weapon.special.includes('torchFire')) notes.push('Torch: treated as a club at −1 to hit. Its wounds cannot be regenerated; apply that restriction at the table. It lasts one game and adds 4 inches when spotting hidden enemies. Building fires and torch consumption are not automated here.')
     if (w.weapon.id === 'tufenk') notes.push(`Tufenk: after a hit, roll a D6 separately; ${setup.context.dryTarget ? '2+' : '4+'} sets the target on fire. Ongoing fire and the every-other-turn reload are not included in these odds. In each Recovery phase, a burning model extinguishes the fire on 4+; otherwise it takes a Strength 4 hit and may only move. A friendly model in base contact can help extinguish it on 4+.`)
     if (w.input.automaticHitReason === 'blunderbussLine') notes.push(`${w.weapon.name}: check the straight 16-inch by 1-inch line at the table. These odds resolve one automatic Strength 3 hit on the selected model. Every model in the line, including friends, must be resolved separately. ${w.weapon.special.includes('fireOncePerBattle') ? 'The Battle Sheet records a single firing declaration and resolves every model selected in its line.' : 'The Battle Sheet records the firing declaration and requires a complete own turn between shots.'}`)

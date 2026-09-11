@@ -9,7 +9,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -35,11 +35,12 @@ export interface AttackPlan {
   rot?: boolean
 }
 
-export type Outcome = 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
+export type Outcome = 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
+  cannotFire: 'Unable to fire',
   entangled: 'Entangled',
   miss: 'Missed',
   parried: 'Parried',
@@ -158,7 +159,7 @@ function attackName(state: RollState): string {
   return `${ordinal(state.index + 1)} attack (${plan.weaponName})`
 }
 
-function beginAttack(state: RollState): RollState {
+function beginAttack(state: RollState, permissionGranted = false): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
   if (state.hitBatch?.phase === 'resolve' && !plan.additionalAttack) {
@@ -166,6 +167,7 @@ function beginAttack(state: RollState): RollState {
     if (hit.outcome) return finishAttack(fresh, hit.outcome)
     return afterHit({ ...fresh, cur: { ...fresh.cur, hitRoll: hit.roll } })
   }
+  if (plan.input.firePermissionThreshold !== undefined && !permissionGranted) return { ...fresh, pending: { kind: 'firePermission', who: 'attacker', label: 'Overcome the Lady’s blessing', detail: `Needs ${plan.input.firePermissionThreshold}+ to fire this shot; a failed test ends this shot before to-hit.` } }
   // A stunned target: taken out of action by the first hit in hand-to-hand combat, no rolls at all (01:947-959).
   if (plan.input.autoOutOfActionStunned) {
     return finishAttack(log(fresh, `${attackName(state)}: the target is stunned — automatically out of action.`, 'good'), 'outOfAction')
@@ -255,6 +257,12 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
   let rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
+    case 'firePermission': {
+      const allowed = passesSave(roll, input.firePermissionThreshold ?? 4)
+      const next = log(state, `Blessing of the Lady: rolled ${roll}${rollTag}. ${allowed ? 'May fire this shot.' : 'Cannot fire this shot.'}`, allowed ? 'good' : 'bad')
+      return allowed ? beginAttack(next, true) : finishAttack(next, 'cannotFire')
+    }
+
     case 'hit':
     case 'hitReroll': {
       if (passes(roll, input.hitThreshold)) {

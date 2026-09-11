@@ -86,6 +86,7 @@ export interface ExplorationDerived {
   /** The Hero the test names, when `needsTest.pickHero` is set (Well) — null until chosen. */
   testSubject: RosterHero | null
   /** Set when the test was failed and failing has a structured consequence (Well: misses the next game). */
+  pitLostHeroId: string | null
   missNextGameHeroId: string | null
   /** Rewards count: no test, or the test was recorded as passed. */
   rewardsApply: boolean
@@ -150,6 +151,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     needsTest: null,
     testSubject: null,
     missNextGameHeroId: null,
+    pitLostHeroId: null,
     rewardsApply: false,
     gold: empty,
     extraShards: empty,
@@ -223,7 +225,13 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const location = result.location
   let outcome: LocationOutcome | null = null
   let needsSubRoll = false
-  if (location) {
+  const pit = location?.id === 'the_pit'
+  const pitSkipped = pit && draft.pitChoice === 'skip'
+  const pitHero = pit && draft.pitChoice === 'send' ? input.eligibleHeroes.find(h=>h.id===draft.pitHeroId) : undefined
+  if (pit && !['skip','send'].includes(draft.pitChoice??'')) problems.push('The Pit: choose whether to send a Hero or leave it alone.')
+  if (pit && draft.pitChoice==='send' && !pitHero) problems.push('The Pit: choose the Hero being sent.')
+  const pitLostHeroId = pitHero && draft.subRoll===1 ? pitHero.id : null
+  if (location && !pitSkipped) {
     const subRoll = isDie(draft.subRoll, 6) ? draft.subRoll : undefined
     outcome = locationOutcome(location, subRoll)
     needsSubRoll = Boolean(outcome.needsSubRoll)
@@ -258,9 +266,12 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const merchantGold = merchantReady ? merchantSymbol ? 0 : maxFinds ? 60 : (merchantDice[0]! + merchantDice[1]!) * 5 : null
   if (merchant && !merchantReady) problems.push('Merchant’s House: enter both D6 to check for doubles.')
   const gold = merchant ? {fixed: merchantGold ?? 0, expressions: [], value: merchantGold} : diceAmount(rewards, 'gold', draft.gold, maxFinds)
-  const extraShards = diceAmount(rewards, 'wyrdstone', draft.extraShards, maxFinds)
+  const pitReturned = pitHero && isDie(draft.subRoll,6) && draft.subRoll!>=2
+  const pitShards = pitReturned ? maxFinds ? 7 : isDie(draft.pitShardDie??null,6) ? draft.pitShardDie!+1 : null : 0
+  const extraShards = pit ? {fixed:pitShards??0,expressions:[],value:pitShards} : diceAmount(rewards, 'wyrdstone', draft.extraShards, maxFinds)
   if (!merchant && gold.value === null) problems.push(`Enter the gold found (${gold.expressions.join(' + ')} gc).`)
-  if (extraShards.value === null) problems.push(`Enter the shards found at the location (${extraShards.expressions.join(' + ')}).`)
+  if (pitReturned && pitShards===null) problems.push('The Pit: roll the D6 for the returned wyrdstone.')
+  if (!pit && extraShards.value === null) problems.push(`Enter the shards found at the location (${extraShards.expressions.join(' + ')}).`)
 
   const itemQuantityPrompts: ExplorationDerived['itemQuantityPrompts'] = []
   const suggestedItems: FoundItem[] = []
@@ -305,6 +316,8 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
   const notes: string[] = xp.awards.map(a=>`${a.reason}: +${a.amount} XP to ${a.name}${xp.sides ? ` (D${xp.sides} ${draft.locationXpDie})` : ''}.`)
   if (merchant && merchantReady) notes.push(`Merchant’s House: D6 ${merchantDice.join(' + ')}; ${merchantSymbol ? 'doubles — Symbol of the Order of Freetraders instead of gold.' : `${merchantGold} gc${maxFinds ? ' (maximum find)' : ''}.`}`)
+  if (pitSkipped) notes.push('The Pit: the warband chose not to send a Hero.')
+  if (pitHero && isDie(draft.subRoll,6)) notes.push(`The Pit: ${pitHero.name} sent; risk D6 ${draft.subRoll}. ${pitLostHeroId ? 'Devoured; permanently lost with carried equipment.' : `Returned with ${pitShards??'unresolved'} shards${maxFinds ? ' (maximum find)' : ` (D6 ${draft.pitShardDie??'?'} + 1)`}.`}`)
   if (artefact) notes.push(`Magical artefact D6 ${draft.artefactRoll}: ${artefact.name}.${draft.artefactOverrideReason?.trim() ? ` Agreed override: ${draft.artefactOverrideReason.trim()}` : ''}`)
   if (location?.id === 'shattered_building') notes.push(`Shattered Building: D3 shards are found regardless of the Leadership test.${testPassed === true ? ' The wardog joins; assign it from the stash to a Hero.' : testPassed === false ? ' The wardog does not join.' : ''}`)
   if (tavernAutoPass) notes.push('Tavern: this warband automatically passes the Leadership test; 4D6 gc.')
@@ -339,7 +352,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
           locationId: location?.id ?? null,
           locationName: location?.name ?? null,
           locationText: location ? location.rules : null,
-          subRoll: location?.subRoll ? (draft.subRoll ?? null) : null,
+          subRoll: location?.subRoll && !pitSkipped ? (draft.subRoll ?? null) : null,
           goldFound: (gold.value ?? 0) + bonuses.gold,
           itemsFound: items.filter((i) => i.quantity >= 1 && (i.item_rules_id || i.custom_name)),
           notes: notes.filter((n) => n !== ''),
@@ -362,6 +375,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     needsTest,
     testSubject,
     missNextGameHeroId,
+    pitLostHeroId,
     rewardsApply,
     gold,
     extraShards,

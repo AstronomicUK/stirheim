@@ -108,3 +108,27 @@ describe('Merchant’s House raw reward dice (#66)',()=>{
   expect(deriveExploration({...draft,merchantDice:[2,2]},band,{...input,maxFinds:{districtName:"QA district"}}).record?.goldFound).toBe(0)
  })
 })
+
+describe('The Pit expedition (#66)',()=>{
+ const six=['a','b','c','d','e','f'].map(id=>makeHero({id}))
+ const band=makeWarband({heroes:six}),input={won:false,eligibleHeroes:six}
+ const draft={...emptyExploration(),rolls:[1,1,1,1,1,1]}
+ it('requires a decision, and declining needs no risk roll',()=>{
+  expect(deriveExploration(draft,band,input).record).toBeNull()
+  const skipped=deriveExploration({...draft,pitChoice:'skip'},band,input)
+  expect(skipped.record).not.toBeNull();expect(skipped.needsSubRoll).toBe(false);expect(skipped.pitLostHeroId).toBeNull()
+  expect(skipped.record?.notes.join(' ')).toContain('chose not to send')
+ })
+ it('requires an eligible selected Hero and loses that Hero only on 1',()=>{
+  expect(deriveExploration({...draft,pitChoice:'send',subRoll:1},band,input).record).toBeNull()
+  const lost=deriveExploration({...draft,pitChoice:'send',pitHeroId:'b',subRoll:1},band,input)
+  expect(lost.pitLostHeroId).toBe('b');expect(lost.extraShards.value).toBe(0);expect(lost.record?.rolls).toEqual([1,1,1,1,1,1])
+ })
+ it('requires a separate loot die after returning, while a maximum find never removes the risk',()=>{
+  expect(deriveExploration({...draft,pitChoice:'send',pitHeroId:'a',subRoll:2},band,input).record).toBeNull()
+  const returned=deriveExploration({...draft,pitChoice:'send',pitHeroId:'a',subRoll:2,pitShardDie:4},band,input)
+  expect(returned.extraShards.value).toBe(5);expect(returned.pitLostHeroId).toBeNull()
+  expect(deriveExploration({...draft,pitChoice:'send',pitHeroId:'a',subRoll:1},band,{...input,maxFinds:{districtName:'QA'}}).pitLostHeroId).toBe('a')
+  expect(deriveExploration({...draft,pitChoice:'send',pitHeroId:'a',subRoll:3},band,{...input,maxFinds:{districtName:'QA'}}).extraShards.value).toBe(7)
+ })
+})

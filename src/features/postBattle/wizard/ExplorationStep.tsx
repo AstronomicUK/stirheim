@@ -188,7 +188,17 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
               <p className="text-sm italic leading-relaxed text-ink-dim">{ex.location.flavour}</p>
               <Markdown source={ex.location.rules} className="text-sm" />
 
-              {ex.location.subRoll ? (
+              {ex.location.id==='the_pit'?<div className="flex flex-col gap-2 border-t border-border pt-3">
+                <SelectField label="Explore the Pit" value={draft.exploration.pitChoice??''} onChange={e=>update(d=>({...d,exploration:{...d.exploration,pitChoice:e.target.value as 'skip'|'send',pitHeroId:undefined,subRoll:null,pitShardDie:null,extraShards:null,items:null}}))}><option value="">Choose…</option><option value="skip">Leave the Pit alone</option><option value="send">Send a Hero</option></SelectField>
+                {draft.exploration.pitChoice==='send'?<>
+                  <Notice>A roll of 1 permanently loses the chosen Hero and their carried equipment. On 2–6 they return with D6+1 shards.</Notice>
+                  <SelectField label="Hero entering the Pit" value={draft.exploration.pitHeroId??''} onChange={e=>update(d=>({...d,exploration:{...d.exploration,pitHeroId:e.target.value,subRoll:null,pitShardDie:null,extraShards:null,items:null}}))}><option value="">Choose a Hero…</option>{ex.eligibleHeroes.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>
+                  {draft.exploration.pitHeroId?<DieField label="Pit risk D6" sides={6} rollable value={draft.exploration.subRoll} onChange={value=>update(d=>setExplorationSubRoll(d,value))}/>:null}
+                  {draft.exploration.subRoll!=null&&draft.exploration.subRoll>=2&&!ctx.map?.perks.explorationMaxFinds?<DieField label="Pit wyrdstone D6" sides={6} rollable value={draft.exploration.pitShardDie??null} onChange={value=>update(d=>({...d,exploration:{...d.exploration,pitShardDie:value}}))}/>:null}
+                  {ex.pitLostHeroId?<p className="text-sm text-warn">{ex.eligibleHeroes.find(h=>h.id===ex.pitLostHeroId)?.name} is devoured. This loss is applied when the report is filed.</p>:null}
+                </>:null}
+              </div>:null}
+              {ex.location.subRoll && ex.location.id!=='the_pit' ? (
                 <div className="flex flex-col gap-2 border-t border-border pt-3">
                   <p className="text-xs text-ink-dim">{ex.location.subRoll.prompt}</p>
                   <DieField label="Location D6" sides={6} value={draft.exploration.subRoll} onChange={(v) => update((d) => setExplorationSubRoll(d, v))} rollable />

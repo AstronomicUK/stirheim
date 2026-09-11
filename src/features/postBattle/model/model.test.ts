@@ -1039,3 +1039,26 @@ it('does not advertise an advance for the last group member leaving feral',()=>{
  expect(result.report?.applied.pending_advances).toEqual([])
  expect(result.xp.lines.find(l=>l.subjectId==='watch')?.advancesEarned).toBe(0)
 })
+
+describe('Pit loss applies after exploration (#66)',()=>{
+ it('removes only the chosen Hero and carried kit, with no pending advance for the lost Hero',()=>{
+  let draft=setResult(emptyDraft(),'won')
+  draft=setExplorationDiceOverride(draft,{count:6,reason:'QA six dice'})
+  draft=setExplorationRolls(draft,[1,1,1,1,1,1])
+  draft={...draft,exploration:{...draft.exploration,pitChoice:'send',pitHeroId:'champion',subRoll:1}}
+  const result=deriveReport(draft,ctx())
+  expect(result.report!.applied.heroes.find(h=>h.id==='champion')?.patch.status).toBe('dead')
+  expect(result.report!.applied.remove_item_ids).toContain('item-champion-sword')
+  expect(result.report!.applied.remove_item_ids).not.toContain('item-captain-sword')
+  expect(result.report!.applied.pending_advances.some(a=>a.subject_id==='champion')).toBe(false)
+  expect(result.exploration.record?.rolls).toHaveLength(6)
+  expect(result.exploration.record?.notes.join(' ')).toContain('champion sent')
+ })
+})
+
+
+it('clears a recorded Pit expedition when changing which exploration dice are kept',()=>{
+ const draft={...emptyDraft(),exploration:{...emptyDraft().exploration,rolls:[1,1,1,1,1,1,2],kept:[0,1,2,3,4,5],pitChoice:'send' as const,pitHeroId:'champion',subRoll:1}}
+ const changed=toggleExplorationKeep(draft,5,6)
+ expect(changed.exploration.pitChoice).toBeUndefined();expect(changed.exploration.pitHeroId).toBeUndefined();expect(changed.exploration.subRoll).toBeNull()
+})

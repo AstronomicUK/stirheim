@@ -588,6 +588,12 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     else heroes.push({ id: hero.id, patch: { flags } })
   }
 
+  if (exploration.pitLostHeroId) {
+    const id=exploration.pitLostHeroId, existing=heroes.find(h=>h.id===id)
+    if(existing)existing.patch.status='dead';else heroes.push({id,patch:{status:'dead'}})
+    removeItemIds.push(...ctx.items.filter(i=>i.holder_type==='hero'&&i.holder_id===id).map(i=>i.id))
+  }
+
   // The Well: a Hero who fails the Toughness test misses the next game through sickness (03:671-675).
   if (exploration.missNextGameHeroId) {
     const hero = ctx.roster.heroes.find((h) => h.id === exploration.missNextGameHeroId && h.status === 'active')

@@ -1,3 +1,4 @@
+import { blessWeapon, shrineBlessed, SHRINE_BLESSING } from '../../../rules/resolve/shrineBlessing'
 import { legacyHiredItemId } from '../../../rules/data/items/hiredSpecial'
 import { GUARDIAN_RULES } from '../../../rules/resolve/hiredCompanions'
 // Who can attack whom: every model on the table as the calculator sees it, and the pure mapping
@@ -399,6 +400,7 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
       continue
     }
     if (weapon) {
+      if(shrineBlessed(entry.notes)){weapon=blessWeapon(weapon);out.assumptions.push(SHRINE_BLESSING)}
       if (effect?.note) out.assumptions.push(effect.note)
       // Two of the same hand weapon is a real loadout (two swords); more than two never fight at once.
       const copies = weapon.type === 'melee' && !weapon.paired ? Math.min(2, Math.max(1, entry.quantity)) : 1

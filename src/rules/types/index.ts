@@ -103,6 +103,9 @@ export interface Weapon {
   /** Against a knocked-down target roll 2D6 to wound and keep the highest (Misericordia). */
   toWoundHighestOf2D6VsKnockedDown?: boolean;
   /** Bonuses against targets carrying any of these traits (Sigmarite Warhammer +1 to wound versus Undead and Possessed; Silver-tip Stake +1 injury versus Vampires). */
+  /** Display selection identity; the base weapon ID retains skill compatibility. */
+  choiceId?: string;
+  shrineBlessed?: boolean;
   vsTraits?: { traits: string[]; toWound?: number; injury?: number };
   /** Enemies attacking the wielder in close combat suffer this to-hit modifier (Ball and Chain -1). */
   defenderToBeHitModifier?: number;

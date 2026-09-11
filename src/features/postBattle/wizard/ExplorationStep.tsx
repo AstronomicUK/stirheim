@@ -188,6 +188,10 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
               <p className="text-sm italic leading-relaxed text-ink-dim">{ex.location.flavour}</p>
               <Markdown source={ex.location.rules} className="text-sm" />
 
+              {ex.location.id==='shrine'&&['witch_hunters','sisters_of_sigmar'].includes(ctx.roster.warbandTemplateId)?<div className="flex flex-col gap-2 border-t border-border pt-3">
+                <SelectField label="Shrine discovery" value={draft.exploration.shrineChoice??''} onChange={e=>update(d=>({...d,exploration:{...d.exploration,shrineChoice:e.target.value as 'strip'|'save',shrineWeaponId:undefined}}))}><option value="">Choose…</option><option value="strip">Strip the shrine for 3D6 gc</option><option value="save">Save the relics: 3D6 gc and bless one weapon</option></SelectField>
+                {draft.exploration.shrineChoice==='save'?<><SelectField label="Weapon to bless" value={draft.exploration.shrineWeaponId??''} onChange={e=>update(d=>({...d,exploration:{...d.exploration,shrineWeaponId:e.target.value}}))}><option value="">Choose one weapon…</option>{derived.shrine.options.map(o=><option key={o.original.id} value={o.original.id}>{o.label}</option>)}</SelectField><p className="text-sm">Only the selected weapon is blessed, even if it belongs to a stack. It wounds Undead and Possessed on 2+. Choose a custom item only if it is a weapon, and use its agreed weapon rules for attacks.</p></>:null}
+              </div>:null}
               {ex.location.id==='the_pit'?<div className="flex flex-col gap-2 border-t border-border pt-3">
                 <SelectField label="Explore the Pit" value={draft.exploration.pitChoice??''} onChange={e=>update(d=>({...d,exploration:{...d.exploration,pitChoice:e.target.value as 'skip'|'send',pitHeroId:undefined,subRoll:null,pitShardDie:null,extraShards:null,items:null}}))}><option value="">Choose…</option><option value="skip">Leave the Pit alone</option><option value="send">Send a Hero</option></SelectField>
                 {draft.exploration.pitChoice==='send'?<>

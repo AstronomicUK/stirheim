@@ -1,3 +1,4 @@
+import {blessWeapon} from '../../resolve/shrineBlessing'
 // Phase 16: weapon rules the engine used to carry only as tags, kit that changes saves and to-hit
 // rolls, and the data fixes from the weapons and armour audit.
 
@@ -193,3 +194,12 @@ describe("kit that changes the defender's odds", () => {
     expect(through).toBeCloseTo(5 / 6);
   });
 });
+
+
+it('a Shrine blessing wounds only Undead/Possessed on 2+, retaining the base weapon rules',()=>{
+ const blade=blessWeapon(W('sword'))
+ expect(buildAttackInput({attacker:attacker(),weapon:blade,defender:defender({activeTraitIds:['undead']}),context:ctx()}).critTriggerFaces).toEqual([6])
+ expect(blade.id).toBe('sword');expect(blade.parry).toBe(W('sword').parry)
+ for(const trait of ['undead','possessed'])expect(buildAttackInput({attacker:attacker(),weapon:blade,defender:defender({T:10,activeTraitIds:[trait]}),context:ctx()}).woundThreshold).toBe(2)
+ expect(buildAttackInput({attacker:attacker(),weapon:blade,defender:defender({T:10}),context:ctx()}).woundThreshold).toBe(IMPOSSIBLE)
+})

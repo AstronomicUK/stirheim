@@ -237,7 +237,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const vsTraitsApply = Boolean(weapon.vsTraits && weapon.vsTraits.traits.some((t) => defender.activeTraitIds.includes(t)));
   const woundBase = toWoundThreshold(strengthForToWound, defender.T);
   // Sigmarite Warhammer: +1 to wound against Undead and Possessed (a 6 is still needed for a critical, handled by the trigger faces).
-  const woundThreshold: Threshold = vsTraitsApply && weapon.vsTraits?.toWound && woundBase !== IMPOSSIBLE ? Math.max(2, woundBase - weapon.vsTraits.toWound) : woundBase;
+  const woundThreshold: Threshold = weapon.shrineBlessed && defender.activeTraitIds.some(t=>t==='undead'||t==='possessed') ? 2 : vsTraitsApply && weapon.vsTraits?.toWound && woundBase !== IMPOSSIBLE ? Math.max(2, woundBase - weapon.vsTraits.toWound) : woundBase;
 
   // ---- Armour save ----
   // Base save from armour/shield (with the Strength erosion house rule if on), then the weapon's

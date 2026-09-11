@@ -242,4 +242,29 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Direct scenario equipment t
     expect((await admin.from('henchman_groups').select('size').eq('id',group).single()).data?.size).toBe(2)
   })
 
+  it('blesses exactly one weapon from a stack and restores the original stack on withdrawal',async()=>{
+    expect((await admin.from('warbands').update({type_rules_id:'witch_hunters'}).eq('id',warbands[0])).error).toBeNull()
+    expect((await admin.from('items').update({quantity:2}).eq('id',item)).error).toBeNull()
+    const original=(await admin.from('items').select('*').eq('id',item).single()).data!
+    const {created_at:_created,updated_at:_updated,...expected}=original
+    const blessed={holder_type:'hero',holder_id:heroes[0],item_rules_id:'sword',custom_name:null,quantity:1,notes:'Original kit\nShrine blessing: wounds Undead and Possessed on 2+.'}
+    const report={result:'won',won:true,exploration:{locationId:'shrine'},applied:{warband:{gold_delta:9,wyrdstone_delta:0},shrine_equipment:{item_id:item,expected},item_patches:[{id:item,quantity:1}],awarded_items:[blessed]}}
+    expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:report})).error).toBeNull()
+    const copies=(await admin.from('items').select('quantity,notes').eq('warband_id',warbands[0]).eq('item_rules_id','sword')).data!
+    expect(copies).toHaveLength(2);expect(copies.every(i=>i.quantity===1)).toBe(true);expect(copies.filter(i=>i.notes.includes('Shrine blessing'))).toHaveLength(1)
+    expect((await withdraw()).error).toBeNull()
+    const restored=(await admin.from('items').select('id,quantity,notes').eq('warband_id',warbands[0]).eq('item_rules_id','sword')).data!
+    expect(restored).toEqual([{id:item,quantity:2,notes:'Original kit'}])
+  })
+  it('rejects a Shrine weapon changed after review, without creating a free blessed copy',async()=>{
+    expect((await admin.from('warbands').update({type_rules_id:'sisters_of_sigmar'}).eq('id',warbands[0])).error).toBeNull()
+    const original=(await admin.from('items').select('*').eq('id',item).single()).data!
+    const {created_at:_created,updated_at:_updated,...expected}=original
+    expect((await admin.from('items').update({notes:'Changed since review'}).eq('id',item)).error).toBeNull()
+    const report={result:'won',won:true,exploration:{locationId:'shrine'},applied:{warband:{gold_delta:9,wyrdstone_delta:0},shrine_equipment:{item_id:item,expected},item_patches:[{id:item,notes:'Shrine blessing: wounds Undead and Possessed on 2+.'}]}}
+    const result=await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:warbands[0],p_report:report})
+    expect(result.error?.message).toContain('Shrine weapon changed')
+    expect((await admin.from('warbands').select('gold').eq('id',warbands[0]).single()).data?.gold).toBe(100)
+  })
+
 })

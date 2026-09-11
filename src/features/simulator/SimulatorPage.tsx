@@ -1,3 +1,4 @@
+import { weaponChoiceKey } from '../../rules/resolve/shrineBlessing'
 // The simulator: exact combat odds between any two warriors, and the two analysers (what each +1
 // characteristic or each skill would do to the numbers). Sides come from the user's warbands, from
 // another roster in one of their campaigns, or from any published unit type with kit picked from
@@ -288,9 +289,9 @@ function selectedWeapons(combatant: Combatant, choices: FightChoices) {
   const kit = loadoutFor(combatant)
   const melee = kit.melee.length ? kit.melee : [defaultPrimary([])]
   const weapons = [...melee, ...kit.ranged]
-  const primary = weapons.find((w) => w.id === choices.primaryId) ?? defaultPrimary(melee)
+  const primary = weapons.find((w) => weaponChoiceKey(w) === choices.primaryId) ?? defaultPrimary(melee)
   const offHandOptions = primary.type === 'melee' ? offHandCandidates(melee, primary) : []
-  const preferred = choices.offHandId === 'none' ? null : melee.find((w) => w.id === choices.offHandId) ?? defaultOffHand(melee, primary)
+  const preferred = choices.offHandId === 'none' ? null : melee.find((w) => weaponChoiceKey(w) === choices.offHandId) ?? defaultOffHand(melee, primary)
   const offHand = preferred && offHandOptions.includes(preferred) ? preferred : null
   return { kit, weapons, primary, offHand, offHandOptions }
 }
@@ -298,11 +299,11 @@ function selectedWeapons(combatant: Combatant, choices: FightChoices) {
 function WeaponPicker({ combatant, choices, setChoices }: { combatant: Combatant; choices: FightChoices; setChoices: (next: FightChoices) => void }) {
   const { weapons, primary, offHand, offHandOptions } = selectedWeapons(combatant, choices)
   return <div className="flex min-w-0 flex-col gap-3 border-t border-border pt-3">
-    <SelectField label="Attack weapon" value={primary.id} onChange={(e) => setChoices({ ...choices, primaryId: e.target.value, offHandId: null })}>
-      {weapons.map((w, i) => <option key={`${w.id}-${i}`} value={w.id}>{w.name} ({w.type === 'melee' ? 'melee' : 'shooting'})</option>)}
+    <SelectField label="Attack weapon" value={weaponChoiceKey(primary)} onChange={(e) => setChoices({ ...choices, primaryId: e.target.value, offHandId: null })}>
+      {weapons.map((w, i) => <option key={`${w.id}-${i}`} value={weaponChoiceKey(w)}>{w.name} ({w.type === 'melee' ? 'melee' : 'shooting'})</option>)}
     </SelectField>
-    {offHandOptions.length > 0 && <SelectField label="Other hand" value={offHand?.id ?? 'none'} onChange={(e) => setChoices({ ...choices, offHandId: e.target.value })}>
-      <option value="none">Nothing (one weapon)</option>{offHandOptions.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+    {offHandOptions.length > 0 && <SelectField label="Other hand" value={offHand ? weaponChoiceKey(offHand) : 'none'} onChange={(e) => setChoices({ ...choices, offHandId: e.target.value })}>
+      <option value="none">Nothing (one weapon)</option>{offHandOptions.map((w,i) => <option key={`${weaponChoiceKey(w)}-${i}`} value={weaponChoiceKey(w)}>{w.name}</option>)}
     </SelectField>}
   </div>
 }

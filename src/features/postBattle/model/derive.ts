@@ -1,3 +1,4 @@
+import {applyShrineBlessing} from './shrineBlessing'
 import {woodsCasualtyDraft,woodsInjuryDraft,lycanthropeReport,applyLycanthropeReport} from './lycanthropeReport'
 import {medicineChestUses} from './medicineChest'
 import {rawhideReport} from './rawhideReport'
@@ -172,6 +173,7 @@ export interface AdvancesDerived {
 }
 
 export interface DerivedReport {
+  shrine: ReturnType<typeof applyShrineBlessing>
   lycanthrope: ReturnType<typeof lycanthropeReport>
   equipmentLosses: ReturnType<typeof groupEquipmentLosses>
   recruits: ReturnType<typeof locationRecruits>
@@ -981,6 +983,9 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const theft = pettyThief(draft, ctx, participants)
   if (theft.transfer) applied.petty_thief = theft.transfer
   const lycanthropeEquipmentProblems=applyLycanthropeReport(lycanthrope,applied,ctx)
+  const shrine=applyShrineBlessing(draft.exploration,exploration.location?.id,ctx.roster,ctx.items,applied)
+  exploration.problems.push(...shrine.problems)
+  if(exploration.record)exploration.record.notes.push(...shrine.notes)
   const departingIds=new Set([...applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id),...applied.groups.filter(g=>g.patch.size===0).map(g=>g.id)])
   applied.pending_advances=applied.pending_advances.filter(a=>!departingIds.has(a.subject_id))
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
@@ -1028,7 +1033,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     }
   }
 
-  return { lycanthrope, participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, equipmentLosses, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
+  return { shrine, lycanthrope, participants, kit, advances, survivingHeroes, injuries, xp, exploration, recruits, equipmentLosses, veteranPool: veteranPoolOf(draft), problems, firstIncompleteStep, report }
 }
 
 /** The finished report, or an error naming what is still missing. */

@@ -1881,6 +1881,10 @@ export type Database = {
         Args: { p_report_id: string }
         Returns: undefined
       }
+      validate_shrine_equipment: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
       withdraw_battle_prompt: {
         Args: { p_prompt_id: string }
         Returns: undefined

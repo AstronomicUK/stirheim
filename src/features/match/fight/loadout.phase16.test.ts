@@ -1,3 +1,4 @@
+import {SHRINE_BLESSING,weaponChoiceKey} from '../../../rules/resolve/shrineBlessing'
 // Phase 16: the loadout mapping reads the item rules overlay (traits, saves, consumables, upgrades).
 
 import { describe, expect, it } from 'vitest'
@@ -96,4 +97,12 @@ describe('battle boosts from the map', () => {
     expect(boosted.find((c) => c.id === 'champ')?.stats.Ld).toBe(8)
     expect(boosted.every((c) => c.traitIds.includes('immune_to_fear'))).toBe(true)
   })
+})
+
+
+it('keeps ordinary and Shrine-blessed copies distinct without changing skill-compatible weapon IDs',()=>{
+ const kit=loadoutOf([item('sword'),item('sword',{notes:SHRINE_BLESSING})])
+ expect(kit.melee.map(w=>w.id)).toEqual(['sword','sword'])
+ expect(kit.melee.map(weaponChoiceKey)).toEqual(['sword','sword:shrine'])
+ expect(kit.melee[0].shrineBlessed).toBeUndefined();expect(kit.melee[1].shrineBlessed).toBe(true)
 })

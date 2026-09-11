@@ -750,3 +750,25 @@ it('a failed smoke test stops shooting but leaves normal melee attacks available
  const melee=setup(captain,skaven,'sword',null)
  expect(computeOdds({...melee,context:{...melee.context,firepotSmoke:true}}).attacks).toBe(computeOdds(melee).attacks)
 })
+
+
+it('Lightning Reflexes compares Initiative against a charger, including ties and kit-granted skills (#59/#156)', () => {
+  const defender = combatant('Reflexes Hero', [{ itemId: 'sword', quantity: 1 }], { skillIds: ['lightning_reflexes'], stats: { ...base, I: 5 } })
+  const fight = setup(captain, defender, 'sword', null)
+  fight.context.charging = true
+  expect(computeOdds(fight).strikeOrder).toContain('Reflexes Hero strikes first: Initiative 5')
+  expect(computeOdds(fight).strikeOrder).toContain('Lightning Reflexes')
+  expect(computeOdds({ ...fight, defender: { ...defender, stats: { ...base, I: 2 } } }).strikeOrder).toContain('Captain strikes first: Initiative 3')
+  expect(computeOdds({ ...fight, defender: { ...defender, stats: base } }).strikeOrder).toContain('Equal Initiative (3 each): roll off')
+  expect(computeOdds({ ...fight, defender: { ...defender, skillIds: [] }, defenderKit: { ...fight.defenderKit, skillIds: ['lightning_reflexes'] } }).strikeOrder).toContain('Reflexes Hero strikes first')
+  expect(computeOdds({ ...fight, context: { ...fight.context, charging: false } }).strikeOrder).not.toContain('Lightning Reflexes')
+  expect(computeOdds({ ...fight, defender: { ...defender, skillIds: [] } }).strikeOrder).toContain('Captain strikes first: charging')
+})
+
+it('Lightning Reflexes does not remove Strike Last, but Strongman removes the double-handed penalty', () => {
+  const defender = combatant('Heavy defender', [{ itemId: 'double_handed_weapon', quantity: 1 }], { skillIds: ['lightning_reflexes'], stats: { ...base, I: 5 } })
+  const fight = setup(captain, defender, 'sword', null)
+  fight.context.charging = true
+  expect(computeOdds(fight).strikeOrder).toContain('always strikes last')
+  expect(computeOdds({ ...fight, defender: { ...defender, skillIds: ['lightning_reflexes', 'strongman'] } }).strikeOrder).toContain('Heavy defender strikes first: Initiative 5')
+})

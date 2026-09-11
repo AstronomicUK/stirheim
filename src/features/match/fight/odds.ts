@@ -372,17 +372,19 @@ function normalStrikeOrder(setup: FightSetup): string {
   const aFirstWeapon = firstTurn ? aWeapons.find(w => w.special.includes('strikesFirstFirstTurn')) : undefined
   const dFirstWeapon = firstTurn ? dWeapons.find(w => w.special.includes('strikesFirstFirstTurn') || (setup.context.charging && w.special.includes('strikesFirstWhenCharged'))) : undefined
   const aFirst = !aLast.length && (setup.context.charging || Boolean(aFirstWeapon))
-  const dFirst = !dLast.length && Boolean(dFirstWeapon)
+  const lightningReflexes = setup.context.charging && [...d.skillIds, ...setup.defenderKit.skillIds].includes('lightning_reflexes')
+  const dFirst = !dLast.length && (Boolean(dFirstWeapon) || lightningReflexes)
   if (aFirst && !dFirst) return setup.context.charging
     ? `${a.name} strikes first: charging.`
     : `${a.name} strikes first in the first turn (${aFirstWeapon!.name}).`
   if (dFirst && !aFirst) return `${d.name} strikes first in the first turn (${dFirstWeapon!.name}).`
   // Chargers and Strike First weapons have the same priority; Initiative breaks their tie.
+  const priorityNote = lightningReflexes && !dLast.length ? ` Lightning Reflexes gives ${d.name} the same Strike First priority as the charger, so Initiative determines their order.` : ''
   const aNote = aI !== a.stats.I ? ` (${a.stats.I}${aI - a.stats.I > 0 ? '+' : ''}${aI - a.stats.I} from the weapon)` : ''
   const dNote = dI !== d.stats.I ? ` (${d.stats.I}${dI - d.stats.I > 0 ? '+' : ''}${dI - d.stats.I} from the weapon)` : ''
-  if (aI > dI) return `${a.name} strikes first: Initiative ${aI}${aNote} against ${dI}${dNote}.`
-  if (dI > aI) return `${d.name} strikes first: Initiative ${dI}${dNote} against ${aI}${aNote}.`
-  return `Equal Initiative (${aI}${aNote} each): roll off for who strikes first.`
+  if (aI > dI) return `${a.name} strikes first: Initiative ${aI}${aNote} against ${dI}${dNote}.${priorityNote}`
+  if (dI > aI) return `${d.name} strikes first: Initiative ${dI}${dNote} against ${aI}${aNote}.${priorityNote}`
+  return `Equal Initiative (${aI}${aNote} each): roll off for who strikes first.${priorityNote}`
 }
 
 /** Coating bonuses the engine's weapon fields cannot carry: an injury bonus, and Reptile Venom's Strength that leaves the save alone. */

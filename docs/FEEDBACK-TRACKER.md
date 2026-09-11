@@ -3281,6 +3281,8 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 **Acceptance:** Collaboratively design section navigation for the campaign overview on desktop and mobile, consistent with #223 while retaining the primary app menu. Keep this separate from the settings form: these are two different screens with related design work.
 
+**Further log clarity (11 September):** advancement details now show app-roll → manual-change history as plain sentences, followed by the concise outcome; no generic “Changed rolled from none” or full chart instructions. Historical results without provenance are explicitly labelled as having no recorded dice history. Routine pending status, revision, submission timestamps, default non-rout and zero exploration gold are omitted; battle results and applied awards remain visible. Focused activity tests (35) and production build passed. Kept local for the combined release. Mobile browser verification also passed: app roll, manual correction, reload, filed report and saved warband history.
+
 ### 226. Post-battle history does not clearly identify deliberately overridden advancement dice
 
 **Status:** ✅ Corrected advancement scope fixed locally — awaiting batched release

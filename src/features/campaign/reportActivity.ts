@@ -33,9 +33,9 @@ export function reportActivityChanges(entry:CampaignActivity):FieldChange[]{
   }
   if(changed('exploration')&&before.exploration&&!after.exploration)add('Removed exploration','Removed the previously recorded exploration result from this report.')
  }
- if(changed('result')&&record.result)add('Battle result',`Battle result: ${text(record.result)}.`)
- if(changed('routed')&&typeof record.routed==='boolean')add('Rout',record.routed?'The warband routed.':'The warband did not rout.')
- if(changed('status')&&record.status)add('Report status',`Report status: ${text(record.status).replace(/_/g,' ')}.`)
+ if(changed('result')&&record.result)add('Battle result',({won:'Won the battle.',lost:'Lost the battle.',draw:'Drew the battle.'}[text(record.result)] ?? `Battle result: ${text(record.result)}.`))
+ if(changed('routed')&&typeof record.routed==='boolean'&&(record.routed||before.routed===true))add('Rout',record.routed?'The warband routed.':'The warband did not rout.')
+ if(changed('status')&&record.status==='applied')add('Report status','The report’s changes were applied to the warband.')
  if(changed('xp_log'))list(record.xp_log).forEach((xp,i)=>{
   const name=text(xp.subjectName,'Warrior'), amount=number(xp.amount),from=number(xp.xpBefore),to=number(xp.xpAfter)
   const reasons=strings(xp.reasons).join('; '),advances=number(xp.advancesEarned)
@@ -51,7 +51,7 @@ export function reportActivityChanges(entry:CampaignActivity):FieldChange[]{
  })
  if(changed('exploration')&&record.exploration){
   const e=row(record.exploration),rolls=dice(e.rolls),location=text(e.locationName)
-  add('Exploration',`Exploration${location?`: ${location}`:''}.${rolls?` Dice: ${rolls}.`:''}${number(e.total)!==null?` Total: ${e.total}.`:''}${number(e.shards)!==null?` Wyrdstone: ${e.shards}.`:''}${number(e.goldFound)!==null?` Gold found: ${e.goldFound} gc.`:''}`)
+  add('Exploration',`Exploration${location?`: ${location}`:''}.${rolls?` Dice: ${rolls}.`:''}${number(e.total)!==null?` Total: ${e.total}.`:''}${number(e.shards)!==null?` Wyrdstone: ${e.shards}.`:''}${(number(e.goldFound)??0)!==0?` Gold found: ${e.goldFound} gc.`:''}`)
   strings(e.notes).forEach((note,i)=>add(`Exploration note ${i}`,note))
   list(e.itemsFound).forEach((item,i)=>add(`Exploration item ${i}`,`Found ${number(item.quantity)??1} × ${text(item.custom_name)||findItem(text(item.item_rules_id))?.name||'item'}.`))
  }

@@ -13,6 +13,7 @@ import { WARBAND_TEMPLATES } from '../../rules/data/warbandTemplates'
 import { HERO_INJURIES } from '../../rules/data/campaign/injuries'
 import { SPELL_LORES } from '../../rules/data/campaign/magic'
 import { reportActivityChanges } from './reportActivity'
+import { advanceActivityChanges } from './advanceActivity'
 import { defaultCampaignSettings } from '../../domain/settings'
 import { HOUSE_RULE_SWITCHES, DICE_POLICY_OPTIONS, COMBAT_MODE_OPTIONS, FIRST_SPELL_RULE_OPTIONS } from './settingsForm'
 import { banName, type BanKind } from './bans'
@@ -220,6 +221,8 @@ const BORING_FIELDS = new Set([
   'reverted_by',
   'resolved_at',
   'version',
+  'revision',
+  'submitted_at',
 ])
 
 /** Human labels for columns worth naming specially; anything else falls back to "un snaked case". */
@@ -382,6 +385,7 @@ function campaignSettingChanges(before: Json | undefined, after: Json | undefine
  */
 export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
   if(entry.table_name==='match_reports')return reportActivityChanges(entry)
+  if(entry.table_name==='pending_advances')return advanceActivityChanges(entry)
   const before = asRow(entry.before)
   const after = asRow(entry.after)
   const keys = new Set([...(before ? Object.keys(before) : []), ...(after ? Object.keys(after) : [])])

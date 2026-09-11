@@ -10,11 +10,11 @@ it('turns the supplied post-battle structure into named facts without leaking ap
  expect(changes.find(c=>c.label==='Injury 0')?.details).toContain('50 gc')
  expect(prose).toContain('used 65 instead of 22. Reason: Agreed at the table')
  expect(prose).toContain('Dice: 2, 5. Total: 7. Wyrdstone: 3.')
- expect(prose).not.toMatch(/patch|revision|submitted|internal id|internal timestamp|applied to the warband/)
+ expect(prose).not.toMatch(/patch|revision|submitted|internal id|internal timestamp|Report status|Gold found: 0|applied to the warband/)
 })
 it('does not repeat the full report for a later approval status update',()=>{
  const before={status:'pending',xp_log:[{subjectName:'Engineer',amount:1}],applied:{warband:{gold_delta:50}}}
- expect(reportActivityChanges(entry({action:'update',before,after:{...before,status:'applied'}}))).toEqual([{label:'Report status',before:'',after:'',sentence:'Report status: applied.'}])
+ expect(reportActivityChanges(entry({action:'update',before,after:{...before,status:'applied'}}))).toEqual([{label:'Report status',before:'',after:'',sentence:'The report’s changes were applied to the warband.'}])
 })
 it('does not invent an original dice result for a historical injury',()=>{
  const changes=reportActivityChanges(entry({after:{injuries:[{subjectName:'Engineer',injuryName:'Leg Wound',rolls:[22]}]}}))
@@ -22,7 +22,7 @@ it('does not invent an original dice result for a historical injury',()=>{
  expect(JSON.stringify(changes)).not.toMatch(/override|app.roll|instead/)
 })
 it('labels deleted report facts as a removed record, not fresh awards',()=>{
- expect(reportActivityChanges(entry({action:'delete',before:{result:'won'}}))[0].sentence).toBe('Removed record: Battle result: won.')
+ expect(reportActivityChanges(entry({action:'delete',before:{result:'won'}}))[0].sentence).toBe('Removed record: Won the battle.')
 })
 
 it('makes removed warriors and cleared report facts visible in amendments',()=>{

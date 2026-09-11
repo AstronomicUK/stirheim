@@ -621,6 +621,11 @@ it('a carried Torch is a club at minus one to hit and frightens identified anima
 })
 
 describe('Blessing shooting odds', () => {
+  it('does not grant another critical to a later victim of the same firing action', () => {
+    const fight = setup(marksman, skaven, 'bow', null)
+    expect(computeOdds({ ...fight, context: { ...fight.context, sharedCriticalUsed: true } }).weapons[0].input.critTriggerFaces).toEqual([])
+    expect(computeOdds(fight).weapons[0].input.critTriggerFaces).toContain(6)
+  })
   it('includes permission in hit, wound and OOA probabilities and sensitivity tables', () => {
     const plain = setup(marksman, skaven, 'bow', null)
     const blessed = { ...plain, ladyBlessing: true }

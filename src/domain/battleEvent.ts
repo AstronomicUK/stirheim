@@ -31,6 +31,8 @@ export const attackEventPayloadSchema = z.object({
   /** Bolas condition, separate from wounds and injury results. */
   entangled: z.boolean().optional(),
   blackpowderSelfShotId: z.string().optional(),
+  mortarShotId: z.string().optional(),
+  mortarTargetKey: z.string().optional(),
   grapeShotId: z.string().optional(),
   grapeTargetKey: z.string().optional(),
   pigeonLaunchId: z.string().optional(),

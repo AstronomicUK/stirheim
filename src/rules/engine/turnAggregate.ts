@@ -132,7 +132,11 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
     const failedWound = Math.max(0, mass - massNormal - massTrigger);
     if (attack.barrageNext || attack.barrageAtCap) {
       applyFollowup(attack.barrageNext ?? attack, failedWound, parriesUsed, critConsumed, woundsTaken, worst);
-    } else addMass(parriesUsed, critConsumed, woundsTaken, worst, failedWound);
+    } else {
+      const knockdown = Math.min(failedWound, attack.pHit > 0 ? mass * (attack.pKnockdownWithoutWound ?? 0) / attack.pHit : 0);
+      addMass(parriesUsed, critConsumed, woundsTaken, Math.max(worst, 1) as Severity, knockdown);
+      addMass(parriesUsed, critConsumed, woundsTaken, worst, failedWound - knockdown);
+    }
     if (massNormal > 0) applyEvents(attack.normalEvents, massNormal, parriesUsed, critConsumed, woundsTaken, worst);
     if (massTrigger > 0) {
       if (critConsumed === 0) {

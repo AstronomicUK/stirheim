@@ -1,3 +1,5 @@
+import { MortarControls } from './MortarControls'
+import { GrapeShotControls } from './GrapeShotControls'
 import { BlackpowderControls } from './BlackpowderControls'
 import { ladyBlessingActive, ladyBlessingReason } from '../../../rules/resolve/ladyBlessing'
 import { PigeonLaunchControls } from './PigeonLaunchControls'
@@ -10,7 +12,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { correctBlackpowderShot, blackpowderBlock, recordBlackpowderShot, recordMisfireDie, unresolvedPigeonVictims, unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
+import { unresolvedMortarTargets, startGrapeShotSpread, unresolvedGrapeShotTargets, correctBlackpowderShot, blackpowderBlock, recordBlackpowderShot, recordMisfireDie, unresolvedPigeonVictims, unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -87,7 +89,20 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const pigeonLaunch = sheet.pigeonLaunches.find(l => l.id === pigeonSelection?.launchId)
   const pigeonTarget = pigeonLaunch?.targets?.find(t => t.key === pigeonSelection?.targetKey)
   const pigeonDone = Boolean(pigeonLaunch && pigeonTarget && !unresolvedPigeonVictims(pigeonLaunch, events).some(t => t.key === pigeonTarget.key))
-  const areaTarget = selfShot ? { key: `self:${selfShot.id}`, warriorId: selfShot.warriorId, warbandId: roster.id, name: 'the firer' } : pigeonTarget ?? lineTarget
+  const [grapeSelection, setGrapeSelection] = useState<{ shotId: string; targetKey: string } | null>(null)
+  const [grapePrimarySlot, setGrapePrimarySlot] = useState(0)
+  const grapeSpread = sheet.grapeShotSpreads.find(s => s.shotId === grapeSelection?.shotId && sheet.blackpowderShots.some(shot => shot.id === s.shotId && !shot.correction))
+  const grapeTarget = grapeSpread?.targets?.find(t => t.key === grapeSelection?.targetKey)
+  const grapeDone = Boolean(grapeSpread && grapeTarget && !unresolvedGrapeShotTargets(grapeSpread, events).some(t => t.key === grapeTarget.key))
+  const grapeCriticalUsed = sheet.blackpowderShots.some(s => s.id === grapeSpread?.shotId && s.criticalUsed)
+  const grapeStrength = sheet.blackpowderShots.find(s => s.id === grapeSpread?.shotId)?.misfireDie === 6 ? 4 : 3
+  const [mortarSelection, setMortarSelection] = useState<{ shotId: string; targetKey: string } | null>(null)
+  const mortarShot = sheet.mortarShots.find(s => s.id === mortarSelection?.shotId && !s.correction)
+  const mortarCriticalUsed = sheet.blackpowderShots.some(s => s.id === mortarShot?.id && s.criticalUsed)
+  const mortarTarget = mortarShot?.targets?.find(t => t.key === mortarSelection?.targetKey)
+  const mortarDone = Boolean(mortarShot && mortarTarget && !unresolvedMortarTargets(mortarShot, events).some(t => t.key === mortarTarget.key))
+  const areaId = mortarShot ? `mortar:${mortarShot.id}` : grapeSpread ? `grape:${grapeSpread.shotId}` : pigeonLaunch ? `pigeon:${pigeonLaunch.id}` : lineShot ? `line:${lineShot.id}` : null
+  const areaTarget = selfShot ? { key: `self:${selfShot.id}`, warriorId: selfShot.warriorId, warbandId: roster.id, name: 'the firer' } : mortarTarget ?? grapeTarget ?? pigeonTarget ?? lineTarget
 
   const mine = useMemo(() => withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), [roster, template, sheet, boosts, events])
   const targets = useMemo(
@@ -145,6 +160,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const swivelSlots = attacker?.kind === 'henchman' ? Math.max(1, attacker.groupSize ?? 1) : 1
   const swivelModel = Math.min(swivelSlot, swivelSlots - 1)
   const swivelKey = `swivel:${swivelModel}`
+  const isMortar = primary?.id === 'hand_held_mortar'
+  const mortarReady = Boolean(selfShot || (mortarShot && mortarTarget && !mortarDone && mortarShot.warriorId === attacker?.id))
   const isPigeon = primary?.id === 'hersten_wenkler_pigeon_bombs'
   const pigeonReady = Boolean(pigeonLaunch && pigeonTarget && !pigeonDone && pigeonLaunch.warriorId === attacker?.id && isPigeon)
   const isLineWeapon = primary?.id === 'blunderbuss' || primary?.id === 'chaos_dwarf_blunderbuss'
@@ -215,13 +232,13 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
 
   const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1))) : null
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
-  const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined
+  const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) ?? (offHandValid && offHand ? ladyBlessingReason(offHand, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined) : undefined
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
-  const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}:${selfShotId ?? pigeonSelection?.targetKey ?? lineSelection?.targetKey ?? ''}` : ''
+  const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}:${selfShotId ?? mortarSelection?.targetKey ?? grapeSelection?.targetKey ?? pigeonSelection?.targetKey ?? lineSelection?.targetKey ?? ''}` : ''
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ ladyBlessing: !selfShot && Boolean(ladyTest), attacker: selfShot ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfShot ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfShot ? { id: 'blackpowder_self_hit', name: 'Exploding weapon', type: 'ranged', strength: 4, critCategory: 'missile', concussion: false, special: ['blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: offHandValid ? offHand : null, context: { ...context, pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle: selfShot ? [] : attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfShot ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfShot ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfShot ? { id: 'blackpowder_self_hit', name: 'Exploding weapon', type: 'ranged', strength: 4, critCategory: 'missile', concussion: false, special: ['blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: offHandValid ? offHand : null, context: { ...context, sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle: selfShot ? [] : attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -264,7 +281,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
       {/* Attacker and defender face each other, with the dice between them. */}
       <div className="relative grid grid-cols-2 items-stretch gap-3 lg:gap-8">
         <FightBox icon="battle" title="Attacker" tone="brass">
-          <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => { setAttackerId(e.target.value); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null) }}>
+          <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => { setAttackerId(e.target.value); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null); setGrapeSelection(null); setMortarSelection(null) }}>
             {mine.map((c) => (
               <option key={c.id} value={c.id}>
                 {combatantLabel(c)}
@@ -297,6 +314,22 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setRollSetup(null); setRolling(true)
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
               }} /> : null}
+              {isMortar ? <MortarControls key={attacker.id} attacker={attacker} defender={defender} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} hitThreshold={odds?.weapons[0]?.input.hitThreshold ?? null} requiresPermission={Boolean(ladyTest)} mayFire={!attacker.out && !psychologyLoading && !active.failedStupidity && (!context.movedThisTurn || [...attacker.skillIds, ...(attackerKit?.skillIds ?? [])].includes('nimble')) && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onSelfHit={id => {
+                setGrapeSelection(null); setMortarSelection(null); setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setRollSetup(null); setRolling(true)
+                if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
+              }} onResolve={(shot, target) => {
+                setSelfShotId(null); setGrapeSelection(null); setLineSelection(null); setPigeonSelection(null); setMortarSelection({ shotId: shot.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
+                const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
+                setWoundsOverride(model?.kind === 'henchman' ? { id: model.id, value: 0 } : null)
+              }} /> : null}
+              {primary.id === 'swivel_gun_grape_shot' ? <>
+                {!areaTarget && defender?.kind === 'henchman' && (defender.groupSize ?? 1) > 1 ? <SelectField label="Grape Shot primary target model" value={String(Math.min(grapePrimarySlot, (defender.groupSize ?? 1) - 1))} onChange={e => setGrapePrimarySlot(Number(e.target.value))}>{Array.from({ length: defender.groupSize ?? 1 }, (_, n) => <option key={n} value={n}>Model {n + 1}</option>)}</SelectField> : null}
+                <GrapeShotControls attacker={attacker} models={[...mine, ...targets]} sheet={sheet} events={events} readOnly={readOnly} edit={edit} onResolve={(spread, target) => {
+                  setSelfShotId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection({ shotId: spread.shotId, targetKey: target.key }); setRollSetup(null); setRolling(true)
+                  const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
+                  setWoundsOverride(model?.kind === 'henchman' ? { id: model.id, value: 0 } : null)
+                }} />
+              </> : null}
               {isPigeon ? <PigeonLaunchControls key={`${attacker.id}:${primary.id}`} attacker={attacker} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} requiresPermission={Boolean(ladyTest)} mayLaunch={!attacker.out && !psychologyLoading && !active.failedStupidity && (!context.movedThisTurn || [...attacker.skillIds, ...(attackerKit?.skillIds ?? [])].includes('nimble')) && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onResolve={(launch, target) => {
                 setLineSelection(null); setPigeonSelection({ launchId: launch.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
                 const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
@@ -456,7 +489,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={(Boolean(swivelBlocked) && !selfShot) || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))}
+          disabled={(Boolean(swivelBlocked) && !selfShot && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -470,18 +503,18 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         <>
           <Sheet
             open={rolling}
-            onClose={() => { setRolling(false); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null) }}
+            onClose={() => { setRolling(false); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null); setGrapeSelection(null); setMortarSelection(null) }}
             size="full"
             title={`${attacker.name} attacks ${defender.name}`}
             description={`${(rollSetup ?? odds).attacks === 1 ? '1 attack' : `${(rollSetup ?? odds).attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
             footer={
-              <Button variant="secondary" block onClick={() => { setRolling(false); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null) }}>
+              <Button variant="secondary" block onClick={() => { setRolling(false); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null); setGrapeSelection(null); setMortarSelection(null) }}>
                 Close
               </Button>
             }
           >
           {!rollSetup ? <div className="flex flex-col gap-4 py-3">
-            {areaTarget ? <p className="text-sm">One automatic Strength {selfShot || pigeonTarget ? 4 : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
+            {areaTarget ? <p className="text-sm">One automatic Strength {selfShot || pigeonTarget ? 4 : mortarTarget ? mortarShot!.strength : grapeTarget ? grapeStrength : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
             {!areaTarget ? <><p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
             <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} /></> : defender.kind === 'henchman' && defender.stats.W > 1 ? <Stepper label="Wounds already lost by this model" value={woundsAlreadyLost} onChange={value => setWoundsOverride({ id: defender.id, value })} max={defender.stats.W} /> : null}
             {needsInterception ? <div className="flex flex-col gap-3 rounded border border-brass p-3">
@@ -496,16 +529,23 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={(Boolean(swivelBlocked) && !selfShot) || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || Boolean(staffUse?.used) || bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))} onClick={() => { if (bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={(Boolean(swivelBlocked) && !selfShot && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || Boolean(staffUse?.used) || bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
-            onRestart={isSwivel && !selfShot && edit ? id => edit(s => correctBlackpowderShot(s, id, 'Player restarted the attack roller; earlier dice are preserved.')) : undefined}
-            onProgress={isSwivel && !selfShot && edit ? (previous, next, attemptId, rolled) => {
+            onRestart={isSwivel && !areaTarget && edit ? id => edit(s => correctBlackpowderShot(s, id, 'Player restarted the attack roller; earlier dice are preserved.')) : undefined}
+            onProgress={edit ? (previous, next, attemptId, rolled) => {
+              if (next.critUsed && areaId) edit(s => ({ ...s, areaCriticals: { ...s.areaCriticals, [areaId]: true } }))
+              const blastShotId = grapeSpread?.shotId ?? mortarShot?.id
+              if (next.critUsed && blastShotId) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === blastShotId ? { ...shot, criticalUsed: true } : shot) }))
+              if (!isSwivel || areaTarget) return
+              if (next.critUsed) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, criticalUsed: true } : shot) }))
               const startsShot = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
               if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, weaponName: 'Swivel Gun', ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
               if (previous?.pending?.kind === 'hit' && next.pending?.kind === 'misfire') edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, misfirePending: true } : shot) }))
               if (previous?.pending?.kind === 'misfire' && rolled) edit(s => recordMisfireDie(s, attemptId, rolled.value, rolled.manual ? undefined : rolled.value))
+              const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))
+              if (primary?.id === 'swivel_gun_grape_shot' && hit) edit(s => startGrapeShotSpread(s, { shotId: attemptId, warriorId: attacker.id, warbandId: roster.id, shooterName: attacker.name, at: new Date().toISOString(), primary: { key: `${defender.warbandId}:${defender.id}:${Math.min(grapePrimarySlot, Math.max(0, (defender.groupSize ?? 1) - 1))}`, warriorId: defender.id, warbandId: defender.warbandId, name: defender.name }, primaryInCover: Boolean(context.cover || defenderKit?.armour.pavise) }))
             } : undefined}
             forceLog={Boolean(areaTarget)}
             turn={sheet.turn}
@@ -546,6 +586,10 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 lineShotId: lineShot?.id,
                 lineShotTargetKey: lineTarget?.key,
                 blackpowderSelfShotId: selfShot?.id,
+                mortarShotId: mortarShot?.id,
+                mortarTargetKey: mortarTarget?.key,
+                grapeShotId: grapeSpread?.shotId,
+                grapeTargetKey: grapeTarget?.key,
                 pigeonLaunchId: pigeonLaunch?.id,
                 pigeonTargetKey: pigeonTarget?.key,
                 kill: defender.warbandId !== attacker.warbandId && state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
@@ -1004,6 +1048,7 @@ function kitNames(c: Combatant): string {
 /** One side of the fight: a headed box so the two read as facing each other on a phone. */
 /** The big heading for a roll step, read from across a table: the phase, not the weapon or the reroll count. */
 const ROLL_KIND_HEADING: Record<RollKind, string> = {
+  chainKnockdown: 'Chain Shot knock-down',
   misfire: 'Blackpowder Misfire',
   pigeonLaunch: 'Pigeon Launch',
   firePermission: 'Blessing of the Lady',

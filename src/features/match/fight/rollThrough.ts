@@ -10,7 +10,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -72,6 +72,8 @@ interface SaveStep {
 
 /** Scratch state for the attack being rolled. */
 interface Current {
+  chainTested?: boolean
+  chainOriginalOutcome?: Outcome
   firstWoundRoll?: number
   dodgeResolved?: boolean
   hitRoll: number | null
@@ -181,7 +183,7 @@ function beginAttack(state: RollState, permissionGranted = false): RollState {
     return askWound(log(fresh, `${attackName(state)}: automatic hit — the target is knocked down.`, 'good'))
   }
   if (plan.input.automaticHits) {
-    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blackpowderExplosion' ? 'automatic Strength 4 self-hit from the exploding weapon; no critical hits' : plan.input.automaticHitReason === 'pigeonBlast' ? 'automatic Strength 4 hit — this model is in the Pigeon Bomb blast' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
+    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'mortarBlast' ? 'automatic Mortar blast hit' : plan.input.automaticHitReason === 'grapeShot' ? 'automatic Grape Shot hit — no armour save modifier' : plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blackpowderExplosion' ? 'automatic Strength 4 self-hit from the exploding weapon; no critical hits' : plan.input.automaticHitReason === 'pigeonBlast' ? 'automatic Strength 4 hit — this model is in the Pigeon Bomb blast' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
     if (plan.input.automaticHitReason && plan.input.dodgeThreshold !== undefined && plan.input.dodgeThreshold !== IMPOSSIBLE) return afterHit(hit)
     return plan.input.automaticHitReason ? offerCharmOrContinue(hit) : askWound(hit)
   }
@@ -202,6 +204,8 @@ function log(state: RollState, text: string, tone: LogLine['tone'] = 'neutral'):
 }
 
 function finishAttack(state: RollState, outcome: Outcome): RollState {
+  if ((outcome === 'noWound' || outcome === 'saved') && state.plans[state.index]?.input.chainShotKnockdown && !state.cur.chainTested) return { ...state, cur: { ...state.cur, chainOriginalOutcome: outcome }, pending: { kind: 'chainKnockdown', who: 'attacker', label: 'Chain Shot knock-down', detail: 'Hit but no unsaved wound: 4+ knocks the target down, even if normally immune.' } }
+
   if (state.hitBatch?.phase === 'collect') return collectHit(state, outcome)
   if (state.hitBatch?.phase === 'parry') return nextBatchParry({ ...state, hitBatch: { ...state.hitBatch, hits: state.hitBatch.hits.map((h, i) => i === state.index ? { ...h, outcome } : h) } })
   const outcomes = [...state.outcomes, outcome]
@@ -262,6 +266,11 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
   let rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
+    case 'chainKnockdown': {
+      const knocked = roll >= 4;
+      return finishAttack(log({ ...state, cur: { ...state.cur, chainTested: true } }, `Chain Shot: rolled ${roll}${rollTag}. ${knocked ? 'Knocked down, even if normally immune.' : 'Remains standing.'}`, knocked ? 'good' : 'neutral'), knocked ? 'knockedDown' : state.cur.chainOriginalOutcome ?? 'noWound');
+    }
+
     case 'firePermission': {
       const allowed = passesSave(roll, input.firePermissionThreshold ?? 4)
       const next = log(state, `Blessing of the Lady: rolled ${roll}${rollTag}. ${allowed ? 'May fire this shot.' : 'Cannot fire this shot.'}`, allowed ? 'good' : 'bad')

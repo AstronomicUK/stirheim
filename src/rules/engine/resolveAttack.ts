@@ -37,6 +37,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Chain Shot: a hit causing no unsaved wounds can knock down on 4+. */
+  chainShotKnockdown?: boolean;
   /** Mandatory single-shot misfire: the 6 result hits at the enhanced profile. */
   misfireEnhanced?: AttackInput;
   /** Pigeon launch table: 5–6 on target, 2–4 harmless, 1 explodes at the firer. */
@@ -48,7 +50,7 @@ export interface AttackInput {
   barrageOnFailedWound?: boolean;
   /** Already-established hits, such as a successfully cast damage spell. */
   automaticHits?: boolean;
-  automaticHitReason?: "zeroWeaponSkill" | "blunderbussLine" | "pigeonBlast" | "blackpowderExplosion";
+  automaticHitReason?: "zeroWeaponSkill" | "blunderbussLine" | "pigeonBlast" | "blackpowderExplosion" | "grapeShot" | "mortarBlast";
   /** Minimum D6 to hit, with all modifiers (opposed WS or flat BS + cover/range/moving/large-target stack) already folded in. */
   hitThreshold: Threshold;
   /** Minimum D6 to wound (attacker/weapon Strength vs defender Toughness), with skill modifiers already folded in. */
@@ -293,6 +295,8 @@ export interface SingleAttackBreakdown {
   pHit: number;
   /** Joint hit & wound probability, after Dodge (ranged) is applied. */
   pWound: number;
+  /** Joint hit, no wound-roll success, and Chain Shot knock-down probability. */
+  pKnockdownWithoutWound?: number;
   /** Joint probability this attack hits, wounds, and the wound roll is NOT crit-trigger-eligible. */
   pWoundNormal: number;
   /** Joint probability this attack hits, wounds, and the wound roll IS crit-trigger-eligible (may or may not end up being the phase's actual crit — that's resolved in turnAggregate.ts). */
@@ -324,14 +328,14 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     const resolved = resolveSingleAttack({ ...input, firePermissionThreshold: undefined });
     return { ...resolved,
       branches: resolved.branches ? [{ probability: permission, attack: resolved }, { probability: 1 - permission, attack: resolveSingleAttack({ ...input, firePermissionThreshold: undefined, misfireEnhanced: undefined, hitThreshold: IMPOSSIBLE, automaticHits: false, autoHitKnockedDown: false }) }] : undefined,
-      pHit: resolved.pHit * permission, pWound: resolved.pWound * permission,
+      pHit: resolved.pHit * permission, pWound: resolved.pWound * permission, pKnockdownWithoutWound: (resolved.pKnockdownWithoutWound ?? 0) * permission,
       pWoundNormal: resolved.pWoundNormal * permission, pWoundTriggerEligible: resolved.pWoundTriggerEligible * permission,
       hitFaces: resolved.hitFaces?.map(face => ({ ...face, probability: face.probability * permission + (face.face === 0 ? 1 - permission : 0) })) };
   }
 
   if (input.misfireEnhanced) {
     const ordinary = resolveSingleAttack({ ...input, misfireEnhanced: undefined });
-    const conditioned = { ...ordinary, pHit: ordinary.pHit * 6 / 5, pWound: ordinary.pWound * 6 / 5, pWoundNormal: ordinary.pWoundNormal * 6 / 5, pWoundTriggerEligible: ordinary.pWoundTriggerEligible * 6 / 5, hitFaces: undefined };
+    const conditioned = { ...ordinary, pKnockdownWithoutWound: (ordinary.pKnockdownWithoutWound ?? 0) * 6 / 5, pHit: ordinary.pHit * 6 / 5, pWound: ordinary.pWound * 6 / 5, pWoundNormal: ordinary.pWoundNormal * 6 / 5, pWoundTriggerEligible: ordinary.pWoundTriggerEligible * 6 / 5, hitFaces: undefined };
     const enhanced = resolveSingleAttack({ ...input.misfireEnhanced, misfireEnhanced: undefined, firePermissionThreshold: undefined, automaticHits: true, autoWoundOnNaturalSixToHit: false });
     const miss = resolveSingleAttack({ ...input, misfireEnhanced: undefined, hitThreshold: IMPOSSIBLE, automaticHits: false });
     return mixRangedAttacks([{ probability: 5 / 6, attack: conditioned }, { probability: 1 / 36, attack: enhanced }, { probability: 5 / 36, attack: miss }]);
@@ -391,8 +395,9 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     .filter(({ result }) => result.ricochet)
     .reduce((sum, { probability }) => sum + probability, 0);
 
-  const normalEvents = normalWoundEvents(input);
-  const critEvents = critWoundEvents(input);
+  const chainEvents = (events: WoundEvent[]): WoundEvent[] => !input.chainShotKnockdown ? events : events.flatMap(e => e.wounds === 0 && !e.minSeverityKnockedDown ? [{ ...e, probability: e.probability / 2 }, { ...e, probability: e.probability / 2, minSeverityKnockedDown: true }] : [e]);
+  const normalEvents = chainEvents(normalWoundEvents(input));
+  const critEvents = chainEvents(critWoundEvents(input));
 
   return {
     barrageNext: input.barrageOnFailedWound && input.hitThreshold !== IMPOSSIBLE
@@ -411,6 +416,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
       })),
     ],
     pWound,
+    pKnockdownWithoutWound: input.chainShotKnockdown ? Math.max(0, pHit * (1 - pDodge) - pWound) / 2 : 0,
     pWoundNormal,
     pWoundTriggerEligible,
     extraAttack: input.critTriggerFaces.length && critEvents.some(e => e.extraAttack)

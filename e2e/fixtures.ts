@@ -8,10 +8,10 @@ export const PASSWORD = 'stirheim-dev'
 export const GM = { email: 'gm@stirheim.test', displayName: 'Tom (GM)' } as const
 export const PLAYER = { email: 'player@stirheim.test', displayName: 'Ana' } as const
 
-export const REIKLAND_WATCH = { id: 'aaaaaaaa-0000-4000-8000-000000000001', name: 'Reikland Watch' } as const
-export const CLAWS_OF_ESHIN = { id: 'aaaaaaaa-0000-4000-8000-000000000002', name: 'Claws of Eshin' } as const
+export const REIKLAND_WATCH = { id: process.env.E2E_REIKLAND_ID ?? 'aaaaaaaa-0000-4000-8000-000000000001', name: process.env.E2E_REIKLAND_NAME ?? 'Reikland Watch' } as const
+export const CLAWS_OF_ESHIN = { id: process.env.E2E_ESHIN_ID ?? 'aaaaaaaa-0000-4000-8000-000000000002', name: process.env.E2E_ESHIN_NAME ?? 'Claws of Eshin' } as const
 
-export const CAMPAIGN = { id: 'dddddddd-0000-4000-8000-000000000001', name: 'Ruins of the Stir', inviteCode: 'test-2026' } as const
+export const CAMPAIGN = { id: process.env.E2E_CAMPAIGN_ID ?? 'dddddddd-0000-4000-8000-000000000001', name: process.env.E2E_CAMPAIGN_NAME ?? 'Ruins of the Stir', inviteCode: process.env.E2E_INVITE_CODE ?? 'test-2026' } as const
 
 export const UUID_RE = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 

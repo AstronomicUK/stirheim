@@ -19,3 +19,5 @@ export * from "./pigeonLaunch";
 
 export * from "./blackpowderShot";
 export * from "./grapeShot";
+
+export * from "./mortarShot";

@@ -25,12 +25,14 @@ export function grapeShotTargets(primary: LineShotTarget, primaryInCover: boolea
 
 /** Called only once the primary shot has hit; this does not declare another firing attempt. */
 export function startGrapeShotSpread(sheet: BattleLiveState, input: Omit<GrapeShotSpread, 'die' | 'targets'>): BattleLiveState {
-  if (sheet.grapeShotSpreads.some(s => s.shotId === input.shotId)) return sheet
+  const existing = sheet.grapeShotSpreads.find(s => s.shotId === input.shotId)
+  if (existing && (existing.original !== undefined || existing.die !== undefined || input.original === undefined)) return sheet
+  if (existing) input = { ...existing, original: input.original }
   const shot = sheet.blackpowderShots.find(s => s.id === input.shotId && s.warriorId === input.warriorId && !s.correction)
   if (!shot || shot.misfirePending || (shot.misfireDie !== undefined && shot.misfireDie !== 6)) throw new Error('An active, fired shot is required before resolving Grape Shot.')
   if (input.original !== undefined && !validD6(input.original)) throw new Error('A valid Grape Shot D6 is required.')
   const spread = { ...input, primary: { ...input.primary }, die: undefined, targets: undefined }
-  return withRollAttempt({ ...sheet, grapeShotSpreads: [...sheet.grapeShotSpreads, spread] }, {
+  return withRollAttempt({ ...sheet, grapeShotSpreads: existing ? sheet.grapeShotSpreads.map(s => s.shotId === input.shotId ? spread : s) : [...sheet.grapeShotSpreads, spread] }, {
     id: `grape-spread:${input.shotId}`, at: input.at, turn: sheet.turn, kind: 'attack', status: 'incomplete', label: `${input.shooterName}: Grape Shot additional hits`,
     rolls: [`Primary target: ${input.primary.name} (${input.primaryInCover ? 'in cover' : 'in the open'}).`, input.original === undefined ? 'Awaiting tabletop D6 for additional hits.' : `App rolled ${input.original}. Awaiting confirmation; edits will be recorded.`],
   })

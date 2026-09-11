@@ -1,3 +1,4 @@
+import { isBlackpowderWeapon } from '../resolve/ladyBlessing';
 // Adapter layer: turns a Character + Weapon + defender profile + context toggles into the flat
 // AttackInput the pure resolveAttack.ts engine consumes. This is where skill, trait and weapon
 // special-rule effects actually get applied — the engine files themselves stay rule-agnostic.
@@ -104,6 +105,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   if (weapon.type === "ranged") {
     const nimble = skills.some((s) => s.id === "nimble" && isActive(s, context));
     if (weapon.moveOrFire && context.movedThisTurn && !nimble) return 0;
+    if (weapon.id === "hand_held_mortar") return 1;
     // An alternative fire mode (single shot for repeaters, the Sling's double shot) replaces the profile's shots.
     const shots = context.altFire && weapon.altFire ? weapon.altFire.shots : (weapon.rangedProfile?.shotsPerTurn ?? 1);
     const count = shots + skillBonus();
@@ -373,17 +375,18 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 
   // Swivel Guns fire one shot. Multi-barrel Experimental weapons need shared jam/destruction state separately.
-  const misfireEnhanced = weapon.type === "ranged" && weapon.special.includes("cumbersomeMinus1InitiativeMinus1Movement") && !rerollToHit
-    ? buildAttackInput({ attacker, defender, context: { ...context, firePermissionThreshold: undefined }, customSkills, houseRules, weapon: { ...weapon, strength: attackStrength + 1, strengthBonus: 0, special: weapon.special.filter(tag => tag !== "cumbersomeMinus1InitiativeMinus1Movement") } })
+  const misfireEnhanced = weapon.type === "ranged" && (weapon.special.includes("cumbersomeMinus1InitiativeMinus1Movement") || weapon.id === "hand_held_mortar" && weapon.special.includes("experimentalBlackpowderRulesAlwaysOn")) && !rerollToHit
+    ? buildAttackInput({ attacker, defender, context: { ...context, firePermissionThreshold: undefined }, customSkills, houseRules, weapon: { ...weapon, strength: attackStrength + 1, strengthBonus: 0, special: weapon.special.filter(tag => tag !== "cumbersomeMinus1InitiativeMinus1Movement" && tag !== "experimentalBlackpowderRulesAlwaysOn") } })
     : undefined;
   const pigeonBlast = context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs";
   return {
     misfireEnhanced,
-    firePermissionThreshold: !pigeonBlast && weapon.type === "ranged" && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
+    chainShotKnockdown: weapon.special.includes("allWrappedUpKnocksDownUnwoundedTargetOn4Plus"),
+    firePermissionThreshold: !pigeonBlast && (weapon.type === "ranged" || isBlackpowderWeapon(weapon)) && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
     hitThreshold: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") ? 5 : hitThreshold,
     temperamentalPigeon: !pigeonBlast && weapon.special.includes("temperamentalD6ToHitInsteadOfBS") || undefined,
-    automaticHits: weapon.special.includes("blackpowderSelfHit") || pigeonBlast || weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
-    automaticHitReason: weapon.special.includes("blackpowderSelfHit") ? "blackpowderExplosion" : pigeonBlast ? "pigeonBlast" : weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
+    automaticHits: weapon.special.includes("mortarBlastHit") || weapon.special.includes("grapeShotHit") || weapon.special.includes("blackpowderSelfHit") || pigeonBlast || weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
+    automaticHitReason: weapon.special.includes("mortarBlastHit") ? "mortarBlast" : weapon.special.includes("grapeShotHit") ? "grapeShot" : weapon.special.includes("blackpowderSelfHit") ? "blackpowderExplosion" : pigeonBlast ? "pigeonBlast" : weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
     woundThreshold: weapon.special.includes("entangleInsteadOfWound") ? IMPOSSIBLE : woundThreshold,
     entangleInsteadOfWound: weapon.special.includes("entangleInsteadOfWound") || undefined,
     armourThreshold,
@@ -400,7 +403,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     stunnedBecomesKnockedDown,
     ignoreKnockedDownAndStunned: defender.activeTraitIds.includes("veskit_no_pain") || undefined,
     injuryIgnoreThreshold,
-    critTriggerFaces: weapon.special.includes("blackpowderSelfHit") ? [] : critTriggerFaces,
+    critTriggerFaces: context.sharedCriticalUsed || weapon.special.includes("blackpowderSelfHit") || weapon.special.includes("noFurtherCritical") ? [] : critTriggerFaces,
     critTable,
     critTableRollModifier,
     rerollToHit: !weapon.special.includes("temperamentalD6ToHitInsteadOfBS") && rerollToHit,

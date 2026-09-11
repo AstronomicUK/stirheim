@@ -3777,3 +3777,24 @@ Grape Shot now honours its explicit no-armour-save-modifier rule, including when
 Added nearby-victim selection rules: nearest eligible enemies within 4 inches and line of sight, excluding the primary model and friends; cover is allowed only when the primary target was in cover. Hidden models remain eligible. Separate group members retain their identities and equally close models retain the player’s selected order. Saved spread dice preserve app originals and edits through reload; confirmed victims freeze without consuming another shot. Shared-result identity supports resolving each victim once and reopening reverted results.
 
 Five focused tests passed. This is domain/state groundwork only: Battle Sheet controls and automatic collateral damage are not yet connected, so #154 remains partial. Source: reference/rules/02-weapons-armour-equipment.md:1230. No migration or deployment.
+
+
+### Tonight’s release scope — #154/#155 (11 September, local verification)
+
+Tom approved finishing #154, then #155, taking #163 only if release-testing time remained, and deploying the verified batch together. #163 is deferred to the next batch; its partial status is unchanged.
+
+#154: Grape Shot now creates a saved additional-hit action after a primary hit. Its D6 original/edit history survives reload; selection enforces distance, cover, enemy eligibility and nearest-first order, with numbered group models. Chain Shot offers a 4+ knock-down after a hit causes no unsaved wound, including saved wounds, and bypasses normal knock-down immunity; numerical probabilities include this outcome. Mortar now has saved permission, hit, mandatory misfire, 2D6 scatter/clockface direction and blast stages; stopped shells do not scatter. Friends/enemies resolve separate automatic hits with shared history, repeat prevention, corrections and reload. Per-firing critical consumption is shared across blast/line victims.
+
+#155: Guiding Dream target modifiers and Blessing firing tests are implemented across existing shooting flows. The catalogue check now includes Experimental and Veskit’s built-in blackpowder. Weapon-specific checking also recognises a blackpowder pistol profile fired in melee without cursing ordinary blades; adding absent melee pistol profiles remains wider weapon work, not a new claim here. Existing unrestricted attack restarts/player overrides remain.
+
+Mobile Grape spread, Chain knock-down and Mortar scatter/reload tests passed; desktop Mortar KA-BOOM test passed. The earlier full ordinary suite passed 1,887 tests; final shared-critical/permission changes are undergoing release checks. General blackpowder inventory destruction, ammunition supplies and other outstanding #69/#71/#73 consequences remain open. Mortar scatter geometry is determined on the physical table; numerical previews explicitly describe direct hits, not a guessed scatter probability. No deployment yet.
+
+
+### #154/#155 release validation — 11 September
+
+Final ordinary suite: 1,890 passed, 176 database tests skipped in that run; all 176 passed separately against local Supabase. Build/typecheck and lint passed (existing audit-probe/chunk warnings only). Mobile Grape Shot spread, Chain Shot knock-down and Mortar scatter/reload checks passed; desktop Mortar misfire/strengthened blast check passed. #154 and #155 are complete locally within their recorded scopes; wider #69/#71/#73 equipment consequences and #163 remain open. Full browser regression is being checked before deployment. Production preview contains exactly migrations 73 and 74; Netlify automatic builds remain paused.
+
+
+### Final browser gate — 11 September
+
+All 16 browser regression tests pass against disposable copies of the original seed fixtures. The first run used an altered shared local campaign (four members/map mode), so its fixed-baseline assertions failed; isolated reruns corrected fixture invite formatting and one hard-coded warband label without changing application behaviour. Test fixture IDs/names can now be overridden while CI defaults stay unchanged. Extra desktop QA verifies one critical across successive Mortar victims. All disposable fixtures cleaned. Final ordinary/database totals remain 1,890 +176, with build/typecheck/lint passing. Ready for one release; expected production migrations 73–74.

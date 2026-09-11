@@ -315,6 +315,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** A previous victim of this same firing action already consumed its critical. */
+  sharedCriticalUsed?: boolean;
   /** Resolve one already-declared Pigeon Bomb blast victim, without relaunching. */
   pigeonBlastHit?: boolean;
   /** Required permission test before each ordinary missile shot. */

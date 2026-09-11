@@ -203,3 +203,16 @@ it('a Shrine blessing wounds only Undead/Possessed on 2+, retaining the base wea
  for(const trait of ['undead','possessed'])expect(buildAttackInput({attacker:attacker(),weapon:blade,defender:defender({T:10,activeTraitIds:[trait]}),context:ctx()}).woundThreshold).toBe(2)
  expect(buildAttackInput({attacker:attacker(),weapon:blade,defender:defender({T:10}),context:ctx()}).woundThreshold).toBe(IMPOSSIBLE)
 })
+
+it('allocates one Whipcrack bonus to the whip even in the off hand, never one per whip', async () => {
+  const { weaponAttackCounts, totalAttackCount } = await import('../buildAttackInput');
+  const a = { ...attacker(), stats: { ...attacker().stats, A: 2 }, traits: ['frenzy'] };
+  for (const firstRound of [ctx({ charging: true }), ctx({ firstTurnOfCombat: true })]) {
+    expect(weaponAttackCounts(a, [W('sword'), W('steel_whip')], firstRound).map(w => w.count)).toEqual([4, 2]);
+    expect(weaponAttackCounts(a, [W('steel_whip'), W('sword')], firstRound).map(w => w.count)).toEqual([5, 1]);
+    expect(weaponAttackCounts(a, [W('steel_whip'), W('steel_whip')], firstRound).map(w => w.count)).toEqual([5, 1]);
+    expect(totalAttackCount(a, [W('sword'), W('steel_whip')], firstRound)).toBe(6);
+  }
+  expect(weaponAttackCounts(a, [W('sword'), W('steel_whip')], ctx()).map(w => w.count)).toEqual([4, 1]);
+  expect(weaponAttackCounts({ ...a, traits: ['stupidity'] }, [W('sword'), W('steel_whip')], ctx({ charging: true, failedStupidity: true })).map(w => w.count)).toEqual([0, 0]);
+});

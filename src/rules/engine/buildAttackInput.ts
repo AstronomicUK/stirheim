@@ -77,7 +77,7 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
  *   two weapons (01:811) — a flat +1, not scaled by A, skills or Frenzy (01:1100).
  * - `maxAttacks` (Fist: 1) caps the result.
  */
-export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = []): number {
+export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = [], chargeBonusAvailable = true): number {
   if (context.failedStupidity && character.traits.includes("stupidity") && !character.traits.includes("deathwish")) return 0;
   if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
   // A blunderbuss shot places one hit on each model in its line, not extra
@@ -107,7 +107,8 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
     return Math.max(0, count);
   }
 
-  if (!isPrimary) return Math.min(1, weapon.maxAttacks ?? 1);
+  const chargeBonus = chargeBonusAvailable && isFirstTurnOfCombat(context) ? weapon.chargeBonusAttacks ?? 0 : 0;
+  if (!isPrimary) return Math.min(1, weapon.maxAttacks ?? 1) + chargeBonus;
 
   // Frenzy (01:1100): double Attacks in hand-to-hand combat; the off-hand +1 is not doubled.
   const baseAttacks = character.traits.includes("frenzy") && !character.traits.includes("deathwish") && !context.frenzyEnded ? character.stats.A * 2 : character.stats.A;
@@ -116,7 +117,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   if (weapon.paired) count += 1;
   count += weapon.bonusAttacks ?? 0;
   // Whipcrack: +1 Attack when charging, and +1 against the charger when charged (the first turn either way).
-  if (isFirstTurnOfCombat(context) && weapon.chargeBonusAttacks) count += weapon.chargeBonusAttacks;
+  count += chargeBonus;
   // Chain Sticks' Flurry: extra attacks in the first turn of each combat.
   if (isFirstTurnOfCombat(context) && weapon.firstTurnBonusAttacks) count += weapon.firstTurnBonusAttacks;
   // Quarter Staff: the free hand strikes as well when the staff is used alone.
@@ -133,7 +134,13 @@ export function weaponsForPhase(weapons: Weapon[], phase: WeaponKind): Weapon[] 
 /** Total attacks this phase across every weapon of that phase, in resolution order — the same count `resolveCharacterTurn` actually rolls. */
 export function totalAttackCount(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = [], phase?: WeaponKind): number {
   const inPhase = weaponsForPhase(weapons, phase ?? weapons[0]?.type ?? "melee");
-  return inPhase.reduce((sum, weapon, index) => sum + computeAttackCount(character, weapon, index === 0, context, customSkills), 0);
+  return weaponAttackCounts(character, inPhase, context, customSkills).reduce((sum, entry) => sum + entry.count, 0);
+}
+
+/** Allocate attacks to the actual weapon. A pair of whips gets Whipcrack only once. */
+export function weaponAttackCounts(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = []): { weapon: Weapon; count: number }[] {
+  const firstWhip = weapons.findIndex(w => Boolean(w.chargeBonusAttacks));
+  return weapons.map((weapon, index) => ({ weapon, count: computeAttackCount(character, weapon, index === 0, context, customSkills, index === firstWhip) }));
 }
 
 function effectiveStat(base: Stats, skills: Skill[], context: CombatContext, weaponType: WeaponKind, stat: keyof Stats, participant: "self" | "opponent"): number {

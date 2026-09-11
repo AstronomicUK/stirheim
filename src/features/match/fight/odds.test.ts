@@ -493,3 +493,16 @@ it('both blunderbusses automatically deliver one S3 hit per model in the line (#
     expect(relevantToggles(gunner, 'ranged', fight.primary).some(t => ['cover', 'longRange', 'movedThisTurn'].includes(t.field))).toBe(false)
   }
 })
+
+it('includes the off-hand Whipcrack attack in the displayed weapon counts and combined odds', () => {
+  const wielder = combatant('Whip wielder', [{ itemId: 'sword', quantity: 1 }, { itemId: 'steel_whip', quantity: 1 }])
+  const target = combatant('Target', [])
+  const fight = setup(wielder, target, 'sword', 'steel_whip')
+  fight.context = { ...fight.context, charging: true }
+  const odds = computeOdds(fight)
+  expect(odds.weapons.map(w => [w.weapon.id, w.attacks])).toEqual([['sword', 1], ['steel_whip', 2]])
+  expect(odds.attacks).toBe(3)
+  expect(odds.chain.attacks).toBe(3)
+  expect(odds.chain.anyHit).toBeCloseTo(1 - Math.pow(0.5, 3), 10)
+  expect(computeOdds({ ...fight, context: { ...fight.context, charging: false } }).attacks).toBe(2)
+})

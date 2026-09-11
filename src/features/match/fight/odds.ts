@@ -3,7 +3,7 @@ import { ignoresFear } from '../../../rules/engine/psychology'
 // probabilities for one phase of attacks, plus the flat thresholds a player rolls against.
 
 import { missilePenaltyRules } from '../../../rules/engine/missileRules'
-import { buildAttackInput, computeAttackCount, computeMaxParries, effectiveOffensiveStats, totalAttackCount, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
+import { buildAttackInput, weaponAttackCounts, computeMaxParries, effectiveOffensiveStats, totalAttackCount, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
 import { phaseChain, type PhaseChain } from '../../../rules/engine/chain'
 import { IMPOSSIBLE, probabilityAtLeast, type Threshold } from '../../../rules/engine/dice'
 import { resolveSingleAttack, type AttackInput, type Severity4Distribution } from '../../../rules/engine/resolveAttack'
@@ -199,8 +199,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
-  const perWeapon: WeaponOdds[] = weaponsForPhase(weapons, phase).map((weapon, index) => {
-    const full = computeAttackCount(attacker, weapon, index === 0, context)
+  const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context).map(({ weapon, count: full }) => {
     const attacks = Math.min(full, Math.max(0, remaining))
     remaining -= attacks
     const raw = buildAttackInput({ attacker, weapon, defender, context, houseRules })
@@ -273,7 +272,7 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
   const context: CombatContext = { ...setup.context, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
-  const perWeapon = weaponsForPhase(weapons, phase).map((weapon, index) => ({ weapon, count: computeAttackCount(attacker, weapon, index === 0, context) }))
+  const perWeapon = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context)
   const n = perWeapon.reduce((s, x) => s + x.count, 0)
   const nLabel = `${n} attack${n === 1 ? '' : 's'}`
 

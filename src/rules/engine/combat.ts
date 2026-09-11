@@ -4,7 +4,7 @@
 
 import type { Character, CombatContext, DefenderProfile, HouseRules, Skill, Weapon, WeaponKind } from "../types";
 import { defaultHouseRules } from "../types";
-import { buildAttackInput, computeAttackCount, computeMaxParries, weaponsForPhase } from "./buildAttackInput";
+import { buildAttackInput, weaponAttackCounts, computeMaxParries, weaponsForPhase } from "./buildAttackInput";
 import { resolveSingleAttack } from "./resolveAttack";
 import { resolveTurn, type TurnResult } from "./turnAggregate";
 
@@ -37,9 +37,7 @@ export function resolveCharacterTurn(
   options: TurnOptions = {}
 ): TurnResult {
   const inPhase = weaponsForPhase(weapons, phase ?? weapons[0]?.type ?? "melee");
-  let attacks = inPhase.flatMap((weapon, index) => {
-    const isPrimary = index === 0;
-    const count = computeAttackCount(attacker, weapon, isPrimary, context, customSkills);
+  let attacks = weaponAttackCounts(attacker, inPhase, context, customSkills).flatMap(({ weapon, count }) => {
     const input = buildAttackInput({ attacker, weapon, defender, context, customSkills, houseRules });
     const resolved = resolveSingleAttack(input);
     return Array.from({ length: count }, () => resolved);

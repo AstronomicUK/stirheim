@@ -118,3 +118,9 @@ Next: #156 selected defender weapons/strike-order conditions; #70 All Alone/Anim
 Learned Beastmen Fearless→Fear+AllAlone immunity; Noblesse→Fear only; Darkstalker→AllAlone only. Exact IDs via traitsFromSkills already shared with previews. Unit Loner checks explicit All Alone text; does not misclassify Shinobi’s leader exclusion. Added separate AllAlone badge; fixed generic Fear tooltip wrongly extending Cemetery Terror rule to all immunity sources. Sources1a:1617,1c:1109,1878,2a1:193,1025,2692. 316 focused tests +build/typecheck/lint pass; final source-label-only adjustment afterward. No deployment.
 
 Next combat: #156 strike-order selection/conditions, #149 Rapier Barrage, #150 Serpent Staff mode, #152–154 special weapon procedures, #68 transactional Bribery/abandonment. #70 Animosity/persistent psychology still partial. Broad work can proceed independently of table-only All Alone tests.
+
+## Source checkpoint — #150 and further #163 coverage
+
+Read Serpent Staff source02:597–605: its alternative is not merely WS4/S4. Bearer forgoes ALL normal attacks AND parries that round; staff makes exactly one attack and always strikes first. Existing data only tag alternativeStaffAttackWs4S4; do not expose a partial mode without suppressing offhand/bonus attacks and persisting lost parry eligibility. Ordinary staff is two-handed and can parry. Standalone clause is not dependent on full deferred Khemri campaign systems.
+
+Source1c:224–237 confirms Raging Peasants fight unarmed without penalties; monks additionally gain +1Attack unarmed. Generic naturalWeapons currently displays “Teeth and claws”, inappropriate for peasants’ improvised tools. Extend weapon display/profile metadata before adding these to #163. No source change retained in this checkpoint; next turn resume substantive combat fixes, keeping these constraints.

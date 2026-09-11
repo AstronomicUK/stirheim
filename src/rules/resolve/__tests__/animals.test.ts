@@ -53,9 +53,11 @@ describe("animals fighting as warriors", () => {
     expect(dog.kind).toBe("animal");
     expect(dog.stats.S).toBe(4);
     expect(loadoutFor(dog).melee.map((w) => w.id)).toEqual(["wardog_bite"]);
+    expect(dog.isAnimal).toBe(true);
     const gnoblar = combatants.find((c) => c.id === "animal:trapper:gnoblar_fighter:1")!;
     expect(loadoutFor(gnoblar).ranged.map((w) => w.id)).toEqual(["gnoblar_sharp_stuff"]);
     const rating = warbandRating(roster, OHP);
+    expect(gnoblar.isAnimal).toBe(false);
     expect(rating.breakdown.filter((b) => b.subjectId.startsWith("animal:")).map((b) => b.points)).toEqual([5, 5, 5, 5]);
   });
 });

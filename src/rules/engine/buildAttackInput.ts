@@ -5,7 +5,7 @@
 import type { Character, CombatContext, DefenderProfile, HouseRules, Skill, Stats, Weapon, WeaponKind } from "../types";
 import { defaultHouseRules } from "../types";
 import { findSkill } from "../data/skills";
-import { ignoresFear } from "./psychology";
+import { ignoresFear, causesFearAgainst } from "./psychology";
 import { missilePenaltyRules } from "./missileRules";
 import { meleeToHitThreshold, rangedToHitBaseThreshold } from "./toHit";
 import { toWoundThreshold } from "./toWound";
@@ -248,7 +248,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   }
 
   if (weapon.type === "melee" && context.failedFearWhenCharged && !context.charging
-      && defender.activeTraitIds.includes("causes_fear") && !ignoresFear(attacker.traits, context)) hitThreshold = 6;
+      && causesFearAgainst(defender.activeTraitIds, defender.causesFearInAnimals, attacker.isAnimal) && !ignoresFear(attacker.traits, context)) hitThreshold = 6;
 
   // Aenur’s source says always 2+ in hand-to-hand, irrespective of opposing WS.
   if (weapon.type === "melee" && attacker.traits.includes("invincible_swordsman")) hitThreshold = 2;

@@ -3637,3 +3637,10 @@ The carried loadout now applies the printed -1 to enemy missile hit rolls when t
 Corrected Bolas resolution so a successful hit ends with entanglement, never an ordinary Strength 3 wound, armour save or injury roll. Target wound/OOA odds are zero while hit odds remain available. Dodge can discard the hit first. The result and notes describe no movement, -2 melee WS and Recovery 4+ to escape; a natural 1 logs the separate Strength 3 self-hit for table resolution. Source: 02-weapons-armour-equipment.md:777–786.
 
 236 engine/odds/roll-through tests and build/typecheck/lint passed (existing audit warnings). Local only, no live data modified. #152 remains partial: the entangled condition/recovery, backfire damage and once-per-battle usage are explicitly table-managed for now; no claim of persisted entanglement or complete Bolas automation.
+
+
+### #152 — Beastlash Fear against identified animals (local, 11 September)
+
+Wielding a Beastlash now exposes the existing failed-Fear-when-charged control against an explicitly identified animal and applies the required 6-to-hit result. Ordinary Fear exemptions still apply. Humans and Gnoblar companions are unaffected; the wielder does not gain universal Fear or Fear immunity. Removing the selected Beastlash removes the conditional effect. Wardog equipment companions now carry explicit animal identity; companion bookkeeping alone is not used because it also includes Gnoblars.
+
+183 engine/odds/animal tests and build/typecheck/lint passed (existing audit warnings). Source: 02-weapons-armour-equipment.md:67–78. Local only. This does not yet identify every animal henchman, mount or custom simulator unit, nor automate Fear tests or failed charges. Those remain open rather than inferring species from names.

@@ -25,6 +25,8 @@ export type CombatantKind = 'hero' | 'hiredSword' | 'henchman' | 'animal'
 
 /** One model that can be picked as attacker or target. A henchman group is one model of the group. */
 export interface Combatant {
+  /** Rules identity, distinct from the companion bookkeeping kind. */
+  isAnimal?: boolean
   /** heroes.id or henchman_groups.id: what the battle sheet tallies against. */
   id: string
   kind: CombatantKind
@@ -253,6 +255,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
     out.push({
       id: animal.id,
       kind: 'animal',
+      isAnimal: animal.kind.isAnimal,
       name: animal.name,
       typeName: `${animal.kind.name} (${animal.holderName}'s)`,
       warbandId: roster.id,

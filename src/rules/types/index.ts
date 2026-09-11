@@ -188,6 +188,8 @@ export interface Trait {
 }
 
 export interface Character {
+  /** Explicit animal identity, not inferred from the displayed name. */
+  isAnimal?: boolean;
   id: string;
   name: string;
   warband: string;
@@ -367,6 +369,8 @@ export function defaultCombatContext(): CombatContext {
 }
 
 export interface DefenderProfile {
+  /** Conditional Fear from a currently wielded Beastlash. Does not grant universal Fear immunity. */
+  causesFearInAnimals?: boolean;
   WS: number;
   T: number;
   S: number;

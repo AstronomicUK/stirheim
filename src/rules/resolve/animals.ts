@@ -9,6 +9,8 @@ import type { Stats } from "../types";
 import type { RosterHero, RosterWarband } from "../types/roster";
 
 export interface AnimalKind {
+  /** Biological animal for conditional Fear; Gnoblar companions are not animals. */
+  isAnimal: boolean;
   name: string;
   stats: Stats;
   /** Engine weapon ids the animal fights with. */
@@ -21,6 +23,7 @@ export interface AnimalKind {
 
 export const ANIMAL_KINDS: Record<string, AnimalKind> = {
   wardogs: {
+    isAnimal: true,
     name: "Wardog",
     stats: { M: 6, WS: 4, BS: 0, S: 4, T: 3, W: 1, I: 4, A: 1, Ld: 5 },
     weaponIds: ["wardog_bite"],
@@ -28,6 +31,7 @@ export const ANIMAL_KINDS: Record<string, AnimalKind> = {
     ratingPoints: 5,
   },
   gnoblar_fighter: {
+    isAnimal: false,
     name: "Gnoblar Fighter",
     stats: { M: 4, WS: 2, BS: 3, S: 2, T: 3, W: 1, I: 3, A: 1, Ld: 5 },
     weaponIds: ["dagger", "gnoblar_sharp_stuff"],

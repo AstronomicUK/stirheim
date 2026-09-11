@@ -587,3 +587,21 @@ it('Bolas can hit but never wound or take the target out of action', () => {
   expect(odds.chain.outOfAction).toBe(0)
   expect(odds.notes.join(' ')).toContain('entangles instead of wounding')
 })
+
+
+it('Beastlash Fear affects an animal that failed when charged, without giving universal Fear', () => {
+  const beastmaster = combatant('Beastmaster', [{ itemId: 'beastlash', quantity: 1 }])
+  const dog = combatant('Dog', [{ itemId: 'dagger', quantity: 1 }], { kind: 'animal', isAnimal: true })
+  const fight = setup(dog, beastmaster, 'dagger', null)
+  const failed = { ...fight, context: { ...fight.context, failedFearWhenCharged: true } }
+  expect(relevantToggles(dog, 'melee', fight.primary, fight.defenderKit, null, beastmaster).some(t => t.field === 'failedFearWhenCharged')).toBe(true)
+  expect(computeOdds(failed).weapons[0].input.hitThreshold).toBe(6)
+  expect(toDefender(beastmaster, fight.defenderKit).activeTraitIds).not.toContain('causes_fear')
+  const human = { ...dog, kind: 'hero' as const, isAnimal: false }
+  expect(computeOdds({ ...failed, attacker: human }).weapons[0].input.hitThreshold).toBe(4)
+  expect(relevantToggles(human, 'melee', fight.primary, fight.defenderKit, null, beastmaster).some(t => t.field === 'failedFearWhenCharged')).toBe(false)
+  expect(computeOdds({ ...failed, attacker: { ...dog, traitIds: ['immune_to_fear'] } }).weapons[0].input.hitThreshold).toBe(4)
+  expect(computeOdds({ ...failed, attacker: { ...dog, isAnimal: false } }).weapons[0].input.hitThreshold).toBe(4) // Gnoblar companion
+  const noWhip = loadoutOf([{ itemId: 'dagger', quantity: 1 }])
+  expect(computeOdds({ ...failed, defenderKit: noWhip }).weapons[0].input.hitThreshold).toBe(4)
+})

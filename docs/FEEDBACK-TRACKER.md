@@ -2909,6 +2909,375 @@ code effect or any other tracker item naming them.
 -->
 
 
+
+### 104. Mountain Guide’s roll-two-keep-one exploration die is missing
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Grant a standing Mountain Guide the printed two dice, choose one exploration result. The Augur has the hook, but Maneaters do not.
+
+**Implementation evidence:** data/campaignRules/index.ts: only Sisters populate rollTwoKeepOneWith; resolve/explorationAids.ts consumes it. Full Maneater hero-roster probe returns no aids.
+
+**Source clauses:** W-A1; W-B:Maneaters; reference/rules/warbands/grade-1c.md:1876. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 105. Cursed Cavalcade Chronicler upgrade and exploration reroll are not connected
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Record the 10 gc Chronicler choice on a non-Wizard Twisted Scholar and offer its exploration reroll with a choice of either result. Neither the upgrade state nor its exploration aid is implemented.
+
+**Implementation evidence:** resolve/recruitPurchases.ts only lists recruitOnly items; campaignRules has no Cavalcade exploration entry; explorationAids returns no aid for its hero roster.
+
+**Source clauses:** W-A1; W-A17; W-B:The Cursed Cavalcade; reference/rules/warbands/grade-1c.md:1297. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 106. Hochland Poachers do not grant their exploration rerolls
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Offer one exploration D6 reroll per eligible Poacher under Trailblazers, with the rule’s participation conditions. The source rule is present but no aid is created.
+
+**Implementation evidence:** resolve/explorationAids.ts has no Poacher/Trailblazers branch; probe with all Hochland hero types returns no aids.
+
+**Source clauses:** W-A1; W-B:Hochland Bandits; reference/rules/warbands/grade-1b-part1.md:2575. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 107. Dwarf Slayer exploration ignores Only in Victory and Record of Valor
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Apply Only in Victory, Record of Valor and Bard Back-up Records, including the Rememberer exception, qualifying enemy-caused casualties and non-stacking observers. The current standard survivor count misses both the loss restriction and extra casualty dice.
+
+**Implementation evidence:** resolve/exploration.ts uses active survivors, noExplorationDie and flat warband extras; campaignRules has no Slayer exploration rule. explorationAids yields no Slayer aid.
+
+**Source clauses:** W-A1; W-B:Dwarf Slayer Cult; reference/rules/warbands/grade-2a-part1.md:682. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 108. Halfling Thief’s Cutpurse does not add the extra treasure
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Add one treasure when the warband’s Halfling Thief fought and was not taken out of action. This is the Halfling warband hero, not an assumption about every hired thief.
+
+**Implementation evidence:** resolve/exploration.ts: explorationBonuses reads only flat WARBAND_RULES extras; halflings has only an income rule, no Cutpurse consumer.
+
+**Source clauses:** W-A1; W-B:Halflings; reference/rules/warbands/grade-2a-part1.md:1404. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 109. Light Fingers never awards its once-per-game wyrdstone
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Check the hero’s selected Light Fingers skill and qualifying enemy OOA, awarding at most one shard per hero per game. Correct the old audit’s misleading “+1 shard per hero kill”: the source explicitly caps it at one per game.
+
+**Implementation evidence:** resolve/exploration.ts and explorationAids.ts never read selected hero skillIds for this award.
+
+**Source clauses:** W-A1; W-B:Survivors of Strigos; reference/rules/warbands/grade-2a-part2.md:1673. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 110. Mazzalupo Squire’s Petty Thief treasure roll has no flow
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 1. **Exploration bonuses and penalties.** Shards found are the dice total plus location rewards
+
+**Remaining work:** Offer and record the Squire’s 5+ theft roll and its extra shard, with the printed participation conditions.
+
+**Implementation evidence:** No Mazzalupo exploration overlay or Petty Thief consumer exists in resolve/exploration.ts, explorationAids.ts or the report model.
+
+**Source clauses:** W-A1; W-B:Mazzalupo. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 119. Warband-side hired-sword restrictions are only partially covered
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 9. **Hired sword restrictions written on the warband.** Eligibility is read only from the hired
+
+**Remaining work:** Complete the source-defined lists/conditions missing from WARBAND_RULES: Orc Mob, Black Orcs/Black Dwarfs/Sons of Hashut, Druchii, Marauders, both Night Goblin lists, Ogre Hunting Party (including no-Hunter Ogre exception), Lustrian Reavers, Outlaws, Pirates/Pit Fighters, Grave Robbers, mounted-only Imperial Outriders and Wood Elf tolerance. Complete Sorcerous Society’s wizard exclusion beyond four hard-coded IDs, Maneaters’ Dog of War unlock and conflict-driven departure/upkeep cases. Preserve the established warning-and-reason override policy; absence of a hard block is not itself a bug.
+
+**Implementation evidence:** data/campaignRules/index.ts HiredSwordRules/WARBAND_RULES and features/recruitment helpers: fixed allow/deny/keyword lists; many named warbands have no hiredSwords rule. Distinct from #97 resolver defense and #99 campaign-grade filtering.
+
+**Source clauses:** W-A9; W-B hired-sword clauses. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+**Implementation progress — 2026-09-10:** Added the Outlaws’ named exclusions, Pit Fighters’ Elf Ranger exclusion, Grave Robbers’ Shady Reputation exclusions and Lustrian Reavers’ allowed list. Corrected the Cavalcade’s Crow Master exception (the persona exists in the catalogue). Explicit warband permission takes precedence over the generic “May be hired” parser; warning panels now display the actual reason for the warband restriction. Other conditions listed above remain open.
+
+**Deployment — 2026-09-10:** Recruitment follow-up `2f7c750` deployed and served application files verified against the tested build. Details: [implementation and validation](HIRED-RECRUITMENT-IMPLEMENTATION-2026-09-10.md).
+
+### 123. Special henchman upkeep choices and supplies remain unimplemented
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WARBAND-RULES-GAPS.md)):
+
+> 13. **Upkeep for henchmen.** Only hired swords have upkeep. Not built: Trolls (15 or 20 gc, or
+
+**Remaining work:** Troll gold payments exist, but add sacrificing Goblins/Squigs and the Black Orc income-count alternative instead of always removing an unpaid Troll; track Fanatic mushroom supply/sitting out, Pirate mixed-Dwarf/Elf surcharge, and Trapmaster per-game trap costs. Also surface due henchman upkeep in the post-battle sequence rather than relying solely on the recruitment page. Apply the Fanatic’s Looney permanent-damage test when mushrooms were required by the unit, even if the player did not manually tick an item-use box.
+
+**Implementation evidence:** resolve/recruitment.ts henchmanUpkeepDue/payHenchmanUpkeep reads only gold and removes unpaid groups; campaignRules.upkeep has gold/note only. No supply ledger or alternate-payment action.
+
+**Source clauses:** W-A13; W-B:Night Goblins; W-B:Pirates; W-B:Lustrian Reavers; complements #60 hired upkeep. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 184. Multi-model hires collapse to one fighter and companion requirements are lost
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** Fresh rules sweep, 2026-09-09, at Tom’s request
+**Classification:** Gap
+
+**Observed:** Hiring Ulli & Marquand creates one row with Marquand’s profile and no kit, despite two source profiles and a mandatory pair. The same first-profile-only constructor cannot create the Snake Charmer’s three snakes. Maglah’s required two-to-five Hobgoblin Scouts conflicts with the unconditional one-of-each guard.
+
+**Expected:** Represent mandatory companion/pair fighters and their separate kit while keeping the hire’s shared price and rating. Add the specific Maglah exception to one-of-each and handle departures. Optional mounts and skill-earned bodyguards should appear only when selected/earned.
+
+**Source:** `reference/rules/05-dramatis-personae.md:432, :1085; 04-hired-swords.md:1561`. **Implementation:** `src/rules/resolve/recruitment.ts:513; src/rules/resolve/recruitment.ts:524`. [All-entry executable comparison](audits/2026-09-09-sweep/hired-probe.json). Local verification; temporary test passed and was removed.
+
+
+**Implementation — 2026-09-10:** Ulli and Marquand are separate equipped fighters with a shared contract/rating. Snake Charmer has three animal fighters, individual injury records, snake-bite attacks, shared upkeep and rating. Maglah hires/charges two to five Scouts, allows additional Scouts and retains only one when he departs; short retinues receive a warning. STILL OPEN: optional mounts and skill-earned bodyguards, snake hunting/replacement acquisition, and choosing which Scout remains rather than retaining the first surviving record.
+
+### 187. Exploration rewards ignore their individual conditions
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** Fresh rules sweep, 2026-09-09, at Tom’s request
+**Classification:** Bug
+
+**Observed:** Tavern success offers 4D6 + D6 gold instead of 4D6; failure offers none instead of D6. Shattered Building loses its unconditional D3 shards when the separate wardog Leadership test fails. Shop suggests a Lucky Charm regardless of the gold die being 1. A single success flag gates every reward, while conditions embedded in reward text are not evaluated.
+
+**Expected:** Resolve each reward’s own condition, retaining failure rewards and unconditional rewards. The visible Roll button must roll only the selected branch.
+
+**Source:** `reference/rules/03a-income-page-rescrape.md:122`, `:174`, `:335`. **Implementation:** `src/features/postBattle/model/exploration.ts:206`, `:217`; `src/features/postBattle/wizard/ExplorationStep.tsx:205`. [All-location executable results](audits/2026-09-09-sweep/exploration-income-probe.json). Temporary probe passed and was removed; no live browser playthrough.
+
+### 188. Exploration item quantities default to one despite dice quantities
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** Fresh rules sweep, 2026-09-09, at Tom’s request
+**Classification:** Bug
+
+**Observed:** The reward-to-inventory conversion discards amount and calls foundItemFromName with its default quantity of one. Fletcher’s D3 bows/crossbows and Slaughtered Warband’s D6 daggers therefore start as one, with no quantity roll or unresolved-quantity requirement. The user can manually change the quantity, but the suggested result is presented as resolved.
+
+**Expected:** Carry fixed quantities through and explicitly resolve dice quantities before completing exploration. Keep the manual correction control.
+
+**Source:** `reference/rules/03a-income-page-rescrape.md:211`, `:387`. **Implementation:** `src/features/postBattle/model/exploration.ts:217`; `src/features/postBattle/wizard/ExplorationStep.tsx:249`. [All-location executable results](audits/2026-09-09-sweep/exploration-income-probe.json). Temporary probe passed and was removed.
+
+### 190. Magical artefacts lack campaign-wide uniqueness tracking
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-09 — fresh rules sweep
+**Classification:** Gap
+
+**Source:** `reference/rules/03-campaigns-magic-optional-rules.md:973–977` requires an artefact already found in the campaign to be rerolled, even after its bearer dies. The exact rule is preserved in `src/rules/data/campaign/exploration.ts:825`.
+
+**Observed:** Exploration can record gold, shards, arbitrary items and notes, but `src/rules/resolve/exploration.ts:170–180` accepts only one roster and its gains. It cannot inspect other warbands or remember a dead bearer's artefact. No non-data consumer of the magical artefact rule/table implements a campaign uniqueness ledger; the wizard's reward adapter (`src/features/postBattle/model/exploration.ts:206–219`) passes textual artefact instructions through as notes.
+
+**Expected:** Provide a campaign-level found-artefact record and reroll advice that survives deaths/transfers. Preserve an explained GM/player override. This is a missing campaign aid, not a request to delete manually recorded items or rewrite history. Existing #66 covers exploration rewards, but not this cross-warband lifetime constraint.
+
+### 219. Warn before the next battle and automatically dismiss unpaid hired characters at battle start
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** Tom, 2026-09-10
+**Related:** #60 upkeep lifecycle; #61 special fees; #185 one-battle contracts; #119 conditional departures.
+
+> How is hired swords upkeep treated, as well as any Dramatis Personae? I'd suggest a pop-up between battles on the warband screen reminding them to pay the upkeep, with a button to pay it which deducts it from the gold total. If they try to join a battle, another message pops up saying they need to pay the upkeep before they can start, and if they proceed, the hired sword / Dramatis Personae will be removed from the warband.
+
+**Current implementation checked — 2026-09-10:** Applying a post-battle report marks surviving participating hired characters as owing upkeep. The warband screen displays an inline “Hired swords: upkeep due” section with Record payment and Dismiss instead actions. Payment deducts the applicable gold/resource fee, saves a roster event and clears the reminder. This includes Dramatis Personae with continuing contracts; one-battle hires instead leave under their own contract rules. An insufficient-funds payment is not saved by this card: the player must sell resources or choose dismissal. There is no upkeep check in the battle entry flow and this is not a modal pop-up.
+
+**Tom’s clarification — 2026-09-10 (supersedes the pop-up request):**
+
+> The reminder is fine, it doesn't need to be a pop-up. But I do think we need a warning before the next battle and an automatic removal if they start the next battle without paying.
+
+**Required work:** Keep the existing inline warband upkeep reminder; do not add a between-battle pop-up. Warn before the next battle, naming the unpaid hired characters and explaining that starting without paying will dismiss them. Let the player return to settle upkeep. If they start the next battle with upkeep still unpaid, automatically dismiss the affected Hired Swords/Dramatis Personae before they can participate; do not rely on a separate manual dismissal action. Joining or scheduling a future battle alone must not dismiss them: the trigger is starting the battle without paying. Persist the payment/departure and log it; use source-specific gold/resource costs, shared contracts and companion departures. Do not charge one-battle characters as if they had ongoing contracts. Keep departed records for history while removing them from the active warband. Ensure payment cannot be charged twice on repeated confirmation/reload.
+
+### 220. Move Dramatis Personae recruitment from Trading Post to Recruit
+
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
+**Priority:** 🟠 Medium
+**Reported:** Tom, 2026-09-10
+**Related:** #27 persona search interface; #93 persona search/filter.
+
+> Dramatis Personae recruitment should be under the Recruit option, not the trading post (although it should ensure that the hero selection limitations of only being able to do 1 of:
+> - Look for Dramatis Personae
+> - Look for rare items
+> still stands)
+
+**Required work:** Move the existing Dramatis Personae search/recruitment interface under Recruit and remove it from Trading Post. Preserve the shared post-battle hero search allowance across both destinations: a hero who searches for a persona cannot also search for rare items in the same sequence, and vice versa. Persist usage through navigation/reload; retain eligibility, search results and character-specific recruitment conditions. This is a location change, not a fresh search allowance.
+
+## Between Battles — approved single-release project (2026-09-10)
+
+Tom approved the 20-item batch: #61, #74, #119, #184, #123, #219, #220, #72, #187, #188, #190, #66, #104–110 and #87. **Local commits only; no intermediate pushes or deployments.** One final push/release after verification, avoiding duplicate Netlify auto/manual builds. Detailed progress and remaining scope: [Between Battles project](BETWEEN-BATTLES-PROJECT.md).
+
+Local implementation checkpoints now cover #87, #220, #219, #104, #106, #108, #109 and #188, with partial #66 reroll handling. These are **not deployed or finally signed off**. 1,373 unit tests pass; 10 separately run local battle/upkeep integration tests pass. Migration 20260910000039 is local only. Remaining source work and browser verification are recorded in the project document; earlier production statuses must not be read as deployment of this batch.
+
+Additional **local-only** checkpoints: #105 Chronicler recruitment/exploration, #107 Slayer exploration, #66 Elf Ranger modifier, #187 Tavern/Shop/Armourer branches, and #190 campaign artefact ledger. Mobile recruitment/upkeep actions were checked with disposable local data; four local artefact DB tests pass. Migration 20260910000040 is local only. See the project document for exact coverage and outstanding cases; these updates do not close the whole 20-item batch or imply deployment.
+
+Local verification update: #220 now passes the actual mobile Persona→rare-item and rare-item→Persona allowance checks through navigation/reload. #61 Luthor’s role is saved, displayed, and supplied by the Persona search/hire path; mobile hire verified. Full suite: 1,385 pass; 86 DB tests skipped in that suite. Still not deployed.
+
+#### Between Battles local follow-up — 10 September 2026 (#72/#189)
+
+Not deployed; keep broader entries open. Wizard’s Tower now has per-chest reward rolls (1–2 illusions, 3–5 3D6 gc, 6 6D6 gc), derived treasury totals and full report notes, with incomplete-roll filing guards and a separate reason-required extra-reward adjustment. Also corrected Wizard’s Tower to skip exploration and Mordheim’s Burning to allow losers normal exploration without a winner bonus. Source: the respective scraped scenario sections. 1,387 tests pass; build passes. New chest UI still needs browser verification; remaining scenarios and other Between Battles work are not complete. See `docs/BETWEEN-BATTLES-PROJECT.md` for full scope and the single-release constraint.
+
+#### Between Battles local follow-up — 10 September 2026 (#72/#87)
+
+Added 17 scenario reward paths beside Wizard’s Tower: explicit core counter/building/Chance Encounter formulas, independent Hidden Treasure/Lost Prince/Mummy/Beujuntae finds, conditional Bar Room Brawl and graveyard rewards, ransom, and explicit no-extra-treasure scenarios. Complete source/evidence matrix: `docs/SCENARIO-REWARDS-AUDIT-2026-09-10.md`. Arbitrary extras on these supported scenarios require a separate explained adjustment. Other scenarios remain outstanding; #72 is **not complete**.
+
+#87’s actual mobile browser filing-gate check now passes through reload, rolled-skill deferral and saved report. Hidden Treasure and Wizard’s Tower mobile/local report checks persist the correct treasury, stash, XP and logs. 1,397 unit tests pass; typechecked build passes; lint unchanged. **Local only; no push/deploy.** Do not mark the production release complete.
+
+#### Between Battles local follow-up — 10 September 2026 (#66/#187)
+
+Shattered Building keeps unconditional shards and grants its wardog only on a Leadership pass. Applied report history now supplies the non-stacking permanent Catacombs reroll, Straggler’s extra die/discard at the next actual exploration, next-battle tunnel reminder and one free Returning a Favour hire. Free-hire use persists across departures/reload and is protected against concurrent claims. Source details and validation are in `docs/BETWEEN-BATTLES-PROJECT.md`. Remaining conditional XP/recruit rewards stay open. **Not deployed.**
+
+Local batch progress: #66/#187 faction-specific location XP/gold and free Prisoner/Zombie recruitment are implemented with report logs, XP/advance gates, equipment costs, roster limits, and protected withdrawal. Local migration 42 and two apply/withdraw/refile database tests pass. This is local progress, not closure of the broader items or a production deployment. See Between Battles milestone 10.
+
+### 221. Ban-list search truncates results and cannot browse the full catalogue
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-10
+
+> When you go to use the search box for the ban list, if there are too many results, there's no way to view more. An example is if you search for "Witch" under Hired Swords, it shows virtually every Hired Sword, since most of them specify that they can be recruited by Witch Hunters. But because of this, you can't find the Witch herself, and there is no way to manually browse.
+
+**Acceptance:** Every matching entry must remain reachable through scrolling, pagination or Show more; allow browsing without a search. Prioritise actual name matches over recruitment-description matches so Witch is discoverable. Check all ban categories, desktop and mobile. Distinct from #42/#93 recruitment catalogue search.
+
+### 222. Campaign scenario settings do not expose the full scenario library
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-10
+
+> I can't see a way that you can add a scenario to a campaign. Clicking it in settings takes you to a separate window (I don't think this is necessary) and from there you only get the option to "Write a scenario". The app's database of the full scenario library is never accessible, since it only has the default scenarios enabled and no way to add the others.
+
+**Acceptance:** Let the GM browse/search the full existing library and enable/disable scenarios for this campaign, with current choices clear and persisted on reload. Keep writing a custom scenario as a separate option. Prefer an integrated campaign-settings flow over a separate window. Related to #80's navigation move, but this is missing library selection, not bespoke rewards #72.
+
+### 223. Break Campaign Settings into manageable sections on desktop and mobile
+
+**Status:** 🔲 Open — design discussion required
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-10
+
+> I think the Campaign Settings is getting too long and cumbersome. It needs a menu tab where things can be broken into sections, but we need to think how this is laid out on both Desktop and Mobile, as we can't replace the existing menu (we need that one as well).
+
+**Acceptance:** Propose secondary section navigation that preserves the app's existing primary menu; agree grouping and desktop/mobile presentation with Tom before implementation. Include scenario-library management (#222), clear save behaviour (#208), and accessible navigation.
+
+### 224. GM Checklist cannot be completed and dismissal does not persist
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-10
+
+> There is no way of "Completing" the GM Checklist, and dismissing it means it just reappears next time.
+
+**Acceptance:** Provide a clear completion state and persist dismissal/completion through reload and later visits. Preserve a deliberate way to reopen the checklist. Verify appropriate campaign/user scope rather than hiding another GM's unfinished work unintentionally.
+
+### 225. Campaign overview needs secondary navigation
+
+**Status:** 🔲 Open — design discussion required
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-10
+
+> I think the Campaign screen also needs a sub menu if we can figure out a UI display solution. Again, there's a lot of different information in one screen.
+
+**Acceptance:** Collaboratively design section navigation for the campaign overview on desktop and mobile, consistent with #223 while retaining the primary app menu. Keep this separate from the settings form: these are two different screens with related design work.
+
+### 226. Post-battle history does not clearly identify deliberately overridden injury dice
+
+**Status:** 🔲 Open
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-10
+
+> I purposely fudged a dice roll and changed the engineer's dice roll to a result I wanted: nowhere is that clear in that heaping dump of data.
+
+**Acceptance:** In the visible report/history, clearly name the warrior and identify manual entry/override, original app result where retained, replacement result, and supplied explanation. Retain roll chronology and distinguish ordinary manual tabletop entry from replacing an app roll. Verify saving, applying and reloading the report. Do not invent an original result for historical records lacking it. Related to #20/#207 roll transparency and reopened #23 presentation, but specifically track post-battle injury overrides. Player overrides remain explicitly approved; do not remove them.
+
 ### 227. Optional Khemri campaign system and setting-based scenario availability
 
 **Status:** 💡 Potential future upgrade — deferred

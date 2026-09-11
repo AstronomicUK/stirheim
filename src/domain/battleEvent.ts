@@ -30,6 +30,7 @@ export const attackEventPayloadSchema = z.object({
   nurgles_rot: z.boolean().default(false),
   /** Bolas condition, separate from wounds and injury results. */
   entangled: z.boolean().optional(),
+  blackpowderSelfShotId: z.string().optional(),
   pigeonLaunchId: z.string().optional(),
   pigeonTargetKey: z.string().optional(),
   lineShotId: z.string().optional(),

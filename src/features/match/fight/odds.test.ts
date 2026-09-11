@@ -685,3 +685,15 @@ it('includes the Swivel misfire six as an extra 1/36 automatic hit at increased 
   expect(blessed.chain.outOfAction).toBeCloseTo(odds.chain.outOfAction / 2)
   expect(blessed.chain.anyHit).toBeCloseTo(odds.chain.anyHit / 2)
 })
+
+it('an exploding weapon inflicts one automatic Strength 4 self-hit with no criticals or weapon armour modifier', () => {
+  const gunner = combatant('Gunner', [{ itemId: 'swivel_gun', quantity: 1 }, { itemId: 'light_armour', quantity: 1 }])
+  const initial = setup(gunner, gunner, 'swivel_gun_ball_shot', null)
+  const odds = computeOdds({ ...initial, primary: { id: 'blackpowder_self_hit', name: 'Exploding weapon', type: 'ranged', strength: 4, critCategory: 'missile', concussion: false, special: ['blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } })
+  expect(odds.attacks).toBe(1)
+  expect(odds.weapons[0].pHit).toBe(1)
+  expect(odds.weapons[0].strength).toBe(4)
+  expect(odds.weapons[0].input.armourThreshold).toBe(6)
+  expect(odds.chain.anyCrit).toBe(0)
+  expect(odds.weapons[0].input.misfireEnhanced).toBeUndefined()
+})

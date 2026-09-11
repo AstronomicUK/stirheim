@@ -3758,3 +3758,10 @@ Full ordinary tests: 1873 passed, 176 database skipped. Build/typecheck/lint pas
 The Battle Sheet now records the physical Swivel Gun when firing begins, after any Blessing permission passes. Ammunition changes share the same gun's reload/jam state. Misfire results persist destruction, battle-long jamming and the extra Phut turn; pending misfires can be finished after reload with original app dice and edits preserved. Numbered group members are tracked separately. Explicit corrections preserve history, and the approved unrestricted Start again remains available with an automatic logged firing correction. Permanent inventory removal and BOOM self-damage remain manual.
 
 The ordinary suite passed 1873 tests (176 database skipped); final build/typecheck/lint passed with existing warnings. Disposable mobile QA verified jam persistence across reload/ammunition changes, corrections, interrupted misfire recovery, failed Blessing consuming no shot, and unrestricted restart. QA exposed repeated development-effect initialization, now guarded, and was updated to await normal autosave before reloading. No deployment.
+
+
+### #69/#71/#154 — BOOM self-hit in the Battle Sheet (local, 11 September)
+
+A destroyed Swivel Gun now offers a separate explosion self-hit action. It resolves one automatic Strength 4 hit against the firer through the normal wound/save/injury flow, forbids critical hits, and does not inherit the ammunition's armour modifier or the firer's offensive skill bonuses. The shared log records self-inflicted wounds/casualties without kill XP. Recording the hit disables its action; reverting that event makes it available again. Group members use the existing numbered firing model and separate wound assumption. Permanent gun removal remains manual.
+
+Full ordinary suite: 1874 passed, 176 database tests skipped. Build/typecheck/lint passed with existing warnings. Disposable mobile QA verified BOOM → self-hit → natural-six wound without a critical → self-inflicted casualty with no XP and completed-action state. No deployment.

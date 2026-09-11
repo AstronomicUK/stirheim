@@ -113,6 +113,7 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
     if (hero.status !== 'active') continue;
     if (hero.skillIds.includes('wyrdstone_hunter') && !down.has(hero.id)) out.push({ key: `wyrdstone-hunter:${hero.id}`, label: 'Wyrdstone Hunter', kind: 'reroll', uses: 1, holderId: hero.id, holderName: hero.name, note: 'A Hero searching the ruins may reroll one exploration die. Accept the second result.' });
     if (hero.skillIds.some(id => [
+      'resource_hunter',
       'dwarf_treasure_hunters_dwarf_skills_resource_hunter',
       'dwarf_rangers_dwarf_skills_resource_hunter',
       'black_dwarfs_skills_resource_hunter',

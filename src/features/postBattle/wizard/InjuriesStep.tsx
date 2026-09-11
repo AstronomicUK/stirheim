@@ -1,3 +1,4 @@
+import { ExtraTough } from './ExtraTough'
 import {LycanthropeAftermath} from './LycanthropeAftermath'
 import {MedicineChest} from './MedicineChest'
 import type {ReactNode} from 'react'
@@ -77,7 +78,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               name={hero.name}
               type={warriorTypeLabel(ctx, hero)}
               resolution={resolution}
-              medicine={<MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/>}
+              medicine={<><ExtraTough hero={hero} draft={draft} update={update}/><MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/></>}
               skip={draft.injurySkips[hero.id]}
               onSkip={(reason) => update((d) => setInjurySkip(d, hero.id, reason))}
               onD66={(d66, source) => update((d) => addHeroInjuryRoll(d, hero.id, d66, source))}

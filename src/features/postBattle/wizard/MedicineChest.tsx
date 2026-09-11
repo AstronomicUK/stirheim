@@ -12,7 +12,7 @@ export function MedicineChest({heroId,draft,items,resolution,update}:{heroId:str
  const used=new Map<string,number>()
  for(const f of Object.values(draft.heroInjuries))for(const r of f.rolls)if(r.medicine)used.set(r.medicine.itemId,(used.get(r.medicine.itemId)??0)+1)
  const available=items.filter(i=>i.item_rules_id==='scenario_medicine_chest'&&i.quantity>(used.get(i.id)??0))
- if(!step||!roll||roll.medicine||step.rerolled||step.rewrittenBy||!canUseMedicineChest(roll.d66)||!available.length)return null
+ if(!step||!roll||(flow.extraToughUsed&&index===0)||roll.medicine||step.rerolled||step.rewrittenBy||!canUseMedicineChest(roll.d66)||!available.length)return null
  const selected=available.some(i=>i.id===itemId)?itemId:''
  return <div className="flex flex-col gap-2 rounded border border-border p-3">
   <SelectField label="Medicine Chest reroll" value={selected} onChange={e=>setItemId(e.target.value)}><option value="">Keep this result</option>{available.map(i=><option key={i.id} value={i.id}>Use a chest ({i.quantity-(used.get(i.id)??0)} available)</option>)}</SelectField>

@@ -34,6 +34,8 @@ export const STEP_TITLES: Record<StepId, string> = {
 
 /** One hero's Serious Injury rolls, in the order they were made. */
 export interface HeroInjuryFlow {
+  /** Extra Tough has replaced the initial Serious Injury roll; the replacement stands. */
+  extraToughUsed?: boolean;
   /**
    * D66 results; `subRoll` stays null until the injury asks for one and the player supplies it.
    * `districtRoll` is the D6 a map district lets the player make to turn the result into a Full
@@ -356,7 +358,7 @@ export function addHeroInjuryRoll(draft: ReportDraft, heroId: string, d66: numbe
 /** Replace one original result while retaining its provenance; later dependent rolls must be made afresh. */
 export function setMedicineChestReroll(draft:ReportDraft,heroId:string,rollIndex:number,itemId:string,d66:number):ReportDraft {
   const flow=flowOf(draft,heroId),original=flow.rolls[rollIndex]
-  if(!original||original.medicine)return draft
+  if(!original||original.medicine||(flow.extraToughUsed&&rollIndex===0))return draft
   const rolls=flow.rolls.slice(0,rollIndex+1)
   rolls[rollIndex]={...original,subRoll:null,districtRoll:null,medicine:{itemId,d66,originalSubRoll:original.subRoll,originalDistrictRoll:original.districtRoll??null}}
   return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls,countRoll:rollIndex===0?null:flow.countRoll}}}
@@ -398,7 +400,7 @@ export function resetHeroInjury(draft: ReportDraft, heroId: string, reason: stri
   const flow = flowOf(draft, heroId)
   if (!flow.rolls.length || !reason.trim()) return draft
   return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: {
-    rolls: [], countRoll: null,
+    rolls: [], countRoll: null, extraToughUsed: flow.extraToughUsed,
     previousAttempts: [...(flow.previousAttempts ?? []), {rolls: flow.rolls, countRoll: flow.countRoll, reason: reason.trim()}],
   } } }
 }

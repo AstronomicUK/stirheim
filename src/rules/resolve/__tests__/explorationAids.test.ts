@@ -92,7 +92,7 @@ it('does not reroll the same die using another aid, but permits a Guide choice b
 
 
 describe('native exploration skills (#66)', () => {
-  it.each(['dwarf_treasure_hunters_dwarf_skills_resource_hunter', 'dwarf_rangers_dwarf_skills_resource_hunter', 'black_dwarfs_skills_resource_hunter', 'wood_elves_of_athel_loren_special_skills_seeker'])('offers a single adjustment for %s', skill => {
+  it.each(['resource_hunter', 'dwarf_treasure_hunters_dwarf_skills_resource_hunter', 'dwarf_rangers_dwarf_skills_resource_hunter', 'black_dwarfs_skills_resource_hunter', 'wood_elves_of_athel_loren_special_skills_seeker'])('offers a single adjustment for %s', skill => {
     const bearer = {...hero('bearer', []), skillIds: [skill]};
     const aids = explorationAids(warband([bearer]), base);
     expect(aids).toHaveLength(1);

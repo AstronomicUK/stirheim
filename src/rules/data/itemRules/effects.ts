@@ -8,6 +8,7 @@ import type { ItemEffect } from "./types";
 const UNDEAD_AND_POSSESSED = ["undead", "possessed"];
 
 export const ITEM_EFFECTS: Record<string, ItemEffect> = {
+  nicodemus_staff: {note:"Nicodemus’s staff uses its two-handed club/parry mode here. If Sword of Rezhebel is active, resolve the spell combination separately: the off-hand staff is then an ordinary club and neither weapon grants parry."},
   lantern_rig: {note:"Lantern Rig: add 4 inches when spotting hidden enemies on the tabletop; both hands remain free for weapons."},
   hillman_fur_cloak: {ownSave:{melee:6,missile:5},note:"Heavy Fur Cloak: man form only, 6+ armour in melee and 5+ against ranged attacks. Discard all equipment in wolf form; recover it after battle. Wolf transformation must be resolved separately."},
   dark_emissary_spiral: { wardSave: 5, note: "The Spiral: unmodifiable 5+ save." },

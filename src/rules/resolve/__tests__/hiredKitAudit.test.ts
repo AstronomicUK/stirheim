@@ -112,3 +112,8 @@ it('keeps named priest and shaman weapons distinct from cast magic',()=>{
  expect(priest.map(i=>i.itemId)).toEqual(['priest_hammer_of_sigmar','light_armour','shield'])
  for(const weapon of ['sword','axe']) expect(hiredSwordStartingEquipment('norse_shaman',findHiredSword('norse_shaman')!.detail,undefined,weapon).map(i=>i.itemId)).toEqual(['norse_rune_staff',weapon])
 })
+
+it('separates Belandysh’s ordinary armour from his bespoke sword and resolves Nicodemus’s staff',()=>{
+ expect(hiredSwordStartingEquipment('belandysh_condemned_champion_of_chen',findHiredSword('belandysh_condemned_champion_of_chen')!.detail)).toContainEqual({itemId:'chaos_armour',quantity:1})
+ expect(hiredSwordStartingEquipment('nicodemus_the_cursed_pilgrim',findHiredSword('nicodemus_the_cursed_pilgrim')!.detail)).toEqual([{itemId:'nicodemus_staff',quantity:1}])
+})

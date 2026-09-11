@@ -293,3 +293,12 @@ it('resolves exact legacy staff and hammer names without permanent magic bonuses
   expect(kit.melee[0].vsTraits).toBeUndefined()
  }
 })
+
+it('recognises old Nicodemus staff and Belandysh armour entries in combat',()=>{
+ const staff=loadoutOf([{itemId:null,customName:"enormous Wizard's staff (see Special Rules)",quantity:1}])
+ expect(staff.melee[0]).toMatchObject({id:'wizards_staff',concussion:true,parry:true})
+ expect(isTwoHanded(staff.melee[0])).toBe(true)
+ expect(staff.assumptions.some(note=>note.includes('Sword of Rezhebel'))).toBe(true)
+ const armour=loadoutOf([{itemId:null,customName:'Chaos Armour that hardly hold his body together',quantity:1}])
+ expect(armour).toEqual(loadoutOf([{itemId:'chaos_armour',quantity:1}]))
+})

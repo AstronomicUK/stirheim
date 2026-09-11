@@ -9,12 +9,11 @@ Generated from current starting equipment and combat loadout mapping. These are 
 | Coachman | Whip |
 | Pyromaniac | Fireworks |
 | Dwarf Slayer Pirate | many many Pistols |
-| Halfling Knight | Hound; Barding |
-| Nicodemus, the cursed pilgrim | enormous Wizard's staff (see Special Rules) |
+| Halfling Knight | Hound |
 | Crow Master, The | Mantle of Crows; Needle & Thread |
 | Dijin Katal, The Renegade Assassin | Druchii Assassin’s Cloak |
 | Heinrich 'Altdorf' Schmidt | Whip |
-| Belandysh, Condemned Champion Of Chen | Broadsword of Damnation (see Chaos Artefacts); Chaos Armour that hardly hold his body together |
+| Belandysh, Condemned Champion Of Chen | Broadsword of Damnation (see Chaos Artefacts) |
 | Grand Master Ippan Shu | iron fan in one of his hands |
 | Luthor Wolfenbaum (wizard) | Fish-slapping staff; Bugman’s Beer; Clay orbs of Tilean Fire |
 | "Busty" Gwen | Knives (profile/count not stated; Rolling Pin now operational) |
@@ -35,3 +34,5 @@ Milestone 55 completes the Staff of Light’s shared per-player-turn allowance, 
 Milestone 56 maps Maximilian’s Holy Weapon and Religious Fervour/Frenzy, with an explicit calculator control for Frenzy ending. Seventeen unmapped character/role entries remain. His other conditional psychology/aura abilities are still separate open work.
 
 Milestone 57 resolves Rune Staff and Hammer of Sigmar as named ordinary bludgeoning equipment; no additional magical weapon profile is specified in their entries. Fifteen unmapped character/role entries remain. The Norse armour exception and selected Sigmar prayer dispel protection are also fixed independently of the agreed prayer-lore classification.
+
+Milestone 58 confirms Barding was already mapped and maps Belandysh’s ordinary Chaos Armour. Nicodemus’s two-handed staff/parry mode is now operational; its active-Sword-of-Rezhebel off-hand mode remains separately open. Fourteen custom-equipment entries remain. Original #74 expressly treats bespoke equipment without catalogue entries as intentionally custom, so this list is an investigation inventory, not a mandatory new-combat-automation checklist. Reconcile ordinary aliases against the original tracker scope before classifying release blockers.

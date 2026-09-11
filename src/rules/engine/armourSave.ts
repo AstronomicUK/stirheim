@@ -44,6 +44,7 @@ function baseArmourThreshold(armour: Armour, paviseCounts: boolean): Threshold {
   if (shieldBonus > 0) {
     base = base === IMPOSSIBLE ? 7 - shieldBonus : Math.max(2, base - shieldBonus);
   }
+  if ((armour.naturalSaveBonus ?? 0) > 0) base = base === IMPOSSIBLE ? 7 - armour.naturalSaveBonus! : base - armour.naturalSaveBonus!;
   return base;
 }
 

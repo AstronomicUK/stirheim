@@ -9,6 +9,14 @@ import type { Trait } from "../types";
 
 export const TRAITS: Trait[] = [
   {
+    id: "black_orc",
+    name: "Black Orc",
+    modeled: true,
+    conditional: false,
+    source: "Black Orcs — Grade 1b",
+    description: "Natural 6+ armour save, improving worn armour by 1. Black Orcs do not ride mounts. Buying Black Orc Blood alone does not grant this rule; a Young’un must learn Proven Warrior.",
+  },
+  {
     id: "frenzy",
     name: "Frenzy",
     modeled: true,

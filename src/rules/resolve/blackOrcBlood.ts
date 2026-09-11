@@ -1,4 +1,5 @@
-import type { RosterWarband } from '../types/roster'
+import { findWarbandTemplate } from '../data/warbandTemplates'
+import type { RosterHero, RosterWarband } from '../types/roster'
 import { RulesError } from './errors'
 
 export const BLACK_ORC_BLOOD_COST = 10
@@ -20,4 +21,12 @@ export function purchaseBlackOrcBlood(roster: RosterWarband, heroId: string): { 
     roster: { ...roster, gold: roster.gold - BLACK_ORC_BLOOD_COST, heroes: roster.heroes.map(h => h.id === heroId ? { ...h, flags: { ...h.flags, blackOrcBlood: true } } : h) },
     reason: `${hero.name}: bought Black Orc Blood for 10 gc. May choose Proven Warrior after reaching 25 Experience; no characteristics, armour or advance granted by this purchase.`,
   }
+}
+
+
+/** Legacy learned skills gain access without rewriting the warrior's original identity. */
+export function provenWarriorSkillTables(hero: Pick<RosterHero, 'skillIds' | 'skillTableIds'>): string[] {
+  if (!hero.skillIds.includes('black_orcs_skills_proven_warrior')) return hero.skillTableIds
+  const tables = findWarbandTemplate('black_orcs')?.heroTemplates.find(unit => unit.id === 'black_orcs_black_orc')?.skillTableIds ?? []
+  return [...new Set([...hero.skillTableIds, ...tables])]
 }

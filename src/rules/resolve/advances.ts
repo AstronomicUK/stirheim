@@ -1,3 +1,4 @@
+import { provenWarriorSkillTables } from "./blackOrcBlood";
 // Experience and advance resolvers (post-battle sequence step 2: "Experience").
 //
 // Pure functions: dice results are inputs, inputs are never mutated, and every state change is
@@ -395,7 +396,7 @@ function resolveSkill(skillId: string): ResolvedSkill | undefined {
 }
 
 function heroMayUseTable(hero: RosterHero, skill: ResolvedSkill, warbandTemplateId?: string): boolean {
-  if (hero.skillTableIds.includes(skill.tableId)) return true;
+  if (provenWarriorSkillTables(hero).includes(skill.tableId)) return true;
   // Templates say "warband-unique" rather than naming the table; accept any warband skill table
   // in that case, restricted to the hero's own warband when we know it.
   if (skill.warbandId && hero.skillTableIds.includes(WARBAND_UNIQUE_TABLE_ID)) {
@@ -432,7 +433,8 @@ export function learnSkill(
   } else {
     throw new RulesError("UNKNOWN_SKILL", `No skill with id "${skillId}" exists`);
   }
-  const next = recordAdvanceTaken({ ...hero, skillIds: [...hero.skillIds, skillId] });
+  const learned = { ...hero, skillIds: [...hero.skillIds, skillId] };
+  const next = recordAdvanceTaken({ ...learned, skillTableIds: provenWarriorSkillTables(learned) });
   events.push(
     { kind: "skillLearned", subjectId: hero.id, message: `${hero.name} learns ${label}.`, data: { skillId, tableId: skill?.tableId } },
     { kind: "advanceTaken", subjectId: hero.id, message: `${hero.name} has taken ${next.levelUps} advance${next.levelUps === 1 ? "" : "s"}.`, data: { levelUps: next.levelUps } },
@@ -493,7 +495,7 @@ export function availableSkills(hero: RosterHero, warbandTemplateId?: string, op
   };
   const allowed = (id: string) => !known.has(id) && !isBanned(opts.bans, "skills", id);
   const tables: AvailableSkillTable[] = [];
-  for (const tableId of hero.skillTableIds) {
+  for (const tableId of provenWarriorSkillTables(hero)) {
     if (CORE_SKILL_TABLE_IDS.includes(tableId)) {
       tables.push({
         tableId,

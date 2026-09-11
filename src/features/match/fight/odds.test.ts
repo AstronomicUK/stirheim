@@ -3,7 +3,7 @@ import { findWeapon } from '../../../rules/data/weapons'
 import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
-import { kindTraits, kitWithSelectedWeapons, loadoutOf, loadoutFor, type Combatant } from './combatants'
+import { traitsFromRules, kindTraits, kitWithSelectedWeapons, loadoutOf, loadoutFor, type Combatant } from './combatants'
 import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
@@ -779,4 +779,21 @@ it('maps learned Jump Up into shared battle/simulator injury inputs without gran
   expect(odds.weapons[0].input.ignoreRolledKnockedDown).toBe(true)
   expect(odds.notes.join(' ')).toContain('not knock-downs caused by a helmet save or No Pain')
   expect(computeOdds(setup(captain, skaven, 'sword', null)).weapons[0].input.ignoreRolledKnockedDown).toBeUndefined()
+})
+
+
+it('Black Orcs and Proven Warriors have stacking natural armour; Blood alone does not grant it', () => {
+  const native = combatant('Black Orc', [], { traitIds: traitsFromRules([{ name: 'Black Orc', text: 'Natural 6+ armour save.' }]) })
+  const proven = combatant('Proven Youngun', [], { skillIds: ['black_orcs_skills_proven_warrior'] })
+  const plain = combatant('Youngun', [], { traitIds: traitsFromRules([{ name: 'Black Orc Blood', text: 'May buy the upgrade.' }]) })
+  const armour = (d: Combatant) => computeOdds(setup(captain, d, 'sword', null)).weapons[0].input.armourThreshold
+  expect(armour(native)).toBe(6); expect(armour(proven)).toBe(6); expect(armour(plain)).toBe(IMPOSSIBLE)
+  expect(armour({ ...proven, equipment: [{ itemId: 'light_armour', quantity: 1 }, { itemId: 'shield', quantity: 1 }] })).toBe(4)
+  const strength = setup({ ...captain, stats: { ...base, S: 4 } }, proven, 'sword', null, { houseRules: { ...defaultCampaignHouseRules(), strengthArmourPiercing: true } })
+  expect(computeOdds(strength).weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+  const heavilyArmoured = { ...proven, equipment: [{ itemId: 'gromril_armour', quantity: 1 }, { itemId: 'kite_shield', quantity: 1 }] }
+  expect(computeOdds(setup({ ...captain, stats: { ...base, S: 4 } }, heavilyArmoured, 'sword', null, { houseRules: { ...defaultCampaignHouseRules(), strengthArmourPiercing: true } })).weapons[0].input.armourThreshold).toBe(2)
+  const chef = combatant('Chef', [{ itemId: 'ladle', quantity: 1 }])
+  expect(computeOdds(setup(chef, proven, 'ladle', null)).weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+  expect(computeOdds(setup(chef, { ...proven, equipment: [{ itemId: 'shield', quantity: 1 }] }, 'ladle', null)).weapons[0].input.armourThreshold).toBe(6)
 })

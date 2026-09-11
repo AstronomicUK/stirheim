@@ -9,7 +9,7 @@ export function BlackOrcBloodCard({ detail, canEdit }: { detail: WarbandDetail; 
   const save = useRosterEvent(detail)
   if (!canEdit || detail.warband.archived || detail.roster.warbandTemplateId !== 'black_orcs') return null
   const upgraded = detail.roster.heroes.find(h => ['active', 'captured'].includes(h.status) && (h.flags.blackOrcBlood || h.skillIds.includes('black_orcs_skills_proven_warrior')))
-  if (upgraded) return <Notice title="Black Orc Blood">{upgraded.name} occupies the warband’s Black Orc Blood upgrade. Proven Warrior can be chosen as a skill at 25 Experience.</Notice>
+  if (upgraded) return <Notice title="Black Orc Blood">{upgraded.name} occupies the warband’s Black Orc Blood upgrade. {upgraded.skillIds.includes('black_orcs_skills_proven_warrior') ? 'Proven Warrior has been learned; the warrior retains the Young’un title and original characteristics.' : 'Proven Warrior can be chosen as a skill at 25 Experience.'}</Notice>
   const candidates = detail.roster.heroes.filter(h => h.unitTemplateId === 'black_orcs_youngun' && h.status === 'active')
   if (!candidates.length) return null
   const selected = candidates.some(h => h.id === chosen) ? chosen : candidates[0].id

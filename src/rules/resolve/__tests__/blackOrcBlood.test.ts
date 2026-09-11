@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { warriorFlagsSchema } from '../../../domain/json'
 import type { RosterHero, RosterWarband } from '../../types/roster'
 import { blackOrcBloodBlock, purchaseBlackOrcBlood } from '../blackOrcBlood'
-import { availableSkills } from '../advances'
+import { availableSkills, learnSkill } from '../advances'
 const young = (id: string): RosterHero => ({ id, name: id, unitTemplateId: 'black_orcs_youngun', stats: { M: 4, WS: 2, BS: 2, S: 3, T: 4, W: 1, I: 2, A: 1, Ld: 6 }, xp: 25, levelUps: 8, skillTableIds: ['warband-unique'], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active' })
 const roster = (): RosterWarband => ({ id: 'w', name: 'Black Orcs', warbandTemplateId: 'black_orcs', gold: 10, wyrdstone: 0, veteranPool: null, heroes: [young('one'), young('two')], henchmenGroups: [], hiredSwords: [], stash: [] })
 it('purchases one persistent upgrade, costing exactly 10 gc without granting the later skill or stats', () => {
@@ -30,4 +30,18 @@ it('uses a real purchase for the Proven Warrior prerequisite while retaining a s
   const upgraded = purchaseBlackOrcBlood(r, 'one').roster.heroes[0]
   expect(entry(upgraded)?.blocked).toBeUndefined()
   expect(entry({ ...upgraded, xp: 24 })?.blocked).toContain('25 Experience')
+})
+
+
+it('Proven Warrior grants Black Orc skill tables without replacing identity, stats, kit or experience', () => {
+  const h = young('proven')
+  const learned = learnSkill(h, 'black_orcs_skills_proven_warrior', undefined, { warbandTemplateId: 'black_orcs' }).value
+  expect(learned.skillTableIds).toEqual(expect.arrayContaining(['combat', 'shooting', 'strength', 'speed', 'warband-unique']))
+  expect(learned.unitTemplateId).toBe(h.unitTemplateId)
+  expect(learned.stats).toEqual(h.stats); expect(learned.xp).toBe(h.xp); expect(learned.equipment).toEqual(h.equipment)
+  expect(learned.levelUps).toBe(h.levelUps + 1)
+  const legacy = { ...h, skillIds: ['black_orcs_skills_proven_warrior'] }
+  expect(availableSkills(legacy, 'black_orcs').map(t => t.tableId)).toContain('strength')
+  expect(learnSkill(legacy, 'mighty_blow', undefined, { warbandTemplateId: 'black_orcs' }).value.skillIds).toContain('mighty_blow')
+  expect(availableSkills(h, 'black_orcs').map(t => t.tableId)).not.toContain('strength')
 })

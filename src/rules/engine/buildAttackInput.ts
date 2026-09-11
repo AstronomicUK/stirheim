@@ -287,7 +287,9 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     // A pavise counts as a shield in close combat only when the bearer was charged to the front; never against shooting.
     const paviseCounts = weapon.type === "melee" && (context.paviseFront ?? true);
     // A Ladle lets only a shield save; body armour and helmets do not count.
-    const armour = weapon.ignoresArmourSaveExceptShield ? { ...defender.armour, type: "none" as const, kiteShield: false } : defender.armour;
+    const blackOrc = defender.activeTraitIds.includes("black_orc") || defender.activeSkillIds.includes("black_orcs_skills_proven_warrior");
+    const fullArmour = blackOrc ? { ...defender.armour, naturalSaveBonus: Math.max(1, defender.armour.naturalSaveBonus ?? 0) } : defender.armour;
+    const armour = weapon.ignoresArmourSaveExceptShield ? { ...fullArmour, type: "none" as const, kiteShield: false, naturalSaveBonus: undefined } : fullArmour;
     const unmodifiedHit = weapon.special.includes("noArmourSaveModifier");
     const strengthErosion = houseRules.strengthArmourPiercing && !unmodifiedHit;
     let base = armourSaveThreshold(armour, attackStrength, strengthErosion, paviseCounts);

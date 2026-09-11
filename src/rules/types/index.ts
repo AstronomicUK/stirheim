@@ -18,6 +18,8 @@ export interface Stats {
 }
 
 export interface Armour {
+  /** Natural armour that stacks with equipment (Black Orc: +1, or 6+ alone). */
+  naturalSaveBonus?: number;
   type: ArmourType;
   shield: boolean;
   /** Distinct from a shield (mordheimer.net): a buckler grants no save bonus but does grant a Parry attempt, the same as a Parry-tagged weapon. */

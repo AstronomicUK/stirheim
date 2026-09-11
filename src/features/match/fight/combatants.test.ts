@@ -529,3 +529,13 @@ it.each([
  expect(odds.weapons[0].strength).toBe(strength)
  expect(odds.attacks).toBe(attacks)
 })
+
+
+it('reads native Black Orc armour from actual unit rules without treating a Blood purchase as full Black Orc status', () => {
+  const template = findWarbandTemplate('black_orcs')!
+  const roster = warband({ warbandTemplateId: template.id, heroes: [hero('boss', { unitTemplateId: 'black_orcs_black_orc_boss' }), hero('orc', { unitTemplateId: 'black_orcs_black_orc' }), hero('young', { unitTemplateId: 'black_orcs_youngun', flags: { blackOrcBlood: true } })] })
+  const models = combatantsOf(roster, template, roster.name, undefined)
+  expect(models.find(c => c.id === 'boss')?.traitIds).toContain('black_orc')
+  expect(models.find(c => c.id === 'orc')?.traitIds).toContain('black_orc')
+  expect(models.find(c => c.id === 'young')?.traitIds).not.toContain('black_orc')
+})

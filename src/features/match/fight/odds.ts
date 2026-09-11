@@ -104,7 +104,7 @@ export function toCharacter(c: Combatant, kit: Loadout): Character {
     role: c.kind === 'henchman' ? 'henchman' : 'hero',
     stats: c.stats,
     equippedWeapons: [...kit.melee, ...kit.ranged].map((w) => w.id),
-    armour: kit.armour,
+    armour: c.traitIds.includes('black_orc') || kit.traitIds.includes('black_orc') || c.skillIds.includes('black_orcs_skills_proven_warrior') ? { ...kit.armour, naturalSaveBonus: Math.max(1, kit.armour.naturalSaveBonus ?? 0) } : kit.armour,
     helmet: kit.helmet,
     skills: [...c.skillIds, ...kit.skillIds.filter((s) => !c.skillIds.includes(s))],
     traits: [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))],
@@ -126,7 +126,7 @@ export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
     T: c.stats.T,
     S: c.stats.S,
     W: Math.max(1, c.stats.W),
-    armour: kit.armour,
+    armour: c.traitIds.includes('black_orc') || kit.traitIds.includes('black_orc') || c.skillIds.includes('black_orcs_skills_proven_warrior') ? { ...kit.armour, naturalSaveBonus: Math.max(1, kit.armour.naturalSaveBonus ?? 0) } : kit.armour,
     helmet: kit.helmet,
     activeSkillIds: [...c.skillIds, ...kit.skillIds.filter((s) => !c.skillIds.includes(s))],
     activeTraitIds: traits,
@@ -402,6 +402,8 @@ function adjustForCoatings(input: AttackInput, weapon: Weapon, phase: WeaponKind
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const notes: string[] = []
   const primary = weapons[0]
+  if (setup.defender.traitIds.includes('black_orc') || setup.defender.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push(`${setup.defender.name} has Black Orc natural armour: 6+ alone, improving worn armour by 1. It does not apply against attacks that allow only shields or ignore armour.`)
+  if (setup.attacker.traitIds.includes('black_orc') || setup.attacker.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push('Black Orcs do not ride mounts. Use this warrior on foot.')
   if (primary?.input.ignoreRolledKnockedDown) notes.push(`${setup.defender.name} has Jump Up: ignores rolled knocked-down injuries, but not knock-downs caused by a helmet save or No Pain. Wounds are still lost.`)
   if (setup.attacker.entangled) notes.push(`${setup.attacker.name} is entangled: cannot move or charge; melee Weapon Skill is reduced by 2. Shooting is unaffected. Resolve a 4+ escape roll in Recovery.`)
   if (setup.defender.entangled) notes.push(`${setup.defender.name} is entangled: melee Weapon Skill is reduced by 2 until freed in Recovery.`)

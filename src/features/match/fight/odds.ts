@@ -349,7 +349,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (setup.context.targetStunned && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already stunned: the first hit takes it out of action automatically, no rolls needed.`)
   else if (setup.context.targetKnockedDown && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already knocked down: attacks hit automatically and it cannot parry.`)
   if (primary && primary.attacks === 0) {
-    notes.push(setup.primary.moveOrFire ? `${setup.primary.name} cannot fire in a turn the shooter moved.` : `${setup.primary.name} makes no attacks in this situation.`)
+    notes.push(setup.context.failedStupidity && setup.attacker.traitIds.includes('stupidity') ? 'Failed Stupidity test: this warrior cannot attack until its next turn.' : setup.primary.moveOrFire ? `${setup.primary.name} cannot fire in a turn the shooter moved.` : `${setup.primary.name} makes no attacks in this situation.`)
   }
   if (primary && primary.input.rerollToHit) notes.push('Missed to-hit rolls may be rerolled once.')
   if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
@@ -418,6 +418,7 @@ export interface ContextToggle {
 
 export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout, offHand?: Weapon | null): ContextToggle[] {
   const toggles: ContextToggle[] = []
+  if (attacker.traitIds.includes('stupidity')) toggles.push({ field: 'failedStupidity', label: 'Failed Stupidity test', hint: 'No melee or shooting attacks until the start of this warrior’s next turn. Clear this after the next test is passed.' })
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
     toggles.push({ field: 'charging', label: 'Charging' })

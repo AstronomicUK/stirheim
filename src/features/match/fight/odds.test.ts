@@ -366,3 +366,19 @@ it('shows extended Eagle Eyes range and hides only the ignored weapon penalties'
   const pins = findWeapon('belaying_pins')!
   expect(relevantToggles(archer, 'ranged', pins).map(t => t.field)).toEqual(['movedThisTurn', 'cover', 'largeTarget'])
 })
+
+
+it('failed Stupidity suppresses both weapon hands and shooting without affecting a different warrior', () => {
+  const warrior = { ...captain, traitIds: ['stupidity'] }
+  const melee = setup(warrior, skaven, 'sword', 'dagger')
+  const context = { ...melee.context, failedStupidity: true }
+  const result = computeOdds({ ...melee, context })
+  expect(result.attacks).toBe(0)
+  expect(result.weapons.every(w => w.attacks === 0)).toBe(true)
+  expect(computeOdds({ ...melee, context: { ...context, failedStupidity: false } }).attacks).toBe(2)
+  expect(computeOdds({ ...melee, attacker: captain, context }).attacks).toBe(2)
+  const ranged = setup({ ...marksman, traitIds: ['stupidity'] }, skaven, 'bow', null)
+  expect(computeOdds({ ...ranged, context }).attacks).toBe(0)
+  expect(relevantToggles(warrior, 'melee', melee.primary).some(t => t.field === 'failedStupidity')).toBe(true)
+  expect(relevantToggles(captain, 'melee', melee.primary).some(t => t.field === 'failedStupidity')).toBe(false)
+})

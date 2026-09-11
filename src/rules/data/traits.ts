@@ -33,7 +33,7 @@ export const TRAITS: Trait[] = [
     conditional: false,
     source: "mordheimer.net — Leadership & Psychology",
     description:
-      "Must pass a Leadership test each turn or be unable to fight/cast/shoot that turn. Whether the model gets to act at all isn't modeled here — no Hit/Wound/Injury math effect once it's their turn to fight.",
+      "Test Leadership at the start of each turn. On failure, this model cannot fight, cast or shoot until its next turn; enemies still roll to hit normally. Use Failed Stupidity test to suppress its combat attacks. Resolve the test, movement and casting restriction at the table.",
   },
   {
     id: "immune_to_fear",

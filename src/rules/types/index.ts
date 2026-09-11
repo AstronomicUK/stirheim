@@ -311,6 +311,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** Failed Stupidity test: no attacks until the next own turn. */
+  failedStupidity?: boolean;
   /** Frenzy ended after this attacker was knocked down or stunned earlier in the battle. */
   frenzyEnded?: boolean;
   charging: boolean;

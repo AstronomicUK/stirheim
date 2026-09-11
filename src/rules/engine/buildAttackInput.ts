@@ -77,6 +77,7 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
  * - `maxAttacks` (Fist: 1) caps the result.
  */
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = []): number {
+  if (context.failedStupidity && character.traits.includes("stupidity")) return 0;
   const skills = resolveSkills(character.skills, customSkills);
 
   const skillBonus = () => {

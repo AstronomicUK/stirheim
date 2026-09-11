@@ -3618,3 +3618,10 @@ For individual warriors, the Battle Sheet’s failed-Stupidity choice is now sav
 Henchman groups containing several models deliberately retain a clearly labelled per-calculation choice; one model’s failed test must not be saved as a failure for every member. Mandatory test prompts, actual Leadership/movement dice and other psychology remain open. Source: reference/rules/01-introduction-and-rules.md:1116–1127.
 
 Validation: full ordinary suite 1,821 passed (176 database tests skipped); build/typecheck/lint passed with existing audit warnings. Disposable 390px mobile QA verified saved failure, reload, blocked attacks/casting, continued effect during the opponent’s next-round turn and expiry on the next own turn. Unit tests cover corrections/history and blocked casting without a spell record. A succession test’s dynamic imports hit the five-second limit under the full suite; moving those imports to module scope removed that test-startup overhead, and the complete rerun passed. No database migration or production deployment. #70 remains partial.
+
+
+### #70 — Start-of-turn Stupidity tests (local, 11 September)
+
+Added a Battle Sheet reminder and individual warrior tests with 2D6 Leadership resolution, an explained Leadership override (such as a nearby leader), and the failed-test movement D6 outside combat. App rolls are saved immediately as pending attempts; confirmation records the original dice, any player edits, movement and the final outcome together. Replacing an existing test requires a reason. Failure uses the persisted attack/spell restrictions until the next own turn.
+
+Verified at 390px with disposable local data: app rolls and edits, Leadership explanation, movement edits, one completed history entry, reload persistence, restrictions during the opponent’s turn and expiry at the next own turn. Fourteen focused tests, build/typecheck and lint passed (three existing audit-file warnings). Not deployed. #70 remains partial: multi-member henchmen need individual model identities; their tests and physical movement remain at the table. The reminder does not prevent agreed manual play before a test is recorded.

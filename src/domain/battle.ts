@@ -226,3 +226,44 @@ export function recordStupidityResult(state: BattleLiveState, warriorId: string,
     rolls: [failed ? 'Recorded by the player. Cannot attack or cast until the start of their next own turn; resolve the Stupidity movement roll at the table.' : 'Cleared by the player as a correction or agreed table decision. No new dice roll is implied.'],
   });
 }
+
+export interface StupidityTestRoll {
+  dice: number[];
+  /** Original app-generated dice, retained if the player edits either face. */
+  originalDice?: number[];
+  leadership: number;
+  baseLeadership: number;
+  leadershipReason?: string;
+  inCombat: boolean;
+  movementDie?: number;
+  originalMovementDie?: number;
+  correctionReason?: string;
+  attemptId?: string;
+}
+
+/** Resolve an actual start-of-turn test, preserving both app rolls and player changes. */
+export function recordStupidityTest(state: BattleLiveState, warriorId: string, turnKey: string, name: string, roll: StupidityTestRoll, turn = state.turn): BattleLiveState {
+  const d6 = (value: number) => Number.isInteger(value) && value >= 1 && value <= 6;
+  if (roll.dice.length !== 2 || !roll.dice.every(d6) || (roll.originalDice && (roll.originalDice.length !== 2 || !roll.originalDice.every(d6)))) throw new Error('Enter two D6 results from 1 to 6.');
+  if (!Number.isInteger(roll.leadership) || roll.leadership < 0 || roll.leadership > 20) throw new Error('Enter a valid Leadership for this test.');
+  if (roll.leadership !== roll.baseLeadership && !roll.leadershipReason?.trim()) throw new Error('Explain the Leadership used, for example a nearby leader.');
+  if (state.stupidityResults.some(result => result.warriorId === warriorId && result.turnKey === turnKey) && !roll.correctionReason?.trim()) throw new Error('Explain why this turn’s recorded test is being replaced.');
+  if (roll.originalMovementDie !== undefined && !d6(roll.originalMovementDie)) throw new Error('The original movement roll must be a D6 result.');
+  const total = roll.dice[0] + roll.dice[1];
+  const failed = total > roll.leadership;
+  if (failed && !roll.inCombat && !d6(roll.movementDie ?? 0)) throw new Error('Roll a D6 for the failed test’s movement.');
+  const changed = roll.originalDice && roll.dice.some((die, index) => die !== roll.originalDice![index]);
+  const diceText = roll.originalDice
+    ? `App rolled ${roll.originalDice.join(' + ')}${changed ? `; player changed the dice to ${roll.dice.join(' + ')}` : ''}.`
+    : `Player entered ${roll.dice.join(' + ')}.`;
+  const resultText = `${total} against Leadership ${roll.leadership}: ${failed ? 'failed' : 'passed'}.`;
+  const movementText = !failed ? 'Acts normally until the next own turn’s test.' : roll.inCombat
+    ? 'In hand-to-hand combat: cannot attack or cast until the next own turn. Opponents still roll to hit normally.'
+    : `${roll.originalMovementDie !== undefined ? `App rolled movement D6: ${roll.originalMovementDie}${roll.originalMovementDie !== roll.movementDie ? `; player changed it to ${roll.movementDie}` : ''}` : `Player entered movement D6: ${roll.movementDie}`}. ${roll.movementDie! <= 3 ? 'Move straight forward at half speed; no charge, stop 1 inch from enemies and at obstacles. Falls still apply.' : 'Stand inactive; no other actions.'} No attacks or spells until the next own turn.`;
+  const results = state.stupidityResults.filter(result => result.warriorId !== warriorId || result.turnKey !== turnKey);
+  return withRollAttempt({ ...state, stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
+    id: roll.attemptId ?? crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
+    label: `${name}: Stupidity test ${failed ? 'failed' : 'passed'}`,
+    rolls: [diceText, resultText, ...(roll.originalMovementDie !== undefined && (!failed || roll.inCombat) ? [`App movement roll ${roll.originalMovementDie} was not used for the final situation.`] : []), ...(roll.correctionReason?.trim() ? [`Recorded test replaced: ${roll.correctionReason.trim()}.`] : []), ...(roll.leadership !== roll.baseLeadership ? [`Leadership ${roll.leadership} instead of ${roll.baseLeadership}: ${roll.leadershipReason!.trim()}.`] : []), movementText],
+  });
+}

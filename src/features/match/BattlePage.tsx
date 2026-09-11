@@ -1,3 +1,4 @@
+import { StupidityTests } from './battle/StupidityTests'
 import {useBattleBribes} from '../../api/battleBribes'
 import {CurseReminder} from '../roster/view/CurseReminder'
 import { useBattleTurns } from '../../api/battleTurns'
@@ -316,6 +317,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
 
       {inApp ? <TurnControls matchId={match.id} state={turns.data} participants={match.participants} myId={roster.id} readOnly={readOnly} loading={turns.isPending} error={turns.error?.message} onBattleOver={onBattleOver} /> : null}
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
+      {!readOnly && !turns.isPending && !turns.isError ? <StupidityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}
       {boostLines.length > 0 && !readOnly ? (
         <Notice tone="info" title="From the map">

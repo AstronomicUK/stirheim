@@ -697,3 +697,14 @@ it('an exploding weapon inflicts one automatic Strength 4 self-hit with no criti
   expect(odds.chain.anyCrit).toBe(0)
   expect(odds.weapons[0].input.misfireEnhanced).toBeUndefined()
 })
+
+it('Grape Shot retains an unmodified armour save even for the strengthened misfire hit', () => {
+  const gunner = combatant('Gunner', [{ itemId: 'swivel_gun', quantity: 1 }])
+  const protectedTarget = combatant('Target', [{ itemId: 'light_armour', quantity: 1 }])
+  const initial = setup(gunner, protectedTarget, 'swivel_gun_grape_shot', null)
+  const odds = computeOdds({ ...initial, houseRules: { ...initial.houseRules, strengthArmourPiercing: true } })
+  expect(odds.weapons[0].input.armourThreshold).toBe(6)
+  expect(odds.weapons[0].input.misfireEnhanced?.armourThreshold).toBe(6)
+  const ball = setup(gunner, protectedTarget, 'swivel_gun_ball_shot', null)
+  expect(computeOdds({ ...ball, houseRules: { ...ball.houseRules, strengthArmourPiercing: true } }).weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+})

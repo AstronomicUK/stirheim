@@ -276,15 +276,17 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     const paviseCounts = weapon.type === "melee" && (context.paviseFront ?? true);
     // A Ladle lets only a shield save; body armour and helmets do not count.
     const armour = weapon.ignoresArmourSaveExceptShield ? { ...defender.armour, type: "none" as const, kiteShield: false } : defender.armour;
-    let base = armourSaveThreshold(armour, attackStrength, houseRules.strengthArmourPiercing, paviseCounts);
+    const unmodifiedHit = weapon.special.includes("noArmourSaveModifier");
+    const strengthErosion = houseRules.strengthArmourPiercing && !unmodifiedHit;
+    let base = armourSaveThreshold(armour, attackStrength, strengthErosion, paviseCounts);
     // A Sea Dragon Cloak is a save of its own, used when better than the armour worn.
-    const own = defender.ownSave ? (weapon.type === "melee" ? defender.ownSave.melee : defender.ownSave.missile) + (houseRules.strengthArmourPiercing ? strengthSaveErosion(attackStrength) : 0) : null;
+    const own = defender.ownSave ? (weapon.type === "melee" ? defender.ownSave.melee : defender.ownSave.missile) + (strengthErosion ? strengthSaveErosion(attackStrength) : 0) : null;
     if (own !== null && !weapon.ignoresArmourSaveExceptShield && (base === IMPOSSIBLE || own < base)) base = own;
     // Wolfcloaks, Silk Armour: a bonus to the save, sometimes even a 6+ from nothing.
     const bonus = weapon.ignoresArmourSaveExceptShield ? 0 : (weapon.type === "melee" ? defender.saveBonus?.melee : defender.saveBonus?.missile) ?? 0;
     if (bonus > 0) base = base === IMPOSSIBLE ? (defender.saveBonus?.savesFromNothing ? 7 - bonus : IMPOSSIBLE) : Math.max(2, base - bonus);
     // The Ogre Club's Crushing Attack needs both hands on the club.
-    const modifier = (weapon.saveModifierTwoHandedOnly && !context.twoHanded ? 0 : (weapon.saveModifier ?? 0)) + (attacker.traits.includes("perfect_killer") ? 1 : 0);
+    const modifier = unmodifiedHit ? 0 : (weapon.saveModifierTwoHandedOnly && !context.twoHanded ? 0 : (weapon.saveModifier ?? 0)) + (attacker.traits.includes("perfect_killer") ? 1 : 0);
     if (base === IMPOSSIBLE) {
       armourThreshold = modifier < 0 ? saveThresholdOrImpossible(7 + modifier) : IMPOSSIBLE;
     } else {

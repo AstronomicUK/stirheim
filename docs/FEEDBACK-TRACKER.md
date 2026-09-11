@@ -3765,3 +3765,8 @@ The ordinary suite passed 1873 tests (176 database skipped); final build/typeche
 A destroyed Swivel Gun now offers a separate explosion self-hit action. It resolves one automatic Strength 4 hit against the firer through the normal wound/save/injury flow, forbids critical hits, and does not inherit the ammunition's armour modifier or the firer's offensive skill bonuses. The shared log records self-inflicted wounds/casualties without kill XP. Recording the hit disables its action; reverting that event makes it available again. Group members use the existing numbered firing model and separate wound assumption. Permanent gun removal remains manual.
 
 Full ordinary suite: 1874 passed, 176 database tests skipped. Build/typecheck/lint passed with existing warnings. Disposable mobile QA verified BOOM → self-hit → natural-six wound without a critical → self-inflicted casualty with no XP and completed-action state. No deployment.
+
+
+### #154 — Grape Shot armour saves (local, 11 September)
+
+Grape Shot now honours its explicit no-armour-save-modifier rule, including when a KA-BOOM misfire increases Strength and the campaign enables Strength-based armour penetration. Defensive armour/wardrobe bonuses remain; the gun's offensive penetration is suppressed. Other ammunition keeps its printed modifiers. Source: reference/rules/02-weapons-armour-equipment.md:1230. Fifty-nine focused odds tests plus build/typecheck/lint passed with existing warnings. Grape Shot's additional-victim selection remains outstanding. No deployment.

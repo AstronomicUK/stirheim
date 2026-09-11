@@ -3737,3 +3737,10 @@ Full ordinary suite: 1862 passed, 176 database tests skipped. Build/typecheck/li
 The carried Swivel Gun now reduces its bearer's Battle Sheet Movement and Initiative by 1 throughout the battle, including while using another weapon, without changing roster characteristics. The penalty applies once and ignores zero-quantity entries. All three ammunition profiles are limited to one calculated shot and cannot fire after movement, even with Nimble or extra-shot skills. Source: reference/rules/02-weapons-armour-equipment.md:1214.
 
 109 focused tests passed; build/typecheck/lint passed with existing warnings. Disposable mobile QA confirmed movement disables firing and correcting that assumption restores it. Cross-action firing usage, ammunition supply, misfires, Chain Shot knock-down and Grape Shot spread remain outstanding; #154 stays partial. No deployment.
+
+
+### #69/#71/#73/#154 — Blackpowder misfire and firing-state foundation (local, 11 September)
+
+Added the printed six-result misfire resolver and persistent physical-weapon firing records. The foundation distinguishes destruction, battle-long jamming, an extra reload turn, harmless clicks, and a successful +1 Strength shot; BOOM self-hits explicitly cannot cause critical hits. Shared weapon keys prevent changing ammunition from bypassing reload. Pending app misfire dice survive reload, edited confirmation preserves the original, and explained corrections retain history. Experimental weapons reload after non-BOOM results.
+
+Five focused domain tests plus build/typecheck/lint passed (existing warnings). This is foundation only: it is not yet connected to the firing UI, automatic damage, roster weapon removal or displayed probabilities. Existing partial tracker statuses remain. Source: reference/rules/03-campaigns-magic-optional-rules.md:4319–4331 and Experimental weapon clauses in 02. No migration or deployment.

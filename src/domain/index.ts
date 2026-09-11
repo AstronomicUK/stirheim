@@ -16,3 +16,5 @@ export * from "./guidingDream";
 export * from "./lineShot";
 
 export * from "./pigeonLaunch";
+
+export * from "./blackpowderShot";

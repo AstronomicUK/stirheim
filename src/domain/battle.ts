@@ -101,6 +101,11 @@ export const battleLiveStateSchema = z.object({
   rollAttempts: z.array(rollAttemptSchema).default([]),
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
+  blackpowderShots: z.array(z.object({
+    id: z.string(), warriorId: z.string(), weaponKey: z.string(), weaponName: z.string(), ownTurn: z.number().int().min(0),
+    reloadTurns: z.number().int().min(0), at: z.string(), misfireDie: z.number().int().min(1).max(6).optional(),
+    misfirePending: z.boolean().optional(), misfireOriginal: z.number().int().min(1).max(6).optional(), experimental: z.boolean().default(false), correction: z.string().optional(),
+  })).default([]),
   pigeonLaunches: z.array(z.object({
     id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), permissionRequired: z.boolean().optional(), permissionOriginal: z.number().int().min(1).max(6).optional(), permissionDie: z.number().int().min(1).max(6).optional(), permissionNote: z.string().optional(), ownTurn: z.number().int().min(0), at: z.string(), reason: z.string().default(''),
     original: z.number().int().min(1).max(6).optional(), die: z.number().int().min(1).max(6).optional(),

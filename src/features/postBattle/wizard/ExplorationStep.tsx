@@ -229,6 +229,11 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
 
               {ex.rewardsApply ? (
                 <div className="flex flex-col gap-3 border-t border-border pt-3">
+                  {ex.result?.location?.id === 'merchants_house' ? <div className="flex flex-col gap-2">
+                    <p className="text-sm">Roll both dice. Doubles find the Freetraders symbol instead of gold; otherwise receive five times their total.</p>
+                    {[0,1].map(index=><DieField key={index} label={`Merchant’s House D6 ${index+1}`} sides={6} value={draft.exploration.merchantDice?.[index]??null} rollable onChange={value=>update(d=>{const dice:[number|null,number|null]=[...(d.exploration.merchantDice??[null,null])];dice[index]=value;return {...d,exploration:{...d.exploration,merchantDice:dice,gold:null,items:null}}})}/>)}
+                    {ctx.map?.perks.explorationMaxFinds?<p className="text-xs text-ink-dim">Maximum finds makes the gold 60 gc if these dice do not show doubles.</p>:null}
+                  </div> : null}
                   {ex.gold.expressions.length > 0 ? (
                     <div className="flex items-end gap-2">
                       <NumberField

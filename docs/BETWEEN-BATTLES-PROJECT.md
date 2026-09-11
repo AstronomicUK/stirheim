@@ -24,7 +24,7 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: #66’s remaining named location consequences (Shrine blessing, Merchant House Haggle on doubles and The Pit); final original-scope reconciliation and release preparation. The combined recruitment/reward/start checks passed at milestone 58. Bespoke custom equipment is not automatically a release blocker under original #74. Ogre Slaver identity remains unconfirmed and is now explicitly presented for table review. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,647 ordinary tests pass; the last separate local database run passed all 159 tests**. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 60 (exploration book study and mobile persistence). Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,647 ordinary tests pass; the last separate local database run passed all 159 tests**. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 61 (Merchant’s House reward replacement; 82 focused tests and mobile filing pass). Mobile checks use disposable local records and actual 390px viewport constraints.
 
 Migrations through 69 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
@@ -517,3 +517,12 @@ Migration `20260911000069_exploration_book_study.sql` serializes readers against
 Validation: **1,647 ordinary tests and all 159 local database tests pass**; typechecked build and lint pass with existing warnings. Three new transaction tests cover concurrent readers, retry/quantity handling, preserved learning, missing stock, dead readers and unrelated-user denial. `/tmp/stirheim-books-mobile-qa.mjs` verifies both real study actions at 390px, reload persistence, removed used copies, unchanged current WS/skills, and no overflow/page errors; all fixtures cleaned. No production migration, push or deployment.
 
 Next: Shrine selected-weapon blessing, Merchant’s House doubles replacing gold with the Haggle symbol (source says “instead”, not an optional extra), and The Pit’s selected Hero loss. Full source for these three reread at `03a-income-page-rescrape.md:254–262,329–355`; they remain original #66 scope. The pending Defend the Oasis scope question and final original-scope/release reconciliation remain. Keep the second feedback batch queued until the main release.
+
+
+### Local milestone 61 — Merchant’s House doubles (#66, not deployed)
+
+Merchant’s House now records the two actual D6, rather than accepting an aggregate gold amount that cannot reveal doubles. Every double awards one catalogue Symbol of the Order of Freetraders and zero gold. Non-doubles give five times the total. Changing either die clears previously chosen items/gold; changing the main exploration result clears these dice. Missing/invalid dice block filing, including legacy drafts containing only a gold total. The report records the actual dice and replacement outcome. A maximum-find benefit still needs the branch dice and gives maximum gold only on a non-double; it does not invent two natural sixes. Source: `03a-income-page-rescrape.md:329–333`.
+
+The symbol is found-only and its tooltip carries Haggle’s full source rule: one single-item reduction of 2D6 gc to minimum 1 gc per post-battle sequence (`03-campaigns-magic-optional-rules.md:459–463`). **Its possession-based skill and once-per-sequence trading consumer remain outstanding**, shared with ordinary Haggle; this milestone completes the reward replacement, not all of #66.
+
+The 390px `/tmp/stirheim-merchant-house-mobile-qa.mjs` check passes: missing-dice gate, non-double→double reset, reload, report filing, saved symbol quantity, unchanged gold, readable raw-dice log and no viewport overflow/page errors. Disposable local records cleaned. All 82 focused reward/report-model/catalogue tests pass; typechecked build and lint pass with existing warnings. No migration, production push or deployment. Next remaining #66 work: Haggle trading consumer, Shrine weapon blessing and The Pit’s selected-Hero outcome; Oasis scope remains pending.

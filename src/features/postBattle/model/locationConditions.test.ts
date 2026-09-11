@@ -83,3 +83,28 @@ describe('Conditional location rewards (#187)', () => {
    expect(grave.record?.xpAwards?.map(a=>a.amount)).toEqual([1,2]);
    expect(grave.problems).toEqual([]);
  });
+
+describe('Merchant’s House raw reward dice (#66)',()=>{
+ const five=['a','b','c','d','e'].map(id=>makeHero({id}))
+ const band=makeWarband({heroes:five})
+ const input={won:false,eligibleHeroes:five}
+ const draft={...emptyExploration(),rolls:[4,4,4,4,4]}
+ it('blocks an old aggregate gold amount until doubles can be checked',()=>{
+  const result=deriveExploration({...draft,gold:40},band,input)
+  expect(result.record).toBeNull();expect(result.problems.join(' ')).toContain('both D6')
+ })
+ it('replaces all gold with one symbol for every possible double',()=>{
+  for(const die of [1,2,3,4,5,6]) {
+   const result=deriveExploration({...draft,merchantDice:[die,die],gold:60},band,input)
+   expect(result.record?.goldFound).toBe(0)
+   expect(result.items).toEqual([{item_rules_id:'symbol_of_the_order_of_freetraders',custom_name:null,quantity:1}])
+   expect(result.record?.notes.join(' ')).toContain('instead of gold')
+  }
+ })
+ it('calculates non-doubles and keeps branch dice when maximum finds applies',()=>{
+  const result=deriveExploration({...draft,merchantDice:[2,5]},band,input)
+  expect(result.record?.goldFound).toBe(35);expect(result.items).toEqual([])
+  expect(deriveExploration({...draft,merchantDice:[2,5]},band,{...input,maxFinds:{districtName:"QA district"}}).record?.goldFound).toBe(60)
+  expect(deriveExploration({...draft,merchantDice:[2,2]},band,{...input,maxFinds:{districtName:"QA district"}}).record?.goldFound).toBe(0)
+ })
+})

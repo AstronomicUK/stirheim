@@ -251,9 +251,15 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const xp = locationXp(location?.id, roster.warbandTemplateId, draft, input.rewardHeroes ?? roster.heroes, input.leaderId)
   problems.push(...xp.problems)
   const maxFinds = Boolean(input.maxFinds) && rewardsApply
-  const gold = diceAmount(rewards, 'gold', draft.gold, maxFinds)
+  const merchant = rewardsApply && location?.id === 'merchants_house'
+  const merchantDice = draft.merchantDice ?? [null, null]
+  const merchantReady = merchantDice.length === 2 && merchantDice.every(die => isDie(die, 6))
+  const merchantSymbol = merchant && merchantReady && merchantDice[0] === merchantDice[1]
+  const merchantGold = merchantReady ? merchantSymbol ? 0 : maxFinds ? 60 : (merchantDice[0]! + merchantDice[1]!) * 5 : null
+  if (merchant && !merchantReady) problems.push('Merchant’s House: enter both D6 to check for doubles.')
+  const gold = merchant ? {fixed: merchantGold ?? 0, expressions: [], value: merchantGold} : diceAmount(rewards, 'gold', draft.gold, maxFinds)
   const extraShards = diceAmount(rewards, 'wyrdstone', draft.extraShards, maxFinds)
-  if (gold.value === null) problems.push(`Enter the gold found (${gold.expressions.join(' + ')} gc).`)
+  if (!merchant && gold.value === null) problems.push(`Enter the gold found (${gold.expressions.join(' + ')} gc).`)
   if (extraShards.value === null) problems.push(`Enter the shards found at the location (${extraShards.expressions.join(' + ')}).`)
 
   const itemQuantityPrompts: ExplorationDerived['itemQuantityPrompts'] = []
@@ -294,9 +300,11 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     if (artefact) suggestedItems.push(foundItemFromName(artefact.name))
   }
   if (location?.id === 'shattered_building' && testPassed === true) suggestedItems.push({ item_rules_id: 'wardogs', custom_name: null, quantity: 1 })
+  if (merchantSymbol) suggestedItems.push({item_rules_id:'symbol_of_the_order_of_freetraders',custom_name:null,quantity:1})
   const items = draft.items ?? suggestedItems
   const textNotes = rewards.filter((r) => r.kind === 'text').map((r) => r.text)
   const notes: string[] = xp.awards.map(a=>`${a.reason}: +${a.amount} XP to ${a.name}${xp.sides ? ` (D${xp.sides} ${draft.locationXpDie})` : ''}.`)
+  if (merchant && merchantReady) notes.push(`Merchant’s House: D6 ${merchantDice.join(' + ')}; ${merchantSymbol ? 'doubles — Symbol of the Order of Freetraders instead of gold.' : `${merchantGold} gc${maxFinds ? ' (maximum find)' : ''}.`}`)
   if (artefact) notes.push(`Magical artefact D6 ${draft.artefactRoll}: ${artefact.name}.${draft.artefactOverrideReason?.trim() ? ` Agreed override: ${draft.artefactOverrideReason.trim()}` : ''}`)
   if (location?.id === 'shattered_building') notes.push(`Shattered Building: D3 shards are found regardless of the Leadership test.${testPassed === true ? ' The wardog joins; assign it from the stash to a Hero.' : testPassed === false ? ' The wardog does not join.' : ''}`)
   if (tavernAutoPass) notes.push('Tavern: this warband automatically passes the Leadership test; 4D6 gc.')

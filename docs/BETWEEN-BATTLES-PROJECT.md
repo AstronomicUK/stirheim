@@ -606,3 +606,10 @@ Tom asked to review last night's issues. The eight workstreams, review findings 
 ### Second batch checkpoint — readable campaign setting logs
 
 The campaign-settings half of reopened #23 now passes unit and real mobile save/activity checks. The larger warband post-battle dump, #226 override provenance and Pits prompt remain next; read `SECOND-FEEDBACK-BATCH.md`. No new deployment. Navigation proposal still awaits Tom’s choice.
+
+
+### Second batch checkpoint — independent fixes verified, menu choice pending
+
+#221/#222/#224, the campaign and report logs in #23, injury replacement provenance #226, and the Sold to the Pits follow-up are fixed and verified locally. Amphitheatre automatic wins now apply their report gold/XP and resolved history. The two reported hosted browser-test paths are corrected and checked with disposable mobile fixtures; #201 awaits hosted CI after the final batched push. **1,694 ordinary +169 database tests, build/typecheck and lint pass** (existing warnings). Read `SECOND-FEEDBACK-BATCH.md` for evidence.
+
+Only #223/#225 menu implementation awaits Tom’s A/B layout answer. A fresh concise preference question has been sent; do not assume the answer from elapsed time or deploy the partial batch. Pause the overnight heartbeat while only this input is needed, then resume from navigation on his response. Migration 72 remains local only. The original main release 904e2a8 remains deployed; no second release/push has occurred.

@@ -69,9 +69,12 @@ test.describe('match', () => {
     await page.getByRole('button', { name: 'Attack', exact: false }).first().click()
     await expect(page.getByText('2 attacks this phase')).toBeVisible()
     await expect(page.getByText('At least one hit').locator('xpath=following-sibling::span')).toHaveText('75%')
-    // Rolling happens in a sheet the dice button opens, with the first step already waiting.
+    // Choose the attack allocation, then begin the dice sequence.
     await page.getByRole('button', { name: 'Roll it through' }).click()
+    await page.getByRole('button', { name: 'Begin attacks', exact: true }).click()
     await rollDie(page, 'First attack (Sword): to hit', 4)
+    // Roll all hits before the defender chooses the highest eligible hit to parry.
+    await rollDie(page, 'Second attack (Dagger): to hit', 1)
     await page.getByRole('button', { name: 'No parry' }).click()
     await rollDie(page, 'To wound', 4)
     await rollDie(page, 'Injury roll', 5)

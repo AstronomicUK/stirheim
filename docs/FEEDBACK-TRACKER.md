@@ -616,7 +616,7 @@ all clean.
 
 **Local progress — 2026-09-11:** Campaign setting logs now name individual changes, including added/removed bans, rule toggles and scenario availability. Familiar and the actual opposed-parry example are independently tested; unchanged nested data is not repeated. 27 activity tests, typecheck/lint and real mobile save/activity checks pass. Not deployed. Warband/post-battle dumps and #226 provenance remain open.
 
-**Status:** 🟡 Partially fixed
+**Status:** ✅ Fixed locally — awaiting batched release
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -653,6 +653,9 @@ distinct, larger piece of work than the naming fix, not attempted here. `unit_ty
 still shows its raw id (needs the row's own `type_rules_id` alongside it to resolve via
 `unitTypeName`, which the current single-field lookup shape doesn't carry) — a smaller known gap in
 the same vein.
+
+**Local follow-up — 2026-09-11:** Nested campaign settings now show only actual named changes, including bans and scenario selection. Battle-report activity shows named XP, casualties, injury outcomes, exploration/rewards, player adjustments and amendments instead of internal application patches/revisions/timestamps. Removed entries remain visible, approval-only updates do not repeat the report, and injury effects are optional details. Injury D66 originals/replacements/reasons are now captured under #226. Verified actual mobile settings saves and filed/reloaded report history, 32 activity tests and the full 1,694-test suite. Fixed locally; awaiting batched release.
+
 
 ### 24. Roll-it-out popup is full-screen with nothing filling the space; text should be bigger and more exciting; the weapon/toggle boxes should move into the popup itself (a previously-made point that wasn't acted on)
 
@@ -1481,7 +1484,7 @@ how long — not attempted here.
 
 ### 54. Sold to the Pits has no resolution flow — the pit fight it triggers is logged and then abandoned
 
-**Status:** ✅ Fixed — plus a real cross-cutting bug found and fixed along the way (see below)
+**Status:** ✅ Fixed locally — awaiting batched release
 **Priority:** 🟠 Medium
 **Reported:** n/a — split out of #5's full injury-enforcement audit, not something Tom flagged directly
 
@@ -1498,6 +1501,8 @@ A reasonable fix would follow that same pattern: a persistent flag (`pitFightOwe
 2. Not a new bug, but flagged for whoever owns #75: cancelling a match whose report had already been applied reverted the campaign-level rating correctly but left one hero's `injuries`/`flags` unreverted in this session's testing (a second hero on a second cancelled match reverted cleanly). Not investigated further — noted here rather than silently worked around, since it's outside this item's scope and only affects the shared dev seed data, not anything shipped.
 
 Verified live end-to-end twice: first attempt (before the schema fix) reproduced the dropped-flags bug exactly as described; after the fix, filed a fresh "Sold to the Pits" report, confirmed `flags: {"pitFightOwed": true}` actually reached the database, saw the "Owed a pit fight" card render, resolved it as a win through the real UI, and confirmed gold +50, hero +2 XP, kit kept, flag cleared, card gone. The loss branch (including the sub-roll cascade) is covered by 9 new resolver tests and a new `dice.ts` test for `rollD66InRange`, not separately live-tested given the win path already round-trips the same persistence layer both bugs lived in. `tsc -b`, `oxlint` and the full suite (1253 passed) clean. **Left open:** `pitFightAutoWin` (Amphitheatre) still isn't wired to skip the win/lose choice — genuinely ambiguous with the current design, since the perk is battle/district-scoped and this resolution point isn't tied to a specific upcoming match; Merchant Caravans' Bribery and the other items under #68/#71 that reference this same injury are unaffected and still open there.
+
+**Local completion — 2026-09-11:** D66 65 now gives an explicit in-wizard next step. Filed reports show the approval gate or a direct link opening that warrior’s pit sheet; resolved fights disappear from the prompt. Separate player/GM and two-warrior mobile checks passed, including the selected win (+50 gc/+2 XP), second-warrior loss/weapon removal, and reload. Amphitheatre control now grants its automatic Hero win inside the report transaction, with source-named history and no duplicate reward on reload; verified through an actual disposable map campaign. Full ordinary suite: 1,694 passing; build/lint pass with existing warnings. Local only, awaiting batched release.
 
 ### 55. The battle page crashes for any warband holding a hired sword
 
@@ -3302,3 +3307,24 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 **Future proposal:** An optional campaign setting/theme (for example Mordheim or Khemri) could determine the relevant scenario library and enable that setting’s supported campaign rules. Design this separately, preserving campaign-specific scenario selection and approved overrides. This is a suggestion for later review, not a request to change scenario availability now.
 
 **Batch reconciliation:** #72 has 102 implemented scenario reward paths; the remaining Khemri-dependent path is now explicitly deferred here by Tom, rather than an unanswered release blocker. Final release verification still applies.
+
+
+### #54 / #218 follow-up — Sold to the Pits did not prompt its fight
+
+> I also got the result "Sold to the Pits" on the injury chart but didn't get prompted to do the fight with the Pit Fighter.
+
+**Status:** ✅ Fixed locally — prompt, approval gate and selected-warrior resolution verified; awaiting batched release.
+
+**Reproduction lead:** The same Test Dwarves report above records Dwarf Engineer with `pit fight owed: yes`, but Tom saw no prompt. Trace draft injury selection → submitted/pending versus applied report → warband reminder/resolution. Clearly direct the player to the required fight and expose the existing resolution action at the right stage; verify the actual selected Engineer and reload. Do not call this fixed merely because a resolver exists. Preserve #218's separation of temporary injury events from permanent injuries, and verify #177's correct-warrior handling. No live roster/report edits authorised by this feedback recording.
+
+### 201. CI is red again: roster-import e2e still expects the old transfer button
+
+**Status:** 🔲 Open
+**Priority:** 🔴 High
+**Reported:** Found during Tom’s requested completed-item verification, 2026-09-09.
+
+**Evidence:** [Hosted CI run 34342167421](https://github.com/AstronomicUK/stirheim/actions/runs/34342167421) on main completed with lint/unit/build successful, but e2e failed: 15 passed, one failed (including retry). `e2e/06-roster-import.spec.ts:25` expects the button `Transfer warband to another player` to be visible. Live roster navigation now puts `Transfer to another player` inside More, correctly implementing #22. The test has not followed the changed UI. The previous four inspected CI runs are also red.
+
+**Required work:** Update the import test to open More and assert the actual transfer action, preserving its verification purpose, then confirm both jobs green on hosted CI. This is a new regression, not evidence that #65’s earlier combat-label fix failed; #65 remains closed with this cross-reference.
+
+**Local test correction — 2026-09-11:** Import test now opens More actions → Transfer to another player and verifies the transfer dialog. Actual disposable mobile import/dialog check passes, without performing a transfer. The other hosted failure is also corrected locally: the battle test confirms attack allocation with Begin attacks, then enters both hit rolls before the parry step. A disposable mobile fight verifies hit/wound/injury progression to Out of action. Hosted CI has not rerun; keep this entry open until the batched push verifies both jobs.

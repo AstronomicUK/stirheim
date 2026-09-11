@@ -360,6 +360,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
   if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
+    if (w.input.barrageOnFailedWound) notes.push(`${w.weapon.name}: a hit that fails to wound grants another attack at −1 to hit, capped at 6+. The continuing attacks are included in the odds; a miss or successful wound ends the sequence.`)
     if (w.weapon.special.includes('reach3Inches')) notes.push(`${w.weapon.name}: may attack within 3 inches; check reach at the table.`)
     if (w.weapon.special.includes('manSizedWielderOnly')) notes.push(`${w.weapon.name}: only a man-sized or larger warrior may wield it; this does not restrict which enemies it can attack.`)
     if (w.input.woundThreshold === IMPOSSIBLE) notes.push(`${w.weapon.name}: Strength ${w.strength} cannot wound Toughness ${setup.defender.stats.T}.`)

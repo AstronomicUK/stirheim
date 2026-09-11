@@ -377,6 +377,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     critTableRollModifier,
     rerollToHit,
     woundHighestOfTwo: woundHighestOfTwo || undefined,
+    barrageOnFailedWound: weapon.special.includes("barrageExtraAttacksOnFailedWound") || undefined,
     autoWoundOnNaturalSixToHit: autoWound,
     parryEligible,
     parrySuccessProbGivenAttempt,

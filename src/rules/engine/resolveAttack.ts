@@ -36,6 +36,7 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  barrageOnFailedWound?: boolean;
   /** Already-established hits, such as a successfully cast damage spell. */
   automaticHits?: boolean;
   automaticHitReason?: "zeroWeaponSkill";
@@ -263,7 +264,18 @@ export function eventsSeverity(events: WoundEvent[], maxWounds = 1, woundsTaken 
   return total;
 }
 
+function nextBarrageInput(input: AttackInput): AttackInput {
+  const hitThreshold = input.hitThreshold === IMPOSSIBLE ? IMPOSSIBLE : Math.min(6, input.hitThreshold + 1);
+  const hitFaces = [2, 3, 4, 5, 6].filter(face => hitThreshold !== IMPOSSIBLE && face >= hitThreshold);
+  const parrySuccessProbGivenAttempt = input.parrySuccessByFace && hitFaces.length
+    ? hitFaces.reduce((sum, face) => sum + (input.parrySuccessByFace?.[face] ?? input.parrySuccessProbGivenAttempt), 0) / hitFaces.length
+    : input.parrySuccessProbGivenAttempt;
+  return { ...input, hitThreshold, parrySuccessProbGivenAttempt };
+}
+
 export interface SingleAttackBreakdown {
+  barrageNext?: SingleAttackBreakdown;
+  barrageAtCap?: boolean;
   /** Unconditioned extra attack; never inherits a highest-hit parry partition. */
   extraAttack?: SingleAttackBreakdown;
   hitFaces?: { face: number; probability: number; wound: number; trigger: number; parry: number }[];
@@ -353,6 +365,11 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
   const critEvents = critWoundEvents(input);
 
   return {
+    barrageNext: input.barrageOnFailedWound && input.hitThreshold !== IMPOSSIBLE
+      ? input.hitThreshold < 6
+        ? resolveSingleAttack(nextBarrageInput(input))
+        : { ...resolveSingleAttack({ ...input, barrageOnFailedWound: false }), barrageAtCap: true }
+      : undefined,
     pHit,
     hitFaces: input.autoHitKnockedDown || input.automaticHits ? undefined : [
       { face: 0, probability: 1 - pHit, wound: 0, trigger: 0, parry: 0 },

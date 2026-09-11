@@ -154,3 +154,9 @@ Next: #156 remaining specialist Pike/Whipcrack order; #149 exact Barrage or #150
 Merchant Pike initiativeFirstTurnBonus1 applied only opening round; firstTurn toggle relevance now considers selected defender gear as well. Tilean Pike twoHanded tag fixes offhand/shield handling; manSizedWielderOnly replaces misleading largeCreaturesOnly, with explicit reach/wielder table notes. Source02:538–560. Thirty-nine odds tests +build/typecheck/lint pass; explanatory note strings afterward. No deploy. Still partial: Tilean Pike over Spear precedence and Whipcrack separate bonus strike, plus broader special effects.
 
 Next tackle one larger sequence (#149 Rapier exact additional-attack loop or #150 full staff mode) using earlier source constraints. Avoid mislabelling table-only constraints as automated.
+
+## Combat milestone 20 — #149 Rapier Barrage (local)
+
+Implemented exact continuing hit/failed-wound attacks, cumulative -1 capped6+, unconditioned followups after highest-hit partitioning, remaining parries/critical limit preserved. Infinite6+ tail summed geometrically; successful wound ends chain even if saved. Interactive inserted plans preserve later batch hits. Source02:585–595. Fullordinary1772pass/169DBskipped; final build/typecheck/lint pass existingwarnings,58focusedpass. Mobile /tmp/stirheim-barrage-mobile-qa.mjs passes, fixtures cleaned. No deployment. #149 fixed locally.
+
+Next priority: #150 complete Serpent Staff alternative (one WS4/S4 attack, always first, forgo ALL normal attacks and parries this round); #156 Tilean Pike/Spear and Whipcrack exceptions; #68 transaction-backed Bribery/abandonment and remaining #70 persistent psychology. Keep umbrella statuses partial and proceed through the remaining priority groups. All checkpoints remain local for combined release.

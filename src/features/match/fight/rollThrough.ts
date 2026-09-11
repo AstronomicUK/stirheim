@@ -24,7 +24,7 @@ export interface PendingRoll {
 
 export interface AttackPlan {
   /** Added during resolution, so it has no pre-collected hit die. */
-  bodyBlowBonus?: boolean
+  additionalAttack?: boolean
   weaponName: string
   input: AttackInput
   /** Parry mechanics not carried by AttackInput. A fixed threshold (Starblade 4+) replaces the beat-the-hit-roll test. */
@@ -160,7 +160,7 @@ function attackName(state: RollState): string {
 function beginAttack(state: RollState): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
-  if (state.hitBatch?.phase === 'resolve' && !plan.bodyBlowBonus) {
+  if (state.hitBatch?.phase === 'resolve' && !plan.additionalAttack) {
     const hit = state.hitBatch.hits[state.index]
     if (hit.outcome) return finishAttack(fresh, hit.outcome)
     return afterHit({ ...fresh, cur: { ...fresh.cur, hitRoll: hit.roll } })
@@ -203,12 +203,15 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
     next = log(next, `${OUTCOME_LABEL[outcome]}! The target is out of action; any remaining attacks are not needed.`, 'good')
     return { ...next, done: true, index: state.plans.length }
   }
-  if (state.cur.crit?.extraAttack) {
+  const barrage = outcome === 'noWound' && state.plans[state.index].input.barrageOnFailedWound
+  if (state.cur.crit?.extraAttack || barrage) {
     const plans = [...state.plans]
-    plans.splice(state.index + 1, 0, { ...state.plans[state.index], bodyBlowBonus: true })
+    const original = state.plans[state.index]
+    plans.splice(state.index + 1, 0, { ...original, additionalAttack: true,
+      input: barrage ? { ...original.input, hitThreshold: original.input.hitThreshold === IMPOSSIBLE ? IMPOSSIBLE : Math.min(6, original.input.hitThreshold + 1) } : original.input })
     const hitBatch = state.hitBatch ? { ...state.hitBatch, hits: [...state.hitBatch.hits] } : undefined
     hitBatch?.hits.splice(state.index + 1, 0, { roll: null })
-    next = log({ ...next, plans, hitBatch }, 'Body Blow: resolve one additional attack. This warrior has already used its critical hit.', 'good')
+    next = log({ ...next, plans, hitBatch }, barrage ? 'Barrage: hit but failed to wound. Make another attack at −1 to hit, capped at needing 6.' : 'Body Blow: resolve one additional attack. This warrior has already used its critical hit.', 'good')
   }
   if (state.index + 1 >= next.plans.length) return { ...next, done: true }
   return beginAttack({ ...next, index: state.index + 1 })

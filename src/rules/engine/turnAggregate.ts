@@ -62,6 +62,17 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
     next[parriesUsed][critConsumed][Math.min(woundsTaken, maxWounds)][severity] += mass;
   };
 
+  const applyFollowup = (followup: SingleAttackBreakdown, mass: number, parriesUsed: number, critConsumed: 0 | 1, woundsTaken: number, worst: Severity) => {
+    if (mass <= 0) return;
+    const initial = emptyState(maxParries, maxWounds);
+    initial[parriesUsed][critConsumed][woundsTaken][worst] = mass;
+    const result = applyAttack(initial, followup, maxParries, maxWounds);
+    ricochetDelta += result.ricochetDelta;
+    for (let p = 0; p <= maxParries; p++) for (const c of [0, 1] as const)
+      for (let w = 0; w <= maxWounds; w++) for (const severity of [0, 1, 2, 3] as const)
+        addMass(p, c, w, severity, result.next[p][c][w][severity]);
+  };
+
   // A stunned target: this attack takes it out of action outright, whatever state it was already
   // in (Wounds taken, Parries used, worst so far can only go up) — no wound/injury pipeline at all.
   if (attack.guaranteedOutOfAction) {
@@ -109,8 +120,10 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
     if (mass === 0) return;
     const massNormal = mass * normalFrac;
     const massTrigger = mass * triggerFrac;
-    // Remainder (hit but no wound) leaves everything unchanged.
-    addMass(parriesUsed, critConsumed, woundsTaken, worst, mass - massNormal - massTrigger);
+    const failedWound = Math.max(0, mass - massNormal - massTrigger);
+    if (attack.barrageNext || attack.barrageAtCap) {
+      applyFollowup(attack.barrageNext ?? attack, failedWound, parriesUsed, critConsumed, woundsTaken, worst);
+    } else addMass(parriesUsed, critConsumed, woundsTaken, worst, failedWound);
     if (massNormal > 0) applyEvents(attack.normalEvents, massNormal, parriesUsed, critConsumed, woundsTaken, worst);
     if (massTrigger > 0) {
       if (critConsumed === 0) {
@@ -128,6 +141,20 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
         for (let worst = 0; worst < 4; worst++) {
           const p = state[parriesUsed][critConsumed][woundsTaken][worst];
           if (p === 0) continue;
+
+          // At the 6+ cap with no remaining parry, repeated hit/failed-wound
+          // attempts leave the state unchanged. Sum that geometric tail exactly.
+          if (attack.barrageAtCap && (!attack.parryEligible || parriesUsed >= maxParries)) {
+            const denominator = 1 - (attack.pHit - attack.pWound);
+            if (denominator <= 0) addMass(parriesUsed, critConsumed, woundsTaken, worst as Severity, p);
+            else applyFollowup({ ...attack, barrageAtCap: false, barrageNext: undefined,
+              parryEligible: false, pHit: attack.pWound / denominator,
+              pWound: attack.pWound / denominator,
+              pWoundNormal: attack.pWoundNormal / denominator,
+              pWoundTriggerEligible: attack.pWoundTriggerEligible / denominator,
+            }, p, parriesUsed, critConsumed, woundsTaken, worst as Severity);
+            continue;
+          }
 
           // A miss never rolls to hit, so Parry never enters into it — state unchanged.
           addMass(parriesUsed, critConsumed, woundsTaken, worst as Severity, p * (1 - attack.pHit));

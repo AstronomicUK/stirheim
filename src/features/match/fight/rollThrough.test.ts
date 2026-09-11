@@ -528,3 +528,34 @@ describe('Body Blow additional attack (#169)', () => {
     expect(s.outcomes).toEqual(['saved', 'miss', 'noWound'])
   })
 })
+
+describe('Rapier Barrage (#149)', () => {
+  it('adds attacks only after hitting but failing to wound, worsening to-hit to a cap of six', () => {
+    let s = rolls(startPhase([plan('Rapier', { barrageOnFailedWound: true })], 2, 0), 4, 1)
+    expect(s.pending).toMatchObject({ kind: 'hit', detail: 'Needs 5+' })
+    s = rolls(s, 5, 1)
+    expect(s.pending).toMatchObject({ kind: 'hit', detail: 'Needs 6+' })
+    s = rolls(s, 6, 1)
+    expect(s.pending).toMatchObject({ kind: 'hit', detail: 'Needs 6+' })
+    s = rolls(s, 6, 4, 6) // Wounded, then saved: no more Barrage.
+    expect(s.done).toBe(true)
+    expect(s.outcomes).toEqual(['noWound', 'noWound', 'noWound', 'saved'])
+  })
+  it('ends on a missed hit and does not treat a parry as a failed wound', () => {
+    expect(rolls(startPhase([plan('Rapier', { barrageOnFailedWound: true })], 2, 0), 1).plans).toHaveLength(1)
+    const s = rolls(startPhase([plan('Rapier', { barrageOnFailedWound: true, parryEligible: true })], 2, 1), 4, 5)
+    expect(s.done).toBe(true)
+    expect(s.plans).toHaveLength(1)
+  })
+})
+
+it('Barrage inserts new hit rolls without losing pre-collected later attacks', () => {
+  const rapier = plan('Rapier', { barrageOnFailedWound: true, parryEligible: true })
+  let s = rolls(startPhase([rapier, rapier], 3, 1), 6, 4, 1)
+  expect(s.pending?.kind).toBe('hit')
+  s = rolls(s, 1) // Bonus miss, then resume original second hit.
+  expect(s.pending?.kind).toBe('wound')
+  s = rolls(s, 4, 6)
+  expect(s.done).toBe(true)
+  expect(s.outcomes).toEqual(['noWound', 'miss', 'saved'])
+})

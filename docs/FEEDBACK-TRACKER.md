@@ -3440,3 +3440,9 @@ Battle defender box now has Weapon held and applicable Other hand selectors, wit
 ### #156/#152 Pike source-specific corrections — 11 September
 
 Merchant Caravan Pike now grants its printed +1 Initiative only in the first round, including when defending against a charge. Shared first-round controls consider selected weapons on both sides. Tilean Pike now correctly occupies both hands and its source’s Large restriction is presented as a **wielder-size** constraint, not a large-enemy requirement; 3-inch reach remains an explicit table check. Source02:538–560 read. Thirty-nine odds tests and typecheck/build/lint passed (existing warnings only); final explanatory-note strings added afterward. No deployment. Special Tilean Pike-versus-Spear priority and Whipcrack’s separate first-strike bonus still need resolution; #156/#152 remain partial.
+
+### #149 Rapier Barrage — fixed locally, 11 September
+
+The printed hit-but-failed-wound condition now drives odds and interactive rolling, with each extra attack at a cumulative −1 to hit, capped at 6+. The probability engine sums the repeating 6+ tail exactly, preserves remaining parries and the critical-hit limit, and recomputes parry chances for the harder hit roll. A miss, successful parry, or successful wound (even if saved) ends the sequence. Additional rolls preserve the later attacks in a pre-collected hit batch. The misleading internal “on miss” tag was corrected. Source02:585–595 checked.
+
+Validation: full ordinary suite 1,772 passed /169 database tests skipped; final typecheck/build/lint passed with existing audit-file warnings; 58 focused tests passed after the final test-type correction. Disposable local mobile QA confirmed a failed wound offers a fresh 5+ attack with a readable Barrage log. Fixtures cleaned; no production data or deployment changed. #149 is complete locally and awaits the combined release.

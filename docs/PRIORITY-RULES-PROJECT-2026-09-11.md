@@ -220,3 +220,8 @@ Rigors metadata covers four original Heroes plus promoted Runts and Shoota Teams
 ## Experience milestone 3 — #115–117 printed maxima (local)
 
 Added Druchii, Snotling, Ogre(OgreHuntingParty), Gnoblar(OgreHuntingParty) data rows from printed tables. Exact unit overrides include promotable henchmen; BulliedGoblin retainsGoblin; genericracialrows unchanged. Existing OHP UNIT_RULES overrides updated (they takeprecedenceoverwarbandoverride). 78advances/campaignRules tests pass; build/typecheck/lintpass (3old auditwarnings). Tests cover full9stats/renamedHeroes/maxedadvancement andgenericrowpreservation. Oldtest expectinggenericGnoblar/Ogre updated tocorrectsource. #115–117 fixedlocal, no retroactivedatachanges/deploy. Next#118ChosenOfChaos skill-basedprofile, thenremaining#114specialpromotion workflows/#112enemykillXP. Combat outstanding asabove; maintaincombinedreleaseonly.
+
+
+## Experience milestone 4 — #118 Chosen of Chaos maxima (local)
+
+resolveRacialProfile accepts optionalskillIds; exact learned marauders_of_chaos_skills_chosen_of_chaos overrides originalprofile withWarriorOfChaos, matchedBy=skill. Namealone notenough; removing skill restoresbase; no autocharacteristicincrease; TrainingManual stacks maximumWS.65focusedtests/build/typecheck/lintpass existing3warnings. #118fixedlocal; Heroequipmentlist consequence remainsbroader#59/equipment scope, notclaimedfixed. No deploy. Next#114specialpromotion or#112enemykillXP; oldercombat outstanding asabove.

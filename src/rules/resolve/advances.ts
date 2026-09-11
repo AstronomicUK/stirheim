@@ -222,7 +222,7 @@ export interface RacialProfileMatch {
   profile: string;
   maxima: Stats;
   /** How the profile was chosen, for the UI/debugging. */
-  matchedBy: "unitOverride" | "unitName" | "warbandDefault" | "raceString" | "fallback";
+  matchedBy: "skill" | "unitOverride" | "unitName" | "warbandDefault" | "raceString" | "fallback";
 }
 
 function matchKeyword(text: string, warbandId: string): string | undefined {
@@ -234,7 +234,7 @@ function matchKeyword(text: string, warbandId: string): string | undefined {
 }
 
 /** Work out which RACIAL_MAXIMUMS profile caps a hero, with a warning event when we had to guess. */
-export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "unitTemplateId"> & Partial<Pick<RosterHero, "flags">>, warbandTemplateId: string): Resolution<RacialProfileMatch> {
+export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "unitTemplateId"> & Partial<Pick<RosterHero, "flags" | "skillIds">>, warbandTemplateId: string): Resolution<RacialProfileMatch> {
   const template = findWarbandTemplate(warbandTemplateId);
   const unit = template ? findUnitTemplate(template, hero.unitTemplateId) : undefined;
   const unitName = unit?.name ?? hero.name;
@@ -245,7 +245,13 @@ export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "uni
   let matchedBy: RacialProfileMatch["matchedBy"] = "fallback";
 
   const unitOverride = unitRules(hero.unitTemplateId).racialProfile ?? override?.units?.[hero.unitTemplateId] ?? override?.units?.[unitName];
-  if (unitOverride) {
+  // Chosen changes the warrior's maximum profile, regardless of their original unit.
+  // Read the actual learned skill, never a name or descriptive warband rule.
+  if (hero.skillIds?.includes("marauders_of_chaos_skills_chosen_of_chaos")) {
+    profile = "Warrior Of Chaos";
+    matchedBy = "skill";
+  }
+  if (!profile && unitOverride) {
     profile = unitOverride;
     matchedBy = "unitOverride";
   }

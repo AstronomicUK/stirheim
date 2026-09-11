@@ -3496,3 +3496,8 @@ App rolls and later manual dice changes are retained separately in the draft and
 ## 2026-09-11 characteristic maximum corrections — #115–117 (local)
 
 Fixed locally, awaiting combined deployment: Druchii use their printed T3 maximum; Snotling Heroes (including promoted Runts/Shoota Teams) use their own profile, while the Bullied Goblin retains Goblin maxima; Ogre Hunting Party uses its Ogre BS4/I4 and Gnoblar S3 rows, including promoted Fighters/Flingers. Generic Elf, Ogre and Goblin profiles are unchanged. Source tables verified in grade-2a-part1.md (Druchii and Ogre Hunting Party) and grade-2a-part2.md (Snotlings). Tests cover every affected original/promoted unit, renamed warriors and advancement blocked at maximum. Build/typecheck/lint and78 focused tests pass; three existing audit-script lint warnings remain. No deployment or retroactive roster edits.
+
+
+## 2026-09-11 Chosen of Chaos maximum profile — #118 (local)
+
+#118 fixed locally, awaiting combined deployment. The learned Chosen of Chaos skill selects the Warrior Of Chaos maximum profile before original unit/race lookup. Merely naming a hero Chosen of Chaos does not grant it; removing the skill restores the original maximum. Current characteristics are not automatically increased. The Training Manual maximum-WS adjustment still applies. This closes the maximum-profile issue only; equipment-list consequences remain part of the broader skill/equipment work. Source: grade-1c.md:1979,1994. Build/typecheck/lint and65 focused tests pass, with three existing audit-script lint warnings. No deployment or live data changes.

@@ -151,6 +151,24 @@ describe("racial maximums", () => {
     expect(findRacialMaximum("Goblin")?.stats.S).toBe(4);
   });
 
+  it("Chosen of Chaos changes maxima only after learning the skill (#118)", () => {
+    const band = WARBAND_TEMPLATES.find(w => w.id === "marauders_of_chaos")!;
+    const unit = band.heroTemplates[0];
+    const hero = makeHero({ unitTemplateId: unit.id, name: "Chosen of Chaos" });
+    expect(resolveRacialProfile(hero, band.id).value.profile).toBe("Marauder Of Chaos");
+    const chosen = { ...hero, skillIds: ["marauders_of_chaos_skills_chosen_of_chaos"] };
+    const result = resolveRacialProfile(chosen, band.id);
+    expect(result.value.profile).toBe("Warrior Of Chaos");
+    expect(result.value.matchedBy).toBe("skill");
+    expect(result.value.maxima).toEqual({ M: 4, WS: 8, BS: 8, S: 5, T: 5, W: 3, I: 8, A: 5, Ld: 9 });
+    const atOldCap = { ...chosen, stats: { ...chosen.stats, S: 4, T: 4 } };
+    expect(eligibleStatChoices(atOldCap, ["S", "T"], result.value.maxima).options).toEqual(["S", "T"]);
+    expect(applyStatIncrease(atOldCap, "S", result.value.maxima).value.stats.S).toBe(5);
+    expect(resolveRacialProfile({ ...chosen, flags: { studiedTrainingManual: true } }, band.id).value.maxima.WS).toBe(9);
+    expect(resolveRacialProfile({ ...chosen, skillIds: [] }, band.id).value.maxima.S).toBe(4);
+    expect(hero.stats.S).toBe(3); // Looking up a new cap never raises current characteristics.
+  });
+
   it("maps well-known heroes", () => {
     const cases: [string, string, string][] = [
       ["mercenaries_reikland", "mercenaries_reikland_mercenary_captain", "Human"],

@@ -302,3 +302,17 @@ it('recognises old Nicodemus staff and Belandysh armour entries in combat',()=>{
  const armour=loadoutOf([{itemId:null,customName:'Chaos Armour that hardly hold his body together',quantity:1}])
  expect(armour).toEqual(loadoutOf([{itemId:'chaos_armour',quantity:1}]))
 })
+
+
+it.each([
+  ['black_dwarfs', 'black_dwarfs_informers', 'black_dwarfs_chaos_dwarfs'],
+  ['the_sons_of_hashut', 'sons_of_hashut_hobgoblins', 'sons_of_hashut_chaos_dwarf_warriors'],
+])('respects %s henchmen race exclusions without stripping real Dwarf defences (#162)', (warbandTemplateId, excludedId, dwarfId) => {
+  const template = findWarbandTemplate(warbandTemplateId)
+  expect(template).toBeDefined()
+  const combatants = combatantsOf(warband({ warbandTemplateId, henchmenGroups: [group('excluded', { unitTemplateId: excludedId }), group('dwarf', { unitTemplateId: dwarfId })] }), template, 'QA warband', undefined)
+  expect(combatants.find(c => c.id === 'excluded')?.traitIds).not.toContain('hard_to_kill')
+  expect(combatants.find(c => c.id === 'excluded')?.traitIds).not.toContain('hard_head')
+  expect(combatants.find(c => c.id === 'dwarf')?.traitIds).toContain('hard_to_kill')
+  expect(combatants.find(c => c.id === 'dwarf')?.traitIds).toContain('hard_head')
+});

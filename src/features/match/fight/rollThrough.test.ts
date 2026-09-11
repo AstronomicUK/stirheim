@@ -435,3 +435,46 @@ it('does not describe a wound with an ignored injury as an earlier missed attack
  expect(state.worst).toBe('ignored')
  expect(state.woundsLost).toBe(1)
 })
+
+
+it('WS0 skips the hit roll but still rolls injury after an unsaved wound', () => {
+  let state = startPhase([plan('Sword', { automaticHits: true, automaticHitReason: 'zeroWeaponSkill' })], 1, 0)
+  expect(state.pending?.kind).toBe('wound')
+  expect(state.log.at(-1)?.text).toContain('Weapon Skill 0')
+  state = applyRoll(state, 4)
+  expect(state.pending?.kind).toBe('save')
+  state = applyRoll(state, 1)
+  expect(state.pending?.kind).toBe('injury')
+  state = applyRoll(state, 1)
+  expect(state.worst).toBe('knockedDown')
+  const stunned = startPhase([plan('Sword', { automaticHits: true, automaticHitReason: 'zeroWeaponSkill', autoOutOfActionStunned: true })], 1, 0)
+  expect(stunned.worst).toBe('outOfAction')
+});
+
+
+it('Dodge preserves the Lucky Charm for the first hit that remains (#175)', () => {
+  const shot = { ...plan('Bow', { dodgeThreshold: 5 }), luckyCharm: 4 }
+  let state = startPhase([shot, shot], 1, 0, 0, true)
+  state = applyRoll(state, 4)
+  expect(state.pending?.kind).toBe('dodge')
+  expect(state.charmUsed).toBe(false)
+  state = applyRoll(state, 5)
+  expect(state.charmUsed).toBe(false)
+  state = applyRoll(state, 4)
+  state = applyRoll(state, 1)
+  expect(state.pending?.kind).toBe('luckyCharm')
+  state = applyRoll(state, 1)
+  expect(state.pending?.kind).toBe('wound')
+  expect(state.charmUsed).toBe(true)
+  expect(state.log.filter(l => l.text.startsWith('Dodge:'))).toHaveLength(2)
+});
+
+
+it('keeping the charm after a failed Dodge does not mark it spent', () => {
+  let state = startPhase([{ ...plan('Bow', { dodgeThreshold: 5 }), luckyCharm: 4 }], 1, 0, 0, true)
+  state = applyRoll(applyRoll(state, 4), 1)
+  expect(state.pending?.kind).toBe('luckyCharm')
+  state = declineRoll(state)
+  expect(state.charmUsed).toBe(false)
+  expect(state.pending?.kind).toBe('wound')
+});

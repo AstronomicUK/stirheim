@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { findWeapon } from '../../../rules/data/weapons'
 import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
@@ -353,4 +354,15 @@ it('can end Frenzy after being knocked down without changing the printed Attacks
  expect(relevantToggles(max,'melee',fight.primary).map(t=>t.field)).toContain('frenzyEnded')
  expect(relevantToggles(captain,'melee',fight.primary).map(t=>t.field)).not.toContain('frenzyEnded')
  expect(max.stats.A).toBe(2)
+})
+
+
+it('shows extended Eagle Eyes range and hides only the ignored weapon penalties', () => {
+  const archer = combatant('Archer', [], { skillIds: ['eagle_eyes'] })
+  const bow = loadoutOf([{ itemId: 'bow', quantity: 1 }]).ranged[0]
+  expect(relevantToggles(archer, 'ranged', bow).find(t => t.field === 'longRange')?.hint).toContain('More than 15 inches away (maximum 30 inches')
+  const knives = findWeapon('throwing_knife')!
+  expect(relevantToggles(archer, 'ranged', knives).map(t => t.field)).toEqual(['cover', 'largeTarget'])
+  const pins = findWeapon('belaying_pins')!
+  expect(relevantToggles(archer, 'ranged', pins).map(t => t.field)).toEqual(['movedThisTurn', 'cover', 'largeTarget'])
 })

@@ -5,9 +5,10 @@
 import type { Character, CombatContext, DefenderProfile, HouseRules, Skill, Stats, Weapon, WeaponKind } from "../types";
 import { defaultHouseRules } from "../types";
 import { findSkill } from "../data/skills";
+import { missilePenaltyRules } from "./missileRules";
 import { meleeToHitThreshold, rangedToHitBaseThreshold } from "./toHit";
 import { toWoundThreshold } from "./toWound";
-import { armourSaveThreshold } from "./armourSave";
+import { armourSaveThreshold, strengthSaveErosion } from "./armourSave";
 import type { AttackInput } from "./resolveAttack";
 import type { CritTableKey } from "./crit";
 import { IMPOSSIBLE, type Threshold } from "./dice";
@@ -216,11 +217,12 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     hitThreshold = meleeToHitThreshold(effectiveWS, defender.WS) - (weapon.toHitBonus ?? 0) - (defender.toBeHit?.melee ?? 0);
   } else {
     let modifierSum = 0;
+    const penalties = missilePenaltyRules(weapon);
     // A pavise makes its bearer count as in cover against missiles (02: Pavise), the same -1 as real cover.
     if ((context.cover || defender.armour.pavise) && !hasActiveEffect(attackerSkills, context, weapon.type, "ignoresModifier", "cover")) modifierSum -= 1;
-    if (context.longRange && !attackerSkills.some((s) => s.effect.type === "rangeExtension" && isActive(s, context))) modifierSum -= 1;
+    if (context.longRange && !penalties.ignoresLongRange) modifierSum -= 1;
     // Moving and shooting is always -1 (01:673); Nimble only lets Move-or-Fire weapons shoot at all (see computeAttackCount).
-    if (context.movedThisTurn) modifierSum -= 1;
+    if (context.movedThisTurn && !penalties.ignoresMovement) modifierSum -= 1;
     if (context.largeTarget || defender.activeTraitIds.includes("large_target")) modifierSum += 1;
     if (context.altFire && weapon.altFire) modifierSum -= weapon.altFire.toHitPenalty;
     else if ((weapon.rangedProfile?.shotsPerTurn ?? 1) > 1 && weapon.multiShotToHitPenalty) modifierSum -= weapon.multiShotToHitPenalty;
@@ -255,7 +257,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     const armour = weapon.ignoresArmourSaveExceptShield ? { ...defender.armour, type: "none" as const, kiteShield: false } : defender.armour;
     let base = armourSaveThreshold(armour, attackStrength, houseRules.strengthArmourPiercing, paviseCounts);
     // A Sea Dragon Cloak is a save of its own, used when better than the armour worn.
-    const own = defender.ownSave ? (weapon.type === "melee" ? defender.ownSave.melee : defender.ownSave.missile) : null;
+    const own = defender.ownSave ? (weapon.type === "melee" ? defender.ownSave.melee : defender.ownSave.missile) + (houseRules.strengthArmourPiercing ? strengthSaveErosion(attackStrength) : 0) : null;
     if (own !== null && !weapon.ignoresArmourSaveExceptShield && (base === IMPOSSIBLE || own < base)) base = own;
     // Wolfcloaks, Silk Armour: a bonus to the save, sometimes even a 6+ from nothing.
     const bonus = weapon.ignoresArmourSaveExceptShield ? 0 : (weapon.type === "melee" ? defender.saveBonus?.melee : defender.saveBonus?.missile) ?? 0;
@@ -322,7 +324,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const masterOfBlades = defenderSkills.some((s) => s.id === "master_of_blades" && isActive(s, context));
   // The Ogre Club counts one Strength higher for the parry check when swung two-handed.
   const parryStrength = attackStrength + (weapon.id === "ogre_club" && context.twoHanded ? 1 : 0);
-  const parryEligible = weapon.type === "melee" && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S && !context.targetKnockedDown;
+  const parryEligible = weapon.type === "melee" && defender.WS > 0 && !weapon.cannotBeParried && defender.parryWeaponCount > 0 && parryStrength < 2 * defender.S && !context.targetKnockedDown;
   // A fixed parry threshold (Starblade) is its own mechanic — always a flat save regardless of
   // either side's WS — so it still wins over the opposed-WS house rule when both are in play.
   const opposedParryWS = parryEligible && houseRules.opposedParryWS && defender.parryThreshold === undefined;
@@ -348,6 +350,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
 
   return {
     hitThreshold,
+    automaticHits: weapon.type === "melee" && defender.WS === 0 || undefined,
+    automaticHitReason: weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
     woundThreshold,
     armourThreshold,
     dodgeThreshold: dodgeSkill?.effect.threshold,

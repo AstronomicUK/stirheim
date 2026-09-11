@@ -3362,3 +3362,7 @@ Source 03:421–425 verified. Terrain/pavise cover now checks the shooter’s sk
 > This is more of a "nice to have" upgrade than a high priority, so mark it as such on the tracker
 
 **Scope for later design:** Extend the Sold to the Pits follow-up (#54/#218) into a dedicated mini battle sheet containing the affected warrior and a single Pit Fighter opponent. Support App Calculates and Player Calculates, using the familiar battle-sheet controls. Consider assigning the temporary Pit Fighter to another campaign player so they can control it from their own account. The opponent must be scoped to that fight, never become a permanent owned warband or enrolled campaign roster, and never receive ordinary campaign progression. On completion, feed the result into the existing pit-fight consequences exactly once and retain the fight history. Player assignment and fallback when no second player is available need design before implementation. Keep this enhancement separate from the already deployed result-entry/reminder fix; it does not change today's priority order.
+
+### Combat priority milestone — 11 September
+
+#162/#166/#170/#172/#174/#175 fixed locally; source clauses, regression evidence, mobile checks and limits are recorded in PRIORITY-RULES-PROJECT-2026-09-11.md. These join #173 in the next local batch. #201 hosted CI now reaches the later Log-to-roster step; old selector corrected locally, full hosted result still outstanding.

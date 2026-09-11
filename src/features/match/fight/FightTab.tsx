@@ -258,7 +258,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   {toggleList.map((t) => (
                     <label key={t.field} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={t.hint}>
                       <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" checked={toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => setToggles((s) => ({ ...s, [t.field]: e.target.checked }))} />
-                      <span>{t.label}</span>
+                      <span>{t.label}{t.field === 'longRange' && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.hint}</span> : null}</span>
                     </label>
                   ))}
                 </fieldset>
@@ -544,7 +544,7 @@ function WeaponRow({ w, phase }: { w: WeaponOdds; phase: FightOdds['phase'] }) {
         </span>
       </p>
       <div className="grid grid-cols-3 gap-1.5">
-        <Tile label="To hit" value={thresholdText(w.input.hitThreshold, '—')} sub={percent(w.pHit)} />
+        <Tile label="To hit" value={w.pHit === 1 ? 'Automatic' : thresholdText(w.input.hitThreshold, '—')} sub={percent(w.pHit)} />
         <Tile label="To wound" value={thresholdText(w.input.woundThreshold, '—')} sub={w.input.woundThreshold === null ? 'cannot' : percent(w.pWound / Math.max(w.pHit, 1e-9))} />
         <Tile label="Their save" value={thresholdText(save, 'none')} sub={save === null ? '' : `${percent(1 - w.pThroughSaves)} saved`} />
       </div>

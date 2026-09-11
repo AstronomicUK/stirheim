@@ -86,6 +86,7 @@ test.describe('match', () => {
     // The shared log lists it, and back on "My warband" the kill sits on the captain's counter; one Watchman goes down by hand.
     await page.getByRole('button', { name: 'Log', exact: false }).first().click()
     await expect(page.getByText(`${CAPTAIN} took Skritch Nightblade out of action`, { exact: false })).toBeVisible()
+    await page.getByRole('button', { name: 'View Rosters', exact: false }).click()
     await page.getByRole('radio', { name: 'My warband', exact: true }).click()
     await expect(page.getByRole('group', { name: `enemies out by ${CAPTAIN}` })).toContainText('1')
     await page.getByRole('button', { name: 'More Watchmen out of action' }).click()

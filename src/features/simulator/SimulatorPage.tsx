@@ -353,7 +353,7 @@ function Fight({
                     checked={choices.toggles[t.field] ?? Boolean(t.defaultOn)}
                     onChange={(e) => setChoices({ ...choices, toggles: { ...choices.toggles, [t.field]: e.target.checked } })}
                   />
-                  {t.label}
+                  <span>{t.label}{t.field === 'longRange' && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.hint}</span> : null}</span>
                 </label>
               ))}
             </fieldset>
@@ -407,7 +407,7 @@ function OddsView({ odds, attacker, defender }: { odds: FightOdds; attacker: Com
               </span>
             </p>
             <div className="grid grid-cols-3 gap-1.5">
-              <Tile label="To hit" value={thresholdText(w.input.hitThreshold, '—')} sub={percent(w.pHit)} />
+              <Tile label="To hit" value={w.pHit === 1 ? 'Automatic' : thresholdText(w.input.hitThreshold, '—')} sub={percent(w.pHit)} />
               <Tile label="To wound" value={thresholdText(w.input.woundThreshold, '—')} sub={w.input.woundThreshold === null ? 'cannot' : percent(w.pWound / Math.max(w.pHit, 1e-9))} />
               <Tile label="Their save" value={thresholdText(w.input.armourThreshold, 'none')} sub={w.input.armourThreshold === null ? '' : `${percent(1 - w.pThroughSaves)} saved`} />
             </div>

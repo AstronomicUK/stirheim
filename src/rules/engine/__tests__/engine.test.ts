@@ -1071,3 +1071,47 @@ describe("Trick Shooter belongs to the shooter (#173)", () => {
     expect(input.hitThreshold).toBe(6);
   });
 });
+
+
+describe("Printed missile penalties (#170/#174)", () => {
+  it.each(["throwing_knife", "javelins", "fish_hook_shot", "cathayan_candles"])("%s ignores range and movement, but retains cover", id => {
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: W(id), defender: testDefender(), context: testContext({ movedThisTurn: true, longRange: true, cover: true }) });
+    expect(input.hitThreshold).toBe(5);
+  });
+  it.each(["belaying_pins", "firepots_miragliano", "sun_gauntlet", "sunstaff", "sunstaff_lustria"])("%s ignores range but retains movement and cover", id => {
+    const input = buildAttackInput({ attacker: testCharacter(), weapon: W(id), defender: testDefender(), context: testContext({ movedThisTurn: true, longRange: true, cover: true }) });
+    expect(input.hitThreshold).toBe(6);
+  });
+  it("Eagle Eyes does not exempt a shot declared beyond half of its extended range", () => {
+    const attacker = testCharacter({ skills: ["eagle_eyes"] });
+    const base = { attacker, weapon: W("bow"), defender: testDefender() };
+    expect(buildAttackInput({ ...base, context: testContext() }).hitThreshold).toBe(4);
+    expect(buildAttackInput({ ...base, context: testContext({ longRange: true }) }).hitThreshold).toBe(5);
+  });
+});
+
+
+it("WS0 takes automatic melee hits but retains normal wounds and injuries (#166)", () => {
+  const base = { attacker: testCharacter(), weapon: W("sword"), defender: testDefender({ WS: 0, parryWeaponCount: 1 }), context: testContext() };
+  const input = buildAttackInput(base);
+  const result = resolveSingleAttack(input);
+  expect(result.pHit).toBe(1);
+  expect(result.pWound).toBeCloseTo(0.5);
+  expect(input.parryEligible).toBe(false);
+  expect(input.autoHitKnockedDown).toBe(false);
+  expect(result.normalOutcome.outOfAction).toBeLessThan(1);
+  expect(resolveSingleAttack({ ...input, autoWoundOnNaturalSixToHit: true }).pWound).toBeCloseTo(0.5);
+  expect(resolveSingleAttack(buildAttackInput({ ...base, weapon: W("bow") })).pHit).toBeCloseTo(0.5);
+});
+
+
+it("Sea Dragon Cloak's own armour save receives the enabled Strength reduction (#172)", () => {
+  for (const [strength, melee, ranged] of [[3, 5, 4], [4, 6, 5], [5, IMPOSSIBLE, 6], [6, IMPOSSIBLE, IMPOSSIBLE]] as const) {
+    const attacker = testCharacter(); attacker.stats.S = strength;
+    const defender = testDefender({ ownSave: { melee: 5, missile: 4 } });
+    const base = { attacker, defender, context: testContext(), houseRules: { ...defaultHouseRules(), strengthArmourPiercing: true } };
+    expect(buildAttackInput({ ...base, weapon: W("sword") }).armourThreshold).toBe(melee);
+    expect(buildAttackInput({ ...base, weapon: { ...W("bow"), strength } }).armourThreshold).toBe(ranged);
+    expect(buildAttackInput({ ...base, houseRules: defaultHouseRules(), weapon: W("sword") }).armourThreshold).toBe(5);
+  }
+});

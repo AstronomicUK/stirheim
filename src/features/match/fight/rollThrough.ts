@@ -64,6 +64,7 @@ interface SaveStep {
 
 /** Scratch state for the attack being rolled. */
 interface Current {
+  dodgeResolved?: boolean
   hitRoll: number | null
   rerolled: boolean
   /** Set once the wound roll succeeded (or was automatic). */
@@ -133,7 +134,7 @@ export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: n
     outcomes: [],
     worst: null,
     done: plans.length === 0,
-    hitBatch: plans.length > 1 && maxParries > 0 && plans.some(p => p.input.parryEligible) && !plans.some(p => p.input.autoHitKnockedDown || p.input.autoOutOfActionStunned)
+    hitBatch: plans.length > 1 && maxParries > 0 && plans.some(p => p.input.parryEligible) && !plans.some(p => p.input.automaticHits || p.input.autoHitKnockedDown || p.input.autoOutOfActionStunned)
       ? { phase: 'collect', hits: [], parryIndices: [] } : undefined,
   }
   return state.done ? state : beginAttack(state)
@@ -156,7 +157,6 @@ function attackName(state: RollState): string {
 function beginAttack(state: RollState): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
-  if (plan.input.automaticHits) return askWound(log(fresh, `${attackName(state)}: automatic spell hit.`, 'good'))
   if (state.hitBatch?.phase === 'resolve') {
     const hit = state.hitBatch.hits[state.index]
     if (hit.outcome) return finishAttack(fresh, hit.outcome)
@@ -169,6 +169,10 @@ function beginAttack(state: RollState): RollState {
   // A knocked-down target: hits automatically and may not parry, but still rolls to wound and save as normal.
   if (plan.input.autoHitKnockedDown) {
     return askWound(log(fresh, `${attackName(state)}: automatic hit — the target is knocked down.`, 'good'))
+  }
+  if (plan.input.automaticHits) {
+    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : 'automatic spell hit'}.`, 'good')
+    return plan.input.automaticHitReason === 'zeroWeaponSkill' ? offerCharmOrContinue(hit) : askWound(hit)
   }
   const t = plan.input.hitThreshold
   return {
@@ -224,7 +228,7 @@ function afterCollectedHit(state: RollState): RollState {
 /** The defender declines an optional roll (a parry attempt, or the Lucky Charm): the hit stands. */
 export function declineRoll(state: RollState): RollState {
   if (!state.pending?.optional) return state
-  if (state.pending.kind === 'luckyCharm') return afterCollectedHit(log(state, 'The Lucky Charm is kept for later.'))
+  if (state.pending.kind === 'luckyCharm') return afterCollectedHit(log({ ...state, charmUsed: false }, 'The Lucky Charm is kept for later.'))
   return afterHit(log(state, 'No parry attempted.'))
 }
 
@@ -241,10 +245,9 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
     case 'hitReroll': {
       if (passes(roll, input.hitThreshold)) {
         const s = log({ ...state, cur: { ...state.cur, hitRoll: roll } }, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Hit.`, 'good')
-        if (!s.charmUsed && plan.luckyCharm !== undefined) {
-          return { ...s, charmUsed: true, pending: { kind: 'luckyCharm', who: 'defender', label: 'Lucky Charm', detail: `The first hit of the battle: discarded on ${plan.luckyCharm}+`, optional: true } }
-        }
-        return afterCollectedHit(s)
+        // Dodge explicitly precedes equipment, including the first-hit Lucky Charm (03:557).
+        if (input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) return afterHit(s)
+        return offerCharmOrContinue(s)
       }
       if (pending.kind === 'hit' && input.rerollToHit) {
         return {
@@ -283,7 +286,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
     }
     case 'dodge': {
       if (passesSave(roll, input.dodgeThreshold ?? IMPOSSIBLE)) return finishAttack(log(state, `Dodge: rolled ${roll}${rollTag}. Dodged!`, 'bad'), 'dodged')
-      return askWound(log(state, `Dodge: rolled ${roll}${rollTag}. Failed.`, 'good'))
+      return offerCharmOrContinue(log({ ...state, cur: { ...state.cur, dodgeResolved: true } }, `Dodge: rolled ${roll}${rollTag}. Failed.`, 'good'))
     }
     case 'wound':
     case 'woundReroll': {
@@ -408,10 +411,18 @@ function offerParry(state: RollState): RollState {
   return afterHit(state)
 }
 
+function offerCharmOrContinue(state: RollState): RollState {
+  const plan = state.plans[state.index]
+  if (!state.charmUsed && plan.luckyCharm !== undefined) {
+    return { ...state, charmUsed: true, pending: { kind: 'luckyCharm', who: 'defender', label: 'Lucky Charm', detail: `The first hit that was not dodged: discarded on ${plan.luckyCharm}+`, optional: true } }
+  }
+  return afterCollectedHit(state)
+}
+
 function afterHit(state: RollState): RollState {
   if (state.hitBatch?.phase === 'parry') return nextBatchParry(state)
   const input = state.plans[state.index].input
-  if (input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) {
+  if (!state.cur.dodgeResolved && input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) {
     return { ...state, pending: { kind: 'dodge', who: 'defender', label: 'Dodge', detail: `Needs ${thresholdText(input.dodgeThreshold)}` } }
   }
   return askWound(state)

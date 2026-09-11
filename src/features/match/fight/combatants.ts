@@ -205,7 +205,8 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
   for (const group of fightingGroups(roster)) {
     const unit = template ? findUnitTemplate(template, group.unitTemplateId) : undefined
     const kit = perModelKit(group.equipment, group.size)
-    const traits = [...race, ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? []), ...boostTraits]
+    const raceFor = unitRules(group.unitTemplateId).excludeRaceTraits ? [] : race
+    const traits = [...raceFor, ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? []), ...boostTraits]
     if (group.campaignState?.permanentStupidity) traits.push('stupidity')
     if (group.campaignState?.fanaticBattleMatch && !group.campaignState.fanaticSittingOut) traits.push('frenzy')
     if (group.isLarge) traits.push('large_target')

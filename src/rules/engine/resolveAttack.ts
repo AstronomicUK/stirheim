@@ -38,6 +38,7 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 export interface AttackInput {
   /** Already-established hits, such as a successfully cast damage spell. */
   automaticHits?: boolean;
+  automaticHitReason?: "zeroWeaponSkill";
   /** Minimum D6 to hit, with all modifiers (opposed WS or flat BS + cover/range/moving/large-target stack) already folded in. */
   hitThreshold: Threshold;
   /** Minimum D6 to wound (attacker/weapon Strength vs defender Toughness), with skill modifiers already folded in. */
@@ -322,7 +323,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
   // to-hit die is a 6) is 1/6, plus (with a reroll) the chance the first die missed and the second
   // came up 6. Those hits skip the to-wound test (but still roll it for the crit check).
   let pWound: number;
-  if (input.autoWoundOnNaturalSixToHit && input.hitThreshold !== IMPOSSIBLE) {
+  if (input.autoWoundOnNaturalSixToHit && !input.automaticHits && !input.autoHitKnockedDown && input.hitThreshold !== IMPOSSIBLE) {
     const pSixToHit = input.rerollToHit ? 1 / 6 + (1 - pHitBase) * (1 / 6) : 1 / 6;
     const pHitOther = Math.max(0, pHit - pSixToHit);
     pWound = (1 - pDodge) * (pSixToHit + pHitOther * pWoundIfHit);

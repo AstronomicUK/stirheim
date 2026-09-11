@@ -1,6 +1,7 @@
 // From two combatants and a situation to the numbers on the screen: the engine's exact
 // probabilities for one phase of attacks, plus the flat thresholds a player rolls against.
 
+import { missilePenaltyRules } from '../../../rules/engine/missileRules'
 import { buildAttackInput, computeAttackCount, computeMaxParries, effectiveOffensiveStats, totalAttackCount, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
 import { phaseChain, type PhaseChain } from '../../../rules/engine/chain'
 import { IMPOSSIBLE, probabilityAtLeast, type Threshold } from '../../../rules/engine/dice'
@@ -272,7 +273,7 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
   const n = perWeapon.reduce((s, x) => s + x.count, 0)
   const nLabel = `${n} attack${n === 1 ? '' : 's'}`
 
-  const hitAt = (defender: DefenderProfile, weapon: Weapon) => probabilityAtLeast(buildAttackInput({ attacker, weapon, defender, context, houseRules }).hitThreshold)
+  const hitAt = (defender: DefenderProfile, weapon: Weapon) => resolveSingleAttack(buildAttackInput({ attacker, weapon, defender, context, houseRules })).pHit
   const woundAt = (defender: DefenderProfile, weapon: Weapon) => probabilityAtLeast(buildAttackInput({ attacker, weapon, defender, context, houseRules }).woundThreshold)
   const anyOf = (p: (w: Weapon) => number) => 1 - perWeapon.reduce((acc, x) => acc * Math.pow(1 - p(x.weapon), x.count), 1)
   const allOf = (p: (w: Weapon) => number) => perWeapon.reduce((acc, x) => acc * Math.pow(p(x.weapon), x.count), 1)
@@ -351,7 +352,8 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
     notes.push(setup.primary.moveOrFire ? `${setup.primary.name} cannot fire in a turn the shooter moved.` : `${setup.primary.name} makes no attacks in this situation.`)
   }
   if (primary && primary.input.rerollToHit) notes.push('Missed to-hit rolls may be rerolled once.')
-  if (primary && primary.input.autoWoundOnNaturalSixToHit) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
+  if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
+  if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
     if (w.input.woundThreshold === IMPOSSIBLE) notes.push(`${w.weapon.name}: Strength ${w.strength} cannot wound Toughness ${setup.defender.stats.T}.`)
     if (w.weapon.vsTraits && w.weapon.vsTraits.traits.some((t) => setup.defender.traitIds.includes(t))) notes.push(w.weapon.id==='maximilian_holy_weapon' ? `${w.weapon.name}: +1 to wound against this Undead, Possessed, Carnival of Chaos or Beastmen target.` : `${w.weapon.name}: its bonus against ${w.weapon.vsTraits.traits.join(' and ')} applies to this target.`)
@@ -428,8 +430,11 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: 'Hatred: reroll misses in the first turn against a hated enemy.' })
     if (defenderKit?.armour.pavise) toggles.push({ field: 'paviseFront', label: 'Their pavise faces you', hint: 'A pavise counts as a shield only against a charge to the front.', defaultOn: true })
   } else {
-    toggles.push({ field: 'movedThisTurn', label: 'Moved this turn' })
-    toggles.push({ field: 'longRange', label: 'Long range' })
+    const penalties = missilePenaltyRules(primary)
+    const extraRange = skills.reduce((sum, skill) => sum + (skill.effect.type === 'rangeExtension' ? skill.effect.value ?? 0 : 0), 0)
+    const maxRange = primary.rangedProfile?.maxRange != null ? primary.rangedProfile.maxRange + extraRange : null
+    if (!penalties.ignoresMovement) toggles.push({ field: 'movedThisTurn', label: 'Moved this turn' })
+    if (!penalties.ignoresLongRange) toggles.push({ field: 'longRange', label: 'Long range', hint: maxRange ? `More than ${maxRange / 2} inches away (maximum ${maxRange} inches${extraRange ? `, including +${extraRange} from skills` : ''}). Long-range shots still take −1 to hit.` : undefined })
     toggles.push({ field: 'cover', label: 'Target in cover' })
     toggles.push({ field: 'largeTarget', label: 'Large target' })
     if (primary.altFire) toggles.push({ field: 'altFire', label: primary.altFire.label, hint: primary.altFire.hint })

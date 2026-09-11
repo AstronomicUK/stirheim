@@ -22,6 +22,15 @@ describe('loadout from the item rules', () => {
     expect(kit.firstHitDiscard).toBe(4)
   })
 
+  it('fog-enhancing shards need a censer and affect missile defence only, once', () => {
+    for (const equipment of [[item('censer')], [item('fog_enhancing_warpstone_shards')], [item('censer'), item('fog_enhancing_warpstone_shards', { quantity: 0 })]]) {
+      expect(loadoutOf(equipment).toBeHit).toEqual({ melee: 0, missile: 0 })
+    }
+    const kit = loadoutOf([item('censer'), item('fog_enhancing_warpstone_shards', { quantity: 2 })])
+    expect(toDefender(combatant([]), kit).toBeHit).toEqual({ melee: 0, missile: -1 })
+    expect(kit.assumptions.join(' ')).toContain('in the censer')
+  })
+
   it('a Wolfcloak and a Sea Dragon Cloak reach the defender profile', () => {
     const kit = loadoutOf([item('wolfcloak'), item('sea_dragon_cloak'), item('light_armour')])
     const d = toDefender(combatant([]), kit)

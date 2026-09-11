@@ -3625,3 +3625,8 @@ Validation: full ordinary suite 1,821 passed (176 database tests skipped); build
 Added a Battle Sheet reminder and individual warrior tests with 2D6 Leadership resolution, an explained Leadership override (such as a nearby leader), and the failed-test movement D6 outside combat. App rolls are saved immediately as pending attempts; confirmation records the original dice, any player edits, movement and the final outcome together. Replacing an existing test requires a reason. Failure uses the persisted attack/spell restrictions until the next own turn.
 
 Verified at 390px with disposable local data: app rolls and edits, Leadership explanation, movement edits, one completed history entry, reload persistence, restrictions during the opponent’s turn and expiry at the next own turn. Fourteen focused tests, build/typecheck and lint passed (three existing audit-file warnings). Not deployed. #70 remains partial: multi-member henchmen need individual model identities; their tests and physical movement remain at the table. The reminder does not prevent agreed manual play before a test is recorded.
+
+
+### #69 — Fog-enhancing shards and Censer missile defence (local, 11 September)
+
+The carried loadout now applies the printed -1 to enemy missile hit rolls when the warrior has both a Censer and Fog-Enhancing Warpstone Shards. Neither item alone grants concealment; extra shard quantities do not multiply it, and melee rolls are unchanged. The loadout explanation names the effect. Source: 02-weapons-armour-equipment.md:1665–1671. Twelve focused loadout tests, build/typecheck and lint passed (existing audit warnings). No deployment or live-data changes. Censer Fog of Death Toughness tests and wielder damage remain outstanding under #69.

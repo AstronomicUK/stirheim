@@ -465,6 +465,12 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
     if (item.category === 'melee' || item.category === 'missile' || item.category === 'blackpowder') out.ignored.push(item.name)
     // Remaining miscellaneous gear and animals have no place in a single attack roll; they are left out quietly.
   }
+  // Fog-enhancing shards only work in a censer; neither item alone gives concealment.
+  // Missile defence uses the carried loadout, before melee hand selection (02:1665–1671).
+  if (equipment.some(entry => entry.itemId === 'fog_enhancing_warpstone_shards' && entry.quantity > 0) && out.melee.some(weapon => weapon.id === 'censer')) {
+    out.toBeHit.missile -= 1
+    out.assumptions.push('Fog-Enhancing Warpstone Shards in the censer: -1 to be hit by missile weapons.')
+  }
   if (toughenedLeathers && (out.armour.shield || out.armour.kiteShield)) {
     out.armour.shield = false
     out.armour.kiteShield = false

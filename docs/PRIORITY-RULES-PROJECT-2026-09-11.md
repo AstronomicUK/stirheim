@@ -373,3 +373,10 @@ Added a Battle Sheet reminder and individual warrior tests with 2D6 Leadership r
 Verified at 390px with disposable local data: app rolls and edits, Leadership explanation, movement edits, one completed history entry, reload persistence, restrictions during the opponent’s turn and expiry at the next own turn. Fourteen focused tests, build/typecheck and lint passed (three existing audit-file warnings). Not deployed. #70 remains partial: multi-member henchmen need individual model identities; their tests and physical movement remain at the table. The reminder does not prevent agreed manual play before a test is recorded.
 
 Checkpoint: mobile QA /tmp/stirheim-stupidity-test-mobile-qa.mjs PASS. First run used wrong button locators for DieField inputs; corrected QA selectors, no product issue. No migration. Continue remaining combat/psychology priority; no whole-area completion claim. Keep all fixes local for the combined release; do not push solely to run CI.
+
+
+### #69 — Fog-enhancing shards and Censer missile defence (local, 11 September)
+
+The carried loadout now applies the printed -1 to enemy missile hit rolls when the warrior has both a Censer and Fog-Enhancing Warpstone Shards. Neither item alone grants concealment; extra shard quantities do not multiply it, and melee rolls are unchanged. The loadout explanation names the effect. Source: 02-weapons-armour-equipment.md:1665–1671. Twelve focused loadout tests, build/typecheck and lint passed (existing audit warnings). No deployment or live-data changes. Censer Fog of Death Toughness tests and wielder damage remain outstanding under #69.
+
+Checkpoint 15:12 London: local-only loadout fix. No browser QA needed for unchanged UI; defender profile integration covered by test. Logs /tmp/stirheim-fog-build.log and /tmp/stirheim-fog-lint.log. Remaining combat priorities still include multi-target once-per-battle shooting, persistent fire/disarming and Censer tests; do not guess ambiguous self-test cadence. Stupidity test UI previous milestone committed c852dc9 and mobile QA passed. Continue priority order on next heartbeat; keep no-push batching and preserve unrelated tracker work.

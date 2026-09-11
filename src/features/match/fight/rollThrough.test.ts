@@ -566,3 +566,19 @@ it('a blunderbuss line hit starts at the wound roll and is not described as a sp
   expect(state.log.map(l => l.text).join(' ')).toContain('model is in the blunderbuss line')
   expect(state.log.map(l => l.text).join(' ')).not.toContain('spell')
 })
+
+
+describe('Bolas non-damaging hits', () => {
+  it('ends a hit with entanglement, no wound/save/injury roll and no lost wounds', () => {
+    const state = applyRoll(startPhase([plan('Bolas', { entangleInsteadOfWound: true, woundThreshold: IMPOSSIBLE })], 1, 0), 6)
+    expect(state.done).toBe(true)
+    expect(state.worst).toBe('entangled')
+    expect(state.woundsLost).toBe(0)
+    expect(state.log.map(line => line.text).join(' ')).toContain('4+ frees it')
+  })
+  it('allows Dodge to discard the hit before entanglement', () => {
+    const state = rolls(startPhase([plan('Bolas', { entangleInsteadOfWound: true, dodgeThreshold: 5 })], 1, 0), 6, 5)
+    expect(state.worst).toBe('dodged')
+    expect(state.woundsLost).toBe(0)
+  })
+})

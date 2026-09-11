@@ -576,3 +576,14 @@ it('uses the Tufenk’s printed dry-target Strength without hiding its separate 
   expect(relevantToggles(marksman, 'ranged', bow.primary).some(t => t.field === 'dryTarget')).toBe(false)
   expect(computeOdds({ ...bow, context: { ...bow.context, dryTarget: true } }).weapons[0].input.woundThreshold).toBe(computeOdds(bow).weapons[0].input.woundThreshold)
 })
+
+
+it('Bolas can hit but never wound or take the target out of action', () => {
+  const thrower = combatant('Thrower', [{ itemId: 'bolas', quantity: 1 }])
+  const odds = computeOdds(setup(thrower, skaven, 'bolas', null))
+  expect(odds.weapons[0].pHit).toBeGreaterThan(0)
+  expect(odds.weapons[0].pWound).toBe(0)
+  expect(odds.chain.anyWound).toBe(0)
+  expect(odds.chain.outOfAction).toBe(0)
+  expect(odds.notes.join(' ')).toContain('entangles instead of wounding')
+})

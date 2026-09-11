@@ -371,7 +371,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     hitThreshold,
     automaticHits: weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
     automaticHitReason: weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
-    woundThreshold,
+    woundThreshold: weapon.special.includes("entangleInsteadOfWound") ? IMPOSSIBLE : woundThreshold,
+    entangleInsteadOfWound: weapon.special.includes("entangleInsteadOfWound") || undefined,
     armourThreshold,
     dodgeThreshold: dodgeSkill?.effect.threshold,
     stepAsideThreshold: stepAsideSkill?.effect.threshold,
@@ -392,7 +393,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     rerollToHit,
     woundHighestOfTwo: woundHighestOfTwo || undefined,
     barrageOnFailedWound: weapon.special.includes("barrageExtraAttacksOnFailedWound") || undefined,
-    autoWoundOnNaturalSixToHit: autoWound,
+    autoWoundOnNaturalSixToHit: !weapon.special.includes("entangleInsteadOfWound") && autoWound,
     parryEligible,
     parrySuccessProbGivenAttempt,
     parrySuccessByFace: Array.from({ length: 7 }, (_, hit) => {

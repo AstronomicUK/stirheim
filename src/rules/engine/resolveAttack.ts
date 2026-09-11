@@ -36,6 +36,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Bolas hits entangle rather than inflicting wounds. */
+  entangleInsteadOfWound?: boolean;
   barrageOnFailedWound?: boolean;
   /** Already-established hits, such as a successfully cast damage spell. */
   automaticHits?: boolean;
@@ -308,6 +310,7 @@ const OUT_OF_ACTION_DIST: Severity4Distribution = { none: 0, knockedDown: 0, stu
 
 /** Pure function: resolves everything about a single attack except which attack (if any) consumes the phase's one crit and how many Wounds the target has left — that's the aggregation step in turnAggregate.ts. */
 export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
+  if (input.entangleInsteadOfWound) input = { ...input, woundThreshold: IMPOSSIBLE, autoWoundOnNaturalSixToHit: false, autoOutOfActionStunned: false };
   // A stunned target is taken out of action by the first hit in hand-to-hand combat, full stop —
   // no to-hit, wound, save or injury roll, and independent of how many Wounds it has left, so this
   // bypasses the wound/injury event model entirely rather than trying to express it as one.

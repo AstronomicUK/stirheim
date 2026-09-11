@@ -3630,3 +3630,10 @@ Verified at 390px with disposable local data: app rolls and edits, Leadership ex
 ### #69 — Fog-enhancing shards and Censer missile defence (local, 11 September)
 
 The carried loadout now applies the printed -1 to enemy missile hit rolls when the warrior has both a Censer and Fog-Enhancing Warpstone Shards. Neither item alone grants concealment; extra shard quantities do not multiply it, and melee rolls are unchanged. The loadout explanation names the effect. Source: 02-weapons-armour-equipment.md:1665–1671. Twelve focused loadout tests, build/typecheck and lint passed (existing audit warnings). No deployment or live-data changes. Censer Fog of Death Toughness tests and wielder damage remain outstanding under #69.
+
+
+### #152 — Bolas must not wound their target (local, 11 September)
+
+Corrected Bolas resolution so a successful hit ends with entanglement, never an ordinary Strength 3 wound, armour save or injury roll. Target wound/OOA odds are zero while hit odds remain available. Dodge can discard the hit first. The result and notes describe no movement, -2 melee WS and Recovery 4+ to escape; a natural 1 logs the separate Strength 3 self-hit for table resolution. Source: 02-weapons-armour-equipment.md:777–786.
+
+236 engine/odds/roll-through tests and build/typecheck/lint passed (existing audit warnings). Local only, no live data modified. #152 remains partial: the entangled condition/recovery, backfire damage and once-per-battle usage are explicitly table-managed for now; no claim of persisted entanglement or complete Bolas automation.

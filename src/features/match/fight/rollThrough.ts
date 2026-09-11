@@ -35,11 +35,12 @@ export interface AttackPlan {
   rot?: boolean
 }
 
-export type Outcome = 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
+export type Outcome = 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
+  entangled: 'Entangled (resolve recovery at the table)',
   miss: 'Missed',
   parried: 'Parried',
   charmed: 'Discarded by the Lucky Charm',
@@ -262,6 +263,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
         if (input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) return afterHit(s)
         return offerCharmOrContinue(s)
       }
+      if (roll === 1 && input.entangleInsteadOfWound) state = log(state, 'Bolas backfire: resolve a separate Strength 3 hit on the wielder at the table. This target result does not apply that self-hit.', 'bad')
       if (pending.kind === 'hit' && input.rerollToHit) {
         return {
           ...log(state, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Missed, but the miss may be rerolled.`),
@@ -453,6 +455,7 @@ function afterHit(state: RollState): RollState {
 
 function askWound(state: RollState): RollState {
   const input = state.plans[state.index].input
+  if (input.entangleInsteadOfWound) return finishAttack(log(state, 'Bolas entangle the target without a wound: it cannot move and has −2 Weapon Skill in hand-to-hand combat, but may shoot normally. At the table, roll a D6 in Recovery; 4+ frees it. The app does not yet persist this condition.', 'good'), 'entangled')
   const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6
   const detail = auto ? 'Automatic wound from the 6 to hit; roll to check for a critical' : input.woundThreshold === IMPOSSIBLE ? 'Cannot wound' : `Needs ${thresholdText(input.woundThreshold)}`
   return { ...state, pending: { kind: 'wound', who: 'attacker', label: 'To wound', detail } }

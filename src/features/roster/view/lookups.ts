@@ -153,13 +153,20 @@ export function startingProfile(template: WarbandTemplate | undefined, unitId: s
 }
 
 /** Special rules shown when a card is expanded: the unit's own (heroes, henchmen) or the hired sword entry's. */
-export function warriorSpecialRules(template: WarbandTemplate | undefined, unitId: string | null, hiredSwordId: string | null, luthorRole?: 'crimson' | 'wizard' | 'archer'): NamedRule[] {
+export function warriorSpecialRules(template: WarbandTemplate | undefined, unitId: string | null, hiredSwordId: string | null, luthorRole?: 'crimson' | 'wizard' | 'archer', isHero = false): NamedRule[] {
   if (hiredSwordId) {
     const detail = findHiredSword(hiredSwordId)?.detail
     const role = luthorRole === 'crimson' ? 'Crimson Blade' : luthorRole === 'wizard' ? 'Dark Wizard' : 'Master Archer'
     return [...(detail?.specialRules ?? []), ...(hiredSwordId === 'luthor_wolfenbaum' && luthorRole ? detail?.otherSections?.filter(s => s.name.includes(role)) ?? [] : [])]
   }
-  if (template && unitId) return findUnitTemplate(template, unitId)?.specialRules ?? []
+  if (template && unitId) {
+    const rules = findUnitTemplate(template, unitId)?.specialRules ?? []
+    if (isHero && unitId === 'restless_dead_wights') {
+      const blades = findUnitTemplate(template, 'restless_dead_grave_guards')?.specialRules.find(rule => /^wight blades$/i.test(rule.name))
+      return blades ? [...rules, blades] : rules
+    }
+    return rules
+  }
   return []
 }
 

@@ -67,7 +67,7 @@ export function combatantFromTemplate(side: TemplateSide, name?: string): Combat
   const stats: Stats = unitStartingStats(unit)
   const equipment: RosterItem[] = side.itemIds.map((itemId) => ({ itemId, quantity: 1 }))
   const race = unitRules(unit.id).excludeRaceTraits ? [] : template.raceTraits
-  const traits = [...new Set([...race, ...traitsFromSkills(side.skillIds), ...(unitRules(unit.id).naturalWeapons ? ['natural_weapons'] : []), ...(unit.traitIds ?? []), ...traitsFromRules(unit.specialRules), ...kindTraits(template.id, unit.id, unit.specialRules)])]
+  const traits = [...new Set([...race, ...traitsFromSkills(side.skillIds), ...(unitRules(unit.id).naturalWeapons ? ['natural_weapons'] : []), ...(unit.traitIds ?? []), ...traitsFromRules(unit.specialRules), ...kindTraits(template.id, unit.id, unit.specialRules, unit.role === 'hero')])]
   return {
     id: `template:${template.id}:${unit.id}`,
     kind: unit.role === 'hero' ? 'hero' : 'henchman',

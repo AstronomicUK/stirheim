@@ -72,7 +72,6 @@ const TRAIT_BY_RULE_NAME: [RegExp, string][] = [
   [/immune to poison/i, 'immune_to_poison'],
   [/undead construct/i, 'undead_construct'],
   [/^pit fighter$/i, 'pit_fighter'],
-  [/wight blades?/i, 'wight_blades_5plus'],
   // #70: psychology traits, checked against every warband's actual rule headings rather than
   // assumed. "Fear"/"Cause Fear"/"Fearsome" and "Immune to Psychology" are used consistently across
   // all 73 warbands with no unrelated rule reusing the heading.
@@ -135,8 +134,11 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
  * Water): read from the warband and the unit type. Living members of an Undead list (Dregs) are not
  * undead; the campaign rules overlay marks those units as excluding race traits.
  */
-export function kindTraits(warbandTemplateId: string, unitTemplateId: string, unitRulesText: readonly NamedRule[]): string[] {
+export function kindTraits(warbandTemplateId: string, unitTemplateId: string, unitRulesText: readonly NamedRule[], isHero = false): string[] {
   const out: string[] = []
+  // The two published Wight Blades rules differ; never infer either from the shared heading.
+  if (unitTemplateId === 'restless_dead_grave_guards' || (isHero && unitTemplateId === 'restless_dead_wights')) out.push('wight_blades_auto_wound')
+  if (unitTemplateId === 'restless_dead_variant_grave_guards') out.push('wight_blades_5plus')
   // This named weapon also specifies whole enemy warbands, not merely creature physiology.
   if (warbandInAny(warbandTemplateId, ['undead','possessed','beastmen'])) out.push('maximilian_holy_target')
   // Explicit living rules take precedence over broad name-based inference.
@@ -194,7 +196,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         unarmedProfile: unitRules(warrior.unitTemplateId).unarmedProfile,
         skillIds: warrior.skillIds,
         skillTableIds: warrior.skillTableIds,
-        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? []), ...boostTraits], entry.warrior.isLarge),
+        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [], true), ...boostTraits], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })

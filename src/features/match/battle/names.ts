@@ -25,7 +25,7 @@ export function warriorTypeName(entry: SheetWarrior, template: WarbandTemplate |
 }
 
 export function warriorRules(entry: SheetWarrior, template: WarbandTemplate | undefined): NamedRule[] {
-  return entry.role === 'hiredSword' ? warriorSpecialRules(template, null, entry.warrior.hiredSwordId) : warriorSpecialRules(template, entry.warrior.unitTemplateId, null)
+  return entry.role === 'hiredSword' ? warriorSpecialRules(template, null, entry.warrior.hiredSwordId) : warriorSpecialRules(template, entry.warrior.unitTemplateId, null, undefined, true)
 }
 
 export function groupTypeName(group: RosterHenchmanGroup, template: WarbandTemplate | undefined): string {

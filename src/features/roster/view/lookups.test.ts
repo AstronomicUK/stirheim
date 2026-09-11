@@ -1,5 +1,6 @@
+import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import { describe, expect, it } from 'vitest'
-import { flagTags, skillName, skillOptionsFor, skillTableName, spellName, statusLabel, xpNotches, xpProgress } from './lookups'
+import { warriorSpecialRules, flagTags, skillName, skillOptionsFor, skillTableName, spellName, statusLabel, xpNotches, xpProgress } from './lookups'
 
 describe('xpProgress', () => {
   it('reports the band a hero sits in and advances owed', () => {
@@ -86,4 +87,13 @@ describe('tags', () => {
     expect(statusLabel('dead')).toBe('Dead')
     expect(statusLabel('left')).toBe('Left')
   })
+})
+
+it('shows the granted Wight Blades rule only for promoted standard-list Wights', () => {
+  const template = findWarbandTemplate('the_restless_dead')
+  const rules = warriorSpecialRules(template, 'restless_dead_wights', null, undefined, true)
+  expect(rules.filter(r => r.name === 'Wight Blades')).toHaveLength(1)
+  expect(rules.find(r => r.name === 'Wight Blades')?.text).toContain('automatically wound')
+  expect(warriorSpecialRules(template, 'restless_dead_wights', null).some(r => r.name === 'Wight Blades')).toBe(false)
+  expect(warriorSpecialRules(findWarbandTemplate('the_restless_dead_variant'), 'restless_dead_variant_wights', null, undefined, true).some(r => r.name === 'Wight Blades')).toBe(false)
 })

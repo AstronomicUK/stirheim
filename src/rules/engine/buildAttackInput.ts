@@ -309,7 +309,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const stunnedBecomesKnockedDown = defender.activeTraitIds.includes("no_pain");
   const injuryIgnoreThreshold = defender.activeTraitIds.includes("undead_construct") && !weapon.special.includes("magical") ? 4 : undefined;
   // Immune to Poison: a poisoned weapon's auto-wound on a 6 to hit doesn't apply.
-  const autoWound = Boolean(weapon.autoWoundOnNaturalSixToHit) && !(weapon.poisoned && defender.activeTraitIds.includes("immune_to_poison"));
+  const wightAutoWound = weapon.type === "melee" && attacker.traits.includes("wight_blades_auto_wound");
+  const autoWound = wightAutoWound || (Boolean(weapon.autoWoundOnNaturalSixToHit) && !(weapon.poisoned && defender.activeTraitIds.includes("immune_to_poison")));
 
   // ---- Crit trigger / table ----
   // Wight Blades (Restless Dead variant): any non-magical close-combat weapon the model carries

@@ -936,6 +936,17 @@ describe("Undead traits (The Restless Dead variant)", () => {
     expect(large.hitThreshold).toBe((plain.hitThreshold as number) - 1);
   });
 
+  it("standard Wight Blades apply to held melee weapons without variant criticals (#114)", () => {
+    const guard = testCharacter({ traits: ["wight_blades_auto_wound"] });
+    for (const id of ["sword", "dagger", "gromril_sword", "weeping_blades"]) {
+      const input = buildAttackInput({ attacker: guard, weapon: W(id), defender: testDefender({ activeTraitIds: ["immune_to_poison"] }), context: testContext(), customSkills: [] });
+      expect(input.autoWoundOnNaturalSixToHit, id).toBe(true);
+      expect(input.critTriggerFaces, id).toEqual([6]);
+    }
+    const bow = buildAttackInput({ attacker: guard, weapon: W("bow"), defender: testDefender(), context: testContext(), customSkills: [] });
+    expect(bow.autoWoundOnNaturalSixToHit).toBe(false);
+  });
+
   it("Variant Wight Blades: crits on 5+ with any non-magical hand weapon, not Gromril", () => {
     const guard = testCharacter({ traits: ["wight_blades_5plus"] });
     expect(buildAttackInput({ attacker: guard, weapon: W("sword"), defender: testDefender(), context: testContext(), customSkills: [] }).critTriggerFaces).toEqual([5, 6]);

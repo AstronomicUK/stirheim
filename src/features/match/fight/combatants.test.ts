@@ -5,7 +5,7 @@ import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate, WARBAND_TEMPLATES } from '../../../rules/data/warbandTemplates'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { setGroupOut, toggleHeroOut } from '../battle/sheet'
-import { canBeOffHand, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, loadoutFor, offHandCandidates, traitsFromRules } from './combatants'
+import { canBeOffHand, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, loadoutFor, offHandCandidates, traitsFromRules, kindTraits } from './combatants'
 
 const stats = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
@@ -409,4 +409,23 @@ it('distinguishes All Alone Loner from the Shinobi leadership-only Loner', () =>
   expect(traitsFromRules([{ name: 'Loner', text: 'Priests of Morr do not suffer from the all alone rules.' }])).toContain('immune_to_all_alone')
   expect(traitsFromRules([{ name: 'Loner', text: 'They are immune to all alone tests and may never become the warband leader.' }])).toContain('immune_to_all_alone')
   expect(traitsFromRules([{ name: 'Loner', text: 'Shinobi may never become the leader of the warband.' }])).not.toContain('immune_to_all_alone')
+})
+
+
+it('keeps both Wight Blades lists and unpromoted Wights distinct (#114)', () => {
+  expect(traitsFromRules([{ name: 'Wight Blades', text: '' }])).toEqual([])
+  expect(kindTraits('the_restless_dead', 'restless_dead_grave_guards', [])).toContain('wight_blades_auto_wound')
+  expect(kindTraits('the_restless_dead', 'restless_dead_wights', [], true)).toContain('wight_blades_auto_wound')
+  expect(kindTraits('the_restless_dead', 'restless_dead_wights', [])).not.toContain('wight_blades_auto_wound')
+  const variant = kindTraits('the_restless_dead_variant', 'restless_dead_variant_grave_guards', [], true)
+  expect(variant).toContain('wight_blades_5plus')
+  expect(variant).not.toContain('wight_blades_auto_wound')
+  expect(kindTraits('the_restless_dead_variant', 'restless_dead_variant_wights', [], true)).not.toContain('wight_blades_5plus')
+})
+
+it('an existing promoted Wight receives its blade rule when building the battle roster', () => {
+  const roster = warband({ warbandTemplateId: 'the_restless_dead', heroes: [hero('promoted', { unitTemplateId: 'restless_dead_wights' })] })
+  const [fighter] = combatantsOf(roster, findWarbandTemplate(roster.warbandTemplateId), roster.name, undefined)
+  expect(fighter.traitIds).toContain('wight_blades_auto_wound')
+  expect(fighter.traitIds).not.toContain('wight_blades_5plus')
 })

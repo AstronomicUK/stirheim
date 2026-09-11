@@ -108,6 +108,14 @@ export const TRAITS: Trait[] = [
     description: "Poisoned weapons (Black Lotus, Poison Daggers, Weeping Blades, Blowpipe) do not auto-wound this model on a 6 to hit.",
   },
   {
+    id: "wight_blades_auto_wound",
+    name: "Wight Blades (6 to hit wounds)",
+    modeled: true,
+    conditional: false,
+    source: "The Restless Dead — Grave Guards and promoted Wights",
+    description: "All close-combat hits rolled as a natural 6 wound automatically. Roll to wound to check for a critical; failing that roll still causes a wound. This is magic, not poison.",
+  },
+  {
     id: "wight_blades_5plus",
     name: "Wight Blades (crit on 5+)",
     modeled: true,

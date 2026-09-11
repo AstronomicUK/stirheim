@@ -80,6 +80,8 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = [], chargeBonusAvailable = true): number {
   if (context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs") return 1;
   if (context.failedStupidity && character.traits.includes("stupidity") && !character.traits.includes("deathwish")) return 0;
+  // Swivel Gun Cumbersome explicitly overrides Nimble and all extra-shot skills (02:1214).
+  if (weapon.type === "ranged" && weapon.special.includes("cumbersomeMinus1InitiativeMinus1Movement")) return context.movedThisTurn ? 0 : 1;
   if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
   // A blunderbuss shot places one hit on each model in its line, not extra
   // shots from the firer's Attacks or shooting skills (02:997-1020).

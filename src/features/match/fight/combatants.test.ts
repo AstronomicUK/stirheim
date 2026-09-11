@@ -463,3 +463,15 @@ it('reduces only battle WS for entanglement, floors at zero and restores after r
   expect(withBolasEntanglement(warriors, [event], id, [event.id])[0]).toBe(warriors[0]);
   expect(withBolasEntanglement(warriors, [{ ...event, reverted_at: event.at }], id)[0]).toBe(warriors[0]);
 })
+
+it('applies the carried Swivel Gun Movement and Initiative penalty once for the battle without changing the roster', () => {
+  const roster = warband({ heroes: [hero('gunner', { equipment: [item('swivel_gun', 2), item('sword')] }), hero('empty', { equipment: [item('swivel_gun', 0)] })] })
+  const [gunner, empty] = combatantsOf(roster, undefined, roster.name, undefined)
+  expect(gunner.stats.M).toBe(stats.M - 1)
+  expect(gunner.stats.I).toBe(stats.I - 1)
+  expect(empty.stats).toEqual(stats)
+  expect(roster.heroes[0].stats).toEqual(stats)
+  expect(loadoutFor(gunner).assumptions.join(' ')).toContain('throughout this battle')
+  const again = combatantsOf(roster, undefined, roster.name, undefined)[0]
+  expect(again.stats).toEqual(gunner.stats)
+})

@@ -664,3 +664,12 @@ it('resolves a declared Pigeon blast as one automatic S4 hit without another lau
   expect(odds.weapons[0].strength).toBe(4)
   expect(odds.chain.anyHit).toBe(1)
 })
+
+it('the Swivel Gun cannot fire after movement even with Nimble and never gains extra shots', () => {
+  const gunner = combatant('Gunner', [{ itemId: 'swivel_gun', quantity: 1 }], { skillIds: ['nimble', 'quick_shot'], stats: { ...base, A: 4 } })
+  for (const id of ['swivel_gun_ball_shot', 'swivel_gun_chain_shot', 'swivel_gun_grape_shot']) {
+    const initial = setup(gunner, skaven, id, null)
+    expect(computeOdds(initial).attacks).toBe(1)
+    expect(computeOdds({ ...initial, context: { ...initial.context, movedThisTurn: true } }).attacks).toBe(0)
+  }
+})

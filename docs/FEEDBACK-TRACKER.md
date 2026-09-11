@@ -3730,3 +3730,10 @@ Full ordinary tests: 1860 passed, 176 database tests skipped; build/typecheck/li
 Replaced the temporary tabletop-confirmation checkbox with an actual 4+ firing test before the Pigeon launch. Permission and launch dice are stored separately as soon as the app rolls them, survive reload, and retain original values when edited. Failed permission creates no launch or blast; another same-turn attempt needs an explanation. Passing allows exactly the following launch, with no repeated test per blast victim. Tabletop dice remain supported.
 
 Full ordinary suite: 1862 passed, 176 database tests skipped. Build/typecheck/lint passed with existing warnings. Disposable mobile QA passed two separate reloads (permission then launch), edited confirmation, and subsequent blast victims without retesting. #155 remains partial for ordinary-shot durable usage/retry handling and applicable melee pistol modes. No migration or deployment.
+
+
+### #154 — Swivel Gun Cumbersome restrictions (local, 11 September)
+
+The carried Swivel Gun now reduces its bearer's Battle Sheet Movement and Initiative by 1 throughout the battle, including while using another weapon, without changing roster characteristics. The penalty applies once and ignores zero-quantity entries. All three ammunition profiles are limited to one calculated shot and cannot fire after movement, even with Nimble or extra-shot skills. Source: reference/rules/02-weapons-armour-equipment.md:1214.
+
+109 focused tests passed; build/typecheck/lint passed with existing warnings. Disposable mobile QA confirmed movement disables firing and correcting that assumption restores it. Cross-action firing usage, ammunition supply, misfires, Chain Shot knock-down and Grape Shot spread remain outstanding; #154 stays partial. No deployment.

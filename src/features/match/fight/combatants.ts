@@ -277,7 +277,9 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       woundsLost: 0,
     })
   }
-  return out
+  return out.map(warrior => warrior.equipment.some(entry => entry.quantity > 0 && (entry.itemId === 'swivel_gun' || (!entry.itemId && resolveEquipmentName(entry.customName ?? '')?.id === 'swivel_gun')))
+    ? { ...warrior, stats: { ...warrior.stats, M: Math.max(0, warrior.stats.M - 1), I: Math.max(0, warrior.stats.I - 1) } }
+    : warrior)
 }
 
 /** "Watchmen (one of 3)" for a group, "Wardog (Ulrich's)" for an animal, the warrior's name otherwise. */
@@ -436,6 +438,7 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
       if(pistol&&!out.ranged.some(w=>w.id===pistol.id))out.ranged.push(pistol)
     }
     const effect = itemEffect(item.id)
+    if (item.id === 'swivel_gun') out.assumptions.push('Swivel Gun: the bearer has −1 Movement and −1 Initiative throughout this battle (included in Battle Sheet characteristics). It cannot fire after moving or fire more than once per turn, even with skills.')
     if (item.id === 'toughened_leathers') toughenedLeathers = true
     if (item.id === 'imperial_tactician_plate_armour') out.assumptions.push('Plate armour: reduce Movement by 1 while worn, even without a shield. The saved characteristic remains the unarmoured value.')
 

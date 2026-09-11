@@ -807,6 +807,7 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   if(id==='ninja_gnoblar') return kit(['toughened_leathers','ninja_gnoblar_shurikens','ninja_gnoblar_bo']);
   if(id==='drenok_johansen_wielder_of_the_great_axe') return kit(['icefang_axe','sabertooth_tiger_hide']);
   if(id==='abdul_alhazred_the_mad_sorcerer') return kit(['nomad_robes','dagger','abdul_eye_pendant']);
+  if(id==='maximilian_the_mad') return kit(['maximilian_holy_weapon']);
   if(id==='busty_gwen') return [{itemId:null,customName:'Knives',quantity:1},...kit(['gwen_rolling_pin'])];
   if(id==='veskit_high_executioner_of_clan_eshin') return kit(['veskit_eshin_claws','veskit_warplock_pistols']);
   if(id==='freelancer') return [...kit(['heavy_armour', 'shield', 'lance', 'sword']), ...mount];

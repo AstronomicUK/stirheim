@@ -16,7 +16,6 @@ Generated from current starting equipment and combat loadout mapping. These are 
 | Crow Master, The | Mantle of Crows; Needle & Thread |
 | Dijin Katal, The Renegade Assassin | Druchii Assassin’s Cloak |
 | Heinrich 'Altdorf' Schmidt | Whip |
-| Maximilian The Mad | double handed Holy Weapon |
 | Belandysh, Condemned Champion Of Chen | Broadsword of Damnation (see Chaos Artefacts); Chaos Armour that hardly hold his body together |
 | Grand Master Ippan Shu | iron fan in one of his hands |
 | Luthor Wolfenbaum (wizard) | Fish-slapping staff; Bugman’s Beer; Clay orbs of Tilean Fire |
@@ -34,3 +33,5 @@ Milestone 54 maps Lantern Rig and the Hillman’s man-form Heavy Fur Cloak. 18 u
 Staff of Light implementation notes: `CastTab.tsx` currently gathers dispel sources only from opposing `roster.heroes`; hired characters are omitted. `casting.ts:succeed` offers only the first source, and `DispelSource` has no owner or usage limit. Complete this as one coherent change: include active hires, choose an eligible named source, record both successful and failed attempts with owner identity in shared match state, and enforce/reset the per-turn allowance across different casters and reloads. Do not add a component-local spent flag or treat a declined attempt as spent. Also preserve source-specific restrictions (for example Blessed by Morr applies only to its bearer against Undead).
 
 Milestone 55 completes the Staff of Light’s shared per-player-turn allowance, named source selection and persisted roll log; the implementation notes above are now historical. Other dispel items are not automatically implemented by this change. Remaining kit inventory is still 18 entries.
+
+Milestone 56 maps Maximilian’s Holy Weapon and Religious Fervour/Frenzy, with an explicit calculator control for Frenzy ending. Seventeen unmapped character/role entries remain. His other conditional psychology/aura abilities are still separate open work.

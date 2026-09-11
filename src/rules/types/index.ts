@@ -308,6 +308,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** Frenzy ended after this attacker was knocked down or stunned earlier in the battle. */
+  frenzyEnded?: boolean;
   charging: boolean;
   fightingMultiple: boolean; // fighting 2+ enemies
   movedThisTurn: boolean; // ranged only

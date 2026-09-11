@@ -354,7 +354,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary && primary.input.autoWoundOnNaturalSixToHit) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
     if (w.input.woundThreshold === IMPOSSIBLE) notes.push(`${w.weapon.name}: Strength ${w.strength} cannot wound Toughness ${setup.defender.stats.T}.`)
-    if (w.weapon.vsTraits && w.weapon.vsTraits.traits.some((t) => setup.defender.traitIds.includes(t))) notes.push(`${w.weapon.name}: its bonus against ${w.weapon.vsTraits.traits.join(' and ')} applies to this target.`)
+    if (w.weapon.vsTraits && w.weapon.vsTraits.traits.some((t) => setup.defender.traitIds.includes(t))) notes.push(w.weapon.id==='maximilian_holy_weapon' ? `${w.weapon.name}: +1 to wound against this Undead, Possessed, Carnival of Chaos or Beastmen target.` : `${w.weapon.name}: its bonus against ${w.weapon.vsTraits.traits.join(' and ')} applies to this target.`)
     if (w.weapon.saveModifierTwoHandedOnly) notes.push(setup.context.twoHanded ? `${w.weapon.name} swung two-handed: the save modifier applies.` : `${w.weapon.name}: the save modifier needs both hands on the club.`)
     if (w.weapon.strengthBonusMountedChargeOnly) notes.push(setup.context.mounted && setup.context.charging ? `${w.weapon.name}: the mounted charge bonus applies.` : `${w.weapon.name} only gives its Strength bonus on a mounted charge.`)
     if (w.weapon.toWoundHighestOf2D6VsKnockedDown) notes.push(setup.context.targetKnockedDown ? `${w.weapon.name}: 2D6 to wound against the knocked-down target, keep the highest.` : `${w.weapon.name}: against a knocked-down target roll 2D6 to wound and keep the highest.`)
@@ -419,6 +419,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
     toggles.push({ field: 'charging', label: 'Charging' })
+    if(attacker.traitIds.includes('frenzy')) toggles.push({field:'frenzyEnded',label:'Frenzy has ended',hint:'Select if this warrior was knocked down or stunned earlier in this battle. Their Attacks are no longer doubled.'})
     if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })
     const firstTurnMatters = (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks
     if (firstTurnMatters) toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: primary.strengthBonusFirstTurnOnly ? `${primary.name} only gets its Strength bonus in the first turn.` : `${primary.name} gets its extra attacks in the first turn (charging or charged).` })

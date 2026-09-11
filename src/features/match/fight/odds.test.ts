@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
-import { loadoutOf, type Combatant } from './combatants'
+import { kindTraits, loadoutOf, type Combatant } from './combatants'
 import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
@@ -328,4 +328,29 @@ it('applies legacy Hillman cloak saves and does not turn a lantern rig into a we
  const withRig=loadoutOf([{itemId:'sword',quantity:1},{itemId:null,customName:'lantern rig (see below)',quantity:1}])
  expect(withRig.melee).toEqual(without.melee)
  expect(withRig.ranged).toEqual(without.ranged)
+})
+
+it('applies Maximilian’s holy bonus without changing critical faces or granting parry',()=>{
+ const max=combatant('Max',[{itemId:null,customName:'double handed Holy Weapon',quantity:1}],{traitIds:['frenzy'],skillIds:['strongman']})
+ const target=combatant('Brethren',[],{stats:{...base,T:5},traitIds:kindTraits('carnival_of_chaos','brethren',[])})
+ const holy=computeOdds(setup(max,target,'maximilian_holy_weapon',null))
+ expect(holy.weapons[0].input.woundThreshold).toBe(3)
+ expect(holy.weapons[0].input.critTriggerFaces).toEqual([6])
+ expect(holy.attacks).toBe(2)
+ expect(holy.strikeOrder).not.toContain('always strikes last')
+ expect(loadoutOf(max.equipment).melee[0].parry).toBeFalsy()
+ const mundane=computeOdds(setup(max,{...target,traitIds:kindTraits('mercenaries_reikland','champion',[])},'maximilian_holy_weapon',null))
+ expect(mundane.weapons[0].input.woundThreshold).toBe(4)
+ expect(kindTraits('beastmen_raiders','gor',[])).toContain('maximilian_holy_target')
+ expect(kindTraits('marauders_of_chaos','marauder',[])).not.toContain('maximilian_holy_target')
+})
+
+it('can end Frenzy after being knocked down without changing the printed Attacks',()=>{
+ const max=combatant('Max',[{itemId:'maximilian_holy_weapon',quantity:1}],{stats:{...base,A:2},traitIds:['frenzy'],skillIds:['strongman']})
+ const fight=setup(max,skaven,'maximilian_holy_weapon',null)
+ expect(computeOdds(fight).attacks).toBe(4)
+ expect(computeOdds({...fight,context:{...fight.context,frenzyEnded:true}}).attacks).toBe(2)
+ expect(relevantToggles(max,'melee',fight.primary).map(t=>t.field)).toContain('frenzyEnded')
+ expect(relevantToggles(captain,'melee',fight.primary).map(t=>t.field)).not.toContain('frenzyEnded')
+ expect(max.stats.A).toBe(2)
 })

@@ -1,3 +1,4 @@
+import {hiredSwordStartingSkills} from '../hiredSwordRules'
 import { describe, expect, it } from 'vitest'
 import { findHiredSword } from '../../data/campaign/hiredSwords'
 import { findItem, SHOP_ITEMS } from '../../data/items'
@@ -98,4 +99,10 @@ it('maps the hands-free lantern rig and the Hillman man-form cloak',()=>{
  expect(hiredSwordStartingEquipment('dwarf_treasure_hunter',findHiredSword('dwarf_treasure_hunter')!.detail)).toContainEqual({itemId:'lantern_rig',quantity:1})
  expect(hiredSwordStartingEquipment('cursed_hillman',findHiredSword('cursed_hillman')!.detail).map(i=>i.itemId)).toEqual(['axe','dagger','longbow','hillman_fur_cloak'])
  expect(SHOP_ITEMS.some(i=>['lantern_rig','hillman_fur_cloak'].includes(i.id))).toBe(false)
+})
+
+it('gives Maximilian his named holy weapon and Strongman at recruitment',()=>{
+ const detail=findHiredSword('maximilian_the_mad')!.detail
+ expect(hiredSwordStartingSkills('maximilian_the_mad')).toContain('strongman')
+ expect(hiredSwordStartingEquipment('maximilian_the_mad',detail)).toEqual([{itemId:'maximilian_holy_weapon',quantity:1}])
 })

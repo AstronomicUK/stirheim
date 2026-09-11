@@ -104,6 +104,7 @@ function unique(ids: string[]): string[] {
 function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly NamedRule[], base: string[], isLarge: boolean | undefined): string[] {
   const ids = [...base, ...traitsFromRules(rules)]
   if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'veskit_high_executioner_of_clan_eshin' && !warrior.flags.hireCompanion) ids.push('veskit_no_pain','veskit_metallic_body')
+  if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'maximilian_the_mad' && !warrior.flags.hireCompanion) ids.push('frenzy')
   if (warrior.flags.frenzy) ids.push('frenzy')
   if (warrior.flags.hates) ids.push('hatred')
   if (warrior.flags.nurglesRot) ids.push('nurgles_rot')
@@ -121,6 +122,8 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
  */
 export function kindTraits(warbandTemplateId: string, unitTemplateId: string, unitRulesText: readonly NamedRule[]): string[] {
   const out: string[] = []
+  // This named weapon also specifies whole enemy warbands, not merely creature physiology.
+  if (warbandInAny(warbandTemplateId, ['undead','possessed','beastmen'])) out.push('maximilian_holy_target')
   const rulesSay = (re: RegExp) => unitRulesText.some((r) => re.test(r.name) || re.test(r.text.slice(0, 160)))
   if (/vampire|necrarch|strigoi/i.test(unitTemplateId) || rulesSay(/^vampire/i)) out.push('vampire', 'undead')
   if (warbandInAny(warbandTemplateId, ['undead']) && (rulesSay(/no pain|undead|may not run/i) || /zombie|ghoul|skeleton|wight|wolf|bat|liche|tomb|grave_guard|mummy/i.test(unitTemplateId))) out.push('undead')

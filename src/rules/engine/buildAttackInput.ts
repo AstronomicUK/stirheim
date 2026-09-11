@@ -103,7 +103,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   if (!isPrimary) return Math.min(1, weapon.maxAttacks ?? 1);
 
   // Frenzy (01:1100): double Attacks in hand-to-hand combat; the off-hand +1 is not doubled.
-  const baseAttacks = character.traits.includes("frenzy") ? character.stats.A * 2 : character.stats.A;
+  const baseAttacks = character.traits.includes("frenzy") && !context.frenzyEnded ? character.stats.A * 2 : character.stats.A;
   let count = baseAttacks + skillBonus();
   if (pitFighterActive(character, context)) count += 1;
   if (weapon.paired) count += 1;

@@ -24,9 +24,9 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,623 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,631 ordinary tests pass; the last separate local database run passed all 156 tests**; an additional Frenzy-ended regression passes in the 80-test focused run. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 56. Mobile checks use disposable local records and actual 390px viewport constraints.
 
-Migrations through 67 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
+Migrations through 68 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
 Pending scope question: Defend the Oasis relies on Khemri’s wider water/carrying-capacity/exploration/trading system. An asynchronous question asks whether this batch should provide scenario-specific recorded support or expand into the full Khemri campaign system. No response was received at this checkpoint; other scenario work is independent. The original [Town Cryer compilation](https://broheim.net/downloads/campaigns/khemri/Khemri%20Town%20Cryer%20Compilation.pdf), PDF pages 5–7 and 38, confirms that these are campaign systems rather than just a gold reward. Do not silently claim full Khemri support.
 
@@ -464,3 +464,12 @@ Migration `20260911000068_staff_of_light_dispels.sql` adds a match-wide, readabl
 Validation: **1,628 ordinary tests and 156 database integration tests pass**; production build/typecheck and lint pass with existing warnings. The disposable 390px mobile check (`/tmp/stirheim-staff-mobile-qa.mjs`) casts, fails the opposing hired Truthsayer’s dispel, verifies the saved entry and shared log after reload, then switches to another caster and confirms the spent staff is not offered again. No overflow or page errors. Migration 68 has been applied only to local Docker Supabase; no production migration, push or deployment. The local migration ledger has not been reset or blindly advanced.
 
 Remaining: the 18-entry unmapped hired kit inventory and separately identified character abilities/ambiguous sources; Defend the Oasis scope awaits the earlier question; final combined release review and the single production release. Scenario reward coverage remains 102/103 paths. The second feedback batch stays queued until the main release.
+
+
+### Local milestone 56 — Maximilian’s weapon and Frenzy control (#61/#74, not deployed)
+
+Reviewed `05-dramatis-personae.md:753–763`. Maximilian’s named Holy Weapon now supplies the normal double-handed +2 Strength, occupies both hands, and adds +1 to wound against the listed Undead/Possessed/Carnival/Beastmen opponents. The existing warband groups identify native listed-warband targets; existing Undead/Possessed creature traits also qualify. Unrelated Chaos warbands do not. Criticals still require natural 6 and the weapon does not gain parry or concussion. Strongman is already supplied by starting-skill extraction and removes its strike-last penalty. New recruitment and the exact legacy “double handed Holy Weapon” name resolve to the new item.
+
+Religious Fervour now supplies Maximilian’s Frenzy. A calculator control, shown only for frenzied melee attackers, lets the player state that Frenzy has ended after being knocked down/stunned. It removes doubled Attacks without rewriting printed stats. This is an explicit current-calculation control, not automatic persistent injury/psychology tracking. His wider conditional Hatred, Leadership and nearby Fear-immunity rules remain separate work; this milestone does not close all Maximilian abilities.
+
+Validation: the full ordinary suite passed **1,631 tests**, then all **80 focused combat/recruitment tests** passed after adding the Frenzy-ended regression. Typechecked build and lint pass with existing warnings. The disposable 390px mobile check (`/tmp/stirheim-maximilian-mobile-qa.mjs`) confirms the named weapon, occupied off-hand and usable Frenzy-ended control without overflow or page errors. No migration, push or deployment. Last separate database run remains 156 passing tests. Unmapped equipment inventory now lists 17 character/role entries.

@@ -275,3 +275,10 @@ it('recognises Veskit’s legacy claw assembly and its built-in pistols without 
  const band=warband({hiredSwords:[hiredSword('veskit',{hiredSwordId:'veskit_high_executioner_of_clan_eshin'})]})
  expect(combatantsOf(band,undefined,band.name,undefined)[0].traitIds).toEqual(expect.arrayContaining(['veskit_no_pain','veskit_metallic_body']))
 })
+
+it('derives Maximilian’s Religious Fervour without giving it to other hired warriors',()=>{
+ const band=warband({hiredSwords:[hiredSword('max',{hiredSwordId:'maximilian_the_mad'}),hiredSword('ordinary',{hiredSwordId:'warlock'})]})
+ const fighters=combatantsOf(band,undefined,band.name,undefined)
+ expect(fighters[0].traitIds).toContain('frenzy')
+ expect(fighters[1].traitIds).not.toContain('frenzy')
+})

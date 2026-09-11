@@ -101,6 +101,7 @@ export const battleLiveStateSchema = z.object({
   rollAttempts: z.array(rollAttemptSchema).default([]),
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
+  lineShots: z.array(z.object({ id: z.string(), warriorId: z.string(), weaponId: z.enum(["blunderbuss", "chaos_dwarf_blunderbuss"]), ownTurn: z.number().int().min(0), at: z.string(), cancelled: z.boolean().default(false), targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })) })).default([]),
   bolasRecoveryTests: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), attemptId: z.string() })).default([]),
   bolasRecoveredEventIds: z.array(z.string()).default([]),
   bolasThrows: z.array(z.object({ warriorId: z.string(), at: z.string() })).default([]),

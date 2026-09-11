@@ -13,3 +13,4 @@ export * from "./report";
 export * from "./csv";
 
 export * from "./guidingDream";
+export * from "./lineShot";

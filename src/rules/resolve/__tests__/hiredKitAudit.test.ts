@@ -93,3 +93,9 @@ it('keeps Veskit’s claw assembly and built-in pistols as unique equipment',()=
  const kit=hiredSwordStartingEquipment('veskit_high_executioner_of_clan_eshin',findHiredSword('veskit_high_executioner_of_clan_eshin')!.detail)
  expect(kit.map(i=>i.itemId)).toEqual(['veskit_eshin_claws','veskit_warplock_pistols'])
 })
+
+it('maps the hands-free lantern rig and the Hillman man-form cloak',()=>{
+ expect(hiredSwordStartingEquipment('dwarf_treasure_hunter',findHiredSword('dwarf_treasure_hunter')!.detail)).toContainEqual({itemId:'lantern_rig',quantity:1})
+ expect(hiredSwordStartingEquipment('cursed_hillman',findHiredSword('cursed_hillman')!.detail).map(i=>i.itemId)).toEqual(['axe','dagger','longbow','hillman_fur_cloak'])
+ expect(SHOP_ITEMS.some(i=>['lantern_rig','hillman_fur_cloak'].includes(i.id))).toBe(false)
+})

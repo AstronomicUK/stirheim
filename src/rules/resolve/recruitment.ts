@@ -812,7 +812,7 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
   if(id==='freelancer') return [...kit(['heavy_armour', 'shield', 'lance', 'sword']), ...mount];
   if(id==='highwayman') return [...kit(['dagger', 'rapier', 'buckler']), { itemId: 'pistol', quantity: 2 }, ...mount];
   if(id==='roadwarden') return [...kit(['crossbow', 'horsemans_hammer', 'dagger', 'heavy_armour']), { itemId: 'torch', quantity: 3 }, ...mount];
-  if(id==='cursed_hillman') return [...kit(['axe', 'dagger', 'longbow']), {itemId:null,customName:'Heavy fur cloak',quantity:1,notes:'5+ armour save against ranged attacks; 6+ in close combat. Equipment is left behind in wolf form and recovered after the battle.'}];
+  if(id==='cursed_hillman') return kit(['axe', 'dagger', 'longbow', 'hillman_fur_cloak']);
   if(id==='duellist') return kit(['duelling_pistol', 'sword', 'dagger', 'buckler']);
   if(id==='knight_of_the_white_wolf') return [...kit(['heavy_armour', 'wolfcloak', 'horsemans_hammer']), ...mount];
   if(id==='johann_the_knife') return [{itemId:'throwing_knives_stars',quantity:1},{itemId:'sword',quantity:2,notes:'His long daggers count as two swords in close combat.'}];

@@ -319,3 +319,13 @@ it('uses Veskit’s printed attacks, fixed claw Strength, two parries and metall
  expect(defense.weapons[0].input.ignoreKnockedDownAndStunned).toBe(true)
  expect(setup(veskit,skaven,'veskit_warplock_pistols',null).primary.special).not.toContain('prepareShotReloadEveryOtherTurnUnlessBrace')
 })
+
+it('applies legacy Hillman cloak saves and does not turn a lantern rig into a weapon',()=>{
+ const hillman=combatant('Hillman',[{itemId:null,customName:'Heavy fur cloak',quantity:1}])
+ expect(computeOdds(setup(captain,hillman,'sword',null)).weapons[0].input.armourThreshold).toBe(6)
+ expect(computeOdds(setup(marksman,hillman,'bow',null)).weapons[0].input.armourThreshold).toBe(5)
+ const without=loadoutOf([{itemId:'sword',quantity:1}])
+ const withRig=loadoutOf([{itemId:'sword',quantity:1},{itemId:null,customName:'lantern rig (see below)',quantity:1}])
+ expect(withRig.melee).toEqual(without.melee)
+ expect(withRig.ranged).toEqual(without.ranged)
+})

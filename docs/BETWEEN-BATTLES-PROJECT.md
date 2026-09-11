@@ -446,3 +446,10 @@ Veskit’s No Pain is separate from ordinary Undead No Pain: injury-chart knocke
 The result screen now allows actual wound loss to be logged even when the associated injury is ignored, and does not describe that damage as an earlier miss. The shared event stores wound loss and no OOA, with the No Pain explanation in its rolls. Mobile verification used a disposable 390px battle and checked the actual saved event (`/tmp/stirheim-veskit-mobile-qa.mjs`).
 
 Validation: the full suite passed **1,623 ordinary tests**; a subsequent regression for an earlier miss followed by an ignored injury passes with all 44 roll-through tests. Typechecked build and lint pass with existing warnings. No migration, push or deployment. The remaining unmapped inventory has 20 character/role entries; larger mapped-item effects, source ambiguities, Oasis scope and combined release checks remain outstanding.
+
+
+### Local milestone 54 — lantern rig and Hillman man-form armour (#61/#74, not deployed)
+
+The Dwarf Treasure Hunter’s Lantern Rig now resolves to a catalogue item with its hands-free +4-inch spotting reminder. The Cursed Hillman’s Heavy Fur Cloak now supplies its printed ordinary 6+ melee / 5+ ranged save in his man-form loadout. Recruitment and exact legacy custom names both resolve correctly; neither item enters the ordinary shop. Source: `04-hired-swords.md:1016–1028,2200–2202` and the normal lantern rule. Visibility distances remain tabletop decisions. This does not implement the Hillman’s separate wolf transformation: the combat reminder explicitly states that all equipment is discarded in wolf form and recovered afterward. Do not treat that broader ability as complete.
+
+Validation: 56 focused equipment/catalogue/combat tests pass; typechecked production build and lint pass with the existing warnings. No database change, push or deployment. Remaining unmapped equipment inventory: 18 character/role entries, plus the separately listed mapped-item abilities and release gates.

@@ -42,3 +42,35 @@ export function correctLineShot(sheet: BattleLiveState, shotId: string, reason: 
     rolls: [`Restored firing availability by player correction: ${reason.trim()}.`, 'Existing target results remain in the shared log; revert any incorrect result separately.'],
   })
 }
+
+
+export type LinePermissionTest = BattleLiveState['linePermissionTests'][number]
+
+/** Save the original app die immediately, so closing or reloading cannot discard a failed attempt. */
+export function startLinePermission(sheet: BattleLiveState, test: LinePermissionTest, name: string): BattleLiveState {
+  if (sheet.linePermissionTests.some(t => t.id === test.id)) return sheet
+  if (test.original !== undefined && (!Number.isInteger(test.original) || test.original < 1 || test.original > 6)) throw new Error('A valid D6 is required.')
+  if (!test.targets.length) throw new Error('Choose the line before testing the blessing.')
+  const previous = sheet.linePermissionTests.some(t => t.warriorId === test.warriorId && t.weaponId === test.weaponId && t.shooterSlot === test.shooterSlot && t.ownTurn === test.ownTurn)
+  if (previous && !test.reason.trim()) throw new Error('Explain the additional firing attempt this turn.')
+  const blocked = lineShotBlock(sheet, test.warriorId, test.weaponId, test.ownTurn, test.shooterSlot)
+  if (blocked) throw new Error(blocked)
+  const pending = { ...test, die: undefined, targets: test.targets.map(t => ({ ...t })) }
+  return withRollAttempt({ ...sheet, linePermissionTests: [...sheet.linePermissionTests, pending] }, {
+    id: test.id, at: test.at, turn: sheet.turn, kind: 'attack', status: 'incomplete', label: `${name}: Blessing firing test in progress`,
+    rolls: [...(test.reason.trim() ? [`Additional attempt: ${test.reason.trim()}.`] : []), ...(test.original === undefined ? ['Tabletop D6 awaiting confirmation.'] : [`App rolled ${test.original}. Awaiting confirmation; edits will be recorded.`]), `Declared line: ${test.targets.map(t => t.name).join(', ')}.`],
+  })
+}
+
+/** One permission test governs the entire line. A failure consumes no ammunition or reload cycle. */
+export function finishLinePermission(sheet: BattleLiveState, id: string, die: number, name: string): BattleLiveState {
+  const test = sheet.linePermissionTests.find(t => t.id === id)
+  if (!test || test.die !== undefined) return sheet
+  if (!Number.isInteger(die) || die < 1 || die > 6) throw new Error('A valid D6 is required.')
+  let next = withRollAttempt({ ...sheet, linePermissionTests: sheet.linePermissionTests.map(t => t.id === id ? { ...t, die } : t) }, {
+    id, at: test.at, turn: sheet.turn, kind: 'attack', status: 'complete', label: `${name}: Blessing firing test`,
+    rolls: [...(test.reason.trim() ? [`Additional attempt: ${test.reason.trim()}.`] : []), test.original === undefined ? `Tabletop D6 entered: ${die}.` : test.original === die ? `App rolled ${die}.` : `App rolled ${test.original}; player changed it to ${die}.`, die >= 4 ? 'Passed: fire the declared line. Do not repeat this test for each target.' : 'Failed: unable to fire this turn. No ammunition spent; no reload started.'],
+  })
+  if (die >= 4) next = declareLineShot(next, { id: `blessing:${id}`, warriorId: test.warriorId, weaponId: test.weaponId, shooterSlot: test.shooterSlot, ownTurn: test.ownTurn, targets: test.targets }, name)
+  return next
+}

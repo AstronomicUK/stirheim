@@ -197,7 +197,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
-  const ladyTest = primary && defender ? ladyBlessingReason(primary, roster.id, defender.warbandId, defender.unitTemplateId, blessedWarbands) : undefined
+  const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
   const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}:${lineSelection?.targetKey ?? ''}` : ''
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
@@ -275,8 +275,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   </option>
                 ))}
               </SelectField>
-              {ladyTest && isLineWeapon ? <p className="text-xs">{ladyTest} Resolve this once for the whole line at the table before declaring it; the per-target rolls do not repeat the test.</p> : null}
-              {isLineWeapon ? <LineShotControls key={`${attacker.id}:${primary.id}`} attacker={attacker} weaponId={primary.id as 'blunderbuss' | 'chaos_dwarf_blunderbuss'} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} mayFire={!psychologyLoading && !active.failedStupidity && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onResolve={(shot, target) => {
+              {ladyTest && isLineWeapon ? <p className="text-xs">{ladyTest} One firing test covers the whole line.</p> : null}
+              {isLineWeapon ? <LineShotControls requiresPermission={Boolean(ladyTest)} key={`${attacker.id}:${primary.id}`} attacker={attacker} weaponId={primary.id as 'blunderbuss' | 'chaos_dwarf_blunderbuss'} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} mayFire={!psychologyLoading && !active.failedStupidity && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onResolve={(shot, target) => {
                 setLineSelection({ shotId: shot.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
                 const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
                 setWoundsOverride(model?.kind === 'henchman' && (model.groupSize ?? 1) > 1 ? { id: model.id, value: 0 } : null)

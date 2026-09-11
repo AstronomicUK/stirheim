@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState, parseBattleLiveState } from '../battle'
-import { declareLineShot, correctLineShot, lineShotBlock, unresolvedLineTargets, type LineShot } from '../lineShot'
+import { startLinePermission, finishLinePermission, declareLineShot, correctLineShot, lineShotBlock, unresolvedLineTargets, type LineShot } from '../lineShot'
 import { battleEventRowSchema } from '../battleEvent'
 const input = (weaponId: LineShot['weaponId'] = 'blunderbuss') => ({ id: 'shot', shooterSlot: 0, warriorId: 'shooter', weaponId, ownTurn: 1, targets: [{ key: 'enemy', warriorId: 'enemy', warbandId: 'aaaaaaaa-0000-4000-8000-000000000005', name: 'Enemy' }, { key: 'friend', warriorId: 'friend', warbandId: 'aaaaaaaa-0000-4000-8000-000000000004', name: 'Friend' }] })
 describe('declared Blunderbuss lines', () => {
@@ -38,5 +38,41 @@ describe('declared Blunderbuss lines', () => {
     expect(fixed.rollAttempts[1].rolls.join(' ')).toContain('Accidental declaration')
     expect(() => declareLineShot(emptyBattleLiveState(), { ...input(), targets: [] }, 'S')).toThrow(/Choose/)
     expect(() => declareLineShot(emptyBattleLiveState(), { ...input(), targets: [input().targets[0], input().targets[0]] }, 'S')).toThrow(/distinct/)
+  })
+})
+
+
+describe('one Blessing test for the whole firing line', () => {
+  const attempt = () => ({ ...input(), original: 2, reason: '', at: '2026-09-11T16:20:00Z' })
+  it('persists the app die and frozen targets, then logs a player correction and creates exactly one line', () => {
+    const test = attempt()
+    let sheet = startLinePermission(emptyBattleLiveState(), test, 'Shooter')
+    test.targets[0].name = 'Changed'
+    sheet = parseBattleLiveState(JSON.parse(JSON.stringify(sheet)))
+    expect(sheet.linePermissionTests[0].original).toBe(2)
+    expect(sheet.linePermissionTests[0].targets[0].name).toBe('Enemy')
+    expect(sheet.rollAttempts[0].status).toBe('incomplete')
+    sheet = finishLinePermission(sheet, test.id, 5, 'Shooter')
+    expect(sheet.lineShots).toHaveLength(1)
+    expect(sheet.lineShots[0].targets).toHaveLength(2)
+    expect(sheet.rollAttempts[0].rolls.join(' ')).toContain('App rolled 2; player changed it to 5')
+    expect(finishLinePermission(sheet, test.id, 6, 'Shooter')).toBe(sheet)
+  })
+  it('a failed attempt spends no shot or reload but requires an explanation for a same-turn retry', () => {
+    let sheet = startLinePermission(emptyBattleLiveState(), attempt(), 'Shooter')
+    sheet = finishLinePermission(sheet, 'shot', 2, 'Shooter')
+    expect(sheet.lineShots).toHaveLength(0)
+    expect(lineShotBlock(sheet, 'shooter', 'blunderbuss', 2)).toBeNull()
+    expect(() => startLinePermission(sheet, { ...attempt(), id: 'retry' }, 'Shooter')).toThrow(/Explain/)
+    expect(startLinePermission(sheet, { ...attempt(), id: 'retry', reason: 'Agreed exception' }, 'Shooter').linePermissionTests).toHaveLength(2)
+    expect(startLinePermission(sheet, { ...attempt(), id: 'next-turn', ownTurn: 2 }, 'Shooter').linePermissionTests).toHaveLength(2)
+    expect(startLinePermission(sheet, { ...attempt(), id: 'other-model', shooterSlot: 1 }, 'Shooter').linePermissionTests).toHaveLength(2)
+  })
+  it('does not discard an incomplete app test when reloaded, and distinguishes tabletop dice', () => {
+    let sheet = startLinePermission(emptyBattleLiveState(), attempt(), 'Shooter')
+    expect(() => startLinePermission(sheet, { ...attempt(), id: 'discard' }, 'Shooter')).toThrow(/Explain/)
+    sheet = startLinePermission(sheet, { ...attempt(), id: 'table', ownTurn: 2, original: undefined }, 'Shooter')
+    sheet = finishLinePermission(sheet, 'table', 4, 'Shooter')
+    expect(sheet.rollAttempts.find(r => r.id === 'table')?.rolls.join(' ')).toContain('Tabletop D6 entered: 4')
   })
 })

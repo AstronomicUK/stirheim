@@ -586,3 +586,8 @@ Independent release preparation is at a useful stop while the Oasis scope questi
 The user resolved the sole remaining scope decision by deferring Khemri-dependent rules to #227. **1,672 ordinary tests and all 166 local database tests now pass.** Production build, typecheck and lint pass with the previously documented warnings. The built app targets the linked production Supabase project, not the disposable local database. Remote main has no divergent commits. Final diff review found only redundant trailing blank lines in eight batch files; these were removed without changing logic or SQL statements. No additional implementation or rules decision remains before release.
 
 Next action is the already-authorised coordinated production migration, single push and single Netlify deployment, followed by served-asset verification. The expected migration set is 39–71; no production reset or seeding.
+
+
+### Second batch started — 11 September
+
+Tom asked to review last night's issues. The eight workstreams, review findings and next steps are recorded in `SECOND-FEEDBACK-BATCH.md`. #221 is implemented and verified locally; the other seven remain open. Hosted CI's ordinary test job passed, but two browser scenarios failed and three did not run; details and follow-up are in that checkpoint. Main release's served-asset verification remains valid; do not claim hosted CI passed. Continue the second batch locally without intermediate deployment.

@@ -3220,6 +3220,8 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 221. Ban-list search truncates results and cannot browse the full catalogue
 
+**Local fix — 2026-09-11:** Name-ranked search, complete catalogue browsing, Show more and result counts implemented. Seven focused tests/typecheck pass. Actual mobile/desktop settings check reaches all 20 Witch matches with Witch first and no overflow. Not yet deployed; see `SECOND-FEEDBACK-BATCH.md`.
+
 **Status:** 🔲 Open
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10

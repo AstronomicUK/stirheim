@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react'
 import type { CampaignBans } from '../../rules/types/roster'
 import { Icon, TextField } from '../../ui'
-import { KIND_ICON, KIND_LABEL, banCandidates, banName, type BanKind } from './bans'
+import { KIND_ICON, KIND_LABEL, banCandidates, searchBanCandidates, banName, type BanKind } from './bans'
 
 /** Commonly banned at most tables; offered as one-tap chips while the list is empty. */
 
@@ -18,16 +18,16 @@ export interface BansEditorProps {
 export function BansEditor({ bans, onChange, disabled = false }: BansEditorProps) {
   const [kind, setKind] = useState<BanKind>('items')
   const [query, setQuery] = useState('')
+  const [visibleCount, setVisibleCount] = useState(12)
   const candidates = useMemo(() => banCandidates(kind), [kind])
   const q = query.trim().toLowerCase()
-  const matches = useMemo(() => (q.length < 2 ? [] : candidates.filter((e) => e.name.toLowerCase().includes(q) || e.detail.toLowerCase().includes(q)).slice(0, 12)), [candidates, q])
+  const matches = useMemo(() => searchBanCandidates(candidates, q), [candidates, q])
   const current = bans[kind]
   const total = bans.items.length + bans.spells.length + bans.hiredSwords.length + bans.characters.length + bans.skills.length
 
   function add(id: string) {
     if (disabled || current.includes(id)) return
     onChange({ ...bans, [kind]: [...current, id] })
-    setQuery('')
   }
   function remove(k: BanKind, id: string) {
     if (disabled) return
@@ -52,7 +52,7 @@ export function BansEditor({ bans, onChange, disabled = false }: BansEditorProps
               type="button"
               role="radio"
               aria-checked={on}
-              onClick={() => setKind(k)}
+              onClick={() => { setKind(k); setVisibleCount(12) }}
               className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm transition-colors ${
                 on ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'
               }`}
@@ -86,13 +86,13 @@ export function BansEditor({ bans, onChange, disabled = false }: BansEditorProps
           <p className="text-[11px] text-ink-dim">Tap one to lift the ban.</p>
         </div>
       ) : null}
-      <TextField label={`Search ${KIND_LABEL[kind].toLowerCase()}`} value={query} autoComplete="off" disabled={disabled} placeholder="Type at least two letters" onChange={(e) => setQuery(e.target.value)} />
-      {q.length >= 2 ? (
+      <TextField label={`Search ${KIND_LABEL[kind].toLowerCase()}`} value={query} autoComplete="off" disabled={disabled} placeholder="Search by name or browse below" onChange={(e) => { setQuery(e.target.value); setVisibleCount(12) }} />
+      {(
         matches.length === 0 ? (
           <p className="text-xs text-ink-dim">Nothing in the rules data matches.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
-            {matches.map((e) => {
+          <ul aria-label="Ban search results" className="flex max-h-80 flex-col divide-y divide-border overflow-y-auto rounded-md border border-border">
+            {matches.slice(0, visibleCount).map((e) => {
               const banned = current.includes(e.id)
               return (
                 <li key={e.id}>
@@ -108,7 +108,11 @@ export function BansEditor({ bans, onChange, disabled = false }: BansEditorProps
             })}
           </ul>
         )
-      ) : null}
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p role="status" className="text-xs text-ink-dim">Showing {Math.min(visibleCount, matches.length)} of {matches.length} {q ? 'matches' : 'entries'}</p>
+        {visibleCount < matches.length ? <button type="button" onClick={() => setVisibleCount(count => count + 12)} className="min-h-11 px-3 text-sm text-brass">Show more</button> : null}
+      </div>
     </div>
   )
 }

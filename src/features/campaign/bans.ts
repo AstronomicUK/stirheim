@@ -51,3 +51,16 @@ export function banName(kind: BanKind, id: string): string {
   return banCandidates(kind).find((e) => e.id === id)?.name ?? id
 }
 
+
+/** Name matches lead; descriptive matches remain reachable without truncating the catalogue. */
+export function searchBanCandidates(entries: readonly Entry[], query: string): Entry[] {
+  const q = query.trim().toLocaleLowerCase();
+  const rank = (entry: Entry) => {
+    const name = entry.name.toLocaleLowerCase();
+    if (!q || name === q) return 0;
+    if (name.startsWith(q)) return 1;
+    if (name.includes(q)) return 2;
+    return entry.detail.toLocaleLowerCase().includes(q) ? 3 : 4;
+  };
+  return entries.filter(entry => rank(entry) < 4).sort((a,b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+}

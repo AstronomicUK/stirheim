@@ -57,7 +57,7 @@ export const TRAITS: Trait[] = [
     modeled: false,
     conditional: false,
     source: "mordheimer.net — Leadership & Psychology",
-    description: "Enemies charging or being charged by this model must pass a Fear test — no Hit/Wound/Injury math effect for this tool.",
+    description: "Enemies must test Fear to charge this model or when charged by it. Failing to charge prevents the charge; failing when charged means hits only on 6s that round. Fear-causing and immune models do not test. Use Failed Fear when charged to apply the hit restriction.",
   },
   {
     id: "pit_fighter",

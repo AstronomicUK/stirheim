@@ -330,7 +330,7 @@ function Fight({
   const defenderKit = otherWeapons.kit
   const phase: WeaponKind = primary.type
   const chargingMatters = [primary, ...(offHand ? [offHand] : [])].some((w) => w.strengthBonusFirstTurnOnly || w.strengthBonusMountedChargeOnly || w.chargeBonusAttacks || w.firstTurnBonusAttacks || w.special.includes('mountedChargeStrengthBonus')) || SKILLS.some((s) => attacker.skillIds.includes(s.id) && s.conditionField === 'charging')
-  const toggleList = relevantToggles(attacker, phase, primary, defenderKit, offHand).filter((t) => t.field !== 'charging' || chargingMatters)
+  const toggleList = relevantToggles(attacker, phase, primary, defenderKit, offHand, defender).filter((t) => t.field !== 'charging' || chargingMatters)
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = choices.toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)

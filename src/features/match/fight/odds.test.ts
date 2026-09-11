@@ -382,3 +382,22 @@ it('failed Stupidity suppresses both weapon hands and shooting without affecting
   expect(relevantToggles(warrior, 'melee', melee.primary).some(t => t.field === 'failedStupidity')).toBe(true)
   expect(relevantToggles(captain, 'melee', melee.primary).some(t => t.field === 'failedStupidity')).toBe(false)
 })
+
+it('failed Fear when charged requires sixes, with exemptions and no shooting penalty (#70)', () => {
+  const scary = { ...skaven, traitIds: ['causes_fear'] }
+  const fight = setup(captain, scary, 'sword', 'dagger')
+  const context = { ...fight.context, failedFearWhenCharged: true }
+  expect(computeOdds({ ...fight, context }).weapons[0].input.hitThreshold).toBe(6)
+  expect(computeOdds({ ...fight, context }).weapons[0].pHit).toBeCloseTo(1 / 6)
+  for (const trait of ['causes_fear', 'immune_to_fear', 'immune_to_psychology', 'frenzy']) {
+    expect(computeOdds({ ...fight, context, attacker: { ...captain, traitIds: [trait] } }).weapons[0].input.hitThreshold).toBe(4)
+  }
+  expect(computeOdds({ ...fight, context: { ...context, frenzyEnded: true }, attacker: { ...captain, traitIds: ['frenzy'] } }).weapons[0].input.hitThreshold).toBe(6)
+  expect(computeOdds({ ...fight, context, defender: skaven }).weapons[0].input.hitThreshold).toBe(4)
+  expect(computeOdds({ ...fight, context: { ...context, charging: true } }).weapons[0].input.hitThreshold).toBe(4)
+  expect(computeOdds({ ...fight, context, attacker: { ...captain, traitIds: ['invincible_swordsman'] } }).weapons[0].input.hitThreshold).toBe(2) // Explicit always-2+ source rule.
+  const shot = setup(marksman, scary, 'bow', null)
+  expect(computeOdds({ ...shot, context }).weapons[0].input.hitThreshold).toBe(4)
+  expect(relevantToggles(captain, 'melee', fight.primary, fight.defenderKit, null, scary).some(t => t.field === 'failedFearWhenCharged')).toBe(true)
+  expect(relevantToggles(captain, 'melee', fight.primary, fight.defenderKit, null, skaven).some(t => t.field === 'failedFearWhenCharged')).toBe(false)
+})

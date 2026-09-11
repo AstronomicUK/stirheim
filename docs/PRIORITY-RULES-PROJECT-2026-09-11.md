@@ -106,3 +106,9 @@ Read Bribery source1c:2298: LEARNED Merchant skill, not warband innate; pay5gc p
 Explicit failedStupidity context field, shown only for Stupidity attackers in shared situation controls, sets computeAttackCount to0 for melee/off-hand/ranged. Stale flag on a different non-Stupidity warrior ignored. Odds note explains; existing fight action disabled for attacks<1. Test/movement/casting remain table-managed and tooltip says so. Source01:1113–1130. 305 engine/fight tests +typecheck/build/lint pass. No deployment.
 
 Next #70: failed-Fear-when-charged needs6 to hit, whereas failed charge-Fear means cannot charge; do not conflate. Source01:1083–1096 read. Fear-causing creatures ignore Fear. Current relevantToggles lacks target Combatant (only defenderKit), so consider passing defender to show applicable controls rather than global toggles. Invincible Swordsman always2+ needs explicit source handling if interacting. #156 defender-selected weapons remains; #68 Bribery/abandonment require atomic state.
+
+## Combat milestone 14 — #70 explicit failed-Fear hit restriction (local)
+
+Added failedFearWhenCharged and shared ignoresFear. Target-aware relevantToggles now receives defender in Battle/Simulator; control shown for susceptible melee attacker vs Fear target. Engine6+ only for failed received-charge test, not shooting/charging/nonfear target; immune/causesFear/activeFrenzy exempt. Aenur explicit always2+ preserved (source05:190), noted in odds. Source01:1083–1104. Actual Leadership test and failed-charge prevention remain table managed; controls explain distinction. 306 engine/fight tests +final36odds after Aenur assertion, typecheck/build/lint pass. No deployment.
+
+Next: #156 selected defender weapons/strike-order conditions; #70 All Alone/Animosity/persistent-state gaps; #68 transactional Bribery/abandonment. Continue independent combat work then advance to next priority group, without treating umbrella tickets as wholly closed.

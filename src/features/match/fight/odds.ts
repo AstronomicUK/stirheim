@@ -1,3 +1,4 @@
+import { ignoresFear } from '../../../rules/engine/psychology'
 // From two combatants and a situation to the numbers on the screen: the engine's exact
 // probabilities for one phase of attacks, plus the flat thresholds a player rolls against.
 
@@ -351,6 +352,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary && primary.attacks === 0) {
     notes.push(setup.context.failedStupidity && setup.attacker.traitIds.includes('stupidity') ? 'Failed Stupidity test: this warrior cannot attack until its next turn.' : setup.primary.moveOrFire ? `${setup.primary.name} cannot fire in a turn the shooter moved.` : `${setup.primary.name} makes no attacks in this situation.`)
   }
+  if (setup.context.failedFearWhenCharged && !setup.context.charging && setup.primary.type === 'melee' && setup.defender.traitIds.includes('causes_fear') && !ignoresFear(setup.attacker.traitIds, setup.context)) notes.push(setup.attacker.traitIds.includes('invincible_swordsman') ? 'Invincible Swordsman retains its explicit always-hit-on-2+ rule.' : 'Failed Fear when charged: this warrior needs 6s to hit this round.')
   if (primary && primary.input.rerollToHit) notes.push('Missed to-hit rolls may be rerolled once.')
   if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
   if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
@@ -416,11 +418,12 @@ export interface ContextToggle {
   defaultOn?: boolean
 }
 
-export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout, offHand?: Weapon | null): ContextToggle[] {
+export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary: Weapon, defenderKit?: Loadout, offHand?: Weapon | null, defender?: Combatant): ContextToggle[] {
   const toggles: ContextToggle[] = []
   if (attacker.traitIds.includes('stupidity')) toggles.push({ field: 'failedStupidity', label: 'Failed Stupidity test', hint: 'No melee or shooting attacks until the start of this warrior’s next turn. Clear this after the next test is passed.' })
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
+    if (defender?.traitIds.includes('causes_fear') && !ignoresFear(attacker.traitIds, { frenzyEnded: true })) toggles.push({ field: 'failedFearWhenCharged', label: 'Failed Fear when charged', hint: 'This warrior was charged by the fear-causing opponent and failed its Fear test: needs 6s to hit this round. A failed test to charge instead prevents the charge; it is not this setting.' })
     toggles.push({ field: 'charging', label: 'Charging' })
     if(attacker.traitIds.includes('frenzy')) toggles.push({field:'frenzyEnded',label:'Frenzy has ended',hint:'Select if this warrior was knocked down or stunned earlier in this battle. Their Attacks are no longer doubled.'})
     if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })

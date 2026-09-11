@@ -141,7 +141,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
       ? parryOverride.used
       : targetMemory?.parryUsedTurn === sheet.turn
     : false
-  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null) : []
+  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined) : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   // Already knocked down or stunned (from an earlier, already-logged phase this turn): hits it

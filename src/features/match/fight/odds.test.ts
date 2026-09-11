@@ -713,3 +713,17 @@ it('Grape Shot retains an unmodified armour save even for the strengthened misfi
   const ball = setup(gunner, protectedTarget, 'swivel_gun_ball_shot', null)
   expect(computeOdds({ ...ball, houseRules: { ...ball.houseRules, strengthArmourPiercing: true } }).weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
 })
+
+it('offers Fish-hook fall only for that weapon and uses the wielder Strength with large-target modifier',()=>{
+ const wielder=combatant('Monk',[{itemId:'fish_hook_shot',quantity:1}],{stats:{...base,S:4}})
+ const fight=setup(wielder,skaven,'fish_hook_shot',null)
+ expect(relevantToggles(wielder,'ranged',fight.primary).some(t=>t.field==='fishHookFall')).toBe(true)
+ const normal=computeOdds(fight)
+ expect(normal.weapons[0].input.fishHookFallThreshold).toBeUndefined()
+ const fall=computeOdds({...fight,context:{...fight.context,fishHookFall:true}})
+ expect(fall.weapons[0].input.fishHookFallThreshold).toBe(4)
+ expect(fall.weapons[0].input.woundThreshold).toBe(IMPOSSIBLE)
+ const large=computeOdds({...fight,context:{...fight.context,fishHookFall:true,largeTarget:true}})
+ expect(large.weapons[0].input.fishHookFallThreshold).toBe(3)
+ expect(computeOdds({...setup(marksman,skaven,'bow',null),context:{...fight.context,fishHookFall:true}}).weapons[0].input.fishHookFallThreshold).toBeUndefined()
+})

@@ -37,6 +37,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Fish-hook Shot: maximum successful raw D6 on the attacker’s Strength test. */
+  fishHookFallThreshold?: number;
   /** Chain Shot: a hit causing no unsaved wounds can knock down on 4+. */
   chainShotKnockdown?: boolean;
   /** Mandatory single-shot misfire: the 6 result hits at the enhanced profile. */
@@ -341,7 +343,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     return mixRangedAttacks([{ probability: 5 / 6, attack: conditioned }, { probability: 1 / 36, attack: enhanced }, { probability: 5 / 36, attack: miss }]);
   }
 
-  if (input.entangleInsteadOfWound) input = { ...input, woundThreshold: IMPOSSIBLE, autoWoundOnNaturalSixToHit: false, autoOutOfActionStunned: false };
+  if (input.entangleInsteadOfWound || input.fishHookFallThreshold !== undefined) input = { ...input, woundThreshold: IMPOSSIBLE, critTriggerFaces: [], autoWoundOnNaturalSixToHit: false, autoOutOfActionStunned: false };
   // A stunned target is taken out of action by the first hit in hand-to-hand combat, full stop —
   // no to-hit, wound, save or injury roll, and independent of how many Wounds it has left, so this
   // bypasses the wound/injury event model entirely rather than trying to express it as one.
@@ -416,7 +418,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
       })),
     ],
     pWound,
-    pKnockdownWithoutWound: input.chainShotKnockdown ? Math.max(0, pHit * (1 - pDodge) - pWound) / 2 : 0,
+    pKnockdownWithoutWound: input.fishHookFallThreshold !== undefined ? (input.ignoreKnockedDownAndStunned ? 0 : pHit * (1-pDodge) * Math.max(0,Math.min(5,input.fishHookFallThreshold))/6) : input.chainShotKnockdown ? Math.max(0, pHit * (1 - pDodge) - pWound) / 2 : 0,
     pWoundNormal,
     pWoundTriggerEligible,
     extraAttack: input.critTriggerFaces.length && critEvents.some(e => e.extraAttack)

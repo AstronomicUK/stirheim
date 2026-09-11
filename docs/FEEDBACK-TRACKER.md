@@ -3864,3 +3864,7 @@ Initial and subsequent Dreamer certification now records D6/history, blocks recr
 
 ### Overnight combined release — DEPLOYED
 Finished #163/#112 and implemented #114/#122 clauses deployed together from d17cb00 on Netlify6aa4750b9e2cb9a410a0a9d0. Production migrations75/76 applied; no migrations remain. All110served files match the tested build. Pre-release2,001ordinary/178DB/16browser checks passed. One manual deployment with automatic builds paused. Question-dependent #114/#122 clauses stay open; see overnight checkpoint.
+
+
+### #152 Fish-hook Caused Fall — fixed locally, not deployed
+Fish-hook Shot can replace damage with its printed Strength-test knock-down, including +1 test modifier against large targets. Shared odds/roller preserve hit/Dodge, produce no wounds/criticals and log actual dice/knock-down to both sheets. Wielder close-combat eligibility and mounted rider’s Whoa Boy3–4 remain explicit table constraints. 2,005ordinary tests/build and mobile+saved-event checks pass. Production unchanged; held for next batch.

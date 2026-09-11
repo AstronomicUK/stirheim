@@ -1049,6 +1049,7 @@ function kitNames(c: Combatant): string {
 /** One side of the fight: a headed box so the two read as facing each other on a phone. */
 /** The big heading for a roll step, read from across a table: the phase, not the weapon or the reroll count. */
 const ROLL_KIND_HEADING: Record<RollKind, string> = {
+  fishHookFall: 'Fish-hook Strength Test',
   chainKnockdown: 'Chain Shot knock-down',
   misfire: 'Blackpowder Misfire',
   pigeonLaunch: 'Pigeon Launch',

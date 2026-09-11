@@ -10,7 +10,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -266,6 +266,11 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
   let rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
+    case 'fishHookFall': {
+      const passed = roll < 6 && roll <= (input.fishHookFallThreshold ?? 0)
+      const knocked = passed && !input.ignoreKnockedDownAndStunned
+      return finishAttack(log(state, `Fish-hook Strength test: rolled ${roll}${rollTag}. ${knocked ? 'Target knocked down; no wound inflicted. If the target is a mount, resolve its rider’s fall using Whoa Boy! 3–4 at the table.' : passed ? 'Target ignores knock-down; no wound inflicted.' : 'Failed; no fall or wound.'}`,knocked?'good':'neutral'),knocked?'knockedDown':'noWound')
+    }
     case 'chainKnockdown': {
       const knocked = roll >= 4;
       return finishAttack(log({ ...state, cur: { ...state.cur, chainTested: true } }, `Chain Shot: rolled ${roll}${rollTag}. ${knocked ? 'Knocked down, even if normally immune.' : 'Remains standing.'}`, knocked ? 'good' : 'neutral'), knocked ? 'knockedDown' : state.cur.chainOriginalOutcome ?? 'noWound');
@@ -492,6 +497,7 @@ function afterHit(state: RollState): RollState {
 
 function askWound(state: RollState): RollState {
   const input = state.plans[state.index].input
+  if (input.fishHookFallThreshold !== undefined) return {...state,pending:{kind:'fishHookFall',who:'attacker',label:'Fish-hook Strength test',detail:`Roll ${input.fishHookFallThreshold} or less; 6 always fails. The +1 test modifier against a large target is already included. This replaces all damage.`}}
   if (input.entangleInsteadOfWound) return finishAttack(log(state, 'Bolas entangle the target without a wound: it cannot move and has −2 Weapon Skill in hand-to-hand combat, but may shoot normally. At the table, roll a D6 in Recovery; 4+ frees it. Log this result to record entanglement for an individually identified target; track members of groups separately.', 'good'), 'entangled')
   const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6
   const detail = auto ? 'Automatic wound from the 6 to hit; roll to check for a critical' : input.woundThreshold === IMPOSSIBLE ? 'Cannot wound' : `Needs ${thresholdText(input.woundThreshold)}`

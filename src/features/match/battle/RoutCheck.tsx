@@ -1,3 +1,4 @@
+import {BriberyControl} from './BriberyControl'
 // The rout check, offered (never forced: the app does not track turns) once a quarter of the
 // starting models are out of action. Roll it here against a chosen Leadership, mark it as taken
 // at the table, or declare the rout. A failed roll routs the warband and asks whether the battle
@@ -14,6 +15,9 @@ import { leadershipOptions, routSkillReminders, suggestedLeadership } from './ro
 import { setNotes, setRouted } from './sheet'
 
 export interface RoutCheckProps {
+  matchId: string
+  paidExclusions: number
+  bribesReady: boolean
   roster: RosterWarband
   template: WarbandTemplate | undefined
   sheet: BattleLiveState
@@ -31,7 +35,7 @@ function stamp(state: BattleLiveState, line: string): BattleLiveState {
   return setNotes(state, notes)
 }
 
-export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
+export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<'passed' | 'failed' | null>(null)
   const options = leadershipOptions(roster, template, sheet, leaderLd, conditions)
@@ -76,6 +80,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
             {totals.routCasualties !== totals.ownOutOfAction || totals.routModels !== totals.startingModels ? <p className="text-sm text-ink-dim">Special unit rules give a starting Rout count of {totals.routModels}; those casualties count as {totals.routCasualties}.</p> : null}
           </div>
         </div>
+        <BriberyControl matchId={matchId} roster={roster} sheet={sheet} paidExclusions={paidExclusions} ready={bribesReady} />
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => {

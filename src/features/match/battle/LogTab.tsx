@@ -1,3 +1,4 @@
+import {useBattleBribes} from '../../../api/battleBribes'
 // The shared combat log: every attack result logged from a calculator at this table, newest
 // first, with who logged it and a revert for mistakes. A reverted entry stays, struck through,
 // with the note, so the record is honest.
@@ -22,6 +23,7 @@ export interface LogTabProps {
 
 export function LogTab({ matchId, events, sessions, participants, canRevert }: LogTabProps) {
   const dispels=useBattleDispels(matchId)
+  const bribes = useBattleBribes(matchId)
   const [reverting, setReverting] = useState<BattleEventRow | null>(null)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +46,9 @@ export function LogTab({ matchId, events, sessions, participants, canRevert }: L
 
   return (
     <>
+      {bribes.data?.length ? <Section title="Bribery payments" aside={String(bribes.data.length)}>
+        {bribes.data.map(b => <Card key={b.id} className="px-4 py-3"><p className="font-semibold">{b.merchant_name} · Round {b.round}</p><p>Paid {b.amount} gc for {b.non_heroes} confirmed remaining non-Hero members. One casualty is ignored for Rout tests for the rest of this battle.</p></Card>)}
+      </Section> : null}
       <Section title="Dice history" aside={String(attempts.length)}>
         <p className="text-sm text-ink-dim">Every attack and spell attempt, including failed rolls and restarts. Saving this history does not apply damage; applied results appear below.</p>
         {attempts.length === 0 ? <p className="text-sm text-ink-dim">No recorded dice attempts yet.</p> : attempts.map(a => <Card key={`${a.warbandId}:${a.id}`} className="px-4 py-3">

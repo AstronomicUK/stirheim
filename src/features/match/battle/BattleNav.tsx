@@ -9,7 +9,7 @@ export type BattleTab = 'mine' | 'enemy' | 'fight' | 'cast' | 'log' | 'notes'
 export interface BattleNavProps {
   tab: BattleTab
   setTab: (tab: BattleTab) => void
-  /** The Attack and Log panels only exist when the match is being fought in the app. */
+  /** The Attack panels only exist when the match is being fought in the app. */
   inApp: boolean
   /** Somebody on the roster can cast a spell or recite a prayer. */
   canCast: boolean
@@ -78,7 +78,7 @@ export function BattleNav({ tab, setTab, inApp, canCast, attackStartWith, onAtta
             {inApp ? <NavTile icon="shooting" label="Ranged Attack" detail="Odds and dice, step by step" active={tab === 'fight' && attackStartWith === 'ranged'} tone="accent" onClick={() => onAttack('ranged')} /> : null}
             <NavTile castCircle={canCast} icon="cast" label="Cast a Spell" detail="Spells and prayers" active={tab === 'cast'} tone="brass" onClick={() => setTab('cast')} />
 
-        {inApp ? <NavTile icon="log" label="Log" detail="What both sides have rolled" active={tab === 'log'} tone="brass" onClick={() => setTab('log')} /> : null}
+        <NavTile icon="log" label="Log" detail="Battle history and payments" active={tab === 'log'} tone="brass" onClick={() => setTab('log')} />
         <NavTile icon="notes" label="Notes" detail="Objectives and scribbles" active={tab === 'notes'} tone="brass" onClick={() => setTab('notes')} />
 
           </div>

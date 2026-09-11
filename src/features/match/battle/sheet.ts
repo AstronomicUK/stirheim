@@ -279,10 +279,10 @@ export interface SheetTotals {
   routAt: number
 }
 
-export function sheetTotals(state: BattleLiveState, roster: RosterWarband): SheetTotals {
+export function sheetTotals(state: BattleLiveState, roster: RosterWarband, paidExclusions = 0): SheetTotals {
   const totals = battleTotals(state)
   const models = startingModels(roster, state)
-  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: routCasualties(state, roster), routModels: routStartingModels(roster, state), wyrdstoneFound: state.wyrdstoneFound, routAt: rosterRoutThreshold(roster, state) }
+  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: Math.max(0, routCasualties(state, roster) - paidExclusions), routModels: routStartingModels(roster, state), wyrdstoneFound: state.wyrdstoneFound, routAt: rosterRoutThreshold(roster, state) }
 }
 
 export type RoutStatus = 'none' | 'test' | 'routed'
@@ -291,10 +291,10 @@ export type RoutStatus = 'none' | 'test' | 'routed'
  * "test" once a quarter (rounded up) of the starting models are out of action and the warband has
  * not routed yet; an empty roster never warns.
  */
-export function routStatus(state: BattleLiveState, models: number, roster?: RosterWarband): RoutStatus {
+export function routStatus(state: BattleLiveState, models: number, roster?: RosterWarband, paidExclusions = 0): RoutStatus {
   if (state.routed) return 'routed'
   if (models <= 0) return 'none'
-  return routCasualties(state, roster) >= (roster ? rosterRoutThreshold(roster, state) : routThreshold(models)) ? 'test' : 'none'
+  return Math.max(0, routCasualties(state, roster) - paidExclusions) >= (roster ? rosterRoutThreshold(roster, state) : routThreshold(models)) ? 'test' : 'none'
 }
 
 // ---------------------------------------------------------------------------------------------

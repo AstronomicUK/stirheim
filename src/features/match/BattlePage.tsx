@@ -1,3 +1,4 @@
+import {useBattleBribes} from '../../api/battleBribes'
 import {CurseReminder} from '../roster/view/CurseReminder'
 import { useBattleTurns } from '../../api/battleTurns'
 import { TurnControls } from './battle/TurnControls'
@@ -174,7 +175,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
         </header>
         {!inProgress ? <AwaitingReportsNotice matchId={match.id} /> : null}
         <EnemyView matchId={match.id} participants={match.participants} sessions={shownSessions} />
-        {match.combat_mode === 'app' ? <LogTab matchId={match.id} events={events} sessions={shownSessions} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} /> : null}
+        <LogTab matchId={match.id} events={events} sessions={shownSessions} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} />
         {canEnd ? (
           <>
             <SaveBar saveState="readonly" saveError={null} onRetry={() => {}} onBattleOver={() => setEndOpen(true)} />
@@ -256,6 +257,8 @@ interface PlayerBattleProps {
 
 function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
   const turns = useBattleTurns(match.id)
+  const bribes = useBattleBribes(match.id)
+  const paidExclusions = bribes.data?.filter(b => b.warband_id === roster.id).length ?? 0
   const myBoosts = boosts[roster.id] ?? NO_BOOSTS
   const boostLines = [
     ...(myBoosts.leaderLd ? [`Leader +${myBoosts.leaderLd} Ld (${myBoosts.leaderLdSources.join(', ')})`] : []),
@@ -266,8 +269,8 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
   const shown = useMemo(() => { const result = applyBattleEvents(handle.sheet, events, roster.id); return turns.data ? { ...result, turn: turns.data.round } : result }, [handle.sheet, events, roster.id, turns.data])
   const pendingAdvances = usePendingAdvances(roster.id)
   const advancesDue = pendingAdvances.data?.length ?? 0
-  const totals = useMemo(() => sheetTotals(shown, roster), [shown, roster])
-  const rout = routStatus(shown, totals.startingModels, roster)
+  const totals = useMemo(() => sheetTotals(shown, roster, paidExclusions), [shown, roster, paidExclusions])
+  const rout = routStatus(shown, totals.startingModels, roster, paidExclusions)
   // All screen sizes use the same roster/action navigation.
   const inApp = match.combat_mode === 'app'
   // Shares the Enemy tab's cache, so this costs nothing extra: it only feeds the "enemies out of N".
@@ -284,12 +287,12 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
     }, 0)
     const only = enemyRosters.warbands.length === 1 ? enemyRosters.warbands[0] : undefined
     const onlySheet = only ? sessions.find(x => x.warband_id === only.roster.id)?.live_state : undefined
-    const routTotals = only && onlySheet ? sheetTotals(onlySheet, only.roster) : undefined
+    const routTotals = only && onlySheet ? sheetTotals(onlySheet, only.roster, bribes.data?.filter(b => b.warband_id === only.roster.id).length ?? 0) : undefined
     const routSummary = others.length > 1 ? 'Rout tests are per warband'
       : onlySheet?.routed ? 'routed'
       : routTotals ? `Rout count ${routTotals.routCasualties}/${routTotals.routAt}` : undefined
     return { outOfAction: out, models, routSummary }
-  }, [others, enemyRosters.warbands, sessions])
+  }, [others, enemyRosters.warbands, sessions, bribes.data])
   const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
   const sideTab: Tab = tab
   // Which quick action opened the Attack tab: only changes the weapon it starts on, the picker still offers both.
@@ -319,7 +322,8 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
           {boostLines.join('. ')}.
         </Notice>
       ) : null}
-      {rout === 'test' && !readOnly ? <RoutCheck conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
+      {bribes.isError ? <Notice tone="info" title="Bribery payments could not be loaded">Check paid Bribery exclusions at the table before taking a Rout test.</Notice> : null}
+      {rout === 'test' && bribes.isSuccess && !readOnly ? <RoutCheck matchId={match.id} paidExclusions={paidExclusions} bribesReady={bribes.isSuccess} conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
       {advancesDue > 0 && !readOnly ? (
         <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still owed`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}
@@ -363,7 +367,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
               startWith={attackStartWith}
             />
           ) : null}
-          {sideTab === 'log' && inApp ? <LogTab matchId={match.id} events={events} sessions={[...sessions.filter(s => s.warband_id !== roster.id), { warband_id: roster.id, live_state: shown, updated_at: shown.editedAt ?? '' }]} participants={match.participants} canRevert={!readOnly} /> : null}
+          {sideTab === 'log' ? <LogTab matchId={match.id} events={events} sessions={[...sessions.filter(s => s.warband_id !== roster.id), { warband_id: roster.id, live_state: shown, updated_at: shown.editedAt ?? '' }]} participants={match.participants} canRevert={!readOnly} /> : null}
           {sideTab === 'notes' ? <NotesTab sheet={shown} edit={handle.edit} readOnly={readOnly} scenarioId={match.scenario_rules_id} custom={match.custom_scenario_name !== null} /> : null}
         </div>
       </div>

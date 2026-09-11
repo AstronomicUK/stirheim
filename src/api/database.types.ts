@@ -51,6 +51,79 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_bribes: {
+        Row: {
+          actor_id: string
+          amount: number
+          at: string
+          declared_casualties: number
+          declared_threshold: number
+          exclusions_before: number
+          gold_before: number
+          id: string
+          match_id: string
+          merchant_id: string
+          merchant_name: string
+          non_heroes: number
+          round: number
+          warband_id: string
+        }
+        Insert: {
+          actor_id: string
+          amount: number
+          at?: string
+          declared_casualties: number
+          declared_threshold: number
+          exclusions_before: number
+          gold_before: number
+          id: string
+          match_id: string
+          merchant_id: string
+          merchant_name: string
+          non_heroes: number
+          round: number
+          warband_id: string
+        }
+        Update: {
+          actor_id?: string
+          amount?: number
+          at?: string
+          declared_casualties?: number
+          declared_threshold?: number
+          exclusions_before?: number
+          gold_before?: number
+          id?: string
+          match_id?: string
+          merchant_id?: string
+          merchant_name?: string
+          non_heroes?: number
+          round?: number
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_bribes_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "battle_bribes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_bribes_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_dispels: {
         Row: {
           active_warband_id: string
@@ -1687,6 +1760,21 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      pay_merchant_bribery: {
+        Args: {
+          p_casualties: number
+          p_expected_exclusions: number
+          p_expected_gold: number
+          p_id: string
+          p_match_id: string
+          p_merchant_id: string
+          p_non_heroes: number
+          p_round: number
+          p_threshold: number
+          p_warband_id: string
+        }
+        Returns: Json
       }
       pay_pirate_upkeep: {
         Args: { p_amount?: number; p_reason?: string; p_warband_id: string }

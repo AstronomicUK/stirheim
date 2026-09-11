@@ -1,3 +1,4 @@
+import {useBattleBribes} from '../../../api/battleBribes'
 import { useBattleTurns } from '../../../api/battleTurns'
 import { useMemo, useState } from 'react'
 import { useMatchRoster, type BattleSessionView, type MatchParticipantView } from '../../../api/matches'
@@ -24,6 +25,7 @@ export interface EnemyViewProps {
 /** Every other warband at the table: their roster for reference and their live tallies. */
 export function EnemyView({ matchId, participants, sessions, events = [], turn = 0 }: EnemyViewProps) {
   const turns = useBattleTurns(matchId)
+  const bribes = useBattleBribes(matchId)
   return (
     <>
       {participants.length === 0 ? <p className="text-sm text-ink-dim">No other warbands in this match.</p> : null}
@@ -32,6 +34,7 @@ export function EnemyView({ matchId, participants, sessions, events = [], turn =
           key={p.warband_id}
           matchId={matchId}
           participant={p}
+          paidExclusions={bribes.data?.filter(b => b.warband_id === p.warband_id).length ?? 0}
           session={sessions.find((s) => s.warband_id === p.warband_id)}
           conditions={conditionsFor(events, p.warband_id, turn, turns.data?.recoveries)}
         />
@@ -67,10 +70,12 @@ function EnemyWarband({
   participant,
   session,
   conditions,
+  paidExclusions,
 }: {
   matchId: string
   participant: MatchParticipantView
   session: BattleSessionView | undefined
+  paidExclusions: number
   conditions: Map<string, string>
 }) {
   const query = useMatchRoster(matchId, participant.warband_id)
@@ -78,7 +83,7 @@ function EnemyWarband({
   const template = useMemo(() => (roster ? findWarbandTemplate(roster.warbandTemplateId) : undefined), [roster])
 
   const totals = session ? battleTotals(session.live_state) : null
-  const routTotals = session && roster ? sheetTotals(session.live_state, roster) : undefined
+  const routTotals = session && roster ? sheetTotals(session.live_state, roster, paidExclusions) : undefined
   const models = roster ? startingModels(roster, session?.live_state) : null
 
   return (

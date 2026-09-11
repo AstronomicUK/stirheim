@@ -296,3 +296,12 @@ it('uses half-model starting and casualty counts only for web Night Goblin Squig
   const otherList = { ...r, henchmenGroups: [{ ...r.henchmenGroups[0], unitTemplateId: 'night_goblins_cave_squigs' }] }
   expect(sheetTotals(sheet, otherList)).toMatchObject({ routModels: 7, routCasualties: 2, routAt: 2 })
 })
+
+it('paid Bribery reduces only the Rout count, never actual casualties or injury tallies', () => {
+  const s = setGroupOut(emptyBattleLiveState(), 'watch', 2, 3);
+  expect(routStatus(s, 6, roster)).toBe('test');
+  expect(routStatus(s, 6, roster, 1)).toBe('none');
+  expect(sheetTotals(s, roster, 1)).toMatchObject({ ownOutOfAction: 2, routCasualties: 1, startingModels: 6 });
+  expect(groupOut(s, 'watch')).toBe(2);
+  expect(sheetTotals(s, roster, 9).routCasualties).toBe(0);
+});

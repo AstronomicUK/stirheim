@@ -437,3 +437,13 @@ it('promoted Slayers ignore psychology while unpromoted Skittish henchmen do not
   for (const trait of ['hatred', 'frenzy', 'stupidity']) expect(fighter.traitIds).not.toContain(trait)
   expect(kindTraits('dwarf_slayer_cult', 'dwarf_slayer_cult_stubbles', [])).not.toContain('deathwish')
 })
+
+
+it('uses explicit animal unit rules for henchmen, never names or lack of XP', () => {
+  const animalIds = ['witch_hunters_war_hounds', 'skaven_giant_rats', 'norse_wolf', 'druchii_slavehounds', 'halflings_piggies', 'ogre_hunting_party_sabretusk_cubs']
+  const otherIds = ['mercenaries_reikland_warriors', 'undead_zombies', 'carnival_of_chaos_nurglings']
+  const roster = warband({ henchmenGroups: [...animalIds, ...otherIds].map(id => group(id, { unitTemplateId: id, name: 'Wardog' })) })
+  const fighters = combatantsOf(roster, undefined, roster.name, undefined)
+  for (const id of animalIds) expect(fighters.find(f => f.id === id)?.isAnimal).toBe(true)
+  for (const id of otherIds) expect(fighters.find(f => f.id === id)?.isAnimal).not.toBe(true)
+})

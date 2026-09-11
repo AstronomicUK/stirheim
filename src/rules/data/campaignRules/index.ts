@@ -43,6 +43,8 @@ export interface InjuryException {
 }
 
 export interface UnitCampaignRules {
+  /** Explicit Animal rules category; no-XP alone does not imply an animal. */
+  isAnimal?: boolean;
   /** Animals, undead, daemons and constructs: no +1 for surviving, no underdog bonus. */
   gainsExperience?: false;
   /** The Rigors of Leadership: Heroes gain 2 survival XP; henchmen keep their normal award. */
@@ -200,7 +202,7 @@ export interface WarbandCampaignRules {
 // ---------------------------------------------------------------------------------------------
 
 const NO_XP: UnitCampaignRules = { gainsExperience: false };
-const ANIMAL: UnitCampaignRules = { gainsExperience: false, promotion: { never: true, note: "Animals are never promoted." } };
+const ANIMAL: UnitCampaignRules = { isAnimal: true, gainsExperience: false, promotion: { never: true, note: "Animals are never promoted." } };
 const UNDEAD_HENCHMAN: UnitCampaignRules = { gainsExperience: false, promotion: { never: true, note: "The dead do not learn." } };
 const OGRE: UnitCampaignRules = {
   advanceRate: "half",

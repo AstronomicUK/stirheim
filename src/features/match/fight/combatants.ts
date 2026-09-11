@@ -191,6 +191,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       out.push({
         id: warrior.id,
         kind: 'hero',
+        isAnimal: unitRules(warrior.unitTemplateId).isAnimal,
         name: warrior.name,
         typeName: unitTypeName(template?.id ?? roster.warbandTemplateId, warrior.unitTemplateId),
         warbandId: roster.id,
@@ -237,6 +238,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
     out.push({
       id: group.id,
       kind: 'henchman',
+      isAnimal: unitRules(group.unitTemplateId).isAnimal,
       name: group.name,
       typeName: unitTypeName(template?.id ?? roster.warbandTemplateId, group.unitTemplateId),
       warbandId: roster.id,

@@ -3644,3 +3644,10 @@ Corrected Bolas resolution so a successful hit ends with entanglement, never an 
 Wielding a Beastlash now exposes the existing failed-Fear-when-charged control against an explicitly identified animal and applies the required 6-to-hit result. Ordinary Fear exemptions still apply. Humans and Gnoblar companions are unaffected; the wielder does not gain universal Fear or Fear immunity. Removing the selected Beastlash removes the conditional effect. Wardog equipment companions now carry explicit animal identity; companion bookkeeping alone is not used because it also includes Gnoblars.
 
 183 engine/odds/animal tests and build/typecheck/lint passed (existing audit warnings). Source: 02-weapons-armour-equipment.md:67–78. Local only. This does not yet identify every animal henchman, mount or custom simulator unit, nor automate Fear tests or failed charges. Those remain open rather than inferring species from names.
+
+
+### #152 — Extend conditional Fear to catalogue animal units (local, 11 September)
+
+Extended explicit animal identity to the existing Animal category in unit rules, so animal henchmen such as Warhounds, Giant Rats, Wolves, Slavehounds, Piggies and Sabretusks can use the Beastlash Fear handling. Uses the catalogue category, not a model's name or simply its lack of experience gains. Human henchmen, Zombies and Nurglings are not classified as animals by this change; Gnoblar companions remain excluded.
+
+105 combatant/odds/animal tests and build/typecheck/lint passed (existing audit warnings). The underlying category includes the printed Animal special rule for Kroxigor; existing Fear immunity still applies. Custom units, mounts and hired companions outside the existing companion catalogue remain separate scope. Local only.

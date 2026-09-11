@@ -3856,3 +3856,7 @@ Sisters/Possessed/Carnival successor first-advance spell/prayer choice implement
 
 ### #122 overnight follow-up — Strigos and Mazzalupo (local)
 Strigos now survives its Vampire under an eligible human successor, preserving profile and barring new Vampire recruitment. Mazzalupo successor retains original unit, inherits Commands, rolls/saves one separate non-spell Command with visible rules and dice-edit history. 1,998 ordinary tests/build and mobile Command save/reload checks pass. No push/deployment; decision-dependent clauses remain open. Full Commands combat/advancement is broader than this succession fix.
+
+
+### #122 overnight follow-up — Dreamer certification; combined release ready
+Initial and subsequent Dreamer certification now records D6/history, blocks recruitment without 4+, waits for another latest battle report after failure, and saves initial result atomically (migration76). Mobile reload checks, 2,001 ordinary tests,178local DB tests,16isolated browser regressions and build pass. Combined finished #114/#122/#163/#112 scope is release-ready; unresolved source choices stay open, not marked complete. Production migrations75/76 and one Netlify deploy pending.

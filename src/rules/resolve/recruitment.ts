@@ -1,3 +1,4 @@
+import { dreamerRecruitmentBlock } from './dreamerCertification'
 import { leaderReplacementPurchaseBlock } from './leaderReplacement';
 import { availableFreeHires } from './explorationDiscoveries'
 import { DWARF_HIRES, ELF_HIRES } from './mixedHireUpkeep'
@@ -119,7 +120,7 @@ export function recruitmentBlock(
   count: number,
 ): string | undefined {
   if (template.id === 'order_of_the_mare' && unit.id !== 'dame_of_the_mare' && warband.heroes.some(h => h.unitTemplateId === 'dame_of_the_mare') && !warband.heroes.some(h => h.unitTemplateId === 'dame_of_the_mare' && ['active','captured'].includes(h.status))) return 'Recruit a new Dame of the Mare before any other warriors.';
-  if (template.id === 'dreamwalkers_cult_of_morr' && unit.id === 'dreamwalkers_dreamer' && warband.heroes.some(h => h.unitTemplateId === unit.id && h.status === 'dead')) return 'A genuine Dreamer has died. This warband may never hire another Dreamer; the Priest of Morr leads instead.';
+  if (unit.id === 'dreamwalkers_dreamer') { const block=dreamerRecruitmentBlock(warband); if(block)return block; }
   const collapse = collapsedWarbandReason(warband);
   if(collapse)return `${collapse} Retire this warband rather than recruiting replacements.`;
   const waitBlock = delayedLeaderRecruitmentBlock(warband, unit.id);

@@ -1,3 +1,4 @@
+import { CertificationRoll } from '../recruitment/DreamerCertification'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
@@ -145,6 +146,7 @@ function Builder({ draft, template }: { draft: WarbandDraft; template: WarbandTe
     <BuilderRulesContext.Provider value={houseRules}>
       <PageHeader eyebrow="New warband" title={template.name} description={`${template.race} · ${template.originalSetting}`} />
 
+      {template.id==='dreamwalkers_cult_of_morr' ? draft.dreamerCertification ? <Notice title={draft.dreamerCertification.die>=4?'Dreamer certified':'Dreamer rejected'}>{draft.dreamerCertification.die>=4?'A genuine Dreamer may be added at the normal cost.':'Build the warband without a Dreamer. The Priest leads; retry certification after the next battle.'} D6: {draft.dreamerCertification.die}. {draft.dreamerCertification.history.join('; ')}</Notice> : <CertificationRoll afterMatch={null} onConfirm={result=>update(d=>({...d,dreamerCertification:result}))}/> : null}
       <SummaryBar
         costs={derived.costs}
         startingGold={draft.startingGold}

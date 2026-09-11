@@ -1,3 +1,4 @@
+import type { DreamerCertification, WarriorFlags } from '../types/roster'
 // Warband builder — the pure model behind the "create a warband" screen. A WarbandDraft is the
 // player's work in progress: a template, a name, heroes, henchman groups and the starting equipment
 // bought for each from that unit's equipment list. It converts to a RosterWarband for validation and
@@ -70,6 +71,7 @@ export interface DraftGroup {
 }
 
 export interface WarbandDraft {
+  dreamerCertification?: DreamerCertification;
   name: string;
   warbandTemplateId: string;
   startingGold: number;
@@ -518,7 +520,7 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       skillIds: [],
       spellIds: hero.spellIds.filter(Boolean),
       injuries: [],
-      flags: { ...(hero.unitTemplateId === 'cursed_cavalcade_twisted_scholar' && hero.magicChoiceId === 'chronicler' ? { chronicler: true } : {}), ...(startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)!.loreId! } : {}), ...(hero.unitTemplateId === 'marauders_seer' ? { chaosMark: hero.magicChoiceId } : {}) },
+      flags: { ...(hero.unitTemplateId === 'dreamwalkers_priest_of_morr' && draft.dreamerCertification ? {dreamerCertification:draft.dreamerCertification}:{}), ...(hero.unitTemplateId === 'cursed_cavalcade_twisted_scholar' && hero.magicChoiceId === 'chronicler' ? { chronicler: true } : {}), ...(startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)!.loreId! } : {}), ...(hero.unitTemplateId === 'marauders_seer' ? { chaosMark: hero.magicChoiceId } : {}) },
       equipment: [...hero.equipment.map((item) => toRosterItem(item, 1)), ...(unit?.alternateHero === 'wolf_priest_of_ulric' ? [{ itemId: 'wolfcloak', quantity: 1 }] : [])],
       isLarge: unitIsLarge(unit),
       status: "active",
@@ -563,6 +565,10 @@ export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, ba
   const roster = draftToRosterWarband(draft, template, {}, houseRules);
   const problems: RosterProblem[] = [...validateRoster(roster, template, { atCreation: true, bans }).problems];
   const costs = draftCosts(draft, template, houseRules);
+  if(template.id==='dreamwalkers_cult_of_morr') {
+    if(!draft.dreamerCertification)problems.push({code:'dreamer.certification',message:'The Priest of Morr must roll the initial Dreamer certification.'});
+    if(draft.heroes.some(h=>h.unitTemplateId==='dreamwalkers_dreamer')&&(draft.dreamerCertification?.die ?? 0)<4)problems.push({code:'dreamer.uncertified',message:'A Dreamer may only join after certification succeeds on 4+.'});
+  }
 
   if (costs.remaining < 0) {
     problems.push({
@@ -636,6 +642,7 @@ export interface CreateWarbandPayload {
   gold: number;
   notes: string;
   heroes: {
+    flags?: WarriorFlags;
     name: string;
     unit_type_rules_id: string;
     stats: Stats;
@@ -680,6 +687,7 @@ export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTempl
     heroes: draft.heroes.map((hero, sort_order) => {
       const unit = findUnitTemplate(template, hero.unitTemplateId);
       return {
+        flags: hero.unitTemplateId === 'dreamwalkers_priest_of_morr' && draft.dreamerCertification ? {dreamerCertification:draft.dreamerCertification} : undefined,
         name: hero.name,
         unit_type_rules_id: hero.unitTemplateId,
         stats: unitStartingStats(unit),

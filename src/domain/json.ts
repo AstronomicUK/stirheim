@@ -49,6 +49,7 @@ export const warriorFlagsSchema = z.object({
   protectoratePrayerChoice: z.boolean().optional(),
   leaderMagicChoice: z.boolean().optional(),
   successorCommandPending: z.boolean().optional(),
+  dreamerCertification: z.object({die:z.number().int().min(1).max(6),afterMatch:z.string().nullable(),recordedAt:z.string(),history:z.array(z.string())}).optional(),
   commandIds: z.array(z.string()).optional(),
   lustrianReplacementOf: z.string().uuid().optional(),
   temporaryLeader: z.boolean().optional(),

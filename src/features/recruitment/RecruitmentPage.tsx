@@ -1,3 +1,4 @@
+import { DreamerCertificationCard } from './DreamerCertification'
 import { PersonaeRecruitment } from './PersonaeRecruitment'
 // Recruitment between battles: hire heroes and henchmen from the warband template, hire and pay
 // hired swords, dismiss warriors. Every action runs a src/rules/resolve/recruitment resolver on the
@@ -100,6 +101,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
         </Card>
       </div>
 
+      <DreamerCertificationCard detail={detail} canEdit={canEdit} />
       {!isOwner ? (
         <Notice tone="info" title="Read-only">
           Only the warband&apos;s owner can recruit, pay or dismiss warriors. You can still browse what is available.

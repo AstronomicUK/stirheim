@@ -37,7 +37,10 @@ export interface AppliedInjury {
 }
 
 /** Persistent conditions that change how a warrior plays or is administered. */
+export interface DreamerCertification { die: number; afterMatch: string | null; recordedAt: string; history: string[] }
+
 export interface WarriorFlags {
+  dreamerCertification?: DreamerCertification;
   leaderLostInMatch?: string;
   leaderReplacementReadyAfter?: string;
   /** Permanent leadership role held without replacing the warrior’s original unit type. */

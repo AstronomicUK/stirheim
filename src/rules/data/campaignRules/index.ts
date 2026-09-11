@@ -65,6 +65,8 @@ export interface UnitCampaignRules {
   excludeRaceTraits?: boolean;
   /** Explicit natural weapons: use printed Strength/Attacks, without ordinary fist penalties. */
   naturalWeapons?: boolean;
+  /** Casualty contribution to Rout tests; does not reduce the starting model count. */
+  routCasualtyWeight?: number;
   /** How each model counts for the wyrdstone income chart (default 1); for a group, per model. */
   incomeCountsAs?: number;
   /** The whole group counts as this many models for income (Snotling mobs count as one). */
@@ -221,10 +223,11 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   dwarf_treasure_hunters_troll_slayers: { equipmentBans: SLAYER_BANS },
   kislevites_trained_bear: { ...ANIMAL, large: true, relation: { onlyWith: { unitIds: ["kislevites_bear_tamer"], label: "a Bear Tamer" } } },
   orc_mob_goblin_warriors: {
+    routCasualtyWeight: 0.5,
     promotion: { never: true, note: "Runts: a Goblin who rolls The lad's got talent is killed by the Orcs; roll again." },
     relation: { noMoreThan: { unitIds: ["orc_mob_boss", "orc_mob_shaman", "orc_mob_big_uns", "orc_mob_orc_boyz"], ratio: 2, label: "two Goblins per Orc" } },
   },
-  orc_mob_cave_squigs: { ...ANIMAL, relation: { noMoreThan: { unitIds: ["orc_mob_goblin_warriors"], label: "the Goblins" } } },
+  orc_mob_cave_squigs: { ...ANIMAL, routCasualtyWeight: 0.5, relation: { noMoreThan: { unitIds: ["orc_mob_goblin_warriors"], label: "the Goblins" } } },
   orc_mob_troll: TROLL,
   ostlander_ruffians: { neverLeads: true, equipmentBans: ["missile"] },
   ostlander_priest_of_taal: { equipmentBans: ["heavyArmour"] },
@@ -259,7 +262,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   tomb_guardians_skeleton_warrior: UNDEAD_HENCHMAN,
   tomb_guardians_tomb_scorpion: { ...ANIMAL, excludeRaceTraits: true },
   // 1c
-  battle_monks_raging_peasants: { ...NO_XP, promotion: { never: true, note: "Raging Peasants are a mob, never promoted." } },
+  battle_monks_raging_peasants: { ...NO_XP, routCasualtyWeight: 0, promotion: { never: true, note: "Raging Peasants are a mob, never promoted." } },
   black_dwarfs_informers: { excludeRaceTraits: true, promotion: { never: true, note: "Informers are never made heroes; roll again." } },
   bretonnian_knight_errant: { equipmentBans: ["helmets"] },
   bretonnian_battle_pilgrims: { promotion: { never: true, note: "Low Caste: Pilgrims are never knighted; roll again." } },
@@ -277,7 +280,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   maneaters_mountain_guide: { ...OGRE, neverLeads: true, promotion: undefined },
   maneaters_bulls: OGRE,
   maneaters_half_growns: { advanceRate: "half", incomeCountsAs: 2, promotion: OGRE.promotion },
-  maneaters_sabretusks: { ...ANIMAL, relation: { onlyWith: { unitIds: ["maneaters_mountain_guide"], label: "a Mountain Guide" } } },
+  maneaters_sabretusks: { ...ANIMAL, routCasualtyWeight: 0, relation: { onlyWith: { unitIds: ["maneaters_mountain_guide"], label: "a Mountain Guide" } } },
   marauders_warhounds_of_chaos: ANIMAL,
   marauders_spawn_of_chaos: { ...NO_XP, large: true, promotion: { never: true, note: "A Spawn has no mind left to promote." } },
   merchant_knights_vanguard: { neverLeads: true },

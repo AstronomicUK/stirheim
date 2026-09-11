@@ -267,7 +267,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
   const pendingAdvances = usePendingAdvances(roster.id)
   const advancesDue = pendingAdvances.data?.length ?? 0
   const totals = useMemo(() => sheetTotals(shown, roster), [shown, roster])
-  const rout = routStatus(shown, totals.startingModels)
+  const rout = routStatus(shown, totals.startingModels, roster)
   // All screen sizes use the same roster/action navigation.
   const inApp = match.combat_mode === 'app'
   // Shares the Enemy tab's cache, so this costs nothing extra: it only feeds the "enemies out of N".

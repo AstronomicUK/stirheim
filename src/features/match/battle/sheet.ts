@@ -1,3 +1,4 @@
+import { unitRules } from '../../../rules/data/campaignRules'
 import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 // Pure helpers behind the battle sheet: who is fighting, tally edits, the rout warning, and the
 // decision of when to adopt a sheet that arrived from the server (another device). No React, no
@@ -101,6 +102,16 @@ function insignificantOut(state: BattleLiveState): number {
     const kind = parsed ? ANIMAL_KINDS[parsed.itemId] : undefined
     return kind && !kind.countsForRout ? n + t.outOfAction : n
   }, 0)
+}
+
+/** Weighted casualties for Rout tests, kept separate from actual casualty totals. */
+export function routCasualties(state: BattleLiveState, roster?: RosterWarband): number {
+  let count = battleTotals(state).ownOutOfAction - insignificantOut(state)
+  for (const group of roster?.henchmenGroups ?? []) {
+    const weight = unitRules(group.unitTemplateId).routCasualtyWeight ?? 1
+    count -= groupOut(state, group.id) * (1 - weight)
+  }
+  return Math.max(0, count)
 }
 
 /** Per-model equipment: divide group totals by size where it divides evenly. */
@@ -231,6 +242,7 @@ export interface SheetTotals {
   enemiesOutOfAction: number
   ownOutOfAction: number
   startingModels: number
+  routCasualties: number
   wyrdstoneFound: number
   /** Models out of action at which the rout test is due. */
   routAt: number
@@ -239,7 +251,7 @@ export interface SheetTotals {
 export function sheetTotals(state: BattleLiveState, roster: RosterWarband): SheetTotals {
   const totals = battleTotals(state)
   const models = startingModels(roster, state)
-  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(models) }
+  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: routCasualties(state, roster), wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(models) }
 }
 
 export type RoutStatus = 'none' | 'test' | 'routed'
@@ -248,10 +260,10 @@ export type RoutStatus = 'none' | 'test' | 'routed'
  * "test" once a quarter (rounded up) of the starting models are out of action and the warband has
  * not routed yet; an empty roster never warns.
  */
-export function routStatus(state: BattleLiveState, models: number): RoutStatus {
+export function routStatus(state: BattleLiveState, models: number, roster?: RosterWarband): RoutStatus {
   if (state.routed) return 'routed'
   if (models <= 0) return 'none'
-  return battleTotals(state).ownOutOfAction - insignificantOut(state) >= routThreshold(models) ? 'test' : 'none'
+  return routCasualties(state, roster) >= routThreshold(models) ? 'test' : 'none'
 }
 
 // ---------------------------------------------------------------------------------------------

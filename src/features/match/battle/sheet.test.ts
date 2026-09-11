@@ -166,7 +166,7 @@ describe('totals and rout', () => {
     let s = addEnemyOut(emptyBattleLiveState(), 'captain', 2)
     s = setGroupOut(s, 'watch', 1, 3)
     s = setWyrdstoneFound(s, 1)
-    expect(sheetTotals(s, roster)).toEqual({ enemiesOutOfAction: 2, ownOutOfAction: 1, startingModels: 6, wyrdstoneFound: 1, routAt: 2 })
+    expect(sheetTotals(s, roster)).toEqual({ enemiesOutOfAction: 2, ownOutOfAction: 1, startingModels: 6, routCasualties: 1, wyrdstoneFound: 1, routAt: 2 })
   })
 
   it('warns once a quarter of the models are down, until routed', () => {
@@ -244,5 +244,29 @@ describe('taken out by', () => {
     s = setTakenOutBy(s, 'grp', [fall, { ...fall, name: 'Skritch (Claws)', modelId: 'skritch', warbandId: 'w2' }])
     s = setGroupOut(s, 'grp', 1, 4)
     expect(takenOutBy(s, 'grp')).toEqual([fall])
+  })
+})
+
+
+describe('special Rout casualty weights (#68)', () => {
+  it.each(['orc_mob_goblin_warriors', 'orc_mob_cave_squigs'])('matches the printed five Orcs / ten non-Orcs example for %s', unitTemplateId => {
+    const r: RosterWarband = { ...roster, heroes: Array.from({ length: 5 }, (_, i) => hero(`orc${i}`)), hiredSwords: [], henchmenGroups: [{ ...group('nonOrcs', 10), unitTemplateId }] }
+    let sheet = setGroupOut(emptyBattleLiveState(), 'nonOrcs', 7, 10)
+    expect(sheetTotals(sheet, r)).toMatchObject({ startingModels: 15, ownOutOfAction: 7, routCasualties: 3.5, routAt: 4 })
+    expect(routStatus(sheet, startingModels(r), r)).toBe('none')
+    sheet = setGroupOut(sheet, 'nonOrcs', 8, 10)
+    expect(routStatus(sheet, startingModels(r), r)).toBe('test')
+    sheet = setGroupOut(sheet, 'nonOrcs', 6, 10)
+    sheet = toggleHeroOut(sheet, 'orc0')
+    expect(sheetTotals(sheet, r).routCasualties).toBe(4)
+    expect(routStatus(sheet, startingModels(r), r)).toBe('test')
+  })
+  it.each(['battle_monks_raging_peasants', 'maneaters_sabretusks'])('ignores %s casualties without shrinking the starting warband', unitTemplateId => {
+    const r: RosterWarband = { ...roster, heroes: [hero('leader'), hero('hero2')], hiredSwords: [], henchmenGroups: [{ ...group('ignored', 2), unitTemplateId }] }
+    let sheet = setGroupOut(emptyBattleLiveState(), 'ignored', 2, 2)
+    expect(sheetTotals(sheet, r)).toMatchObject({ startingModels: 4, ownOutOfAction: 2, routCasualties: 0, routAt: 1 })
+    expect(routStatus(sheet, startingModels(r), r)).toBe('none')
+    sheet = toggleHeroOut(sheet, 'leader')
+    expect(routStatus(sheet, startingModels(r), r)).toBe('test')
   })
 })

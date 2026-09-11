@@ -73,6 +73,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
               {totals.ownOutOfAction} of {totals.startingModels} models are out of action (a quarter is {totals.routAt}). The rules call for a
               Leadership test at the start of each of your turns until the battle ends.
             </p>
+            {totals.routCasualties !== totals.ownOutOfAction ? <p className="text-sm text-ink-dim">Special unit rules make those casualties count as {totals.routCasualties} for Rout tests.</p> : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

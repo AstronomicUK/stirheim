@@ -1,3 +1,4 @@
+import { equipmentListWarning } from "./equipmentLists";
 // Who may buy or carry an item (audit A1), how many, when, and whether it may be moved or sold
 // (A13). Everything here is a warning: the shop shows it and lets the player override with a
 // reason, the roster lists it as a problem, and nothing is silently blocked. Data in
@@ -86,6 +87,7 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
   if (holder.kind === "hero" || holder.kind === "henchmanGroup") {
     const banReason = equipmentBanReason(warbandId, holder.unitTemplateId ?? "", { itemId: item.id, quantity });
     if (banReason) out.push(`${banReason}.`);
+
   }
 
   if (holder.kind === "henchmanGroup" && rule.heroesOnly) out.push(`${item.name}: miscellaneous equipment is for Heroes only; henchmen may not carry it.`);
@@ -108,7 +110,7 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
     const held = kit.filter((e) => e.itemId === item.id).reduce((n, e) => n + e.quantity, 0);
     if (held + addedPerModel > 1) out.push(`${item.name}: one per model.`);
   }
-  if (rule.creationOnly && !opts.atCreation) out.push(`${item.name} may only be bought when the warband is created.`);
+  if (rule.creationOnly && !opts.atCreation && !opts.alreadyHeld) out.push(`${item.name} may only be bought when the warband is created.`);
 
   if (rule.requiresAnyOf && holder.kind !== "stash") {
     const has = holder.equipment.some((e) => e.itemId && rule.requiresAnyOf!.itemIds.includes(e.itemId));
@@ -135,6 +137,8 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
       if (after > MAX_MISSILE_WEAPONS) out.push(`${each ? `${each} ` : ""}${holder.name ?? "This warrior"} would carry ${after} missile weapons; the rulebook allows up to two different missile weapons per warrior, a brace of pistols counting as one (Weapons and Armour, Equipment).`);
     }
   }
+  const listWarning = equipmentListWarning(warband, item, holder);
+  if (listWarning && !equipmentBanReason(warbandId, holder.unitTemplateId ?? "", { itemId: item.id, quantity })) out.push(listWarning);
   return out;
 }
 

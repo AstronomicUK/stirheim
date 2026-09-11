@@ -1,7 +1,9 @@
+import { findItem } from '../../rules/data/items'
+import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
 import { useMemo, useState } from 'react'
 import { moveItem, type InventoryLocation } from '../../rules/resolve/trading'
 import type { RosterItem } from '../../rules/types/roster'
-import { Button, Notice, SelectField, Sheet, Stepper } from '../../ui'
+import { Button, Notice, SelectField, Sheet, Stepper, TextField } from '../../ui'
 import { itemName } from '../roster/shared/names'
 import { Card, ItemLines, Tag } from '../roster/view/bits'
 import { locationKey, locationLabel, locationOptions, moveStack, parseLocationKey, readInventory, type LocationOption } from './helpers'
@@ -21,8 +23,7 @@ export function StashTab({ trade }: { trade: TradeContext }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm leading-relaxed text-ink-dim">
-        Swap equipment between the stash and your warriors. Whether a warrior may use an item is left to you and the roster's equipment list; injuries
-        such as a severed arm are noted on the roster, not enforced here.
+        Swap equipment between the stash and your warriors. The app checks equipment restrictions and asks you to record a reason for any agreed exception.
       </p>
       {locations.map((loc) => (
         <Inventory
@@ -130,7 +131,19 @@ function MoveSheet({ selection, locations, trade, onClose }: MoveSheetProps) {
   const targets = locations.filter((l) => l.key !== fromKey)
   const [toKey, setToKey] = useState(targets[0]?.key ?? '')
   const [quantity, setQuantity] = useState(selection.item.quantity)
-  const ready = canTrade && toKey !== '' && quantity >= 1
+  const [overrideReason, setOverrideReason] = useState('')
+  const destination = parseLocationKey(toKey || 'stash')
+  let holder: ItemHolder = { kind: 'stash', equipment: roster.stash }
+  if (destination.kind === 'hero') {
+    const hero = roster.heroes.find(h => h.id === destination.id)
+    holder = { kind: 'hero', id: destination.id, name: hero?.name, unitTemplateId: hero?.unitTemplateId, flags: hero?.flags, equipment: [...(hero?.equipment ?? []), { ...selection.item, quantity }] }
+  } else if (destination.kind === 'henchmanGroup') {
+    const group = roster.henchmenGroups.find(g => g.id === destination.id)
+    holder = { kind: 'henchmanGroup', id: destination.id, name: group?.name, unitTemplateId: group?.unitTemplateId, size: group?.size, equipment: [...(group?.equipment ?? []), { ...selection.item, quantity }] }
+  }
+  const catalogueItem = findItem(selection.item.itemId ?? '')
+  const warnings = destination.kind !== 'stash' && catalogueItem ? itemRestrictionWarnings(roster, catalogueItem, holder, { alreadyHeld: true, bans: trade.houseRules.bans }) : []
+  const ready = canTrade && toKey !== '' && quantity >= 1 && (!warnings.length || Boolean(overrideReason.trim()))
 
   async function confirm() {
     const to = parseLocationKey(toKey)
@@ -138,7 +151,7 @@ function MoveSheet({ selection, locations, trade, onClose }: MoveSheetProps) {
       const itemId = selection.item.itemId
       if (itemId !== null) return moveItem(roster, selection.from, to, itemId, quantity).value
       return moveStack(roster, selection.from, to, selection.item, quantity)
-    })
+    }, warnings.length ? { reason: `${itemName(selection.item)} moved to ${locationLabel(roster, to)} despite: ${warnings.join(' ')} Reason: ${overrideReason.trim()}` } : undefined)
     if (ok) onClose()
   }
 
@@ -164,7 +177,7 @@ function MoveSheet({ selection, locations, trade, onClose }: MoveSheetProps) {
         {targets.length === 0 ? (
           <Notice tone="info">There is nowhere else to put it: the warband has no other warriors.</Notice>
         ) : (
-          <SelectField label="Move to" value={toKey} onChange={(e) => setToKey(e.target.value)}>
+          <SelectField label="Move to" value={toKey} onChange={(e) => { setToKey(e.target.value); setOverrideReason('') }}>
             {targets.some((t) => !t.group) ? <option value="stash">Stash</option> : null}
             {(['Heroes', 'Henchmen'] as const).map((group) => {
               const list = targets.filter((t) => t.group === group)
@@ -186,6 +199,10 @@ function MoveSheet({ selection, locations, trade, onClose }: MoveSheetProps) {
             <Stepper label="quantity to move" value={quantity} min={1} max={selection.item.quantity} onChange={setQuantity} />
           </div>
         ) : null}
+        {warnings.length ? <Notice tone="warn" title="Equipment restrictions">
+          {warnings.map(warning => <p key={warning}>{warning}</p>)}
+          <TextField label="Reason for equipping anyway" value={overrideReason} onChange={e => setOverrideReason(e.target.value)} placeholder="The table agreed …" hint="Saved with this equipment move." />
+        </Notice> : null}
         {toKey.startsWith('henchmanGroup:') ? (
           <p className="text-xs text-ink-dim">Henchmen in a group are equipped alike; move one per model to keep the roster tidy.</p>
         ) : null}

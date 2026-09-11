@@ -93,3 +93,16 @@ it('includes promoted Gnoblar Fighters and Flingers in temporary succession', ()
   const w = warband(template.id, [hero('t', 'ogre_hunting_party_trappers'), hero('f', 'ogre_hunting_party_flingers', { stats: { ...stats, Ld: 8 } }), hero('g', 'ogre_hunting_party_gnoblar_fighters', { xp: 9 })]);
   expect(successionOptions(w, template)?.candidates.map(c => c.hero.id)).toEqual(['f', 'g', 't']);
 });
+
+it('grants a Merchant successor the Merchant skill list without importing other leader skill lists', async () => {
+  const { availableSkills } = await import('../advances');
+  const template = findWarbandTemplate('merchant_caravans')!;
+  const apprentice = hero('a', 'merchant_apprentice', { skillTableIds: ['combat', 'shooting'], skillIds: ['dodge'] });
+  const w = warband(template.id, [apprentice]);
+  expect(availableSkills(apprentice, template.id).some(t => t.tableId === 'merchant_caravans_skills')).toBe(false);
+  const successor = appointLeader(w, template, 'a').value.heroes[0];
+  expect(successor.skillTableIds).toEqual(['combat', 'shooting', 'merchant_caravans_skills']);
+  expect(successor.skillIds).toEqual(['dodge']);
+  expect(availableSkills(successor, template.id).find(t => t.tableId === 'merchant_caravans_skills')?.skills.map(s => s.id)).toContain('merchant_caravans_skills_bribery');
+  expect(appointLeader({ ...w, heroes: [{ ...apprentice, skillTableIds: successor.skillTableIds }] }, template, 'a').value.heroes[0].skillTableIds).toEqual(successor.skillTableIds);
+});

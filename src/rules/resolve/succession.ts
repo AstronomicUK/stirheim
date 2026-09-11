@@ -89,7 +89,7 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
     ...hero,
     unitTemplateId: rule?.temporary ? hero.unitTemplateId : leader.id,
     flags: { ...hero.flags, ...(rule?.temporary ? { temporaryLeader: true } : {}) },
-    skillTableIds: [...hero.skillTableIds],
+    skillTableIds: [...new Set([...hero.skillTableIds, ...(rule?.grantsSkillTableIds ?? [])])],
     skillIds: [...hero.skillIds, ...gained],
   };
   return {

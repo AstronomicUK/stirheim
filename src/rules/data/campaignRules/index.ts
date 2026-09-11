@@ -148,6 +148,8 @@ export interface SuccessionRule {
   disbandsWithout?: boolean;
   /** Skills the new leader gains on taking over. */
   grantsSkillIds?: string[];
+  /** Additional skill lists explicitly inherited by the successor. */
+  grantsSkillTableIds?: string[];
   /** Keep the successor’s original unit type until the printed leader is replaced. */
   temporary?: boolean;
 }
@@ -448,7 +450,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   skaven_of_clan_moulder: { succession: { note: "Heir to Power: an Apprentice succeeds the Packmaster; with none left the warband disbands.", candidateUnitIds: ["apprentices"], disbandsWithout: true } },
   ogre_hunting_party: { succession: { temporary: true, note: "Ideas Above Their Station: the Gnoblar with the highest Leadership takes over until a new Ogre Hunter is bought.", candidateUnitIds: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter", "ogre_hunting_party_gnoblar_fighters", "ogre_hunting_party_flingers"], by: "leadership" } },
   pirates: { succession: { note: "A Ship's Mate takes the wheel.", candidateUnitIds: ["pirates_ships_mate"], anyHero: true } },
-  merchant_caravans: { succession: { note: "The new leader gains the Merchant rule.", anyHero: true } },
+  merchant_caravans: { succession: { note: "The new leader gains the Merchant rule and access to the Merchant skill list, retaining their original skill lists.", anyHero: true, grantsSkillTableIds: ["merchant_caravans_skills"] } },
   survivors_of_strigos: { undeadUnitIds: ["strigoi_vampire"], succession: { note: "A dead Strigoi cannot be replaced: the survivors carry on without a Vampire, or the warband is retired.", candidateUnitIds: [], disbandsWithout: true } },
   battle_monks_of_cathay: { hiredSwords: { allow: "none", note: "Battle Monks hire nobody." }, equipmentBans: ["armour", "helmets", "poison"], notes: ["Monks never wear armour or use poison."], succession: { note: "Decree: a new Emissary must be hired before anything else is bought; the Officer leads meanwhile.", candidateUnitIds: ["battle_monks_officer"], anyHero: true } },
   lizardmen: { succession: { note: "The warband plays one game without a leader before a replacement Skink Priest joins; the Skink Great Crest stands in.", candidateUnitIds: ["lizardmen_skink_great_crest"], anyHero: true } },

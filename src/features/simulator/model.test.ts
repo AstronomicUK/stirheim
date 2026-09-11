@@ -48,3 +48,10 @@ describe('simulator model', () => {
     expect(pts(-0.0002)).toBe('0.0')
   })
 })
+
+
+it('published Wulfen previews use natural weapons without saved equipment', () => {
+  const c = combatantFromTemplate({ ...defaultTemplateSide('norse_explorers'), unitId: 'norse_wulfen', itemIds: [] })!
+  expect(loadoutFor(c).melee[0]).toMatchObject({ id: 'natural_weapons', strength: 'user' })
+  expect(c.stats).toMatchObject({ S: 4, A: 2 })
+});

@@ -1,9 +1,11 @@
+import { computeOdds, combatContextFor } from './odds'
+import { defaultCampaignHouseRules } from '../../../rules/types/roster'
 import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate, WARBAND_TEMPLATES } from '../../../rules/data/warbandTemplates'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { setGroupOut, toggleHeroOut } from '../battle/sheet'
-import { canBeOffHand, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, offHandCandidates, traitsFromRules } from './combatants'
+import { canBeOffHand, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, loadoutFor, offHandCandidates, traitsFromRules } from './combatants'
 
 const stats = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
@@ -315,4 +317,46 @@ it.each([
   expect(combatants.find(c => c.id === 'excluded')?.traitIds).not.toContain('hard_head')
   expect(combatants.find(c => c.id === 'dwarf')?.traitIds).toContain('hard_to_kill')
   expect(combatants.find(c => c.id === 'dwarf')?.traitIds).toContain('hard_head')
+});
+
+
+it.each([
+  ['norse', 'norse_wulfen', 'hero', 4, 2],
+  ['skaven', 'skaven_rat_ogre', 'group', 5, 3],
+  ['skaven_pestilens', 'skaven_pestilens_rat_ogre', 'group', 5, 3],
+] as const)('uses printed natural attacks for %s %s (#163)', (_warbandTemplateId, unitTemplateId, kind, strength, attacks) => {
+  const template = WARBAND_TEMPLATES.find(t => [...t.heroTemplates, ...t.henchmanTemplates].some(u => u.id === unitTemplateId))
+  expect(template).toBeDefined()
+  const unit = [...template!.heroTemplates, ...template!.henchmanTemplates].find(u => u.id === unitTemplateId)!
+  expect(unit).toBeDefined()
+  const roster = warband({ warbandTemplateId: template!.id, heroes: kind === 'hero' ? [hero('beast', { unitTemplateId, stats: unit.stats!, equipment: [] })] : [], henchmenGroups: kind === 'group' ? [group('beast', { unitTemplateId, stats: unit.stats!, equipment: [], size: 1 })] : [] })
+  const attacker = combatantsOf(roster, template, 'QA', undefined)[0]
+  const defender = combatantsOf(warband({ heroes: [hero('human', { equipment: [] })] }), undefined, 'Opponent', undefined)[0]
+  const attackerKit = loadoutFor(attacker), defenderKit = loadoutFor(defender), primary = defaultPrimary(attackerKit.melee)
+  const houseRules = defaultCampaignHouseRules()
+  const odds = computeOdds({ attacker, defender, attackerKit, defenderKit, primary, offHand: null, context: combatContextFor(houseRules), houseRules })
+  expect(primary.strength).toBe('user')
+  expect(attacker.stats.S).toBe(strength)
+  expect(primary.strengthBonus ?? 0).toBe(0)
+  expect(primary.saveModifier ?? 0).toBe(0)
+  expect(odds.attacks).toBe(attacks)
+  expect(defaultOffHand(attackerKit.melee, primary)).toBeNull()
+  expect(defaultPrimary(defenderKit.melee).id).toBe('unarmed')
+});
+
+
+it('keeps explicitly living Tomb Scorpions and Strigos followers out of Undead rules (#164)', () => {
+  for (const [warbandTemplateId, unitTemplateId] of [['tomb_guardians', 'tomb_guardians_tomb_scorpion'], ['survivors_of_strigos', 'ghouls'], ['survivors_of_strigos', 'giant_bats']]) {
+    const template = findWarbandTemplate(warbandTemplateId)!
+    expect(template).toBeDefined()
+    const c = combatantsOf(warband({ warbandTemplateId, henchmenGroups: [group('living', { unitTemplateId })] }), template, 'QA', undefined)[0]
+    expect(c.traitIds).not.toContain('undead')
+    if (unitTemplateId === 'tomb_guardians_tomb_scorpion') {
+      expect(c.traitIds).not.toContain('immune_to_psychology')
+      expect(c.traitIds).not.toContain('causes_fear')
+    }
+  }
+  const template = findWarbandTemplate('survivors_of_strigos')!
+  const vampire = combatantsOf(warband({ warbandTemplateId: template.id, heroes: [hero('vampire', { unitTemplateId: 'strigoi_vampire' })] }), template, 'QA', undefined)[0]
+  expect(vampire.traitIds).toContain('undead')
 });

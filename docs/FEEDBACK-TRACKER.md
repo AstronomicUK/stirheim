@@ -3366,3 +3366,7 @@ Source 03:421–425 verified. Terrain/pavise cover now checks the shooter’s sk
 ### Combat priority milestone — 11 September
 
 #162/#166/#170/#172/#174/#175 fixed locally; source clauses, regression evidence, mobile checks and limits are recorded in PRIORITY-RULES-PROJECT-2026-09-11.md. These join #173 in the next local batch. #201 hosted CI now reaches the later Log-to-roster step; old selector corrected locally, full hosted result still outstanding.
+
+### #163/#164 combat follow-up — 11 September
+
+Source-confirmed Wulfen/Rat Ogre natural attacks now retain printed Strength/Attacks without fist penalties in roster and simulator paths. Wider creature review remains in #163. #164 living Tomb Scorpions and Strigos followers no longer inherit Undead rules; the Strigoi Vampire retains them. 41 focused tests pass. Details: PRIORITY-RULES-PROJECT-2026-09-11.md. Local only.

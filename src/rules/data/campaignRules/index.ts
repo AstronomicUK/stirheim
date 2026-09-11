@@ -63,6 +63,8 @@ export interface UnitCampaignRules {
   neverLeads?: boolean;
   /** Does not receive the warband's race traits (an Informer is not a Dwarf). */
   excludeRaceTraits?: boolean;
+  /** Explicit natural weapons: use printed Strength/Attacks, without ordinary fist penalties. */
+  naturalWeapons?: boolean;
   /** How each model counts for the wyrdstone income chart (default 1); for a group, per model. */
   incomeCountsAs?: number;
   /** The whole group counts as this many models for income (Snotling mobs count as one). */
@@ -153,6 +155,8 @@ export interface WarbandPostBattleRule {
 }
 
 export interface WarbandCampaignRules {
+  /** Explicit exception to warband/name-based Undead inference. */
+  undeadUnitIds?: readonly string[];
   /** Rolls the list calls for before each battle. */
   preBattle?: PreBattleRule[];
   /** Rolls the list calls for after each battle. */
@@ -200,7 +204,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   // Core
   mercenaries_reikland_marksmen: { statBonus: { BS: 1 } },
   skaven_giant_rats: ANIMAL,
-  skaven_rat_ogre: { ...ANIMAL, large: true },
+  skaven_rat_ogre: { ...ANIMAL, large: true, naturalWeapons: true },
   undead_dire_wolves: ANIMAL,
   undead_zombies: UNDEAD_HENCHMAN,
   witch_hunters_flagellants: { neverLeads: true, equipmentBans: ["missile"] },
@@ -243,17 +247,17 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
     relation: { noMoreThan: { unitIds: ["lizardmen_skink_brave"], label: "the Skink Braves" } },
   },
   lizardmen_kroxigor: { ...ANIMAL, large: true },
-  norse_wulfen: { neverLeads: true },
+  norse_wulfen: { neverLeads: true, naturalWeapons: true },
   norse_wolf: { ...ANIMAL, relation: { onlyWith: { unitIds: ["norse_wulfen"], label: "a Wulfen" } } },
   pirates_swabbie: { ...NO_XP, promotion: { never: true, note: "Swabbies are rabble and never become heroes." }, relation: { noMoreThan: { unitIds: ["pirates_crew"], label: "the Crew" } } },
   pit_fighters_troll_slayer: { equipmentBans: SLAYER_BANS },
   pit_fighters_ogre: OGRE,
   shadow_warriors_shadow_weaver: {},
   skaven_pestilens_giant_rat: ANIMAL,
-  skaven_pestilens_rat_ogre: { ...ANIMAL, large: true },
+  skaven_pestilens_rat_ogre: { ...ANIMAL, large: true, naturalWeapons: true },
   tomb_guardians_liche_priest: { equipmentBans: ["armour", "helmets"] },
   tomb_guardians_skeleton_warrior: UNDEAD_HENCHMAN,
-  tomb_guardians_tomb_scorpion: { ...ANIMAL },
+  tomb_guardians_tomb_scorpion: { ...ANIMAL, excludeRaceTraits: true },
   // 1c
   battle_monks_raging_peasants: { ...NO_XP, promotion: { never: true, note: "Raging Peasants are a mob, never promoted." } },
   black_dwarfs_informers: { excludeRaceTraits: true, promotion: { never: true, note: "Informers are never made heroes; roll again." } },
@@ -425,7 +429,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   ogre_hunting_party: { succession: { note: "Ideas Above Their Station: the Gnoblar with the highest Leadership takes over until a new Ogre Hunter is bought.", candidateUnitIds: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter"], by: "leadership" } },
   pirates: { succession: { note: "A Ship's Mate takes the wheel.", candidateUnitIds: ["pirates_ships_mate"], anyHero: true } },
   merchant_caravans: { succession: { note: "The new leader gains the Merchant rule.", anyHero: true } },
-  survivors_of_strigos: { succession: { note: "A dead Strigoi cannot be replaced: the survivors carry on without a Vampire, or the warband is retired.", candidateUnitIds: [], disbandsWithout: true } },
+  survivors_of_strigos: { undeadUnitIds: ["strigoi_vampire"], succession: { note: "A dead Strigoi cannot be replaced: the survivors carry on without a Vampire, or the warband is retired.", candidateUnitIds: [], disbandsWithout: true } },
   battle_monks_of_cathay: { hiredSwords: { allow: "none", note: "Battle Monks hire nobody." }, equipmentBans: ["armour", "helmets", "poison"], notes: ["Monks never wear armour or use poison."], succession: { note: "Decree: a new Emissary must be hired before anything else is bought; the Officer leads meanwhile.", candidateUnitIds: ["battle_monks_officer"], anyHero: true } },
   lizardmen: { succession: { note: "The warband plays one game without a leader before a replacement Skink Priest joins; the Skink Great Crest stands in.", candidateUnitIds: ["lizardmen_skink_great_crest"], anyHero: true } },
   court_of_the_profane_pleasures: { succession: { note: "Any hero may lead the Court.", anyHero: true } },

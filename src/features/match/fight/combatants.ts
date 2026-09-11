@@ -6,7 +6,7 @@ import { GUARDIAN_RULES } from '../../../rules/resolve/hiredCompanions'
 // no network; unit-tested in node.
 
 import { leaderTemplate } from '../../../rules/resolve/roster'
-import { unitRules } from '../../../rules/data/campaignRules'
+import { unitRules, warbandRules } from '../../../rules/data/campaignRules'
 import { findItem, resolveEquipmentName } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
@@ -125,6 +125,9 @@ export function kindTraits(warbandTemplateId: string, unitTemplateId: string, un
   const out: string[] = []
   // This named weapon also specifies whole enemy warbands, not merely creature physiology.
   if (warbandInAny(warbandTemplateId, ['undead','possessed','beastmen'])) out.push('maximilian_holy_target')
+  // Explicit living rules take precedence over broad name-based inference.
+  const undeadUnits = warbandRules(warbandTemplateId).undeadUnitIds
+  if ((undeadUnits && !undeadUnits.includes(unitTemplateId)) || unitRulesText.some(r => /^living$/i.test(r.name))) return out
   const rulesSay = (re: RegExp) => unitRulesText.some((r) => re.test(r.name) || re.test(r.text.slice(0, 160)))
   if (/vampire|necrarch|strigoi/i.test(unitTemplateId) || rulesSay(/^vampire/i)) out.push('vampire', 'undead')
   if (warbandInAny(warbandTemplateId, ['undead']) && (rulesSay(/no pain|undead|may not run/i) || /zombie|ghoul|skeleton|wight|wolf|bat|liche|tomb|grave_guard|mummy/i.test(unitTemplateId))) out.push('undead')
@@ -176,7 +179,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
         skillTableIds: warrior.skillTableIds,
-        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? []), ...boostTraits], entry.warrior.isLarge),
+        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? []), ...boostTraits], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })
@@ -206,7 +209,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
     const unit = template ? findUnitTemplate(template, group.unitTemplateId) : undefined
     const kit = perModelKit(group.equipment, group.size)
     const raceFor = unitRules(group.unitTemplateId).excludeRaceTraits ? [] : race
-    const traits = [...raceFor, ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? []), ...boostTraits]
+    const traits = [...raceFor, ...(unitRules(group.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? []), ...boostTraits]
     if (group.campaignState?.permanentStupidity) traits.push('stupidity')
     if (group.campaignState?.fanaticBattleMatch && !group.campaignState.fanaticSittingOut) traits.push('frenzy')
     if (group.isLarge) traits.push('large_target')
@@ -254,10 +257,18 @@ export function combatantLabel(c: Combatant): string {
   return c.name
 }
 
+/** Natural weapons do not grant an additional off-hand attack or count as purchased equipment. */
+const NATURAL_WEAPONS: Weapon = {
+  id: 'natural_weapons', name: 'Teeth and claws', type: 'melee', strength: 'user',
+  critCategory: 'unarmed', concussion: false, special: [], rangedProfile: null,
+}
+
 /** The kit the calculator uses for a combatant: an animal's fixed weapons, or a warrior's roster kit. */
 export function loadoutFor(c: Combatant): Loadout {
   if (c.weaponIds) return loadoutOfWeapons(c.weaponIds)
-  return loadoutOf(c.equipment)
+  const kit = loadoutOf(c.equipment)
+  if (c.traitIds.includes('natural_weapons') && kit.melee.length === 0) kit.melee.push(NATURAL_WEAPONS)
+  return kit
 }
 
 /** A loadout from engine weapon ids alone (animals). */

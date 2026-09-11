@@ -58,10 +58,10 @@ function ActivityDetail({ line }: { line: ActivityLine }) {
           <ul className="flex flex-col gap-0.5">
             {changes.map((c) => (
               <li key={c.label} className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-ink-dim">
-                <span>{entry.action === 'delete' ? `Previously recorded ${c.label}:` : `${entry.action === 'insert' ? 'Set' : 'Changed'} ${c.label} ${entry.action === 'insert' ? 'to' : 'from'}`}</span>
+                {c.sentence ? <span className="text-ink">{c.sentence}</span> : <><span>{entry.action === 'delete' ? `Previously recorded ${c.label}:` : `${entry.action === 'insert' ? 'Set' : 'Changed'} ${c.label} ${entry.action === 'insert' ? 'to' : 'from'}`}</span>
                 {entry.action !== 'insert' ? <ChangeValue terms={activityTerms(entry, c.label, 'before')} fallback={c.before} /> : null}
                 {entry.action === 'update' ? <span>to</span> : null}
-                {entry.action !== 'delete' ? <ChangeValue terms={activityTerms(entry, c.label, 'after')} fallback={c.after} /> : null}
+                {entry.action !== 'delete' ? <ChangeValue terms={activityTerms(entry, c.label, 'after')} fallback={c.after} /> : null}</>}
               </li>
             ))}
           </ul>

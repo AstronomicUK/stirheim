@@ -614,6 +614,8 @@ all clean.
 
 ### 23. The audit log's "Details" expander reads like raw data (field names, ids) instead of English, and wants tooltips
 
+**Local progress — 2026-09-11:** Campaign setting logs now name individual changes, including added/removed bans, rule toggles and scenario availability. Familiar and the actual opposed-parry example are independently tested; unchanged nested data is not repeated. 27 activity tests, typecheck/lint and real mobile save/activity checks pass. Not deployed. Warband/post-battle dumps and #226 provenance remain open.
+
 **Status:** 🟡 Partially fixed
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07

@@ -12,6 +12,10 @@ import { findSpellOption, hiredSwordName, skillName, skillTableName, skillText, 
 import { WARBAND_TEMPLATES } from '../../rules/data/warbandTemplates'
 import { HERO_INJURIES } from '../../rules/data/campaign/injuries'
 import { SPELL_LORES } from '../../rules/data/campaign/magic'
+import { defaultCampaignSettings } from '../../domain/settings'
+import { HOUSE_RULE_SWITCHES, DICE_POLICY_OPTIONS, COMBAT_MODE_OPTIONS, FIRST_SPELL_RULE_OPTIONS } from './settingsForm'
+import { banName, type BanKind } from './bans'
+import { CORE_RULEBOOK_SCENARIO_IDS, SCENARIOS } from '../../rules/data/campaign/scenarios'
 
 type Row = Record<string, Json | undefined>
 
@@ -128,7 +132,11 @@ function describeCampaign(entry: CampaignActivity, before: Row | null, after: Ro
   if (before && after && str(before, 'name') !== nameAfter && nameAfter) parts.push(`renamed the campaign to ${nameAfter}`)
   if (before && after && before.archived !== after.archived) parts.push(after.archived === true ? 'archived the campaign' : 'unarchived the campaign')
   if (before && after && before.invite_code !== after.invite_code) parts.push('issued a new invite code')
-  if (before && after && JSON.stringify(before.settings) !== JSON.stringify(after.settings)) parts.push('changed the campaign settings')
+  if (before && after && !sameValue(before.settings, after.settings)) {
+    const changed=campaignSettingChanges(before.settings,after.settings)
+    parts.push(...changed.slice(0,3).map(c=>c.sentence!.charAt(0).toLowerCase()+c.sentence!.slice(1).replace(/\.$/,'')))
+    if(changed.length>3)parts.push(`made ${changed.length-3} other setting changes`)
+  }
   if (before && after && before.rules_markdown !== after.rules_markdown) parts.push('updated the campaign rules')
   if (!parts.length) return `${actor} updated the campaign`
   return `${actor} ${joinNatural(parts)}`
@@ -311,9 +319,59 @@ function sameValue(a: Json | undefined, b: Json | undefined): boolean {
 }
 
 export interface FieldChange {
+  sentence?: string
   label: string
   before: string
   after: string
+}
+
+const DEFAULT_SETTINGS = defaultCampaignSettings()
+
+/** Describe actual setting changes, never whole nested settings snapshots. */
+function campaignSettingChanges(before: Json | undefined, after: Json | undefined): FieldChange[] {
+  const old = {...DEFAULT_SETTINGS,...asRow(before)} as Row, next = {...DEFAULT_SETTINGS,...asRow(after)} as Row
+  const changes:FieldChange[]=[]
+  const add=(label:string,a:Json|undefined,b:Json|undefined,sentence?:string)=>{
+    if(sameValue(a,b))return
+    const from=displayValue(a),to=displayValue(b)
+    changes.push({label,before:from,after:to,sentence:sentence??`Changed ${label} from ${from} to ${to}.`})
+  }
+  for(const key of new Set([...Object.keys(old),...Object.keys(next)])){
+    if(key==='houseRules'){
+      const a={...DEFAULT_SETTINGS.houseRules,...asRow(old[key])} as Row,b={...DEFAULT_SETTINGS.houseRules,...asRow(next[key])} as Row
+      for(const rule of new Set([...Object.keys(a),...Object.keys(b)])){
+        if(rule==='bans'){
+          const previous=asRow(a.bans)??{},current=asRow(b.bans)??{}
+          const kinds:Record<BanKind,string>={items:'item',spells:'spell',skills:'skill',hiredSwords:'hired sword',characters:'character'}
+          for(const kind of Object.keys(kinds) as BanKind[]){
+            const was=new Set(Array.isArray(previous[kind])?previous[kind] as string[]:[]), now=new Set(Array.isArray(current[kind])?current[kind] as string[]:[])
+            for(const id of new Set([...was,...now])){
+              if(was.has(id)===now.has(id))continue
+              const name=banName(kind,id)
+              add(`${kinds[kind]} ban: ${name}`,was.has(id),now.has(id),now.has(id)?`Banned ${name} (${kinds[kind]}).`:`Lifted the ban on ${name} (${kinds[kind]}).`)
+            }
+          }
+        }else{
+          const explicit:Record<string,string>={halfPriceShields:'half-price shields',halfPriceHelmets:'half-price helmets'}
+          const label=explicit[rule]??HOUSE_RULE_SWITCHES.find(s=>s.key===rule)?.label??fieldLabel(rule)
+          if(rule==='firstSpellRule'){add(label,a[rule],b[rule],`Changed the first spell rule from ${FIRST_SPELL_RULE_OPTIONS.find(o=>o.value===a[rule])?.label??displayValue(a[rule])} to ${FIRST_SPELL_RULE_OPTIONS.find(o=>o.value===b[rule])?.label??displayValue(b[rule])}.`);continue}
+          add(label,a[rule],b[rule],typeof b[rule]==='boolean'?`${b[rule]?'Enabled':'Disabled'} ${label}.`:undefined)
+        }
+      }
+    }else if(key==='enabledScenarioIds'){
+      const was=new Set(Array.isArray(old[key])?old[key] as string[]:CORE_RULEBOOK_SCENARIO_IDS),now=new Set(Array.isArray(next[key])?next[key] as string[]:CORE_RULEBOOK_SCENARIO_IDS)
+      for(const id of new Set([...was,...now]))if(was.has(id)!==now.has(id)){
+        const name=SCENARIOS.find(s=>s.id===id)?.title??id
+        add(`scenario: ${name}`,was.has(id),now.has(id),`${now.has(id)?'Enabled':'Disabled'} ${name} for new battles.`)
+      }
+    }else {
+      const options=key==='dicePolicy'?DICE_POLICY_OPTIONS:key==='combatMode'?COMBAT_MODE_OPTIONS:null
+      const labels:Record<string,string>={reportApproval:'GM approval for post-battle reports',lockCombatMode:'GM-only combat-mode changes',mapCampaign:'map campaign'}
+      const label=labels[key]??fieldLabel(key)
+      add(label,old[key],next[key],options?`Changed ${label} from ${options.find(o=>o.value===old[key])?.label??displayValue(old[key])} to ${options.find(o=>o.value===next[key])?.label??displayValue(next[key])}.`:typeof next[key]==='boolean'?`${next[key]?'Enabled':'Disabled'} ${label}.`:undefined)
+    }
+  }
+  return changes
 }
 
 /**
@@ -330,6 +388,7 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
     const a = before?.[key]
     const b = after?.[key]
     if (before && after && sameValue(a, b)) continue
+    if(key==='settings' && entry.table_name==='campaigns' && entry.action==='update'){out.push(...campaignSettingChanges(a,b));continue}
     if ((key === 'flags' || key === 'settings' || key === 'stat_increases') && (asRow(a) || asRow(b))) {
       const oldFields = asRow(a) ?? {}, newFields = asRow(b) ?? {}
       for (const child of new Set([...Object.keys(oldFields), ...Object.keys(newFields)])) {

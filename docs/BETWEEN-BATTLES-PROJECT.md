@@ -601,3 +601,8 @@ Tom asked to review last night's issues. The eight workstreams, review findings 
 ### Second batch checkpoint — scenario selection and menu drafts
 
 #221, #224 and #222 are implemented and tested locally. #223/#225 interactive navigation proposals are ready for Tom’s review; read `SECOND-FEEDBACK-BATCH.md`. Next independent work is shared English logs (#23), injury-roll override provenance (#226) and the missing Sold to the Pits prompt. Preserve the local-only batch and migration 72; no further deployment has occurred.
+
+
+### Second batch checkpoint — readable campaign setting logs
+
+The campaign-settings half of reopened #23 now passes unit and real mobile save/activity checks. The larger warband post-battle dump, #226 override provenance and Pits prompt remain next; read `SECOND-FEEDBACK-BATCH.md`. No new deployment. Navigation proposal still awaits Tom’s choice.

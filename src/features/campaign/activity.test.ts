@@ -1,3 +1,4 @@
+import { CORE_RULEBOOK_SCENARIO_IDS } from '../../rules/data/campaign/scenarios'
 import { describe, expect, it } from 'vitest'
 import type { CampaignActivity } from '../../api/campaigns'
 import { activityFieldChanges, activityTerms, activityLines, describeActivity, describeWarbandChanges, formatRelativeTime } from './activity'
@@ -96,7 +97,7 @@ describe('describeActivity', () => {
         after: { name: 'Stirheim', archived: true, invite_code: 'a', settings: { startingGold: 600 }, rules_markdown: '' },
       }),
     )
-    expect(line).toBe('Tom archived the campaign and changed the campaign settings')
+    expect(line).toBe('Tom archived the campaign and changed starting gold from 500 to 600')
   })
 
   it('uses familiar names for battle records', () => {
@@ -247,4 +248,31 @@ describe('readable roster history', () => {
 
 it('names pending advances without exposing table names or broken singulars', () => {
   expect(describeActivity(entry({ table_name: 'pending_advances', action: 'insert' }))).toContain('added an advance')
+})
+
+
+describe('readable nested campaign settings',()=>{
+ it('names the added Familiar without repeating unchanged bans or rules',()=>{
+  const before={settings:{houseRules:{bans:{items:['nurgles_rot']},halfPriceArmour:true,opposedParryWs:false}}}
+  const after={settings:{houseRules:{bans:{items:['nurgles_rot','familiar']},halfPriceArmour:true,opposedParryWs:false}}}
+  const row=entry({table_name:'campaigns',before,after})
+  expect(activityFieldChanges(row)).toEqual([expect.objectContaining({sentence:'Banned Familiar (item).'})])
+  expect(describeActivity(row)).toBe('Ana banned Familiar (item)')
+ })
+ it('reports the actual parry change in the supplied example without inventing a Familiar change',()=>{
+  const rules={bans:{items:['nurgles_rot','familiar']},halfPriceArmour:true,opposedParryWs:false}
+  const row=entry({table_name:'campaigns',before:{settings:{houseRules:rules}},after:{settings:{houseRules:{...rules,opposedParryWs:true}}}})
+  const changes=activityFieldChanges(row)
+  expect(changes).toHaveLength(1);expect(changes[0].sentence).toMatch(/^Enabled /)
+  expect(JSON.stringify(changes)).not.toMatch(/familiar|nurgles_rot|halfPriceArmour/)
+ })
+ it('handles removed bans and ignores array ordering',()=>{
+  const row=entry({table_name:'campaigns',before:{settings:{houseRules:{bans:{items:['familiar','nurgles_rot']}}}},after:{settings:{houseRules:{bans:{items:['nurgles_rot']}}}}})
+  expect(activityFieldChanges(row)[0].sentence).toBe('Lifted the ban on Familiar (item).')
+  row.after=row.before;expect(activityFieldChanges(row)).toEqual([])
+ })
+ it('uses core defaults when describing newly customised scenario availability',()=>{
+  const row=entry({table_name:'campaigns',before:{settings:{}},after:{settings:{enabledScenarioIds:[...CORE_RULEBOOK_SCENARIO_IDS,'the_pool']}}})
+  expect(activityFieldChanges(row)).toEqual([expect.objectContaining({sentence:'Enabled The Pool for new battles.'})])
+ })
 })

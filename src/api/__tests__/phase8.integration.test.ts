@@ -185,6 +185,26 @@ describe.skipIf(!enabled)('phase 8 functions', () => {
     expect(spent.error).toBeNull()
   })
 
+  it('a casualty advance removes one member and queues the remainder exactly once (#114)', async () => {
+    for (const size of [1, 3]) {
+      const groupId = crypto.randomUUID()
+      const inserted = await admin.from('henchman_groups').insert({ id: groupId, warband_id: CLAWS_OF_ESHIN, name: 'Slaves QA', unit_type_rules_id: 'arabian_tomb_raiders_slave', size, stats: STATS })
+      if (inserted.error) throw inserted.error
+      const pending = await admin.from('pending_advances').insert({ warband_id: CLAWS_OF_ESHIN, subject_type: 'group', subject_id: groupId, threshold_xp: 2 }).select('id').single()
+      if (pending.error) throw pending.error
+      const resolution = { outcome: 'casualty', text: 'Life of Slavery: one Slave is executed.', followUps: size > 1 ? [{ subjectType: 'group', subjectId: groupId, thresholdXp: 2 }] : [] }
+      const changes = size > 1 ? [{ table: 'henchman_groups', op: 'update', id: groupId, data: { size: size - 1 } }] : [{ table: 'henchman_groups', op: 'delete', id: groupId }]
+      const args = { p_advance_id: pending.data.id, p_resolution: resolution, p_changes: changes }
+      expect((await player.rpc('resolve_pending_advance', args)).error).toBeNull()
+      expect((await player.rpc('resolve_pending_advance', args)).error?.message).toMatch(/already been resolved/)
+      const group = await admin.from('henchman_groups').select('size').eq('id', groupId)
+      expect(group.data).toEqual(size > 1 ? [{ size: 2 }] : [])
+      const rows = await admin.from('pending_advances').select('resolved_at, resolution').eq('subject_id', groupId)
+      expect(rows.data?.filter(r => r.resolved_at === null)).toHaveLength(size > 1 ? 1 : 0)
+      expect(rows.data?.find(r => r.resolved_at !== null)?.resolution).toEqual(resolution)
+    }
+  })
+
   it('record_trade applies the batch, keeps the once-per-phase state, and refuses repeats', async () => {
     const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN], p_scenario_rules_id: 'skirmish' })
     if (m.error) throw m.error

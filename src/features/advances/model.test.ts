@@ -486,3 +486,25 @@ it('retains a repeated app follow-up even when it rolls the same face',()=>{
  expect(second.rollHistory).toHaveLength(first.rollHistory!.length+1)
  expect(second.rollHistory?.at(-1)).toBe('App rolled characteristic follow-up D6: 1 → 1.')
 })
+
+it('Life of Slavery removes one Slave and queues only the surviving group advance (#114)', () => {
+  for (const size of [1, 3]) {
+    const group = { ...watchmen, unitTemplateId: 'arabian_tomb_raiders_slave', name: 'Slaves', size }
+    const band = { ...roster, warbandTemplateId: 'arabian_tomb_raiders', henchmenGroups: [group] }
+    const draft = setDice(emptyDraft(NEW_ID), 5, 5, 'app')
+    const result = planGroup(draft, group, { roster: band, template: findWarbandTemplate(band.warbandTemplateId), thresholdXp: 2 }).result!
+    expect(result.resolution.outcome).toBe('casualty')
+    expect(result.resolution.text).toContain('one member of Slaves is executed')
+    expect(result.next.heroes).toEqual(band.heroes)
+    expect(group.size).toBe(size)
+    if (size === 1) {
+      expect(result.next.henchmenGroups).toEqual([])
+      expect(result.resolution.followUps).toEqual([])
+    } else {
+      expect(result.next.henchmenGroups[0]).toEqual({ ...group, size: 2 })
+      expect(result.resolution.followUps).toEqual([{ subjectType: 'group', subjectId: group.id, thresholdXp: 2 }])
+    }
+    const normal = planGroup(setDice(emptyDraft(NEW_ID), 1, 1), group, { roster: band, template: findWarbandTemplate(band.warbandTemplateId) })
+    expect(normal.result?.resolution.outcome).not.toBe('casualty')
+  }
+})

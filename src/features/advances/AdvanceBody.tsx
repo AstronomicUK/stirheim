@@ -283,6 +283,7 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
 }
 
 function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
+  if (plan.result?.resolution.outcome === 'casualty') return <Notice tone="warn" title="Life of Slavery">{plan.result.resolution.casualtySummary}</Notice>
   if (plan.need === 'reroll') {
     return (
       <Notice tone="warn" title="Roll again">

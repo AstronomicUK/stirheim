@@ -50,7 +50,7 @@ export interface UnitCampaignRules {
   /** Ogres: twice the experience per advance box. */
   advanceRate?: "half";
   /** "The lad's got talent" restrictions. */
-  promotion?: { never: true; note: string } | { tables: SkillCategory[]; note: string };
+  promotion?: { never: true; note: string; casualty?: "executed" } | { tables: SkillCategory[]; note: string };
   /** Skills the unit starts with (added on recruitment). */
   startingSkillIds?: string[];
   /** Henchman injury exceptions; heroes still roll D66. */
@@ -241,7 +241,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   ostlander_priest_of_taal: { equipmentBans: ["heavyArmour"] },
   ostlander_ogre: OGRE,
   // 1b
-  arabian_tomb_raiders_slave: { promotion: { never: true, note: "Life of Slavery: a slave who rolls The lad's got talent is executed; roll again." } },
+  arabian_tomb_raiders_slave: { promotion: { never: true, casualty: "executed", note: "Life of Slavery: one Slave is executed and removed. Any remaining members re-roll their advance." } },
   black_orcs_orc_shoota: { relation: { noMoreThan: { unitIds: ["black_orcs_orc_boy"], label: "the Orc Boyz" } } },
   black_orcs_orc_nutta: { neverLeads: true, promotion: { tables: ["combat", "shooting", "strength", "speed"], note: "Nuttaz may not take Academic skills." } },
   black_orcs_troll: { ...TROLL, upkeep: { gold: 20, note: "Always Hungry: 20 gc after every battle; if unaffordable, pay 5 gc and count the Troll as two members for income and the warband limit." } },

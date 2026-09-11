@@ -60,7 +60,7 @@ export function ResolveSheet({ advance, subject, detail, template, bans, chooseS
   const name = subjectName(subject)
   const roleLabel = subject.kind === 'group' ? `Henchman group · ${subject.group.size} ${subject.group.size === 1 ? 'model' : 'models'}` : subject.kind === 'hiredSword' ? 'Hired sword' : 'Hero'
   // A henchman fixed increase has nothing to choose, so Back from the review returns to the dice.
-  const hasChoice = subject.kind !== 'group' || plan.roll?.kind !== 'statIncrease'
+  const hasChoice = subject.kind !== 'group' || (plan.roll?.kind !== 'statIncrease' && plan.result?.resolution.outcome !== 'casualty')
 
   async function confirm() {
     if (!plan?.result) return

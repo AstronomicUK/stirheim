@@ -449,7 +449,7 @@ export function defaultPromotedName(group: RosterHenchmanGroup, roster: RosterWa
 // The resolution stored on the row
 // ---------------------------------------------------------------------------------------------
 
-export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion' | 'reward'
+export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion' | 'reward' | 'casualty'
 
 export interface AdvanceResolution extends AdvanceRollAudit {
   version: 1
@@ -471,6 +471,7 @@ export interface AdvanceResolution extends AdvanceRollAudit {
   spellId?: string
   spellName?: string
   loreId?: string
+  casualtySummary?: string
   newHeroId?: string
   newHeroName?: string
   skillTableIds?: string[]
@@ -516,6 +517,9 @@ export function summaryText(p: ResolutionParts): string {
       break
     case 'spell':
       body = `learned the spell ${p.spellName ?? p.spellId ?? ''}`.trimEnd()
+      break
+    case 'casualty':
+      body = p.casualtySummary ?? 'one henchman is removed'
       break
     case 'promotion':
       body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero`
@@ -927,6 +931,19 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
     }
     case 'ladsGotTalent': {
       const promotionRule = unitRules(group.unitTemplateId).promotion
+      if (promotionRule && 'never' in promotionRule && promotionRule.casualty === 'executed') {
+        const remaining = group.size - 1
+        const next = { ...ctx.roster, henchmenGroups: remaining > 0
+          ? ctx.roster.henchmenGroups.map(g => g.id === group.id ? { ...g, size: remaining } : g)
+          : ctx.roster.henchmenGroups.filter(g => g.id !== group.id) }
+        const summary = `Life of Slavery: one member of ${group.name} is executed and removed. ${remaining > 0 ? `${remaining} remain and must re-roll this advance.` : 'The group has no members left.'}`
+        return { ...plan, result: {
+          next,
+          events: [{ kind: 'henchmanLost', subjectId: group.id, message: summary, data: { before: group.size, after: remaining } }],
+          resolution: buildResolution({ ...base, outcome: 'casualty', casualtySummary: summary,
+            followUps: remaining > 0 ? [{ subjectType: 'group', subjectId: group.id, thresholdXp: ctx.thresholdXp ?? group.xp }] : [] }),
+        } }
+      }
       if (promotionRule && 'never' in promotionRule) {
         return { ...plan, need: 'reroll', rerollReason: promotionRule.note }
       }

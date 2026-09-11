@@ -30,6 +30,8 @@ export const attackEventPayloadSchema = z.object({
   nurgles_rot: z.boolean().default(false),
   /** Bolas condition, separate from wounds and injury results. */
   entangled: z.boolean().optional(),
+  pigeonLaunchId: z.string().optional(),
+  pigeonTargetKey: z.string().optional(),
   lineShotId: z.string().optional(),
   lineShotTargetKey: z.string().optional(),
   /** Every roll of the walk-through, in order: "rolled 5 to hit. Hit.", "Armour save: rolled 2. Failed." ... */

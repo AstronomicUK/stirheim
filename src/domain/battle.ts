@@ -101,6 +101,12 @@ export const battleLiveStateSchema = z.object({
   rollAttempts: z.array(rollAttemptSchema).default([]),
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
+  pigeonLaunches: z.array(z.object({
+    id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), ownTurn: z.number().int().min(0), at: z.string(), reason: z.string().default(''),
+    original: z.number().int().min(1).max(6).optional(), die: z.number().int().min(1).max(6).optional(),
+    intendedTarget: z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() }),
+    targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })).optional(),
+  })).default([]),
   linePermissionTests: z.array(z.object({ id: z.string(), warriorId: z.string(), weaponId: z.enum(["blunderbuss", "chaos_dwarf_blunderbuss"]), shooterSlot: z.number().int().min(0), ownTurn: z.number().int().min(0), original: z.number().int().min(1).max(6).optional(), die: z.number().int().min(1).max(6).optional(), reason: z.string().default(''), at: z.string(), targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })) })).default([]),
   lineShots: z.array(z.object({ id: z.string(), warriorId: z.string(), weaponId: z.enum(["blunderbuss", "chaos_dwarf_blunderbuss"]), shooterSlot: z.number().int().min(0).default(0), ownTurn: z.number().int().min(0), at: z.string(), cancelled: z.boolean().default(false), targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })) })).default([]),
   bolasRecoveryTests: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), attemptId: z.string() })).default([]),

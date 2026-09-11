@@ -565,3 +565,95 @@ it('optional dismissal and promotion are planned together, preserving restrictio
   const invalid = planGroup({ ...selected, dismissHeroId: 'not-an-active-hero' }, watchmen, context)
   expect(invalid.result).toBeNull()
 })
+
+it('Orc Goblins are killed on Talent instead of silently rerolling (#114)',()=>{
+ for(const size of [1,3]) {
+  const group={...watchmen,unitTemplateId:'orc_mob_goblin_warriors',name:'Mouthy Goblins',size}
+  const band={...roster,warbandTemplateId:'orc_mob',henchmenGroups:[group]}
+  const plan=planGroup(setDice(emptyDraft(NEW_ID),5,6,'app'),group,{roster:band,template:findWarbandTemplate('orc_mob'),thresholdXp:2})
+  expect(plan.result?.resolution.outcome).toBe('casualty')
+  expect(plan.result?.resolution.text).toContain('Runts: one member of Mouthy Goblins is executed')
+  expect(plan.result?.resolution.text).not.toContain('Life of Slavery')
+  expect(plan.result?.next.heroes).toEqual(band.heroes)
+  expect(plan.result?.next.henchmenGroups[0]?.size??0).toBe(size-1)
+  expect(plan.result?.resolution.followUps?.length).toBe(size>1?1:0)
+ }
+})
+
+it('Chapel Squires choose their path and a Knight spends the immediate advance on knighthood (#114)',()=>{
+ const group={...watchmen,unitTemplateId:'bretonnian_squires',size:2,equipment:[{itemId:'sword',quantity:2},{itemId:'bow',quantity:2},{itemId:'helmet',quantity:2}]}
+ const band={...roster,warbandTemplateId:'bretonnian_chapel_guard',henchmenGroups:[group]}
+ const context={roster:band,template:findWarbandTemplate(band.warbandTemplateId),thresholdXp:2}
+ const base={...setDice(emptyDraft(NEW_ID),5,5),newHeroName:'Sir Test',skillTableIds:['combat','academic']}
+ expect(planGroup(base,group,context).result).toBeNull()
+ const squire=planGroup({...base,squirePromotion:'squire'},group,context)
+ expect(squire.result?.next.heroes.find(h=>h.id===NEW_ID)?.unitTemplateId).toBe('bretonnian_squires')
+ expect(squire.result?.resolution.followUps?.some(f=>f.subjectType==='hero')).toBe(true)
+ const knight=planGroup({...base,squirePromotion:'knight'},group,context)
+ const h=knight.result!.next.heroes.find(h=>h.id===NEW_ID)!
+ expect(h.unitTemplateId).toBe('bretonnian_knight_errant')
+ expect(h.stats).toEqual(group.stats)
+ expect(h.xp).toBe(group.xp)
+ expect(h.levelUps).toBe(group.levelUps+1)
+ expect(h.skillTableIds).toEqual(['combat','academic','warband-unique'])
+ expect(h.equipment.map(i=>i.itemId)).toEqual(['sword'])
+ expect(knight.result?.next.stash.map(i=>i.itemId)).toEqual(expect.arrayContaining(['bow','helmet']))
+ expect(knight.result?.resolution.followUps).toEqual([{subjectType:'group',subjectId:group.id,thresholdXp:2}])
+ expect(planGroup({...base,squirePromotion:'squire',skillTableIds:['combat','shooting']},group,context).result).toBeNull()
+})
+
+
+it.each(['night_goblins_web_fanatics','lustrian_reavers_prospects'])('%s cannot use an ordinary Talent roll to promote (#114)',unitTemplateId=>{
+ const group={...watchmen,unitTemplateId}
+ const band={...roster,henchmenGroups:[group]}
+ const plan=planGroup({...setDice(emptyDraft(NEW_ID),5,5),newHeroName:'Not a Hero',skillTableIds:['combat','speed']},group,{roster:band,template:undefined})
+ expect(plan.need).toBe('reroll')
+ expect(plan.result).toBeNull()
+})
+
+it('Harnessed makes an Untrained a wizard and offers a spell instead of the immediate advance (#114)',()=>{
+ const group={...watchmen,unitTemplateId:'untrained',size:2}
+ const band={...roster,warbandTemplateId:'sorcerous_society',henchmenGroups:[group]}
+ const ctx={roster:band,template:findWarbandTemplate(band.warbandTemplateId),thresholdXp:2}
+ const base={...setDice(emptyDraft(NEW_ID),5,5),newHeroName:'New Wizard',skillTableIds:['combat','academic']}
+ expect(planGroup(base,group,ctx).result).toBeNull()
+ const normal=planGroup({...base,harnessedAdvance:'advance',spellLoreId:'lesser_magic'},group,ctx)
+ const hero=normal.result!.next.heroes.find(h=>h.id===NEW_ID)!
+ expect(hero.flags.magicLoreId).toBe('lesser_magic')
+ expect(hero.spellIds).toEqual([])
+ expect(hero.levelUps).toBe(group.levelUps)
+ expect(normal.result?.resolution.followUps?.some(f=>f.subjectType==='hero')).toBe(true)
+ const rolled=planGroup({...base,harnessedAdvance:'spell',spellLoreId:'lesser_magic',subRoll:1},group,ctx)
+ const wizard=rolled.result!.next.heroes.find(h=>h.id===NEW_ID)!
+ expect(wizard.spellIds).toHaveLength(1)
+ expect(wizard.levelUps).toBe(group.levelUps+1)
+ expect(rolled.result?.resolution.followUps?.some(f=>f.subjectType==='hero')).toBe(false)
+ expect(rolled.result?.resolution.text).toContain('Wizard and')
+ expect(planGroup({...base,harnessedAdvance:'spell',spellLoreId:'necromancy',subRoll:1},group,ctx).result).toBeNull()
+ expect(planGroup({...base,harnessedAdvance:'spell',spellLoreId:'lesser_magic'},group,ctx).result).toBeNull()
+})
+
+it.each([1,3])('A Grunt can become an Untrained henchman, then a wizard on a later Talent roll (size %s)',size=>{
+ const group={...watchmen,unitTemplateId:'grunts',size,equipment:[{itemId:'sword',quantity:size}]}
+ const band={...roster,warbandTemplateId:'sorcerous_society',henchmenGroups:[group]}
+ const ctx={roster:band,template:findWarbandTemplate(band.warbandTemplateId),thresholdXp:2}
+ const base={...setDice(emptyDraft(NEW_ID),5,5),newHeroName:'Grunt Untrained'}
+ expect(planGroup(base,group,ctx).result).toBeNull()
+ const trained=planGroup({...base,gruntChoice:'untrained'},group,ctx).result!
+ expect(trained.next.heroes).toEqual(band.heroes)
+ const novice=trained.next.henchmenGroups.find(g=>g.id===NEW_ID)!
+ expect(novice.unitTemplateId).toBe('untrained')
+ expect(novice.stats).toEqual(group.stats)
+ expect(novice.xp).toBe(group.xp)
+ expect(novice.size).toBe(1)
+ expect(novice.levelUps).toBe(group.levelUps+1)
+ expect(novice.equipment).toEqual([{itemId:'sword',quantity:1}])
+ expect(trained.resolution.followUps).toHaveLength(size>1?1:0)
+ expect(trained.resolution.text).toContain('remains a henchman')
+ const later=planGroup({...base,newHeroId:'aaaaaaaa-0000-4000-8000-000000000009',harnessedAdvance:'advance',spellLoreId:'lesser_magic',skillTableIds:['combat','academic']},novice,{...ctx,roster:trained.next}).result!
+ expect(later.next.heroes).toHaveLength(band.heroes.length+1)
+ expect(later.next.heroes.at(-1)?.flags.magicLoreId).toBe('lesser_magic')
+ const mundane=planGroup({...base,gruntChoice:'hero',skillTableIds:['combat','speed']},group,ctx).result!
+ expect(mundane.next.heroes.at(-1)?.flags.magicLoreId).toBeUndefined()
+ expect(mundane.next.heroes.at(-1)?.unitTemplateId).toBe('grunts')
+})

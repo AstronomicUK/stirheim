@@ -562,7 +562,7 @@ export function allowedSkillTablesFor(warbandTemplateId: string): string[] {
 }
 
 /** Split one of each item off a group's equipment for a promoted member (see file header for the stack rule). */
-function splitEquipment(group: RosterHenchmanGroup): { heroItems: RosterItem[]; groupItems: RosterItem[] } {
+export function splitEquipment(group: RosterHenchmanGroup): { heroItems: RosterItem[]; groupItems: RosterItem[] } {
   const heroItems: RosterItem[] = [];
   const groupItems: RosterItem[] = [];
   for (const item of group.equipment) {

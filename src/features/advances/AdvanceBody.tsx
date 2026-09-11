@@ -283,7 +283,7 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
 }
 
 function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
-  if (plan.result?.resolution.outcome === 'casualty') return <Notice tone="warn" title="Life of Slavery">{plan.result.resolution.casualtySummary}</Notice>
+  if (plan.result?.resolution.outcome === 'casualty') return <Notice tone="warn" title={plan.result.resolution.casualtySummary?.split(':')[0] ?? 'Henchman lost'}>{plan.result.resolution.casualtySummary}</Notice>
   if (plan.need === 'reroll') {
     return (
       <Notice tone="warn" title="Roll again">
@@ -303,9 +303,34 @@ function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
       </Block>
     )
   }
+  const gruntPicker = plan.grunt ? <SelectField label="Grunt’s path" value={draft.gruntChoice ?? ''} onChange={e => update(d => ({ ...d, gruntChoice: e.target.value as 'hero' | 'untrained', skillTableIds: [] }))}>
+    <option value="">Choose the Grunt’s path</option><option value="hero">Become a mundane Hero</option><option value="untrained">Become a Grunt Untrained — remain a henchman</option>
+  </SelectField> : null
+  if (plan.roll?.kind === 'ladsGotTalent' && plan.grunt && draft.gruntChoice !== 'hero') return <Block title="Prove That Talent!">
+    {gruntPicker}
+    {draft.gruntChoice === 'untrained' ? <><p className="text-sm">One Grunt becomes an Untrained henchman, keeping his experience, characteristics and equipment. A future Lad’s Got Talent result can make him a Wizard. Remaining Grunts re-roll this advance.</p><TextField label="Name" value={draft.newHeroName} onChange={e => update(d => setNewHeroName(d, e.target.value))} /></> : null}
+  </Block>
   if (plan.roll?.kind === 'ladsGotTalent') {
     return (
       <Block title="The lad's got talent">
+        {gruntPicker}
+        {plan.harnessed ? <>
+          <Notice tone="info" title="Harnessed">The promoted warrior gains Wizard. Choose a lore and whether to take a normal Hero advance or generate a spell instead.</Notice>
+          <SelectField label="Wizard’s lore" value={draft.spellLoreId ?? ''} onChange={e => update(d => ({ ...d, spellLoreId: e.target.value, subRoll: null }))}>
+            <option value="">Choose a lore</option>{plan.harnessedLores?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </SelectField>
+          <SelectField label="Immediate advancement" value={draft.harnessedAdvance ?? ''} onChange={e => update(d => ({ ...d, harnessedAdvance: e.target.value as 'advance' | 'spell', subRoll: null }))}>
+            <option value="">Choose the advancement</option><option value="advance">Roll on the Hero advancement table</option><option value="spell">Generate a spell instead</option>
+          </SelectField>
+          {draft.harnessedAdvance === 'spell' && plan.harnessedLores?.some(l => l.id === draft.spellLoreId) ? <>
+            <DieField label="Spell D6" sides={6} value={draft.subRoll} onChange={(v, source) => update(d => setSubRoll(d, v, source))} rollable />
+            <p className="text-sm">{draft.subRoll ? spellForRoll(plan.harnessedLores!.find(l => l.id === draft.spellLoreId)!, draft.subRoll)?.name : 'Roll to generate the spell.'}</p>
+          </> : null}
+        </> : null}
+        {plan.squirePromotion ? <SelectField label="Squire promotion" value={draft.squirePromotion ?? ''} onChange={e => update(d => ({ ...d, squirePromotion: e.target.value as 'squire' | 'knight', skillTableIds: [] }))}>
+          <option value="">Choose the Squire’s path</option><option value="squire">Remain a Squire — gain the immediate Hero advance</option><option value="knight">Become a Knight Errant — gain Knight rules instead</option>
+        </SelectField> : null}
+        {plan.squirePromotion && draft.squirePromotion === 'knight' ? <Notice tone="info" title="Knighthood">Keeps his experience and characteristics. Gains Special Skills alongside the two chosen tables. Missile weapons, helmets and other equipment outside the Knight list return to the stash when you confirm.</Notice> : null}
         {plan.dismissalOptions.length > 0 ? <Notice tone="warn" title="Your warband is at the maximum number of heroes. Do you want to dismiss an existing hero?">
           <SelectField label="Hero to dismiss" value={draft.dismissHeroId ?? ''} onChange={e => update(d => ({ ...d, dismissHeroId: e.target.value }))}>
             <option value="">Choose a Hero</option>
@@ -314,7 +339,7 @@ function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
           <p className="mt-2 text-sm">Their equipment returns to the stash. Dismissal and promotion happen together when you confirm.</p>
         </Notice> : null}
         <p className="text-sm leading-relaxed text-ink-dim">
-          One member becomes a hero of the same type, keeping his experience and characteristics, and takes one of each item the group carries.
+          One member becomes a hero, keeping his experience and characteristics, and takes one of each item the group carries, subject to any new equipment restrictions.
           {plan.dissolvesGroup ? ' He is the last member, so the group leaves the roster.' : ''}
         </p>
         <TextField label="Name" value={draft.newHeroName} autoComplete="off" onChange={(e) => update((d) => setNewHeroName(d, e.target.value))} />
@@ -339,7 +364,7 @@ function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
         </div>
         <p className="text-xs leading-relaxed text-ink-dim">
           {plan.heroCapacity !== null ? `The warband may have ${plan.heroCapacity} heroes. ` : ''}
-          {plan.promotionGrant ? `The new hero learns ${plan.promotionGrant} instead of rolling on the Hero advance table. Only surviving group members are queued to roll again.` : 'The new hero rolls once on the Hero advance table straight away, and remaining group members roll again for this advance (re-rolling 10–12). These rolls are queued when you confirm.'}
+          {plan.harnessed && draft.harnessedAdvance === 'spell' ? 'The spell replaces the immediate Hero advance. Remaining group members roll again for this advance.' : plan.promotionGrant ? `The new hero learns ${plan.promotionGrant} instead of rolling on the Hero advance table. Only surviving group members are queued to roll again.` : 'The new hero rolls once on the Hero advance table straight away, and remaining group members roll again for this advance (re-rolling 10–12). These rolls are queued when you confirm.'}
         </p>
       </Block>
     )

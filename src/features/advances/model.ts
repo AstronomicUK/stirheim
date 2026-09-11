@@ -1,3 +1,5 @@
+import {trainGrunt, promoteUntrained, SORCEROUS_LORES, type HarnessedAdvance} from '../../rules/resolve/sorcerousPromotion'
+import {promoteChapelSquire, SQUIRE_TABLES, type SquirePromotion} from '../../rules/resolve/chapelPromotion'
 import { dismissWarrior } from '../../rules/resolve/recruitment'
 import { grantMerchantGuardian, hasGuardianSkill } from '../../rules/resolve/hiredCompanions'
 // Pure helpers for the advancement screen: grouping pending advances by warrior, the persisted
@@ -278,6 +280,9 @@ export interface AdvanceDraft extends AdvanceRollAudit {
   skillInstead: boolean
   /** The lad's got talent. */
   newHeroName: string
+  gruntChoice?: 'hero' | 'untrained'
+  harnessedAdvance?: HarnessedAdvance
+  squirePromotion?: SquirePromotion
   skillTableIds: string[]
   /** Generated once with crypto.randomUUID() so a refresh does not change the new hero's id. */
   newHeroId: string
@@ -476,6 +481,8 @@ export interface AdvanceResolution extends AdvanceRollAudit {
   loreId?: string
   dismissedHeroId?: string
   dismissedHeroName?: string
+  henchmanTransition?: string
+  wizardLore?: string
   promotionGrant?: string
   casualtySummary?: string
   newHeroId?: string
@@ -529,7 +536,8 @@ export function summaryText(p: ResolutionParts): string {
       body = p.casualtySummary ?? 'one henchman is removed'
       break
     case 'promotion':
-      body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero${p.dismissedHeroName ? `, replacing dismissed Hero ${p.dismissedHeroName}` : ''}${p.promotionGrant ? ` and learns ${p.promotionGrant} instead of the immediate Hero advance roll` : ''}`
+      if (p.henchmanTransition) { body = p.henchmanTransition; break }
+      body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero${p.wizardLore ? ` and gains Wizard (${p.wizardLore})` : ''}${p.dismissedHeroName ? `, replacing dismissed Hero ${p.dismissedHeroName}` : ''}${p.promotionGrant ? ` and learns ${p.promotionGrant} instead of the immediate Hero advance roll` : ''}`
       break
     case 'reward':
       body = `${p.rewardSummary ?? `Rewards of the Shadowlord: ${p.rewardTitle ?? ''}`}`.trimEnd()
@@ -840,6 +848,10 @@ export interface SkillTableOption {
 }
 
 export interface GroupPlan {
+  grunt?: boolean
+  harnessed?: boolean
+  harnessedLores?: SpellLore[]
+  squirePromotion?: boolean
   total: number | null
   roll: HenchmanAdvanceRoll | null
   maxima: MaximaInfo
@@ -862,7 +874,12 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
   const warbandTemplateId = ctx.roster.warbandTemplateId
   const maxima = groupMaxima(group, warbandTemplateId)
   const capacity = ctx.template ? heroCapacity(ctx.template) : null
+  const harnessed = warbandTemplateId === 'sorcerous_society' && group.unitTemplateId === 'untrained'
   const plan: GroupPlan = {
+    grunt: warbandTemplateId === 'sorcerous_society' && group.unitTemplateId === 'grunts',
+    harnessed,
+    harnessedLores: harnessed ? SPELL_LORES.filter(l => SORCEROUS_LORES.includes(l.id)) : [],
+    squirePromotion: group.unitTemplateId === 'bretonnian_squires',
     total: diceTotal(draft),
     roll: null,
     maxima,
@@ -871,11 +888,12 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
     statOptions: [],
     tableOptions: allowedSkillTablesFor(warbandTemplateId)
       .filter((id) => {
+        if (group.unitTemplateId === 'bretonnian_squires') return SQUIRE_TABLES.includes(id)
         const rule = unitRules(group.unitTemplateId).promotion
         return !rule || !('tables' in rule) || (rule.tables as string[]).includes(id)
       })
       .map((id) => ({ id, name: tableName(id) })),
-    promotionGrant: unitRules(group.unitTemplateId).promotionAdvanceSkill ? 'Deathwish' : null,
+    promotionGrant: group.unitTemplateId === 'bretonnian_squires' && draft.squirePromotion === 'knight' ? 'Knight, Vain and Impetuous' : unitRules(group.unitTemplateId).promotionAdvanceSkill ? 'Deathwish' : null,
     dismissalOptions: [],
     heroCapacity: capacity,
     dissolvesGroup: group.size <= 1,
@@ -950,7 +968,8 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
         const next = { ...ctx.roster, henchmenGroups: remaining > 0
           ? ctx.roster.henchmenGroups.map(g => g.id === group.id ? { ...g, size: remaining } : g)
           : ctx.roster.henchmenGroups.filter(g => g.id !== group.id) }
-        const summary = `Life of Slavery: one member of ${group.name} is executed and removed. ${remaining > 0 ? `${remaining} remain and must re-roll this advance.` : 'The group has no members left.'}`
+        const ruleName = promotionRule.note.split(':')[0]
+        const summary = `${ruleName}: one member of ${group.name} is executed and removed. ${remaining > 0 ? `${remaining} remain and must re-roll this advance.` : 'The group has no members left.'}`
         return { ...plan, roll: { ...roll, text: promotionRule.note }, result: {
           next,
           events: [{ kind: 'henchmanLost', subjectId: group.id, message: summary, data: { before: group.size, after: remaining } }],
@@ -961,6 +980,16 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
       if (promotionRule && 'never' in promotionRule) {
         return { ...plan, need: 'reroll', rerollReason: promotionRule.note }
       }
+      if (plan.grunt) {
+        if (!draft.gruntChoice) return { ...plan, need: 'promotion' }
+        if (draft.gruntChoice === 'untrained') {
+          if (!draft.newHeroName.trim()) return { ...plan, need: 'promotion' }
+          try {
+            const r = trainGrunt(ctx.roster, group.id, draft.newHeroName, draft.newHeroId)
+            return { ...plan, result: {next:r.value,events:r.events,resolution:buildResolution({...base,outcome:'promotion',henchmanTransition:r.events[0].message,followUps:group.size > 1 ? [{subjectType:'group',subjectId:group.id,thresholdXp:ctx.thresholdXp ?? group.xp}] : []})} }
+          } catch(e) { return {...plan,need:'promotion',error:errorMessage(e)} }
+        }
+      }
       const active = ctx.roster.heroes.filter((h) => h.status === 'active').length
       let dismissed: RosterHero | undefined
       if (capacity !== null && active >= capacity) {
@@ -969,11 +998,17 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
         dismissed = ctx.roster.heroes.find(h => h.id === draft.dismissHeroId && h.status === 'active')
         if (!dismissed) return { ...plan, need: 'promotion' }
       }
+      if (harnessed && (!draft.harnessedAdvance || !draft.spellLoreId || (draft.harnessedAdvance === 'spell' && draft.subRoll === null))) return { ...plan, need: 'promotion' }
+      if (plan.squirePromotion && !draft.squirePromotion) return { ...plan, need: 'promotion' }
       const name = draft.newHeroName.trim()
       if (name.length === 0 || draft.skillTableIds.length !== 2) return { ...plan, need: 'promotion' }
       try {
         const dismissal = dismissed ? dismissWarrior(ctx.roster, dismissed.id) : null
-        const r = promoteHenchman(dismissal?.value ?? ctx.roster, group.id, name, draft.skillTableIds, draft.newHeroId, capacity !== null ? { heroCapacity: capacity } : undefined)
+        const r = harnessed
+          ? promoteUntrained(dismissal?.value ?? ctx.roster, group.id, name, draft.skillTableIds, draft.newHeroId, draft.harnessedAdvance!, draft.spellLoreId!, draft.subRoll, capacity ?? undefined)
+          : plan.squirePromotion
+          ? promoteChapelSquire(dismissal?.value ?? ctx.roster, group.id, name, draft.skillTableIds, draft.newHeroId, draft.squirePromotion!, capacity ?? undefined)
+          : promoteHenchman(dismissal?.value ?? ctx.roster, group.id, name, draft.skillTableIds, draft.newHeroId, capacity !== null ? { heroCapacity: capacity } : undefined)
         return {
           ...plan,
           result: {
@@ -983,11 +1018,12 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
               ...base,
               ...(dismissed ? { dismissedHeroId: dismissed.id, dismissedHeroName: dismissed.name } : {}),
               outcome: 'promotion',
+              ...(harnessed ? { wizardLore: draft.harnessedAdvance === 'advance' ? plan.harnessedLores!.find(l=>l.id===draft.spellLoreId)!.name : undefined, promotionGrant: draft.harnessedAdvance === 'spell' ? `Wizard and ${spellForRoll(plan.harnessedLores!.find(l=>l.id===draft.spellLoreId)!,draft.subRoll!)?.name ?? 'a spell'}` : undefined } : {}),
               ...(plan.promotionGrant ? { promotionGrant: plan.promotionGrant } : {}),
               newHeroId: draft.newHeroId,
               newHeroName: name,
               skillTableIds: [...draft.skillTableIds],
-              followUps: promotionFollowUps(r.value, group.id, draft.newHeroId, ctx.thresholdXp ?? group.xp),
+              followUps: promotionFollowUps(r.value, group.id, draft.newHeroId, ctx.thresholdXp ?? group.xp).filter(f => !((plan.squirePromotion && draft.squirePromotion === 'knight' || harnessed && draft.harnessedAdvance === 'spell') && f.subjectType === 'hero')),
             }),
           },
         }

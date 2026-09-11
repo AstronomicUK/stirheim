@@ -297,3 +297,10 @@ Build/typecheck/lintpass (3existingwarnings),72targettests pass acrossfinalruns 
 Fullordinary /tmp/stirheim-midday-full-tests.log 1803pass/176DBskipped. FirstordinaryrunonlyfailedoldRACIAL_MAXIMUMScount31expected;updated35because4printedrowsaddedearlier;rerunallpass. AllDBrun175pass1timeoutscenarioEquipment movesexistingkit (5000ms threshold, took8s underload); isolatedentire26scenarioEquipmenttests rerunPASS3.72s. All176DBverifiedacrossruns;notasinglecleanfullDBpassclaim. No prodchanges;pending73+74.
 
 NextHIGH#62remaininghalf-rate startingLevelUps: tracker1843–1855 identifiesManeaterCaptain20XP/MountainGuide8/OgreHunter20 helpernormalratebug. ReadbuilderstartingLevelUps/recruitment/lookup beforefix; retainnormalrate behaviorandno retroactivehistoryediting. Then#122temporaryleadershipspecies/followups, #114otherexceptions/#112killXP. Allpriorcombatremainingstillopen.
+
+
+## Experience milestone 15 — #62 half-rate starting counts (local)
+
+startingLevelUps nowadvancesEarned(...,unitRules(unit.id).advanceRate??normal). Sharedbuildercreatepayload/import/recruit pathsusehelperalready. Tests actualcreation+payload+recruit+UIxpProgress forManeaterCaptain20/4,next22;MountainGuide8/2,next12;OgreHunter20/4,next22;eacharrival0owed,nextthreshold1owed. NormalCaptain8levelupsretainedbyexistingtests.80tests/build/typecheck/lintpass oldwarnings. SourceSlowWitted1c1674,2apart12931. #62fixedprospective, nohistoricallevelupsrewrite/deploy.
+
+Next#122temporarysuccession/species requirescohesivechange: currentappointLeaderalwaysunitretemplates; needpreserveGnoblar/etc whilegrantingleaderaccess andtemporaryreplacementflow. No isLeader/actingLeaderflagcurrentlyinRoster;leaderTemplate used~15calls, inspectallbeforeintroducingroleflag. Currentcore#121ranking/skilllistfixed;do notrebreak. Alternative next#114Wretch/Chapel/Sorcerous/Lustrian or#112killXP iflargersuccessionneeds stagedwork. Stillreturnremainingcombatmechanicsbeforeclaimingarea complete.

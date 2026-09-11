@@ -476,12 +476,13 @@ export function unitStartingStats(unit: UnitTemplate | undefined): Stats {
 
 /** True when any of the unit's special rules is named "Large", "Large Target", "Large Monster" … */
 /**
- * Starting experience is "already spent": a Captain who begins at 20 xp has crossed eight
+ * Starting experience is "already spent": a Mercenary Captain at 20 xp has crossed eight
  * threshold boxes but is owed no advances for them (rulebook: starting experience reflects
- * skills the profile already has). Recording that as level-ups keeps advancesEarned honest.
+ * skills the profile already has). Half-rate units count their doubled thresholds instead.
+ * Recording the matching count prevents both phantom and hidden advances.
  */
 export function startingLevelUps(unit: UnitTemplate | undefined, role: "hero" | "henchman"): number {
-  return advancesEarned(0, unit?.startingExperience ?? 0, role);
+  return advancesEarned(0, unit?.startingExperience ?? 0, role, unit ? unitRules(unit.id).advanceRate ?? "normal" : "normal");
 }
 
 export function unitIsLarge(unit: UnitTemplate | undefined): boolean {

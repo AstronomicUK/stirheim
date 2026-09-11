@@ -3557,3 +3557,8 @@ Build/typecheck/lint pass. The 72 focused advancement/settings/domain/house-rule
 Verified the full mobile flow using a disposable local campaign: the setting starts off and blocks capped promotion; enabling it through Campaign Settings saves correctly; choosing the outgoing Hero and promotion options shows a joint review; confirmation keeps six active Heroes, retires the selected Hero, moves their sword to the stash, creates the replacement and records both names. Reload and mobile width checks pass. #211 is ready for the combined deployment.
 
 Midday regression check: all1,803 ordinary tests pass. Local database run passed175 tests with one scenario-equipment timeout; rerunning that entire26-test file passed, verifying all176 database tests across the runs. No production changes. Updated the old racial-profile-count test from31 to35 for the four already-verified printed maximum profiles.
+
+
+## 2026-09-11 half-rate starting advances — #62 corrected locally
+
+The shared starting-experience helper now counts the unit's actual advancement rate. Maneater Captains and Ogre Hunters at20 XP start with4 consumed advances; Mountain Guides at8 XP start with2. Creation payloads and later recruitment agree with roster progress: no advances owed on arrival, then exactly one at22/12/22 XP respectively. Normal-rate recruitment is unchanged. Source Slow Witted, grade-1c.md:1674 and grade-2a-part1.md:2931. Build/typecheck/lint and80 focused creation/recruitment/roster tests pass; three old audit-script lint warnings remain. This corrects newly created/recruited warriors; existing stored advancement histories are not automatically recalculated. Pending combined deployment.

@@ -1,3 +1,5 @@
+import { xpProgress } from '../../../features/roster/view/lookups'
+import { recruitHero } from '../recruitment'
 import { describe, expect, it } from "vitest";
 import { findWarbandTemplate } from "../../data/warbandTemplates";
 import { defaultCampaignHouseRules } from "../../types/roster";
@@ -531,4 +533,26 @@ describe("a spellcasting hero's first spell at creation", () => {
       expect(loreForUnit(unitId, warband)?.id).toBe(loreId);
     }
   });
+});
+
+it('half-rate starting experience uses the same boxes in creation, recruitment and roster progress (#62)', () => {
+  for (const [warbandId, unitId, taken, nextXp] of [
+    ['maneaters', 'maneaters_captain', 4, 22],
+    ['maneaters', 'maneaters_mountain_guide', 2, 12],
+    ['ogre_hunting_party', 'ogre_hunting_party_ogre_hunter', 4, 22],
+  ] as const) {
+    const template = findWarbandTemplate(warbandId)!;
+    let draft = newWarbandDraft(template, 'Half-rate QA');
+    if (!draftToRosterWarband(draft, template).heroes.some(h => h.unitTemplateId === unitId)) draft = addDraftHero(draft, template, unitId, 'extra');
+    const created = draftToRosterWarband(draft, template).heroes.find(h => h.unitTemplateId === unitId)!;
+    const payload = draftToCreatePayload(draft, template).heroes.find(h => h.unit_type_rules_id === unitId)!;
+    expect(created.levelUps, unitId).toBe(taken);
+    expect(payload.level_ups, unitId).toBe(taken);
+    const empty = { ...draftToRosterWarband(draft, template), heroes: [], gold: 1000 };
+    const recruited = recruitHero(empty, template, unitId, 'New warrior', 'new').value.heroes[0];
+    expect(recruited.levelUps, unitId).toBe(taken);
+    expect(xpProgress(created.xp, created.levelUps, 'hero', 'half').advancesOwed).toBe(0);
+    expect(xpProgress(created.xp, created.levelUps, 'hero', 'half').next).toBe(nextXp);
+    expect(xpProgress(nextXp, created.levelUps, 'hero', 'half').advancesOwed).toBe(1);
+  }
 });

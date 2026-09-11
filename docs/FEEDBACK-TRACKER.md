@@ -3770,3 +3770,10 @@ Full ordinary suite: 1874 passed, 176 database tests skipped. Build/typecheck/li
 ### #154 — Grape Shot armour saves (local, 11 September)
 
 Grape Shot now honours its explicit no-armour-save-modifier rule, including when a KA-BOOM misfire increases Strength and the campaign enables Strength-based armour penetration. Defensive armour/wardrobe bonuses remain; the gun's offensive penetration is suppressed. Other ammunition keeps its printed modifiers. Source: reference/rules/02-weapons-armour-equipment.md:1230. Fifty-nine focused odds tests plus build/typecheck/lint passed with existing warnings. Grape Shot's additional-victim selection remains outstanding. No deployment.
+
+
+### #154 — Grape Shot spread foundation (local, 11 September)
+
+Added nearby-victim selection rules: nearest eligible enemies within 4 inches and line of sight, excluding the primary model and friends; cover is allowed only when the primary target was in cover. Hidden models remain eligible. Separate group members retain their identities and equally close models retain the player’s selected order. Saved spread dice preserve app originals and edits through reload; confirmed victims freeze without consuming another shot. Shared-result identity supports resolving each victim once and reopening reverted results.
+
+Five focused tests passed. This is domain/state groundwork only: Battle Sheet controls and automatic collateral damage are not yet connected, so #154 remains partial. Source: reference/rules/02-weapons-armour-equipment.md:1230. No migration or deployment.

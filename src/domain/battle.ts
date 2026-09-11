@@ -106,6 +106,13 @@ export const battleLiveStateSchema = z.object({
     reloadTurns: z.number().int().min(0), at: z.string(), misfireDie: z.number().int().min(1).max(6).optional(),
     misfirePending: z.boolean().optional(), misfireOriginal: z.number().int().min(1).max(6).optional(), experimental: z.boolean().default(false), correction: z.string().optional(),
   })).default([]),
+  grapeShotSpreads: z.array(z.object({
+    shotId: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), at: z.string(),
+    primary: z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() }),
+    primaryInCover: z.boolean(), original: z.number().int().min(1).max(6).optional(),
+    die: z.number().int().min(1).max(6).optional(),
+    targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })).optional(),
+  })).default([]),
   pigeonLaunches: z.array(z.object({
     id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), permissionRequired: z.boolean().optional(), permissionOriginal: z.number().int().min(1).max(6).optional(), permissionDie: z.number().int().min(1).max(6).optional(), permissionNote: z.string().optional(), ownTurn: z.number().int().min(0), at: z.string(), reason: z.string().default(''),
     original: z.number().int().min(1).max(6).optional(), die: z.number().int().min(1).max(6).optional(),

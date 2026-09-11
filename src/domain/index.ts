@@ -18,3 +18,4 @@ export * from "./lineShot";
 export * from "./pigeonLaunch";
 
 export * from "./blackpowderShot";
+export * from "./grapeShot";

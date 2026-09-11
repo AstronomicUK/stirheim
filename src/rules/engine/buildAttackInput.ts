@@ -217,7 +217,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   } else {
     let modifierSum = 0;
     // A pavise makes its bearer count as in cover against missiles (02: Pavise), the same -1 as real cover.
-    if ((context.cover || defender.armour.pavise) && !hasActiveEffect(defenderSkills, context, weapon.type, "ignoresModifier", "cover")) modifierSum -= 1;
+    if ((context.cover || defender.armour.pavise) && !hasActiveEffect(attackerSkills, context, weapon.type, "ignoresModifier", "cover")) modifierSum -= 1;
     if (context.longRange && !attackerSkills.some((s) => s.effect.type === "rangeExtension" && isActive(s, context))) modifierSum -= 1;
     // Moving and shooting is always -1 (01:673); Nimble only lets Move-or-Fire weapons shoot at all (see computeAttackCount).
     if (context.movedThisTurn) modifierSum -= 1;

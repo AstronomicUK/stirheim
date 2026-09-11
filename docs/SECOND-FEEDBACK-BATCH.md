@@ -104,3 +104,7 @@ Tom clarified that the deliberately changed roll was an advancement, not an inju
 Tom selected Mobile B for both phone and desktop. Both campaign screens now use the same visible rectangular section buttons: three columns on mobile, one wrapping row on desktop. Settings: General, Rules & bans, Scenarios, Players, Management. Campaign: Overview, Warbands, Battles, Map (map campaigns only), Activity, Rules. Existing primary navigation remains. Selected sections survive refresh; settings share one draft and Save changes action across sections, and validation returns to General when its fields need attention. “Done” now reads “Back to campaign”. Custom-scenario return links reopen Scenarios.
 
 Production build passed. Disposable browser verification passed at 390px and 1280px: section visibility, cross-section gold/scenario edits saved together, reload persistence, no mobile overflow or page errors, and one-row desktop navigation. Browser campaign tests updated to select the relevant sections. No deployment; retain for the combined release.
+
+## Release completed
+
+Second feedback batch deployed 11 September: commit 5a8cac8, Netlify 6aa396398993652a4f163c6f. Migration 72 applied. All 100 served HTML/JS/CSS files match the tested build. Final suites: 1,701 ordinary +169 database tests passed. Hosted CI 34567376962 still running at this checkpoint.

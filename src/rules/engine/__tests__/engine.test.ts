@@ -1048,3 +1048,26 @@ describe("Ball and Chain — D3 wounds per hit instead of 1 (#69)", () => {
     expect(normalEvents).toEqual([{ probability: 1, wounds: 1, injury: expect.any(Object), autoOOA: false, minSeverityKnockedDown: false }]);
   });
 });
+
+
+describe("Trick Shooter belongs to the shooter (#173)", () => {
+  it("ignores terrain and pavise cover only when the shooter knows the skill", () => {
+    const weapon = W("bow");
+    for (const pavise of [false, true]) {
+      const context = testContext({ cover: !pavise });
+      const defender = testDefender({ armour: { type: "none", shield: false, buckler: false, pavise } });
+      const ordinary = buildAttackInput({ attacker: testCharacter(), weapon, defender, context });
+      const skilled = buildAttackInput({ attacker: testCharacter({ skills: ["trick_shooter"] }), weapon, defender, context });
+      const defendingSkill = buildAttackInput({ attacker: testCharacter(), weapon, defender: { ...defender, activeSkillIds: ["trick_shooter"] }, context });
+      expect(ordinary.hitThreshold).toBe(5);
+      expect(skilled.hitThreshold).toBe(4);
+      expect(defendingSkill.hitThreshold).toBe(5);
+      expect(resolveSingleAttack(skilled).pHit).toBeCloseTo(0.5);
+      expect(resolveSingleAttack(defendingSkill).pHit).toBeCloseTo(1 / 3);
+    }
+  });
+  it("does not remove the separate movement or long-range penalties", () => {
+    const input = buildAttackInput({ attacker: testCharacter({ skills: ["trick_shooter"] }), weapon: W("bow"), defender: testDefender(), context: testContext({ cover: true, movedThisTurn: true, longRange: true }) });
+    expect(input.hitThreshold).toBe(6);
+  });
+});

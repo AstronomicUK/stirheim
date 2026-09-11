@@ -616,7 +616,7 @@ all clean.
 
 **Local progress — 2026-09-11:** Campaign setting logs now name individual changes, including added/removed bans, rule toggles and scenario availability. Familiar and the actual opposed-parry example are independently tested; unchanged nested data is not repeated. 27 activity tests, typecheck/lint and real mobile save/activity checks pass. Not deployed. Warband/post-battle dumps and #226 provenance remain open.
 
-**Status:** ✅ Fixed locally — awaiting batched release
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -3229,7 +3229,7 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 **Local fix — 2026-09-11:** Name-ranked search, complete catalogue browsing, Show more and result counts implemented. Seven focused tests/typecheck pass. Actual mobile/desktop settings check reaches all 20 Witch matches with Witch first and no overflow. Not yet deployed; see `SECOND-FEEDBACK-BATCH.md`.
 
-**Status:** 🔲 Open
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
@@ -3241,7 +3241,7 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 **Local fix — 2026-09-11:** Full built-in scenario selection now lives in Campaign Settings, persists with the existing save action, and controls new-battle manual/random selection. Existing battles and custom scenarios are retained. Thirty-five focused tests and real mobile save/reload/picker checks pass; build/typecheck pass. Not deployed; see `SECOND-FEEDBACK-BATCH.md`.
 
-**Status:** 🔲 Open
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
@@ -3251,7 +3251,7 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 223. Break Campaign Settings into manageable sections on desktop and mobile
 
-**Status:** 🔲 Open — design discussion required
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
@@ -3263,7 +3263,7 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 **Local fix — 2026-09-11:** Personal campaign checklist now persists in the account database, with tickable steps, completion, dismissal and reopening. Three access/persistence database tests and real mobile reload checks pass; typecheck/lint pass. Migration 72 is local only; not deployed. See `SECOND-FEEDBACK-BATCH.md`.
 
-**Status:** 🔲 Open
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
@@ -3273,7 +3273,7 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 225. Campaign overview needs secondary navigation
 
-**Status:** 🔲 Open — design discussion required
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
@@ -3285,7 +3285,7 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 226. Post-battle history does not clearly identify deliberately overridden advancement dice
 
-**Status:** ✅ Corrected advancement scope fixed locally — awaiting batched release
+**Status:** 🚀 Deployed — second feedback batch, 11 September 2026
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
@@ -3340,3 +3340,11 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 Tom selected Mobile B for both phone and desktop. Both campaign screens now use the same visible rectangular section buttons: three columns on mobile, one wrapping row on desktop. Settings: General, Rules & bans, Scenarios, Players, Management. Campaign: Overview, Warbands, Battles, Map (map campaigns only), Activity, Rules. Existing primary navigation remains. Selected sections survive refresh; settings share one draft and Save changes action across sections, and validation returns to General when its fields need attention. “Done” now reads “Back to campaign”. Custom-scenario return links reopen Scenarios.
 
 Production build passed. Disposable browser verification passed at 390px and 1280px: section visibility, cross-section gold/scenario edits saved together, reload persistence, no mobile overflow or page errors, and one-row desktop navigation. Browser campaign tests updated to select the relevant sections. No deployment; retain for the combined release.
+
+### Second feedback release — 11 September
+
+Second feedback batch deployed 11 September: commit 5a8cac8, Netlify 6aa396398993652a4f163c6f. Migration 72 applied. All 100 served HTML/JS/CSS files match the tested build. Final suites: 1,701 ordinary +169 database tests passed. Hosted CI 34567376962 still running at this checkpoint.
+
+### #173 follow-up — Trick Shooter
+
+Source 03:421–425 verified. Terrain/pavise cover now checks the shooter’s skills, not the defender’s. Tests verify ownership, probabilities and retained movement/range penalties. Fixed locally, not yet deployed.

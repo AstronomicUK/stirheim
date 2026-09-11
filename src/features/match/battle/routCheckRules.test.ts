@@ -3,7 +3,7 @@ import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { leadershipOptions, routSkillReminders, suggestedLeadership } from './routCheckRules'
-import { toggleHeroOut } from './sheet'
+import { setGroupOut, toggleHeroOut } from './sheet'
 
 const REIKLAND = findWarbandTemplate('mercenaries_reikland')!
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 7 }
@@ -29,10 +29,10 @@ describe('rout check leadership', () => {
     expect(options[0]).toMatchObject({ id: 'cap', standing: false })
     expect(suggestedLeadership(options)?.id).toBe('ch1')
   })
-  it('still offers a fallen warrior when everyone is down', () => {
+  it('does not suggest a fallen warrior when everyone is down', () => {
     let sheet = emptyBattleLiveState()
     for (const id of ['cap', 'ch1', 'yb']) sheet = toggleHeroOut(sheet, id)
-    expect(suggestedLeadership(leadershipOptions(roster, REIKLAND, sheet))?.id).toBe('cap')
+    expect(suggestedLeadership(leadershipOptions(roster, REIKLAND, sheet))).toBeUndefined()
   })
 
   it('never offers a hired sword as the suggestion, even with the highest Leadership standing (#60/#68)', () => {
@@ -80,5 +80,32 @@ describe('rout skill reminders (#68)', () => {
 
   it('returns nothing when no standing warrior has a rout-affecting skill', () => {
     expect(routSkillReminders(roster, emptyBattleLiveState())).toEqual([])
+  })
+})
+
+
+describe('henchman Rout Leadership (#68)', () => {
+  const veterans = { id: 'veterans', name: 'Veterans', unitTemplateId: 'mercenaries_reikland_warriors', size: 2, stats: { ...stats, Ld: 9 }, xp: 10, levelUps: 1, statIncreases: {}, equipment: [] }
+  const withVeterans: RosterWarband = { ...roster, henchmenGroups: [veterans] }
+  it('retains the leader while present, then uses surviving veteran henchmen', () => {
+    expect(suggestedLeadership(leadershipOptions(withVeterans, REIKLAND, emptyBattleLiveState()))?.id).toBe('cap')
+    let sheet = toggleHeroOut(emptyBattleLiveState(), 'cap')
+    sheet = setGroupOut(sheet, veterans.id, 1, 2)
+    expect(suggestedLeadership(leadershipOptions(withVeterans, REIKLAND, sheet))?.id).toBe('veterans')
+    sheet = setGroupOut(sheet, veterans.id, 2, 2)
+    expect(suggestedLeadership(leadershipOptions(withVeterans, REIKLAND, sheet))?.id).toBe('ch1')
+  })
+  it('does not suggest an explicit never-leader, an absent group or hired sword as fallback', () => {
+    const groups = [
+      { ...veterans, unitTemplateId: 'witch_hunters_flagellants' },
+      { ...veterans, id: 'empty', size: 0 },
+      { ...veterans, id: 'absent', campaignState: { fanaticSittingOut: true } },
+    ]
+    const testRoster: RosterWarband = { ...withVeterans, heroes: [], henchmenGroups: groups, hiredSwords: [{ id: 'hs', hiredSwordId: 'ogre_bodyguard', name: 'Grom', stats, xp: 0, levelUps: 0, skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active' }] }
+    const options = leadershipOptions(testRoster, REIKLAND, emptyBattleLiveState())
+    expect(options.some(o => o.id === 'empty' || o.id === 'absent')).toBe(false)
+    expect(options.find(o => o.id === 'veterans')?.mayLead).toBe(false)
+    expect(suggestedLeadership(options)).toBeUndefined()
+    expect(options).toHaveLength(2) // Both remain selectable as approved player overrides.
   })
 })

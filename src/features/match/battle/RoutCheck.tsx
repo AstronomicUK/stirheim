@@ -100,7 +100,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
         footer={
           outcome === null ? (
             <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => resolve(rollDie(6), rollDie(6))}>
+              <Button variant="secondary" className="flex-1" disabled={!chosen} onClick={() => resolve(rollDie(6), rollDie(6))}>
                 Roll for me
               </Button>
               <Button className="flex-1" disabled={!ready} onClick={() => ready && resolve(d1, d2)}>
@@ -132,6 +132,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
       >
         <div className="flex flex-col gap-4 py-2">
           <SelectField label="Whose Leadership" value={chosen?.id ?? ''} onChange={(e) => setChosenId(e.target.value)} disabled={outcome !== null}>
+            <option value="" disabled>Select a fighter</option>
             {options.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -141,6 +142,7 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
               </option>
             ))}
           </SelectField>
+          {!suggested ? <p className="text-xs text-ink-dim">No eligible remaining fighter is available for the rules suggestion. You can select a fighter manually to resolve an exception at the table.</p> : null}
           {suggested && chosen && chosen.id !== suggested.id ? (
             <p className="text-xs text-ink-dim">The rules suggest {suggested.label}; using someone else is your call at the table.</p>
           ) : null}

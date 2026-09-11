@@ -772,3 +772,11 @@ it('Lightning Reflexes does not remove Strike Last, but Strongman removes the do
   expect(computeOdds(fight).strikeOrder).toContain('always strikes last')
   expect(computeOdds({ ...fight, defender: { ...defender, skillIds: ['lightning_reflexes', 'strongman'] } }).strikeOrder).toContain('Heavy defender strikes first: Initiative 5')
 })
+
+it('maps learned Jump Up into shared battle/simulator injury inputs without granting it to other units', () => {
+  const defender = { ...skaven, skillIds: ['jump_up'] }
+  const odds = computeOdds(setup(captain, defender, 'sword', null))
+  expect(odds.weapons[0].input.ignoreRolledKnockedDown).toBe(true)
+  expect(odds.notes.join(' ')).toContain('not knock-downs caused by a helmet save or No Pain')
+  expect(computeOdds(setup(captain, skaven, 'sword', null)).weapons[0].input.ignoreRolledKnockedDown).toBeUndefined()
+})

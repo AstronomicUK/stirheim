@@ -82,6 +82,7 @@ export interface AttackInput {
   /** No Pain: every Stunned result becomes Knocked Down. */
   stunnedBecomesKnockedDown?: boolean;
   /** Veskit ignores both non-OOA injury results; wounds are still lost. */
+  ignoreRolledKnockedDown?: boolean;
   ignoreKnockedDownAndStunned?: boolean;
   /** Undead Construct: each Injury roll is ignored on this D6 or better (wound still lost). */
   injuryIgnoreThreshold?: number;
@@ -154,6 +155,7 @@ function injuryModsOf(input: AttackInput, extraInjuryBonus: number, ignoreHelmet
     hardToKill: input.hardToKill,
     stunAvoidanceThreshold: ignoreHelmet ? undefined : input.stunAvoidanceThreshold,
     stunnedBecomesKnockedDown: input.stunnedBecomesKnockedDown,
+    ignoreRolledKnockedDown: input.ignoreRolledKnockedDown,
     ignoreKnockedDownAndStunned: input.ignoreKnockedDownAndStunned,
     injuryIgnoreThreshold: input.injuryIgnoreThreshold,
   };

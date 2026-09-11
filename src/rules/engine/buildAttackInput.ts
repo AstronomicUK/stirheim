@@ -413,6 +413,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     hardToKill,
     stunAvoidanceThreshold,
     stunnedBecomesKnockedDown,
+    ignoreRolledKnockedDown: defender.activeSkillIds.includes("jump_up") || undefined,
     ignoreKnockedDownAndStunned: defender.activeTraitIds.includes("veskit_no_pain") || undefined,
     injuryIgnoreThreshold,
     critTriggerFaces: context.sharedCriticalUsed || weapon.special.includes("blackpowderSelfHit") || weapon.special.includes("noFurtherCritical") ? [] : critTriggerFaces,

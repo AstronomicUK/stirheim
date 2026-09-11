@@ -443,6 +443,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       const result: 'knockedDown' | 'stunned' | 'outOfAction' = modified <= koMax ? 'knockedDown' : modified <= stunnedMax ? 'stunned' : 'outOfAction'
       const s = log(state, `Injury: rolled ${roll}${rollTag}${bonus ? ` (${modified} after +${bonus})` : ''}. ${OUTCOME_LABEL[result]}.`, result === 'outOfAction' ? 'good' : 'neutral')
       if (input.ignoreKnockedDownAndStunned && result !== 'outOfAction') return injuryRolled(log(s, "Veskit’s No Pain: ignores the knocked-down or stunned result; the wound is still lost.", 'bad'), null)
+      if (input.ignoreRolledKnockedDown && result === 'knockedDown') return injuryRolled(log(s, "Jump Up: ignores this rolled knocked-down result; the wound is still lost.", 'bad'), null)
       return injuryRolled(s, result)
     }
     case 'stunSave': {

@@ -402,6 +402,7 @@ function adjustForCoatings(input: AttackInput, weapon: Weapon, phase: WeaponKind
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const notes: string[] = []
   const primary = weapons[0]
+  if (primary?.input.ignoreRolledKnockedDown) notes.push(`${setup.defender.name} has Jump Up: ignores rolled knocked-down injuries, but not knock-downs caused by a helmet save or No Pain. Wounds are still lost.`)
   if (setup.attacker.entangled) notes.push(`${setup.attacker.name} is entangled: cannot move or charge; melee Weapon Skill is reduced by 2. Shooting is unaffected. Resolve a 4+ escape roll in Recovery.`)
   if (setup.defender.entangled) notes.push(`${setup.defender.name} is entangled: melee Weapon Skill is reduced by 2 until freed in Recovery.`)
   if (setup.context.targetStunned && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already stunned: the first hit takes it out of action automatically, no rolls needed.`)

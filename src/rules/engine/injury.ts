@@ -33,6 +33,8 @@ export interface InjuryModifiers {
   stunAvoidanceThreshold?: number;
   /** No Pain (undead): every Stunned result is treated as Knocked Down. */
   stunnedBecomesKnockedDown?: boolean;
+  /** Jump Up ignores rolled Knocked Down results, before helmet/No Pain conversions. */
+  ignoreRolledKnockedDown?: boolean;
   /** Veskit ignores both non-OOA injury results; wounds are still lost. */
   ignoreKnockedDownAndStunned?: boolean;
   /** Undead Construct (Bone Goliath): each Injury roll is ignored entirely on this D6 threshold or better; the wound is still lost. Not an armour save, not modified by Strength. */
@@ -69,6 +71,9 @@ export function injuryDistribution(mods: InjuryModifiers): InjuryBreakdown {
     else outOfAction += p;
   }
 
+  let none = 0;
+  if (mods.ignoreRolledKnockedDown) { none = knockedDown; knockedDown = 0; }
+
   if (mods.stunnedBecomesKnockedDown) {
     knockedDown += stunned;
     stunned = 0;
@@ -79,8 +84,7 @@ export function injuryDistribution(mods: InjuryModifiers): InjuryBreakdown {
     knockedDown += converted;
   }
 
-  let none = 0;
-  if (mods.ignoreKnockedDownAndStunned) { none = knockedDown + stunned; knockedDown = 0; stunned = 0; }
+  if (mods.ignoreKnockedDownAndStunned) { none += knockedDown + stunned; knockedDown = 0; stunned = 0; }
   if (mods.injuryIgnoreThreshold !== undefined) {
     const pIgnore = probabilityAtLeast(mods.injuryIgnoreThreshold);
     none = pIgnore + none * (1 - pIgnore);

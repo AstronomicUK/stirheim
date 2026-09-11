@@ -429,3 +429,11 @@ it('an existing promoted Wight receives its blade rule when building the battle 
   expect(fighter.traitIds).toContain('wight_blades_auto_wound')
   expect(fighter.traitIds).not.toContain('wight_blades_5plus')
 })
+
+it('promoted Slayers ignore psychology while unpromoted Skittish henchmen do not (#114)', () => {
+  const roster = warband({ warbandTemplateId: 'dwarf_slayer_cult', heroes: [hero('new', { unitTemplateId: 'dwarf_slayer_cult_stubbles', flags: { frenzy: true, stupidity: true, hates: 'Orcs' } })] })
+  const [fighter] = combatantsOf(roster, findWarbandTemplate(roster.warbandTemplateId), roster.name, undefined)
+  expect(fighter.traitIds).toEqual(expect.arrayContaining(['deathwish', 'immune_to_psychology', 'immune_to_all_alone']))
+  for (const trait of ['hatred', 'frenzy', 'stupidity']) expect(fighter.traitIds).not.toContain(trait)
+  expect(kindTraits('dwarf_slayer_cult', 'dwarf_slayer_cult_stubbles', [])).not.toContain('deathwish')
+})

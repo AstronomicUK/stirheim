@@ -614,6 +614,7 @@ export function promoteHenchman(
     throw new RulesError("HERO_CAP", `${warband.name} already has the maximum number of heroes (${opts.heroCapacity}); roll again`);
   }
 
+  const promotionSkill = unitRules(group.unitTemplateId).promotionAdvanceSkill;
   const { heroItems, groupItems } = splitEquipment(group);
   const hero: RosterHero = {
     id: newHeroId,
@@ -621,9 +622,9 @@ export function promoteHenchman(
     unitTemplateId: group.unitTemplateId,
     stats: { ...group.stats },
     xp: group.xp,
-    levelUps: group.levelUps,
+    levelUps: group.levelUps + (promotionSkill ? 1 : 0),
     skillTableIds: [...unique],
-    skillIds: [],
+    skillIds: promotionSkill ? [promotionSkill] : [],
     spellIds: [],
     injuries: [],
     flags: {},
@@ -646,7 +647,9 @@ export function promoteHenchman(
       message: `The lad's got talent! ${newHeroName} leaves ${group.name} and becomes a Hero with ${group.xp} Experience, skill tables: ${unique.join(", ")}. Takes: ${heroItems.length ? heroItems.map((i) => i.customName ?? i.itemId).join(", ") : "nothing"}.`,
       data: { groupId, heroId: hero.id, xp: group.xp, skillTableIds: unique },
     },
-    { kind: "advanceDue", subjectId: hero.id, message: `${newHeroName} may immediately roll once on the Heroes Advance table.` },
+    promotionSkill
+      ? { kind: "skillLearned", subjectId: hero.id, message: `${newHeroName} learns ${findWarbandSkill(promotionSkill)?.skill.name ?? promotionSkill} instead of the immediate Hero advance roll.`, data: { skillId: promotionSkill } }
+      : { kind: "advanceDue", subjectId: hero.id, message: `${newHeroName} may immediately roll once on the Heroes Advance table.` },
   ];
   if (remaining) {
     events.push({

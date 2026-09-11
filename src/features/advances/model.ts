@@ -471,6 +471,7 @@ export interface AdvanceResolution extends AdvanceRollAudit {
   spellId?: string
   spellName?: string
   loreId?: string
+  promotionGrant?: string
   casualtySummary?: string
   newHeroId?: string
   newHeroName?: string
@@ -493,7 +494,8 @@ export interface AdvanceFollowUp {
 
 /** Rulebook: a promoted lad rolls once on the hero table straight away; the rest of the group re-roll this advance. */
 export function promotionFollowUps(next: RosterWarband, groupId: string, newHeroId: string, thresholdXp: number): AdvanceFollowUp[] {
-  const out: AdvanceFollowUp[] = [{ subjectType: 'hero', subjectId: newHeroId, thresholdXp }]
+  const hero = next.heroes.find(h => h.id === newHeroId)
+  const out: AdvanceFollowUp[] = hero && unitRules(hero.unitTemplateId).promotionAdvanceSkill ? [] : [{ subjectType: 'hero', subjectId: newHeroId, thresholdXp }]
   const group = next.henchmenGroups.find((g) => g.id === groupId)
   if (group && group.size > 0) out.push({ subjectType: 'group', subjectId: groupId, thresholdXp })
   return out
@@ -522,7 +524,7 @@ export function summaryText(p: ResolutionParts): string {
       body = p.casualtySummary ?? 'one henchman is removed'
       break
     case 'promotion':
-      body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero`
+      body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero${p.promotionGrant ? ` and learns ${p.promotionGrant} instead of the immediate Hero advance roll` : ''}`
       break
     case 'reward':
       body = `${p.rewardSummary ?? `Rewards of the Shadowlord: ${p.rewardTitle ?? ''}`}`.trimEnd()
@@ -841,6 +843,7 @@ export interface GroupPlan {
   /** The lad's got talent: tables the new hero may be given. */
   tableOptions: SkillTableOption[]
   heroCapacity: number | null
+  promotionGrant: string | null
   /** True when promoting the last member removes the group. */
   dissolvesGroup: boolean
   result: AdvanceResult | null
@@ -864,6 +867,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
         return !rule || !('tables' in rule) || (rule.tables as string[]).includes(id)
       })
       .map((id) => ({ id, name: tableName(id) })),
+    promotionGrant: unitRules(group.unitTemplateId).promotionAdvanceSkill ? 'Deathwish' : null,
     heroCapacity: capacity,
     dissolvesGroup: group.size <= 1,
     result: null,
@@ -963,6 +967,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
             resolution: buildResolution({
               ...base,
               outcome: 'promotion',
+              ...(plan.promotionGrant ? { promotionGrant: plan.promotionGrant } : {}),
               newHeroId: draft.newHeroId,
               newHeroName: name,
               skillTableIds: [...draft.skillTableIds],

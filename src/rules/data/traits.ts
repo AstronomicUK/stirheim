@@ -108,6 +108,14 @@ export const TRAITS: Trait[] = [
     description: "Poisoned weapons (Black Lotus, Poison Daggers, Weeping Blades, Blowpipe) do not auto-wound this model on a 6 to hit.",
   },
   {
+    id: "deathwish",
+    name: "Deathwish",
+    modeled: true,
+    conditional: false,
+    source: "Dwarf Slayer Cult — Deathwish",
+    description: "Immune to all psychology, including Hatred, Frenzy and Stupidity; never tests for fighting alone.",
+  },
+  {
     id: "wight_blades_auto_wound",
     name: "Wight Blades (6 to hit wounds)",
     modeled: true,

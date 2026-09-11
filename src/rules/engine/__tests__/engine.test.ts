@@ -1136,3 +1136,11 @@ it("Misericordia keeps the higher wound die for criticals as well as wounds (#17
   expect(result.pWoundNormal).toBeCloseTo(16 / 36);
   expect(resolveSingleAttack({ ...input, woundThreshold: 6 }).pWoundTriggerEligible).toBe(0);
 });
+
+it('Deathwish suppresses Hatred, Frenzy and Stupidity without suppressing normal attacks (#114)', () => {
+  const slayer = testCharacter({ traits: ['deathwish', 'hatred', 'frenzy', 'stupidity'] });
+  const context = testContext({ failedStupidity: true, vsHatedEnemy: true });
+  expect(computeAttackCount(slayer, W('sword'), true, context)).toBe(slayer.stats.A);
+  const input = buildAttackInput({ attacker: slayer, weapon: W('sword'), defender: testDefender(), context, customSkills: [] });
+  expect(input.rerollToHit).toBe(false);
+});

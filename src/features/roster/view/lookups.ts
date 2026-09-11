@@ -162,6 +162,7 @@ export function warriorSpecialRules(template: WarbandTemplate | undefined, unitI
   }
   if (template && unitId) {
     const rules = findUnitTemplate(template, unitId)?.specialRules ?? []
+    if (isHero && unitRules(unitId).promotionAdvanceSkill) return rules.filter(rule => rule.name !== 'Skittish')
     if (isHero && unitRules(unitId).rigorsOfLeadership) {
       const grants = findUnitTemplate(template, 'bullied_goblin')?.specialRules.filter(rule => ['Mob Rule', 'The Rigors of Leadership'].includes(rule.name)) ?? []
       const grantNames = new Set(grants.map(rule => rule.name))

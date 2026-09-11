@@ -510,3 +510,20 @@ it('Life of Slavery removes one Slave and queues only the surviving group advanc
     expect(normal.result?.resolution.outcome).not.toBe('casualty')
   }
 })
+
+it('promoted Hurlers and Stubbles take Deathwish instead of a bonus Hero roll (#114)', () => {
+  for (const unitTemplateId of ['dwarf_slayer_cult_axe_hurlers', 'dwarf_slayer_cult_stubbles']) {
+    const group = { ...watchmen, unitTemplateId, size: 2 }
+    const band = { ...roster, warbandTemplateId: 'dwarf_slayer_cult', heroes: [], henchmenGroups: [group] }
+    const draft = { ...setDice(emptyDraft(NEW_ID), 5, 5), newHeroName: 'New Slayer', skillTableIds: ['combat', 'shooting'] }
+    const plan = planGroup(draft, group, { roster: band, template: findWarbandTemplate(band.warbandTemplateId), thresholdXp: 2 })
+    const result = plan.result!
+    expect(plan.tableOptions.some(t => t.id === 'shooting')).toBe(true)
+    expect(result.next.heroes[0].skillIds).toContain('dwarf_slayer_cult_skills_deathwish')
+    expect(result.next.heroes[0].levelUps).toBe(group.levelUps + 1)
+    expect(result.resolution.text).toContain('Deathwish instead of the immediate Hero advance roll')
+    expect(result.resolution.followUps).toEqual([{ subjectType: 'group', subjectId: group.id, thresholdXp: 2 }])
+    expect(result.events.some(e => e.kind === 'advanceDue')).toBe(false)
+    expect(result.next.henchmenGroups[0].size).toBe(1)
+  }
+})

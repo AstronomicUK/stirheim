@@ -50,6 +50,8 @@ export interface UnitCampaignRules {
   /** Ogres: twice the experience per advance box. */
   advanceRate?: "half";
   /** "The lad's got talent" restrictions. */
+  /** Mandatory skill replacing the immediate Hero-table roll on promotion. */
+  promotionAdvanceSkill?: string;
   promotion?: { never: true; note: string; casualty?: "executed" } | { tables: SkillCategory[]; note: string };
   /** Skills the unit starts with (added on recruitment). */
   startingSkillIds?: string[];
@@ -320,8 +322,8 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   dreamwalkers_priest_of_morr: { equipmentBans: ["armour", "helmets", "missile"], neverLeads: false },
   druchii_slavehounds: { ...ANIMAL, relation: { onlyWith: { unitIds: ["druchii_beastmaster"], label: "a Beastmaster" } } },
   dwarf_slayer_cult_rememberer_hero: { neverLeads: true },
-  dwarf_slayer_cult_axe_hurlers: { equipmentBans: ["armour", "helmets"] },
-  dwarf_slayer_cult_stubbles: { equipmentBans: SLAYER_BANS },
+  dwarf_slayer_cult_axe_hurlers: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: ["armour", "helmets"] },
+  dwarf_slayer_cult_stubbles: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: SLAYER_BANS },
   dwarf_slayer_cult_troll_slayers: { equipmentBans: SLAYER_BANS },
   halflings_scouts: { promotion: { tables: ["combat", "shooting", "speed", "academic"], note: "Halfling Scouts may not take Strength skills." } },
   halflings_piggies: ANIMAL,

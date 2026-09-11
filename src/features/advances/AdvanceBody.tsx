@@ -332,8 +332,7 @@ function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
         </div>
         <p className="text-xs leading-relaxed text-ink-dim">
           {plan.heroCapacity !== null ? `The warband may have ${plan.heroCapacity} heroes. ` : ''}
-          By the rulebook the new hero rolls once on the hero advance table straight away, and the rest of the group roll again for this advance (re-rolling 10-12). Both
-          are queued as new advances when you confirm.
+          {plan.promotionGrant ? `The new hero learns ${plan.promotionGrant} instead of rolling on the Hero advance table. Only surviving group members are queued to roll again.` : 'The new hero rolls once on the Hero advance table straight away, and remaining group members roll again for this advance (re-rolling 10–12). These rolls are queued when you confirm.'}
         </p>
       </Block>
     )

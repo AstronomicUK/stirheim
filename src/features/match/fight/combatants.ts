@@ -108,6 +108,7 @@ function unique(ids: string[]): string[] {
 export function traitsFromSkills(skillIds: readonly string[]): string[] {
   const grants: Record<string, string[]> = {
     fearsome: ['causes_fear'],
+    dwarf_slayer_cult_skills_deathwish: ['deathwish', 'immune_to_psychology', 'immune_to_all_alone'],
     beastmen_raiders_special_skills_fearless: ['immune_to_fear', 'immune_to_all_alone'],
     the_cursed_cavalcade_skills_noblesse_obliges: ['immune_to_fear'],
     grave_robbers_skills_darkstalker: ['immune_to_all_alone'],
@@ -126,7 +127,7 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
   if (warrior.flags.immuneToFear) ids.push('immune_to_fear')
   if (warrior.flags.causesFear) ids.push('causes_fear')
   if (isLarge) ids.push('large_target')
-  return unique(ids)
+  return unique(ids).filter(id => !ids.includes('deathwish') || !['hatred', 'frenzy', 'stupidity'].includes(id))
 }
 
 /**
@@ -136,6 +137,7 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
  */
 export function kindTraits(warbandTemplateId: string, unitTemplateId: string, unitRulesText: readonly NamedRule[], isHero = false): string[] {
   const out: string[] = []
+  if (isHero && unitRules(unitTemplateId).promotionAdvanceSkill === 'dwarf_slayer_cult_skills_deathwish') out.push('deathwish', 'immune_to_psychology', 'immune_to_all_alone')
   // The two published Wight Blades rules differ; never infer either from the shared heading.
   if (unitTemplateId === 'restless_dead_grave_guards' || (isHero && unitTemplateId === 'restless_dead_wights')) out.push('wight_blades_auto_wound')
   if (unitTemplateId === 'restless_dead_variant_grave_guards') out.push('wight_blades_5plus')

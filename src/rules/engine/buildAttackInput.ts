@@ -78,7 +78,7 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
  * - `maxAttacks` (Fist: 1) caps the result.
  */
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = []): number {
-  if (context.failedStupidity && character.traits.includes("stupidity")) return 0;
+  if (context.failedStupidity && character.traits.includes("stupidity") && !character.traits.includes("deathwish")) return 0;
   if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
   // A blunderbuss shot places one hit on each model in its line, not extra
   // shots from the firer's Attacks or shooting skills (02:997-1020).
@@ -110,7 +110,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   if (!isPrimary) return Math.min(1, weapon.maxAttacks ?? 1);
 
   // Frenzy (01:1100): double Attacks in hand-to-hand combat; the off-hand +1 is not doubled.
-  const baseAttacks = character.traits.includes("frenzy") && !context.frenzyEnded ? character.stats.A * 2 : character.stats.A;
+  const baseAttacks = character.traits.includes("frenzy") && !character.traits.includes("deathwish") && !context.frenzyEnded ? character.stats.A * 2 : character.stats.A;
   let count = baseAttacks + skillBonus();
   if (pitFighterActive(character, context)) count += 1;
   if (weapon.paired) count += 1;
@@ -328,7 +328,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   // Expert Swordsman (03:381 — normal swords and Weeping Blades only, on the charge) and Hatred
   // (01:1110 — any melee weapon, first turn vs a hated enemy) both grant a to-hit reroll.
   const expertSwordsman = weapon.type === "melee" && Boolean(weapon.isSword) && hasActiveEffect(attackerSkills, context, weapon.type, "rerollToHit");
-  const hatred = weapon.type === "melee" && attacker.traits.includes("hatred") && context.vsHatedEnemy;
+  const hatred = weapon.type === "melee" && attacker.traits.includes("hatred") && !attacker.traits.includes("deathwish") && context.vsHatedEnemy;
   const rerollToHit = expertSwordsman || hatred || attacker.traits.includes("blessed_sight");
 
   // ---- Parry (01:836-848; Sword / Buckler / Dwarf Axe rules; Master of Blades) ----

@@ -3526,3 +3526,8 @@ Arabian Tomb Raider Slaves rolling Lad's Got Talent now lose one group member to
 
 
 **#114 Slave execution mobile verification — 2026-09-11:** Passed the actual local mobile advancement flow for groups of 3 and 1: app roll, manual correction to 10, review before any roster change, confirmation, one casualty, replacement advance only for survivors, saved app/manual dice history, reload and no horizontal overflow. Disposable fixtures removed. The roll-result card now also explains Life of Slavery rather than displaying the generic hero-promotion instruction. Final typecheck and36 advancement model tests pass. Local only.
+
+
+## 2026-09-11 Slayer promotion — #114 partial (local)
+
+Axe Hurlers and Stubbles now automatically learn the existing Deathwish skill when promoted, consuming the immediate Hero advance instead of queuing a free additional roll. Remaining group members still receive their replacement advance. Choice/review/history explain the substitution, and Shooting remains available to Hurlers. Their promoted combat profiles gain psychology/All Alone immunity and suppress Hatred, Frenzy and Stupidity; unpromoted Skittish units remain susceptible. Promoted cards stop showing the obsolete Skittish restriction. Source grade-2a-part1.md:676,718,961,977. Build/lint and259 focused tests pass; final typecheck and129 engine tests pass. Three existing audit-script warnings remain. Mobile promotion confirmation still needs its follow-up check; other #114 consequences remain open. No deployment or live record changes.

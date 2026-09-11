@@ -128,6 +128,29 @@ describe("racial maximums", () => {
     }
   });
 
+  it("uses printed warband maxima for original and promoted Heroes (#115–117)", () => {
+    const cases: [string, string[], number[]][] = [
+      ["druchii", ["druchii_noble", "druchii_sorceress", "druchii_beastmaster", "druchii_lordlings", "druchii_corsairs", "druchii_shades_henchmen", "druchii_witch_elves_henchmen"], [5, 7, 7, 4, 3, 3, 9, 4, 10]],
+      ["snotlings", ["bigsnotz", "snotling_scouts", "snotling_shaman", "runts", "snotling_shoota_team"], [4, 4, 4, 3, 3, 2, 9, 4, 6]],
+      ["snotlings", ["bullied_goblin"], [4, 5, 6, 4, 4, 3, 6, 4, 7]],
+      ["ogre_hunting_party", ["ogre_hunting_party_ogre_hunter"], [6, 6, 4, 5, 5, 5, 4, 5, 9]],
+      ["ogre_hunting_party", ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter", "ogre_hunting_party_gnoblar_fighters", "ogre_hunting_party_flingers"], [4, 5, 6, 3, 4, 3, 6, 4, 7]],
+    ];
+    const keys = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"] as const;
+    for (const [warband, units, values] of cases) for (const unit of units) {
+      const hero = makeHero({ unitTemplateId: unit, name: "Renamed warrior" });
+      const result = resolveRacialProfile(hero, warband);
+      expect(result.events, unit).toEqual([]);
+      const maxima = result.value.maxima;
+      expect(keys.map(key => maxima[key]), unit).toEqual(values);
+      expect(eligibleStatChoices({ ...hero, stats: { ...maxima } }, ["S", "T"], maxima).options, unit).toEqual([]);
+      expect(() => applyStatIncrease({ ...hero, stats: { ...maxima } }, "T", maxima), unit).toThrow();
+    }
+    expect(findRacialMaximum("Elf")?.stats.T).toBe(4);
+    expect(findRacialMaximum("Ogre")?.stats.BS).toBe(5);
+    expect(findRacialMaximum("Goblin")?.stats.S).toBe(4);
+  });
+
   it("maps well-known heroes", () => {
     const cases: [string, string, string][] = [
       ["mercenaries_reikland", "mercenaries_reikland_mercenary_captain", "Human"],

@@ -160,10 +160,10 @@ describe("upkeep", () => {
 });
 
 describe("racial maxima", () => {
-  it("caps a Necrarch with its own row and a Gnoblar Trapper as a Goblin", () => {
+  it("caps Necrarch and Ogre Hunting Party warriors with their printed rows", () => {
     expect(resolveRacialProfile(hero("v", "necrarchs_necrarch_vampire"), "necrarchs_the_soul_stealers").value.profile).toBe("Necrarch Vampire");
-    expect(resolveRacialProfile(hero("t", "ogre_hunting_party_trappers"), "ogre_hunting_party").value.profile).toBe("Goblin");
-    expect(resolveRacialProfile(hero("o", "ogre_hunting_party_ogre_hunter"), "ogre_hunting_party").value.profile).toBe("Ogre");
+    expect(resolveRacialProfile(hero("t", "ogre_hunting_party_trappers"), "ogre_hunting_party").value.profile).toBe("Gnoblar (Ogre Hunting Party)");
+    expect(resolveRacialProfile(hero("o", "ogre_hunting_party_ogre_hunter"), "ogre_hunting_party").value.profile).toBe("Ogre (Ogre Hunting Party)");
   });
 });
 

@@ -203,8 +203,19 @@ export const WARBAND_PROFILE_OVERRIDES: Record<string, WarbandProfileOverride> =
   the_restless_dead: { default: "Human" },
   the_restless_dead_variant: { default: "Human" },
   masters_of_horror: { units: { Wolfman: "Werecreature (Norse) Wulfen/Ulfwerenar" } },
-  snotlings: { default: "Goblin" },
-  ogre_hunting_party: { default: "Ogre" },
+  snotlings: { default: "Goblin", units: {
+    bigsnotz: "Snotling", snotling_scouts: "Snotling", snotling_shaman: "Snotling",
+    snotling_shoota_team: "Snotling", runts: "Snotling",
+  } },
+  druchii: { units: {
+    druchii_noble: "Druchii", druchii_sorceress: "Druchii", druchii_beastmaster: "Druchii",
+    druchii_lordlings: "Druchii", druchii_corsairs: "Druchii",
+    druchii_shades_henchmen: "Druchii", druchii_witch_elves_henchmen: "Druchii",
+  } },
+  ogre_hunting_party: { default: "Ogre (Ogre Hunting Party)", units: {
+    ogre_hunting_party_gnoblar_fighters: "Gnoblar (Ogre Hunting Party)",
+    ogre_hunting_party_flingers: "Gnoblar (Ogre Hunting Party)",
+  } },
 };
 
 export interface RacialProfileMatch {

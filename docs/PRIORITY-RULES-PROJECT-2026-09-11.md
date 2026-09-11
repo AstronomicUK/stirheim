@@ -215,3 +215,8 @@ Next experience priorities #112 Rigors/+2survival, #113 WEB Snotlings noXP; then
 ## Experience milestone 2 — #112 Rigors / #113 WEB Snotlings
 
 Rigors metadata covers four original Heroes plus promoted Runts and Shoota Teams; hero-only survival award is2. WEB Snotlings gainsExperience:false; distinct Snotling Mobs unaffected. Merged Shoota Team metadata preserving injury rule. Build/typecheck/lint and260focusedtests pass (3existing audit warnings). #112 remains partial for enemy-kill XP (Runts postbattle5+, WEB halfXP roundeddown);#113 fixedlocally. No migration/deployment. Next: thosekill procedures or #114specialpromotions. #125 Snotling Mobs injurydeadOn1–3 is wrong against source1–2 and remainsopen, not modified here.
+
+
+## Experience milestone 3 — #115–117 printed maxima (local)
+
+Added Druchii, Snotling, Ogre(OgreHuntingParty), Gnoblar(OgreHuntingParty) data rows from printed tables. Exact unit overrides include promotable henchmen; BulliedGoblin retainsGoblin; genericracialrows unchanged. Existing OHP UNIT_RULES overrides updated (they takeprecedenceoverwarbandoverride). 78advances/campaignRules tests pass; build/typecheck/lintpass (3old auditwarnings). Tests cover full9stats/renamedHeroes/maxedadvancement andgenericrowpreservation. Oldtest expectinggenericGnoblar/Ogre updated tocorrectsource. #115–117 fixedlocal, no retroactivedatachanges/deploy. Next#118ChosenOfChaos skill-basedprofile, thenremaining#114specialpromotion workflows/#112enemykillXP. Combat outstanding asabove; maintaincombinedreleaseonly.

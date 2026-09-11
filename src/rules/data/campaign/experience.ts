@@ -181,6 +181,12 @@ export const RACIAL_MAXIMUMS: RacialMaximum[] = [
   { profile: "Centigor", stats: { M: 9, WS: 7, BS: 6, S: 4, T: 5, W: 4, I: 6, A: 4, Ld: 9 } },
   { profile: "Minotaur", stats: { M: 6, WS: 6, BS: 5, S: 5, T: 5, W: 5, I: 6, A: 5, Ld: 9 } },
   { profile: "Other Beastmen", stats: { M: 5, WS: 7, BS: 6, S: 4, T: 5, W: 4, I: 6, A: 4, Ld: 9 } },
+  // Printed warband-specific maxima: grade-2a-part1 Druchii / Ogre Hunting Party;
+  // grade-2a-part2 Snotlings. Keep the generic racial profiles unchanged.
+  { profile: "Druchii", stats: { M: 5, WS: 7, BS: 7, S: 4, T: 3, W: 3, I: 9, A: 4, Ld: 10 } },
+  { profile: "Snotling", stats: { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 2, I: 9, A: 4, Ld: 6 } },
+  { profile: "Ogre (Ogre Hunting Party)", stats: { M: 6, WS: 6, BS: 4, S: 5, T: 5, W: 5, I: 4, A: 5, Ld: 9 } },
+  { profile: "Gnoblar (Ogre Hunting Party)", stats: { M: 4, WS: 5, BS: 6, S: 3, T: 4, W: 3, I: 6, A: 4, Ld: 7 } },
   // Rows from individual warband lists (2026-09-05 audit): the generic row was wrong for these.
   { profile: "Necrarch Vampire", stats: { M: 6, WS: 4, BS: 4, S: 6, T: 6, W: 4, I: 9, A: 3, Ld: 10 }, note: "Necrarchs list: WS4 BS4 S6 A3, otherwise as Vampire." },
   { profile: "Wolfman (Masters of Horror)", stats: { M: 6, WS: 4, BS: 3, S: 5, T: 4, W: 3, I: 7, A: 4, Ld: 8 } },

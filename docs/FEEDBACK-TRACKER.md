@@ -3491,3 +3491,8 @@ App rolls and later manual dice changes are retained separately in the draft and
 #112 is partially complete: The Rigors of Leadership now awards 2 survival XP to all four original Snotling Heroes and promoted Runts/Shoota Teams. Ordinary henchmen retain their normal survival award. The distinct enemy-kill XP procedures for Runts and WEB Snotlings remain outstanding.
 
 #113 is fixed locally: Night Goblins (web) Snotlings never earn XP, including underdog and objective awards. The separate Snotling warband Mobs still earn XP normally. Source: grade-2a-part2.md Rigors / That (Git)'s Got Talent; grade-1c.md WEB Snotlings Insignificant. Build, type checking, lint and 260 focused tests pass; lint retains three pre-existing audit-script warnings. No deployment or live data changes.
+
+
+## 2026-09-11 characteristic maximum corrections — #115–117 (local)
+
+Fixed locally, awaiting combined deployment: Druchii use their printed T3 maximum; Snotling Heroes (including promoted Runts/Shoota Teams) use their own profile, while the Bullied Goblin retains Goblin maxima; Ogre Hunting Party uses its Ogre BS4/I4 and Gnoblar S3 rows, including promoted Fighters/Flingers. Generic Elf, Ogre and Goblin profiles are unchanged. Source tables verified in grade-2a-part1.md (Druchii and Ogre Hunting Party) and grade-2a-part2.md (Snotlings). Tests cover every affected original/promoted unit, renamed warriors and advancement blocked at maximum. Build/typecheck/lint and78 focused tests pass; three existing audit-script lint warnings remain. No deployment or retroactive roster edits.

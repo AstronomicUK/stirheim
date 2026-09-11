@@ -19,6 +19,7 @@ export type EquipmentBan =
   | "missile" // no missile weapons of any kind
   | "missileExceptThrown"
   | "blackPowder"
+  | "smallHands" // Snotling list: oversized bows and long black-powder weapons; Shoota Teams exempt
   | "poison"
   | "onlyBlackPowderMissiles" // ranged weapons must be black powder
   | "allEquipment";
@@ -364,12 +365,12 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
     promotion: { never: true, note: "A Wheelo never learns The lad's got talent." },
     injury: { deadOn: [1], label: "destroyed", note: "Tough Machine: on a 1 the Wheelo is destroyed; on a 2 it misses the next 1D3 games for repairs (note it on the group); 3-6 it is unscathed." },
   },
-  snotling_mobs: { promotion: { never: true, note: "Snotling Mobs are never promoted." }, injury: { deadOn: [1, 2], label: "dead", note: "Not So Small, Surprisingly Tough: Snotling Mobs die only on a 1-2." } },
-  bullied_goblin: { rigorsOfLeadership: true },
-  bigsnotz: { rigorsOfLeadership: true },
-  snotling_scouts: { rigorsOfLeadership: true },
-  snotling_shaman: { rigorsOfLeadership: true },
-  runts: { rigorsOfLeadership: true, injury: { deadOn: [1, 2, 3, 4], label: "dead", note: "Smallest of the Small: Runts die on a 1-4." } },
+  snotling_mobs: { equipmentBans: ["smallHands"], promotion: { never: true, note: "Snotling Mobs are never promoted." }, injury: { deadOn: [1, 2], label: "dead", note: "Not So Small, Surprisingly Tough: Snotling Mobs die only on a 1-2." } },
+  bullied_goblin: { equipmentBans: ["smallHands"], rigorsOfLeadership: true },
+  bigsnotz: { equipmentBans: ["smallHands"], rigorsOfLeadership: true },
+  snotling_scouts: { equipmentBans: ["smallHands"], rigorsOfLeadership: true },
+  snotling_shaman: { equipmentBans: ["smallHands"], rigorsOfLeadership: true },
+  runts: { equipmentBans: ["smallHands"], rigorsOfLeadership: true, injury: { deadOn: [1, 2, 3, 4], label: "dead", note: "Smallest of the Small: Runts die on a 1-4." } },
   companions: { neverLeads: true },
   giant_bats: { ...ANIMAL, large: true },
   pilgrims_of_the_dark_shroud: { neverLeads: true },

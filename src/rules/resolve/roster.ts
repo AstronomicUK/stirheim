@@ -329,6 +329,12 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
       case "missileExceptThrown":
         if ((catalogue.category === "missile" || catalogue.category === "blackpowder") && !thrown) return `${name}: this warrior uses no missile weapons but thrown ones`;
         break;
+      case "smallHands":
+        // Includes variants of the same prohibited weapon types, not every missile weapon.
+        if (["longbow", "elf_bow", "handgun", "double_barrelled_handgun", "repeater_handgun", "hunting_rifle", "ostlander_double_barrelled_hunting_rifle", "blunderbuss", "chaos_dwarf_blunderbuss"].includes(catalogue.id)) {
+          return `${name}: Small Hands prevents this warrior using this oversized weapon, even with Weapons Expert (Shoota Teams are exempt)`;
+        }
+        break;
       case "blackPowder":
         if (catalogue.category === "blackpowder") return `${name} is a black powder weapon, which this warband does not use`;
         break;

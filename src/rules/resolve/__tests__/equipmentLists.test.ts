@@ -3,6 +3,7 @@ import { findItem } from '../../data/items'
 import type { RosterHero, RosterWarband } from '../../types/roster'
 import { equipmentListWarning } from '../equipmentLists'
 import { itemRestrictionWarnings, type ItemHolder } from '../itemRestrictions'
+import { equipmentBanReason } from '../roster'
 const hero = (unitTemplateId: string, skillIds: string[] = []): RosterHero => ({ id: 'hero', name: 'Warrior', unitTemplateId, skillIds, skillTableIds: [], spellIds: [], stats: { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }, xp: 0, levelUps: 0, flags: {}, equipment: [], injuries: [], status: 'active' })
 const roster = (warbandTemplateId: string, h: RosterHero): RosterWarband => ({ id: 'w', name: 'Warband', warbandTemplateId, heroes: [h], henchmenGroups: [], hiredSwords: [], stash: [], gold: 100, wyrdstone: 0, veteranPool: null })
 const holder = (h: RosterHero): ItemHolder => ({ kind: 'hero', id: h.id, name: h.name, unitTemplateId: h.unitTemplateId, equipment: h.equipment, flags: h.flags })
@@ -80,4 +81,22 @@ it('limits Hochland powder to Heroes without excluding promoted henchmen or stor
   expect(itemRestrictionWarnings(r, item, holder(h))).toEqual([])
   expect(itemRestrictionWarnings(r, item, { kind: 'stash', equipment: [] })).toEqual([])
   expect(itemRestrictionWarnings({ ...r, warbandTemplateId: 'mercenaries_reikland' }, item, group).join(' ')).not.toContain("Powder's Expensive!")
+})
+
+
+it('keeps Small Hands restrictions after advancement and exempts Shoota Teams', () => {
+  const banned = ['longbow', 'elf_bow', 'handgun', 'double_barrelled_handgun', 'repeater_handgun', 'hunting_rifle', 'ostlander_double_barrelled_hunting_rifle', 'blunderbuss', 'chaos_dwarf_blunderbuss']
+  for (const unit of ['bullied_goblin', 'bigsnotz', 'snotling_scouts', 'snotling_shaman', 'runts', 'snotling_mobs']) {
+    const h = hero(unit, ['weapons_expert']), r = roster('snotlings', h)
+    for (const id of banned) {
+      expect(findItem(id), id).toBeDefined()
+      expect(itemRestrictionWarnings(r, findItem(id)!, holder(h)).join(' '), `${unit}/${id}`).toContain('Small Hands')
+    }
+    for (const id of ['short_bow', 'bow', 'pistol', 'crossbow']) {
+      expect(equipmentBanReason('snotlings', unit, { itemId: id, quantity: 1 }), `${unit}/${id}`).toBeNull()
+    }
+  }
+  const team = hero('snotling_shoota_team', ['weapons_expert']), r = roster('snotlings', team)
+  for (const id of banned) expect(itemRestrictionWarnings(r, findItem(id)!, holder(team)).join(' '), id).not.toContain('Small Hands')
+  expect(equipmentBanReason('night_goblins', 'night_goblins_snotling_mob', { itemId: 'longbow', quantity: 1 })).toBeNull()
 })

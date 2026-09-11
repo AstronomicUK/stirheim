@@ -3348,3 +3348,17 @@ Second feedback batch deployed 11 September: commit 5a8cac8, Netlify 6aa39639899
 ### #173 follow-up — Trick Shooter
 
 Source 03:421–425 verified. Terrain/pavise cover now checks the shooter’s skills, not the defender’s. Tests verify ownership, probabilities and retained movement/range penalties. Fixed locally, not yet deployed.
+
+### 228. Optional Pit Fighter mini-battle with a temporary, player-controlled opponent
+
+**Status:** 🔲 Open — future enhancement, outside the current priority rules batch
+**Priority:** 🟡 Low — nice to have
+**Reported:** 2026-09-11
+
+**Reported (Tom, verbatim):**
+
+> Okay one thing I've noticed: your pit fighter fix is a bit basic. I was thinking it would be cool if the pit fighter forced a mini battle sheet where the only opponent was the pit fighter. You could resolve it through app calculates or player calculates, same as a normal battle sheet. Probably assign the pit fighter to another player to "play as" for the battle so they can control it in their app. We'd need to make sure this doesn't then appear as a warband permanently in their roster or anything weird like that.
+>
+> This is more of a "nice to have" upgrade than a high priority, so mark it as such on the tracker
+
+**Scope for later design:** Extend the Sold to the Pits follow-up (#54/#218) into a dedicated mini battle sheet containing the affected warrior and a single Pit Fighter opponent. Support App Calculates and Player Calculates, using the familiar battle-sheet controls. Consider assigning the temporary Pit Fighter to another campaign player so they can control it from their own account. The opponent must be scoped to that fight, never become a permanent owned warband or enrolled campaign roster, and never receive ordinary campaign progression. On completion, feed the result into the existing pit-fight consequences exactly once and retain the fight history. Player assignment and fallback when no second player is available need design before implementation. Keep this enhancement separate from the already deployed result-entry/reminder fix; it does not change today's priority order.

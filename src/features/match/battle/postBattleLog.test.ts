@@ -34,10 +34,10 @@ describe('postBattleRollLines', () => {
   it('reads a hero injury roll with its outcome', () => {
     const lines = postBattleRollLines(
       report({
-        injuries: [{ subjectType: 'hero', subjectId: 'h1', subjectName: 'Skritch Nightblade', rolls: [3, 5], injuryCode: 'x', injuryName: 'Multiple Injuries', effect: '', outcome: 'recovered' }],
+        injuries: [{ subjectType: 'hero', subjectId: 'h1', subjectName: 'Skritch Nightblade', rolls: [16, 2, 22, 26], injuryCode: 'x', injuryName: 'Multiple Injuries', effect: '', outcome: 'recovered' }],
       }),
     )
-    expect(lines).toEqual(['Skritch Nightblade: rolled 35 — Multiple Injuries (recovered).'])
+    expect(lines).toEqual(['Skritch Nightblade: rolled 16, 2, 22, 26 — Multiple Injuries (recovered).'])
   })
 
   it('reads a henchman group roll as dead and recovered counts', () => {

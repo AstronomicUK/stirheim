@@ -52,6 +52,7 @@ export interface HeroInjuryResolution {
   /** Set once the flow is complete. */
   outcome: InjuryOutcome | null
   line: HeroInjuryLine | null
+  pitFightGold?: number
 }
 
 function classify(before: RosterHero, after: RosterHero): InjuryOutcome {

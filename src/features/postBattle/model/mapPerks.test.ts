@@ -101,3 +101,21 @@ describe('map perks in the report', () => {
     expect(d.problems.veterans).toEqual([])
   })
 })
+
+it('applies the Amphitheatre automatic pit win once in the report and retains its source',()=>{
+ const amphitheatre={districtId:'amphitheatre',districtName:'Amphitheatre'}
+ const c=ctx(perks({pitFightAutoWin:amphitheatre}))
+ const d=addHeroInjuryRoll(setHeroOut(setExplorationRolls(setResult(emptyDraft(),'lost'),[1]),'champ',true),'champ',65)
+ const result=deriveReport(d,c)
+ expect(result.problems).toMatchObject({injuries:[],advances:[],exploration:[]})
+ expect(result.report?.applied.warband.gold_delta).toBe(50)
+ expect(result.xp.lines.find(x=>x.subjectId==='champ')).toMatchObject({amount:3,xpAfter:23})
+ expect(result.report?.injuries[0]).toMatchObject({injuryCode:'sold_to_the_pits',outcome:'recovered'})
+ expect(result.report?.injuries[0]).toHaveProperty('effect', 'Amphitheatre: automatically won the pit fight; +50 gc, +2 Experience; kept equipment.')
+ expect(result.report?.applied.heroes.find(h=>h.id==='champ')?.patch.flags?.pitFightOwed).toBeUndefined()
+ expect(result.report?.applied.remove_item_ids).toEqual([])
+ expect(deriveReport(d,c).report).toEqual(result.report)
+ const ordinary=deriveReport(d,ctx(perks()))
+ expect(ordinary.report?.applied.warband.gold_delta).toBe(0)
+ expect(ordinary.injuries.heroes[0].resolution.hero.flags.pitFightOwed).toBe(true)
+})

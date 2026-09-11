@@ -1,3 +1,4 @@
+import {ReportPitFights} from './ReportPitFights'
 // One filed post-battle report, collapsed behind a one-line summary so a match with several
 // reports still fits a phone. Expanded: who filed it and when, experience lines with their
 // reasons, casualties, injuries with the effect text, the exploration roll, the veteran pool
@@ -52,6 +53,7 @@ export function ReportCard({ report, onWithdraw, onApprove, onReturn, amendTo, b
         </span>
       </button>
 
+      <ReportPitFights report={report}/>
       {open ? (
         <div className="flex flex-col gap-4 border-t border-border px-4 py-3">
           <p className="text-sm text-ink-dim">

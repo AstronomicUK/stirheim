@@ -18,7 +18,8 @@ export function postBattleRollLines(report: ReportView): string[] {
       const survived = Math.max(0, line.rolls.length - line.dead)
       lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.dead} dead, ${survived} recovered.`)
     } else {
-      lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join('') : 'nothing'} — ${line.injuryName} (${OUTCOME_TEXT[line.outcome] ?? line.outcome}).`)
+      lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.injuryName} (${OUTCOME_TEXT[line.outcome] ?? line.outcome}).`)
+      for(const event of line.rollHistory??[])lines.push(`${line.subjectName}: ${event}`)
     }
   }
   if (report.exploration) {

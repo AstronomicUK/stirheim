@@ -343,6 +343,11 @@ export function HeroInjuryCard({ restartReasonRequired = false, medicine, name, 
           <D66Entry onCommit={onD66} />
         </div>
       ) : null}
+      {resolution.hero.flags.pitFightOwed && lastApplied?.code==='sold_to_the_pits' ? <div className="rounded-md border border-warn/60 bg-warn/10 p-3 text-sm text-ink">
+        <p className="font-medium">A pit fight is required</p>
+        <p className="mt-1">{name} must fight a Pit Fighter before rejoining the warband. Finish and file this report first; if GM approval is required, wait for approval. The report will then offer a button to resolve this warrior’s fight.</p>
+        <p className="mt-1 text-xs">Win: 50 gc and +2 Experience for a hero, keeping equipment. Dramatis Personae do not gain Experience. Lose: an injury roll restricted to 11–35; a survivor loses weapons and armour.</p>
+      </div> : null}
       {medicine}
       {steps.length === 0 ? <SkipRow skip={skip} onSkip={onSkip} /> : null}
       {pending.kind === 'subRoll' ? (

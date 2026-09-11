@@ -1,3 +1,4 @@
+import {useSearchParams} from 'react-router'
 import { useState } from 'react'
 import { type WarbandDetail } from '../../../api/warbands'
 import { useRosterEvent } from '../../../api/rosterEvents'
@@ -18,7 +19,9 @@ export interface PitFightCardProps {
 export function PitFightCard({ detail, canEdit, onError }: PitFightCardProps) {
   const update = useRosterEvent(detail)
   const owed = pitFightsOwed(detail.roster)
-  const [heroId, setHeroId] = useState<string | null>(null)
+  const [searchParams,setSearchParams]=useSearchParams()
+  const [heroId, setHeroId] = useState<string | null>(()=>searchParams.get('pitFight'))
+  const closeFight=()=>{setHeroId(null);if(searchParams.has('pitFight')){const next=new URLSearchParams(searchParams);next.delete('pitFight');setSearchParams(next,{replace:true})}}
 
   if (!canEdit || owed.length === 0) return null
   const selectedId = owed.some(o => o.heroId === heroId) ? heroId : null
@@ -27,7 +30,7 @@ export function PitFightCard({ detail, canEdit, onError }: PitFightCardProps) {
     onError(null)
     try {
       await update.mutateAsync({ reason: 'Pit fight resolved: injury, equipment and winnings recorded.', next })
-      setHeroId(null)
+      closeFight()
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not record the pit fight.')
     }
@@ -52,7 +55,7 @@ export function PitFightCard({ detail, canEdit, onError }: PitFightCardProps) {
         ))}
       </div>
 
-      <PitFightSheet key={selectedId} heroId={selectedId} open={selectedId !== null} detail={detail} pending={update.isPending} onClose={() => setHeroId(null)} onApply={apply} />
+      <PitFightSheet key={selectedId} heroId={selectedId} open={selectedId !== null} detail={detail} pending={update.isPending} onClose={closeFight} onApply={apply} />
     </Section>
   )
 }

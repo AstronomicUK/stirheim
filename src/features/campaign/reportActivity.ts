@@ -45,7 +45,7 @@ export function reportActivityChanges(entry:CampaignActivity):FieldChange[]{
  if(changed('injuries'))list(record.injuries).forEach((injury,i)=>{
   const name=text(injury.subjectName,'Warrior'),rolls=dice(injury.rolls)
   const result=text(injury.injuryName)|| (number(injury.dead)!==null?`${number(injury.dead)} ${number(injury.dead)===1?'model':'models'} died`:text(injury.outcome,'injury recorded'))
-  const pits=text(injury.injuryCode)==='sold_to_the_pits'||/sold to the pits/i.test(result)
+  const pits=(text(injury.injuryCode)==='sold_to_the_pits'||/sold to the pits/i.test(result)) && injury.outcome!=='recovered'
   strings(injury.rollHistory).forEach((event,j)=>add(`Injury history ${i} ${j}`,`${name}: ${event}`))
   add(`Injury ${i}`,`${name}: ${result}.${rolls?` Injury dice: ${rolls}.`:''}${pits?' A pit fight must be resolved.':''}`,text(injury.effect))
  })

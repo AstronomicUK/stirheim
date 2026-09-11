@@ -238,7 +238,17 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
         if (die === 6) res.hero = { ...res.hero, xp: res.hero.xp + 1 }
         return { hero, resolution: res }
       }
-      return { hero, resolution: skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId, perks) }
+      const resolution = skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId, perks)
+      if (perks?.pitFightAutoWin && resolution.line?.injuryCode==='sold_to_the_pits' && resolution.hero.flags.pitFightOwed) {
+        const {pitFightOwed: _owed,...flags}=resolution.hero.flags
+        const effect=`${perks.pitFightAutoWin.districtName}: automatically won the pit fight; +50 gc, +2 Experience; kept equipment.`
+        resolution.hero={...resolution.hero,xp:resolution.hero.xp+2,flags,injuries:resolution.hero.injuries.map((injury,index,all)=>index===all.findLastIndex(i=>i.injuryCode==='sold_to_the_pits')?{...injury,effect}:injury)}
+        resolution.outcome='recovered'
+        resolution.pitFightGold=50
+        resolution.line={...resolution.line,effect,outcome:'recovered'}
+        resolution.steps=resolution.steps.map(step=>step.code==='sold_to_the_pits'?{...step,effect}:step)
+      }
+      return {hero,resolution}
     })
   const hiredSwords = participants.hiredSwords
     .filter((s) => out.has(s.id))
@@ -690,7 +700,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     groups,
     warband: {
       wyrdstone_delta: draft.battleWyrdstone + treasure.shards + battleTreasureAwards(participants.heroes, heroOoaIds(draft), draft.enemiesOut).reduce((sum, award) => sum + award.shards, 0) + (record?.shards ?? 0) + effects.shardsDelta + (abundanceShards(draft, ctx) ?? 0),
-      gold_delta: draft.battleGold + treasure.gold + (ctx.scenarioId === 'the_wizard_s_tower' ? towerTreasure(draft.towerChests).gold : 0) + (record?.goldFound ?? 0) + effects.goldDelta,
+      gold_delta: injuries.heroes.reduce((sum,h)=>sum+(h.resolution.pitFightGold??0),0) + draft.battleGold + treasure.gold + (ctx.scenarioId === 'the_wizard_s_tower' ? towerTreasure(draft.towerChests).gold : 0) + (record?.goldFound ?? 0) + effects.goldDelta,
       veteran_pool: veteranPoolOf(draft),
     },
     pending_advances: pending,

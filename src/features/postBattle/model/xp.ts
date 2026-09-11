@@ -1,3 +1,4 @@
+import {needsSurvivalXpTest, survivalXpTestResult, survivalXpTestHistory, type SurvivalXpTest} from './survivalXp'
 // Experience lines for the report (core rulebook, "Experience" and the scenario "experience"
 // blocks that every core scenario repeats):
 //   "+1 Survives. If a Hero or a Henchman group survives the battle they gain +1 Experience."
@@ -29,6 +30,7 @@ import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../..
 import type { XpExtra } from './state'
 
 export interface XpContext {
+  survivalXpTests?: Record<string, SurvivalXpTest>
   scenarioAwards?: { survival: number; leader: number; kill: number }
   zombieKills?: Record<string, number>
   won: boolean
@@ -113,9 +115,13 @@ export function warriorXpLine(
 export function groupXpLine(before: RosterHenchmanGroup, after: RosterHenchmanGroup, ctx: XpContext): XpLine | null {
   if (after.size <= 0) return null
   if (!unitGainsExperience(before.unitTemplateId)) return null
-  const awards: Award[] = [{ amount: ctx.scenarioAwards?.survival ?? 1, reason: 'survived the battle' }]
+  const test = needsSurvivalXpTest(before.unitTemplateId) ? ctx.survivalXpTests?.[before.id] : undefined
+  const testResult = needsSurvivalXpTest(before.unitTemplateId) ? survivalXpTestResult(test, after.stats.Ld) : true
+  const awards: Award[] = [{ amount: testResult === true ? ctx.scenarioAwards?.survival ?? 1 : 0, reason: 'survived the battle' }]
   if (after.xp !== before.xp) awards.push({ amount: after.xp - before.xp, reason: 'from the scenario injury result' })
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   for (const extra of ctx.extras[before.id] ?? []) awards.push({ amount: extra.amount, reason: extra.reason })
-  return toLine('group', before, 'henchman', awards, unitRules(before.unitTemplateId).advanceRate ?? 'normal')
+  const line = toLine('group', before, 'henchman', awards, unitRules(before.unitTemplateId).advanceRate ?? 'normal')
+  if (!test || testResult === null) return line
+  return { ...(line ?? { subjectType: 'group' as const, subjectId: before.id, subjectName: before.name, amount: 0, xpBefore: before.xp, xpAfter: before.xp, advancesEarned: 0 }), reasons: [...(line?.reasons ?? ['No survival experience earned']), ...survivalXpTestHistory(test, after.stats.Ld)] }
 }

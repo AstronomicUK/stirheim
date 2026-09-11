@@ -1,3 +1,4 @@
+import type {SurvivalXpTest} from './survivalXp'
 import { assertNoSecondReroll } from '../../../rules/resolve/explorationAids'
 // The post-battle report draft: everything the player has entered, and nothing derived from it.
 //
@@ -172,6 +173,7 @@ export interface ReportDraft {
   /** Group id -> a different number of injury dice than models out of action, with the reason. */
   groupInjuryDice: Record<string, DiceOverride>
   /** Subject id -> extra experience lines (scenario objectives and the like). */
+  survivalXpTests?: Record<string, SurvivalXpTest>
   xpExtras: Record<string, XpExtra[]>
   /** advanceKey -> the dice and choices for an advance earned this battle. */
   advances: Record<string, AdvanceDraft>

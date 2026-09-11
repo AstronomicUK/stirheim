@@ -1,8 +1,10 @@
+import {needsSurvivalXpTest, recordSurvivalXpRoll, survivalXpTestResult, survivalXpTestHistory, type SurvivalXpRoll} from '../model/survivalXp'
+import {rollDie} from '../../../rules/resolve/dice'
 import { KidnappedRewards } from './KidnappedRewards'
 import { useState } from 'react'
 import type { XpLine } from '../../../domain'
 import { nextAdvanceAt } from '../../../rules/resolve/advances'
-import { Button, Markdown, NumberField, Notice, TextField, SelectField } from '../../../ui'
+import { Button, DieField, Markdown, NumberField, Notice, TextField, SelectField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { addXpExtra, removeXpExtra, setUnderdog, type XpExtra } from '../model'
 import { Intro, SwitchRow, type StepProps } from './bits'
@@ -34,6 +36,21 @@ export function ExperienceStep({ draft, derived, update, match, ctx }: StepProps
   return (
     <StepBody title="Experience">
       <Intro>+{scenario.defaults.survival} for surviving, +{scenario.defaults.leader} to the leader for a win, +{scenario.defaults.kill} per enemy a hero put out of action. These use the selected scenario’s awards. Add objective awards or corrections below with a reason.</Intro>
+      {participants.groups.filter(g => needsSurvivalXpTest(g.unitTemplateId)).map(group => {
+        const after = derived.injuries.groups.find(g => g.group.id === group.id)?.resolution.group ?? group
+        if (after.size <= 0) return null
+        const test = draft.survivalXpTests?.[group.id]
+        const dice = test?.dice ?? [null, null]
+        const result = survivalXpTestResult(test, after.stats.Ld)
+        const record = (values: SurvivalXpRoll['dice'], source: SurvivalXpRoll['source']) => update(d => ({ ...d, survivalXpTests: { ...d.survivalXpTests, [group.id]: recordSurvivalXpRoll(d.survivalXpTests?.[group.id], values, source) } }))
+        return <Card key={group.id} className="flex flex-col gap-3 p-4">
+          <h3 className="font-headline text-xl">{group.name}: A Bit Unhinged</h3>
+          <p className="text-sm">Roll 2D6 equal to or below Leadership {after.stats.Ld} to gain survival experience. A failed test gives no survival XP; other applicable awards and explained corrections are kept.</p>
+          <div className="flex gap-3"><DieField sides={6} label={`${group.name}: Leadership die 1`} value={dice[0]} onChange={n => record([n, dice[1]], 'manual')} /><DieField sides={6} label={`${group.name}: Leadership die 2`} value={dice[1]} onChange={n => record([dice[0], n], 'manual')} /></div>
+          <Button variant="secondary" onClick={() => record([rollDie(6), rollDie(6)], 'app')}>Roll survival Leadership test</Button>
+          {result !== null && test ? <div className="text-sm"><p className="font-semibold">{result ? 'Passed — survival XP earned.' : 'Failed — no survival XP.'}</p>{survivalXpTestHistory(test, after.stats.Ld).map((line,i) => <p key={i} className="text-ink-dim">{line}</p>)}</div> : <p className="text-sm text-ink-dim">Complete both dice before filing the report.</p>}
+        </Card>
+      })}
       {scenario.options.length > 1 ? <SelectField label="Mission played" value={draft.scenarioMission ?? ''} onChange={e => update(d => ({ ...d, scenarioMission: e.target.value }))}><option value="">Choose the mission</option>{scenario.options.map(o => <option key={o.name} value={o.name}>{o.name}</option>)}</SelectField> : null}
       {scenario.conflict ? <Notice tone="warn" title="Conflicting printed awards">
         <p>{scenario.conflict} Choose the interpretation agreed at the table; it will be recorded in the report.</p>

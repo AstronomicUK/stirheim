@@ -1,3 +1,4 @@
+import {needsSurvivalXpTest, validSurvivalXpRoll} from './survivalXp'
 import {advanceAuditText} from '../../advances/model'
 import {describeInjuryAttempt} from './injuryRollHistory'
 import {applyShrineBlessing} from './shrineBlessing'
@@ -346,7 +347,7 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
   const won = draft.result === 'won'
   const extras = { ...draft.xpExtras }
   for (const award of locationAwards) extras[award.id] = [...(extras[award.id] ?? []), {amount:award.amount,reason:award.reason}]
-  const xpCtx = { won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
+  const xpCtx = { survivalXpTests: draft.survivalXpTests, won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
   if(ctx.scenarioId==='brigands_in_the_pasturelands') { const amount=draft.scenarioRewards?.brigands?.role==='defender'?2:1; xpCtx.scenarioAwards={survival:amount,leader:amount,kill:1} }
   const heroAfter = new Map(injuries.heroes.map((h) => [h.hero.id, h.resolution]))
   const swordAfter = new Map(injuries.hiredSwords.map((s) => [s.sword.id, s.resolution]))
@@ -422,6 +423,10 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
+  for (const group of participantsOf(ctx.roster, ctx.template).groups) {
+    const after = injuries.groups.find(g => g.group.id === group.id)?.resolution.group ?? group
+    if (after.size > 0 && needsSurvivalXpTest(group.unitTemplateId) && !validSurvivalXpRoll(draft.survivalXpTests?.[group.id])) problems.experience.push(`${group.name}: complete the Leadership test for survival experience.`)
+  }
   if (ctx.scenarioId === 'the_wizard_s_tower') {
     problems.veterans.push(...towerTreasure(draft.towerChests).problems)
   }

@@ -1,3 +1,4 @@
+import { BlackpowderControls } from './BlackpowderControls'
 import { ladyBlessingActive, ladyBlessingReason } from '../../../rules/resolve/ladyBlessing'
 import { PigeonLaunchControls } from './PigeonLaunchControls'
 import { LineShotControls } from './LineShotControls'
@@ -9,7 +10,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { unresolvedPigeonVictims, unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
+import { correctBlackpowderShot, blackpowderBlock, recordBlackpowderShot, recordMisfireDie, unresolvedPigeonVictims, unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -79,6 +80,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const lineTarget = lineShot?.targets.find(target => target.key === lineSelection?.targetKey)
   const lineTargetDone = Boolean(lineShot && lineTarget && !unresolvedLineTargets(lineShot, events).some(t => t.key === lineTarget.key))
 
+  const [swivelSlot, setSwivelSlot] = useState(0)
   const [pigeonSelection, setPigeonSelection] = useState<{ launchId: string; targetKey: string } | null>(null)
   const pigeonLaunch = sheet.pigeonLaunches.find(l => l.id === pigeonSelection?.launchId)
   const pigeonTarget = pigeonLaunch?.targets?.find(t => t.key === pigeonSelection?.targetKey)
@@ -137,6 +139,10 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         })()
     : null
   const primary = current ? weapons[current.primary] : null
+  const isSwivel = Boolean(primary?.id.startsWith('swivel_gun_'))
+  const swivelSlots = attacker?.kind === 'henchman' ? Math.max(1, attacker.groupSize ?? 1) : 1
+  const swivelModel = Math.min(swivelSlot, swivelSlots - 1)
+  const swivelKey = `swivel:${swivelModel}`
   const isPigeon = primary?.id === 'hersten_wenkler_pigeon_bombs'
   const pigeonReady = Boolean(pigeonLaunch && pigeonTarget && !pigeonDone && pigeonLaunch.warriorId === attacker?.id && isPigeon)
   const isLineWeapon = primary?.id === 'blunderbuss' || primary?.id === 'chaos_dwarf_blunderbuss'
@@ -205,6 +211,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const defenderUsed = defender && defenderSession ? itemsUsedBy(defenderSession.live_state, defender.id) : []
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
+  const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1))) : null
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
   const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
@@ -284,6 +291,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   </option>
                 ))}
               </SelectField>
+              {isSwivel ? <BlackpowderControls sheet={sheet} warriorId={attacker.id} weaponKey={swivelKey} slots={swivelSlots} slot={swivelModel} setSlot={setSwivelSlot} blocked={swivelBlocked} readOnly={readOnly} edit={edit} /> : null}
               {isPigeon ? <PigeonLaunchControls key={`${attacker.id}:${primary.id}`} attacker={attacker} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} requiresPermission={Boolean(ladyTest)} mayLaunch={!attacker.out && !psychologyLoading && !active.failedStupidity && (!context.movedThisTurn || [...attacker.skillIds, ...(attackerKit?.skillIds ?? [])].includes('nimble')) && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onResolve={(launch, target) => {
                 setLineSelection(null); setPigeonSelection({ launchId: launch.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
                 const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
@@ -443,7 +451,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))}
+          disabled={Boolean(swivelBlocked) || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -483,10 +491,17 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || Boolean(staffUse?.used) || bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))} onClick={() => { if (bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={Boolean(swivelBlocked) || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || Boolean(staffUse?.used) || bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))} onClick={() => { if (bolasUsed || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady))) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
+            onRestart={isSwivel && edit ? id => edit(s => correctBlackpowderShot(s, id, 'Player restarted the attack roller; earlier dice are preserved.')) : undefined}
+            onProgress={isSwivel && edit ? (previous, next, attemptId, rolled) => {
+              const startsShot = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
+              if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, weaponName: 'Swivel Gun', ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
+              if (previous?.pending?.kind === 'hit' && next.pending?.kind === 'misfire') edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, misfirePending: true } : shot) }))
+              if (previous?.pending?.kind === 'misfire' && rolled) edit(s => recordMisfireDie(s, attemptId, rolled.value, rolled.manual ? undefined : rolled.value))
+            } : undefined}
             forceLog={Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
@@ -720,6 +735,9 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
 // ---------------------------------------------------------------------------------------------
 
 interface RollSectionProps {
+  onRestart?: (attemptId: string) => void
+  onProgress?: (previous: RollState | null, next: RollState, attemptId: string, rolled?: { value: number; manual?: boolean }) => void
+
   forceLog?: boolean
   turn: number
   onAttempt: (attempt: RollAttempt) => void
@@ -749,12 +767,13 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
+function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
   const [shown, setShown] = useState<{ value: number; label: string; text: string; tone: 'good' | 'bad' | 'neutral'; manual?: boolean } | null>(null)
   const stateRef = useRef<RollState | null>(null)
+  const initialized = useRef(false)
   const [logged, setLogged] = useState<'no' | 'saving' | 'yes' | 'failed'>('no')
   const [logError, setLogError] = useState<string | null>(null)
   // Every attempt "Start again" threw away without logging (#20) — kept visible, not restricted:
@@ -785,6 +804,7 @@ function RollSection({ forceLog, odds, attacker, defender, defenderKit, readOnly
     stateRef.current = started
     setState(started)
     record(started)
+    if (!readOnly) onProgress?.(null, started, attempt.current.id)
   }
 
   async function log() {
@@ -803,7 +823,7 @@ function RollSection({ forceLog, odds, attacker, defender, defenderKit, readOnly
   // Stepping happens outside setState: an updater must be pure, and a phase must only finish once.
   // The sheet is opened in order to roll, so the first step is already waiting when it appears.
   useEffect(() => {
-    if (odds.attacks > 0) start()
+    if (!initialized.current && odds.attacks > 0) { initialized.current = true; start() }
     // Mounted fresh for each fight (the caller keys it), so this runs once per attack.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -815,6 +835,7 @@ function RollSection({ forceLog, odds, attacker, defender, defenderKit, readOnly
     stateRef.current = next
     setState(next)
     record(next)
+    if (!readOnly) onProgress?.(current, next, attempt.current.id, rolled)
     const line = next.log.at(-1)
     if (rolled && line) setShown({ value: rolled.value, label: rolled.label, text: line.text, tone: line.tone, manual: rolled.manual })
     else if (!rolled) setShown(null)
@@ -935,11 +956,13 @@ function RollSection({ forceLog, odds, attacker, defender, defenderKit, readOnly
               }
               stateRef.current = null
               setShown(null)
+              onRestart?.(attempt.current.id)
               start()
             }}
           >
             Start again
           </Button>
+          {onRestart ? <p className="text-xs text-ink-dim">Restarting corrects this firing record and preserves earlier dice. Any shared damage already logged must be reverted separately.</p> : null}
 
           {pastAttempts.length > 0 ? (
             <details className="text-xs text-ink-dim">

@@ -119,6 +119,7 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
   if (ctx.skillId === 'battle_tongue' && (warbandRules(ctx.template?.id ?? '').undeadUnitIds?.includes(ctx.hero.unitTemplateId) || /vampire|necrarch|strigoi/i.test(ctx.hero.unitTemplateId) || unit?.specialRules.some(rule => /^undead$/i.test(rule.name)))) return 'Undead leaders may not use Battle Tongue.';
   if (/only/.test(lower) && /spellcast|capable of casting spells/.test(lower) && !spellcaster(ctx)) return 'Only a warrior capable of casting spells may take this skill; prayers alone do not qualify.';
   if (ctx.skillId === 'black_orcs_skills_proven_warrior' && ctx.hero.xp < 25) return "Proven Warrior requires at least 25 Experience and the purchased Black Orc Blood upgrade.";
+  if (ctx.skillId === 'black_orcs_skills_proven_warrior' && !ctx.hero.flags.blackOrcBlood) return "Proven Warrior requires the 10 gc Black Orc Blood upgrade. No purchase is recorded for this Young’un.";
 
   // Prerequisite skills: "Requires the Strongman skill", "with the Rotten Body special skill", "must have the X skill".
   const prereq = /(?:requires?|must (?:already )?have|with) (?:the )?([a-z' -]+?) (?:special |strength |combat |shooting |speed |academic )?(?:skill|ability)/i.exec(text);

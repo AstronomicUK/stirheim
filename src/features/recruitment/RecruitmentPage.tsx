@@ -1,3 +1,4 @@
+import { BlackOrcBloodCard } from './BlackOrcBlood'
 import { DreamerCertificationCard } from './DreamerCertification'
 import { PersonaeRecruitment } from './PersonaeRecruitment'
 // Recruitment between battles: hire heroes and henchmen from the warband template, hire and pay
@@ -101,6 +102,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
         </Card>
       </div>
 
+      <BlackOrcBloodCard detail={detail} canEdit={canEdit} />
       <DreamerCertificationCard detail={detail} canEdit={canEdit} />
       {!isOwner ? (
         <Notice tone="info" title="Read-only">

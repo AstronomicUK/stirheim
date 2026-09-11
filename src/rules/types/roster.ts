@@ -40,6 +40,7 @@ export interface AppliedInjury {
 export interface DreamerCertification { die: number; afterMatch: string | null; recordedAt: string; history: string[] }
 
 export interface WarriorFlags {
+  blackOrcBlood?: boolean;
   dreamerCertification?: DreamerCertification;
   leaderLostInMatch?: string;
   leaderReplacementReadyAfter?: string;

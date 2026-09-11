@@ -43,6 +43,7 @@ export const appliedInjuriesSchema = z.array(appliedInjurySchema);
 
 /** heroes.flags */
 export const warriorFlagsSchema = z.object({
+  blackOrcBlood: z.boolean().optional(),
   leaderLostInMatch: z.string().optional(),
   leaderReplacementReadyAfter: z.string().optional(),
   leaderRoleId: z.string().optional(),

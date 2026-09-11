@@ -409,6 +409,7 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
         if (child === 'leaderMagicChoice') { out.push({label:'Next advance',before:oldFields[child]?'Spell or prayer choice available':'Normal advancement',after:newFields[child]?'Spell or prayer choice available':'Normal advancement'}); continue }
         if (child === 'protectoratePrayerChoice') { out.push({label:'Next advance',before:oldFields[child]?'Prayer or normal roll':'Normal advancement',after:newFields[child]?'Prayer or normal roll':'Normal advancement'}); continue }
         if (child === 'lustrianReplacementOf') { out.push({label:'Hero replacement',before:oldFields[child]?'Inherited a lost Hero’s position':'Not a replacement',after:newFields[child]?'Inherited a lost Hero’s position':'Not a replacement'}); continue }
+        if (child === 'blackOrcBlood') { out.push({label:'Black Orc Blood upgrade',before:oldFields[child]?'Purchased':'Not purchased',after:newFields[child]?'Purchased':'Not purchased'}); continue }
         if (child === 'leaderRoleId') { out.push({label:'Leadership',before:oldFields[child]?'Appointed leader':'Not appointed',after:newFields[child]?'Appointed leader':'Not appointed'}); continue }
         if (child === 'spellDifficultyReductions') {
           const oldSpells = asRow(oldFields[child]) ?? {}, newSpells = asRow(newFields[child]) ?? {}

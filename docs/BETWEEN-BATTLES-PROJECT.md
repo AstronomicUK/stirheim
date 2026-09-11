@@ -572,3 +572,12 @@ Validation: full ordinary suite **1,671 passed**, build/typecheck and lint pass 
 Read-only Netlify API release check: Stirheim remains connected to `AstronomicUK/stirheim`, branch `main`, but `build_settings.stop_builds` is **true**. No settings changed and no build triggered. Recheck immediately before release; with builds still paused, a push alone will not publish this batch and one deliberate CLI deployment is needed. Last published production timestamp returned: 2026-09-10T10:04:13.206Z. Keep production migrations and frontend release coordinated; all batch migrations through 71 are still local only.
 
 Defend the Oasis remains the outstanding scope question; a fresh asynchronous question offers scenario-specific recorded water/reward support versus full Khemri campaign automation. No answer yet. Final scope reconciliation/release preparation remains open; do not mark the whole batch ready or deploy while its remaining scenario scope is unresolved.
+
+
+### Release preparation — original-scope evidence map and remote dry run (not deployed)
+
+`BETWEEN-BATTLES-RELEASE-CHECKLIST.md` now maps all 20 original entries to implementation evidence and their explicit manual/custom boundaries, with a serial release checklist. The outstanding implementation decision is Defend the Oasis; release verification and publishing follow its resolution. No new unrelated bespoke character mechanics have been added to the batch scope.
+
+The linked Supabase **dry run** succeeded and reported the expected 33 pending migrations (39–71), no seeds and no roles. It did not apply SQL or modify player histories. Netlify automatic builds remain paused per the prior read-only API check; one deliberate release will be needed unless that setting changes. No push or deployment occurred.
+
+Independent release preparation is at a useful stop while the Oasis scope question awaits Tom. The overnight heartbeat can pause here rather than repeatedly re-auditing completed paths or silently expanding into full Khemri rules. Resume from the release checklist after the scope reply; the second batch remains authorised only after the main release is verified.

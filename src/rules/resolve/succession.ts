@@ -83,6 +83,7 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
   if (!hero) throw new RulesError("succession.unknownHero", `No active hero with id "${heroId}"`);
   if (unitRules(hero.unitTemplateId).neverLeads) throw new RulesError("succession.neverLeads", `${hero.name} may never lead the warband`);
   const rule = warbandRules(template.id).succession;
+  if (!successionOptions(warband, template)?.candidates.some(c => c.hero.id === heroId)) throw new RulesError("succession.ineligible", `${hero.name} is not eligible to succeed this leader.`);
   const fromUnit = findUnitTemplate(template, hero.unitTemplateId);
   const gained = (rule?.grantsSkillIds ?? []).filter((id) => !hero.skillIds.includes(id));
   const next: RosterHero = {

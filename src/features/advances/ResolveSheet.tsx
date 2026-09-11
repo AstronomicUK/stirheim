@@ -139,7 +139,7 @@ export function ResolveSheet({ advance, subject, detail, template, bans, chooseS
   })()
 
   return (
-    <Sheet open onClose={onClose} title={name} description={`${roleLabel} · advance earned at ${advance.threshold_xp} xp`} footer={footer}>
+    <Sheet open onClose={onClose} title={name} description={`${roleLabel} · ${subject.kind === 'hero' && subject.hero.flags.lustrianReplacementOf && advance.threshold_xp === 1 ? 'immediate replacement advance' : `advance earned at ${advance.threshold_xp} xp`}`} footer={footer}>
       <div className="flex flex-col gap-4 py-2">
         {advance.rolled && step === 'choose' ? <p className="text-xs text-ink-dim">Rolled earlier; only the choice is left.</p> : null}
         <AdvanceBody draft={draft} plan={plan} subject={subject} step={step} update={update} chooseSpell={chooseSpell} />

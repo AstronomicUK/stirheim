@@ -38,9 +38,21 @@ Next #114: Wretch repeated-result injury and Lustrian replacement-role/kit inher
 
 #122 source follow-up inspected (not yet edited): grade-2a-part1:2071 Necrarch Thrall succeeds, gains random Necromancy spell, cannot buy another Necrarch, may turn existing Acolyte into Thrall retaining stats and gaining undead rules; both Necrarch/Thrall lost means disband. Mage lore override currently absent for Necrarch. grade-1b-part1:709 Black Orc preferred before other species, not exclusive; existing metadata candidate only is too strict, but simply retemplating ordinary Orc to Black Orc Boss would alter species. Need persistent permanent-successor identity/ability inheritance, not temporaryLeader alone (which permits replacement purchase). Mazzalupo Commands successor gains random Command; spells catalogue currently has no Commands lore, so avoid turning it into Wizard magic. Complete these source-specific flows after #114. After completing both, release once with b8fd008 (#163/#112) and verify hosted output. No deployment or push yet.
 
+## Second overnight checkpoint — local inheritance flows
+
+Lustrian replacement is implemented for known lost/retired Heroes and currently retained kit. New `lustrianPromotion` resolver/card preserves Prospect stats/XP/skill choices, adopts lost role, transfers kit exactly once and stashes Prospect kit. Persistent `lustrianReplacementOf` consumes historical vacancy even if a successor later dies. Dismissal keeps kit bound for this replacement; historical roles cannot be re-bought. Captured Heroes are not treated as permanently lost. Zero-XP replacement queues an immediate Hero advance atomically through `resolve_roster_event`; UI labels it as immediate replacement, not falsely earned at1XP. Migration75 changes that existing RPC; applied deliberately to LOCAL DB only, not recorded in old local migration history. PRODUCTION STILL THROUGH74. Do not reset/migrate local blindly. Need apply75 to production during combined release.
+
+Necrarch Acolyte -> Thrall follow-up implemented, same warrior/stats/XP/kit and source undead unit benefits. Requires original Necrarch dead, active successor, empty Thrall slot; then hides consumed opportunity. No replacement Necrarch/Thrall may be purchased after original leader death. Generic `appointLeader` now rejects non-candidates at resolver boundary. Necrarch free spell remains pending source ruling below, other #122 work still outstanding.
+
+Validation: 1,981 ordinary tests pass, all177 local database tests pass (including zero-XP transaction and stale replay), build passes, lint only3old audit warnings. Mobile + DB tests for Lustrian replacement and Acolyte/Thrall pass, disposable fixtures removed. Logs /tmp/stirheim-{lustrian,necrarch}-browser.log; /tmp/stirheim-lustrian-integration.log; /tmp/stirheim-inheritance-{all-tests,build}.log. Source checkpoint to commit now. No push/deploy.
+
+Next: continue unambiguous #122 work (Protectorate next-advance prayer, Black Orc species/Oi Behave, temporary/delayed leader replacement, disband prompts). Wretch full injury flow needs individual serious-injury persistence and follow-up handling; do not label it fixed by a generic note. Preserve player overrides. Collect below rulings in morning; don't interrupt overnight.
+
 ## Questions for Tom in the morning
 
-None yet.
+1. Lustrian retained-kit rule says a lost Hero’s equipment stays with their warband, but Captured disposal says the captor keeps it. For a Reaver who is sold/sacrificed/killed in captivity, should the replacement inherit that kit or should the captor keep it? Normal death/dismissal replacement is implemented; this ownership conflict is not changed.
+2. Necrarch source says starting Wizard spell comes from Necromancy, but the same warband publishes its own Dreaded Scrolls of Nagash list and succession says “the spell list”. Which list should starting/successor spells use? Source grade-2a-part1:2220 versus2350. Free successor spell is held pending this ruling; Acolyte/Thrall chain is implemented.
+3. Wretch’s repeated Talent result triggers a self-inflicted Hero Serious Injury outside a battle. If that roll gives Captured, who is the captor (choose a warband, previous opponent, or another ruling)? No automatic opponent should be invented.
 
 ## After the combined release
 

@@ -43,6 +43,7 @@ export const appliedInjuriesSchema = z.array(appliedInjurySchema);
 
 /** heroes.flags */
 export const warriorFlagsSchema = z.object({
+  lustrianReplacementOf: z.string().uuid().optional(),
   temporaryLeader: z.boolean().optional(),
   haggleUse: z.object({matchId:z.string(),requestId:z.string(),itemName:z.string(),dice:z.array(z.number()),priceBefore:z.number(),priceAfter:z.number()}).optional(),
   studiedAlchemistNotebook: z.boolean().optional(),

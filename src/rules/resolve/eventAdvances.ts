@@ -7,6 +7,7 @@ import { hiredSwordGainsExperience } from './hiredSwordRules'
 export function eventAdvances(before: RosterWarband, after: RosterWarband) {
   return [...after.heroes, ...after.hiredSwords].flatMap(warrior => {
     const old = [...before.heroes, ...before.hiredSwords].find(h => h.id === warrior.id)
+    if (!old && after.warbandTemplateId === 'lustrian_reavers' && warrior.flags.lustrianReplacementOf && warrior.status === 'active') return [{warband_id:after.id,subject_type:'hero',subject_id:warrior.id,threshold_xp:Math.max(1,warrior.xp)}]
     if (!old || warrior.status !== 'active' || warrior.flags.hireCompanion) return []
     const hired = 'hiredSwordId' in warrior
     if (hired && !hiredSwordGainsExperience(warrior.hiredSwordId)) return []

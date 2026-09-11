@@ -1,3 +1,5 @@
+import { NecrarchSuccessionCard } from './view/NecrarchSuccessionCard'
+import { LustrianPromotionCard } from './view/LustrianPromotionCard'
 import { ExplorationBooksCard } from './view/ExplorationBooksCard'
 import { RockTomeCard } from './view/RockTomeCard'
 import { PirateUpkeepCard } from './view/PirateUpkeepCard'
@@ -209,6 +211,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       ) : null}
       {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
 
+      <NecrarchSuccessionCard detail={detail} canEdit={canEdit} onError={setActionError} />
+      <LustrianPromotionCard detail={detail} canEdit={canEdit} onError={setActionError} />
       <ExplorationBooksCard detail={detail} canEdit={canEdit} onError={setActionError} />
       <RockTomeCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       {(detail.roster.scenarioEffects?.raidCaptives??0)>0?<Card className="flex flex-col gap-2 px-4 py-3"><p className="font-medium">Raids resources</p><p className="text-sm">{detail.roster.scenarioEffects!.raidCaptives} captured resources available. Each can be spent once for an extra exploration die after a future battle.</p></Card>:null}

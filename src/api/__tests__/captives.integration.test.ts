@@ -30,4 +30,17 @@ describe.skipIf(!enabled)('atomic captive roster save',()=>{
   expect((await player.rpc('resolve_roster_event',{...args,p_updated:fresh.data!.updated_at})).error?.code).toBe('40001')
  })
 
+ it('queues a zero-XP Lustrian replacement advance atomically and rejects a replay',async()=>{
+  const created=await player.rpc('create_warband',{payload:{name:'Lustrian atomic replacement QA',type_rules_id:'lustrian_reavers',gold:0,heroes:[],henchman_groups:[],stash:[]}})
+  expect(created.error).toBeNull();const band=created.data;ids.push(band)
+  const id=crypto.randomUUID(),fallen=crypto.randomUUID()
+  const w=await player.from('warbands').select('updated_at').eq('id',band).single()
+  const args={p_warband_id:band,p_updated:w.data!.updated_at,p_reason:'Lustrian replacement QA',p_expected:{heroes:[],henchman_groups:[],items:[]},p_changes:[{table:'heroes',op:'insert',id,data:{name:'Zero-XP replacement',unit_type_rules_id:'lustrian_reavers_conqueror',xp:0,stats:{M:4,WS:3,BS:3,S:3,T:3,W:1,I:3,A:1,Ld:7},flags:{lustrianReplacementOf:fallen}}}],p_advances:[{subject_id:id,threshold_xp:1}]}
+  expect((await player.rpc('resolve_roster_event',args)).error).toBeNull()
+  expect((await player.from('heroes').select('xp').eq('id',id).single()).data?.xp).toBe(0)
+  expect((await player.from('pending_advances').select('threshold_xp').eq('subject_id',id)).data).toEqual([{threshold_xp:1}])
+  expect((await player.rpc('resolve_roster_event',args)).error?.code).toBe('40001')
+  expect((await player.from('pending_advances').select('id').eq('subject_id',id)).data).toHaveLength(1)
+ })
+
 })

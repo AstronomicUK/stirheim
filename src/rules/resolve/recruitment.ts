@@ -117,6 +117,8 @@ export function recruitmentBlock(
   unit: UnitTemplate,
   count: number,
 ): string | undefined {
+  if (template.id === 'necrarchs_the_soul_stealers' && warband.heroes.some(h => h.unitTemplateId === 'necrarchs_necrarch_vampire' && h.status === 'dead') && ['necrarchs_necrarch_vampire','necrarchs_thrall'].includes(unit.id)) return 'Death of the Leader: the Thrall succeeds the Necrarch; create a replacement Thrall from an existing Acolyte.';
+  if (template.id === 'lustrian_reavers' && unit.role === 'hero' && warband.heroes.some(h => h.unitTemplateId === unit.id)) return 'Rare Heroes: this Hero type has already been hired. Promote a Prospect into the lost position instead.';
   if (unit.cost === null) return `${unit.name} cannot be hired for gold`;
   if (unit.replacementFor) {
     const replaced = findUnitTemplate(template, unit.replacementFor)!;
@@ -394,18 +396,19 @@ export function dismissWarrior(warband: RosterWarband, subjectId: string): Resol
     if (hero.status !== "active") {
       throw new RulesError("recruitment.notActive", `${hero.name} is already ${hero.status}`);
     }
+    const retainForProspect = warband.warbandTemplateId === 'lustrian_reavers';
     return {
       value: {
         ...warband,
-        heroes: warband.heroes.map((h) => (h.id === hero.id ? { ...h, status: "retired", equipment: [] } : h)),
-        stash: [...warband.stash, ...copyItems(hero.equipment)],
+        heroes: warband.heroes.map((h) => (h.id === hero.id ? { ...h, status: "retired", equipment: retainForProspect ? h.equipment : [] } : h)),
+        stash: retainForProspect ? warband.stash : [...warband.stash, ...copyItems(hero.equipment)],
       },
       events: [
         {
           kind: "hero.dismissed",
           subjectId: hero.id,
-          message: `${hero.name} leaves the warband${hero.equipment.length ? "; their equipment goes to the stash" : ""}`,
-          data: { itemsToStash: hero.equipment.length },
+          message: `${hero.name} leaves the warband${retainForProspect ? "; their equipment is retained for a replacement Prospect" : hero.equipment.length ? "; their equipment goes to the stash" : ""}`,
+          data: { itemsToStash: retainForProspect ? 0 : hero.equipment.length },
         },
       ],
     };

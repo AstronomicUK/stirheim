@@ -185,7 +185,7 @@ function SubjectCard({ group, subject, detail, canResolve, onResolve }: SubjectC
         <Tag tone="brass">{count === 1 ? '1 advance due' : `${count} advances due`}</Tag>
       </div>
       <p className="text-xs text-ink-dim">
-        <span className="tabular-nums text-ink">{xp}</span> xp · earned at {thresholds} xp
+        <span className="tabular-nums text-ink">{xp}</span> xp · {group.advances.map(a => subject.kind === 'hero' && subject.hero.flags.lustrianReplacementOf && a.threshold_xp === 1 ? 'immediate replacement advance' : `earned at ${a.threshold_xp} xp`).join(', ')}
       </p>
       {rolled ? (
         <p className="text-sm text-ink">

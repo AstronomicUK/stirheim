@@ -60,3 +60,24 @@ it('respects Shootaz crossbows and Boyz/Nuttaz two-handed weapons, including pro
   expect(warning(proven, 'crossbow')).toBeNull()
   expect(warning(proven, 'double_handed_weapon')).toBeNull()
 })
+
+
+it('keeps Horned Hunter religious armour bans even with weapon skills', () => {
+  const priest = hero('horned_hunters_priest_of_taal', ['weapons_training', 'weapons_expert'])
+  const initiate = hero('horned_hunters_initiate', ['weapons_training', 'weapons_expert'])
+  const check = (h: RosterHero, id: string) => itemRestrictionWarnings(roster('horned_hunters', h), findItem(id)!, holder(h)).join(' ')
+  expect(check(priest, 'heavy_armour')).toContain('heavy armour, which this warrior may not wear')
+  expect(check(priest, 'light_armour')).not.toContain('may not wear')
+  expect(check(initiate, 'light_armour')).toContain('armour, which this warrior may not wear')
+  expect(check(initiate, 'helmet')).toContain('may not wear a helmet')
+  expect(check(initiate, 'shield')).toContain('armour, which this warrior may not wear')
+})
+it('limits Hochland powder to Heroes without excluding promoted henchmen or storage', () => {
+  const h = hero('hochland_bandits_thug', ['weapons_expert']), r = roster('hochland_bandits', h)
+  const item = findItem('pistol')!
+  const group: ItemHolder = { kind: 'henchmanGroup', unitTemplateId: h.unitTemplateId, size: 1, equipment: [] }
+  expect(itemRestrictionWarnings(r, item, group).join(' ')).toContain("Powder's Expensive!")
+  expect(itemRestrictionWarnings(r, item, holder(h))).toEqual([])
+  expect(itemRestrictionWarnings(r, item, { kind: 'stash', equipment: [] })).toEqual([])
+  expect(itemRestrictionWarnings({ ...r, warbandTemplateId: 'mercenaries_reikland' }, item, group).join(' ')).not.toContain("Powder's Expensive!")
+})

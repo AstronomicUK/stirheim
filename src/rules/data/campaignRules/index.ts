@@ -272,6 +272,9 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   pirates_swabbie: { ...NO_XP, promotion: { never: true, note: "Swabbies are rabble and never become heroes." }, relation: { noMoreThan: { unitIds: ["pirates_crew"], label: "the Crew" } } },
   pit_fighters_troll_slayer: { equipmentBans: SLAYER_BANS },
   pit_fighters_ogre: OGRE,
+  // Horned Hunters Strictures (grade-1b-part1:2756,2774).
+  horned_hunters_priest_of_taal: { equipmentBans: ["heavyArmour"] },
+  horned_hunters_initiate: { equipmentBans: ["armour", "helmets"] },
   shadow_warriors_shadow_weaver: {},
   skaven_pestilens_giant_rat: ANIMAL,
   skaven_pestilens_rat_ogre: { ...ANIMAL, large: true, naturalWeapons: true },

@@ -90,6 +90,12 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
 
   }
 
+  // Powder's Expensive! is a henchman restriction, not a permanent unit/race ban:
+  // promoted Bandit Heroes are explicitly allowed to acquire black powder weapons.
+  if (warbandId === "hochland_bandits" && holder.kind === "henchmanGroup" && item.category === "blackpowder") {
+    out.push(`${item.name}: Hochland Bandit henchmen cannot buy black powder weapons (Powder's Expensive!); only their Heroes may do so.`);
+  }
+
   if (holder.kind === "henchmanGroup" && rule.heroesOnly) out.push(`${item.name}: miscellaneous equipment is for Heroes only; henchmen may not carry it.`);
   if (holder.kind === "hiredSword" && rule.heroesOnly) out.push(`${item.name}: hired swords keep the kit they came with and buy nothing.`);
 

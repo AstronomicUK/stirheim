@@ -22,6 +22,7 @@ export interface RoutCheckProps {
   /** Opens the "Battle over?" confirmation. */
   onBattleOver: (() => void) | undefined
   /** Map campaigns: Leadership the map adds to the leader. */
+  conditions?: ReadonlyMap<string, string>
   leaderLd?: { bonus: number; sources: string[] }
 }
 
@@ -30,10 +31,10 @@ function stamp(state: BattleLiveState, line: string): BattleLiveState {
   return setNotes(state, notes)
 }
 
-export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver, leaderLd }: RoutCheckProps) {
+export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<'passed' | 'failed' | null>(null)
-  const options = leadershipOptions(roster, template, sheet, leaderLd)
+  const options = leadershipOptions(roster, template, sheet, leaderLd, conditions)
   const suggested = suggestedLeadership(options)
   const skillReminders = routSkillReminders(roster, sheet)
   const [chosenId, setChosenId] = useState<string | null>(null)
@@ -137,7 +138,8 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
               <option key={o.id} value={o.id}>
                 {o.label}
                 {o.leader ? ' · leader' : ''}
-                {o.standing ? '' : ' · out of action'}
+                {o.unavailableReason ? ` · ${o.unavailableReason}` : ''}
+                {o.availabilityNote ? ` · ${o.availabilityNote}` : ''}
                 {o.mayLead ? '' : ' · may not lead a Rout test'}
               </option>
             ))}

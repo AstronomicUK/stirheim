@@ -12,13 +12,15 @@ export interface LdOption {
   label: string
   ld: number
   standing: boolean
+  unavailableReason?: string
+  availabilityNote?: string
   leader: boolean
   /** False for warriors the rules say may never lead (Flagellants, Ruffians...). */
   mayLead: boolean
 }
 
 /** Who may give their Leadership: the leader if standing, otherwise the highest eligible remaining fighter. */
-export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }): LdOption[] {
+export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }, conditions: ReadonlyMap<string, string> = new Map()): LdOption[] {
   const leaderUnit = template ? leaderTemplate(template) : undefined
   const fighting = splitWarriors(roster, sheet).fighting
   const options = fighting.map(({ warrior }): LdOption => {
@@ -29,17 +31,23 @@ export function leadershipOptions(roster: RosterWarband, template: WarbandTempla
     const mayLead = isHero && !unitRules(w.unitTemplateId).neverLeads
     const ld = leader && leaderLd.bonus ? w.stats.Ld + leaderLd.bonus : w.stats.Ld
     const label = leader && leaderLd.bonus ? `${w.name} (Ld ${w.stats.Ld} +${leaderLd.bonus} ${leaderLd.sources.join(', ')})` : `${w.name} (Ld ${w.stats.Ld})`
-    return { id: w.id, label, ld, standing: !isHeroOut(sheet, w.id), leader, mayLead }
+    const unavailableReason = isHeroOut(sheet, w.id) ? 'out of action' : conditions.get(w.id) === 'Stunned' ? 'stunned' : undefined
+    return { id: w.id, label, ld, standing: unavailableReason === undefined, unavailableReason, leader, mayLead }
   })
   for (const group of fightingGroups(roster)) {
+    // Events identify the group, not which member was stunned. Apply the event only
+    // to a single-model group; never mark an entire group stunned from one attack.
+    const unavailableReason = groupOut(sheet, group.id) >= group.size ? 'out of action'
+      : group.size === 1 && conditions.get(group.id) === 'Stunned' ? 'stunned' : undefined
     options.push({
       id: group.id, label: `${group.name} (Ld ${group.stats.Ld})`, ld: group.stats.Ld,
-      standing: groupOut(sheet, group.id) < group.size, leader: false,
+      standing: unavailableReason === undefined, unavailableReason, leader: false,
+      availabilityNote: group.size > 1 && conditions.get(group.id) === 'Stunned' ? 'confirm an unstunned member remains' : undefined,
       mayLead: !unitRules(group.unitTemplateId).neverLeads,
     })
   }
-  // Leader first, then standing warriors by Leadership, then the fallen (still selectable: the rules
-  // for stunned or knocked-down leaders are the table's call).
+  // Leader first, then available warriors by Leadership. Unavailable entries remain
+  // selectable for approved player overrides and conditions not recorded in the app.
   return options.sort((a, b) => Number(b.leader) - Number(a.leader) || Number(b.standing) - Number(a.standing) || b.ld - a.ld)
 }
 

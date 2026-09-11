@@ -32,7 +32,7 @@ import { LogTab } from './battle/LogTab'
 import { MyWarbandTab } from './battle/MyWarbandTab'
 import { NotesTab } from './battle/NotesTab'
 import { SaveBar } from './battle/SaveBar'
-import { routStatus, setRouted, setTurn, sheetTotals, startingModels } from './battle/sheet'
+import { conditionsFor, routStatus, setRouted, setTurn, sheetTotals, startingModels } from './battle/sheet'
 import { PreBattle } from './battle/PreBattle'
 import { RoutCheck } from './battle/RoutCheck'
 import { TopStrip } from './battle/TopStrip'
@@ -313,7 +313,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
           {boostLines.join('. ')}.
         </Notice>
       ) : null}
-      {rout === 'test' && !readOnly ? <RoutCheck roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
+      {rout === 'test' && !readOnly ? <RoutCheck conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
       {advancesDue > 0 && !readOnly ? (
         <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still owed`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}

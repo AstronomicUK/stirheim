@@ -3,7 +3,8 @@ import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { leadershipOptions, routSkillReminders, suggestedLeadership } from './routCheckRules'
-import { setGroupOut, toggleHeroOut } from './sheet'
+import { conditionsFor, setGroupOut, toggleHeroOut } from './sheet'
+import { battleEventRowSchema } from '../../../domain/battleEvent'
 
 const REIKLAND = findWarbandTemplate('mercenaries_reikland')!
 const stats = { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 7 }
@@ -107,5 +108,30 @@ describe('henchman Rout Leadership (#68)', () => {
     expect(options.find(o => o.id === 'veterans')?.mayLead).toBe(false)
     expect(suggestedLeadership(options)).toBeUndefined()
     expect(options).toHaveLength(2) // Both remain selectable as approved player overrides.
+  })
+})
+
+
+describe('recorded stun and recovery affect Rout Leadership (#68)', () => {
+  const id = 'aaaaaaaa-0000-4000-8000-000000000001'
+  const testRoster = { ...roster, id }
+  const event = battleEventRowSchema.parse({ id, match_id: id, actor_id: id, actor_warband_id: id, at: '2026-09-11T07:00:00Z', kind: 'attack', summary: '', reverted_at: null, reverted_by: null, revert_note: null,
+    payload: { attacker_warband_id: id, attacker_id: 'enemy', attacker_kind: 'hero', attacker_name: 'Enemy', target_warband_id: id, target_id: 'cap', target_kind: 'hero', target_name: 'Kurt', outcome: 'Stunned', turn: 1 } })
+  it('uses the next fighter while stunned, then restores a knocked-down leader after recovery', () => {
+    const sheet = emptyBattleLiveState()
+    const before = leadershipOptions(testRoster, REIKLAND, sheet, undefined, conditionsFor([event], id, 2, []))
+    expect(before.find(o => o.id === 'cap')).toMatchObject({ standing: false, unavailableReason: 'stunned' })
+    expect(suggestedLeadership(before)?.id).toBe('ch1')
+    const after = leadershipOptions(testRoster, REIKLAND, sheet, undefined, conditionsFor([event], id, 2, [{ warbandId: id, at: '2026-09-11T07:01:00Z' }]))
+    expect(suggestedLeadership(after)?.id).toBe('cap') // Knocked down is allowed for Rout Leadership.
+    const reverted = { ...event, reverted_at: '2026-09-11T07:01:00Z' }
+    expect(suggestedLeadership(leadershipOptions(testRoster, REIKLAND, sheet, undefined, conditionsFor([reverted], id, 2, [])))?.id).toBe('cap')
+  })
+  it('does not assume every member of a group shares one recorded stun', () => {
+    const group = { id: 'v', name: 'Veterans', unitTemplateId: 'mercenaries_reikland_warriors', size: 2, stats: { ...stats, Ld: 9 }, xp: 0, levelUps: 0, statIncreases: {}, equipment: [] }
+    const conditions = new Map([['cap', 'Stunned'], ['v', 'Stunned']])
+    const options = (size: number) => leadershipOptions({ ...roster, henchmenGroups: [{ ...group, size }] }, REIKLAND, emptyBattleLiveState(), undefined, conditions)
+    expect(suggestedLeadership(options(2))).toMatchObject({ id: 'v', availabilityNote: 'confirm an unstunned member remains' })
+    expect(suggestedLeadership(options(1))?.id).toBe('ch1')
   })
 })

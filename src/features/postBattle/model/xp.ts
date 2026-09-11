@@ -98,7 +98,8 @@ export function warriorXpLine(
   // like Heroes" — a Dramatis Persona has no unitTemplateId either, so unitGainsExperience(null)
   // can't catch this on its own; the hired entry's explicit XP exclusions apply as well.
   if ('hiredSwordId' in before && !hiredSwordGainsExperience(before.hiredSwordId)) return null
-  const awards: Award[] = [{ amount: ctx.scenarioAwards?.survival ?? 1, reason: 'survived the battle' }]
+  const rigors = subjectType === 'hero' && unitRules(unitId).rigorsOfLeadership
+  const awards: Award[] = [{ amount: rigors ? 2 : ctx.scenarioAwards?.survival ?? 1, reason: rigors ? 'survived the battle (The Rigors of Leadership)' : 'survived the battle' }]
   if (subjectType === 'hero' && ctx.won && ctx.leaderId === before.id) awards.push({ amount: ctx.scenarioAwards?.leader ?? 1, reason: 'winning leader' })
   const kills = ctx.enemiesOut[before.id] ?? 0
   const zombies = Math.min(kills, Math.max(0, ctx.zombieKills?.[before.id] ?? 0))

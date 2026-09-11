@@ -45,6 +45,8 @@ export interface InjuryException {
 export interface UnitCampaignRules {
   /** Animals, undead, daemons and constructs: no +1 for surviving, no underdog bonus. */
   gainsExperience?: false;
+  /** The Rigors of Leadership: Heroes gain 2 survival XP; henchmen keep their normal award. */
+  rigorsOfLeadership?: true;
   /** Ogres: twice the experience per advance box. */
   advanceRate?: "half";
   /** "The lad's got talent" restrictions. */
@@ -301,7 +303,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   night_goblins_snotling_mob: { routCollective: true, promotion: { never: true, note: "Snotling Mobs are never promoted." }, groupIncomeCountsAs: 1 },
   night_goblins_web_warriors: { promotion: { tables: ["combat", "shooting", "speed", "warband-unique"], note: "Promoted Night Goblin henchmen may not take Strength skills." } },
   night_goblins_web_cave_squigs: { ...ANIMAL, routModelWeight: 0.5, routCasualtyWeight: 0.5, relation: { noMoreThan: { unitIds: ["night_goblins_web_warriors"], label: "the Night Goblin Warriors" } } },
-  night_goblins_web_snotlings: { routCollective: true, promotion: { never: true, note: "Snotlings are never promoted." }, groupIncomeCountsAs: 1 },
+  night_goblins_web_snotlings: { gainsExperience: false, routCollective: true, promotion: { never: true, note: "Snotlings are never promoted." }, groupIncomeCountsAs: 1 },
   night_goblins_web_great_squig: { ...ANIMAL, large: true, relation: { exclusiveWith: { unitIds: ["night_goblins_web_troll"], label: "a Troll (Great Squig or Troll, not both)" } } },
   night_goblins_web_troll: { ...TROLL, relation: { exclusiveWith: { unitIds: ["night_goblins_web_great_squig"], label: "a Great Squig (Great Squig or Troll, not both)" } } },
   restless_dead_grave_guards: { noRareSearch: true },
@@ -343,13 +345,17 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   giant_rats: ANIMAL,
   wolf_rats: ANIMAL,
   rat_ogres: { ...ANIMAL, large: true },
-  snotling_shoota_team: { injury: { deadOn: [1, 2, 3], label: "dead", note: "Not-So-Tough Gits: Snotling henchmen die on a 1-3." } },
+  snotling_shoota_team: { rigorsOfLeadership: true, injury: { deadOn: [1, 2, 3], label: "dead", note: "Not-So-Tough Gits: Snotling henchmen die on a 1-3." } },
   snotling_wheelo: {
     promotion: { never: true, note: "A Wheelo never learns The lad's got talent." },
     injury: { deadOn: [1], label: "destroyed", note: "Tough Machine: on a 1 the Wheelo is destroyed; on a 2 it misses the next 1D3 games for repairs (note it on the group); 3-6 it is unscathed." },
   },
   snotling_mobs: { promotion: { never: true, note: "Snotling Mobs are never promoted." }, injury: { deadOn: [1, 2, 3], label: "dead", note: "Not-So-Tough Gits: Snotling henchmen die on a 1-3." } },
-  runts: { injury: { deadOn: [1, 2, 3, 4], label: "dead", note: "Smallest of the Small: Runts die on a 1-4." } },
+  bullied_goblin: { rigorsOfLeadership: true },
+  bigsnotz: { rigorsOfLeadership: true },
+  snotling_scouts: { rigorsOfLeadership: true },
+  snotling_shaman: { rigorsOfLeadership: true },
+  runts: { rigorsOfLeadership: true, injury: { deadOn: [1, 2, 3, 4], label: "dead", note: "Smallest of the Small: Runts die on a 1-4." } },
   companions: { neverLeads: true },
   giant_bats: { ...ANIMAL, large: true },
   pilgrims_of_the_dark_shroud: { neverLeads: true },

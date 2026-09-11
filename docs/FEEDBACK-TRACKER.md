@@ -3484,3 +3484,10 @@ Validation: **1,782 ordinary tests and all 173 local database tests pass**; 52 f
 A Bit Unhinged now asks for a real 2D6 Leadership test in the Experience step. Survival XP is awarded only on a pass; a surviving Construct with a missing/incomplete test prevents filing. A failed test is recorded as zero survival XP, while other applicable awards and explained player corrections remain available. The check uses the Construct’s post-injury Leadership and is scoped to the printed Masters of Horror unit. Dead groups require no test.
 
 App rolls and later manual dice changes are retained separately in the draft and the filed XP log, including failed tests which award nothing. Validation: 242 post-battle model tests plus typecheck/build/lint pass with existing warnings. Disposable 390px mobile QA rolled in the app, deliberately edited the dice to 6+6, reloaded and filed: the report retained both sources and the Construct remained at zero XP. Initial QA looked for snake-case subject_id instead of the report’s subjectId; correcting the check confirmed the stored evidence. No deployment or migration for this change. Source grade-2a-part1:1726–1748.
+
+
+## 2026-09-11 experience follow-up — #112 / #113 (local, not deployed)
+
+#112 is partially complete: The Rigors of Leadership now awards 2 survival XP to all four original Snotling Heroes and promoted Runts/Shoota Teams. Ordinary henchmen retain their normal survival award. The distinct enemy-kill XP procedures for Runts and WEB Snotlings remain outstanding.
+
+#113 is fixed locally: Night Goblins (web) Snotlings never earn XP, including underdog and objective awards. The separate Snotling warband Mobs still earn XP normally. Source: grade-2a-part2.md Rigors / That (Git)'s Got Talent; grade-1c.md WEB Snotlings Insignificant. Build, type checking, lint and 260 focused tests pass; lint retains three pre-existing audit-script warnings. No deployment or live data changes.

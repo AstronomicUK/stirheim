@@ -70,6 +70,8 @@ export function combatantFromTemplate(side: TemplateSide, name?: string): Combat
   const traits = [...new Set([...race, ...traitsFromSkills(side.skillIds), ...(unitRules(unit.id).naturalWeapons ? ['natural_weapons'] : []), ...(unit.traitIds ?? []), ...traitsFromRules(unit.specialRules), ...kindTraits(template.id, unit.id, unit.specialRules, unit.role === 'hero')])]
   return {
     id: `template:${template.id}:${unit.id}`,
+    unitTemplateId: unit.id,
+    isAnimal: unitRules(unit.id).isAnimal,
     kind: unit.role === 'hero' ? 'hero' : 'henchman',
     name: name ?? unit.name.replace(/s$/, ''),
     typeName: `${unit.name} (${template.name})`,

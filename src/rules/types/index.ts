@@ -188,6 +188,7 @@ export interface Trait {
 }
 
 export interface Character {
+  unitTemplateId?: string;
   /** Explicit animal identity, not inferred from the displayed name. */
   isAnimal?: boolean;
   id: string;
@@ -315,6 +316,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** Player confirms a friendly Barbed Whip Hero within 4 inches and not in combat. */
+  barbedWhipEnrage?: boolean;
   /** Fish-hook Shot: attempt to knock down instead of wounding. */
   fishHookFall?: boolean;
   /** A previous victim of this same firing action already consumed its critical. */

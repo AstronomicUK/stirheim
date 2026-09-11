@@ -3,7 +3,7 @@ import { findWeapon } from '../../../rules/data/weapons'
 import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
-import { kindTraits, kitWithSelectedWeapons, loadoutOf, type Combatant } from './combatants'
+import { kindTraits, kitWithSelectedWeapons, loadoutOf, loadoutFor, type Combatant } from './combatants'
 import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
@@ -726,4 +726,19 @@ it('offers Fish-hook fall only for that weapon and uses the wielder Strength wit
  const large=computeOdds({...fight,context:{...fight.context,fishHookFall:true,largeTarget:true}})
  expect(large.weapons[0].input.fishHookFallThreshold).toBe(3)
  expect(computeOdds({...setup(marksman,skaven,'bow',null),context:{...fight.context,fishHookFall:true}}).weapons[0].input.fishHookFallThreshold).toBeUndefined()
+})
+
+it.each(['marauders_warhounds_of_chaos','beastmen_warhounds_of_chaos'])('Barbed Whip adds one attack only to identified %s',unitTemplateId=>{
+ const dog=combatant('Hound',[],{unitTemplateId,isAnimal:true,traitIds:['natural_weapons'],stats:{...base,A:1}})
+ const kit=loadoutFor(dog)
+ const primary=kit.melee[0]
+ const fight:FightSetup={attacker:dog,attackerKit:kit,defender:skaven,defenderKit:loadoutOf(skaven.equipment),primary,offHand:null,context:combatContextFor(defaultCampaignHouseRules()),houseRules:defaultCampaignHouseRules()}
+ expect(relevantToggles(dog,'melee',primary).some(t=>t.field==='barbedWhipEnrage')).toBe(true)
+ expect(computeOdds(fight).attacks).toBe(1)
+ expect(computeOdds({...fight,context:{...fight.context,barbedWhipEnrage:true}}).attacks).toBe(2)
+ const ordinary={...dog,unitTemplateId:'witch_hunters_warhounds'}
+ expect(relevantToggles(ordinary,'melee',primary).some(t=>t.field==='barbedWhipEnrage')).toBe(false)
+ expect(computeOdds({...fight,attacker:ordinary,context:{...fight.context,barbedWhipEnrage:true}}).attacks).toBe(1)
+ const bow=setup({...dog,equipment:[{itemId:'bow',quantity:1}]},skaven,'bow',null)
+ expect(computeOdds({...bow,context:{...bow.context,barbedWhipEnrage:true}}).attacks).toBe(1)
 })

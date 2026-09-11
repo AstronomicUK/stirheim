@@ -852,6 +852,7 @@ function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender
     setLogError(null)
     setShown(null)
     const started = startPhase(plans, defender.stats.W, odds.parryAttempts, odds.woundsAlreadyLost, charmAvailable)
+    started.log.unshift(...odds.notes.filter(note => note.startsWith('Barbed Whip Enrage:')).map(text => ({text,tone:'neutral' as const})))
     stateRef.current = started
     setState(started)
     record(started)

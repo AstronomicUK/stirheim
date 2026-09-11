@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { findWeapon } from '../../rules/data/weapons'
-import { combatContextFor } from '../match/fight/odds'
+import { combatContextFor, relevantToggles, toCharacter } from '../match/fight/odds'
 import { loadoutFor } from '../match/fight/combatants'
 import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
 import { combatantFromTemplate, defaultTemplateSide, kitOptionsFor, opponentWeapon, pts, skillGains, statGains, unitsOf } from './model'
@@ -76,4 +76,15 @@ it.each([
   expect(kit.melee[0].strength).toBe('user')
   const equipped = combatantFromTemplate({ ...side, itemIds: ['sword'] })!
   expect(loadoutFor(equipped).melee.map(w => w.id)).toEqual(unitId === 'battle_monks_warrior_monks' ? ['sword', 'natural_weapons'] : ['sword'])
+})
+
+
+it('keeps published Chaos Warhound identity in simulator and engine inputs',()=>{
+ const side={...defaultTemplateSide('marauders_of_chaos'),unitId:'marauders_warhounds_of_chaos',itemIds:[],skillIds:[]}
+ const dog=combatantFromTemplate(side)!
+ expect(dog.unitTemplateId).toBe('marauders_warhounds_of_chaos')
+ expect(dog.isAnimal).toBe(true)
+ const kit=loadoutFor(dog)
+ expect(toCharacter(dog,kit).unitTemplateId).toBe(dog.unitTemplateId)
+ expect(relevantToggles(dog,'melee',kit.melee[0]).some(t=>t.field==='barbedWhipEnrage')).toBe(true)
 })

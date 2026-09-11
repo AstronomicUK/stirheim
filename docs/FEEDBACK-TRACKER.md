@@ -3868,3 +3868,7 @@ Finished #163/#112 and implemented #114/#122 clauses deployed together from d17c
 
 ### #152 Fish-hook Caused Fall — fixed locally, not deployed
 Fish-hook Shot can replace damage with its printed Strength-test knock-down, including +1 test modifier against large targets. Shared odds/roller preserve hit/Dodge, produce no wounds/criticals and log actual dice/knock-down to both sheets. Wielder close-combat eligibility and mounted rider’s Whoa Boy3–4 remain explicit table constraints. 2,005ordinary tests/build and mobile+saved-event checks pass. Production unchanged; held for next batch.
+
+
+### #152 Barbed Whip Enrage — fixed locally, not deployed
+Chaos Warhounds now gain one melee attack when the player confirms a friendly Barbed Whip Hero within4in and outside combat. Other animals, ranged attacks and stale selections are unaffected. Battle/simulator share identity and calculation; declaration saved with dice/shared result. 2,008ordinary tests/build and mobile+saved-event checks pass. Table positioning remains player-confirmed. Held for next batch; production unchanged.

@@ -1,3 +1,4 @@
+import { isChaosWarhound } from '../resolve/barbedWhip';
 import { isBlackpowderWeapon } from '../resolve/ladyBlessing';
 // Adapter layer: turns a Character + Weapon + defender profile + context toggles into the flat
 // AttackInput the pure resolveAttack.ts engine consumes. This is where skill, trait and weapon
@@ -118,6 +119,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   // Frenzy (01:1100): double Attacks in hand-to-hand combat; the off-hand +1 is not doubled.
   const baseAttacks = character.traits.includes("frenzy") && !character.traits.includes("deathwish") && !context.frenzyEnded ? character.stats.A * 2 : character.stats.A;
   let count = baseAttacks + skillBonus();
+  if (context.barbedWhipEnrage && isChaosWarhound(character.unitTemplateId)) count += 1;
   if (pitFighterActive(character, context)) count += 1;
   if (weapon.paired) count += 1;
   count += weapon.bonusAttacks ?? 0;

@@ -1,3 +1,4 @@
+import { isChaosWarhound } from '../../../rules/resolve/barbedWhip'
 import { ignoresFear, causesFearAgainst } from '../../../rules/engine/psychology'
 // From two combatants and a situation to the numbers on the screen: the engine's exact
 // probabilities for one phase of attacks, plus the flat thresholds a player rolls against.
@@ -95,6 +96,7 @@ export function weaponInjuryBonus(w: Weapon): number {
 
 export function toCharacter(c: Combatant, kit: Loadout): Character {
   return {
+    unitTemplateId: c.unitTemplateId,
     isAnimal: c.isAnimal,
     id: c.id,
     name: c.name,
@@ -411,6 +413,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
     if (w.input.firePermissionThreshold) notes.push('Blessing of the Lady: this shot needs 4+ before rolling to hit. That permission roll is included in these odds.')
+    if (setup.context.barbedWhipEnrage && isChaosWarhound(setup.attacker.unitTemplateId) && w.weapon.type === 'melee') notes.push('Barbed Whip Enrage: +1 melee attack for this Warhound of Chaos. The player confirms the friendly whip-bearing Hero is within 4 inches and not in close combat; the app does not measure distance.')
     if (w.input.fishHookFallThreshold !== undefined) notes.push('Fish-hook Shot: this attack causes no wounds. A hit followed by a successful Strength test knocks the target down; the large-target modifier is included. The wielder must not be engaged in close combat. A knocked-down mount throws its rider: resolve Whoa Boy! 3–4 at the table.')
     if (w.weapon.special.includes('torchFire')) notes.push('Torch: treated as a club at −1 to hit. Its wounds cannot be regenerated; apply that restriction at the table. It lasts one game and adds 4 inches when spotting hidden enemies. Building fires and torch consumption are not automated here.')
     if (w.weapon.id === 'tufenk') notes.push(`Tufenk: after a hit, roll a D6 separately; ${setup.context.dryTarget ? '2+' : '4+'} sets the target on fire. Ongoing fire and the every-other-turn reload are not included in these odds. In each Recovery phase, a burning model extinguishes the fire on 4+; otherwise it takes a Strength 4 hit and may only move. A friendly model in base contact can help extinguish it on 4+.`)
@@ -495,6 +498,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
   if (attacker.traitIds.includes('stupidity')) toggles.push({ field: 'failedStupidity', label: 'Failed Stupidity test', hint: 'No attacks or spells until the start of this warrior’s next own turn, when a new test is due. In the Battle Sheet this result is saved; untick to record a correction.' })
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
+    if (isChaosWarhound(attacker.unitTemplateId)) toggles.push({field:'barbedWhipEnrage',label:'Enraged by a nearby Barbed Whip',hint:'Confirm a friendly Hero with a Barbed Whip is within 4 inches and is not in close combat. This Warhound of Chaos gains one melee attack; check distance and the Hero’s state at the table.'})
     if (primary.id === 'serpent_staff') toggles.push({ field: 'serpentStaffPower', label: 'Serpent Staff power', hint: 'One WS4 / S4 attack, striking first, instead of all normal attacks and parries this combat phase.' })
     if (defender && causesFearAgainst(defender.traitIds, defenderKit?.melee.some(w => w.special.includes('causesFearInAnimals')), attacker.isAnimal) && !ignoresFear(attacker.traitIds, { frenzyEnded: true })) toggles.push({ field: 'failedFearWhenCharged', label: 'Failed Fear when charged', hint: 'This warrior was charged by the fear-causing opponent and failed its Fear test: needs 6s to hit this round. A failed test to charge instead prevents the charge; it is not this setting.' })
     if (!attacker.entangled) toggles.push({ field: 'charging', label: 'Charging' })

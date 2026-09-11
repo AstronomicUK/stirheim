@@ -5,7 +5,7 @@ import type { RosterHero, RosterWarband } from '../../types/roster';
 import { appointLeader, successionOptions } from '../succession';
 import { canRecruit, recruitHero, recruitHenchmen } from '../recruitment';
 import { buyItem, sellItem, moveItem } from '../trading';
-import { leaderReplacementPurchaseBlock } from '../leaderReplacement';
+import { collapsedWarbandReason, delayedLeaderRecruitmentBlock, leaderWaitingGameUpdates, leaderReplacementPurchaseBlock } from '../leaderReplacement';
 
 const template = findWarbandTemplate('battle_monks_of_cathay')!;
 const hero = (id: string, unitTemplateId: string, Ld = 7): RosterHero => ({ id, name: id, unitTemplateId, stats: { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 4, A: 1, Ld }, xp: 8, levelUps: 0, skillTableIds: ['combat'], skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active' });
@@ -50,3 +50,30 @@ describe('Battle Monks Decree', () => {
     expect(leaderReplacementPurchaseBlock({ ...w, warbandTemplateId: 'mercenaries_reikland' }, 10)).toBeUndefined();
   });
 });
+
+
+describe('one-game replacement waits',()=>{
+ it.each([['the_undead','undead_vampire','undead_necromancer'],['lizardmen','lizardmen_skink_priest','lizardmen_skink_great_crest']])('%s retains its temporary leader and waits beyond the death battle',(id,leader,heir)=>{
+  const template=findWarbandTemplate(id)!
+  const w={...band(),warbandTemplateId:id,heroes:[{...hero('old',leader),status:'dead' as const,flags:{leaderLostInMatch:'death-game'}},hero('heir',heir)]}
+  expect(delayedLeaderRecruitmentBlock(w,leader)).toContain('one further game')
+  expect(canRecruit(w,template,leader).ok).toBe(false)
+  const temporary=appointLeader(w,template,'heir').value
+  expect(temporary.heroes[1].unitTemplateId).toBe(heir)
+  expect(temporary.heroes[1].flags.temporaryLeader).toBe(true)
+  expect(leaderWaitingGameUpdates(temporary,'death-game')).toEqual([])
+  const patches=leaderWaitingGameUpdates(temporary,'next-game')
+  expect(patches).toHaveLength(1)
+  const ready={...temporary,heroes:temporary.heroes.map(h=>h.id==='old'?{...h,flags:patches[0].flags}:h)}
+  expect(delayedLeaderRecruitmentBlock(ready,leader)).toBeUndefined()
+  const hired=recruitHero(ready,template,leader,'Replacement','new').value
+  expect(hired.heroes.find(h=>h.id==='heir')?.flags.temporaryLeader).toBe(false)
+  expect(leaderWaitingGameUpdates(ready,'later-game')).toEqual([])
+ })
+ it('disbands Undead with no Necromancer but does not treat a living captive as dead',()=>{
+  const w={...band(),warbandTemplateId:'the_undead',heroes:[{...hero('old','undead_vampire'),status:'dead' as const},hero('d','undead_dregs')]}
+  expect(collapsedWarbandReason(w)).toContain('no Necromancer')
+  expect(canRecruit(w,findWarbandTemplate('the_undead')!,'undead_necromancer').ok).toBe(false)
+  expect(collapsedWarbandReason({...w,heroes:[...w.heroes,{...hero('c','undead_necromancer'),status:'captured' as const}]})).toBeUndefined()
+ })
+})

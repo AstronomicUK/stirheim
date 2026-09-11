@@ -1,3 +1,4 @@
+import { delayedLeaderUnit, leaderWaitingGameUpdates } from '../../../rules/resolve/leaderReplacement'
 import {specialKillProblems, type SpecialKillXp} from './specialKillXp'
 import {needsSurvivalXpTest, validSurvivalXpRoll} from './survivalXp'
 import {advanceAuditText} from '../../advances/model'
@@ -525,6 +526,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
       patch.stats = after.stats
       patch.injuries = after.injuries
       patch.flags = after.flags
+      if (after.status === 'dead' && hero.status !== 'dead' && delayedLeaderUnit(ctx.roster.warbandTemplateId) === hero.unitTemplateId) patch.flags = {...after.flags,leaderLostInMatch:ctx.matchId,leaderReplacementReadyAfter:undefined}
       if (after.status !== hero.status) patch.status = after.status
       if (after.equipment.length === 0 && hero.equipment.length > 0) removeItemIds.push(...heldItemIds(ctx.items, hero.id))
     }
@@ -714,6 +716,10 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     }
   }
 
+  for (const waiting of leaderWaitingGameUpdates(ctx.roster,ctx.matchId)) {
+    const existing=heroes.find(h=>h.id===waiting.id)
+    if(existing)existing.patch.flags={...waiting.flags,...existing.patch.flags};else heroes.push({id:waiting.id,patch:{flags:waiting.flags}})
+  }
   const record = exploration.record
   for (const sword of ctx.roster.hiredSwords) {
     if (sword.status === 'left' && sword.flags.mustMissNextBattle) heroes.push({ id: sword.id, patch: { flags: { ...sword.flags, mustMissNextBattle: false } } })

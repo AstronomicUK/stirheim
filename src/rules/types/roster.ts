@@ -38,6 +38,8 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  leaderLostInMatch?: string;
+  leaderReplacementReadyAfter?: string;
   /** Permanent leadership role held without replacing the warrior’s original unit type. */
   leaderRoleId?: string;
   /** Protectorate successor may take a prayer instead of rolling the next advance. */

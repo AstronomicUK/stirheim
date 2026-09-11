@@ -276,3 +276,11 @@ describe('readable nested campaign settings',()=>{
   expect(activityFieldChanges(row)).toEqual([expect.objectContaining({sentence:'Enabled The Pool for new battles.'})])
  })
 })
+
+
+it('describes leader waiting flags without leaking match identifiers', () => {
+  const row = entry({table_name:'heroes', before:{flags:{leaderLostInMatch:'private-death-match'}}, after:{flags:{leaderLostInMatch:'private-death-match',leaderReplacementReadyAfter:'private-next-match'}}})
+  const text = JSON.stringify(activityFieldChanges(row))
+  expect(text).toContain('Waiting game completed — may recruit')
+  expect(text).not.toContain('private-')
+})

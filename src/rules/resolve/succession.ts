@@ -74,7 +74,7 @@ export function successionOptions(warband: RosterWarband, template: WarbandTempl
   const tiedIds = tied.length > 1 ? tied.map(c => c.hero.id) : [];
   if (rule?.candidateUnitIds && !rule.anyHero) {
     const named = candidates.filter((c) => c.rank < 100);
-    return { leaderUnitName: leader.name, note: rule.note, candidates: named, tiedIds: tiedIds.filter(id => named.some(c => c.hero.id === id)), disbands: named.length === 0 && Boolean(rule.disbandsWithout) };
+    return { leaderUnitName: leader.name, note: rule.note, candidates: named, tiedIds: tiedIds.filter(id => named.some(c => c.hero.id === id)), disbands: named.length === 0 && Boolean(rule.disbandsWithout) && !warband.heroes.some(h=>h.status==='captured'&&rule.candidateUnitIds?.includes(h.unitTemplateId)) };
   }
   return { leaderUnitName: leader.name, note: rule?.note ?? null, candidates, tiedIds, disbands: false };
 }

@@ -400,6 +400,11 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
       const oldFields = asRow(a) ?? {}, newFields = asRow(b) ?? {}
       for (const child of new Set([...Object.keys(oldFields), ...Object.keys(newFields)])) {
         if (BORING_FIELDS.has(child) || sameValue(oldFields[child], newFields[child])) continue
+        if (child === 'leaderLostInMatch') { out.push({label:'Replacement leader',before:'No waiting game recorded',after:'Must play one further game before recruiting'}); continue }
+        if (child === 'leaderReplacementReadyAfter') { out.push({label:'Replacement leader',before:oldFields[child]?'Waiting game completed':'Waiting game outstanding',after:newFields[child]?'Waiting game completed — may recruit':'Waiting game outstanding'}); continue }
+        if (child === 'protectoratePrayerChoice') { out.push({label:'Next advance',before:oldFields[child]?'Prayer or normal roll':'Normal advancement',after:newFields[child]?'Prayer or normal roll':'Normal advancement'}); continue }
+        if (child === 'lustrianReplacementOf') { out.push({label:'Hero replacement',before:oldFields[child]?'Inherited a lost Hero’s position':'Not a replacement',after:newFields[child]?'Inherited a lost Hero’s position':'Not a replacement'}); continue }
+        if (child === 'leaderRoleId') { out.push({label:'Leadership',before:oldFields[child]?'Appointed leader':'Not appointed',after:newFields[child]?'Appointed leader':'Not appointed'}); continue }
         if (child === 'spellDifficultyReductions') {
           const oldSpells = asRow(oldFields[child]) ?? {}, newSpells = asRow(newFields[child]) ?? {}
           for (const id of new Set([...Object.keys(oldSpells), ...Object.keys(newSpells)])) {

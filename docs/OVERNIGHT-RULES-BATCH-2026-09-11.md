@@ -67,3 +67,12 @@ Next continue #122 delayed/temporary leader replacement (Undead/Lizardmen/Dreamw
 ## After the combined release
 
 Continue source-verified work in existing priority order: combat/psychology (#68–70,#152–153,#156), remaining skills/equipment (#59/#67), exploration, advancement/succession, captives/injuries. Reconcile each old label against deployed evidence before touching it. Record exact finished scope and tests after each bounded change.
+
+
+## Fourth overnight checkpoint — waiting games and collapse notices
+
+#122 local: Undead Necromancer temporary succession and Undead/Lizardmen replacement leader waiting game enforced. Death report records leaderLostInMatch; only a later distinct match report clears waiting via leaderReplacementReadyAfter. Refiling death report cannot satisfy wait. Other ordinary slain leaders cannot be re-bought, with explicit existing replacement exceptions preserved. Warband screen shows waiting/readiness independently of temporary appointment. Source-confirmed Undead/Necrarch/Moulder collapse offers reversible retirement preserving history, and blocks recruiting past collapse. Captured living heirs are not silently declared dead. Activity descriptions hide internal match/vacancy IDs and describe the actual leadership change.
+
+Validation: 1,990 ordinary tests pass plus new activity privacy test (28 activity tests pass); typecheck/build pass. Mobile local QA confirms waiting notice after appointment/reload, recruitment link after readiness, retirement archives without deletion. Disposable fixtures cleaned. Logs /tmp/stirheim-wait-{all-tests,build,browser,activity-tests,lint}.log. No new SQL; migration75 remains production-pending. Not pushed or deployed.
+
+Next source-confirmed #122 clause: reference/rules/03-campaigns-magic-optional-rules.md death-of-leader gives Sisters/Possessed/Carnival successor optional prayer/spell instead of rolling first eligible advance. Reuse Protectorate choice machinery but distinguish spell/prayer UI and avoid granting free immediate magic. Remaining Dreamwalker certification/permanent leader ban, Order of Mare compulsory Dame replacement (source grade2a-part2:31–32), Mazzalupo Commands; reconcile Strigos before retirement. Lizardmen source confirms one game without Priest; existing Great Crest preference needs separate source check, don't claim fresh validation. Morning questions unchanged. Continue working toward combined release.

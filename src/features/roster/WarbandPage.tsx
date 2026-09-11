@@ -1,3 +1,5 @@
+import { LeaderWaitingCard } from './view/LeaderWaitingCard'
+import { collapsedWarbandReason } from '../../rules/resolve/leaderReplacement'
 import { useRosterEvent } from '../../api/rosterEvents'
 import { NecrarchSuccessionCard } from './view/NecrarchSuccessionCard'
 import { LustrianPromotionCard } from './view/LustrianPromotionCard'
@@ -209,8 +211,9 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
           </ul>
         </Notice>
       ) : null}
-      {canEdit && template ? <SuccessionCard detail={detail} template={template} onError={setActionError} /> : null}
+      {canEdit && template && !warband.archived ? <SuccessionCard detail={detail} template={template} onError={setActionError} onRetire={toggleArchive} retiring={update.isPending} /> : null}
 
+      <LeaderWaitingCard detail={detail} canEdit={canEdit} />
       <NecrarchSuccessionCard detail={detail} canEdit={canEdit} onError={setActionError} />
       <LustrianPromotionCard detail={detail} canEdit={canEdit} onError={setActionError} />
       <ExplorationBooksCard detail={detail} canEdit={canEdit} onError={setActionError} />
@@ -436,7 +439,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
 }
 
 /** The leader is dead: offer the list's successors and re-template the chosen hero. */
-function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; template: WarbandTemplate; onError: (e: string | null) => void }) {
+function SuccessionCard({ detail, template, onError, onRetire, retiring }: { detail: WarbandDetail; template: WarbandTemplate; onError: (e: string | null) => void; onRetire:()=>Promise<void>; retiring:boolean }) {
   const update = useRosterEvent(detail)
   const view = useMemo(() => successionOptions(detail.roster, template), [detail.roster, template])
   const [choice, setChoice] = useState('')
@@ -460,7 +463,9 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
         <p>{view.note ?? 'The hero with the highest Leadership takes over; Experience breaks a tie. They retain their original skill lists, characteristics and equipment, and gain access to the leader’s equipment list.'}</p>
         {view.tiedIds.length > 1 ? <p>These leading candidates are tied: {view.candidates.filter(c => view.tiedIds.includes(c.hero.id)).map(c => c.hero.name).join(', ')}. Roll a D6 at the table to decide, then select the new leader below.</p> : null}
         {view.disbands ? (
-          <p className="text-accent">The list names no one left who may take over.</p>
+          <div className="flex flex-col gap-2"><p className="text-accent">{collapsedWarbandReason(detail.roster) ?? 'The list names no one left who may take over.'}</p>
+            {collapsedWarbandReason(detail.roster) ? <><p className="text-sm">Retiring archives the warband and keeps its history.</p><Button variant="secondary" pending={retiring} onClick={()=>void onRetire()}>Retire this warband</Button></> : null}
+          </div>
         ) : view.candidates.length === 0 ? (
           <p>No active hero can lead; recruit one first.</p>
         ) : (

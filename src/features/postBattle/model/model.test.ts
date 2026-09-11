@@ -1094,3 +1094,20 @@ it('files the Protectorate prayer choice without an advancement dice roll',()=>{
  expect(result.advances.rosterAfter.heroes[0].flags.protectoratePrayerChoice).toBe(false)
  expect(result.problems.advances).toEqual([])
 })
+
+
+it('records an Undead leader’s death battle separately from its replacement waiting game',()=>{
+ const vampire=hero('v',{unitTemplateId:'undead_vampire',xp:0})
+ const necromancer=hero('n',{unitTemplateId:'undead_necromancer',xp:0})
+ const roster={...makeRoster(),warbandTemplateId:'the_undead',heroes:[vampire,necromancer],henchmenGroups:[],hiredSwords:[]}
+ const context=ctx({roster,template:findWarbandTemplate('the_undead'),items:[]})
+ let draft=setResult(emptyDraft(),'lost');draft=setHeroOut(draft,'v',true);draft=addHeroInjuryRoll(draft,'v',11);draft=setExplorationRolls(draft,[3])
+ const death=deriveRawReport(draft,context)
+ const dead=death.advances.rosterAfter.heroes.find(h=>h.id==='v')!
+ expect(dead.status).toBe('dead');expect(dead.flags.leaderLostInMatch).toBe('m1');expect(dead.flags.leaderReplacementReadyAfter).toBeUndefined()
+ const laterDraft=setExplorationRolls(setResult(emptyDraft(),'lost'),[3])
+ const same=deriveRawReport(laterDraft,{...context,roster:death.advances.rosterAfter})
+ expect(same.advances.rosterAfter.heroes.find(h=>h.id==='v')?.flags.leaderReplacementReadyAfter).toBeUndefined()
+ const next=deriveRawReport(laterDraft,{...context,roster:death.advances.rosterAfter,matchId:'m2'})
+ expect(next.advances.rosterAfter.heroes.find(h=>h.id==='v')?.flags.leaderReplacementReadyAfter).toBe('m2')
+})

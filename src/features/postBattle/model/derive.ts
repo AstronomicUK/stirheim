@@ -1,3 +1,4 @@
+import {advanceAuditText} from '../../advances/model'
 import {describeInjuryAttempt} from './injuryRollHistory'
 import {applyShrineBlessing} from './shrineBlessing'
 import {woodsCasualtyDraft,woodsInjuryDraft,lycanthropeReport,applyLycanthropeReport} from './lycanthropeReport'
@@ -849,7 +850,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     let summary: string
     if (mode === 'pickLater') {
       complete = subject.kind !== 'group' && plan.need === 'skill' && plan.roll !== null
-      summary = complete ? `${name}: rolled ${plan.total}, ${plan.roll?.text.toLowerCase() ?? 'new skill'}; skill to pick later.` : `${name}: roll the advance first.`
+      summary = complete ? `${name}: rolled ${plan.total}, ${plan.roll?.text.toLowerCase() ?? 'new skill'}; skill to pick later.${advanceAuditText(stored ?? {})}` : `${name}: roll the advance first.`
     } else if (plan.total === null) {
       complete = false
       summary = `${name}: roll the advance earned at ${request.threshold_xp} xp before completing the report.`
@@ -1048,7 +1049,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

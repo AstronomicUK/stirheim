@@ -20,6 +20,7 @@ import {
   readResolution,
   reroll,
   setDice,
+  setDie,
   setSkill,
   setSkillInstead,
   setStat,
@@ -447,4 +448,41 @@ it('creates the equipped Merchant bodyguard only when Guardian is newly learned'
   expect(bodyguard).toMatchObject({ id: NEW_ID, stats: { WS: 4, S: 4 }, flags: { hireGroupId: 'merchant', hireCompanion: true, merchantGuardian: true }, xp: 0, skillIds: [] })
   expect(bodyguard.equipment.map(i => i.itemId)).toEqual(['sword', 'light_armour', 'shield', 'helmet'])
   expect(plan.result?.events.some(e => e.message.includes('Guardian bodyguard'))).toBe(true)
+})
+
+it('keeps advancement app rolls and manual changes through pick-later and final resolution',()=>{
+ let draft=setDice(emptyDraft(NEW_ID),1,1,'app')
+ draft=setDie(draft,0,3,'tabletop');draft=setDie(draft,1,4,'tabletop')
+ draft={...draft,rollChangeReason:'Agreed advancement correction'}
+ const saved=rolledFromDraft(draft,'Choose WS or BS')!
+ const restored=draftFromRolled(JSON.parse(JSON.stringify(saved)),NEW_ID)!
+ const result=planHero(setStat(restored,'WS'),heroSubject(captain),ctx).result!
+ expect(result.resolution.text).toContain('App rolled 2D6: 1 + 1 = 2.')
+ expect(result.resolution.text).toContain('Manually changed First D6: 1 → 3.')
+ expect(result.resolution.text).toContain('Manually changed Second D6: 1 → 4.')
+ expect(result.resolution.text).toContain('Player explanation: Agreed advancement correction.')
+ expect(result.resolution.hasRollReplacement).toBe(true)
+ expect(result.next.heroes.find(h=>h.id===captain.id)?.stats.WS).toBe(captain.stats.WS+1)
+})
+it('distinguishes first tabletop entry, rule-required rerolls and changed follow-up dice',()=>{
+ let draft=setDie(setDie(emptyDraft(NEW_ID),0,3,'tabletop'),1,3,'tabletop')
+ expect(draft.hasRollReplacement).toBeUndefined()
+ draft=reroll(draft)
+ expect(draft.rollHistory?.at(-1)).toContain('Rule-required re-roll')
+ expect(draft.hasRollReplacement).toBeUndefined()
+ draft=setSubRoll(setSubRoll(setDice(draft,3,3,'app'),1,'app'),5,'tabletop')
+ expect(draft.rollHistory?.at(-1)).toBe('Manually changed characteristic follow-up D6: 1 → 5.')
+ expect(draft.hasRollReplacement).toBe(true)
+})
+it('does not manufacture source information when restoring historical advancement rolls',()=>{
+ const draft=draftFromRolled({dice:[3,4],text:'Rolled 7'},NEW_ID)!
+ expect(draft.rollHistory).toBeUndefined()
+ expect(planHero(setStat(draft,'WS'),heroSubject(captain),ctx).result?.resolution.text).not.toContain('Dice history')
+})
+
+it('retains a repeated app follow-up even when it rolls the same face',()=>{
+ const first=setSubRoll(setDice(emptyDraft(NEW_ID),3,3,'app'),1,'app')
+ const second=setSubRoll(first,1,'app')
+ expect(second.rollHistory).toHaveLength(first.rollHistory!.length+1)
+ expect(second.rollHistory?.at(-1)).toBe('App rolled characteristic follow-up D6: 1 → 1.')
 })

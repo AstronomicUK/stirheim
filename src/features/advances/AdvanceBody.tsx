@@ -68,6 +68,11 @@ export function AdvanceBody({ draft, plan, subject, step, update, hideRail = fal
           )}
         </>
       ) : null}
+      {draft.rollHistory?.length ? <details className="rounded-md border border-border p-3 text-xs text-ink-dim" open={draft.hasRollReplacement || undefined}>
+        <summary className="cursor-pointer">Advancement dice history</summary>
+        <ol className="mt-2 flex flex-col gap-1">{draft.rollHistory.map((event,i)=><li key={i}>{event}</li>)}</ol>
+      </details> : null}
+      {draft.hasRollReplacement ? <TextField label="Reason for changing the advancement dice (optional)" value={draft.rollChangeReason??''} onChange={e=>{const reason=e.target.value;update(d=>({...d,rollChangeReason:reason}))}} hint="Your dice changes and any explanation are saved in the history."/> : null}
       {step === 'review' && plan.result ? <ReviewStep plan={plan} subjectKind={subject.kind} /> : null}
       {plan.error && step !== 'roll' ? <Notice tone="error">{plan.error}</Notice> : null}
     </>
@@ -106,9 +111,9 @@ function RollStep({ draft, plan, update }: StepProps<HeroPlan | GroupPlan>) {
     <>
       <p className="text-sm leading-relaxed text-ink-dim">Roll 2D6 on the advance table, or let the app roll.</p>
       <div className="flex flex-wrap items-end gap-3">
-        <DieField label="First D6" sides={6} value={draft.dice[0]} onChange={(v) => update((d) => setDie(d, 0, v))} />
-        <DieField label="Second D6" sides={6} value={draft.dice[1]} onChange={(v) => update((d) => setDie(d, 1, v))} />
-        <Button variant="secondary" onClick={() => update((d) => setDice(d, rollDie(6), rollDie(6)))}>
+        <DieField label="First D6" sides={6} value={draft.dice[0]} onChange={(v, source) => update((d) => setDie(d, 0, v, source))} />
+        <DieField label="Second D6" sides={6} value={draft.dice[1]} onChange={(v, source) => update((d) => setDie(d, 1, v, source))} />
+        <Button variant="secondary" onClick={() => update((d) => setDice(d, rollDie(6), rollDie(6), 'app'))}>
           Roll for me
         </Button>
       </div>
@@ -169,7 +174,7 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
     return (
       <Block title="Roll again (D6)">
         <p className="text-sm leading-relaxed text-ink-dim">The result asks for a second die to decide which characteristic goes up.</p>
-        <DieField label="D6" sides={6} value={draft.subRoll} onChange={(v) => update((d) => setSubRoll(d, v))} rollable />
+        <DieField label="D6" sides={6} value={draft.subRoll} onChange={(v, source) => update((d) => setSubRoll(d, v, source))} rollable />
         <MaximaNote plan={plan} />
       </Block>
     )

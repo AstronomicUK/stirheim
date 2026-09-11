@@ -3281,17 +3281,21 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 **Acceptance:** Collaboratively design section navigation for the campaign overview on desktop and mobile, consistent with #223 while retaining the primary app menu. Keep this separate from the settings form: these are two different screens with related design work.
 
-### 226. Post-battle history does not clearly identify deliberately overridden injury dice
+### 226. Post-battle history does not clearly identify deliberately overridden advancement dice
 
-**Status:** ✅ Fixed locally — awaiting batched release
+**Status:** ✅ Corrected advancement scope fixed locally — awaiting batched release
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
 > I purposely fudged a dice roll and changed the engineer's dice roll to a result I wanted: nowhere is that clear in that heaping dump of data.
 
-**Acceptance:** In the visible report/history, clearly name the warrior and identify manual entry/override, original app result where retained, replacement result, and supplied explanation. Retain roll chronology and distinguish ordinary manual tabletop entry from replacing an app roll. Verify saving, applying and reloading the report. Do not invent an original result for historical records lacking it. Related to #20/#207 roll transparency and reopened #23 presentation, but specifically track post-battle injury overrides. Player overrides remain explicitly approved; do not remove them.
+**Acceptance:** In the visible report/history, clearly name the warrior and identify manual entry/override, original app result where retained, replacement result, and supplied explanation. Retain roll chronology and distinguish ordinary manual tabletop entry from replacing an app roll. Verify saving, applying and reloading the report. Do not invent an original result for historical records lacking it. Related to #20/#207 roll transparency and reopened #23 presentation, but specifically track post-battle advancement overrides. Player overrides remain explicitly approved; do not remove them.
 
 **Local fix — 2026-09-11:** Restarting a hero/Persona D66 injury attempt now requires a reason and retains the original attempt, subsequent replacements and known app/tabletop source. Ordinary manual tabletop entry is not called an override. The report schema, review, saved report and readable history retain this chronology; existing records without source data remain honest. Eighty focused model/history tests, typecheck and a real 390px app-roll → replacement 65 → reload → file/apply → saved report/history check pass on disposable local data. No deployment.
+
+**Tom’s correction — 2026-09-11:** “Sorry my bug report was unclear: it was actually an advancement roll that I fudged, not an injury roll”. Apply the original/replacement/source/explanation requirement to advancement dice, both within post-battle reporting and standalone advances. The separately completed injury-history improvement remains useful, but does not close this corrected issue.
+
+**Corrected-scope implementation — 2026-09-11:** Primary advancement 2D6 and characteristic follow-up D6 now retain app/tabletop source and every replacement, separately from rule-required rerolls. An optional explanation is saved with the chronology. Pick-later/restored drafts and completed advancement resolutions preserve it. Post-battle reports also retain the named recorded advancement and dice history in their notes, even if applying the advancement subsequently remains pending. Historical records without provenance do not acquire invented origins. Verified an actual mobile app roll → manual 3+4 → Weapon Skill choice → draft reload → file/apply → saved report/advance/warband history, with only the selected WS increase applied. Full suite passed 1,697 tests; the final same-face follow-up reroll edge case passes all 35 advancement tests. No production push/deployment.
 
 ### 227. Optional Khemri campaign system and setting-based scenario availability
 

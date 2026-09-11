@@ -235,7 +235,25 @@ export const ADVANCE_DRAFT_VERSION = 1
 export type AdvanceStep = 'roll' | 'choose' | 'review'
 export const ADVANCE_STEPS: readonly AdvanceStep[] = ['roll', 'choose', 'review']
 
-export interface AdvanceDraft {
+export interface AdvanceRollAudit {
+  rollHistory?: string[]
+  hasRollReplacement?: boolean
+  rollChangeReason?: string
+}
+type RollSource = 'app' | 'tabletop'
+function auditRoll(draft: AdvanceDraft, label: string, before: string, after: string, source: RollSource | undefined, replacement: boolean): AdvanceDraft {
+  if (!source) return draft
+  const event = `${source === 'app' ? 'App rolled' : replacement ? 'Manually changed' : 'Entered'} ${label}: ${replacement ? `${before} → ` : ''}${after}.`
+  return {...draft, rollHistory:[...(draft.rollHistory??[]),event], ...(replacement?{hasRollReplacement:true}:{})}
+}
+export function advanceAuditFields(draft: AdvanceRollAudit): AdvanceRollAudit {
+  return {...(draft.rollHistory?.length?{rollHistory:[...draft.rollHistory]}:{}),...(draft.hasRollReplacement?{hasRollReplacement:true}:{}),...(draft.rollChangeReason?.trim()?{rollChangeReason:draft.rollChangeReason.trim()}:{})}
+}
+export function advanceAuditText(draft: AdvanceRollAudit): string {
+  return draft.rollHistory?.length ? ` Dice history: ${draft.rollHistory.join(' ')}${draft.hasRollReplacement?` Player explanation: ${draft.rollChangeReason?.trim()||'not supplied'}.`:''}` : ''
+}
+
+export interface AdvanceDraft extends AdvanceRollAudit {
   maximaRulingConfirmed?: boolean
   agreedRacialMaxima?: Stats
   agreedRacialMaximaReason?: string
@@ -291,20 +309,23 @@ function clearChoices(draft: AdvanceDraft): AdvanceDraft {
   return { ...draft, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill', reward: emptyRewardChoices() }
 }
 
-export function setDie(draft: AdvanceDraft, index: 0 | 1, value: number | null): AdvanceDraft {
+export function setDie(draft: AdvanceDraft, index: 0 | 1, value: number | null, source?: RollSource): AdvanceDraft {
   if (draft.dice[index] === value) return draft
   const dice: [number | null, number | null] = [draft.dice[0], draft.dice[1]]
   dice[index] = value
-  return clearChoices({ ...draft, dice, step: 'roll' })
+  const recorded=auditRoll(draft,index===0?'First D6':'Second D6',String(draft.dice[index]??'blank'),String(value??'blank'),source,draft.dice[index]!==null)
+  return clearChoices({ ...recorded, dice, step: 'roll' })
 }
 
-export function setDice(draft: AdvanceDraft, a: number, b: number): AdvanceDraft {
-  return clearChoices({ ...draft, dice: [a, b], step: 'roll' })
+export function setDice(draft: AdvanceDraft, a: number, b: number, source?: RollSource): AdvanceDraft {
+  const recorded=auditRoll(draft,'2D6',draft.dice.map(n=>n??'blank').join(' + '),`${a} + ${b} = ${a+b}`,source,draft.dice.some(n=>n!==null))
+  return clearChoices({ ...recorded, dice: [a, b], step: 'roll' })
 }
 
-export function setSubRoll(draft: AdvanceDraft, value: number | null): AdvanceDraft {
-  if (draft.subRoll === value) return draft
-  return { ...draft, subRoll: value, skillId: null, spellId: null, stat: null, skillInstead: false }
+export function setSubRoll(draft: AdvanceDraft, value: number | null, source?: RollSource): AdvanceDraft {
+  if (draft.subRoll === value && source !== 'app') return draft
+  const recorded=auditRoll(draft,'characteristic follow-up D6',String(draft.subRoll??'blank'),String(value??'blank'),source,draft.subRoll!==null)
+  return { ...recorded, subRoll: value, skillId: null, spellId: null, stat: null, skillInstead: false }
 }
 
 export function setStat(draft: AdvanceDraft, stat: StatKey | null): AdvanceDraft {
@@ -351,7 +372,7 @@ export function setStep(draft: AdvanceDraft, step: AdvanceStep): AdvanceDraft {
 }
 
 /** What "Pick later" stores on the pending row: the dice as rolled, so the choice can be made later. */
-export interface AdvanceRolled {
+export interface AdvanceRolled extends AdvanceRollAudit {
   agreedRacialMaxima?: Stats
   agreedRacialMaximaReason?: string
   version: 1
@@ -366,7 +387,7 @@ export interface AdvanceRolled {
 export function rolledFromDraft(draft: AdvanceDraft, rollText: string): AdvanceRolled | null {
   const total = diceTotal(draft)
   if (total === null) return null
-  const out: AdvanceRolled = { version: 1, dice: [draft.dice[0] ?? 0, draft.dice[1] ?? 0], text: `Rolled ${total}: ${rollText}` }
+  const out: AdvanceRolled = { ...advanceAuditFields(draft), version: 1, dice: [draft.dice[0] ?? 0, draft.dice[1] ?? 0], text: `Rolled ${total}: ${rollText}${advanceAuditText(draft)}` }
   if (draft.subRoll !== null) out.subRoll = draft.subRoll
   if (draft.rerolled.length > 0) out.rerolled = [...draft.rerolled]
   if (draft.mode === 'spell') out.mode = 'spell'
@@ -385,6 +406,7 @@ export function draftFromRolled(rolled: Record<string, unknown> | null | undefin
   return {
     ...(agreed.success&&typeof rolled.agreedRacialMaximaReason==='string'&&rolled.agreedRacialMaximaReason.trim()?{agreedRacialMaxima:agreed.data,agreedRacialMaximaReason:rolled.agreedRacialMaximaReason,maximaRulingConfirmed:true}:{}),
     ...draft,
+    ...advanceAuditFields({rollHistory:Array.isArray(rolled.rollHistory)?rolled.rollHistory.filter((v):v is string=>typeof v==='string'):undefined,hasRollReplacement:rolled.hasRollReplacement===true,rollChangeReason:typeof rolled.rollChangeReason==='string'?rolled.rollChangeReason:undefined}),
     dice: [a, b],
     subRoll: typeof rolled.subRoll === 'number' ? rolled.subRoll : null,
     rerolled: Array.isArray(rolled.rerolled) ? rolled.rerolled.filter((n): n is number => typeof n === 'number') : [],
@@ -401,7 +423,7 @@ export function readRolled(value: Record<string, unknown> | null | undefined): s
 /** Put the current total on record and clear the dice for another roll. */
 export function reroll(draft: AdvanceDraft): AdvanceDraft {
   const total = diceTotal(draft)
-  return clearChoices({ ...draft, dice: [null, null], rerolled: total === null ? draft.rerolled : [...draft.rerolled, total], step: 'roll' })
+  return clearChoices({ ...draft, ...(draft.rollHistory?.length?{rollHistory:[...draft.rollHistory,`Rule-required re-roll of ${draft.dice.join(' + ')}${draft.subRoll!==null?`; follow-up ${draft.subRoll}`:''}.`]}:{}), dice: [null, null], rerolled: total === null ? draft.rerolled : [...draft.rerolled, total], step: 'roll' })
 }
 
 /** "Watchmen" -> "Watchman", "Marksmen" -> "Marksman", "Youngbloods" -> "Youngblood". */
@@ -429,7 +451,7 @@ export function defaultPromotedName(group: RosterHenchmanGroup, roster: RosterWa
 
 export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion' | 'reward'
 
-export interface AdvanceResolution {
+export interface AdvanceResolution extends AdvanceRollAudit {
   version: 1
   kind: 'hero' | 'group'
   subjectName: string
@@ -503,7 +525,7 @@ export function summaryText(p: ResolutionParts): string {
       break
   }
   const rerolled = p.rerolled && p.rerolled.length > 0 ? ` · re-rolled ${p.rerolled.join(', ')}` : ''
-  return `${rolled}: ${body}${rerolled}`
+  return `${rolled}: ${body}${rerolled}${advanceAuditText(p)}`
 }
 
 export function buildResolution(p: ResolutionParts): AdvanceResolution {
@@ -654,6 +676,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     subjectName: subject.kind === 'hero' ? subject.hero.name : subject.sword.name,
     roll2d6: plan.total,
     dice,
+    ...advanceAuditFields(draft),
     ...(draft.rerolled.length > 0 ? { rerolled: draft.rerolled } : {}),
   }
 
@@ -851,6 +874,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
     roll2d6: plan.total,
     dice,
     groupSize: group.size,
+    ...advanceAuditFields(draft),
     ...(draft.rerolled.length > 0 ? { rerolled: draft.rerolled } : {}),
   }
 

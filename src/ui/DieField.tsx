@@ -7,7 +7,7 @@ export interface DieFieldProps {
   sides: number
   value: number | null
   /** A whole number in 1..sides, or null while the field is blank or out of range. */
-  onChange: (value: number | null) => void
+  onChange: (value: number | null, source?: 'app' | 'tabletop') => void
   /** Show a Roll button that fills the field with a random result. */
   rollable?: boolean
   /** Visually hide the label (still read by screen readers), for rows of dice. */
@@ -64,7 +64,7 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
     const ok = valid(parsed)
     setManual(ok ? true : null)
     if (ok) record(parsed)
-    onChange(ok ? parsed : null)
+    onChange(ok ? parsed : null, 'tabletop')
   }
 
   function roll() {
@@ -72,7 +72,7 @@ export function DieField({ label, sides, value, onChange, rollable = false, hide
     setText(String(result))
     setManual(false)
     record(result)
-    onChange(result)
+    onChange(result, 'app')
   }
 
   const parsed = parse(text)

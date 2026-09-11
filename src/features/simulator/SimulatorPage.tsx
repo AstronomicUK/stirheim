@@ -15,7 +15,7 @@ import type { CombatContext, WeaponKind } from '../../rules/types'
 import type { CampaignHouseRules } from '../../rules/types/roster'
 import { Notice, PageHeader, SelectField, Spinner, TextField } from '../../ui'
 import { Card, Section, Tag } from '../roster/view/bits'
-import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant } from '../match/fight/combatants'
+import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant } from '../match/fight/combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds } from '../match/fight/odds'
 import { combatantFromTemplate, defaultKitFor, defaultTemplateSide, kitOptionsFor, pts, unitsOf, type SideSource, type TemplateSide } from './model'
 import { usePageTitle } from '../onboarding/usePageTitle'
@@ -327,7 +327,7 @@ function Fight({
 }) {
   const { kit: attackerKit, primary, offHand } = selectedWeapons(attacker, choices)
   const otherWeapons = selectedWeapons(defender, defenderChoices)
-  const defenderKit = otherWeapons.kit
+  const defenderKit = kitWithSelectedWeapons(otherWeapons.kit, otherWeapons.primary, otherWeapons.offHand, primary.type)
   const phase: WeaponKind = primary.type
   const chargingMatters = [primary, ...(offHand ? [offHand] : [])].some((w) => w.strengthBonusFirstTurnOnly || w.strengthBonusMountedChargeOnly || w.chargeBonusAttacks || w.firstTurnBonusAttacks || w.special.includes('mountedChargeStrengthBonus')) || SKILLS.some((s) => attacker.skillIds.includes(s.id) && s.conditionField === 'charging')
   const toggleList = relevantToggles(attacker, phase, primary, defenderKit, offHand, defender).filter((t) => t.field !== 'charging' || chargingMatters)
@@ -336,7 +336,7 @@ function Fight({
   const context = combatContextFor(houseRules, active)
   const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand, context, houseRules, woundsAlreadyLost: defender.woundsLost }
   const odds: FightOdds = computeOdds(fightSetup)
-  const reverse = { ...fightSetup, attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: attackerKit, primary: otherWeapons.primary, offHand: otherWeapons.offHand, context: combatContextFor(houseRules, defenderChoices.toggles), woundsAlreadyLost: attacker.woundsLost }
+  const reverse = { ...fightSetup, attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: kitWithSelectedWeapons(attackerKit, primary, offHand, otherWeapons.primary.type), primary: otherWeapons.primary, offHand: otherWeapons.offHand, context: combatContextFor(houseRules, defenderChoices.toggles), woundsAlreadyLost: attacker.woundsLost }
 
   return (
     <>

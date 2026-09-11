@@ -3,7 +3,7 @@ import { findWeapon } from '../../../rules/data/weapons'
 import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
-import { kindTraits, loadoutOf, type Combatant } from './combatants'
+import { kindTraits, kitWithSelectedWeapons, loadoutOf, type Combatant } from './combatants'
 import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
@@ -412,4 +412,25 @@ it('resolves charge versus Strike First by Initiative, and when-charged weapons 
   const corbin = combatant('Guard', [{ itemId: 'bec_de_corbin', quantity: 1 }], { stats: { ...base, I: 2 } })
   const counter = setup(corbin, captain, 'bec_de_corbin', null)
   expect(computeOdds({ ...counter, context: { ...counter.context, firstTurnOfCombat: true } }).strikeOrder).toContain('Captain strikes first: Initiative 3')
+})
+
+
+it('only held defender weapons grant parry and strike-order effects (#156)', () => {
+  const d = combatant('Guard', [{ itemId: 'spear', quantity: 1 }, { itemId: 'sword', quantity: 1 }, { itemId: 'double_handed_weapon', quantity: 1 }, { itemId: 'shield', quantity: 1 }], { stats: { ...base, I: 2 } })
+  const fight = setup(captain, d, 'sword', null)
+  const held = (id: string) => kitWithSelectedWeapons(fight.defenderKit, fight.defenderKit.melee.find(w => w.id === id)!, null)
+  const swordKit = held('sword')
+  const sword = computeOdds({ ...fight, defenderKit: swordKit })
+  expect(sword.parryAttempts).toBe(1)
+  expect(sword.strikeOrder).toContain('Captain strikes first: Initiative 3')
+  expect(swordKit.armour.shield).toBe(true)
+  const spear = computeOdds({ ...fight, defenderKit: held('spear'), context: { ...fight.context, firstTurnOfCombat: true } })
+  expect(spear.parryAttempts).toBe(0)
+  expect(spear.strikeOrder).toContain('Guard strikes first in the first turn (Spear)')
+  const heavyKit = held('double_handed_sword')
+  expect(heavyKit.armour.shield).toBe(false)
+  expect(kitWithSelectedWeapons(fight.defenderKit, heavyKit.melee[0], null, 'ranged').armour.shield).toBe(true)
+  expect(computeOdds({ ...fight, defenderKit: heavyKit }).strikeOrder).toContain('always strikes last')
+  expect(fight.defenderKit.melee).toHaveLength(3)
+  expect(fight.defenderKit.armour.shield).toBe(true) // Selecting hands never edits the carried kit.
 })

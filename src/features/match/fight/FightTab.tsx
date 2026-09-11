@@ -18,7 +18,7 @@ import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/ros
 import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, Spinner, Stepper, TextField } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
-import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
+import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
@@ -96,7 +96,14 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   if (defenderId === null && defender) setDefenderId(defender.id)
 
   const attackerKit = useMemo(() => (attacker ? loadoutFor(attacker) : null), [attacker])
-  const defenderKit = useMemo(() => (defender ? loadoutFor(defender) : null), [defender])
+  const defenderCarriedKit = useMemo(() => (defender ? loadoutFor(defender) : null), [defender])
+  const [defenderChoice, setDefenderChoice] = useState<{ id: string; primary: number; offHand: number } | null>(null)
+  const defenderWeapons = defenderCarriedKit?.melee.length ? defenderCarriedKit.melee : [defaultPrimary([])]
+  const validDefenderChoice = defender && defenderChoice && defenderChoice.id === defender.id && defenderWeapons[defenderChoice.primary] ? defenderChoice : null
+  const defenderPrimary = validDefenderChoice ? defenderWeapons[validDefenderChoice.primary] : defaultPrimary(defenderWeapons)
+  const defenderOffOptions = offHandCandidates(defenderWeapons, defenderPrimary)
+  const preferredDefenderOff = validDefenderChoice ? defenderWeapons[validDefenderChoice.offHand] : defaultOffHand(defenderWeapons, defenderPrimary)
+  const defenderOff = preferredDefenderOff && defenderOffOptions.includes(preferredDefenderOff) ? preferredDefenderOff : null
 
   // Weapon choice follows the attacker: a new attacker gets sensible defaults.
   const [choice, setChoice] = useState<WeaponChoice | null>(null)
@@ -118,6 +125,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const offHandOptions = primary && primary.type === 'melee' ? offHandCandidates(melee, primary) : []
   const offHand = current && current.offHand >= 0 && primary?.type === 'melee' ? melee[current.offHand] ?? null : null
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
+  const defenderKit = defenderCarriedKit ? kitWithSelectedWeapons(defenderCarriedKit, defenderPrimary, defenderOff, primary?.type) : null
 
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
   // The roll-through lives in a sheet the dice button opens, rather than a slab down the page.
@@ -314,6 +322,19 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             </SelectField>
           ) : null}
           {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
+          {defender && defenderCarriedKit ? <>
+            <SelectField label="Weapon held" value={String(defenderWeapons.indexOf(defenderPrimary))} onChange={e => {
+              const index = Number(e.target.value)
+              const off = defaultOffHand(defenderWeapons, defenderWeapons[index])
+              setDefenderChoice({ id: defender.id, primary: index, offHand: off ? defenderWeapons.indexOf(off) : -1 })
+            }}>
+              {defenderWeapons.map((w, i) => <option key={i} value={i}>{w.name}</option>)}
+            </SelectField>
+            {defenderOffOptions.length > 0 ? <SelectField label="Other hand" value={defenderOff ? String(defenderWeapons.indexOf(defenderOff)) : '-1'} onChange={e => setDefenderChoice({ id: defender.id, primary: defenderWeapons.indexOf(defenderPrimary), offHand: Number(e.target.value) })}>
+              <option value="-1">Nothing</option>
+              {defenderOffOptions.map(w => <option key={defenderWeapons.indexOf(w)} value={defenderWeapons.indexOf(w)}>{w.name}</option>)}
+            </SelectField> : null}
+          </> : null}
           {defender && defender.stats.W > 1 ? (
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-ink-dim">

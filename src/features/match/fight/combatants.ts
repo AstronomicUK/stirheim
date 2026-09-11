@@ -542,6 +542,13 @@ export function canBeOffHand(weapon: Weapon): boolean {
   return true
 }
 
+/** Only weapons held this round supply parries and strike-order modifiers. */
+export function kitWithSelectedWeapons(kit: Loadout, primary: Weapon, offHand: Weapon | null, incomingPhase: 'melee' | 'ranged' = 'melee'): Loadout {
+  const melee = primary.type === 'melee' ? [primary, ...(offHand ? [offHand] : [])] : []
+  const handsFull = Boolean(offHand) || isTwoHanded(primary)
+  return { ...kit, melee, armour: handsFull && incomingPhase === 'melee' ? { ...kit.armour, shield: false, buckler: false, kiteShield: false } : kit.armour }
+}
+
 /** A spear ("unwieldy") only shares hands with a shield or buckler; the same list keeps two-handers alone. */
 export function takesOffHand(primary: Weapon): boolean {
   return !isTwoHanded(primary) && !primary.special.includes('unwieldyOffHandOnly') && primary.id !== 'unarmed'

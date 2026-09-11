@@ -1,3 +1,5 @@
+import { appointLeader } from '../../rules/resolve/succession'
+import { leaderTemplate } from '../../rules/resolve/roster'
 import { defaultCampaignHouseRules } from '../../rules/types/roster'
 import { describe, expect, it } from 'vitest'
 import { toRosterWarband, type PendingAdvanceRow } from '../../domain'
@@ -686,4 +688,31 @@ it('preserves the Protectorate normal-roll choice when its skill is picked later
  const draft={...setDice(emptyDraft(NEW_ID),2,2),protectorateChoice:'roll' as const}
  const saved=rolledFromDraft(draft,'New Skill')!
  expect(draftFromRolled({...saved},NEW_ID)?.protectorateChoice).toBe('roll')
+})
+
+
+it.each(['sisters_of_sigmar','cult_of_the_possessed','carnival_of_chaos'])('offers %s successor one honest spell/prayer advance without an immediate grant', id => {
+ const template=findWarbandTemplate(id)!
+ const leader=leaderTemplate(template)!
+ const unit=template.heroTemplates.find(u=>u.role==='hero'&&u.id!==leader.id)!
+ const heir={...roster.heroes[0],unitTemplateId:unit.id,spellIds:[],flags:{}}
+ const initial={...roster,warbandTemplateId:id,heroes:[heir]}
+ const band=appointLeader(initial,template,heir.id).value
+ const hero=band.heroes[0]
+ expect(hero.spellIds).toEqual([])
+ expect(hero.flags.leaderMagicChoice).toBe(true)
+ const subject={kind:'hero' as const,hero}
+ const context={roster:band,template}
+ const blank=emptyDraft(NEW_ID)
+ const plan=planHero(blank,subject,context)
+ expect(plan.protectoratePrayerChoice).toBe(true)
+ expect(plan.spells.length).toBeGreaterThan(0)
+ const picked=planHero({...blank,protectorateChoice:'prayer',spellId:plan.spells[0].id},subject,context).result!
+ expect(picked.next.heroes[0].spellIds).toEqual([plan.spells[0].id])
+ expect(picked.next.heroes[0].flags.leaderMagicChoice).toBe(false)
+ expect(picked.resolution.dice).toBeNull()
+ expect(picked.resolution.text).toContain(`Chose a ${id==='sisters_of_sigmar'?'prayer':'spell'} instead of rolling`)
+ const rolled=planHero({...setDice(blank,3,3),protectorateChoice:'roll',subRoll:2,stat:'S'},subject,context).result!
+ expect(rolled.next.heroes[0].flags.leaderMagicChoice).toBe(false)
+ expect(rolled.next.heroes[0].spellIds).toEqual([])
 })

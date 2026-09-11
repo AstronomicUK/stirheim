@@ -605,6 +605,7 @@ export type HeroNeed = 'maxima' | 'roll' | 'subRoll' | 'stat' | 'skill' | 'rewar
 
 export interface HeroPlan {
   protectoratePrayerChoice?: boolean
+  successionMagicLabel?: 'prayer' | 'spell'
   lores?: SpellLore[]
   total: number | null
   roll: HeroAdvanceRoll | null
@@ -676,9 +677,11 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   const homeLore = loreForHero(hero, ctx.template)
   const lores = isSword && subject.sword.hiredSwordId === 'dark_mage' ? SPELL_LORES.filter(l => ['dark_mage_magic', 'lesser_magic'].includes(l.id)) : homeLore ? [homeLore] : []
   const lore = lores.find(l => l.id === draft.spellLoreId) ?? homeLore
-  const protectoratePrayerChoice = !isSword && warbandTemplateId === 'protectorate_of_sigmar' && hero.unitTemplateId === 'warrior_priest' && Boolean(hero.flags.protectoratePrayerChoice)
+  const protectoratePrayerChoice = !isSword && ((warbandTemplateId === 'protectorate_of_sigmar' && hero.unitTemplateId === 'warrior_priest' && Boolean(hero.flags.protectoratePrayerChoice)) || Boolean(hero.flags.leaderMagicChoice))
+  const successionMagicLabel = ['protectorate_of_sigmar','sisters_of_sigmar'].includes(warbandTemplateId) ? 'prayer' : 'spell'
   const plan: HeroPlan = {
     protectoratePrayerChoice,
+    successionMagicLabel,
     total: diceTotal(draft),
     roll: null,
     maxima,
@@ -702,9 +705,9 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     if (draft.protectorateChoice !== 'prayer' || !prayer || !lore) return { ...plan, need: 'roll' }
     try {
       const learned = learnSpell(hero, lore.id, prayer.id)
-      const next = { ...learned.value, flags: { ...learned.value.flags, protectoratePrayerChoice: false } }
+      const next = { ...learned.value, flags: { ...learned.value.flags, protectoratePrayerChoice: false, leaderMagicChoice: false } }
       return { ...plan, result: { next: replaceHero(ctx.roster, next), events: learned.events,
-        resolution: buildResolution({kind:'hero',subjectName:hero.name,roll2d6:null,dice:null,chosenInsteadOfRoll:'Chose a prayer instead of rolling the next advance',outcome:'spell',spellId:prayer.id,spellName:prayer.name,loreId:lore.id,...advanceAuditFields(draft)}) } }
+        resolution: buildResolution({kind:'hero',subjectName:hero.name,roll2d6:null,dice:null,chosenInsteadOfRoll:`Chose a ${successionMagicLabel} instead of rolling the next advance`,outcome:'spell',spellId:prayer.id,spellName:prayer.name,loreId:lore.id,...advanceAuditFields(draft)}) } }
     } catch(e) { return {...plan,need:'roll',error:errorMessage(e)} }
   }
   if (plan.total === null) return { ...plan, need: 'roll' }
@@ -720,7 +723,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   }
 
   const finish = (next: RosterHero, events: ResolutionEvent[], parts: Omit<ResolutionParts, keyof typeof base>): AdvanceResult => {
-    if(protectoratePrayerChoice) next={...next,flags:{...next.flags,protectoratePrayerChoice:false}}
+    if(protectoratePrayerChoice) next={...next,flags:{...next.flags,protectoratePrayerChoice:false,leaderMagicChoice:false}}
     if(maximaRuling) next={...next,flags:{...next.flags,agreedRacialMaxima:draft.agreedRacialMaxima,agreedRacialMaximaReason:draft.agreedRacialMaximaReason!.trim()}}
     let roster = isSword ? replaceHiredSword(ctx.roster, heroToHiredSword(subject.sword, next)) : replaceHero(ctx.roster, next)
     if (isSword && !hasGuardianSkill(subject.sword)) {

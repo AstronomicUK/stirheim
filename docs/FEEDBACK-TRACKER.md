@@ -3848,3 +3848,7 @@ Validation:1,986 ordinary tests, build/typecheck and mobile+saved-data checks pa
 
 ### #122 overnight follow-up — leader waiting games (local, not deployed)
 Undead/Lizardmen waiting game now excludes the leader’s death battle and repeat filing; temporary appointments preserve the wait. Source-confirmed collapse offers retirement retaining history, and ordinary slain leaders cannot be re-bought. Readable notices/activity, 1,990 ordinary tests plus activity regression, mobile save/reload/archive QA and build pass. Remaining source-specific succession clauses and morning rulings stay open. See OVERNIGHT-RULES-BATCH-2026-09-11.md.
+
+
+### #122 overnight follow-up — core successor magic and recruitment (local)
+Sisters/Possessed/Carnival successor first-advance spell/prayer choice implemented without free magic or fake rolls. Lost Dame must be replaced before recruiting other warriors. Dreamwalker leadership now prioritises living Dreamer then Priest, with dead-Dreamer replacement prohibited; initial certification remains outstanding. 1,996 ordinary tests, build and mobile Carnival both-path save verification pass. Not pushed/deployed; source-specific remaining clauses and questions remain open.

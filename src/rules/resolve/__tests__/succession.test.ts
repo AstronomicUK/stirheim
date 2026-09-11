@@ -144,3 +144,13 @@ it('Black Orc succession prefers real Black Orcs and preserves the fallback Orcâ
  const proven=hero('proven','black_orcs_youngun',{skillIds:['black_orcs_skills_proven_warrior']})
  expect(successionOptions(warband(template.id,[boy,proven]),template)?.candidates.map(c=>c.hero.id)).toEqual(['proven'])
 })
+
+
+it('keeps the Priest of Morr as priest after a Dreamer dies and bars another Dreamer',()=>{
+ const t=findWarbandTemplate('dreamwalkers_cult_of_morr')!
+ const w={...warband(t.id,[hero('dreamer','dreamwalkers_dreamer',{status:'dead'}),hero('priest','dreamwalkers_priest_of_morr')]),gold:500}
+ expect(currentLeader(w.heroes.map(h=>({...h,status:'active' as const})),t)?.id).toBe('dreamer')
+ expect(canRecruit(w,t,'dreamwalkers_dreamer').ok).toBe(false)
+ expect(currentLeader(w.heroes,t)?.id).toBe('priest')
+ expect(w.heroes[1].unitTemplateId).toBe('dreamwalkers_priest_of_morr')
+})

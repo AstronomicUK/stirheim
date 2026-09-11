@@ -44,6 +44,7 @@ export interface WarriorFlags {
   leaderRoleId?: string;
   /** Protectorate successor may take a prayer instead of rolling the next advance. */
   protectoratePrayerChoice?: boolean;
+  leaderMagicChoice?: boolean;
   /** The consumed Lustrian Hero vacancy; retained for the replacement chain. */
   lustrianReplacementOf?: string;
   haggleUse?: {matchId:string; requestId:string; itemName:string; dice:number[]; priceBefore:number; priceAfter:number};

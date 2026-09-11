@@ -442,7 +442,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
         },
       },
     ],
-    succession: { note: "The Priest of Morr leads until a genuine Dreamer joins.", candidateUnitIds: ["dreamwalkers_priest_of_morr"], anyHero: true },
+    succession: { note: "The Priest of Morr leads without becoming a Dreamer. Once a genuine Dreamer dies, another may never be hired.", candidateUnitIds: ["dreamwalkers_priest_of_morr"], temporary: true },
   },
   dwarf_rangers: {
     exploration: { extraShards: 1, note: "Incomparable Miners: +1 shard of wyrdstone whenever the warband finds any." },

@@ -77,3 +77,15 @@ describe('one-game replacement waits',()=>{
   expect(collapsedWarbandReason({...w,heroes:[...w.heroes,{...hero('c','undead_necromancer'),status:'captured' as const}]})).toBeUndefined()
  })
 })
+
+
+it('replaces a removed Dame before other warriors, then lifts the restriction', () => {
+ const t=findWarbandTemplate('order_of_the_mare')!
+ const w={...band(),warbandTemplateId:t.id,heroes:[hero('leader','paragon'),{...hero('dame','dame_of_the_mare'),status:'dead' as const}]}
+ const other=t.heroTemplates.find(u=>!['paragon','dame_of_the_mare'].includes(u.id))!
+ expect(canRecruit(w,t,other.id).reason).toContain('Dame of the Mare before')
+ expect(canRecruit(w,t,'dame_of_the_mare').ok).toBe(true)
+ const next=recruitHero(w,t,'dame_of_the_mare','New Dame','replacement').value
+ expect(canRecruit(next,t,other.id).ok).toBe(true)
+ expect(canRecruit({...w,heroes:w.heroes.map(h=>h.id==='dame'?{...h,status:'captured' as const}:h)},t,other.id).ok).toBe(true)
+})

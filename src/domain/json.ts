@@ -47,6 +47,7 @@ export const warriorFlagsSchema = z.object({
   leaderReplacementReadyAfter: z.string().optional(),
   leaderRoleId: z.string().optional(),
   protectoratePrayerChoice: z.boolean().optional(),
+  leaderMagicChoice: z.boolean().optional(),
   lustrianReplacementOf: z.string().uuid().optional(),
   temporaryLeader: z.boolean().optional(),
   haggleUse: z.object({matchId:z.string(),requestId:z.string(),itemName:z.string(),dice:z.array(z.number()),priceBefore:z.number(),priceAfter:z.number()}).optional(),

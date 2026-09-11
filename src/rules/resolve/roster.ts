@@ -89,6 +89,7 @@ export function leaderTemplate(template: WarbandTemplate): UnitTemplate | undefi
 /** The recruited leader takes precedence over an appointed temporary successor. */
 export function currentLeader(heroes: RosterHero[], template: WarbandTemplate): RosterHero | undefined {
   const active = heroes.filter(h => h.status === "active");
+  if (template.id === 'dreamwalkers_cult_of_morr') return active.find(h => h.unitTemplateId === 'dreamwalkers_dreamer') ?? active.find(h => h.unitTemplateId === 'dreamwalkers_priest_of_morr');
   const type = leaderTemplate(template);
   return active.find(h => h.unitTemplateId === type?.id) ?? active.find(h => h.flags.leaderRoleId === type?.id && Boolean(type)) ?? active.find(h => h.flags.temporaryLeader);
 }

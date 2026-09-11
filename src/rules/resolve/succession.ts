@@ -95,7 +95,7 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
   const next: RosterHero = {
     ...hero,
     unitTemplateId: retainType ? hero.unitTemplateId : leader.id,
-    flags: { ...hero.flags, ...(template.id === 'black_orcs' ? {leaderRoleId:leader.id} : {}), ...(template.id === 'protectorate_of_sigmar' ? { protectoratePrayerChoice: true } : {}), ...(rule?.temporary ? { temporaryLeader: true } : {}) },
+    flags: { ...hero.flags, ...(template.id === 'black_orcs' ? {leaderRoleId:leader.id} : {}), ...(template.id === 'protectorate_of_sigmar' ? { protectoratePrayerChoice: true } : {}), ...(['sisters_of_sigmar','cult_of_the_possessed','carnival_of_chaos'].includes(template.id) ? {leaderMagicChoice:true} : {}), ...(rule?.temporary ? { temporaryLeader: true } : {}) },
     skillTableIds: [...new Set([...hero.skillTableIds, ...(rule?.grantsSkillTableIds ?? [])])],
     skillIds: [...hero.skillIds, ...gained],
   };

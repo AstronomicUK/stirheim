@@ -3798,3 +3798,17 @@ Final ordinary suite: 1,890 passed, 176 database tests skipped in that run; all 
 ### Final browser gate — 11 September
 
 All 16 browser regression tests pass against disposable copies of the original seed fixtures. The first run used an altered shared local campaign (four members/map mode), so its fixed-baseline assertions failed; isolated reruns corrected fixture invite formatting and one hard-coded warband label without changing application behaviour. Test fixture IDs/names can now be overridden while CI defaults stay unchanged. Extra desktop QA verifies one critical across successive Mortar victims. All disposable fixtures cleaned. Final ordinary/database totals remain 1,890 +176, with build/typecheck/lint passing. Ready for one release; expected production migrations 73–74.
+
+
+## Tonight’s batch deployed — 11 September 2026
+
+Released commit `14849b68e86e9ae4c31dda20398c68880f9a2743` in one push and one Netlify production deployment, `6aa44c4cc2d4c6528e354c1c`. This publishes the accumulated local priority fixes plus completed #154/#155. Production migrations 73 (Merchant Bribery) and 74 (promotion re-roll protection) applied; the follow-up dry run reports no pending migrations. All 100 served HTML/JS/CSS files match the production build byte-for-byte; sign-in, campaigns and battles entry routes return 200. No live player records were used for QA.
+
+Validation: 1,890 ordinary tests, 176 local database tests and all 16 isolated browser regression tests passed. Mobile/desktop special-shooting checks passed, including original dice surviving reload and shared critical consumption between blast victims. Hosted CI `34635058580` has passed its test/build job; its separate browser job is still running at this checkpoint. Do not claim #201 closed until that result is known.
+
+#154 and #155 are deployed within their documented scope. #163 remains partial for the next batch. Wider combat/psychology, special promotions/succession, equipment destruction/ammunition and other outstanding areas remain open as previously listed. The daytime heartbeat is paused at this release breakpoint; do not start another batch or deployment automatically. Unrelated audit-document edits remain untouched.
+
+
+### Hosted release checks passed — #201 closed, 11 September
+
+Hosted CI run `34635058580` for released commit `14849b6` completed successfully: test/build job passed and all 16 hosted browser tests passed. This resolves the outstanding hosted verification under #201. The release is fully verified; no further deployment is required. #163 remains the next proposed completion batch, not started in this release.

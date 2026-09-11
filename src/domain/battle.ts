@@ -120,15 +120,31 @@ export function serpentStaffUse(state: BattleLiveState, warriorId: string, turnK
 }
 
 /** Activation is durable before rolling; repeat activation cannot restore a spent attack. */
-export function activateSerpentStaff(state: BattleLiveState, warriorId: string, turnKey: string): BattleLiveState {
+export function activateSerpentStaff(state: BattleLiveState, warriorId: string, turnKey: string, name?: string, turn = state.turn): BattleLiveState {
   if (serpentStaffUse(state, warriorId, turnKey)) return state;
   const at = new Date().toISOString();
-  return { ...state, serpentStaffUses: [...state.serpentStaffUses, { warriorId, turnKey, at, used: false }], editedAt: at };
+  const next = { ...state, serpentStaffUses: [...state.serpentStaffUses, { warriorId, turnKey, at, used: false }], editedAt: at };
+  return name ? withRollAttempt(next, { id: crypto.randomUUID(), at, turn, kind: 'attack', status: 'complete', label: `${name} awakens the Serpent Staff`, rolls: ['Confirmed no attacks or parries already taken. Forfeits all normal attacks and parries this combat phase for one WS4 / S4 staff attack.'] }) : next;
 }
 
 export function consumeSerpentStaff(state: BattleLiveState, warriorId: string, turnKey: string): BattleLiveState {
   const activated = activateSerpentStaff(state, warriorId, turnKey);
   return { ...activated, serpentStaffUses: activated.serpentStaffUses.map(use => use.warriorId === warriorId && use.turnKey === turnKey ? { ...use, used: true } : use), editedAt: new Date().toISOString() };
+}
+
+export function combatPhaseKey(legacyTurn: number, turns?: { round: number; active_index: number; turn_order: string[] } | null): string {
+  return turns && turns.turn_order[turns.active_index] ? `${turns.round}:${turns.turn_order[turns.active_index]}` : `legacy:${legacyTurn}`;
+}
+
+/** Explicit, logged correction preserves Tom's approved ability to handle table exceptions. */
+export function correctSerpentStaff(state: BattleLiveState, warriorId: string, turnKey: string, name: string, reason: string, turn = state.turn): BattleLiveState {
+  const use = serpentStaffUse(state, warriorId, turnKey);
+  if (!use || !reason.trim()) return state;
+  return withRollAttempt({ ...state, serpentStaffUses: state.serpentStaffUses.filter(u => u !== use) }, {
+    id: crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
+    label: `${name}: Serpent Staff command corrected`,
+    rolls: [`Removed the staff command${use.used ? ' after its attack was marked used' : ' before its attack was used'}. Normal attacks and parries restored by player correction: ${reason.trim()}`],
+  });
 }
 
 /** Parse whatever is stored; anything malformed falls back to an empty sheet rather than crashing the table. */

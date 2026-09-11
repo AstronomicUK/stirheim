@@ -6,7 +6,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { withRollAttempt, type RollAttempt } from '../../../domain'
+import { withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -125,8 +125,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const offHandOptions = primary && primary.type === 'melee' ? offHandCandidates(melee, primary) : []
   const offHand = current && current.offHand >= 0 && primary?.type === 'melee' ? melee[current.offHand] ?? null : null
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
-  const defenderKit = defenderCarriedKit ? kitWithSelectedWeapons(defenderCarriedKit, defenderPrimary, defenderOff, primary?.type) : null
 
+  const [staffCorrection, setStaffCorrection] = useState('')
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
   // The roll-through lives in a sheet the dice button opens, rather than a slab down the page.
   const [rolling, setRolling] = useState(false)
@@ -144,19 +144,28 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
       ? woundsOverride.value
       : Math.min(defender.stats.W, Math.max(defender.woundsLost, targetMemory?.woundsLost ?? 0))
     : 0
-  const parryUsed = defender
+  const turns = useBattleTurns(matchId)
+  const phaseKey = combatPhaseKey(sheet.turn, turns.data)
+  const [seenPhase, setSeenPhase] = useState(phaseKey)
+  if (seenPhase !== phaseKey) { setSeenPhase(phaseKey); setRolling(false); setRollSetup(null); setStaffCorrection('') }
+  const staffUse = attacker ? serpentStaffUse(sheet, attacker.id, phaseKey) : undefined
+  const defenderSession = defender ? sessions.find((s) => s.warband_id === defender.warbandId) : undefined
+  const defenderStaffUse = defender && defenderSession ? serpentStaffUse(defenderSession.live_state, defender.id, phaseKey) : undefined
+  const staffDefenderWeapon = defenderStaffUse ? defenderCarriedKit?.melee.find(w => w.id === 'serpent_staff') : undefined
+  const defenderKit = defenderCarriedKit ? kitWithSelectedWeapons(defenderCarriedKit, staffDefenderWeapon ?? defenderPrimary, staffDefenderWeapon ? null : defenderOff, primary?.type) : null
+  const parryUsed = Boolean(defenderStaffUse) || (defender
     ? parryOverride?.id === defender.id && parryOverride.turn === sheet.turn
       ? parryOverride.used
       : targetMemory?.parryUsedTurn === sheet.turn
-    : false
-  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined) : []
+    : false)
+  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined).filter(t => t.field !== 'serpentStaffPower') : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   // Already knocked down or stunned (from an earlier, already-logged phase this turn): hits it
   // automatically in hand-to-hand, and a stunned target goes straight out of action (01:947-959).
   // Read from the shared log, not a toggle — this is exactly the "the battle sheet doesn't do
   // either of these" report, so it needs to just happen rather than rely on a checkbox.
-  const turns = useBattleTurns(matchId)
+  active.serpentStaffPower = Boolean(staffUse)
   const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn, turns.data?.recoveries).get(defender.id) : undefined
   if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
   if (defenderCondition === 'Stunned') active.targetStunned = true
@@ -165,7 +174,6 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   // Consumables the attacker has marked on the sheet (poisons, drugs, special ammunition) shape the odds and are used up by the report.
   const usedIds = attacker ? itemsUsedBy(sheet, attacker.id) : []
   const attackerPreBattle: PreBattleEffect[] = attackerKit ? attackerKit.consumables.filter((c) => usedIds.includes(c.itemId)).map((c) => c.effect) : []
-  const defenderSession = defender ? sessions.find((s) => s.warband_id === defender.warbandId) : undefined
   const defenderUsed = defender && defenderSession ? itemsUsedBy(defenderSession.live_state, defender.id) : []
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
@@ -174,7 +182,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, attackLimit, attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: staffUse?.used ? 0 : attackLimit, attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -244,6 +252,21 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   </option>
                 ))}
               </SelectField>
+              {primary.id === 'serpent_staff' || staffUse ? <div className="flex flex-col gap-2 rounded border border-brass p-3 text-xs">
+                <p className="font-semibold">Serpent Staff power</p>
+                {staffUse ? <>
+                  <p>{staffUse.used ? 'The staff attack has been used.' : 'One WS4 / S4 attack is ready.'} All normal attacks and parries are forfeited for this combat phase.</p>
+                  {primary.id !== 'serpent_staff' ? <p>Select the Serpent Staff to use its attack.</p> : null}
+                  <TextField label="Correction reason" value={staffCorrection} onChange={e => setStaffCorrection(e.target.value)} hint="For an accidental command or an agreed exception. The correction is recorded in Dice history." />
+                  <Button variant="secondary" disabled={readOnly || !edit || !staffCorrection.trim()} onClick={() => {
+                    edit?.(s => correctSerpentStaff(s, attacker.id, phaseKey, attacker.name, staffCorrection.trim(), sheet.turn))
+                    setStaffCorrection('')
+                  }}>Undo staff command</Button>
+                </> : <>
+                  <p>Replace all normal attacks and parries this combat phase with one WS4 / S4 attack that strikes first. Confirm this warrior has not already attacked or parried.</p>
+                  <Button variant="secondary" disabled={readOnly || !edit || turns.isPending || turns.isError} onClick={() => edit?.(s => activateSerpentStaff(s, attacker.id, phaseKey, attacker.name, sheet.turn))}>Confirm and awaken staff</Button>
+                </>}
+              </div> : null}
               {primary.type === 'melee' && offHandOptions.length > 0 ? (
                 <SelectField label="Other hand" value={offHandValid && offHand ? String(melee.indexOf(offHand)) : '-1'} onChange={(e) => setChoice({ ...current, offHand: Number(e.target.value) })}>
                   <option value="-1">Nothing</option>
@@ -323,14 +346,14 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           ) : null}
           {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
           {defender && defenderCarriedKit ? <>
-            <SelectField label="Weapon held" value={String(defenderWeapons.indexOf(defenderPrimary))} onChange={e => {
+            <SelectField label="Weapon held" disabled={Boolean(staffDefenderWeapon)} value={String(defenderWeapons.indexOf(staffDefenderWeapon ?? defenderPrimary))} onChange={e => {
               const index = Number(e.target.value)
               const off = defaultOffHand(defenderWeapons, defenderWeapons[index])
               setDefenderChoice({ id: defender.id, primary: index, offHand: off ? defenderWeapons.indexOf(off) : -1 })
             }}>
               {defenderWeapons.map((w, i) => <option key={i} value={i}>{w.name}</option>)}
             </SelectField>
-            {defenderOffOptions.length > 0 ? <SelectField label="Other hand" value={defenderOff ? String(defenderWeapons.indexOf(defenderOff)) : '-1'} onChange={e => setDefenderChoice({ id: defender.id, primary: defenderWeapons.indexOf(defenderPrimary), offHand: Number(e.target.value) })}>
+            {!staffDefenderWeapon && defenderOffOptions.length > 0 ? <SelectField label="Other hand" value={defenderOff ? String(defenderWeapons.indexOf(defenderOff)) : '-1'} onChange={e => setDefenderChoice({ id: defender.id, primary: defenderWeapons.indexOf(defenderPrimary), offHand: Number(e.target.value) })}>
               <option value="-1">Nothing</option>
               {defenderOffOptions.map(w => <option key={defenderWeapons.indexOf(w)} value={defenderWeapons.indexOf(w)}>{w.name}</option>)}
             </SelectField> : null}
@@ -346,7 +369,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Stepper value={woundsAlreadyLost} onChange={(v) => setWoundsOverride({ id: defender.id, value: v })} label={`wounds already lost by ${defender.name}`} max={defender.stats.W} />
             </div>
           ) : null}
-          {defender && (odds?.parryAttempts || parryUsed) ? (
+          {defenderStaffUse ? <p className="text-xs text-ink-dim">Serpent Staff power: this warrior has forfeited all parries this combat phase.</p> : null}
+          {defender && !defenderStaffUse && (odds?.parryAttempts || parryUsed) ? (
             <label className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title="One parry per turn, whoever attacks. Resets when the turn counter moves.">
               <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" checked={parryUsed} onChange={(e) => setParryOverride({ id: defender.id, turn: sheet.turn, used: e.target.checked })} />
               <span>Parry used this turn</span>
@@ -377,7 +401,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             onClose={() => setRolling(false)}
             size="full"
             title={`${attacker.name} attacks ${defender.name}`}
-            description={`${odds.attacks === 1 ? '1 attack' : `${odds.attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
+            description={`${(rollSetup ?? odds).attacks === 1 ? '1 attack' : `${(rollSetup ?? odds).attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
             footer={
               <Button variant="secondary" block onClick={() => setRolling(false)}>
                 Close
@@ -399,12 +423,12 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={needsInterception} onClick={() => setRollSetup(odds)}>Begin attacks</Button>
+            <Button block disabled={needsInterception || readOnly || Boolean(staffUse?.used)} onClick={() => { setRollSetup(odds); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
             turn={sheet.turn}
-            onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
+            onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
             defender={defender}
             defenderKit={defenderKit!}
@@ -442,7 +466,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
                 nurgles_rot: state.rotPassed,
-                rolls: [...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
+                rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
               })
             }
             onFinished={rememberFight}

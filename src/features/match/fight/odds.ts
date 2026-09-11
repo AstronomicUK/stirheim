@@ -30,6 +30,8 @@ export interface FightSetup {
   woundsAlreadyLost?: number
   /** The target's one parry this turn has already been used by an earlier attacker. */
   parryUsed?: boolean
+  /** The target has activated its staff in this combat phase and forfeited all parries. */
+  defenderStaffPower?: boolean
   /** Only this many attacks go at this target (splitting between enemies). */
   attackLimit?: number
   /** Consumables the attacker has marked as taken or applied for this battle. */
@@ -186,6 +188,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const targetDosed = applyPreBattle(setup.defender, setup.defenderKit, setup.defenderPreBattle ?? [])
   const attacker = toCharacter(dosed.combatant, dosed.kit)
   const defender = toDefender(targetDosed.combatant, targetDosed.kit)
+  if (setup.defenderStaffPower) { defender.parryWeaponCount = 0; defender.parryReroll = false }
   const phase: WeaponKind = setup.primary.type
   // The chosen weapons, as coated: the same entries by id in the dosed kit.
   const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => k.id === w.id) ?? w
@@ -308,7 +311,10 @@ export function strikeOrder(setup: FightSetup): string {
   if (setup.primary.type === 'ranged') return 'Shooting: no strike order.'
   const a = setup.attacker
   const d = setup.defender
-  if (setup.context.serpentStaffPower && setup.primary.id === 'serpent_staff') return `${a.name}'s Serpent Staff attacks first using its power; all normal attacks and parries are forfeited this round.`
+  const staffPower = setup.context.serpentStaffPower && setup.primary.id === 'serpent_staff'
+  if (staffPower && setup.defenderStaffPower) return 'Both Serpent Staff powers strike first: resolve their tie by Initiative, rolling off if equal.'
+  if (staffPower) return `${a.name}'s Serpent Staff attacks first using its power; all normal attacks and parries are forfeited this round.`
+  if (setup.defenderStaffPower) return `${d.name}'s Serpent Staff attacks first using its power; all normal attacks and parries are forfeited this round.`
   const aWeapons = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
   const dWeapons = setup.defenderKit.melee
   const last = (ws: Weapon[], c: Combatant, kit: Loadout) => ws.filter(w => w.special.includes('strikesLast') && !(w.special.includes('twoHanded') && [...c.skillIds,...kit.skillIds].includes('strongman')))
@@ -435,6 +441,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
   if (attacker.traitIds.includes('stupidity')) toggles.push({ field: 'failedStupidity', label: 'Failed Stupidity test', hint: 'No melee or shooting attacks until the start of this warrior’s next turn. Clear this after the next test is passed.' })
   const skills = attacker.skillIds.map((id) => findSkill(id)).filter((s) => s !== undefined)
   if (phase === 'melee') {
+    if (primary.id === 'serpent_staff') toggles.push({ field: 'serpentStaffPower', label: 'Serpent Staff power', hint: 'One WS4 / S4 attack, striking first, instead of all normal attacks and parries this combat phase.' })
     if (defender?.traitIds.includes('causes_fear') && !ignoresFear(attacker.traitIds, { frenzyEnded: true })) toggles.push({ field: 'failedFearWhenCharged', label: 'Failed Fear when charged', hint: 'This warrior was charged by the fear-causing opponent and failed its Fear test: needs 6s to hit this round. A failed test to charge instead prevents the charge; it is not this setting.' })
     toggles.push({ field: 'charging', label: 'Charging' })
     if(attacker.traitIds.includes('frenzy')) toggles.push({field:'frenzyEnded',label:'Frenzy has ended',hint:'Select if this warrior was knocked down or stunned earlier in this battle. Their Attacks are no longer doubled.'})

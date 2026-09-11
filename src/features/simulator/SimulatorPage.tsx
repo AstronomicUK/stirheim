@@ -334,9 +334,9 @@ function Fight({
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = choices.toggles[t.field] ?? Boolean(t.defaultOn)
   const context = combatContextFor(houseRules, active)
-  const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand, context, houseRules, woundsAlreadyLost: defender.woundsLost }
+  const fightSetup = { attacker, attackerKit, defender, defenderKit, primary, offHand, context, houseRules, defenderStaffPower: otherWeapons.primary.id === 'serpent_staff' && Boolean(defenderChoices.toggles.serpentStaffPower), woundsAlreadyLost: defender.woundsLost }
   const odds: FightOdds = computeOdds(fightSetup)
-  const reverse = { ...fightSetup, attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: kitWithSelectedWeapons(attackerKit, primary, offHand, otherWeapons.primary.type), primary: otherWeapons.primary, offHand: otherWeapons.offHand, context: combatContextFor(houseRules, defenderChoices.toggles), woundsAlreadyLost: attacker.woundsLost }
+  const reverse = { ...fightSetup, attacker: defender, attackerKit: defenderKit, defender: attacker, defenderKit: kitWithSelectedWeapons(attackerKit, primary, offHand, otherWeapons.primary.type), primary: otherWeapons.primary, offHand: otherWeapons.offHand, defenderStaffPower: Boolean(context.serpentStaffPower), context: combatContextFor(houseRules, { ...defenderChoices.toggles, serpentStaffPower: otherWeapons.primary.id === 'serpent_staff' && Boolean(defenderChoices.toggles.serpentStaffPower) }), woundsAlreadyLost: attacker.woundsLost }
 
   return (
     <>

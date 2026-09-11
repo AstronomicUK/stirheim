@@ -471,3 +471,10 @@ it('Serpent Staff power replaces normal attacks with exactly one WS4/S4 attack (
   expect(held.armour.shield).toBe(false)
   expect(held.melee[0].parry).toBe(true) // Ordinary two-handed staff still parries.
 })
+
+it('staff activation forfeits defender parries even if different equipment is selected (#150)', () => {
+  const fight = setup(captain, skaven, 'sword', null, { defenderStaffPower: true });
+  expect(computeOdds(fight).parryAttempts).toBe(0);
+  expect(computeOdds(fight).weapons[0].input.parryEligible).toBe(false);
+  expect(computeOdds(fight).strikeOrder).toContain("Skritch's Serpent Staff attacks first");
+});

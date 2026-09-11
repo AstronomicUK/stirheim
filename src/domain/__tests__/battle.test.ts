@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
+import { combatPhaseKey, correctSerpentStaff, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
 
 describe("battle live state", () => {
   it("retains failed and restarted dice through storage without applying casualties or consuming casts", () => {
@@ -56,4 +56,18 @@ it("persists staff forfeiture and consumption independently for each warrior and
   expect(serpentStaffUse(restored, "priest", "2:warband-b")).toBeUndefined();
   expect(serpentStaffUse(restored, "other-priest", "2:warband-a")).toBeUndefined();
   expect(initial.serpentStaffUses).toEqual([]);
+});
+
+it("distinguishes player combat phases and records deliberate staff corrections", () => {
+  const turns = { round: 2, active_index: 0, turn_order: ['a', 'b'] };
+  expect(combatPhaseKey(1, turns)).toBe('2:a');
+  expect(combatPhaseKey(1, { ...turns, active_index: 1 })).toBe('2:b');
+  expect(combatPhaseKey(3, null)).toBe('legacy:3');
+  const active = activateSerpentStaff(emptyBattleLiveState(), 'priest', '2:a', 'Priest');
+  expect(active.rollAttempts[0].label).toContain('awakens');
+  expect(correctSerpentStaff(active, 'priest', '2:a', 'Priest', ' ')).toBe(active);
+  const corrected = correctSerpentStaff(consumeSerpentStaff(active, 'priest', '2:a'), 'priest', '2:a', 'Priest', 'Wrong warrior selected');
+  expect(corrected.serpentStaffUses).toEqual([]);
+  expect(corrected.rollAttempts[1].rolls[0]).toContain('after its attack was marked used');
+  expect(corrected.rollAttempts[1].rolls[0]).toContain('Wrong warrior selected');
 });

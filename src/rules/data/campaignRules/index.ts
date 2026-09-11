@@ -1,3 +1,4 @@
+import { NATURAL_ATTACK_UNITS } from "./naturalAttacks";
 // Campaign-phase rules that the scraped warband templates only carry as prose, written as data the
 // resolvers can read: who never gains experience, who advances at half rate, who may never be
 // promoted, injury-roll exceptions, upkeep for henchmen, exploration and income modifiers, hired
@@ -72,7 +73,7 @@ export interface UnitCampaignRules {
   /** Explicit natural weapons: use printed Strength/Attacks, without ordinary fist penalties. */
   naturalWeapons?: boolean;
   /** Unarmed fighting that replaces ordinary fist penalties, without adding inventory. */
-  unarmedProfile?: { name: string; bonusAttacks?: number };
+  unarmedProfile?: { name: string; bonusAttacks?: number; critTriggerThreshold?: number; saveModifier?: number; selectable?: boolean };
   /** Casualty contribution to Rout tests; does not reduce the starting model count. */
   routCasualtyWeight?: number;
   /** Per-model contribution to the starting Rout count (default 1). */
@@ -278,7 +279,8 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   tomb_guardians_skeleton_warrior: UNDEAD_HENCHMAN,
   tomb_guardians_tomb_scorpion: { ...ANIMAL, excludeRaceTraits: true },
   // 1c
-  battle_monks_warrior_monks: { unarmedProfile: { name: "Open-hand fighting", bonusAttacks: 1 } },
+  battle_monks_dragon_monks: { unarmedProfile: { name: "Open-hand fighting", bonusAttacks: 1, critTriggerThreshold: 5, selectable: true } },
+  battle_monks_warrior_monks: { unarmedProfile: { name: "Open-hand fighting", bonusAttacks: 1, selectable: true } },
   battle_monks_raging_peasants: { ...NO_XP, unarmedProfile: { name: "Improvised tools" }, routCasualtyWeight: 0, promotion: { never: true, note: "Raging Peasants are a mob, never promoted." } },
   black_dwarfs_informers: { excludeRaceTraits: true, promotion: { never: true, note: "Informers are never made heroes; roll again." } },
   bretonnian_knight_errant: { equipmentBans: ["helmets"] },
@@ -308,10 +310,10 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   night_goblins_fanatics: { ...NO_XP, promotion: { never: true, note: "Fanatics are never promoted." } },
   night_goblins_cave_squigs: { ...ANIMAL, relation: { noMoreThan: { unitIds: ["night_goblins_warriors"], label: "the Night Goblins" } } },
   night_goblins_troll: TROLL,
-  night_goblins_snotling_mob: { routCollective: true, promotion: { never: true, note: "Snotling Mobs are never promoted." }, groupIncomeCountsAs: 1 },
+  night_goblins_snotling_mob: { unarmedProfile: { name: "Pointy stick", saveModifier: -1 }, routCollective: true, promotion: { never: true, note: "Snotling Mobs are never promoted." }, groupIncomeCountsAs: 1 },
   night_goblins_web_warriors: { promotion: { tables: ["combat", "shooting", "speed", "warband-unique"], note: "Promoted Night Goblin henchmen may not take Strength skills." } },
   night_goblins_web_cave_squigs: { ...ANIMAL, routModelWeight: 0.5, routCasualtyWeight: 0.5, relation: { noMoreThan: { unitIds: ["night_goblins_web_warriors"], label: "the Night Goblin Warriors" } } },
-  night_goblins_web_snotlings: { gainsExperience: false, routCollective: true, promotion: { never: true, note: "Snotlings are never promoted." }, groupIncomeCountsAs: 1 },
+  night_goblins_web_snotlings: { unarmedProfile: { name: "Pointy stick", saveModifier: -1 }, gainsExperience: false, routCollective: true, promotion: { never: true, note: "Snotlings are never promoted." }, groupIncomeCountsAs: 1 },
   night_goblins_web_great_squig: { ...ANIMAL, large: true, relation: { exclusiveWith: { unitIds: ["night_goblins_web_troll"], label: "a Troll (Great Squig or Troll, not both)" } } },
   night_goblins_web_troll: { ...TROLL, relation: { exclusiveWith: { unitIds: ["night_goblins_web_great_squig"], label: "a Great Squig (Great Squig or Troll, not both)" } } },
   restless_dead_grave_guards: { noRareSearch: true },
@@ -343,7 +345,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   necrarchs_zombies: UNDEAD_HENCHMAN,
   necrarchs_abomination: { ...NO_XP, large: true, injury: { deadOn: [], label: "dead", note: "Powered: the Abomination ignores injury rolls; the opponent gains a shard and one is needed to reanimate it." } },
   nipponese_shinobi_hero: { neverLeads: true },
-  ogre_hunting_party_ogre_hunter: { ...OGRE, noExplorationDie: true, noRareSearch: true, racialProfile: "Ogre (Ogre Hunting Party)", promotion: undefined },
+  ogre_hunting_party_ogre_hunter: { ...OGRE, unarmedProfile: { name: "Ogre fists", saveModifier: -1 }, noExplorationDie: true, noRareSearch: true, racialProfile: "Ogre (Ogre Hunting Party)", promotion: undefined },
   ogre_hunting_party_trappers: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
   ogre_hunting_party_sabre_baiter: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
   ogre_hunting_party_sabretusk_cubs: ANIMAL,
@@ -503,7 +505,8 @@ const EMPTY_UNIT: UnitCampaignRules = {};
 const EMPTY_WARBAND: WarbandCampaignRules = {};
 
 export function unitRules(unitTemplateId: string | null | undefined): UnitCampaignRules {
-  return (unitTemplateId && UNIT_RULES[unitTemplateId]) || EMPTY_UNIT;
+  const rules = (unitTemplateId && UNIT_RULES[unitTemplateId]) || EMPTY_UNIT;
+  return unitTemplateId && NATURAL_ATTACK_UNITS.has(unitTemplateId) ? { ...rules, naturalWeapons: true } : rules;
 }
 
 export function warbandRules(warbandTemplateId: string | null | undefined): WarbandCampaignRules {

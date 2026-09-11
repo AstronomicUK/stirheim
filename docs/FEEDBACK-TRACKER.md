@@ -3812,3 +3812,12 @@ Validation: 1,890 ordinary tests, 176 local database tests and all 16 isolated b
 ### Hosted release checks passed — #201 closed, 11 September
 
 Hosted CI run `34635058580` for released commit `14849b6` completed successfully: test/build job passed and all 16 hosted browser tests passed. This resolves the outstanding hosted verification under #201. The release is fully verified; no further deployment is required. #163 remains the next proposed completion batch, not started in this release.
+
+
+## 11 September 2026 — #163 / #112 completion batch (local, not deployed)
+
+Tom approved these two items following the previous release. #163 now has source-reviewed baseline natural profiles for 61 explicit unit IDs, Dragon Monk open-hand selection and separate staff/bare-hand critical resolution, and the Ogre Hunter/Pointy Stick exceptions. No empty-kit human is automatically treated as a creature; fixed companion profiles and equipped overrides remain intact. Conditional transformations, learned skills and bespoke natural-attack effects remain under the existing broader skill/combat work, not claimed by this profile correction.
+
+#112 now identifies Runts/WEB Snotlings by their actual victim unit IDs, applies the Runt 5+ test (including eligible henchman groups), combines half-value Snotling awards per hero before rounding, replaces ordinary full kill XP and preserves original app rolls/player changes/failed tests in the filed report. Named manual sheet casualties and editable counts cover table-calculated results; incomplete or contradictory data is surfaced rather than silently guessed. The Rigors survival correction from the previous deployment remains intact.
+
+Verification: 1,969 ordinary tests passed; typecheck/production build and lint passed (only existing audit-probe/chunk warnings). All 16 isolated local browser regressions passed. A separate mobile check verified staff/open-hand selection, automatic Runt identification, and the original app roll plus edited result after reload. No production writes or database migrations. Changes remain local for batching; no push or Netlify deployment performed. See [Natural attacks and kill XP scope](NATURAL-ATTACKS-AND-KILL-XP-2026-09-11.md).

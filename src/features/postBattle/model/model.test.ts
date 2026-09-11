@@ -1062,3 +1062,17 @@ it('clears a recorded Pit expedition when changing which exploration dice are ke
  const changed=toggleExplorationKeep(draft,5,6)
  expect(changed.exploration.pitChoice).toBeUndefined();expect(changed.exploration.pitHeroId).toBeUndefined();expect(changed.exploration.subRoll).toBeNull()
 })
+
+it('requires outstanding Runt tests and carries their edited dice into the filed XP log (#112)',()=>{
+ const base=setEnemiesOut(setResult(emptyDraft(),'lost'),'captain',3)
+ const special={runts:1,snotlings:2,rolls:[]}
+ const context=ctx({specialKillXp:{captain:special}})
+ expect(deriveRawReport(base,context).problems.experience.join(' ')).toContain('5+ experience test')
+ const draft={...base,specialKillXp:{captain:{...special,rolls:[{value:6,source:'manual' as const,previous:[{value:2,source:'app' as const}]}]}}}
+ const derived=derive(draft,context)
+ expect(derived.problems.experience).toEqual([])
+ const line=derived.xp.lines.find(l=>l.subjectId==='captain')!
+ expect(line.amount).toBe(3) // survived + successful Runt + two half-value Snotlings
+ expect(line.reasons.join(' ')).toContain('earlier 2 (rolled by the app), replaced')
+ expect(derived.report?.xp_log.find(l=>l.subjectId==='captain')?.reasons.join(' ')).toContain('entered or changed by the player')
+})

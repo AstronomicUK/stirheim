@@ -14,6 +14,8 @@ export const attackEventPayloadSchema = z.object({
   attacker_name: z.string(),
   target_warband_id: uuidSchema,
   target_id: z.string(),
+  /** Preserve the defeated unit rule even if its roster entry is later removed. */
+  target_unit_template_id: z.string().optional(),
   target_kind: z.enum(["hero", "group"]),
   target_name: z.string(),
   /** Group size at the time, to cap out-of-action counts. */

@@ -75,5 +75,5 @@ it.each([
   expect(kit.melee[0].bonusAttacks ?? 0).toBe(bonus)
   expect(kit.melee[0].strength).toBe('user')
   const equipped = combatantFromTemplate({ ...side, itemIds: ['sword'] })!
-  expect(loadoutFor(equipped).melee.map(w => w.id)).toEqual(['sword'])
+  expect(loadoutFor(equipped).melee.map(w => w.id)).toEqual(unitId === 'battle_monks_warrior_monks' ? ['sword', 'natural_weapons'] : ['sword'])
 })

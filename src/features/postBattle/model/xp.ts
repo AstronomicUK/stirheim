@@ -1,3 +1,4 @@
+import {specialKillAwards, type SpecialKillXp} from './specialKillXp'
 import {needsSurvivalXpTest, survivalXpTestResult, survivalXpTestHistory, type SurvivalXpTest} from './survivalXp'
 // Experience lines for the report (core rulebook, "Experience" and the scenario "experience"
 // blocks that every core scenario repeats):
@@ -30,6 +31,7 @@ import type { RosterHenchmanGroup, RosterHero, RosterHiredSword } from '../../..
 import type { XpExtra } from './state'
 
 export interface XpContext {
+  specialKillXp?: Record<string, SpecialKillXp>
   survivalXpTests?: Record<string, SurvivalXpTest>
   scenarioAwards?: { survival: number; leader: number; kill: number }
   zombieKills?: Record<string, number>
@@ -52,6 +54,7 @@ function signed(n: number): string {
 }
 
 interface Award {
+  keepZero?: boolean
   amount: number
   reason: string
 }
@@ -63,7 +66,7 @@ function toLine(
   awards: Award[],
   rate: AdvanceRate = 'normal',
 ): XpLine | null {
-  const kept = awards.filter((a) => a.amount !== 0)
+  const kept = awards.filter((a) => a.amount !== 0 || a.keepZero)
   if (kept.length === 0) return null
   const amount = kept.reduce((n, a) => n + a.amount, 0)
   const xpBefore = subject.xp
@@ -102,9 +105,12 @@ export function warriorXpLine(
   const awards: Award[] = [{ amount: rigors ? 2 : ctx.scenarioAwards?.survival ?? 1, reason: rigors ? 'survived the battle (The Rigors of Leadership)' : 'survived the battle' }]
   if (subjectType === 'hero' && ctx.won && ctx.leaderId === before.id) awards.push({ amount: ctx.scenarioAwards?.leader ?? 1, reason: 'winning leader' })
   const kills = ctx.enemiesOut[before.id] ?? 0
-  const zombies = Math.min(kills, Math.max(0, ctx.zombieKills?.[before.id] ?? 0))
-  const enemies = kills - zombies + Math.min(1, zombies)
+  const special = ctx.specialKillXp?.[before.id]
+  const ordinaryKills = Math.max(0, kills - (special?.runts ?? 0) - (special?.snotlings ?? 0))
+  const zombies = Math.min(ordinaryKills, Math.max(0, ctx.zombieKills?.[before.id] ?? 0))
+  const enemies = ordinaryKills - zombies + Math.min(1, zombies)
   if (subjectType === 'hero' && enemies > 0) awards.push({ amount: enemies * (ctx.scenarioAwards?.kill ?? 1), reason: `${enemies === 1 ? 'enemy' : 'enemies'} out of action` })
+  awards.push(...specialKillAwards(ctx.specialKillXp?.[before.id], subjectType === 'hero'))
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   const injuryXp = after.xp - before.xp
   if (injuryXp !== 0) awards.push({ amount: injuryXp, reason: 'from the Serious Injuries chart' })
@@ -120,6 +126,7 @@ export function groupXpLine(before: RosterHenchmanGroup, after: RosterHenchmanGr
   const testResult = needsSurvivalXpTest(before.unitTemplateId) ? survivalXpTestResult(test, after.stats.Ld) : true
   const awards: Award[] = [{ amount: testResult === true ? ctx.scenarioAwards?.survival ?? 1 : 0, reason: 'survived the battle' }]
   if (after.xp !== before.xp) awards.push({ amount: after.xp - before.xp, reason: 'from the scenario injury result' })
+  awards.push(...specialKillAwards(ctx.specialKillXp?.[before.id], false))
   if (ctx.underdogBonus > 0) awards.push({ amount: ctx.underdogBonus, reason: 'underdog bonus' })
   for (const extra of ctx.extras[before.id] ?? []) awards.push({ amount: extra.amount, reason: extra.reason })
   const line = toLine('group', before, 'henchman', awards, unitRules(before.unitTemplateId).advanceRate ?? 'normal')

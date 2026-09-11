@@ -1,3 +1,4 @@
+import {specialKillProblems, type SpecialKillXp} from './specialKillXp'
 import {needsSurvivalXpTest, validSurvivalXpRoll} from './survivalXp'
 import {advanceAuditText} from '../../advances/model'
 import {describeInjuryAttempt} from './injuryRollHistory'
@@ -17,7 +18,7 @@ import { caravanRewards } from './caravanRewards'
 import { harpyRewards } from './harpyRewards'
 import { ritualZombies } from './scenarioRecruits'
 import { kidnappedRewards } from './kidnappedRewards'
-import { conditionalHireDepartures } from '../../../rules/resolve/hiredSwordRules'
+import { conditionalHireDepartures, hiredSwordGainsExperience } from '../../../rules/resolve/hiredSwordRules'
 import { pettyThief } from './pettyThief'
 import { locationRecruits } from './locationRecruits'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
@@ -63,7 +64,7 @@ import { applyStatDelta, deriveKit, kitEffects, type KitDerived } from './kit'
 import { animalFighters, type AnimalFighter } from '../../../rules/resolve/animals'
 import { HENCHMAN_INJURY } from '../../../rules/data/campaign/injuries'
 import { mapGrade } from '../../../rules/resolve/explorationAids'
-import { unitRules } from '../../../rules/data/campaignRules'
+import { unitGainsExperience, unitRules } from '../../../rules/data/campaignRules'
 import { henchmanInjuryException } from '../../../rules/resolve/injuries'
 import { groupXpLine, underdogBonusFor, warriorXpLine } from './xp'
 import { scenarioAftermath } from '../../../rules/data/campaign/scenarioAftermath'
@@ -74,6 +75,9 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  specialKillXp?: Record<string, SpecialKillXp>
+  specialKillXpLoading?: boolean
+  specialKillXpError?: string
   rawhideCargo?: import('../../../api/rawhide').RawhideCargo
   rawhideEnded?: boolean
   raidSurvivors?: RaidSurvivors
@@ -347,7 +351,7 @@ export function deriveXp(draft: ReportDraft, participants: Participants, injurie
   const won = draft.result === 'won'
   const extras = { ...draft.xpExtras }
   for (const award of locationAwards) extras[award.id] = [...(extras[award.id] ?? []), {amount:award.amount,reason:award.reason}]
-  const xpCtx = { survivalXpTests: draft.survivalXpTests, won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
+  const xpCtx = { specialKillXp: { ...ctx.specialKillXp, ...draft.specialKillXp }, survivalXpTests: draft.survivalXpTests, won, leaderId: participants.leaderId, underdogBonus: underdogApplied, enemiesOut: draft.enemiesOut, extras, scenarioAwards: scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody).defaults, zombieKills: ctx.scenarioId === 'the_sword_of_the_herald' ? draft.scenarioZombieKills : undefined }
   if(ctx.scenarioId==='brigands_in_the_pasturelands') { const amount=draft.scenarioRewards?.brigands?.role==='defender'?2:1; xpCtx.scenarioAwards={survival:amount,leader:amount,kill:1} }
   const heroAfter = new Map(injuries.heroes.map((h) => [h.hero.id, h.resolution]))
   const swordAfter = new Map(injuries.hiredSwords.map((s) => [s.sword.id, s.resolution]))
@@ -423,6 +427,19 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
+  if (ctx.specialKillXpLoading) problems.experience.push('Checking the opposing units for special experience rules.')
+  if (ctx.specialKillXpError) problems.experience.push(ctx.specialKillXpError)
+  const xpParticipants = participantsOf(ctx.roster, ctx.template)
+  for (const warrior of [...xpParticipants.heroes, ...xpParticipants.groups, ...xpParticipants.hiredSwords]) {
+    const special = draft.specialKillXp?.[warrior.id] ?? ctx.specialKillXp?.[warrior.id]
+    if (!special || ('unitTemplateId' in warrior ? !unitGainsExperience(warrior.unitTemplateId) : !hiredSwordGainsExperience(warrior.hiredSwordId))) continue
+    const heroResult = injuries.heroes.find(h => h.hero.id === warrior.id)?.resolution
+    const swordResult = injuries.hiredSwords.find(h => h.sword.id === warrior.id)?.resolution
+    const groupResult = injuries.groups.find(g => g.group.id === warrior.id)?.resolution
+    if ((heroResult && !alive(heroResult.outcome)) || (swordResult && !alive(swordResult.outcome)) || (groupResult && groupResult.group.size <= 0)) continue
+    const total = xpParticipants.heroes.some(h => h.id === warrior.id) ? draft.enemiesOut[warrior.id] ?? 0 : undefined
+    problems.experience.push(...specialKillProblems(special, total).map(p => `${warrior.name}: ${p}`))
+  }
   for (const group of participantsOf(ctx.roster, ctx.template).groups) {
     const after = injuries.groups.find(g => g.group.id === group.id)?.resolution.group ?? group
     if (after.size > 0 && needsSurvivalXpTest(group.unitTemplateId) && !validSurvivalXpRoll(draft.survivalXpTests?.[group.id])) problems.experience.push(`${group.name}: complete the Leadership test for survival experience.`)

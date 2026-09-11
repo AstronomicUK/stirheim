@@ -42,7 +42,7 @@ export interface Combatant {
   equipment: RosterItem[]
   skillIds: string[]
   traitIds: string[]
-  unarmedProfile?: { name: string; bonusAttacks?: number }
+  unarmedProfile?: import('../../../rules/data/campaignRules').UnitCampaignRules['unarmedProfile']
   /** Already out of action according to the live sheet. */
   out: boolean
   /** Wounds lost so far according to the live sheet (multi-Wound models). */
@@ -291,18 +291,20 @@ export function combatantLabel(c: Combatant): string {
 
 /** Natural weapons do not grant an additional off-hand attack or count as purchased equipment. */
 const NATURAL_WEAPONS: Weapon = {
-  id: 'natural_weapons', name: 'Teeth and claws', type: 'melee', strength: 'user',
-  critCategory: 'unarmed', concussion: false, special: [], rangedProfile: null,
+  id: 'natural_weapons', name: 'Natural attacks', type: 'melee', strength: 'user',
+  critCategory: 'unarmed', concussion: false, special: ['naturalAttackOnly'], rangedProfile: null,
 }
 
 /** The kit the calculator uses for a combatant: an animal's fixed weapons, or a warrior's roster kit. */
 export function loadoutFor(c: Combatant): Loadout {
   if (c.weaponIds) return loadoutOfWeapons(c.weaponIds)
   const kit = loadoutOf(c.equipment)
-  if (kit.melee.length === 0) {
+  if (kit.melee.length === 0 || c.unarmedProfile?.selectable) {
     if (c.unarmedProfile) kit.melee.push({ ...NATURAL_WEAPONS, ...c.unarmedProfile })
     else if (c.traitIds.includes('natural_weapons')) kit.melee.push(NATURAL_WEAPONS)
   }
+  if (c.unarmedProfile?.selectable) kit.melee = kit.melee.map(w => w.id === 'quarter_staff'
+    ? { ...w, unarmedBonusAttack: false, special: [...w.special, `monkUnarmedCritical:${c.unarmedProfile?.critTriggerThreshold ?? 6}`] } : w)
   if (c.guidingDream) {
     kit.assumptions.push(c.guidingDream === 'movement' ? 'Guiding Dream: −1 inch Movement this battle; apply positioning at the table.' : `Guiding Dream against this designated Hero: ${c.guidingDream === 'hit' ? '+1 to hit' : c.guidingDream === 'strength' ? '+1 Strength' : 'Frenzy'}.`)
     if (c.guidingDream === 'hit') {
@@ -570,12 +572,12 @@ function applyArmourItem(item: Item, out: Loadout): void {
 
 /** Needs both hands, or is sold as a pair: nothing goes in the other hand. */
 export function isTwoHanded(weapon: Weapon): boolean {
-  return weapon.special.includes('twoHanded') || weapon.special.includes('cumbersomeNoOtherWeapons') || Boolean(weapon.paired)
+  return weapon.special.includes('freestyleNoOtherWeapon') || weapon.special.includes('twoHanded') || weapon.special.includes('cumbersomeNoOtherWeapons') || Boolean(weapon.paired)
 }
 
 /** Can this weapon be the off-hand weapon (the "one extra attack" of fighting with two weapons)? */
 export function canBeOffHand(weapon: Weapon): boolean {
-  if (isTwoHanded(weapon)) return false
+  if (isTwoHanded(weapon) || weapon.special.includes('naturalAttackOnly')) return false
   if (weapon.special.includes('difficultToUseOffHand') || weapon.special.includes('unwieldyOffHandOnly')) return false
   return true
 }
@@ -589,7 +591,7 @@ export function kitWithSelectedWeapons(kit: Loadout, primary: Weapon, offHand: W
 
 /** A spear ("unwieldy") only shares hands with a shield or buckler; the same list keeps two-handers alone. */
 export function takesOffHand(primary: Weapon): boolean {
-  return !isTwoHanded(primary) && !primary.special.includes('unwieldyOffHandOnly') && primary.id !== 'unarmed'
+  return !primary.special.includes('naturalAttackOnly') && !primary.special.includes('freestyleNoOtherWeapon') && !isTwoHanded(primary) && !primary.special.includes('unwieldyOffHandOnly') && primary.id !== 'unarmed'
 }
 
 /** Weapons carried that could fill the other hand next to `primary` (the primary's own entry excluded once). */

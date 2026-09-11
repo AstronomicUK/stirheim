@@ -145,7 +145,14 @@ export function totalAttackCount(character: Character, weapons: Weapon[], contex
 /** Allocate attacks to the actual weapon. A pair of whips gets Whipcrack only once. */
 export function weaponAttackCounts(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = []): { weapon: Weapon; count: number }[] {
   const firstWhip = weapons.findIndex(w => Boolean(w.chargeBonusAttacks));
-  return weapons.map((weapon, index) => ({ weapon, count: computeAttackCount(character, weapon, index === 0, context, customSkills, index === firstWhip) }));
+  return weapons.flatMap((weapon, index) => {
+    const entry = { weapon, count: computeAttackCount(character, weapon, index === 0, context, customSkills, index === firstWhip) };
+    const monk = weapon.special.find(tag => tag.startsWith("monkUnarmedCritical:"));
+    if (!monk || index !== 0) return [entry];
+    // Freestyle: the bonus is a bare-hand attack, not another staff attack (02:583; 1c:199).
+    const hand: Weapon = { id: "monk_bare_hand", name: "Bare-hand attack", type: "melee", strength: "user", critCategory: "unarmed", critTriggerThreshold: Number(monk.split(":")[1]), concussion: false, special: ["naturalAttackOnly"], rangedProfile: null };
+    return [entry, { weapon: hand, count: 1 }];
+  });
 }
 
 function effectiveStat(base: Stats, skills: Skill[], context: CombatContext, weaponType: WeaponKind, stat: keyof Stats, participant: "self" | "opponent"): number {

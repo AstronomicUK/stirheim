@@ -1,3 +1,4 @@
+import {SpecialKillExperience} from './SpecialKillExperience'
 import {needsSurvivalXpTest, recordSurvivalXpRoll, survivalXpTestResult, survivalXpTestHistory, type SurvivalXpRoll} from '../model/survivalXp'
 import {rollDie} from '../../../rules/resolve/dice'
 import { KidnappedRewards } from './KidnappedRewards'
@@ -77,6 +78,7 @@ export function ExperienceStep({ draft, derived, update, match, ctx }: StepProps
         {participants.heroes.filter(h => (draft.enemiesOut[h.id] ?? 0) > 0).map(h => <NumberField key={h.id} label={`${h.name}: Zombie kills`} value={draft.scenarioZombieKills?.[h.id] ?? 0} onChange={v => update(d => ({ ...d, scenarioZombieKills: { ...d.scenarioZombieKills, [h.id]: Math.min(d.enemiesOut[h.id] ?? 0, Math.max(0, Math.trunc(v ?? 0))) } }))} />)}
       </Section> : null}
       {match.scenario_rules_id === 'kidnapped' ? <KidnappedRewards draft={draft} derived={derived} ctx={ctx} update={update} /> : null}
+      <SpecialKillExperience draft={draft} derived={derived} ctx={ctx} update={update} />
       <Section title="Awards" aside={owed > 0 ? `${owed} ${owed === 1 ? 'advance' : 'advances'} owed` : undefined}>
         {lines.length === 0 ? <p className="text-sm text-ink-dim">Nobody earns experience this time.</p> : null}
         {lines.map((line) => (

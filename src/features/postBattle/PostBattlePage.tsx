@@ -1,14 +1,15 @@
+import {specialKillsFromEvents} from './model/specialKillXp'
 import {useRawhideCargo} from '../../api/rawhide'
 import { useCampaignArtefacts } from '../../api/artefacts'
 // The post-battle report wizard for one warband in one match (/matches/:id/report/:warbandId).
 // Seven steps: outcome, casualties, injuries, experience, exploration, veterans & notes, review.
 // The draft lives in localStorage until the report is filed, so the table can finish later.
 
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
-import { useBattleEvents, useBattleSessions, useMatch, useMatchRoster, type MatchParticipantView, type MatchSummary } from '../../api/matches'
+import { useBattleEvents, useBattleSessions, useMatch, useMatchRoster, fetchMatchRoster, matchKeys, type MatchParticipantView, type MatchSummary } from '../../api/matches'
 import { applyBattleEvents, emptyBattleLiveState } from '../../domain'
 import { advanceKeys } from '../../api/advances'
 import { useMatchReports, useSubmitBattleReport } from '../../api/reports'
@@ -195,6 +196,12 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   }, [draft, seed, rosterData.roster, liveState])
 
   const opponents = useMemo(() => match.participants.filter((p) => p.warband_id !== participant.warband_id), [match.participants, participant.warband_id])
+  const enemyRosters = useQueries({ queries: opponents.map(o => ({ queryKey: matchKeys.roster(match.id, o.warband_id), queryFn: () => fetchMatchRoster(o.warband_id, match.id) })) })
+  const killEvents = useBattleEvents(match.id)
+  const killSheets = useBattleSessions(match.id)
+  const specialKillXp = specialKillsFromEvents(killEvents.data ?? [], participant.warband_id, enemyRosters.flatMap(r => r.data ? [r.data.roster] : []), killSheets.data ?? [])
+  const specialKillXpLoading = enemyRosters.some(r => r.isPending) || killEvents.isPending || killSheets.isPending
+  const specialKillXpError = enemyRosters.some(r => r.isError) || killEvents.isError || killSheets.isError ? 'Could not check special enemy experience. Reload the report to try again.' : undefined
   const matchReports = useMatchReports(match.id)
   const artefacts = useCampaignArtefacts(match.campaign_id)
   const rawhideCargo=useRawhideCargo(match.scenario_rules_id==='rawhide'?match.id:undefined,match.state)
@@ -204,6 +211,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   )
   const ctx = useMemo<ReportContext>(
     () => ({
+      specialKillXp, specialKillXpLoading, specialKillXpError,
       roster: rosterData.roster,
       rawhideCargo: rawhideCargo.data,
       rawhideEnded: match.state==='awaiting_reports'||match.state==='completed',
@@ -224,7 +232,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
       takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
     }),
-    [rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
+    [specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

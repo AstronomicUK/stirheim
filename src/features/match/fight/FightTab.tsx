@@ -577,6 +577,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 attacker_name: attacker.name,
                 target_warband_id: defender.warbandId,
                 target_id: defender.id,
+                target_unit_template_id: defender.unitTemplateId,
                 target_kind: defender.kind === 'henchman' ? 'group' : 'hero',
                 // An animal is a single model: its tally is a hero-style out toggle under its animal id.
                 target_name: defender.name,

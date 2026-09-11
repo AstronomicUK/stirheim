@@ -1,3 +1,4 @@
+import {NATURAL_ATTACK_UNITS} from '../../../rules/data/campaignRules/naturalAttacks'
 import { battleEventRowSchema } from '../../../domain'
 import { computeOdds, combatContextFor } from './odds'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
@@ -474,4 +475,57 @@ it('applies the carried Swivel Gun Movement and Initiative penalty once for the 
   expect(loadoutFor(gunner).assumptions.join(' ')).toContain('throughout this battle')
   const again = combatantsOf(roster, undefined, roster.name, undefined)[0]
   expect(again.stats).toEqual(gunner.stats)
+})
+
+ it.each([...NATURAL_ATTACK_UNITS])('preserves the actual profile and forbids free off-hand attacks for %s', unitTemplateId => {
+  const template = WARBAND_TEMPLATES.find(t => [...t.heroTemplates, ...t.henchmanTemplates].some(u => u.id === unitTemplateId))!
+  expect(template).toBeDefined()
+  const unit = [...template.heroTemplates, ...template.henchmanTemplates].find(u => u.id === unitTemplateId)!
+  const roster = warband({warbandTemplateId: template.id, heroes: unit.role === 'hero' ? [hero('natural', {unitTemplateId,stats:unit.stats,equipment:[]})] : [], henchmenGroups:unit.role==='henchman' ? [group('natural',{unitTemplateId,stats:unit.stats,equipment:[],size:1})] : []})
+  const c = combatantsOf(roster,template,'QA',undefined)[0], kit=loadoutFor(c), primary=defaultPrimary(kit.melee)
+  expect(primary.id).toBe('natural_weapons')
+  expect(primary.strengthBonus ?? 0).toBe(0)
+  expect(primary.saveModifier ?? 0).toBe(0)
+  expect(primary.maxAttacks).toBeUndefined()
+  expect(c.stats.S).toBe(unit.stats.S)
+  expect(c.stats.A).toBe(unit.stats.A)
+  expect(defaultOffHand([...kit.melee,...loadoutOf([item('sword')]).melee], primary)).toBeNull()
+  expect(defaultOffHand([...loadoutOf([item('sword')]).melee,...kit.melee], loadoutOf([item('sword')]).melee[0])?.id).not.toBe('natural_weapons')
+  expect(loadoutFor({...c,equipment:[item('sword')]}).melee.map(w=>w.id)).toEqual(['sword'])
+ })
+ it('splits a Dragon Monk staff from its bare-hand critical and offers unarmed without altering kit',()=>{
+  const template=WARBAND_TEMPLATES.find(t=>t.id==='battle_monks_of_cathay')!
+  const monk=hero('monk',{unitTemplateId:'battle_monks_dragon_monks',equipment:[item('quarter_staff')]})
+  const c=combatantsOf(warband({warbandTemplateId:template.id,heroes:[monk]}),template,'QA',undefined)[0]
+  const kit=loadoutFor(c), primary=kit.melee.find(w=>w.id==='quarter_staff')!
+  const defender=combatantsOf(warband({heroes:[hero('target')]}),undefined,'Enemy',undefined)[0]
+  const houseRules=defaultCampaignHouseRules(), context=combatContextFor(houseRules)
+  const setup={attacker:c,attackerKit:kit,defender,defenderKit:loadoutFor(defender),primary,offHand:null,context,houseRules}
+  const odds=computeOdds(setup)
+  expect(odds.attacks).toBe(2)
+  expect(odds.weapons.map(w=>[w.weapon.name,w.attacks,w.input.critTriggerFaces])).toEqual([['Quarter Staff',1,[6]],['Bare-hand attack',1,[5,6]]])
+  expect(defaultOffHand(kit.melee,primary)).toBeNull()
+  const bare=kit.melee.find(w=>w.id==='natural_weapons')!
+  const unarmed=computeOdds({...setup,primary:bare})
+  expect(unarmed.attacks).toBe(2)
+  expect(unarmed.weapons[0].input.critTriggerFaces).toEqual([5,6])
+  expect(c.equipment).toEqual([item('quarter_staff')])
+ })
+
+it.each([
+ ['ogre_hunting_party_ogre_hunter',4,2,'Ogre fists'],
+ ['night_goblins_snotling_mob',2,1,'Pointy stick'],
+ ['night_goblins_web_snotlings',2,1,'Pointy stick'],
+] as const)('keeps the explicit enemy armour bonus for %s', (unitTemplateId,strength,attacks,name)=>{
+ const template=WARBAND_TEMPLATES.find(t=>[...t.heroTemplates,...t.henchmanTemplates].some(u=>u.id===unitTemplateId))!
+ const unit=[...template.heroTemplates,...template.henchmanTemplates].find(u=>u.id===unitTemplateId)!
+ const roster=warband({warbandTemplateId:template.id,heroes:unit.role==='hero'?[hero('test',{unitTemplateId,stats:unit.stats,equipment:[]})]:[],henchmenGroups:unit.role==='henchman'?[group('test',{unitTemplateId,stats:unit.stats,equipment:[]})]:[]})
+ const c=combatantsOf(roster,template,'QA',undefined)[0],kit=loadoutFor(c),primary=defaultPrimary(kit.melee)
+ const target=combatantsOf(warband({heroes:[hero('target',{equipment:[]})]}),undefined,'Enemy',undefined)[0]
+ const houseRules=defaultCampaignHouseRules()
+ const odds=computeOdds({attacker:c,attackerKit:kit,defender:target,defenderKit:loadoutFor(target),primary,offHand:null,context:combatContextFor(houseRules),houseRules})
+ expect(primary.name).toBe(name)
+ expect(primary.saveModifier).toBe(-1)
+ expect(odds.weapons[0].strength).toBe(strength)
+ expect(odds.attacks).toBe(attacks)
 })

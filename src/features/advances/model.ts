@@ -937,7 +937,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
           ? ctx.roster.henchmenGroups.map(g => g.id === group.id ? { ...g, size: remaining } : g)
           : ctx.roster.henchmenGroups.filter(g => g.id !== group.id) }
         const summary = `Life of Slavery: one member of ${group.name} is executed and removed. ${remaining > 0 ? `${remaining} remain and must re-roll this advance.` : 'The group has no members left.'}`
-        return { ...plan, result: {
+        return { ...plan, roll: { ...roll, text: promotionRule.note }, result: {
           next,
           events: [{ kind: 'henchmanLost', subjectId: group.id, message: summary, data: { before: group.size, after: remaining } }],
           resolution: buildResolution({ ...base, outcome: 'casualty', casualtySummary: summary,

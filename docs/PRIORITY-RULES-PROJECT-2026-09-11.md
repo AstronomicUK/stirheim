@@ -249,3 +249,10 @@ Next substantial remainingexperience: #114OrcGoblin/ArabianSlave death rathertha
 ## Experience milestone 8 — #114 Arabian Slave execution (local)
 
 Promotionnevermetadata optionalcasualty=executed onlyArabianSlave. planGroupTLGT returnscasualtyresult beforegenericreroll/cap: removeone, retainedgroupunchangedXP/levelups, followUpgroupcurrentthreshold;lastremovednofollowup. ExistingdiffRoster/groupcasualtyinventorysemantics retained. Newoutcomecasualty+summary, standarddiceauditpreserved. ResolveSheet skipsirrelevantpromotionname/tableschoicetoreview;GroupChoicefallbackwarning. Confirmusesexistingatomicresolve_pending_advance. 58model/roster tests and4localphase8DBtests pass includingnewgroupcasualtydelete/shrink+queue+repeatrefusal. Build/lint/finaltscpass (3oldwarnings). No migration/deploy. No browserQAyet; nextverifyrealmobileadvancementflowusingdisposableSlavefixture, thenOrcGoblin/Wretch/etc. Orcsourcecoregrade1a2695 sayskillonebutnoremainderrerollclause; do notblindlycopyArabianunlesscoreTLGTremainderframeworksupports. #114stillpartial.
+
+
+## Experience milestone 9 — Slave mobile verification
+
+/tmp/stirheim-slave-advance-mobile-qa.mjs PASSactualmobile390:groups3and1,approllthenmanual5+5,ContinueReview(noName/tables),DBunchangedbeforeConfirm,removeone,followuponlysurvivors,audithistoryApp+Manualpersisted,reload/nooverflow;fixturescleaned. RollcardgenericTLGTtextchangedtopromotionRule.note soexplainscasualtyimmediately. tsc+36modeltestspass. No deploy.
+
+Next bounded#114candidateSlayerCult: grade2apart1:961,977 Hurlers/Stubbles gainDeathWishINSTEADOFimmediateHeroroll. IDs dwarf_slayer_cult_axe_hurlers / dwarf_slayer_cult_stubbles. NoDeathWishcatalogueskillfound; derivepromotiongrant/traitandtooltipwithrole plus suppresshero followupandadvancecount appropriately;verifyprintedDeathWishdefinitionbeforecoding. Wretchgrade1c1045: firstTLGTreroll, secondTLGTSeriousInjuryasHeroimmediately (currentalwaysgenericrerollwrong). OrcGoblincoregrade1a2695killone;remainderprocedurequestionstillnotinvented.

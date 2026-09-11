@@ -492,7 +492,9 @@ it('Life of Slavery removes one Slave and queues only the surviving group advanc
     const group = { ...watchmen, unitTemplateId: 'arabian_tomb_raiders_slave', name: 'Slaves', size }
     const band = { ...roster, warbandTemplateId: 'arabian_tomb_raiders', henchmenGroups: [group] }
     const draft = setDice(emptyDraft(NEW_ID), 5, 5, 'app')
-    const result = planGroup(draft, group, { roster: band, template: findWarbandTemplate(band.warbandTemplateId), thresholdXp: 2 }).result!
+    const plan = planGroup(draft, group, { roster: band, template: findWarbandTemplate(band.warbandTemplateId), thresholdXp: 2 })
+    expect(plan.roll?.text).toContain('one Slave is executed')
+    const result = plan.result!
     expect(result.resolution.outcome).toBe('casualty')
     expect(result.resolution.text).toContain('one member of Slaves is executed')
     expect(result.next.heroes).toEqual(band.heroes)

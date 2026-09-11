@@ -112,3 +112,9 @@ Next #70: failed-Fear-when-charged needs6 to hit, whereas failed charge-Fear mea
 Added failedFearWhenCharged and shared ignoresFear. Target-aware relevantToggles now receives defender in Battle/Simulator; control shown for susceptible melee attacker vs Fear target. Engine6+ only for failed received-charge test, not shooting/charging/nonfear target; immune/causesFear/activeFrenzy exempt. Aenur explicit always2+ preserved (source05:190), noted in odds. Source01:1083–1104. Actual Leadership test and failed-charge prevention remain table managed; controls explain distinction. 306 engine/fight tests +final36odds after Aenur assertion, typecheck/build/lint pass. No deployment.
 
 Next: #156 selected defender weapons/strike-order conditions; #70 All Alone/Animosity/persistent-state gaps; #68 transactional Bribery/abandonment. Continue independent combat work then advance to next priority group, without treating umbrella tickets as wholly closed.
+
+## Combat milestone 15 — #59/#70 precise immunity grants (local)
+
+Learned Beastmen Fearless→Fear+AllAlone immunity; Noblesse→Fear only; Darkstalker→AllAlone only. Exact IDs via traitsFromSkills already shared with previews. Unit Loner checks explicit All Alone text; does not misclassify Shinobi’s leader exclusion. Added separate AllAlone badge; fixed generic Fear tooltip wrongly extending Cemetery Terror rule to all immunity sources. Sources1a:1617,1c:1109,1878,2a1:193,1025,2692. 316 focused tests +build/typecheck/lint pass; final source-label-only adjustment afterward. No deployment.
+
+Next combat: #156 strike-order selection/conditions, #149 Rapier Barrage, #150 Serpent Staff mode, #152–154 special weapon procedures, #68 transactional Bribery/abandonment. #70 Animosity/persistent psychology still partial. Broad work can proceed independently of table-only All Alone tests.

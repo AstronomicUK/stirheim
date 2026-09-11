@@ -80,8 +80,7 @@ const TRAIT_BY_RULE_NAME: [RegExp, string][] = [
   // hero-pickable skills ("Beastmen Skill: Fearless", "Warband Skill: Noblesse Obliges") stored in
   // the same warband-level specialRules list as automatic warband-wide rules, with nothing in the
   // data distinguishing the two shapes — a blanket read of that list overshot by 8x on a trial run.
-  // Reaching these properly needs a hero's chosen skillIds threaded into traitsFromRules, the same
-  // "warband skill, not unit rule" wiring gap #56/#68 already have open, not a name-matching fix.
+  // Their learned versions are mapped explicitly by traitsFromSkills below.
   [/^(cause )?fear$/i, 'causes_fear'],
   [/^fearsome$/i, 'causes_fear'],
   [/^immune to psychology$/i, 'immune_to_psychology'],
@@ -95,6 +94,7 @@ export function traitsFromRules(rules: readonly NamedRule[]): string[] {
     // Beasthounds' Leadership note; Orc/Goblin Mobs' "Mass Stupidity" advancement-reroll rule) that
     // have nothing to do with the psychology trait — name alone isn't safe here, so this one checks
     // the rule text actually describes it before tagging it.
+    if (/^loner$/i.test(rule.name.trim()) && /(?:immune to|do not suffer from|does not suffer from) (?:the )?all alone/i.test(rule.text)) out.push('immune_to_all_alone')
     if (/^(mass )?stupidity$/i.test(rule.name.trim()) && /subject to( the rules for)? stupidity/i.test(rule.text) && !out.includes('stupidity')) out.push('stupidity')
   }
   return out
@@ -106,7 +106,13 @@ function unique(ids: string[]): string[] {
 
 /** Exact learned-skill grants, never inferred from unchosen skill-list prose. */
 export function traitsFromSkills(skillIds: readonly string[]): string[] {
-  return skillIds.includes('fearsome') ? ['causes_fear'] : []
+  const grants: Record<string, string[]> = {
+    fearsome: ['causes_fear'],
+    beastmen_raiders_special_skills_fearless: ['immune_to_fear', 'immune_to_all_alone'],
+    the_cursed_cavalcade_skills_noblesse_obliges: ['immune_to_fear'],
+    grave_robbers_skills_darkstalker: ['immune_to_all_alone'],
+  }
+  return unique(skillIds.flatMap(id => grants[id] ?? []))
 }
 
 function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly NamedRule[], base: string[], isLarge: boolean | undefined): string[] {

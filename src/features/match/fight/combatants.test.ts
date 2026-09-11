@@ -390,3 +390,21 @@ it('only learned Fearsome grants the fear trait to roster fighters (#59/#70)', (
   expect(cs.find(c => c.id === 'fearsome')?.traitIds).toContain('causes_fear')
   expect(cs.find(c => c.id === 'ordinary')?.traitIds).not.toContain('causes_fear')
 })
+
+
+it.each([
+  ['beastmen_raiders_special_skills_fearless', ['immune_to_fear', 'immune_to_all_alone']],
+  ['the_cursed_cavalcade_skills_noblesse_obliges', ['immune_to_fear']],
+  ['grave_robbers_skills_darkstalker', ['immune_to_all_alone']],
+])('applies only learned %s psychology grants', (skill, expected) => {
+  const cs = combatantsOf(warband({ heroes: [hero('learner', { skillIds: [skill] }), hero('ordinary')] }), undefined, 'QA', undefined)
+  expect(cs.find(c => c.id === 'learner')?.traitIds).toEqual(expect.arrayContaining(expected))
+  expect(cs.find(c => c.id === 'ordinary')?.traitIds).not.toContain('immune_to_fear')
+  expect(cs.find(c => c.id === 'ordinary')?.traitIds).not.toContain('immune_to_all_alone')
+})
+
+it('distinguishes All Alone Loner from the Shinobi leadership-only Loner', () => {
+  expect(traitsFromRules([{ name: 'Loner', text: 'Priests of Morr do not suffer from the all alone rules.' }])).toContain('immune_to_all_alone')
+  expect(traitsFromRules([{ name: 'Loner', text: 'They are immune to all alone tests and may never become the warband leader.' }])).toContain('immune_to_all_alone')
+  expect(traitsFromRules([{ name: 'Loner', text: 'Shinobi may never become the leader of the warband.' }])).not.toContain('immune_to_all_alone')
+})

@@ -40,8 +40,16 @@ export const TRAITS: Trait[] = [
     name: "Immune to Fear",
     modeled: false,
     conditional: false,
-    source: "Mordheim Campaign Map — The Cemetery (other warbands: immune to Fear, Terror is treated as Fear)",
-    description: "Never tests for Fear; Terror is treated as Fear — no Hit/Wound/Injury math effect.",
+    source: "Mordheim — Fearless, Noblesse Obliges, Hardened and campaign-map Fear immunity",
+    description: "Does not take Fear tests. Other psychology effects follow the specific rule that grants this immunity.",
+  },
+  {
+    id: "immune_to_all_alone",
+    name: "Immune to All Alone",
+    modeled: false,
+    conditional: false,
+    source: "Mordheim — Fearless, Darkstalker and applicable Loner rules",
+    description: "Does not take All Alone tests. This immunity does not by itself grant immunity to Fear or other psychology.",
   },
   {
     id: "immune_to_psychology",

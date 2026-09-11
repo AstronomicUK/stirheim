@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
-import { leadershipOptions, routSkillReminders, suggestedLeadership } from './routCheckRules'
+import { briberyQuote, leadershipOptions, routSkillReminders, suggestedLeadership } from './routCheckRules'
 import { conditionsFor, setGroupOut, toggleHeroOut } from './sheet'
 import { battleEventRowSchema } from '../../../domain/battleEvent'
 
@@ -135,3 +135,24 @@ describe('recorded stun and recovery affect Rout Leadership (#68)', () => {
     expect(suggestedLeadership(options(1))?.id).toBe('ch1')
   })
 })
+
+describe('Merchant Bribery quote (#68)', () => {
+  const caravan: RosterWarband = { ...roster, gold: 100,
+    heroes: roster.heroes.map((h, i) => i === 0 ? { ...h, skillIds: ['merchant_caravans_skills_bribery'], equipment: [{ itemId: 'wardogs', quantity: 1 }] } : h),
+    henchmenGroups: [{ id: 'guards', name: 'Guards', unitTemplateId: 'merchant_caravans_guards', size: 4, stats, xp: 0, levelUps: 0, statIncreases: {}, equipment: [] }],
+    hiredSwords: [{ id: 'hired', hiredSwordId: 'ogre_bodyguard', name: 'Ogre', stats, xp: 0, levelUps: 0, skillIds: [], spellIds: [], injuries: [], flags: {}, equipment: [], status: 'active' }],
+  };
+  const casualties = () => setGroupOut(toggleHeroOut(emptyBattleLiveState(), 'ch1'), 'guards', 2, 4);
+  it('charges only living non-Hero members, including hired swords and purchased animals', () => {
+    const quote = briberyQuote(caravan, casualties());
+    expect(quote).toMatchObject({ merchantId: 'cap', nonHeroes: 4, hiredSwords: 1, henchmen: 2, animals: 1, cost: 20, casualties: 3, threshold: 3, available: true, testStillRequiredAfterPayment: false });
+    expect(briberyQuote(caravan, toggleHeroOut(casualties(), 'hired')).cost).toBe(15);
+  });
+  it('is a learned skill, needs an eligible Merchant and sufficient gold, and cannot skip a still-required test', () => {
+    expect(briberyQuote({ ...caravan, gold: 19 }, casualties()).available).toBe(false);
+    expect(briberyQuote({ ...caravan, heroes: roster.heroes }, casualties()).available).toBe(false);
+    expect(briberyQuote(caravan, toggleHeroOut(casualties(), 'cap')).available).toBe(false);
+    expect(briberyQuote(caravan, toggleHeroOut(casualties(), 'yb')).testStillRequiredAfterPayment).toBe(true);
+    expect(briberyQuote(caravan, casualties(), 1).available).toBe(false);
+  });
+});

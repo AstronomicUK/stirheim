@@ -5,7 +5,28 @@ import { leaderTemplate } from '../../../rules/resolve/roster'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { unitRules } from '../../../rules/data/campaignRules'
-import { fightingGroups, groupOut, isHeroOut, splitWarriors } from './sheet'
+import { animalsFighting, fightingGroups, groupOut, isHeroOut, splitWarriors, routCasualties, rosterRoutThreshold } from './sheet'
+
+/** Merchant Bribery (1c:2298): a learned skill, never a warband-wide free ability. */
+export function briberyQuote(roster: RosterWarband, sheet: BattleLiveState, paidExclusions = 0) {
+  const fighting = splitWarriors(roster, sheet).fighting
+  const merchant = fighting.find(e => e.role === 'hero' && e.warrior.skillIds.includes('merchant_caravans_skills_bribery') && !isHeroOut(sheet, e.warrior.id))
+  const hiredSwords = fighting.filter(e => e.role === 'hiredSword' && !isHeroOut(sheet, e.warrior.id)).length
+  const henchmen = fightingGroups(roster).reduce((n, g) => n + Math.max(0, g.size - groupOut(sheet, g.id)), 0)
+  const fightingHeroIds = new Set(fighting.filter(e => e.role === 'hero').map(e => e.warrior.id))
+  // A purchased animal remains in the game when its owner falls, but not when
+  // the owner was absent from the battle in the first place.
+  const animals = animalsFighting(roster).filter(a => fightingHeroIds.has(a.holderId) && !isHeroOut(sheet, a.id)).length
+  const nonHeroes = hiredSwords + henchmen + animals
+  const cost = 5 * nonHeroes
+  const casualties = Math.max(0, routCasualties(sheet, roster) - Math.max(0, paidExclusions))
+  const threshold = rosterRoutThreshold(roster, sheet)
+  const due = threshold > 0 && casualties >= threshold && !sheet.routed
+  return { merchantId: merchant?.warrior.id, merchantName: merchant?.warrior.name, nonHeroes, hiredSwords, henchmen, animals, cost, casualties, threshold,
+    available: Boolean(merchant) && due && casualties >= 1 && roster.gold >= cost,
+    testStillRequiredAfterPayment: Math.max(0, casualties - 1) >= threshold,
+  }
+}
 
 export interface LdOption {
   id: string

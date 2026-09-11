@@ -487,6 +487,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 wounds_lost: Math.max(0, state.woundsLost - rollSetup.woundsAlreadyLost),
                 out_of_action: state.worst === 'outOfAction',
                 kill: state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
+                entangled: state.outcomes.includes('entangled'),
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
                 nurgles_rot: state.rotPassed,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyBattleLiveState } from "../battle";
-import { applyBattleEvents, attackRollsLine, attackSummary, eventContribution, type AttackEventPayload, type BattleEventRow } from "../battleEvent";
+import { activeBolasEntanglements, resolveBolasRecovery, applyBattleEvents, attackRollsLine, attackSummary, eventContribution, type AttackEventPayload, type BattleEventRow } from "../battleEvent";
 
 const A = "aaaaaaaa-0000-4000-8000-000000000001";
 const B = "aaaaaaaa-0000-4000-8000-000000000002";
@@ -102,3 +102,22 @@ describe("who took whom out", () => {
     expect(applyBattleEvents(emptyBattleLiveState(), [attack({}, true)], B).takenOutBy).toEqual({});
   });
 });
+
+
+it('derives entanglement across turns, removes reverted events and restores only current throws on Recovery', () => {
+  const first = attack({ entangled: true, wounds_lost: 0, out_of_action: false, kill: false });
+  expect(attackSummary(first.payload)).toBe("Turn 2: Captain entangled Skritch with Bolas.");
+  const later = attack({ entangled: true, wounds_lost: 0, out_of_action: false, kill: false, turn: 4 });
+  const group = attack({ entangled: true, target_kind: 'group', target_size: 3 });
+  const reverted = { ...first, id: crypto.randomUUID(), reverted_at: first.at };
+  expect(activeBolasEntanglements([first, group, reverted], B)).toEqual([first]);
+  expect(activeBolasEntanglements([first], A)).toEqual([]);
+  const initial = emptyBattleLiveState();
+  const failed = resolveBolasRecovery(initial, [first], 'skritch', 'Skritch', 3);
+  expect(activeBolasEntanglements([first], B, failed.bolasRecoveredEventIds)).toHaveLength(1);
+  const freed = resolveBolasRecovery(failed, [first], 'skritch', 'Skritch', 4, 2);
+  expect(activeBolasEntanglements([first, later], B, freed.bolasRecoveredEventIds)).toEqual([later]);
+  expect(freed.rollAttempts[1].rolls[0]).toContain('App rolled 2; player changed it to 4');
+  expect(initial.bolasRecoveredEventIds).toEqual([]);
+  expect(() => resolveBolasRecovery(initial, [first], 'skritch', 'Skritch', 7)).toThrow(/D6/);
+})

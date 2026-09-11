@@ -4,7 +4,7 @@
 // player writing to the other's row. Reverting an event puts everything back.
 
 import { z } from "zod";
-import type { TakenOutBy, BattleLiveState, BattleWarriorTally } from "./battle";
+import { withRollAttempt, type TakenOutBy, type BattleLiveState, type BattleWarriorTally } from "./battle";
 import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
@@ -28,6 +28,8 @@ export const attackEventPayloadSchema = z.object({
   turn: z.number().int().min(0).default(0),
   /** A Nurgle's Rot carrier wounded a living target on a natural 6: the target contracts the Rot (their report marks it). */
   nurgles_rot: z.boolean().default(false),
+  /** Bolas condition, separate from wounds and injury results. */
+  entangled: z.boolean().optional(),
   /** Every roll of the walk-through, in order: "rolled 5 to hit. Hit.", "Armour save: rolled 2. Failed." ... */
   rolls: z.array(z.string()).default([]),
 });
@@ -50,7 +52,7 @@ export type BattleEventRow = z.infer<typeof battleEventRowSchema>;
 
 /** One line for the log and the enemy view: "Turn 2: Captain took Skritch out of action." */
 export function attackSummary(p: AttackEventPayload): string {
-  const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : `${p.outcome.toLowerCase()} ${p.target_name}`;
+  const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.entangled ? `entangled ${p.target_name} with Bolas` : `${p.outcome.toLowerCase()} ${p.target_name}`;
   return `Turn ${p.turn}: ${p.attacker_name} ${what}.${p.nurgles_rot ? ` ${p.target_name} contracts Nurgle's Rot.` : ""}`;
 }
 
@@ -116,4 +118,25 @@ export function eventContribution(events: readonly BattleEventRow[], warbandId: 
     }
   }
   return { kills, woundsLost, outOfAction };
+}
+
+
+/** Derive ongoing Bolas effects from unreverted shared events; never write another player's sheet. */
+export function activeBolasEntanglements(events: readonly BattleEventRow[], warbandId: string, recoveredEventIds: readonly string[] = []): BattleEventRow[] {
+  return events.filter(event => !event.reverted_at && event.payload.target_warband_id === warbandId
+    && event.payload.entangled && event.payload.target_size === 1 && !recoveredEventIds.includes(event.id));
+}
+
+/** A Recovery roll frees this warrior from the currently active throws only, never future throws. */
+export function resolveBolasRecovery(state: BattleLiveState, active: readonly BattleEventRow[], warriorId: string, name: string, die: number, originalDie?: number, turn = state.turn): BattleLiveState {
+  const valid = (n: number) => Number.isInteger(n) && n >= 1 && n <= 6;
+  if (!valid(die) || (originalDie !== undefined && !valid(originalDie))) throw new Error('Enter a D6 result from 1 to 6.');
+  const ids = active.filter(e => e.payload.target_id === warriorId && e.payload.entangled && !e.reverted_at && e.payload.target_size === 1).map(e => e.id);
+  if (!ids.length) return state;
+  const freed = die >= 4;
+  return withRollAttempt({ ...state, bolasRecoveredEventIds: freed ? [...new Set([...state.bolasRecoveredEventIds, ...ids])] : state.bolasRecoveredEventIds }, {
+    id: crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
+    label: `${name}: Bolas Recovery ${freed ? 'succeeded' : 'failed'}`,
+    rolls: [originalDie === undefined ? `Player entered ${die}.` : `App rolled ${originalDie}${originalDie !== die ? `; player changed it to ${die}` : ''}.`, freed ? 'Freed from the Bolas; movement and Weapon Skill return to normal.' : 'Still entangled: cannot move and has −2 Weapon Skill in hand-to-hand combat. Shooting is unaffected.'],
+  });
 }

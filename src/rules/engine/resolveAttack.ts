@@ -280,6 +280,8 @@ function nextBarrageInput(input: AttackInput): AttackInput {
 }
 
 export interface SingleAttackBreakdown {
+  /** Mutually exclusive ranged outcomes; preserve their wound/save correlation through the phase. */
+  branches?: { probability: number; attack: SingleAttackBreakdown }[];
   barrageNext?: SingleAttackBreakdown;
   barrageAtCap?: boolean;
   /** Unconditioned extra attack; never inherits a highest-hit parry partition. */

@@ -57,6 +57,15 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
   const next = emptyState(maxParries, maxWounds);
   let ricochetDelta = 0;
 
+  if (attack.branches) {
+    for (const branch of attack.branches) {
+      const result = applyAttack(state, branch.attack, maxParries, maxWounds);
+      ricochetDelta += branch.probability * result.ricochetDelta;
+      for (let p = 0; p <= maxParries; p++) for (let c = 0; c < 2; c++) for (let w = 0; w <= maxWounds; w++) for (let s = 0; s < 4; s++) next[p][c][w][s] += branch.probability * result.next[p][c][w][s];
+    }
+    return { next, ricochetDelta };
+  }
+
   const addMass = (parriesUsed: number, critConsumed: 0 | 1, woundsTaken: number, severity: Severity, mass: number) => {
     if (mass === 0) return;
     next[parriesUsed][critConsumed][Math.min(woundsTaken, maxWounds)][severity] += mass;

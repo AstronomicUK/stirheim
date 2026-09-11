@@ -405,6 +405,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
   if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
+    if (w.weapon.id === 'tufenk') notes.push(`Tufenk: after a hit, roll a D6 separately; ${setup.context.dryTarget ? '2+' : '4+'} sets the target on fire. Ongoing fire and the every-other-turn reload are not included in these odds. In each Recovery phase, a burning model extinguishes the fire on 4+; otherwise it takes a Strength 4 hit and may only move. A friendly model in base contact can help extinguish it on 4+.`)
     if (w.input.automaticHitReason === 'blunderbussLine') notes.push(`${w.weapon.name}: check the straight 16-inch by 1-inch line at the table. These odds resolve one automatic Strength 3 hit on the selected model. Every model in the line, including friends, must be resolved separately. ${w.weapon.special.includes('fireOncePerBattle') ? 'Fire only once per battle; firing history is not yet enforced here.' : 'Reload for a complete turn between shots; firing history is not yet enforced here.'}`)
     if (w.input.barrageOnFailedWound) notes.push(`${w.weapon.name}: a hit that fails to wound grants another attack at −1 to hit, capped at 6+. The continuing attacks are included in the odds; a miss or successful wound ends the sequence.`)
     if (w.weapon.special.includes('reach3Inches')) notes.push(`${w.weapon.name}: may attack within 3 inches; check reach at the table.`)
@@ -495,6 +496,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (!penalties.ignoresLongRange) toggles.push({ field: 'longRange', label: 'Long range', hint: maxRange ? `More than ${maxRange / 2} inches away (maximum ${maxRange} inches${extraRange ? `, including +${extraRange} from skills` : ''}). Long-range shots still take −1 to hit.` : undefined })
     toggles.push({ field: 'cover', label: 'Target in cover' })
     toggles.push({ field: 'largeTarget', label: 'Large target' })
+    if (primary.special.includes('strength3VsDryTargetsLikeMummies')) toggles.push({ field: 'dryTarget', label: 'Dry target (e.g. Mummy)', hint: 'Tufenk hits at Strength 3 instead of 2. The separate roll to catch fire succeeds on 2+ instead of 4+.' })
     if (primary.altFire) toggles.push({ field: 'altFire', label: primary.altFire.label, hint: primary.altFire.hint })
   }
   return toggles

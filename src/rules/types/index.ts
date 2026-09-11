@@ -327,6 +327,8 @@ export interface CombatContext {
   cover: boolean;
   longRange: boolean;
   largeTarget: boolean;
+  /** Tufenk target confirmed by the player as dry (for example a Mummy). */
+  dryTarget?: boolean;
   critMode: CritMode;
   /** Hatred trait: first turn of hand-to-hand combat against an enemy this model hates. */
   vsHatedEnemy: boolean;
@@ -356,6 +358,7 @@ export function defaultCombatContext(): CombatContext {
     cover: false,
     longRange: false,
     largeTarget: false,
+    dryTarget: false,
     critMode: "standard",
     vsHatedEnemy: false,
     firstTurnOfCombat: false,

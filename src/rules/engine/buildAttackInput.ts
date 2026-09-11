@@ -196,7 +196,8 @@ export function effectiveOffensiveStats(attacker: Character, weapon: Weapon, con
   if (weapon.type === "melee" && pitFighterActive(attacker, context)) ws += 1;
   if (weapon.type === "melee" && weapon.wsBonus) ws += weapon.wsBonus;
   const s = effectiveStat(attacker.stats, attackerSkills, context, weapon.type, "S", "self");
-  return { ws, strength: weapon.strength === "user" ? s + weaponStrengthBonus(weapon, context) : weapon.strength };
+  const strength = weapon.special.includes("strength3VsDryTargetsLikeMummies") && context.dryTarget ? 3 : weapon.strength === "user" ? s + weaponStrengthBonus(weapon, context) : weapon.strength;
+  return { ws, strength };
 }
 
 export interface BuildAttackInputParams {

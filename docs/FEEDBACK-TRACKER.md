@@ -3602,3 +3602,10 @@ Sources: 02-weapons-armour-equipment.md:692; warbands/grade-2a-part1.md:861–86
 One Sunstaff (Lustria) now supplies both its printed melee profile and its existing Sunbolt shooting profile. Melee uses the wielder’s Strength and Attacks with normal armour saves; the shooting-only Strength 4/no-armour-save/long-range benefits are not borrowed by melee. The distinct non-Lustria Sunstaff remains unchanged. Additional profiles belong to the same inventory item, with no duplicate purchase or roster item.
 
 Source: reference/rules/warbands/grade-1b-part1.md:252–258. Validation: 353 engine/battle/simulator tests plus build/typecheck/lint passed (existing audit warnings). Disposable local mobile Battle Sheet QA selected both profiles from the one item and verified normal melee hit rolls at 390px. #152’s other special consequences remain open. No production deployment. Separately, the full ordinary suite immediately before this change passed 1,817 tests (176 local-database tests skipped); see /tmp/stirheim-afternoon-full-tests.log.
+
+
+### Priority project — #152 Tufenk dry targets (2026-09-11, local)
+
+The Tufenk now offers a relevant “Dry target (e.g. Mummy)” option: selecting it changes the initial hit from Strength 2 to Strength 3 in the shared calculation and displayed statistics. Its explicit fire reminder changes the separate ignition roll from 4+ to 2+. The option is not offered for unrelated weapons and cannot alter their Strength. Ongoing fire, extinguishing and every-other-turn reloading are clearly identified as outside these odds; this does not claim automatic burning-state resolution.
+
+Source: reference/rules/02-weapons-armour-equipment.md:979–988. This standalone weapon clause does not require the deferred full Khemri campaign system. Validation: 354 engine/battle/simulator tests, build/typecheck/lint passed (existing audit warnings); disposable mobile QA confirmed S2→S3, the 2+ ignition reminder and option removal after switching weapons. #152 remains partial. Local only, no deployment.

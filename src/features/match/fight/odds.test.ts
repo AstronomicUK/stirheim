@@ -559,3 +559,20 @@ it('offers the Lustria Sunstaff’s melee profile without applying its shooting-
   expect(loadoutOf([{ itemId: 'sunstaff', quantity: 1 }]).melee).toEqual([])
   expect(loadoutOf([{ itemId: 'sunstaff_lustria', quantity: 2 }]).melee).toHaveLength(2)
 });
+
+it('uses the Tufenk’s printed dry-target Strength without hiding its separate fire rule', () => {
+  const firer = combatant('Firer', [{ itemId: 'tufenk', quantity: 1 }])
+  const target = combatant('Dry target', [])
+  const fight = setup(firer, target, 'tufenk', null)
+  expect(relevantToggles(firer, 'ranged', fight.primary).some(t => t.field === 'dryTarget')).toBe(true)
+  const normal = computeOdds(fight)
+  const dry = computeOdds({ ...fight, context: { ...fight.context, dryTarget: true } })
+  expect(normal.weapons[0].input.woundThreshold).toBe(5)
+  expect(dry.weapons[0].input.woundThreshold).toBe(4)
+  expect(normal.notes.some(n => n.includes('4+ sets the target on fire'))).toBe(true)
+  expect(dry.notes.some(n => n.includes('2+ sets the target on fire'))).toBe(true)
+  expect(dry.notes.some(n => n.includes('not included in these odds'))).toBe(true)
+  const bow = setup(marksman, target, 'bow', null)
+  expect(relevantToggles(marksman, 'ranged', bow.primary).some(t => t.field === 'dryTarget')).toBe(false)
+  expect(computeOdds({ ...bow, context: { ...bow.context, dryTarget: true } }).weapons[0].input.woundThreshold).toBe(computeOdds(bow).weapons[0].input.woundThreshold)
+})

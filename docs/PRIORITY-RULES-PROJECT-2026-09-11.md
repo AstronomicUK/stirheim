@@ -348,3 +348,10 @@ Item additionalWeaponIds maps same item to secondary printed combat profile; onl
 Broad ordinary validation before Sunstaff change: /tmp/stirheim-afternoon-full-tests.log 1817passed/176DBskipped. No new DB validation needed for catalogue addition. All local, no push/deploy. #152 partial, remaining nonstandard consequences still pending.
 
 Research repeated this checkpoint: Censer02:180 target hit→T test with6always wound, wielder6wound, Undead/Possessedimmune; self-test cadence and whether parriedhit triggers need source-consistent decision, don't silently invent. SwordBreaker02:715 successfulparry→D6 4+breakcurrentlyusedweapon; implementing requires selected-weapon persistence and careful already-rolled hit-batch semantics. Blunderbuss once/battle cannot simply block after first target because all models in its line must be resolved; needs one-shot group with multiple targets first. Avoid a one-target usage guard that prevents remaining line victims. Those remain open.
+
+
+## Combat milestone — #152 Tufenk dry-target profile
+
+Added optional CombatContext.dryTarget (defaultfalse); only relevant Tufenk tag gets checkbox; effectiveOffensiveStats returns S3 when set, otherwise S2. Shared engine and displayed profile agree. Explicit odds note distinguishes separate ignition (2+ dry /4+ ordinary), S4 ongoing fire/Recovery extinguishing and reload from calculated initial hit. Does not automatically infer that every undead warrior is dry, or implement burning state. Standalone weapon math, no deferred full Khemri system required. Source02:979–988.
+
+354 engine/battle/simulator tests + build/typecheck/lint pass (old warnings). `/tmp/stirheim-tufenk-mobile-qa.mjs` PASS disposable390px: checkbox S2→S3,2+fire note, switch toDaggerhidescheckbox, nooverflow/errors. Local only. Next substantial combat remaining includes persistent fire/other conditions, multi-target single-shot actions, SwordBreaker/Ladle persistence and Censer tests. Explicitly preserve their open scope instead of claiming the numerical improvements complete those whole tracker items.

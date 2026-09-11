@@ -12,6 +12,7 @@ import { findSpellOption, hiredSwordName, skillName, skillTableName, skillText, 
 import { WARBAND_TEMPLATES } from '../../rules/data/warbandTemplates'
 import { HERO_INJURIES } from '../../rules/data/campaign/injuries'
 import { SPELL_LORES } from '../../rules/data/campaign/magic'
+import { reportActivityChanges } from './reportActivity'
 import { defaultCampaignSettings } from '../../domain/settings'
 import { HOUSE_RULE_SWITCHES, DICE_POLICY_OPTIONS, COMBAT_MODE_OPTIONS, FIRST_SPELL_RULE_OPTIONS } from './settingsForm'
 import { banName, type BanKind } from './bans'
@@ -320,6 +321,7 @@ function sameValue(a: Json | undefined, b: Json | undefined): boolean {
 
 export interface FieldChange {
   sentence?: string
+  details?: string
   label: string
   before: string
   after: string
@@ -379,6 +381,7 @@ function campaignSettingChanges(before: Json | undefined, after: Json | undefine
  * delete as "was X"; an update shows both sides. Bookkeeping columns (ids, timestamps) are left out.
  */
 export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
+  if(entry.table_name==='match_reports')return reportActivityChanges(entry)
   const before = asRow(entry.before)
   const after = asRow(entry.after)
   const keys = new Set([...(before ? Object.keys(before) : []), ...(after ? Object.keys(after) : [])])

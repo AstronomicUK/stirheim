@@ -54,11 +54,11 @@ function ActivityDetail({ line }: { line: ActivityLine }) {
     <div className="flex flex-col gap-2 rounded-md bg-surface px-3 py-2">
       {groups.map(({ entry, changes }) => (
         <div key={entry.id} className="flex flex-col gap-1">
-          {groups.length > 1 ? <p className="text-[10px] uppercase tracking-wider text-ink-dim">{String((entry.after as Record<string, unknown> | null)?.name ?? (entry.before as Record<string, unknown> | null)?.name ?? 'Other changes')}</p> : null}
+          {groups.length > 1 ? <p className="text-[10px] uppercase tracking-wider text-ink-dim">{String((entry.after as Record<string, unknown> | null)?.name ?? (entry.before as Record<string, unknown> | null)?.name ?? ({match_reports:'Battle report',pending_advances:'Advancement',items:'Equipment'} as Record<string,string>)[entry.table_name] ?? 'Warband changes')}</p> : null}
           <ul className="flex flex-col gap-0.5">
             {changes.map((c) => (
               <li key={c.label} className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-ink-dim">
-                {c.sentence ? <span className="text-ink">{c.sentence}</span> : <><span>{entry.action === 'delete' ? `Previously recorded ${c.label}:` : `${entry.action === 'insert' ? 'Set' : 'Changed'} ${c.label} ${entry.action === 'insert' ? 'to' : 'from'}`}</span>
+                {c.sentence ? <div className="min-w-0 text-ink">{c.sentence}{c.details?<details className="mt-1"><summary className="cursor-pointer text-brass">Effect details</summary><p className="mt-1 whitespace-pre-line">{c.details}</p></details>:null}</div> : <><span>{entry.action === 'delete' ? `Previously recorded ${c.label}:` : `${entry.action === 'insert' ? 'Set' : 'Changed'} ${c.label} ${entry.action === 'insert' ? 'to' : 'from'}`}</span>
                 {entry.action !== 'insert' ? <ChangeValue terms={activityTerms(entry, c.label, 'before')} fallback={c.before} /> : null}
                 {entry.action === 'update' ? <span>to</span> : null}
                 {entry.action !== 'delete' ? <ChangeValue terms={activityTerms(entry, c.label, 'after')} fallback={c.after} /> : null}</>}

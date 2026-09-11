@@ -440,6 +440,13 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
       // Two of the same hand weapon is a real loadout (two swords); more than two never fight at once.
       const copies = weapon.type === 'melee' && !weapon.paired ? Math.min(2, Math.max(1, entry.quantity)) : 1
       for (let i = 0; i < copies; i++) (weapon.type === 'melee' ? out.melee : out.ranged).push(weapon)
+      for (const profileId of item.additionalWeaponIds ?? []) {
+        let profile = findWeapon(profileId)
+        if (!profile) continue
+        if (shrineBlessed(entry.notes)) profile = blessWeapon(profile)
+        const profileCopies = profile.type === 'melee' && !profile.paired ? Math.min(2, Math.max(1, entry.quantity)) : 1
+        for (let i = 0; i < profileCopies; i++) (profile.type === 'melee' ? out.melee : out.ranged).push(profile)
+      }
       continue
     }
 

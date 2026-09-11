@@ -541,3 +541,21 @@ it('does not let a high-Initiative Strike Last charger jump ahead of Whipcrack',
   expect(computeOdds(fight).strikeOrder).toContain('before the charger’s Strike Last attacks')
   expect(computeOdds({ ...fight, attacker: { ...a, skillIds: ['strongman'] } }).strikeOrder).toContain("Heavy charger's charge goes before the bonus attack")
 })
+
+it('offers the Lustria Sunstaff’s melee profile without applying its shooting-only Sunbolt bonuses', () => {
+  const amazon = combatant('Amazon', [{ itemId: 'sunstaff_lustria', quantity: 1 }], { stats: { ...base, S: 5, A: 2 } })
+  const target = combatant('Armoured target', [{ itemId: 'light_armour', quantity: 1 }])
+  const kit = loadoutOf(amazon.equipment)
+  expect(kit.melee.map(w => w.id)).toEqual(['sunstaff_lustria_melee'])
+  expect(kit.ranged.map(w => w.id)).toEqual(['sunstaff_lustria'])
+  const melee = computeOdds(setup(amazon, target, 'sunstaff_lustria_melee', null))
+  const shooting = computeOdds(setup(amazon, target, 'sunstaff_lustria', null))
+  expect(melee.attacks).toBe(2)
+  expect(melee.weapons[0].input.woundThreshold).toBe(2)
+  expect(melee.weapons[0].input.armourThreshold).toBe(6)
+  expect(shooting.attacks).toBe(1)
+  expect(shooting.weapons[0].input.woundThreshold).toBe(3)
+  expect(shooting.weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+  expect(loadoutOf([{ itemId: 'sunstaff', quantity: 1 }]).melee).toEqual([])
+  expect(loadoutOf([{ itemId: 'sunstaff_lustria', quantity: 2 }]).melee).toHaveLength(2)
+});

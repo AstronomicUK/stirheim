@@ -27,6 +27,8 @@ export interface Item {
   specialRules: NamedRule[];
   /** id in src/rules/data/weapons if the same item exists there. */
   weaponId?: string;
+  /** Additional combat profiles of the same physical item (for example melee and shooting). */
+  additionalWeaponIds?: string[];
   /** Publication from the Source field; file is "02-weapons-armour-equipment.md:<start>-<end>". */
   source: SourceRef;
   /** For armour: the save it grants, if the text states one, e.g. 6 for "6+". */

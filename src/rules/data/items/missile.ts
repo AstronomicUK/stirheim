@@ -315,6 +315,7 @@ export const MISSILE_ITEMS: Item[] = [
       { name: "Sunbolt", text: "The wielder of the sunstaff can discharge a beam of energy in the shooting phase that is akin to rays of the sun. The Sunbolt has a range of 12\" and hits at Strength 4. Aside from ward and dodge saves a Sunbolt ignores armour saves and penalties for long range." },
     ],
     weaponId: "sunstaff_lustria",
+    additionalWeaponIds: ["sunstaff_lustria_melee"],
     source: { publication: "Town Cryer #15 (1b)", file: "02-weapons-armour-equipment.md:959-967" },
   },
   {

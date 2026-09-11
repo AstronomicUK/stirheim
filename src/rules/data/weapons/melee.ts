@@ -33,6 +33,8 @@
 import type { Weapon } from "../../types";
 
 export const MELEE_WEAPONS: Weapon[] = [
+  // Lustria Sunstaff: its separate Sunbolt rule applies only in the shooting phase (1b part1:252–258).
+  { id: "sunstaff_lustria_melee", name: "Sunstaff (Lustria, melee)", type: "melee", strength: "user", critCategory: "bludgeoning", concussion: false, special: [], rangedProfile: null },
   { id: "axe", name: "Axe", type: "melee", strength: "user", critCategory: "bladed", concussion: false, saveModifier: 1, special: ["cuttingEdge"], rangedProfile: null },
   { id: "ball_and_chain", name: "Ball and Chain", type: "melee", strength: "user", strengthBonus: 2, critCategory: "bludgeoning", concussion: false, ignoresArmourSave: true, multipleWoundsD3OnHit: true, defenderToBeHitModifier: -1, special: ["multipleWoundsD3OnHit", "randomMovement", "cumbersomeNoOtherWeapons", "unwieldyPostBattleInjury"], rangedProfile: null },
   { id: "barbed_whip", name: "Barbed Whip", type: "melee", strength: "user", critCategory: "bladed", concussion: false, cannotBeParried: true, chargeBonusAttacks: 1, special: ["whipcrackBonusAttack", "enrageNearbyWarhounds"], rangedProfile: null },

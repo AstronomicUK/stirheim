@@ -63,6 +63,8 @@ export interface WarriorFlags {
   spellDifficultyReductions?: Record<string, number>;
   /** Chosen starting lore, retained when later books add spells from other lores. */
   magicLoreId?: string;
+  /** Leads in their original unit type until a replacement leader is recruited. */
+  temporaryLeader?: boolean;
   chaosMark?: string;
   retainedScoutId?: string;
   agreedRacialMaxima?: Stats;

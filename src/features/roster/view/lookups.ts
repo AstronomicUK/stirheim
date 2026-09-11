@@ -228,6 +228,7 @@ export function xpNotches(xp: number, role: CharacterRole, rate: AdvanceRate = '
 /** Short labels for a warrior's persistent conditions, in a stable order. */
 export function flagTags(flags: WarriorFlags): string[] {
   const tags: string[] = []
+  if (flags.temporaryLeader) tags.push("Temporary leader")
   if (flags.missNextGames && flags.missNextGames > 0) {
     tags.push(flags.missNextGames === 1 ? 'Misses next game' : `Misses next ${flags.missNextGames} games`)
   }

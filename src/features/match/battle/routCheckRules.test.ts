@@ -156,3 +156,11 @@ describe('Merchant Bribery quote (#68)', () => {
     expect(briberyQuote(caravan, casualties(), 1).available).toBe(false);
   });
 });
+
+it('uses the appointed Gnoblar as leader for Rout leadership and leader bonuses', () => {
+  const template = findWarbandTemplate('ogre_hunting_party')!
+  const gnoblar = { ...hero('g', 'Gnoblar leader', 'ogre_hunting_party_trappers', 7), flags: { temporaryLeader: true } }
+  const w = { ...roster, warbandTemplateId: template.id, heroes: [gnoblar] }
+  const options = leadershipOptions(w, template, emptyBattleLiveState(), { bonus: 1, sources: ['Campaign bonus'] })
+  expect(options[0]).toMatchObject({ id: 'g', leader: true, ld: 8 })
+})

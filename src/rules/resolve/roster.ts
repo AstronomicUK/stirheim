@@ -8,7 +8,7 @@
 //   - Leader: the rulebook has no data flag for "this is the leader", so the leader template is the
 //     first hero template whose limit has a minimum of 1 (e.g. "1" Mercenary Captain). Every core
 //     and expansion warband lists its leader first. The roster must hold exactly one active hero of
-//     that template — if the leader died, the player promotes a replacement by retemplating.
+//     that template at creation; supported temporary successors retain their original unit type.
 //   - Hero limits count active heroes of the template; henchman limits count models (sum of group
 //     sizes), since "0-5 Swordsmen" is a model count.
 //   - minModels is only enforced at creation (opts.atCreation) — a warband may shrink below three
@@ -17,7 +17,7 @@
 //     is returned as `note` for the player to check by hand.
 
 import type { UnitTemplate, WarbandTemplate } from "../types";
-import type { RosterItem, RosterWarband, CampaignBans } from "../types/roster";
+import type { RosterItem, RosterHero, RosterWarband, CampaignBans } from "../types/roster";
 import { isBodyArmour, isHeavyArmourClass, isHelmet, isThrownWeapon } from "../data/items/classify";
 import { rosterItemWarnings } from "./itemRestrictions";
 import { animalCount } from "./animals";
@@ -86,6 +86,13 @@ export function leaderTemplate(template: WarbandTemplate): UnitTemplate | undefi
   return template.heroTemplates.find((h) => parseRosterLimit(h.rosterLimit).min >= 1);
 }
 
+/** The recruited leader takes precedence over an appointed temporary successor. */
+export function currentLeader(heroes: RosterHero[], template: WarbandTemplate): RosterHero | undefined {
+  const active = heroes.filter(h => h.status === "active");
+  const type = leaderTemplate(template);
+  return active.find(h => h.unitTemplateId === type?.id) ?? active.find(h => h.flags.temporaryLeader);
+}
+
 export interface RosterProblem {
   code: string;
   message: string;
@@ -139,7 +146,7 @@ export function validateRoster(
   const leader = leaderTemplate(template);
   if (leader) {
     const leaders = warband.heroes.filter((h) => h.status === "active" && h.unitTemplateId === leader.id);
-    if (leaders.length === 0) {
+    if (leaders.length === 0 && (opts.atCreation || !currentLeader(warband.heroes, template))) {
       problems.push({ code: "roster.noLeader", message: `The warband has no ${leader.name} (it must have exactly one)` });
     } else if (leaders.length > 1) {
       problems.push({

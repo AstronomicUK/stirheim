@@ -4,7 +4,7 @@ import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 // Reuses the battle sheet's definition of "fighting" so the report counts exactly the warriors
 // the sheet put on the table: active status and not sitting out an injury.
 
-import { leaderTemplate } from '../../../rules/resolve/roster'
+import { currentLeader } from '../../../rules/resolve/roster'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { fightingGroups, splitWarriors } from '../../match/battle/sheet'
@@ -27,14 +27,13 @@ export interface Participants {
 
 /**
  * The leader is the fighting hero of the template's mandatory hero type (the first with a minimum
- * of one, see rules/resolve/roster.leaderTemplate). If none of those fought, the fighting hero
+ * of one), or an appointed temporary leader. If neither fought, the fighting hero
  * with the highest Leadership stands in — the rulebook has the next-best hero lead when the
  * leader is lost.
  */
 export function findLeaderId(heroes: RosterHero[], template: WarbandTemplate | undefined): string | null {
   if (heroes.length === 0) return null
-  const leaderType = template ? leaderTemplate(template) : undefined
-  const byType = leaderType ? heroes.find((h) => h.unitTemplateId === leaderType.id) : undefined
+  const byType = template ? currentLeader(heroes, template) : undefined
   if (byType) return byType.id
   return [...heroes].sort((a, b) => b.stats.Ld - a.stats.Ld)[0].id
 }

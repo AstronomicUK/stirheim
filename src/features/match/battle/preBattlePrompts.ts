@@ -1,7 +1,7 @@
 // Which pre-battle rolls a warband owes: Tarot Cards for any holder, plus the rolls its list names.
 
 import { warbandRules, type PreBattleRule } from '../../../rules/data/campaignRules'
-import { leaderTemplate } from '../../../rules/resolve/roster'
+import { currentLeader } from '../../../rules/resolve/roster'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHero, RosterWarband } from '../../../rules/types/roster'
 
@@ -54,8 +54,7 @@ export function prompts(roster: RosterWarband, template: WarbandTemplate | undef
       target: warrior.stats.T,
     })
   }
-  const leader = template ? leaderTemplate(template) : undefined
-  const leaderHero = leader ? roster.heroes.find((h) => h.status === 'active' && h.unitTemplateId === leader.id) : undefined
+  const leaderHero = template ? currentLeader(roster.heroes, template) : undefined
   for (const rule of warbandRules(roster.warbandTemplateId).preBattle ?? []) {
     const hero = rule.unitId === 'leader' ? leaderHero ?? null : rule.unitId ? roster.heroes.find((h) => h.status === 'active' && h.unitTemplateId === rule.unitId) ?? null : null
     if (rule.unitId && !hero) continue

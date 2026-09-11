@@ -51,7 +51,7 @@ import { rollDie } from "./dice";
 import { spellForRoll } from "./grimoires";
 import { unitRules } from "../data/campaignRules";
 import { startingLevelUps, unitStartingStats } from "./builder";
-import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
+import { leaderTemplate, parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
 
 /**
  * Published starting allocations. Khar-mel rolls D3 for the count; named full sets are below.
@@ -219,7 +219,9 @@ export function recruitHero(
   }
   if (magic && new Set(hero.spellIds).size !== magic.count) throw new RulesError('recruitment.startingSpells', `Record ${magic.count} distinct starting spells.`);
   if (magic?.loreId && hero.spellIds.some(id => !findLore(magic.loreId!)!.spells.some(s => s.id === id))) throw new RulesError('recruitment.startingSpells', 'A starting spell does not belong to the chosen lore.');
-  const recruited = { ...warband, gold: warband.gold - cost, heroes: [...warband.heroes, hero] };
+  const replacesTemporaryLeader = unit.id === leaderTemplate(template)?.id;
+  const existingHeroes = replacesTemporaryLeader ? warband.heroes.map(h => h.flags.temporaryLeader ? { ...h, flags: { ...h.flags, temporaryLeader: false } } : h) : warband.heroes;
+  const recruited = { ...warband, gold: warband.gold - cost, heroes: [...existingHeroes, hero] };
   const departures = conditionalHireDepartures(warband, recruited);
   for (const departure of departures) recruited.hiredSwords = departingHiredSword(recruited, departure.id);
   return {

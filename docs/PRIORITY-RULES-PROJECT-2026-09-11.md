@@ -304,3 +304,10 @@ NextHIGH#62remaininghalf-rate startingLevelUps: tracker1843–1855 identifiesMan
 startingLevelUps nowadvancesEarned(...,unitRules(unit.id).advanceRate??normal). Sharedbuildercreatepayload/import/recruit pathsusehelperalready. Tests actualcreation+payload+recruit+UIxpProgress forManeaterCaptain20/4,next22;MountainGuide8/2,next12;OgreHunter20/4,next22;eacharrival0owed,nextthreshold1owed. NormalCaptain8levelupsretainedbyexistingtests.80tests/build/typecheck/lintpass oldwarnings. SourceSlowWitted1c1674,2apart12931. #62fixedprospective, nohistoricallevelupsrewrite/deploy.
 
 Next#122temporarysuccession/species requirescohesivechange: currentappointLeaderalwaysunitretemplates; needpreserveGnoblar/etc whilegrantingleaderaccess andtemporaryreplacementflow. No isLeader/actingLeaderflagcurrentlyinRoster;leaderTemplate used~15calls, inspectallbeforeintroducingroleflag. Currentcore#121ranking/skilllistfixed;do notrebreak. Alternative next#114Wretch/Chapel/Sorcerous/Lustrian or#112killXP iflargersuccessionneeds stagedwork. Stillreturnremainingcombatmechanicsbeforeclaimingarea complete.
+
+
+## Experience milestone 16 — #122 Gnoblar temporary leadership
+
+Implemented and locally verified Ogre Hunting Party succession without turning a Gnoblar into an Ogre Hunter. Persisted `temporaryLeader` in existing hero flags (no migration), shared current-leader selection across battle/rout/pre-battle/post-battle and leader-only skills, visible roster role, replacement recruitment clears old role. Includes promoted Gnoblar Fighters/Flingers. Starting roster still needs an Ogre Hunter. No historical identity reconstruction.
+
+144 focused tests passed; build/typecheck/lint passed with the three existing audit-probe warnings. `/tmp/stirheim-temporary-leader-mobile-qa.mjs` passed against disposable local data, verifying appointment, original unit/stats/skills, stored role, label and reload at 390px. Recruitment/replacement and later death covered by resolver tests. #122 is still partial; next investigate the other named succession cases and their inherited abilities/purchase timing. All changes local, no push/deploy.

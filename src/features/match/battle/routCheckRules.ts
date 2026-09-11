@@ -1,7 +1,7 @@
 // Pure helpers for the rout check: whose Leadership may be used and which the rules point at.
 
 import type { BattleLiveState } from '../../../domain/battle'
-import { leaderTemplate } from '../../../rules/resolve/roster'
+import { currentLeader } from '../../../rules/resolve/roster'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
 import { unitRules } from '../../../rules/data/campaignRules'
@@ -42,12 +42,12 @@ export interface LdOption {
 
 /** Who may give their Leadership: the leader if standing, otherwise the highest eligible remaining fighter. */
 export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }, conditions: ReadonlyMap<string, string> = new Map()): LdOption[] {
-  const leaderUnit = template ? leaderTemplate(template) : undefined
+  const leaderHero = template ? currentLeader(roster.heroes, template) : undefined
   const fighting = splitWarriors(roster, sheet).fighting
   const options = fighting.map(({ warrior }): LdOption => {
     const w = warrior as RosterHero | RosterHiredSword
     const isHero = 'unitTemplateId' in w
-    const leader = isHero && leaderUnit !== undefined && w.unitTemplateId === leaderUnit.id
+    const leader = isHero && w.id === leaderHero?.id
     // Hired Swords cannot lend Leadership for Rout tests; eligible henchmen are added below.
     const mayLead = isHero && !unitRules(w.unitTemplateId).neverLeads
     const ld = leader && leaderLd.bonus ? w.stats.Ld + leaderLd.bonus : w.stats.Ld

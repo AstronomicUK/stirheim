@@ -1,7 +1,7 @@
 // Leader succession: when the warband's leader is dead (or gone), who takes over and what the list
 // says about it. The app suggests the candidates the rule names, in the order it names them; the
-// player picks, and the chosen hero is re-templated as the leader type, keeping stats, experience,
-// skills, injuries and kit.
+// player picks. Permanent successors are re-templated; supported temporary successors keep their
+// original unit type. Both keep stats, experience, skills, injuries and kit.
 
 import { warbandRules } from "../data/campaignRules";
 import { unitRules } from "../data/campaignRules";
@@ -9,7 +9,7 @@ import { findUnitTemplate } from "../data/warbandTemplates";
 import type { WarbandTemplate } from "../types";
 import type { Resolution, RosterHero, RosterWarband } from "../types/roster";
 import { RulesError } from "./errors";
-import { leaderTemplate } from "./roster";
+import { currentLeader, leaderTemplate } from "./roster";
 
 export interface SuccessionCandidate {
   hero: RosterHero;
@@ -35,7 +35,7 @@ export interface SuccessionView {
 export function needsLeader(warband: RosterWarband, template: WarbandTemplate): boolean {
   const leader = leaderTemplate(template);
   if (!leader) return false;
-  return !warband.heroes.some((h) => h.status === "active" && h.unitTemplateId === leader.id);
+  return !currentLeader(warband.heroes, template);
 }
 
 /** Who may take over, best candidate first. */
@@ -74,7 +74,7 @@ export function successionOptions(warband: RosterWarband, template: WarbandTempl
   return { leaderUnitName: leader.name, note: rule?.note ?? null, candidates, tiedIds, disbands: false };
 }
 
-/** Make `heroId` the leader: same warrior, now of the leader's unit type, plus any skill the rule grants. */
+/** Appoint the same warrior, retaining their unit type when the list specifies temporary leadership. */
 export function appointLeader(warband: RosterWarband, template: WarbandTemplate, heroId: string): Resolution<RosterWarband> {
   const leader = leaderTemplate(template);
   if (!leader) throw new RulesError("succession.noLeaderType", `${template.name} has no mandatory leader`);
@@ -87,7 +87,8 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
   const gained = (rule?.grantsSkillIds ?? []).filter((id) => !hero.skillIds.includes(id));
   const next: RosterHero = {
     ...hero,
-    unitTemplateId: leader.id,
+    unitTemplateId: rule?.temporary ? hero.unitTemplateId : leader.id,
+    flags: { ...hero.flags, ...(rule?.temporary ? { temporaryLeader: true } : {}) },
     skillTableIds: [...hero.skillTableIds],
     skillIds: [...hero.skillIds, ...gained],
   };
@@ -97,8 +98,8 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
       {
         kind: "leader.succession",
         subjectId: heroId,
-        message: `${hero.name} (${fromUnit?.name ?? hero.unitTemplateId}) takes over as ${leader.name}${gained.length ? `, gaining ${gained.join(", ")}` : ""}${rule ? ` (${rule.note})` : ""}`,
-        data: { from: hero.unitTemplateId, to: leader.id, gained },
+        message: `${hero.name} (${fromUnit?.name ?? hero.unitTemplateId}) takes over as ${rule?.temporary ? "temporary leader" : leader.name}${gained.length ? `, gaining ${gained.join(", ")}` : ""}${rule ? ` (${rule.note})` : ""}`,
+        data: { from: hero.unitTemplateId, to: next.unitTemplateId, temporary: Boolean(rule?.temporary), gained },
       },
     ],
   };

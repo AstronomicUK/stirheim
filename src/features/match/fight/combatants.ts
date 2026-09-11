@@ -5,7 +5,7 @@ import { GUARDIAN_RULES } from '../../../rules/resolve/hiredCompanions'
 // from a roster warrior's kit to the probability engine's weapons, armour and traits. No React,
 // no network; unit-tested in node.
 
-import { leaderTemplate } from '../../../rules/resolve/roster'
+import { currentLeader } from '../../../rules/resolve/roster'
 import { unitRules, warbandRules } from '../../../rules/data/campaignRules'
 import { findItem, resolveEquipmentName } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
@@ -177,7 +177,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
   // blanket merge overshot the audit's own count by 8x for immune_to_fear alone. Left for a pass
   // that can tell "automatic warband-wide rule" from "warband-specific skill list" apart per entry.
   const race = template?.raceTraits ?? []
-  const leaderUnitId = template ? leaderTemplate(template)?.id : undefined
+  const leaderId = template ? currentLeader(roster.heroes, template)?.id : undefined
   const boostTraits = boosts.fearImmunity ? ['immune_to_fear'] : []
   const out: Combatant[] = []
   const warriors = splitWarriors(roster, sheet)
@@ -193,7 +193,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         typeName: unitTypeName(template?.id ?? roster.warbandTemplateId, warrior.unitTemplateId),
         warbandId: roster.id,
         warbandName,
-        stats: boosts.leaderLd && leaderUnitId && warrior.unitTemplateId === leaderUnitId ? { ...warrior.stats, Ld: warrior.stats.Ld + boosts.leaderLd } : warrior.stats,
+        stats: boosts.leaderLd && warrior.id === leaderId ? { ...warrior.stats, Ld: warrior.stats.Ld + boosts.leaderLd } : warrior.stats,
         equipment: warrior.equipment,
         unarmedProfile: unitRules(warrior.unitTemplateId).unarmedProfile,
         skillIds: warrior.skillIds,

@@ -59,3 +59,37 @@ it('identifies a genuine Leadership/Experience tie without silently deciding by 
   expect(successionOptions(w, template)?.tiedIds).toEqual(['a', 'b']);
   expect(successionOptions({ ...w, heroes: w.heroes.map(h => h.id === 'b' ? { ...h, xp: 9 } : h) }, template)?.tiedIds).toEqual([]);
 });
+
+it('keeps a temporary Gnoblar leader a Gnoblar and hands leadership to a replacement Ogre Hunter', async () => {
+  const { recruitHero, canRecruit } = await import('../recruitment');
+  const { currentLeader, validateRoster } = await import('../roster');
+  const { warriorFlagsSchema } = await import('../../../domain/json');
+  const { findLeaderId } = await import('../../../features/postBattle/model/participants');
+  const template = findWarbandTemplate('ogre_hunting_party')!;
+  const gnoblar = hero('g', 'ogre_hunting_party_sabre_baiter', { xp: 8, skillTableIds: ['combat'], skillIds: ['dodge'], flags: { oldBattleWound: true } });
+  const original = { ...warband(template.id, [hero('dead', 'ogre_hunting_party_ogre_hunter', { status: 'dead' }), gnoblar]), gold: 1000 };
+  const result = appointLeader(original, template, 'g');
+  const promoted = result.value.heroes.find(h => h.id === 'g')!;
+  expect(promoted).toEqual({ ...gnoblar, flags: { ...gnoblar.flags, temporaryLeader: true } });
+  expect(result.events[0].message).toContain('temporary leader');
+  expect(warriorFlagsSchema.parse(promoted.flags).temporaryLeader).toBe(true);
+  expect(needsLeader(result.value, template)).toBe(false);
+  expect(currentLeader(result.value.heroes, template)?.id).toBe('g');
+  expect(findLeaderId(result.value.heroes.filter(h => h.status === 'active'), template)).toBe('g');
+  expect(validateRoster(result.value, template).problems.some(p => p.code === 'roster.noLeader')).toBe(false);
+  expect(validateRoster(result.value, template, { atCreation: true }).problems.some(p => p.code === 'roster.noLeader')).toBe(true);
+  expect(canRecruit(result.value, template, 'ogre_hunting_party_ogre_hunter').ok).toBe(true);
+  const replaced = recruitHero(result.value, template, 'ogre_hunting_party_ogre_hunter', 'New Hunter', 'new').value;
+  expect(currentLeader(replaced.heroes, template)?.id).toBe('new');
+  expect(replaced.heroes.find(h => h.id === 'g')?.flags).toEqual({ oldBattleWound: true, temporaryLeader: false });
+  expect(replaced.heroes.find(h => h.id === 'g')?.unitTemplateId).toBe(gnoblar.unitTemplateId);
+  // Losing the new leader requires a fresh succession decision, not an old flag silently reviving.
+  expect(needsLeader({ ...replaced, heroes: replaced.heroes.map(h => h.id === 'new' ? { ...h, status: 'dead' } : h) }, template)).toBe(true);
+  expect(original.heroes[1].flags.temporaryLeader).toBeUndefined();
+});
+
+it('includes promoted Gnoblar Fighters and Flingers in temporary succession', () => {
+  const template = findWarbandTemplate('ogre_hunting_party')!;
+  const w = warband(template.id, [hero('t', 'ogre_hunting_party_trappers'), hero('f', 'ogre_hunting_party_flingers', { stats: { ...stats, Ld: 8 } }), hero('g', 'ogre_hunting_party_gnoblar_fighters', { xp: 9 })]);
+  expect(successionOptions(w, template)?.candidates.map(c => c.hero.id)).toEqual(['f', 'g', 't']);
+});

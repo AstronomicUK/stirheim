@@ -148,6 +148,8 @@ export interface SuccessionRule {
   disbandsWithout?: boolean;
   /** Skills the new leader gains on taking over. */
   grantsSkillIds?: string[];
+  /** Keep the successor’s original unit type until the printed leader is replaced. */
+  temporary?: boolean;
 }
 
 /** A roll the list calls for after each battle (Marauders' Eye of the Gods). Read by features/postBattle/model/kit.ts. */
@@ -444,7 +446,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   necrarchs_the_soul_stealers: { succession: { note: "Death of the Leader: the Thrall takes the mantle and rolls for one spell; no new Necrarch can be hired. Both gone, the warband disbands.", candidateUnitIds: ["necrarchs_thrall"], disbandsWithout: true } },
   protectorate_of_sigmar: { heroCapacity: 5, notes: ["The Huntsman replaces a Templar: five heroes at most."], succession: { note: "Death of a Leader: the Acolyte with the most experience becomes Warrior Priest (a prayer comes with his next advance).", candidateUnitIds: ["acolytes"], by: "experience" } },
   skaven_of_clan_moulder: { succession: { note: "Heir to Power: an Apprentice succeeds the Packmaster; with none left the warband disbands.", candidateUnitIds: ["apprentices"], disbandsWithout: true } },
-  ogre_hunting_party: { succession: { note: "Ideas Above Their Station: the Gnoblar with the highest Leadership takes over until a new Ogre Hunter is bought.", candidateUnitIds: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter"], by: "leadership" } },
+  ogre_hunting_party: { succession: { temporary: true, note: "Ideas Above Their Station: the Gnoblar with the highest Leadership takes over until a new Ogre Hunter is bought.", candidateUnitIds: ["ogre_hunting_party_trappers", "ogre_hunting_party_sabre_baiter", "ogre_hunting_party_gnoblar_fighters", "ogre_hunting_party_flingers"], by: "leadership" } },
   pirates: { succession: { note: "A Ship's Mate takes the wheel.", candidateUnitIds: ["pirates_ships_mate"], anyHero: true } },
   merchant_caravans: { succession: { note: "The new leader gains the Merchant rule.", anyHero: true } },
   survivors_of_strigos: { undeadUnitIds: ["strigoi_vampire"], succession: { note: "A dead Strigoi cannot be replaced: the survivors carry on without a Vampire, or the warband is retired.", candidateUnitIds: [], disbandsWithout: true } },

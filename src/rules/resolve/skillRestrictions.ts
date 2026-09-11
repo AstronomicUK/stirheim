@@ -9,7 +9,7 @@ import { WARBAND_SKILL_TABLES } from "../data/campaign/warbandSkills";
 import { findUnitTemplate } from "../data/warbandTemplates";
 import type { WarbandTemplate } from "../types";
 import type { RosterHero, RosterWarband } from "../types/roster";
-import { leaderTemplate } from "./roster";
+import { currentLeader, leaderTemplate } from "./roster";
 
 function normalise(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -105,7 +105,7 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
   // Leader only. ("...with the leader skill" means the leader role, not a takeable skill: no such skill exists in the catalogue.)
   if (/leader/.test(lower) && /only/.test(lower) && ctx.template) {
     const leader = leaderTemplate(ctx.template);
-    if (leader && ctx.hero.unitTemplateId !== leader.id) return `Only the warband's leader may take this skill.`;
+    if (leader && (ctx.roster ? currentLeader(ctx.roster.heroes, ctx.template)?.id !== ctx.hero.id : ctx.hero.unitTemplateId !== leader.id && !ctx.hero.flags.temporaryLeader)) return `Only the warband's leader may take this skill.`;
   }
 
   // Limits across the warband: "no more than two warriors", "Only one Elven Hero may possess this skill",

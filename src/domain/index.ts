@@ -21,3 +21,5 @@ export * from "./blackpowderShot";
 export * from "./grapeShot";
 
 export * from "./mortarShot";
+
+export * from "./firepotSmoke";

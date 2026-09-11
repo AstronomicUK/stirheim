@@ -1,3 +1,5 @@
+import { nextOwnTurnKey, smokeEventsThisTurn, smokeBlocksWarrior, recordSmokeTest } from '../firepotSmoke'
+import { warbandTurnKey, battleLiveStateSchema } from '../battle'
 import { describe, expect, it } from "vitest";
 import { emptyBattleLiveState } from "../battle";
 import { activeBolasEntanglements, resolveBolasRecovery, applyBattleEvents, attackRollsLine, attackSummary, eventContribution, type AttackEventPayload, type BattleEventRow } from "../battleEvent";
@@ -130,4 +132,36 @@ it('requires an explained repeat Recovery attempt in the same own turn', () => {
   expect(resolveBolasRecovery(failed, [event], 'skritch', 'Skritch', 6, undefined, 3, { turnKey: 'own:3', attemptId: 'c' }).bolasRecoveredEventIds).toEqual([event.id]);
   const correction = resolveBolasRecovery(failed, [event], 'skritch', 'Skritch', 6, 1, 2, { turnKey: 'own:2', attemptId: 'b', reason: 'Agreed correction' });
   expect(correction.rollAttempts[1].rolls.join(' ')).toContain('Agreed correction');
+})
+
+
+it('Firepot smoke tests in the next own turn and expires at the following own turn',()=>{
+ const turns={round:1,active_index:0,turn_order:[A,B]}
+ const due=nextOwnTurnKey(warbandTurnKey(B,1,turns))
+ expect(due).toBe(`${B}:1`)
+ const event=attack({smokeDueTurnKey:due,wounds_lost:0,out_of_action:false,kill:false})
+ expect(attackSummary(event.payload)).toContain('Firepot smoke')
+ expect(smokeEventsThisTurn([event],B,warbandTurnKey(B,1,turns))).toEqual([])
+ const own=warbandTurnKey(B,1,{...turns,active_index:1})
+ expect(smokeEventsThisTurn([event],B,own)).toEqual([event])
+ const failed=recordSmokeTest(emptyBattleLiveState(),event,own,3,3,1,'attempt')
+ expect(smokeBlocksWarrior(failed,[event],'skritch',own)).toBe(true)
+ expect(smokeBlocksWarrior(failed,[event],'skritch',warbandTurnKey(B,2,{...turns,round:2}))).toBe(true)
+ expect(smokeBlocksWarrior(failed,[event],'skritch',warbandTurnKey(B,2,{...turns,round:2,active_index:1}))).toBe(false)
+ expect(smokeBlocksWarrior(failed,[{...event,reverted_at:'reverted'}],'skritch',own)).toBe(false)
+ expect(battleLiveStateSchema.parse(failed).smokeTests[0].failed).toBe(true)
+ expect(JSON.stringify(failed.rollAttempts)).toContain('player changed it to 3')
+})
+it('smoke rolls use strict under-Initiative, retain app dice and require reasons for replacement',()=>{
+ const event=attack({smokeDueTurnKey:'legacy:2',out_of_action:false})
+ const initial=emptyBattleLiveState()
+ const pending=recordSmokeTest(initial,event,'legacy:2',3,2,2,'attempt','',true)
+ expect(pending.smokeTests[0].originalDie).toBe(2)
+ expect(smokeBlocksWarrior(pending,[event],'skritch','legacy:2')).toBe(false)
+ const passed=recordSmokeTest(pending,event,'legacy:2',3,2,2,'attempt')
+ expect(passed.smokeTests[0].failed).toBe(false)
+ expect(()=>recordSmokeTest(passed,event,'legacy:2',3,1,undefined,'other')).toThrow(/Explain/)
+ expect(recordSmokeTest(passed,event,'legacy:2',9,6,undefined,'other','Agreed correction').smokeTests[0].failed).toBe(true)
+ expect(()=>recordSmokeTest(initial,{...event,payload:{...event.payload,target_size:3}},'legacy:2',3,1,undefined,'a')).toThrow(/individually/)
+ expect(()=>recordSmokeTest(initial,event,'legacy:1',3,1,undefined,'a')).toThrow(/not due/)
 })

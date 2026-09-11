@@ -80,6 +80,7 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
  * - `maxAttacks` (Fist: 1) caps the result.
  */
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = [], chargeBonusAvailable = true): number {
+  if (context.firepotSmoke && weapon.type === "ranged") return 0;
   if (context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs") return 1;
   if (context.failedStupidity && character.traits.includes("stupidity") && !character.traits.includes("deathwish")) return 0;
   // Swivel Gun Cumbersome explicitly overrides Nimble and all extra-shot skills (02:1214).
@@ -390,6 +391,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const pigeonBlast = context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs";
   return {
     misfireEnhanced,
+    smokeOnHit: weapon.id === 'firepots_miragliano' || undefined,
     fishHookFallThreshold: weapon.id === 'fish_hook_shot' && context.fishHookFall ? Math.max(0,Math.min(5,effectiveStat(attacker.stats,attackerSkills,context,weapon.type,'S','self')-(context.largeTarget?1:0))) : undefined,
     chainShotKnockdown: weapon.special.includes("allWrappedUpKnocksDownUnwoundedTargetOn4Plus"),
     firePermissionThreshold: !pigeonBlast && (weapon.type === "ranged" || isBlackpowderWeapon(weapon)) && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,

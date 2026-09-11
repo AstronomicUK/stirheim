@@ -92,6 +92,7 @@ interface Current {
 }
 
 export interface RollState {
+  smokeHit?: boolean
   hitBatch?: { phase: 'collect' | 'parry' | 'resolve'; hits: { roll: number | null; outcome?: Outcome }[]; parryIndices: number[] }
   plans: AttackPlan[]
   index: number
@@ -497,6 +498,7 @@ function afterHit(state: RollState): RollState {
 
 function askWound(state: RollState): RollState {
   const input = state.plans[state.index].input
+  if (input.smokeOnHit) state = log({...state,smokeHit:true}, 'Firepot smoke: at the start of the target’s next own turn, roll under Initiative. Failure prevents charging and shooting until its following own turn. Resolve group members separately.')
   if (input.fishHookFallThreshold !== undefined) return {...state,pending:{kind:'fishHookFall',who:'attacker',label:'Fish-hook Strength test',detail:`Roll ${input.fishHookFallThreshold} or less; 6 always fails. The +1 test modifier against a large target is already included. This replaces all damage.`}}
   if (input.entangleInsteadOfWound) return finishAttack(log(state, 'Bolas entangle the target without a wound: it cannot move and has −2 Weapon Skill in hand-to-hand combat, but may shoot normally. At the table, roll a D6 in Recovery; 4+ frees it. Log this result to record entanglement for an individually identified target; track members of groups separately.', 'good'), 'entangled')
   const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6

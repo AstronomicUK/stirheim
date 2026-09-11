@@ -28,3 +28,12 @@ it('reports knock-down odds without wound, critical or OOA odds',()=>{
  expect(resolveTurn([resolveSingleAttack({...input,dodgeThreshold:4,fishHookFallThreshold:2})],0,3).distribution.knockedDown).toBeCloseTo(1/12)
  expect(resolveTurn([resolveSingleAttack({...input,ignoreKnockedDownAndStunned:true})],0,3).distribution.knockedDown).toBe(0)
 })
+
+
+it('records Firepot smoke on a landed hit even if it fails to wound, but not misses or Dodges',()=>{
+ const fire={fishHookFallThreshold:undefined,smokeOnHit:true,woundThreshold:5}
+ const hit=applyRoll(applyRoll(begin(fire),4),1)
+ expect(hit.smokeHit).toBe(true);expect(hit.woundsLost).toBe(0)
+ expect(applyRoll(begin(fire),1).smokeHit).not.toBe(true)
+ expect(applyRoll(applyRoll(begin({...fire,dodgeThreshold:4}),4),4).smokeHit).not.toBe(true)
+})

@@ -1,3 +1,4 @@
+import { nextOwnTurnKey, smokeBlocksWarrior } from '../../../domain/firepotSmoke'
 import { MortarControls } from './MortarControls'
 import { GrapeShotControls } from './GrapeShotControls'
 import { BlackpowderControls } from './BlackpowderControls'
@@ -209,13 +210,15 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
       ? parryOverride.used
       : targetMemory?.parryUsedTurn === sheet.turn
     : false)
-  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined).filter(t => t.field !== 'serpentStaffPower') : []
+  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined).filter(t => t.field !== 'serpentStaffPower' && !(t.field === 'charging' && smokeBlocksWarrior(sheet,events,attacker.id,ownTurnKey))) : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   // Already knocked down or stunned (from an earlier, already-logged phase this turn): hits it
   // automatically in hand-to-hand, and a stunned target goes straight out of action (01:947-959).
   // Read from the shared log, not a toggle — this is exactly the "the battle sheet doesn't do
   // either of these" report, so it needs to just happen rather than rely on a checkbox.
+  active.firepotSmoke = Boolean(attacker && smokeBlocksWarrior(sheet,events,attacker.id,ownTurnKey))
+  if (active.firepotSmoke) active.charging = false
   active.serpentStaffPower = Boolean(staffUse)
   if (attacker?.entangled) active.charging = false
   if (attacker) active.failedStupidity = attacker.traitIds.includes('stupidity') && !attacker.traitIds.includes('deathwish') && (individualStupidity ? failedStupidityThisTurn(sheet, attacker.id, ownTurnKey) : groupStupidity?.id === attacker.id && groupStupidity.turnKey === ownTurnKey && groupStupidity.failed)
@@ -278,6 +281,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   return (
     <>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
+      {active.firepotSmoke ? <Notice tone="warn" title="Blinded by Firepot smoke">This warrior cannot charge or shoot until the start of its next own turn. Other movement, melee attacks and spells are unaffected.</Notice> : null}
       {/* Attacker and defender face each other, with the dice between them. */}
       <div className="relative grid grid-cols-2 items-stretch gap-3 lg:gap-8">
         <FightBox icon="battle" title="Attacker" tone="brass">
@@ -595,6 +599,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 pigeonTargetKey: pigeonTarget?.key,
                 kill: defender.warbandId !== attacker.warbandId && state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
                 entangled: state.outcomes.includes('entangled'),
+                smokeDueTurnKey: state.smokeHit ? nextOwnTurnKey(warbandTurnKey(defender.warbandId,sheet.turn,turns.data)) : undefined,
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
                 nurgles_rot: state.rotPassed,
@@ -982,18 +987,18 @@ function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender
                       ? `${defender.name} is ${OUTCOME_LABEL[state.worst].toLowerCase()}.`
                       : state.woundsLost > odds.woundsAlreadyLost
                         ? `${defender.name} is down to ${Math.max(0, defender.stats.W - state.woundsLost)} of ${defender.stats.W} Wounds but still standing.`
-                        : state.worst === 'entangled' ? `${defender.name} cannot move and has −2 melee Weapon Skill until freed in Recovery.` : `${defender.name} is unharmed.`}
+                        : state.worst === 'entangled' ? `${defender.name} cannot move and has −2 melee Weapon Skill until freed in Recovery.` : state.smokeHit ? `${defender.name} must test against Firepot smoke at the start of its next own turn.` : `${defender.name} is unharmed.`}
                 </span>
               </p>
-              {(forceLog || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
+              {(forceLog || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
                   {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
-              {(forceLog || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
-                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
+              {(forceLog || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
+                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : state.smokeHit ? 'Firepot hit and smoke test' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}
             </div>
           ) : null}

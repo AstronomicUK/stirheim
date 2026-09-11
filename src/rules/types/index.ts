@@ -316,6 +316,8 @@ export function defaultHouseRules(): HouseRules {
 // ---- Engine-facing types ----
 
 export interface CombatContext {
+  /** Failed Firepot smoke test: no shooting or charge until next own turn. */
+  firepotSmoke?: boolean;
   /** Player confirms a friendly Barbed Whip Hero within 4 inches and not in combat. */
   barbedWhipEnrage?: boolean;
   /** Fish-hook Shot: attempt to knock down instead of wounding. */

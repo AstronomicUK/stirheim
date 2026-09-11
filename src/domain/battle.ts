@@ -132,6 +132,7 @@ export const battleLiveStateSchema = z.object({
   })).default([]),
   linePermissionTests: z.array(z.object({ id: z.string(), warriorId: z.string(), weaponId: z.enum(["blunderbuss", "chaos_dwarf_blunderbuss"]), shooterSlot: z.number().int().min(0), ownTurn: z.number().int().min(0), original: z.number().int().min(1).max(6).optional(), die: z.number().int().min(1).max(6).optional(), reason: z.string().default(''), at: z.string(), targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })) })).default([]),
   lineShots: z.array(z.object({ id: z.string(), warriorId: z.string(), weaponId: z.enum(["blunderbuss", "chaos_dwarf_blunderbuss"]), shooterSlot: z.number().int().min(0).default(0), ownTurn: z.number().int().min(0), at: z.string(), cancelled: z.boolean().default(false), targets: z.array(z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() })) })).default([]),
+  smokeTests: z.array(z.object({eventId:z.string(),warriorId:z.string(),turnKey:z.string(),attemptId:z.string(),initiative:z.number(),originalDie:z.number().int().min(1).max(6).optional(),die:z.number().int().min(1).max(6).optional(),failed:z.boolean().optional()})).default([]),
   bolasRecoveryTests: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), attemptId: z.string() })).default([]),
   bolasRecoveredEventIds: z.array(z.string()).default([]),
   bolasThrows: z.array(z.object({ warriorId: z.string(), at: z.string() })).default([]),

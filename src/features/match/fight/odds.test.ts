@@ -742,3 +742,11 @@ it.each(['marauders_warhounds_of_chaos','beastmen_warhounds_of_chaos'])('Barbed 
  const bow=setup({...dog,equipment:[{itemId:'bow',quantity:1}]},skaven,'bow',null)
  expect(computeOdds({...bow,context:{...bow.context,barbedWhipEnrage:true}}).attacks).toBe(1)
 })
+
+
+it('a failed smoke test stops shooting but leaves normal melee attacks available',()=>{
+ const bow=setup(marksman,skaven,'bow',null)
+ expect(computeOdds({...bow,context:{...bow.context,firepotSmoke:true}}).attacks).toBe(0)
+ const melee=setup(captain,skaven,'sword',null)
+ expect(computeOdds({...melee,context:{...melee.context,firepotSmoke:true}}).attacks).toBe(computeOdds(melee).attacks)
+})

@@ -32,6 +32,8 @@ export const attackEventPayloadSchema = z.object({
   nurgles_rot: z.boolean().default(false),
   /** Bolas condition, separate from wounds and injury results. */
   entangled: z.boolean().optional(),
+  /** First own turn in which the Firepot smoke test is due. */
+  smokeDueTurnKey: z.string().optional(),
   blackpowderSelfShotId: z.string().optional(),
   mortarShotId: z.string().optional(),
   mortarTargetKey: z.string().optional(),
@@ -63,7 +65,7 @@ export type BattleEventRow = z.infer<typeof battleEventRowSchema>;
 
 /** One line for the log and the enemy view: "Turn 2: Captain took Skritch out of action." */
 export function attackSummary(p: AttackEventPayload): string {
-  const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.entangled ? `entangled ${p.target_name} with Bolas` : `${p.outcome.toLowerCase()} ${p.target_name}`;
+  const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.smokeDueTurnKey ? `hit ${p.target_name} with Firepot smoke` : p.entangled ? `entangled ${p.target_name} with Bolas` : `${p.outcome.toLowerCase()} ${p.target_name}`;
   return `Turn ${p.turn}: ${p.attacker_name} ${what}.${p.nurgles_rot ? ` ${p.target_name} contracts Nurgle's Rot.` : ""}`;
 }
 

@@ -3872,3 +3872,12 @@ Fish-hook Shot can replace damage with its printed Strength-test knock-down, inc
 
 ### #152 Barbed Whip Enrage — fixed locally, not deployed
 Chaos Warhounds now gain one melee attack when the player confirms a friendly Barbed Whip Hero within4in and outside combat. Other animals, ranged attacks and stale selections are unaffected. Battle/simulator share identity and calculation; declaration saved with dice/shared result. 2,008ordinary tests/build and mobile+saved-event checks pass. Table positioning remains player-confirmed. Held for next batch; production unchanged.
+
+
+## Next local batch — #152 Firepot smoke lifecycle
+
+Firepots now retain smoke after a successful hit even if no wound is caused, after existing Dodge/Charm prevention. Shared attack records schedule the smoke test for the target's next own turn. The Battle Sheet offers the strict roll-under-Initiative test (6 fails), preserves the original app roll across reload, and records player changes/corrections. Failure blocks shooting and charging for that own turn while leaving melee and normal movement available; it persists through the enemy turn and expires on the following own turn. Reverted hits stop enforcing the restriction. Multi-member groups remain table-managed rather than applying one member's smoke to every model. Manually resolved/table-only hits are not newly auto-detected.
+
+Validation: 2,012 ordinary tests pass, build/typecheck pass, lint only the three existing audit warnings. Dedicated disposable mobile QA verified a non-wounding hit, next-own-turn scheduling, saved pending roll/reload, strict failure, disabled shooting/charging, unaffected melee, enemy-turn persistence and next-own-turn expiry. Fixtures cleaned. Logs /tmp/stirheim-smoke-{all-tests,build,lint,browser}.log; focused tests cover original app roll versus edited result, replacement reasons, natural6, reverted events and group rejection. Source reference/rules/02-weapons-armour-equipment.md:840–849 and core characteristic tests. No SQL, push or deployment. Production remains d17cb00 / Netlify6aa4750b9e2cb9a410a0a9d0 / migration76. #152 remains partial for other outstanding equipment clauses.
+
+Next: inspect independent remaining equipment/combat clauses; preserve the morning question queue and avoid inventing rulings. Keep this and Fish-hook/Enrage fixes in the next local batch.

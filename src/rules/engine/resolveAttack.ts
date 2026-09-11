@@ -37,6 +37,7 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  smokeOnHit?: boolean;
   /** Fish-hook Shot: maximum successful raw D6 on the attacker’s Strength test. */
   fishHookFallThreshold?: number;
   /** Chain Shot: a hit causing no unsaved wounds can knock down on 4+. */

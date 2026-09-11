@@ -63,6 +63,14 @@ export const rollAttemptSchema = z.object({
 });
 export type RollAttempt = z.infer<typeof rollAttemptSchema>;
 
+const serpentStaffUseSchema = z.object({
+  warriorId: z.string(),
+  /** One hand-to-hand phase: shared round + active warband, not just game round. */
+  turnKey: z.string(),
+  at: z.string(),
+  used: z.boolean().default(false),
+});
+
 export const battleLiveStateSchema = z.object({
   version: z.literal(BATTLE_LIVE_STATE_VERSION).default(BATTLE_LIVE_STATE_VERSION),
   /** A game starts at turn 1; the min stays 0 so a GM can still correct it back down. */
@@ -90,6 +98,8 @@ export const battleLiveStateSchema = z.object({
   casts: z.array(castRecordSchema).default([]),
   /** Dice history only: never contributes wounds, kills or resource spending. */
   rollAttempts: z.array(rollAttemptSchema).default([]),
+  /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
+  serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),
 });
@@ -103,6 +113,22 @@ export function emptyBattleLiveState(): BattleLiveState {
 export function withRollAttempt(state: BattleLiveState, attempt: RollAttempt): BattleLiveState {
   const exists = state.rollAttempts.some(a => a.id === attempt.id);
   return { ...state, rollAttempts: exists ? state.rollAttempts.map(a => a.id === attempt.id ? attempt : a) : [...state.rollAttempts, attempt], editedAt: new Date().toISOString() };
+}
+
+export function serpentStaffUse(state: BattleLiveState, warriorId: string, turnKey: string) {
+  return state.serpentStaffUses.find(use => use.warriorId === warriorId && use.turnKey === turnKey);
+}
+
+/** Activation is durable before rolling; repeat activation cannot restore a spent attack. */
+export function activateSerpentStaff(state: BattleLiveState, warriorId: string, turnKey: string): BattleLiveState {
+  if (serpentStaffUse(state, warriorId, turnKey)) return state;
+  const at = new Date().toISOString();
+  return { ...state, serpentStaffUses: [...state.serpentStaffUses, { warriorId, turnKey, at, used: false }], editedAt: at };
+}
+
+export function consumeSerpentStaff(state: BattleLiveState, warriorId: string, turnKey: string): BattleLiveState {
+  const activated = activateSerpentStaff(state, warriorId, turnKey);
+  return { ...activated, serpentStaffUses: activated.serpentStaffUses.map(use => use.warriorId === warriorId && use.turnKey === turnKey ? { ...use, used: true } : use), editedAt: new Date().toISOString() };
 }
 
 /** Parse whatever is stored; anything malformed falls back to an empty sheet rather than crashing the table. */

@@ -3450,3 +3450,7 @@ Validation: full ordinary suite 1,772 passed /169 database tests skipped; final 
 ### #156 Tilean Pike against a charging Spear — 11 September
 
 The printed exception now takes priority over the ordinary Initiative tie: a Tilean Pike defender strikes before a charging Spear wielder, even if the Spear wielder has higher Initiative. Later rounds return to Initiative. Other charging weapons retain the shared Strike First rules. The Tilean Pike’s existing one-attack cap is also verified with a high-A, frenzied wielder. Source02:550–557. Forty odds tests, typecheck/build and lint pass with existing warnings. Local only; #156 remains partial for Whipcrack and other specialist sequencing.
+
+### #150 Serpent Staff — implementation in progress, 11 September
+
+Engine foundation now supports the staff's single WS4/S4 power attack, suppressing all other attacks rather than adding to Frenzy, off-hand or skill bonuses. Ordinary staff is correctly two-handed and retains its parry. A structured, backwards-compatible live-sheet record can persist activation and attack consumption per warrior and combat phase without allowing repeated activation to restore a spent attack. Source02:597–605 read. Forty-six focused tests, typecheck/build and lint pass with existing warnings. **Not complete and not exposed as a new player control yet:** shared defender parry forfeiture, activation/consumption controls, expiry and mobile verification remain. No deployment.

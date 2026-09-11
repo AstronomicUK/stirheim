@@ -308,6 +308,7 @@ export function strikeOrder(setup: FightSetup): string {
   if (setup.primary.type === 'ranged') return 'Shooting: no strike order.'
   const a = setup.attacker
   const d = setup.defender
+  if (setup.context.serpentStaffPower && setup.primary.id === 'serpent_staff') return `${a.name}'s Serpent Staff attacks first using its power; all normal attacks and parries are forfeited this round.`
   const aWeapons = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]
   const dWeapons = setup.defenderKit.melee
   const last = (ws: Weapon[], c: Combatant, kit: Loadout) => ws.filter(w => w.special.includes('strikesLast') && !(w.special.includes('twoHanded') && [...c.skillIds,...kit.skillIds].includes('strongman')))

@@ -79,6 +79,7 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
  */
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = []): number {
   if (context.failedStupidity && character.traits.includes("stupidity")) return 0;
+  if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
   const skills = resolveSkills(character.skills, customSkills);
 
   const skillBonus = () => {
@@ -179,6 +180,7 @@ function weaponStrengthBonus(weapon: Weapon, context: CombatContext): number {
 
 /** Attacker's effective WS / Strength for a given weapon and context, after self-targeting skills (Unstoppable Charge, Mighty Blow, Pit Fighter) and the weapon's own Strength bonus — used to highlight the right row on the Hit%/Wound% grids and as the attack's Strength for wounding. */
 export function effectiveOffensiveStats(attacker: Character, weapon: Weapon, context: CombatContext, customSkills: Skill[] = []): { ws: number; strength: number } {
+  if (context.serpentStaffPower && weapon.id === "serpent_staff") return { ws: 4, strength: 4 };
   const attackerSkills = resolveSkills(attacker.skills, customSkills);
   let ws = effectiveStat(attacker.stats, attackerSkills, context, weapon.type, "WS", "self");
   if (weapon.type === "melee" && pitFighterActive(attacker, context)) ws += 1;

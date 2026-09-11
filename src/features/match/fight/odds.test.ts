@@ -456,3 +456,18 @@ it('Tilean Pike explicitly beats a faster charging Spear, but later rounds use I
   expect(computeOdds({ ...ordinaryCharge, context: { ...ordinaryCharge.context, charging: true } }).strikeOrder).toContain('Captain strikes first: Initiative 3')
   expect(computeOdds(setup(pikeman, spearman, 'pike_tileans', null)).attacks).toBe(1)
 })
+
+it('Serpent Staff power replaces normal attacks with exactly one WS4/S4 attack (#150)', () => {
+  const priest = combatant('Priest', [{ itemId: 'serpent_staff', quantity: 1 }, { itemId: 'dagger', quantity: 1 }, { itemId: 'shield', quantity: 1 }], { stats: { ...base, WS: 7, S: 6, A: 4 }, traitIds: ['frenzy', 'pit_fighter'], skillIds: ['mighty_blow', 'combat_master'] })
+  const fight = setup(priest, skaven, 'serpent_staff', 'dagger')
+  const powered = computeOdds({ ...fight, context: { ...fight.context, serpentStaffPower: true, insideBuildings: true, fightingMultiple: true } })
+  expect(powered.attacks).toBe(1)
+  expect(powered.chain.attacks).toBe(1)
+  expect(powered.weapons[0].ws).toBe(4)
+  expect(powered.weapons[0].strength).toBe(4)
+  expect(powered.weapons[1].attacks).toBe(0)
+  expect(powered.strikeOrder).toContain('Serpent Staff attacks first')
+  const held = kitWithSelectedWeapons(fight.attackerKit, fight.primary, null)
+  expect(held.armour.shield).toBe(false)
+  expect(held.melee[0].parry).toBe(true) // Ordinary two-handed staff still parries.
+})

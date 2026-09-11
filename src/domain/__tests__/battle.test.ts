@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
+import { activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
 
 describe("battle live state", () => {
   it("retains failed and restarted dice through storage without applying casualties or consuming casts", () => {
@@ -42,4 +42,18 @@ describe("battle live state", () => {
     expect(routThreshold(3)).toBe(1);
     expect(routThreshold(12)).toBe(3);
   });
+});
+
+it("persists staff forfeiture and consumption independently for each warrior and combat phase", () => {
+  const initial = emptyBattleLiveState();
+  expect(parseBattleLiveState({ turn: 2 }).serpentStaffUses).toEqual([]);
+  const active = activateSerpentStaff(initial, "priest", "2:warband-a");
+  expect(serpentStaffUse(active, "priest", "2:warband-a")?.used).toBe(false);
+  const spent = consumeSerpentStaff(active, "priest", "2:warband-a");
+  const restored = parseBattleLiveState(JSON.parse(JSON.stringify(spent)));
+  expect(serpentStaffUse(restored, "priest", "2:warband-a")?.used).toBe(true);
+  expect(activateSerpentStaff(restored, "priest", "2:warband-a")).toBe(restored);
+  expect(serpentStaffUse(restored, "priest", "2:warband-b")).toBeUndefined();
+  expect(serpentStaffUse(restored, "other-priest", "2:warband-a")).toBeUndefined();
+  expect(initial.serpentStaffUses).toEqual([]);
 });

@@ -87,7 +87,7 @@ export const MELEE_WEAPONS: Weapon[] = [
   { id: "poison_daggers", name: "Poison Daggers", type: "melee", strength: "user", critCategory: "bladed", concussion: false, paired: true, saveModifier: -1, autoWoundOnNaturalSixToHit: true, poisoned: true, special: ["permanentPoison"], rangedProfile: null },
   { id: "quarter_staff", name: "Quarter Staff", type: "melee", strength: "user", critCategory: "bludgeoning", concussion: false, parry: true, unarmedBonusAttack: true, initiativeModifier: 1, special: ["balancedPlus1Initiative", "freestyleNoOtherWeapon"], rangedProfile: null },
   { id: "rapier", name: "Rapier", type: "melee", strength: "user", critCategory: "bladed", concussion: false, parry: true, saveModifier: -1, special: ["barrageExtraAttacksOnFailedWound"], rangedProfile: null },
-  { id: "serpent_staff", name: "Serpent Staff", type: "melee", strength: "user", critCategory: "bludgeoning", concussion: false, parry: true, special: ["alternativeStaffAttackWs4S4"], rangedProfile: null },
+  { id: "serpent_staff", name: "Serpent Staff", type: "melee", strength: "user", critCategory: "bludgeoning", concussion: false, parry: true, special: ["twoHanded", "alternativeStaffAttackWs4S4"], rangedProfile: null },
   { id: "shortsword", name: "Shortsword", type: "melee", strength: "user", critCategory: "bladed", concussion: false, parry: true, saveModifier: -1, special: [], rangedProfile: null },
   { id: "sigmarite_warhammer", name: "Sigmarite Warhammer", type: "melee", strength: "user", strengthBonus: 1, critCategory: "bludgeoning", concussion: true, vsTraits: { traits: ["undead", "possessed"], toWound: 1 }, special: ["holyBonusVsUndeadAndPossessed"], rangedProfile: null },
   // Kept for rosters with no base weapon noted: an obsidian sword.

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyBattleLiveState, parseBattleLiveState } from '../battle'
 import { declareLineShot, correctLineShot, lineShotBlock, unresolvedLineTargets, type LineShot } from '../lineShot'
 import { battleEventRowSchema } from '../battleEvent'
-const input = (weaponId: LineShot['weaponId'] = 'blunderbuss') => ({ id: 'shot', warriorId: 'shooter', weaponId, ownTurn: 1, targets: [{ key: 'enemy', warriorId: 'enemy', warbandId: 'aaaaaaaa-0000-4000-8000-000000000005', name: 'Enemy' }, { key: 'friend', warriorId: 'friend', warbandId: 'aaaaaaaa-0000-4000-8000-000000000004', name: 'Friend' }] })
+const input = (weaponId: LineShot['weaponId'] = 'blunderbuss') => ({ id: 'shot', shooterSlot: 0, warriorId: 'shooter', weaponId, ownTurn: 1, targets: [{ key: 'enemy', warriorId: 'enemy', warbandId: 'aaaaaaaa-0000-4000-8000-000000000005', name: 'Enemy' }, { key: 'friend', warriorId: 'friend', warbandId: 'aaaaaaaa-0000-4000-8000-000000000004', name: 'Friend' }] })
 describe('declared Blunderbuss lines', () => {
   it('freezes friends and enemies, persists one shot, and does not allow another normal shot', () => {
     const declaration = input()
@@ -12,6 +12,7 @@ describe('declared Blunderbuss lines', () => {
     expect(restored.lineShots[0].targets[0].name).toBe('Enemy')
     expect(unresolvedLineTargets(restored.lineShots[0], [])).toHaveLength(2)
     expect(lineShotBlock(restored, 'shooter', 'blunderbuss', 20)).toContain('already fired')
+    expect(lineShotBlock(restored, 'shooter', 'blunderbuss', 1, 1)).toBeNull() // Different model in the same group
     expect(declareLineShot(restored, input(), 'Shooter')).toBe(restored)
     expect(() => declareLineShot(restored, { ...input(), id: 'again' }, 'Shooter')).toThrow(/already fired/)
   })

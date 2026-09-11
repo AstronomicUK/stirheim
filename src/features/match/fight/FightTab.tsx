@@ -1,3 +1,4 @@
+import { LineShotControls } from './LineShotControls'
 import { useBattleTurns } from '../../../api/battleTurns'
 // The attack calculator: pick one of your warriors and one enemy model, see the exact odds for
 // this phase of attacks, then (optionally) walk real dice through it step by step. An out of
@@ -6,7 +7,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
+import { unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -71,6 +72,10 @@ interface TargetMemory {
 
 export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, events, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
+  const [lineSelection, setLineSelection] = useState<{ shotId: string; targetKey: string } | null>(null)
+  const lineShot = sheet.lineShots.find(shot => !shot.cancelled && shot.id === lineSelection?.shotId)
+  const lineTarget = lineShot?.targets.find(target => target.key === lineSelection?.targetKey)
+  const lineTargetDone = Boolean(lineShot && lineTarget && !unresolvedLineTargets(lineShot, events).some(t => t.key === lineTarget.key))
 
   const mine = useMemo(() => withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), [roster, template, sheet, boosts, events])
   const targets = useMemo(
@@ -89,9 +94,9 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   // having tapped Ranged specifically.
   const rangedDefault = startWith === 'ranged' ? mine.find((c) => !c.out && loadoutFor(c).ranged.length > 0) : undefined
   const selectedAttacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
-  const selectedDefender = targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
+  const selectedDefender = lineTarget ? [...mine, ...targets].find(c => c.id === lineTarget.warriorId && c.warbandId === lineTarget.warbandId) : targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
   const attacker = selectedAttacker ? withGuidingDream(selectedAttacker, selectedDefender, sheet) : selectedAttacker
-  const defender = selectedDefender ? withGuidingDream(selectedDefender, selectedAttacker, sessions.find(s => s.warband_id === selectedDefender.warbandId)?.live_state) : selectedDefender
+  const defender = selectedDefender ? withGuidingDream(selectedDefender, selectedAttacker, (selectedDefender.warbandId === roster.id ? sheet : sessions.find(s => s.warband_id === selectedDefender.warbandId)?.live_state)) : selectedDefender
   // Pin the defaults once chosen (state adjusted during render, the React way), so a logged kill that marks
   // the target out of action does not swap the fight under the player.
   if (attackerId === null && attacker) setAttackerId(attacker.id)
@@ -124,6 +129,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         })()
     : null
   const primary = current ? weapons[current.primary] : null
+  const isLineWeapon = primary?.id === 'blunderbuss' || primary?.id === 'chaos_dwarf_blunderbuss'
+  const lineReady = Boolean(lineShot && lineTarget && !lineTargetDone && lineShot.warriorId === attacker?.id && lineShot.weaponId === primary?.id)
   const offHandOptions = primary && primary.type === 'melee' ? offHandCandidates(melee, primary) : []
   const offHand = current && current.offHand >= 0 && primary?.type === 'melee' ? melee[current.offHand] ?? null : null
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
@@ -189,11 +196,11 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
-  const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}` : ''
+  const attackKey = attacker && defender && current ? `${attacker.id}:${defender.id}:${current.primary}:${current.offHand}:${lineSelection?.targetKey ?? ''}` : ''
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: staffUse?.used ? 0 : attackLimit, attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ attacker, attackerKit, defender, defenderKit, primary, offHand: offHandValid ? offHand : null, context, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: lineTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -236,7 +243,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
       {/* Attacker and defender face each other, with the dice between them. */}
       <div className="relative grid grid-cols-2 items-stretch gap-3 lg:gap-8">
         <FightBox icon="battle" title="Attacker" tone="brass">
-          <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => setAttackerId(e.target.value)}>
+          <SelectField label="Your warrior" hideLabel value={attacker?.id ?? ''} onChange={(e) => { setAttackerId(e.target.value); setLineSelection(null) }}>
             {mine.map((c) => (
               <option key={c.id} value={c.id}>
                 {combatantLabel(c)}
@@ -252,6 +259,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 label="Weapon"
                 value={String(current.primary)}
                 onChange={(e) => {
+                  setLineSelection(null)
                   const index = Number(e.target.value)
                   const next = weapons[index]
                   const off = next.type === 'melee' ? defaultOffHand(melee, next) : null
@@ -264,6 +272,11 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   </option>
                 ))}
               </SelectField>
+              {isLineWeapon ? <LineShotControls key={`${attacker.id}:${primary.id}`} attacker={attacker} weaponId={primary.id as 'blunderbuss' | 'chaos_dwarf_blunderbuss'} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} mayFire={!psychologyLoading && !active.failedStupidity && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onResolve={(shot, target) => {
+                setLineSelection({ shotId: shot.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
+                const model = [...mine, ...targets].find(c => c.id === target.warriorId && c.warbandId === target.warbandId)
+                setWoundsOverride(model?.kind === 'henchman' && (model.groupSize ?? 1) > 1 ? { id: model.id, value: 0 } : null)
+              }} /> : null}
               {primary.id === 'bolas' ? <div className="flex flex-col gap-2 rounded border border-brass p-3 text-xs">
                 <p>{!individualBolas ? 'Each model may throw Bolas once per battle. Track each group member at the table.' : bolasUsed ? 'Bolas already thrown in this battle.' : 'Beginning this throw marks the Bolas used for this battle, even if it misses.'}</p>
                 {individualBolas && !bolasUsed ? <Button variant="secondary" disabled={readOnly || !edit} onClick={() => edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn, true))}>Record tabletop throw</Button> : null}
@@ -356,7 +369,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
           {enemies.error ? <Notice tone="error">{enemies.error}</Notice> : null}
           {!enemies.isPending && targets.length === 0 ? <p className="text-xs text-ink-dim">No enemy models to pick from.</p> : null}
           {targets.length > 0 ? (
-            <SelectField label="Enemy model" hideLabel value={defender?.id ?? ''} onChange={(e) => setDefenderId(e.target.value)}>
+            <SelectField label="Enemy model" disabled={Boolean(lineTarget)} hideLabel value={defender?.id ?? ''} onChange={(e) => setDefenderId(e.target.value)}>
+              {lineTarget && defender?.warbandId === roster.id ? <option value={defender.id}>{lineTarget.name}</option> : null}
               {enemies.warbands.map((w) => (
                 <optgroup key={w.participant.warband_id} label={w.participant.warband_name}>
                   {targets
@@ -411,7 +425,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1}
+          disabled={psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || (isLineWeapon && !lineReady)}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -425,19 +439,20 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         <>
           <Sheet
             open={rolling}
-            onClose={() => setRolling(false)}
+            onClose={() => { setRolling(false); setLineSelection(null) }}
             size="full"
             title={`${attacker.name} attacks ${defender.name}`}
             description={`${(rollSetup ?? odds).attacks === 1 ? '1 attack' : `${(rollSetup ?? odds).attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
             footer={
-              <Button variant="secondary" block onClick={() => setRolling(false)}>
+              <Button variant="secondary" block onClick={() => { setRolling(false); setLineSelection(null) }}>
                 Close
               </Button>
             }
           >
           {!rollSetup ? <div className="flex flex-col gap-4 py-3">
-            <p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
-            <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} />
+            {lineTarget ? <p className="text-sm">One automatic Strength 3 hit on {lineTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
+            {!lineTarget ? <><p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
+            <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} /></> : defender.kind === 'henchman' && defender.stats.W > 1 ? <Stepper label="Wounds already lost by this model" value={woundsAlreadyLost} onChange={value => setWoundsOverride({ id: defender.id, value })} max={defender.stats.W} /> : null}
             {needsInterception ? <div className="flex flex-col gap-3 rounded border border-brass p-3">
               <p className="font-medium">Merchant’s Guardian</p>
               <p className="text-sm">An unengaged bodyguard intercepts shooting and charges against {defender.name}. Confirm the situation on the tabletop before rolling.</p>
@@ -450,10 +465,11 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={psychologyLoading || needsInterception || readOnly || Boolean(active.failedStupidity) || Boolean(staffUse?.used) || bolasUsed} onClick={() => { if (bolasUsed) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={psychologyLoading || needsInterception || readOnly || Boolean(active.failedStupidity) || Boolean(staffUse?.used) || bolasUsed || (isLineWeapon && !lineReady)} onClick={() => { if (bolasUsed || (isLineWeapon && !lineReady)) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
+            forceLog={Boolean(lineTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
@@ -489,7 +505,9 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 target_size: defender.groupSize ?? 1,
                 wounds_lost: Math.max(0, state.woundsLost - rollSetup.woundsAlreadyLost),
                 out_of_action: state.worst === 'outOfAction',
-                kill: state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
+                lineShotId: lineShot?.id,
+                lineShotTargetKey: lineTarget?.key,
+                kill: defender.warbandId !== attacker.warbandId && state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
                 entangled: state.outcomes.includes('entangled'),
                 outcome: state.worst ? OUTCOME_LABEL[state.worst] : 'No effect',
                 turn: sheet.turn,
@@ -497,7 +515,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
               })
             }
-            onFinished={rememberFight}
+            onFinished={state => { if (!lineTarget || defender.kind !== 'henchman') rememberFight(state) }}
           />}
           </Sheet>
           <OddsSection odds={odds} attacker={attacker} defender={defender} />
@@ -682,6 +700,7 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
 // ---------------------------------------------------------------------------------------------
 
 interface RollSectionProps {
+  forceLog?: boolean
   turn: number
   onAttempt: (attempt: RollAttempt) => void
   odds: FightOdds
@@ -710,7 +729,7 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
+function RollSection({ forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
@@ -873,15 +892,15 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                         : state.worst === 'entangled' ? `${defender.name} cannot move and has −2 melee Weapon Skill until freed in Recovery.` : `${defender.name} is unharmed.`}
                 </span>
               </p>
-              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
+              {(forceLog || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
                   {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
-              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
-                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? 'kill and the casualty' : state.worst === 'entangled' ? 'entanglement' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
+              {(forceLog || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
+                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}
             </div>
           ) : null}

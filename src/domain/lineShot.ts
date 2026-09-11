@@ -4,8 +4,8 @@ import type { BattleEventRow } from './battleEvent'
 export type LineShot = BattleLiveState['lineShots'][number]
 export type LineShotTarget = LineShot['targets'][number]
 
-export function lineShotBlock(sheet: BattleLiveState, warriorId: string, weaponId: LineShot['weaponId'], ownTurn: number): string | null {
-  const used = sheet.lineShots.filter(shot => !shot.cancelled && shot.warriorId === warriorId && shot.weaponId === weaponId)
+export function lineShotBlock(sheet: BattleLiveState, warriorId: string, weaponId: LineShot['weaponId'], ownTurn: number, shooterSlot = 0): string | null {
+  const used = sheet.lineShots.filter(shot => !shot.cancelled && shot.warriorId === warriorId && shot.weaponId === weaponId && shot.shooterSlot === shooterSlot)
   if (!used.length) return null
   if (weaponId === 'blunderbuss') return 'This Blunderbuss has already fired in this battle.'
   const last = Math.max(...used.map(shot => shot.ownTurn))
@@ -15,7 +15,7 @@ export function lineShotBlock(sheet: BattleLiveState, warriorId: string, weaponI
 /** Freeze the declared line before any victim is resolved; one shot can hit friends and enemies. */
 export function declareLineShot(sheet: BattleLiveState, input: Omit<LineShot, 'at' | 'cancelled'>, name: string, turn = sheet.turn): BattleLiveState {
   if (sheet.lineShots.some(shot => shot.id === input.id)) return sheet
-  const blocked = lineShotBlock(sheet, input.warriorId, input.weaponId, input.ownTurn)
+  const blocked = lineShotBlock(sheet, input.warriorId, input.weaponId, input.ownTurn, input.shooterSlot)
   if (blocked) throw new Error(blocked)
   if (!Number.isInteger(input.ownTurn) || input.ownTurn < 0) throw new Error('A valid own turn is required.')
   if (!input.targets.length) throw new Error('Choose the models in the line before firing.')

@@ -72,7 +72,10 @@ export async function fetchTradePhaseState(warbandId: string, matchId: string): 
   return data ? tradePhaseStateRowSchema.parse(data) : null
 }
 
+export interface HaggleTrade {heroId:string; dice:[number,number]; requestId:string; itemName:string; priceBefore:number}
+
 export interface RecordTradeInput {
+  haggle?: HaggleTrade;
   /** The current phase (latest report's match), or null when the warband has not fought yet. */
   matchId: string | null
   /** From diffRoster(rows, next); applied with audit reason 'trading'. */
@@ -87,6 +90,13 @@ export interface RecordTradeInput {
 
 /** Returns the number of roster changes applied. */
 export async function recordTrade(warbandId: string, input: RecordTradeInput): Promise<number> {
+  if(input.haggle) {
+    const h=input.haggle
+    if(!input.matchId)throw new Error('Haggle requires a post-battle sequence.')
+    const {data,error}=await supabase.rpc('record_haggled_trade',{p_warband_id:warbandId,p_match_id:input.matchId,p_changes:input.changes as unknown as Json,p_heroes_searched:input.heroesSearched,p_reason:input.reason??'',p_hero_id:h.heroId,p_dice:h.dice,p_request_id:h.requestId,p_item_name:h.itemName,p_price_before:h.priceBefore})
+    if(error)throw new Error(error.message)
+    return data
+  }
   const { data, error } = await supabase.rpc('record_trade', {
     p_warband_id: warbandId,
     p_match_id: input.matchId ?? undefined,

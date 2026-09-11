@@ -1,3 +1,4 @@
+import { hasHaggle, hagglePrice } from '../../rules/resolve/haggle'
 import { scenarioPurchasePrice } from '../../rules/resolve/scenarioCampaignEffects'
 import { useMemo, useState } from 'react'
 import { warbandRules } from '../../rules/data/campaignRules'
@@ -93,6 +94,10 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const rareSpec = useMemo(() => parseDice(RARE_ROLL), [])
 
   const [faces, setFaces] = useState<(number | null)[]>(() => (priceSpec ? Array.from({ length: priceSpec.count }, () => null) : []))
+  const [hagglerId,setHagglerId]=useState('')
+  const [haggleDice,setHaggleDice]=useState<(number|null)[]>([null,null])
+  const [haggleRequestId]=useState(()=>crypto.randomUUID())
+  const hagglers=roster.heroes.filter(h=>hasHaggle(h)&&!phase.heroesOutOfAction.includes(h.id)&&h.flags.haggleUse?.matchId!==phase.matchId)
   const [manualPrice, setManualPrice] = useState<number | null>(null)
   const [priceOverride, setPriceOverride] = useState<Override | null>(null)
   const [searcherId, setSearcherId] = useState(searchers[0]?.id ?? '')
@@ -162,13 +167,16 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const braceAmount = braceAmountOf(item.price.text)
   const isBrace = braceAmount !== null && quantity === 2 && priceOverride === null && computed !== null
   const beforeScenarioPrice = priceReady ? (isBrace ? braceAmount : unitPrice * quantity) : null
-  const total = beforeScenarioPrice === null ? null : priceOverride !== null ? beforeScenarioPrice : scenarioPurchasePrice(beforeScenarioPrice, roster.scenarioEffects?.trade)
+  const beforeHaggle = beforeScenarioPrice === null ? null : priceOverride !== null ? beforeScenarioPrice : scenarioPurchasePrice(beforeScenarioPrice, roster.scenarioEffects?.trade)
+  const haggler=hagglers.find(h=>h.id===hagglerId)
+  const haggleReady=!hagglerId || Boolean(tracked&&haggler&&quantity===1&&beforeHaggle!==null&&beforeHaggle>=1&&haggleDice.every(d=>d!==null&&Number.isInteger(d)&&d>=1&&d<=6))
+  const total=hagglerId ? haggleReady ? hagglePrice(beforeHaggle!,haggleDice as number[]) : null : beforeHaggle
   const affordable = total !== null && total <= roster.gold
   // "You can only buy one rare item for each successful roll" — a brace of pistols is one purchase priced for two, so it keeps its own cap of 2.
   const rareMaxQty = isRare ? (braceAmount !== null ? 2 : 1) : null
   const withinRareCap = rareMaxQty === null || quantity <= rareMaxQty
 
-  const canBuy = canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
+  const canBuy = haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -192,6 +200,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     ].filter((r): r is string => Boolean(r))
     const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, notes, total ?? undefined).value, {
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
+      ...(hagglerId&&haggler&&beforeHaggle!==null?{haggle:{heroId:hagglerId,dice:haggleDice as [number,number],requestId:haggleRequestId,itemName:item.name,priceBefore:beforeHaggle}}:{}),
       reason: reasons.length ? reasonWith('trading', reasons.join(' · ')) : undefined,
     })
     if (ok) onClose()
@@ -199,7 +208,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
 
   async function recordFailedSearch() {
     // A Familiar's ritual costs its gold whether or not it works.
-    const spend = pricing.paidOnFailure && total !== null ? total : 0
+    const spend = pricing.paidOnFailure && beforeHaggle !== null ? beforeHaggle : 0
     const ok = await run(() => (spend > 0 ? { ...roster, gold: Math.max(0, roster.gold - spend) } : roster), {
       heroesSearched: [searcherId],
       reason: spend > 0 ? reasonWith('trading', `${item.name}: ${spend} gc spent on a failed search (paid on failure)`) : undefined,
@@ -208,7 +217,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   }
 
   async function recordFailedHunt() {
-    const spend = total ?? computed ?? unitPrice ?? 0
+    const spend = beforeHaggle ?? computed ?? unitPrice ?? 0
     const ok = await run(() => ({ ...roster, gold: Math.max(0, roster.gold - spend) }), {
       reason: reasonWith('trading', `${item.name}: hunt failed (rolled ${huntDie} against Strength ${huntStrength}); ${spend} gc spent`),
     })
@@ -225,11 +234,11 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
       Close
     </Button>
   ) : isRare && search && !search.available && tracked ? (
-    <Button block variant="secondary" pending={pending} disabled={!canTrade || !searcherOk} onClick={recordFailedSearch}>
-      {pricing.paidOnFailure && total !== null ? `Record the failed search (${total} gc spent)` : 'Record the failed search'}
+    <Button block variant="secondary" pending={pending} disabled={!canTrade || !searcherOk || (pricing.paidOnFailure && (beforeHaggle===null || beforeHaggle>roster.gold))} onClick={recordFailedSearch}>
+      {pricing.paidOnFailure && beforeHaggle !== null ? `Record the failed search (${beforeHaggle} gc spent)` : 'Record the failed search'}
     </Button>
   ) : huntFailed ? (
-    <Button block variant="secondary" pending={pending} disabled={!canTrade} onClick={recordFailedHunt}>
+    <Button block variant="secondary" pending={pending} disabled={!canTrade || beforeHaggle===null || beforeHaggle>roster.gold} onClick={recordFailedHunt}>
       Record the failed hunt (gold spent)
     </Button>
   ) : (
@@ -302,6 +311,13 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
             </div>
           </section>
         ) : null}
+        {tracked&&roster.heroes.some(hasHaggle) ? <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
+          <SelectField label="Haggle for this purchase" value={hagglerId} onChange={e=>{setHagglerId(e.target.value);setHaggleDice([null,null])}}><option value="">Do not haggle</option>{hagglers.map(h=><option key={h.id} value={h.id}>{h.name}{h.skillIds.includes('haggle')?' — Haggle':' — Freetraders symbol'}</option>)}</SelectField>
+          {roster.heroes.filter(h=>h.flags.haggleUse?.matchId===phase.matchId).map(h=><p key={h.id} className="text-xs text-ink-dim">{h.name} has used Haggle this sequence on {h.flags.haggleUse!.itemName}.</p>)}
+          {hagglerId?<><p className="text-sm">Reduce one item’s price by 2D6 gc, to a minimum of 1 gc. This Hero can haggle once this post-battle sequence.</p>
+          {quantity!==1?<Notice>Choose a quantity of one to haggle.</Notice>:null}
+          {[0,1].map(index=><DieField key={index} label={`Haggle D6 ${index+1}`} sides={6} rollable value={haggleDice[index]} onChange={value=>setHaggleDice(d=>d.map((old,i)=>i===index?value:old))}/>)}</>:null}
+        </section>:null}
         <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
           <h3 className="text-xs uppercase tracking-wider text-ink-dim">Destination</h3>
           <SelectField label="Give to" hideLabel value={destinationKey} onChange={(e) => chooseDestination(e.target.value)}>

@@ -5,12 +5,13 @@ import type { ReportView } from '../../api/reports'
 
 import type { MapPerks } from '../../rules/resolve/mapAdvantages'
 import { useState } from 'react'
-import { useRecordTrade, type TradePhaseStateRow } from '../../api/trading'
+import { useRecordTrade, type HaggleTrade, type TradePhaseStateRow } from '../../api/trading'
 import type { WarbandDetail } from '../../api/warbands'
 import { diffRoster } from '../../domain/rosterDiff'
 import type { CampaignHouseRules, RosterWarband } from '../../rules/types/roster'
 
 export interface TradeOptions {
+  haggle?: HaggleTrade;
   wyrdstoneSold?: boolean
   heroesSearched?: string[]
   /** Audit reason carrying an override note ('trading · Price overridden: …'). */
@@ -66,6 +67,7 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
         wyrdstoneSold: opts.wyrdstoneSold ?? false,
         heroesSearched: opts.heroesSearched ?? [],
         reason: opts.reason,
+        haggle: opts.haggle,
       })
       return true
     } catch (e) {

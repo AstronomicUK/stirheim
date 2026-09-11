@@ -38,6 +38,7 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  haggleUse?: {matchId:string; requestId:string; itemName:string; dice:number[]; priceBefore:number; priceAfter:number};
   studiedAlchemistNotebook?: boolean;
   studiedTrainingManual?: boolean;
   /** Balewolf curse acquired after a particular battle; the normal profile remains the roster profile. */

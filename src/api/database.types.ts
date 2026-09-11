@@ -1688,6 +1688,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_haggled_trade: {
+        Args: {
+          p_changes: Json
+          p_dice: number[]
+          p_hero_id: string
+          p_heroes_searched: string[]
+          p_item_name: string
+          p_match_id: string
+          p_price_before: number
+          p_reason: string
+          p_request_id: string
+          p_warband_id: string
+        }
+        Returns: number
+      }
       record_staff_dispel: {
         Args: {
           p_active_warband_id: string

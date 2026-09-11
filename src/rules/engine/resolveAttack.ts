@@ -106,6 +106,7 @@ export interface AttackInput {
  * any Injury rolls result they use `injury`. Probabilities within a set of events sum to 1.
  */
 export interface WoundEvent {
+  extraAttack?: boolean;
   probability: number;
   wounds: 0 | 1 | 2 | 3;
   injury: InjuryModifiers;
@@ -231,7 +232,7 @@ function critResultEvents(input: AttackInput, result: CritResult): WoundEvent[] 
 function critWoundEvents(input: AttackInput): WoundEvent[] {
   const events: WoundEvent[] = [];
   for (const { result, probability } of critDistribution(input.critTable, input.critTableRollModifier)) {
-    for (const e of critResultEvents(input, result)) events.push({ ...e, probability: e.probability * probability });
+    for (const e of critResultEvents(input, result)) events.push({ ...e, extraAttack: result.extraAttack, probability: e.probability * probability });
   }
   return events;
 }
@@ -263,6 +264,8 @@ export function eventsSeverity(events: WoundEvent[], maxWounds = 1, woundsTaken 
 }
 
 export interface SingleAttackBreakdown {
+  /** Unconditioned extra attack; never inherits a highest-hit parry partition. */
+  extraAttack?: SingleAttackBreakdown;
   hitFaces?: { face: number; probability: number; wound: number; trigger: number; parry: number }[];
   pHit: number;
   /** Joint hit & wound probability, after Dodge (ranged) is applied. */
@@ -363,6 +366,8 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     pWound,
     pWoundNormal,
     pWoundTriggerEligible,
+    extraAttack: input.critTriggerFaces.length && critEvents.some(e => e.extraAttack)
+      ? resolveSingleAttack({ ...input, critTriggerFaces: [] }) : undefined,
     normalEvents,
     critEvents,
     normalOutcome: eventsSeverity(normalEvents, 1),

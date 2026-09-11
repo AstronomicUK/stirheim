@@ -29,6 +29,8 @@ export interface CritResult {
   woundsCaused: 1 | 2;
   /** Missile "Ricochet": informational only — v1 does not simulate the secondary hit (brief §3, §5.5). */
   ricochet?: boolean;
+  /** Body Blow: one additional attack, sharing this warrior’s critical-hit limit. */
+  extraAttack?: boolean;
   /** Narrative-only effect with no probability-table impact for this tool, per the brief's own text. */
   flavourOnly?: string;
 }
@@ -71,7 +73,7 @@ const BLADED_BANDS: Band[] = [
 ];
 
 const UNARMED_BANDS: Band[] = [
-  { maxFace: 2, result: { label: "Body Blow", ignoresArmourSave: false, injuryRollBonus: 0, woundsCaused: 1, flavourOnly: "Grants an extra to-hit/to-wound roll immediately." } },
+  { maxFace: 2, result: { label: "Body Blow", ignoresArmourSave: false, injuryRollBonus: 0, woundsCaused: 1, extraAttack: true } },
   { maxFace: 4, result: { label: "Crushing Blow", ignoresArmourSave: false, injuryRollBonus: 1, woundsCaused: 1 } },
   { maxFace: 6, result: { label: "Mighty Blow", ignoresArmourSave: true, injuryRollBonus: 2, woundsCaused: 1 } },
 ];
@@ -146,6 +148,7 @@ export function describeCrit(result: CritResult): string {
   if (result.injuryRollBonus > 0) parts.push(`+${result.injuryRollBonus} on the Injury roll`);
   if (result.autoOOAOnFailedSave) parts.push("out of action outright if the armour save fails, and nothing at all if it holds");
   if (result.minSeverityKnockedDown) parts.push("knocked down whether or not the wound is saved");
+  if (result.extraAttack) parts.push("an additional attack with normal hit, wound and save rolls");
   if (result.ricochet) parts.push("the shot ricochets on (resolve the second hit at the table)");
   if (parts.length === 0) parts.push("no change to the wound or the save");
   const sentence = parts.join("; ");

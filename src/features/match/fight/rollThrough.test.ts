@@ -494,3 +494,37 @@ it('Misericordia always takes both dice and uses their maximum across all 36 pai
     expect(state.log.some(l => l.text.includes(`second die ${second} (entered by hand)`))).toBe(true)
   }
 });
+
+describe('Body Blow additional attack (#169)', () => {
+  it('still grants the bonus after a successful save and cannot chain criticals', () => {
+    let s = rolls(startPhase([plan('Claws', { critTable: 'unarmed' })], 3, 0), 4, 6, 1, 6)
+    expect(s.pending?.kind).toBe('hit')
+    expect(s.plans).toHaveLength(2)
+    s = rolls(s, 4, 6)
+    expect(s.pending?.kind).toBe('save')
+    s = rolls(s, 1)
+    expect(s.done).toBe(true)
+    expect(s.woundsLost).toBe(1)
+    expect(s.plans).toHaveLength(2)
+    expect(s.log.some(l => l.text.includes('Body Blow: resolve one additional attack'))).toBe(true)
+  })
+
+  it('does not roll a needless bonus after the original wound takes the target OOA', () => {
+    const s = rolls(startPhase([plan('Claws', { critTable: 'unarmed' })], 1, 0), 4, 6, 1, 1, 6)
+    expect(s.done).toBe(true)
+    expect(s.worst).toBe('outOfAction')
+    expect(s.plans).toHaveLength(1)
+  })
+
+  it('keeps pre-collected hits aligned when inserting a bonus attack', () => {
+    const claw = plan('Claws', { critTable: 'unarmed', parryEligible: true })
+    // Two original hits collected, highest 6 is unparryable; resolve first critical.
+    let s = rolls(startPhase([claw, claw], 4, 1), 6, 4, 6, 1, 6)
+    expect(s.pending?.kind).toBe('hit')
+    s = rolls(s, 1) // Bonus misses; second original already hit on its collected 4.
+    expect(s.pending?.kind).toBe('wound')
+    s = rolls(s, 1)
+    expect(s.done).toBe(true)
+    expect(s.outcomes).toEqual(['saved', 'miss', 'noWound'])
+  })
+})

@@ -23,6 +23,8 @@ export interface PendingRoll {
 }
 
 export interface AttackPlan {
+  /** Added during resolution, so it has no pre-collected hit die. */
+  bodyBlowBonus?: boolean
   weaponName: string
   input: AttackInput
   /** Parry mechanics not carried by AttackInput. A fixed threshold (Starblade 4+) replaces the beat-the-hit-roll test. */
@@ -158,7 +160,7 @@ function attackName(state: RollState): string {
 function beginAttack(state: RollState): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
-  if (state.hitBatch?.phase === 'resolve') {
+  if (state.hitBatch?.phase === 'resolve' && !plan.bodyBlowBonus) {
     const hit = state.hitBatch.hits[state.index]
     if (hit.outcome) return finishAttack(fresh, hit.outcome)
     return afterHit({ ...fresh, cur: { ...fresh.cur, hitRoll: hit.roll } })
@@ -201,7 +203,14 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
     next = log(next, `${OUTCOME_LABEL[outcome]}! The target is out of action; any remaining attacks are not needed.`, 'good')
     return { ...next, done: true, index: state.plans.length }
   }
-  if (state.index + 1 >= state.plans.length) return { ...next, done: true }
+  if (state.cur.crit?.extraAttack) {
+    const plans = [...state.plans]
+    plans.splice(state.index + 1, 0, { ...state.plans[state.index], bodyBlowBonus: true })
+    const hitBatch = state.hitBatch ? { ...state.hitBatch, hits: [...state.hitBatch.hits] } : undefined
+    hitBatch?.hits.splice(state.index + 1, 0, { roll: null })
+    next = log({ ...next, plans, hitBatch }, 'Body Blow: resolve one additional attack. This warrior has already used its critical hit.', 'good')
+  }
+  if (state.index + 1 >= next.plans.length) return { ...next, done: true }
   return beginAttack({ ...next, index: state.index + 1 })
 }
 
@@ -327,6 +336,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       if (result.autoOOAOnFailedSave) bits.push('out of action if the save fails')
       if (result.minSeverityKnockedDown) bits.push('knocked down even if saved')
       if (result.ignoresHelmetSave) bits.push('no helmet save')
+      if (result.extraAttack) bits.push('one additional attack')
       if (result.flavourOnly) bits.push(result.flavourOnly)
       const s = log(state, `Critical: rolled ${roll}${rollTag}. ${result.label}${bits.length ? ` (${bits.join(', ')})` : ''}.`, 'good')
       if (input.multipleWoundsD3OnHit) {

@@ -89,7 +89,18 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
       for (const key of OUTCOME_KEYS) {
         const sub = severity[key];
         if (sub === 0) continue;
-        addMass(parriesUsed, critConsumed, woundsTaken + event.wounds, Math.max(worst, severityOf(key)) as Severity, mass * event.probability * sub);
+        const finalSeverity = Math.max(worst, severityOf(key)) as Severity;
+        const eventMass = mass * event.probability * sub;
+        if (event.extraAttack && attack.extraAttack && finalSeverity !== 3) {
+          const bonusState = emptyState(maxParries, maxWounds);
+          bonusState[parriesUsed][critConsumed][Math.min(woundsTaken + event.wounds, maxWounds)][finalSeverity] = eventMass;
+          const bonus = applyAttack(bonusState, attack.extraAttack, maxParries, maxWounds);
+          for (let p = 0; p <= maxParries; p++) for (const c of [0, 1] as const)
+            for (let w = 0; w <= maxWounds; w++) for (const severity of [0, 1, 2, 3] as const)
+              addMass(p, c, w, severity, bonus.next[p][c][w][severity]);
+        } else {
+          addMass(parriesUsed, critConsumed, woundsTaken + event.wounds, finalSeverity, eventMass);
+        }
       }
     }
   };
@@ -148,12 +159,12 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
  * order. `maxParries` — see buildAttackInput.ts's computeMaxParries. `defenderWounds` is the
  * target's Wounds characteristic (default 1).
  */
-function resolveIndependentTurn(attacks: SingleAttackBreakdown[], maxParries: number = 0, defenderWounds: number = 1, woundsAlreadyTaken: number = 0): TurnResult {
+function resolveIndependentTurn(attacks: SingleAttackBreakdown[], maxParries: number = 0, defenderWounds: number = 1, woundsAlreadyTaken: number = 0, parriesAlreadyUsed = 0): TurnResult {
   const maxWounds = Math.max(1, Math.round(defenderWounds));
   let state = emptyState(maxParries, maxWounds);
   // Lost Wounds carry over between turns: a target already down to its last Wound (or at zero and
   // still standing after a knock down) rolls for injury on the next wound through.
-  state[0][0][Math.min(maxWounds, Math.max(0, Math.round(woundsAlreadyTaken)))][0] = 1;
+  state[parriesAlreadyUsed][0][Math.min(maxWounds, Math.max(0, Math.round(woundsAlreadyTaken)))][0] = 1;
   let ricochetProbability = 0;
 
   for (const attack of attacks) {
@@ -221,7 +232,7 @@ export function resolveTurn(attacks: SingleAttackBreakdown[], maxParries = 0, de
       return { ...a, hitFaces: undefined, parryEligible: false, pHit: hit * scale, pWound: wound * scale, pWoundNormal: Math.max(0, wound - trigger) * scale, pWoundTriggerEligible: trigger * scale };
     });
     if (mass === 0) return;
-    const r = resolveIndependentTurn(conditioned, 0, defenderWounds, woundsAlreadyTaken);
+    const r = resolveIndependentTurn(conditioned, maxParries, defenderWounds, woundsAlreadyTaken, selected.size);
     for (const k of OUTCOME_KEYS) total.distribution[k] += mass * r.distribution[k];
     total.anyWoundProbability += mass * r.anyWoundProbability;
     total.criticalHitProbability += mass * r.criticalHitProbability;

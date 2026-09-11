@@ -257,6 +257,7 @@ export function advanceAuditText(draft: AdvanceRollAudit): string {
 }
 
 export interface AdvanceDraft extends AdvanceRollAudit {
+  protectorateChoice?: 'prayer' | 'roll'
   dismissHeroId?: string
 
   maximaRulingConfirmed?: boolean
@@ -381,6 +382,7 @@ export function setStep(draft: AdvanceDraft, step: AdvanceStep): AdvanceDraft {
 
 /** What "Pick later" stores on the pending row: the dice as rolled, so the choice can be made later. */
 export interface AdvanceRolled extends AdvanceRollAudit {
+  protectorateChoice?: 'roll'
   agreedRacialMaxima?: Stats
   agreedRacialMaximaReason?: string
   version: 1
@@ -396,6 +398,7 @@ export function rolledFromDraft(draft: AdvanceDraft, rollText: string): AdvanceR
   const total = diceTotal(draft)
   if (total === null) return null
   const out: AdvanceRolled = { ...advanceAuditFields(draft), version: 1, dice: [draft.dice[0] ?? 0, draft.dice[1] ?? 0], text: `Rolled ${total}: ${rollText}${advanceAuditText(draft)}` }
+  if (draft.protectorateChoice === 'roll') out.protectorateChoice = 'roll'
   if (draft.subRoll !== null) out.subRoll = draft.subRoll
   if (draft.rerolled.length > 0) out.rerolled = [...draft.rerolled]
   if (draft.mode === 'spell') out.mode = 'spell'
@@ -415,6 +418,7 @@ export function draftFromRolled(rolled: Record<string, unknown> | null | undefin
     ...(agreed.success&&typeof rolled.agreedRacialMaximaReason==='string'&&rolled.agreedRacialMaximaReason.trim()?{agreedRacialMaxima:agreed.data,agreedRacialMaximaReason:rolled.agreedRacialMaximaReason,maximaRulingConfirmed:true}:{}),
     ...draft,
     ...advanceAuditFields({rollHistory:Array.isArray(rolled.rollHistory)?rolled.rollHistory.filter((v):v is string=>typeof v==='string'):undefined,hasRollReplacement:rolled.hasRollReplacement===true,rollChangeReason:typeof rolled.rollChangeReason==='string'?rolled.rollChangeReason:undefined}),
+    ...(rolled.protectorateChoice === 'roll' ? {protectorateChoice:'roll' as const} : {}),
     dice: [a, b],
     subRoll: typeof rolled.subRoll === 'number' ? rolled.subRoll : null,
     rerolled: Array.isArray(rolled.rerolled) ? rolled.rerolled.filter((n): n is number => typeof n === 'number') : [],
@@ -463,8 +467,9 @@ export interface AdvanceResolution extends AdvanceRollAudit {
   version: 1
   kind: 'hero' | 'group'
   subjectName: string
-  roll2d6: number
-  dice: [number, number]
+  roll2d6: number | null
+  dice: [number, number] | null
+  chosenInsteadOfRoll?: string
   subRoll?: number
   rerolled?: number[]
   outcome: AdvanceOutcome
@@ -517,7 +522,7 @@ export type ResolutionParts = Omit<AdvanceResolution, 'text' | 'version'> & { gr
 
 /** "Rolled 9: +1 Strength, now S4" and friends. */
 export function summaryText(p: ResolutionParts): string {
-  const rolled = `Rolled ${p.roll2d6}${p.subRoll !== undefined ? ` (then ${p.subRoll})` : ''}`
+  const rolled = p.chosenInsteadOfRoll ?? `Rolled ${p.roll2d6}${p.subRoll !== undefined ? ` (then ${p.subRoll})` : ''}`
   let body: string
   switch (p.outcome) {
     case 'stat': {
@@ -599,6 +604,7 @@ export interface StatOption {
 export type HeroNeed = 'maxima' | 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
 
 export interface HeroPlan {
+  protectoratePrayerChoice?: boolean
   lores?: SpellLore[]
   total: number | null
   roll: HeroAdvanceRoll | null
@@ -670,7 +676,9 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   const homeLore = loreForHero(hero, ctx.template)
   const lores = isSword && subject.sword.hiredSwordId === 'dark_mage' ? SPELL_LORES.filter(l => ['dark_mage_magic', 'lesser_magic'].includes(l.id)) : homeLore ? [homeLore] : []
   const lore = lores.find(l => l.id === draft.spellLoreId) ?? homeLore
+  const protectoratePrayerChoice = !isSword && warbandTemplateId === 'protectorate_of_sigmar' && hero.unitTemplateId === 'warrior_priest' && Boolean(hero.flags.protectoratePrayerChoice)
   const plan: HeroPlan = {
+    protectoratePrayerChoice,
     total: diceTotal(draft),
     roll: null,
     maxima,
@@ -689,6 +697,16 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     result: null,
     error: null,
   }
+  if (protectoratePrayerChoice && draft.protectorateChoice !== 'roll') {
+    const prayer = plan.spells.find(s => s.id === draft.spellId)
+    if (draft.protectorateChoice !== 'prayer' || !prayer || !lore) return { ...plan, need: 'roll' }
+    try {
+      const learned = learnSpell(hero, lore.id, prayer.id)
+      const next = { ...learned.value, flags: { ...learned.value.flags, protectoratePrayerChoice: false } }
+      return { ...plan, result: { next: replaceHero(ctx.roster, next), events: learned.events,
+        resolution: buildResolution({kind:'hero',subjectName:hero.name,roll2d6:null,dice:null,chosenInsteadOfRoll:'Chose a prayer instead of rolling the next advance',outcome:'spell',spellId:prayer.id,spellName:prayer.name,loreId:lore.id,...advanceAuditFields(draft)}) } }
+    } catch(e) { return {...plan,need:'roll',error:errorMessage(e)} }
+  }
   if (plan.total === null) return { ...plan, need: 'roll' }
 
   const dice: [number, number] = [draft.dice[0] ?? 0, draft.dice[1] ?? 0]
@@ -702,6 +720,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   }
 
   const finish = (next: RosterHero, events: ResolutionEvent[], parts: Omit<ResolutionParts, keyof typeof base>): AdvanceResult => {
+    if(protectoratePrayerChoice) next={...next,flags:{...next.flags,protectoratePrayerChoice:false}}
     if(maximaRuling) next={...next,flags:{...next.flags,agreedRacialMaxima:draft.agreedRacialMaxima,agreedRacialMaximaReason:draft.agreedRacialMaximaReason!.trim()}}
     let roster = isSword ? replaceHiredSword(ctx.roster, heroToHiredSword(subject.sword, next)) : replaceHero(ctx.roster, next)
     if (isSword && !hasGuardianSkill(subject.sword)) {

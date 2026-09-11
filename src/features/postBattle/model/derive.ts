@@ -873,7 +873,7 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
     if (mode === 'pickLater') {
       complete = subject.kind !== 'group' && plan.need === 'skill' && plan.roll !== null
       summary = complete ? `${name}: rolled ${plan.total}, ${plan.roll?.text.toLowerCase() ?? 'new skill'}; skill to pick later.${advanceAuditText(stored ?? {})}` : `${name}: roll the advance first.`
-    } else if (plan.total === null) {
+    } else if (plan.total === null && !plan.result) {
       complete = false
       summary = `${name}: roll the advance earned at ${request.threshold_xp} xp before completing the report.`
     } else {

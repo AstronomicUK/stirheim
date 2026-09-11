@@ -657,3 +657,33 @@ it.each([1,3])('A Grunt can become an Untrained henchman, then a wizard on a lat
  expect(mundane.next.heroes.at(-1)?.flags.magicLoreId).toBeUndefined()
  expect(mundane.next.heroes.at(-1)?.unitTemplateId).toBe('grunts')
 })
+
+it('Protectorate successor can take a prayer instead of rolling exactly one advance (#122)',()=>{
+ const priest={...roster.heroes[0],unitTemplateId:'warrior_priest',spellIds:[],flags:{protectoratePrayerChoice:true}}
+ const band={...roster,warbandTemplateId:'protectorate_of_sigmar',heroes:[priest]}
+ const context={roster:band,template:findWarbandTemplate(band.warbandTemplateId)}
+ const subject={kind:'hero' as const,hero:priest}
+ const blank=emptyDraft(NEW_ID)
+ const initial=planHero(blank,subject,context)
+ expect(initial.protectoratePrayerChoice).toBe(true)
+ expect(initial.result).toBeNull()
+ const prayer=initial.spells[0]
+ const choice=planHero({...blank,protectorateChoice:'prayer',spellId:prayer.id},subject,context)
+ const next=choice.result!.next.heroes[0]
+ expect(next.spellIds).toEqual([prayer.id]);expect(next.levelUps).toBe(priest.levelUps+1)
+ expect(next.flags.protectoratePrayerChoice).toBe(false)
+ expect(choice.result!.resolution.roll2d6).toBeNull();expect(choice.result!.resolution.dice).toBeNull()
+ expect(choice.result!.resolution.text).toContain('Chose a prayer instead of rolling')
+ expect(choice.result!.resolution.text).not.toContain('Rolled')
+ const rolled=planHero({...setDice(blank,3,3),protectorateChoice:'roll',subRoll:2,stat:'S'},subject,context)
+ expect(rolled.result!.next.heroes[0].flags.protectoratePrayerChoice).toBe(false)
+ expect(rolled.result!.next.heroes[0].spellIds).toEqual([])
+ expect(planHero(blank,{kind:'hero',hero:next},{...context,roster:choice.result!.next}).protectoratePrayerChoice).toBe(false)
+})
+
+
+it('preserves the Protectorate normal-roll choice when its skill is picked later',()=>{
+ const draft={...setDice(emptyDraft(NEW_ID),2,2),protectorateChoice:'roll' as const}
+ const saved=rolledFromDraft(draft,'New Skill')!
+ expect(draftFromRolled({...saved},NEW_ID)?.protectorateChoice).toBe('roll')
+})

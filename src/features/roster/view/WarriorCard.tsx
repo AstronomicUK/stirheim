@@ -1,3 +1,4 @@
+import { inheritedLeadershipRules } from './lookups'
 import {CurseReminder} from './CurseReminder'
 import { useState } from 'react'
 import { hiredSwordGainsExperience } from '../../../rules/resolve/hiredSwordRules'
@@ -32,7 +33,8 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
     ? hiredSwordName(hero.hired_sword_rules_id ?? '')
     : unitTypeName(template?.id ?? '', hero.unit_type_rules_id ?? '')
   const tags = flagTags(hero.flags)
-  const rules = warriorSpecialRules(template, hero.unit_type_rules_id, hero.hired_sword_rules_id, hero.flags.luthorRole, true)
+  const ownRules = warriorSpecialRules(template, hero.unit_type_rules_id, hero.hired_sword_rules_id, hero.flags.luthorRole, true)
+  const rules = [...ownRules, ...inheritedLeadershipRules(template,hero.flags.leaderRoleId).filter(r=>!ownRules.some(own=>own.name===r.name))]
   const drift = statDrift(hero.stats, startingProfile(template, hero.unit_type_rules_id, hero.hired_sword_rules_id))
 
   return (

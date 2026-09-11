@@ -1,3 +1,4 @@
+import { findLore } from '../../../rules/data/campaign/magic'
 import {setMedicineChestReroll} from './state'
 import { describe, expect, it } from 'vitest'
 import { battleReportSchema, emptyBattleLiveState, heroReportPatchSchema, type ItemRow } from '../../../domain'
@@ -1075,4 +1076,21 @@ it('requires outstanding Runt tests and carries their edited dice into the filed
  expect(line.amount).toBe(3) // survived + successful Runt + two half-value Snotlings
  expect(line.reasons.join(' ')).toContain('earlier 2 (rolled by the app), replaced')
  expect(derived.report?.xp_log.find(l=>l.subjectId==='captain')?.reasons.join(' ')).toContain('entered or changed by the player')
+})
+
+
+it('files the Protectorate prayer choice without an advancement dice roll',()=>{
+ const priest=hero('priest',{unitTemplateId:'warrior_priest',xp:7,flags:{protectoratePrayerChoice:true}})
+ const roster={...makeRoster(),warbandTemplateId:'protectorate_of_sigmar',heroes:[priest],henchmenGroups:[],hiredSwords:[]}
+ const context=ctx({roster,template:findWarbandTemplate('protectorate_of_sigmar'),items:[]})
+ const prayer=findLore('prayers_of_sigmar')!.spells[0]
+ let draft=setResult(emptyDraft(),'lost')
+ draft=seedAdvance(draft,advanceKey('priest',8),{...emptyAdvanceDraft('dddddddd-0000-4000-8000-000000000019'),protectorateChoice:'prayer',spellId:prayer.id})
+ draft=setExplorationRolls(draft,[3])
+ const result=deriveRawReport(draft,context)
+ expect(result.advances.items[0].complete).toBe(true)
+ expect(result.advances.items[0].summary).toContain('Chose a prayer')
+ expect(result.advances.rosterAfter.heroes[0].spellIds).toContain(prayer.id)
+ expect(result.advances.rosterAfter.heroes[0].flags.protectoratePrayerChoice).toBe(false)
+ expect(result.problems.advances).toEqual([])
 })

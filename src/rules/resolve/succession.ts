@@ -43,7 +43,11 @@ export function successionOptions(warband: RosterWarband, template: WarbandTempl
   const leader = leaderTemplate(template);
   if (!leader || !needsLeader(warband, template)) return null;
   const rule = warbandRules(template.id).succession;
-  const active = warband.heroes.filter((h) => h.status === "active" && !unitRules(h.unitTemplateId).neverLeads);
+  let active = warband.heroes.filter((h) => h.status === "active" && !unitRules(h.unitTemplateId).neverLeads);
+  if (template.id === 'black_orcs') {
+    const blackOrcs = active.filter(h => h.unitTemplateId === 'black_orcs_black_orc' || h.skillIds.includes('black_orcs_skills_proven_warrior'));
+    if (blackOrcs.length) active = blackOrcs;
+  }
   const candidates: SuccessionCandidate[] = active.map((hero) => {
     let rank = 100;
     let reason: string | null = null;
@@ -54,6 +58,7 @@ export function successionOptions(warband: RosterWarband, template: WarbandTempl
         reason = rule.note;
       }
     }
+    if (template.id === 'black_orcs' && hero.skillIds.includes('black_orcs_skills_proven_warrior')) { rank = 0; reason = rule?.note ?? null; }
     return { hero, reason, rank };
   });
   const named = (c: SuccessionCandidate) => (c.rank < 100 ? 0 : 1);
@@ -86,10 +91,11 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
   if (!successionOptions(warband, template)?.candidates.some(c => c.hero.id === heroId)) throw new RulesError("succession.ineligible", `${hero.name} is not eligible to succeed this leader.`);
   const fromUnit = findUnitTemplate(template, hero.unitTemplateId);
   const gained = (rule?.grantsSkillIds ?? []).filter((id) => !hero.skillIds.includes(id));
+  const retainType = rule?.temporary || template.id === 'black_orcs';
   const next: RosterHero = {
     ...hero,
-    unitTemplateId: rule?.temporary ? hero.unitTemplateId : leader.id,
-    flags: { ...hero.flags, ...(rule?.temporary ? { temporaryLeader: true } : {}) },
+    unitTemplateId: retainType ? hero.unitTemplateId : leader.id,
+    flags: { ...hero.flags, ...(template.id === 'black_orcs' ? {leaderRoleId:leader.id} : {}), ...(template.id === 'protectorate_of_sigmar' ? { protectoratePrayerChoice: true } : {}), ...(rule?.temporary ? { temporaryLeader: true } : {}) },
     skillTableIds: [...new Set([...hero.skillTableIds, ...(rule?.grantsSkillTableIds ?? [])])],
     skillIds: [...hero.skillIds, ...gained],
   };

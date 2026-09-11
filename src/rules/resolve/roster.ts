@@ -76,7 +76,7 @@ export function warbandHeroCount(warband: RosterWarband): number {
 /** How many models of a unit type the roster holds: active heroes for hero templates, total henchmen for henchman templates. */
 export function unitCount(warband: RosterWarband, unit: UnitTemplate): number {
   if (unit.role === "hero") {
-    return warband.heroes.filter((h) => h.status === "active" && (unit.alternateHero ? h.unitTemplateId.endsWith(`__${unit.alternateHero}`) : h.unitTemplateId === unit.id || h.unitTemplateId.startsWith(`${unit.id}__`))).length;
+    return warband.heroes.filter((h) => { const type = h.flags.leaderRoleId ?? h.unitTemplateId; return h.status === "active" && (unit.alternateHero ? type.endsWith(`__${unit.alternateHero}`) : type === unit.id || type.startsWith(`${unit.id}__`)); }).length;
   }
   return warband.henchmenGroups.filter((g) => g.unitTemplateId === unit.id).reduce((sum, g) => sum + g.size, 0);
 }
@@ -90,7 +90,7 @@ export function leaderTemplate(template: WarbandTemplate): UnitTemplate | undefi
 export function currentLeader(heroes: RosterHero[], template: WarbandTemplate): RosterHero | undefined {
   const active = heroes.filter(h => h.status === "active");
   const type = leaderTemplate(template);
-  return active.find(h => h.unitTemplateId === type?.id) ?? active.find(h => h.flags.temporaryLeader);
+  return active.find(h => h.unitTemplateId === type?.id) ?? active.find(h => h.flags.leaderRoleId === type?.id && Boolean(type)) ?? active.find(h => h.flags.temporaryLeader);
 }
 
 export interface RosterProblem {

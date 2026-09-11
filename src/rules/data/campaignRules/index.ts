@@ -449,7 +449,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
     hiredSwords: DWARF_NO_ELVES,
     preBattle: [{ key: "runes", label: "Inscribe Runes", unitId: "dwarf_rangers_runesmith", test: "2D6", text: "The Runesmith may inscribe a known rune on one warrior's item: roll 2D6 against the rune's Difficulty (6 to 9). Equal or over succeeds for this game; a 2 destroys the item; any other failure gives no bonus." }],
   },
-  black_orcs: { succession: { note: "Da Boss is Dead: a Black Orc must take over as Boss.", candidateUnitIds: ["black_orcs_black_orc"] } },
+  black_orcs: { succession: { note: "Da Boss is Dead: a Black Orc takes priority; if none remain, another Hero takes over. The new Boss gains Oi Behave! and keeps his original warrior type.", candidateUnitIds: ["black_orcs_black_orc"], anyHero: true } },
   necrarchs_the_soul_stealers: { succession: { note: "Death of the Leader: the Thrall takes the mantle and rolls for one spell; no new Necrarch can be hired. Both gone, the warband disbands.", candidateUnitIds: ["necrarchs_thrall"], disbandsWithout: true } },
   protectorate_of_sigmar: { heroCapacity: 5, notes: ["The Huntsman replaces a Templar: five heroes at most."], succession: { note: "Death of a Leader: the Acolyte with the most experience becomes Warrior Priest (a prayer comes with his next advance).", candidateUnitIds: ["acolytes"], by: "experience" } },
   skaven_of_clan_moulder: { succession: { note: "Heir to Power: an Apprentice succeeds the Packmaster; with none left the warband disbands.", candidateUnitIds: ["apprentices"], disbandsWithout: true } },

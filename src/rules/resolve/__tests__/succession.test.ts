@@ -1,5 +1,6 @@
+import { inheritedLeadershipRules } from '../../../features/roster/view/lookups'
 import { recruitHero, canRecruit } from '../recruitment';
-import { currentLeader, validateRoster } from '../roster';
+import { currentLeader, validateRoster, unitCount } from '../roster';
 import { warriorFlagsSchema } from '../../../domain/json';
 import { findLeaderId } from '../../../features/postBattle/model/participants';
 import { availableSkills } from '../advances';
@@ -106,3 +107,40 @@ it('grants a Merchant successor the Merchant skill list without importing other 
   expect(availableSkills(successor, template.id).find(t => t.tableId === 'merchant_caravans_skills')?.skills.map(s => s.id)).toContain('merchant_caravans_skills_bribery');
   expect(appointLeader({ ...w, heroes: [{ ...apprentice, skillTableIds: successor.skillTableIds }] }, template, 'a').value.heroes[0].skillTableIds).toEqual(successor.skillTableIds);
 });
+
+it('Protectorate succession grants only the next-advance prayer choice, not a free prayer',()=>{
+ const template=findWarbandTemplate('protectorate_of_sigmar')!
+ const acolyte=hero('a','acolytes',{xp:7})
+ const next=appointLeader(warband(template.id,[acolyte]),template,'a').value.heroes[0]
+ expect(next.unitTemplateId).toBe('warrior_priest')
+ expect(next.spellIds).toEqual([])
+ expect(next.levelUps).toBe(acolyte.levelUps)
+ expect(warriorFlagsSchema.parse(next.flags).protectoratePrayerChoice).toBe(true)
+})
+
+
+it('Black Orc succession prefers real Black Orcs and preserves the fallback Orc’s profile and armour rules',()=>{
+ const template=findWarbandTemplate('black_orcs')!
+ const boy=hero('boy','black_orcs_orc_boy',{xp:30,stats:{...stats,Ld:9}})
+ const black=hero('black','black_orcs_black_orc',{xp:2})
+ const w=warband(template.id,[boy,black])
+ expect(successionOptions(w,template)?.candidates.map(c=>c.hero.id)).toEqual(['black'])
+ expect(()=>appointLeader(w,template,'boy')).toThrow()
+ const fallback=warband(template.id,[boy])
+ const next=appointLeader(fallback,template,'boy').value
+ const boss=next.heroes[0]
+ expect(boss.unitTemplateId).toBe('black_orcs_orc_boy')
+ expect(boss.stats).toEqual(boy.stats)
+ expect(boss.flags.leaderRoleId).toBe('black_orcs_black_orc_boss')
+ expect(warriorFlagsSchema.parse(boss.flags).leaderRoleId).toBe('black_orcs_black_orc_boss')
+ expect(currentLeader(next.heroes,template)?.id).toBe('boy')
+ expect(needsLeader(next,template)).toBe(false)
+ expect(canRecruit(next,template,'black_orcs_black_orc_boss').ok).toBe(false)
+ expect(inheritedLeadershipRules(template,boss.flags.leaderRoleId).map(r=>r.name)).toEqual(['Leader','Oi Behave!'])
+ expect(inheritedLeadershipRules(template,boss.flags.leaderRoleId).some(r=>r.name==='Black Orc')).toBe(false)
+ const blackLed=appointLeader(w,template,'black').value
+ expect(unitCount(blackLed,template.heroTemplates.find(h=>h.id==='black_orcs_black_orc')!)).toBe(0)
+ expect(unitCount(blackLed,template.heroTemplates.find(h=>h.id==='black_orcs_black_orc_boss')!)).toBe(1)
+ const proven=hero('proven','black_orcs_youngun',{skillIds:['black_orcs_skills_proven_warrior']})
+ expect(successionOptions(warband(template.id,[boy,proven]),template)?.candidates.map(c=>c.hero.id)).toEqual(['proven'])
+})

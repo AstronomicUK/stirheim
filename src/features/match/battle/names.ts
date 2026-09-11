@@ -1,3 +1,4 @@
+import { inheritedLeadershipRules } from '../../roster/view/lookups'
 // Pure lookups for the battle cards: display names, rules and tags for a roster warrior.
 
 import type { NamedRule, WarbandTemplate } from '../../../rules/types'
@@ -25,7 +26,7 @@ export function warriorTypeName(entry: SheetWarrior, template: WarbandTemplate |
 }
 
 export function warriorRules(entry: SheetWarrior, template: WarbandTemplate | undefined): NamedRule[] {
-  return entry.role === 'hiredSword' ? warriorSpecialRules(template, null, entry.warrior.hiredSwordId) : warriorSpecialRules(template, entry.warrior.unitTemplateId, null, undefined, true)
+  return entry.role === 'hiredSword' ? warriorSpecialRules(template, null, entry.warrior.hiredSwordId) : [...warriorSpecialRules(template, entry.warrior.unitTemplateId, null, undefined, true), ...inheritedLeadershipRules(template,entry.warrior.flags.leaderRoleId)]
 }
 
 export function groupTypeName(group: RosterHenchmanGroup, template: WarbandTemplate | undefined): string {

@@ -3837,3 +3837,10 @@ Lustrian Prospects can replace a lost/retired Hero via a snapshot-checked transa
 Necrarch Acolytes can become the replacement Thrall after leader succession, retaining their profile and identity and gaining the Thrall’s printed undead rules. Replacement Vampire purchases are blocked after the original Necrarch dies. Direct succession rejects ineligible candidates. Free successor-spell list remains pending the Necromancy/Scrolls source conflict; other #122 clauses remain open.
 
 Validation: 1,981 ordinary tests and177 local database tests pass; build/typecheck pass, lint only3existing audit warnings. Dedicated mobile plus saved-data tests pass for both flows; zero-XP queue and replay rejection verified. Migration75 applied to local DB only; not yet pushed or deployed. Full checkpoint and deferred questions: OVERNIGHT-RULES-BATCH-2026-09-11.md.
+
+
+### Overnight batch — #122 Protectorate and Black Orc succession (2026-09-11, local)
+
+Protectorate successors gain no immediate prayer. Their next advance offers a prayer from the list or a normal roll, consumes the one-time choice on completion and records chosen prayers without fictitious dice. The roster and post-battle wizard both support it; deferred rolled skills resume correctly. Black Orc succession prioritises Black Orcs/Proven Warriors, allows another Hero when none remain, and preserves the original unit/profile instead of granting Black Orc natural armour. Permanent leadership inherits Leader/Oi Behave, appears on roster/battle sheet, occupies the Boss slot and blocks duplicate Boss recruitment. Succession saves now reject stale roster snapshots.
+
+Validation:1,986 ordinary tests, build/typecheck and mobile+saved-data checks pass; lint only3existing audit warnings. No SQL change beyond pending migration75, no push or deployment. #122 remains partial for delayed/temporary leaders, Mazzalupo Commands, disband prompts and the queued Necrarch spell-list ruling. See overnight checkpoint for exact remaining scope.

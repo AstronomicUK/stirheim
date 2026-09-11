@@ -228,6 +228,7 @@ export function xpNotches(xp: number, role: CharacterRole, rate: AdvanceRate = '
 /** Short labels for a warrior's persistent conditions, in a stable order. */
 export function flagTags(flags: WarriorFlags): string[] {
   const tags: string[] = []
+  if (flags.leaderRoleId) tags.push("Leader")
   if (flags.temporaryLeader) tags.push("Temporary leader")
   if (flags.missNextGames && flags.missNextGames > 0) {
     tags.push(flags.missNextGames === 1 ? 'Misses next game' : `Misses next ${flags.missNextGames} games`)
@@ -287,4 +288,10 @@ export function itemsByHolder(items: readonly ItemRow[]): Map<string, RosterItem
 /** Catalogue rules headed "Note" are just the item's text; the heading adds nothing. */
 export function isPlainNote(name: string): boolean {
   return /^notes?:?$/i.test(name.trim())
+}
+
+/** A Black Orc successor inherits leadership and Oi Behave, never the Boss’s species/armour rule. */
+export function inheritedLeadershipRules(template: WarbandTemplate | undefined, leaderRoleId?: string): NamedRule[] {
+  if (template?.id !== 'black_orcs' || leaderRoleId !== 'black_orcs_black_orc_boss') return []
+  return findUnitTemplate(template, leaderRoleId)?.specialRules.filter(r => ['Leader','Oi Behave!'].includes(r.name)) ?? []
 }

@@ -70,7 +70,7 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
         </div>
         {mode === 'pickLater' ? (
           <Tag tone="brass">Pick later</Tag>
-        ) : plan.total === null ? (
+        ) : plan.total === null && !plan.result ? (
           <Tag tone="warn">Not rolled</Tag>
         ) : item.complete ? (
           <Tag tone="brass">Done</Tag>
@@ -89,8 +89,8 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
         <>
           <AdvanceBody draft={item.draft} plan={plan} subject={subject} step={item.step} update={editAdvance} hideRail chooseSpell={chooseSpell} />
           <div className="flex flex-wrap gap-2">
-            {item.step === 'roll' && plan.total !== null && plan.need !== 'reroll' && plan.error === null ? (
-              <Button variant="secondary" onClick={() => editAdvance((d) => setAdvanceStep(d, plan.result && subject.kind === 'group' && plan.roll?.kind === 'statIncrease' ? 'review' : 'choose'))}>
+            {item.step === 'roll' && (plan.total !== null || Boolean(plan.result)) && plan.need !== 'reroll' && plan.error === null ? (
+              <Button variant="secondary" onClick={() => editAdvance((d) => setAdvanceStep(d, plan.result && (plan.result.resolution.chosenInsteadOfRoll || subject.kind === 'group' && plan.roll?.kind === 'statIncrease') ? 'review' : 'choose'))}>
                 Continue
               </Button>
             ) : null}
@@ -105,7 +105,7 @@ function AdvanceCard({ item, update, chooseSpell }: { item: WizardAdvance; updat
               </Button>
             ) : null}
             {item.step === 'review' ? (
-              <Button variant="ghost" onClick={() => editAdvance((d) => setAdvanceStep(d, 'choose'))}>
+              <Button variant="ghost" onClick={() => editAdvance((d) => setAdvanceStep(d, plan.result?.resolution.chosenInsteadOfRoll ? 'roll' : 'choose'))}>
                 Change the choice
               </Button>
             ) : null}

@@ -1,3 +1,4 @@
+import { useRosterEvent } from '../../api/rosterEvents'
 import { NecrarchSuccessionCard } from './view/NecrarchSuccessionCard'
 import { LustrianPromotionCard } from './view/LustrianPromotionCard'
 import { ExplorationBooksCard } from './view/ExplorationBooksCard'
@@ -13,7 +14,6 @@ import { useWarbandCampaign } from '../../api/trading'
 import { useMoveWarbandCampaign, useMyCampaigns } from '../../api/campaigns'
 import { rosterToTemplatePayload } from '../../rules/resolve/warbandTemplates'
 import { appointLeader, successionOptions } from '../../rules/resolve/succession'
-import { diffRoster } from '../../domain/rosterDiff'
 import type { WarbandTemplate } from '../../rules/types'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -437,7 +437,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
 
 /** The leader is dead: offer the list's successors and re-template the chosen hero. */
 function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; template: WarbandTemplate; onError: (e: string | null) => void }) {
-  const update = useUpdateRoster(detail.warband.id)
+  const update = useRosterEvent(detail)
   const view = useMemo(() => successionOptions(detail.roster, template), [detail.roster, template])
   const [choice, setChoice] = useState('')
   if (!view) return null
@@ -447,8 +447,8 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
     if (!chosen) return
     onError(null)
     try {
-      const next = appointLeader(detail.roster, template, chosen.hero.id).value
-      await update.mutateAsync({ reason: 'succession', changes: diffRoster(detail, next) })
+      const result = appointLeader(detail.roster, template, chosen.hero.id)
+      await update.mutateAsync({ reason: result.events[0].message, next: result.value })
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not appoint the new leader.')
     }

@@ -60,7 +60,7 @@ export function ResolveSheet({ advance, subject, detail, template, bans, chooseS
   const name = subjectName(subject)
   const roleLabel = subject.kind === 'group' ? `Henchman group · ${subject.group.size} ${subject.group.size === 1 ? 'model' : 'models'}` : subject.kind === 'hiredSword' ? 'Hired sword' : 'Hero'
   // A henchman fixed increase has nothing to choose, so Back from the review returns to the dice.
-  const hasChoice = subject.kind !== 'group' || (plan.roll?.kind !== 'statIncrease' && plan.result?.resolution.outcome !== 'casualty')
+  const hasChoice = !plan.result?.resolution.chosenInsteadOfRoll && (subject.kind !== 'group' || (plan.roll?.kind !== 'statIncrease' && plan.result?.resolution.outcome !== 'casualty'))
 
   async function confirm() {
     if (!plan?.result) return
@@ -95,13 +95,13 @@ export function ResolveSheet({ advance, subject, detail, template, bans, chooseS
 
   const footer = (() => {
     if (step === 'roll') {
-      const canContinue = plan.total !== null && plan.need !== 'reroll' && plan.error === null
+      const canContinue = (plan.total !== null || Boolean(plan.result)) && plan.need !== 'reroll' && plan.error === null
       return (
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={onClose}>
             Later
           </Button>
-          <Button className="flex-1" disabled={!canContinue} onClick={() => update((d) => setStep(d, plan.result && !hasChoice ? 'review' : 'choose'))}>
+          <Button className="flex-1" disabled={!canContinue} onClick={() => update((d) => setStep(d, plan.result && (!hasChoice || plan.result.resolution.chosenInsteadOfRoll) ? 'review' : 'choose'))}>
             Continue
           </Button>
         </div>

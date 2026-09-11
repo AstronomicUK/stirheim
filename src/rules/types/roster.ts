@@ -38,6 +38,10 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  /** Permanent leadership role held without replacing the warrior’s original unit type. */
+  leaderRoleId?: string;
+  /** Protectorate successor may take a prayer instead of rolling the next advance. */
+  protectoratePrayerChoice?: boolean;
   /** The consumed Lustrian Hero vacancy; retained for the replacement chain. */
   lustrianReplacementOf?: string;
   haggleUse?: {matchId:string; requestId:string; itemName:string; dice:number[]; priceBefore:number; priceAfter:number};

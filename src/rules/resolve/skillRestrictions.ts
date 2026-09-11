@@ -105,7 +105,7 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
   // Leader only. ("...with the leader skill" means the leader role, not a takeable skill: no such skill exists in the catalogue.)
   if (/leader/.test(lower) && /only/.test(lower) && ctx.template) {
     const leader = leaderTemplate(ctx.template);
-    if (leader && (ctx.roster ? currentLeader(ctx.roster.heroes, ctx.template)?.id !== ctx.hero.id : ctx.hero.unitTemplateId !== leader.id && !ctx.hero.flags.temporaryLeader)) return `Only the warband's leader may take this skill.`;
+    if (leader && (ctx.roster ? currentLeader(ctx.roster.heroes, ctx.template)?.id !== ctx.hero.id : ctx.hero.unitTemplateId !== leader.id && !ctx.hero.flags.temporaryLeader && ctx.hero.flags.leaderRoleId !== leader.id)) return `Only the warband's leader may take this skill.`;
   }
 
   // Limits across the warband: "no more than two warriors", "Only one Elven Hero may possess this skill",

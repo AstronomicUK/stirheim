@@ -117,6 +117,7 @@ export function recruitmentBlock(
   unit: UnitTemplate,
   count: number,
 ): string | undefined {
+  if (warband.heroes.some(h => h.status === 'active' && h.flags.leaderRoleId === unit.id)) return 'This leadership position is already held by the appointed successor.';
   if (template.id === 'necrarchs_the_soul_stealers' && warband.heroes.some(h => h.unitTemplateId === 'necrarchs_necrarch_vampire' && h.status === 'dead') && ['necrarchs_necrarch_vampire','necrarchs_thrall'].includes(unit.id)) return 'Death of the Leader: the Thrall succeeds the Necrarch; create a replacement Thrall from an existing Acolyte.';
   if (template.id === 'lustrian_reavers' && unit.role === 'hero' && warband.heroes.some(h => h.unitTemplateId === unit.id)) return 'Rare Heroes: this Hero type has already been hired. Promote a Prospect into the lost position instead.';
   if (unit.cost === null) return `${unit.name} cannot be hired for gold`;

@@ -107,6 +107,17 @@ interface StepProps<P> {
 }
 
 function RollStep({ draft, plan, update }: StepProps<HeroPlan | GroupPlan>) {
+  if ('protectoratePrayerChoice' in plan && plan.protectoratePrayerChoice) return <>
+    <Notice title="The new Warrior Priest’s first advance">Choose a prayer from the list, or roll a normal advancement. This choice is available only for this advance.</Notice>
+    <SelectField label="First advance as Warrior Priest" value={draft.protectorateChoice ?? ''} onChange={e => update(d => ({...d,protectorateChoice:e.target.value as 'prayer' | 'roll',spellId:null}))}>
+      <option value="">Choose how to advance</option><option value="prayer">Take a prayer instead of rolling</option><option value="roll">Roll a normal advancement</option>
+    </SelectField>
+    {draft.protectorateChoice === 'prayer' ? <SelectField label="Prayer to learn" value={draft.spellId ?? ''} onChange={e => update(d => setSpell(d,e.target.value))}><option value="">Choose a prayer</option>{plan.spells.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</SelectField> : draft.protectorateChoice === 'roll' ? <NormalRollStep draft={draft} plan={plan} update={update}/> : null}
+  </>
+  return <NormalRollStep draft={draft} plan={plan} update={update}/>
+}
+
+function NormalRollStep({ draft, plan, update }: StepProps<HeroPlan | GroupPlan>) {
   return (
     <>
       <p className="text-sm leading-relaxed text-ink-dim">Roll 2D6 on the advance table, or let the app roll.</p>

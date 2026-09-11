@@ -128,15 +128,17 @@ export function activeBolasEntanglements(events: readonly BattleEventRow[], warb
 }
 
 /** A Recovery roll frees this warrior from the currently active throws only, never future throws. */
-export function resolveBolasRecovery(state: BattleLiveState, active: readonly BattleEventRow[], warriorId: string, name: string, die: number, originalDie?: number, turn = state.turn): BattleLiveState {
+export function resolveBolasRecovery(state: BattleLiveState, active: readonly BattleEventRow[], warriorId: string, name: string, die: number, originalDie?: number, turn = state.turn, meta?: { turnKey: string; attemptId: string; reason?: string }): BattleLiveState {
   const valid = (n: number) => Number.isInteger(n) && n >= 1 && n <= 6;
   if (!valid(die) || (originalDie !== undefined && !valid(originalDie))) throw new Error('Enter a D6 result from 1 to 6.');
   const ids = active.filter(e => e.payload.target_id === warriorId && e.payload.entangled && !e.reverted_at && e.payload.target_size === 1).map(e => e.id);
   if (!ids.length) return state;
+  const previous = meta && state.bolasRecoveryTests.find(test => test.warriorId === warriorId && test.turnKey === meta.turnKey);
+  if (previous && previous.attemptId !== meta?.attemptId && !meta?.reason?.trim()) throw new Error('Explain why another Recovery test is needed this turn.');
   const freed = die >= 4;
-  return withRollAttempt({ ...state, bolasRecoveredEventIds: freed ? [...new Set([...state.bolasRecoveredEventIds, ...ids])] : state.bolasRecoveredEventIds }, {
-    id: crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
+  return withRollAttempt({ ...state, bolasRecoveryTests: meta ? [...state.bolasRecoveryTests.filter(test => test.warriorId !== warriorId || test.turnKey !== meta.turnKey), { warriorId, turnKey: meta.turnKey, attemptId: meta.attemptId }] : state.bolasRecoveryTests, bolasRecoveredEventIds: freed ? [...new Set([...state.bolasRecoveredEventIds, ...ids])] : state.bolasRecoveredEventIds }, {
+    id: meta?.attemptId ?? crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
     label: `${name}: Bolas Recovery ${freed ? 'succeeded' : 'failed'}`,
-    rolls: [originalDie === undefined ? `Player entered ${die}.` : `App rolled ${originalDie}${originalDie !== die ? `; player changed it to ${die}` : ''}.`, freed ? 'Freed from the Bolas; movement and Weapon Skill return to normal.' : 'Still entangled: cannot move and has −2 Weapon Skill in hand-to-hand combat. Shooting is unaffected.'],
+    rolls: [...(meta?.reason?.trim() ? [`Additional Recovery test: ${meta.reason.trim()}.`] : []), originalDie === undefined ? `Player entered ${die}.` : `App rolled ${originalDie}${originalDie !== die ? `; player changed it to ${die}` : ''}.`, freed ? 'Freed from the Bolas; movement and Weapon Skill return to normal.' : 'Still entangled: cannot move and has −2 Weapon Skill in hand-to-hand combat. Shooting is unaffected.'],
   });
 }

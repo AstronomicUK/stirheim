@@ -18,7 +18,7 @@ import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/ros
 import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, Spinner, Stepper, TextField } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
-import { combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
+import { combatantLabel, combatantsOf, withBolasEntanglement, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
@@ -72,14 +72,14 @@ interface TargetMemory {
 export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, events, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
 
-  const mine = useMemo(() => combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), [roster, template, sheet, boosts])
+  const mine = useMemo(() => withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), [roster, template, sheet, boosts, events])
   const targets = useMemo(
     () =>
       enemies.warbands.flatMap((w) => {
         const session = sessions.find((s) => s.warband_id === w.participant.warband_id)
-        return combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id])
+        return withBolasEntanglement(combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id]), events, w.participant.warband_id, session?.live_state.bolasRecoveredEventIds)
       }),
-    [enemies.warbands, sessions, boosts],
+    [enemies.warbands, sessions, boosts, events],
   )
 
   const [attackerId, setAttackerId] = useState<string | null>(null)
@@ -173,6 +173,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   // Read from the shared log, not a toggle — this is exactly the "the battle sheet doesn't do
   // either of these" report, so it needs to just happen rather than rely on a checkbox.
   active.serpentStaffPower = Boolean(staffUse)
+  if (attacker?.entangled) active.charging = false
   if (attacker) active.failedStupidity = attacker.traitIds.includes('stupidity') && !attacker.traitIds.includes('deathwish') && (individualStupidity ? failedStupidityThisTurn(sheet, attacker.id, ownTurnKey) : groupStupidity?.id === attacker.id && groupStupidity.turnKey === ownTurnKey && groupStupidity.failed)
   const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn, turns.data?.recoveries).get(defender.id) : undefined
   if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
@@ -867,18 +868,18 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                       ? `${defender.name} is ${OUTCOME_LABEL[state.worst].toLowerCase()}.`
                       : state.woundsLost > odds.woundsAlreadyLost
                         ? `${defender.name} is down to ${Math.max(0, defender.stats.W - state.woundsLost)} of ${defender.stats.W} Wounds but still standing.`
-                        : `${defender.name} is unharmed.`}
+                        : state.worst === 'entangled' ? `${defender.name} cannot move and has −2 melee Weapon Skill until freed in Recovery.` : `${defender.name} is unharmed.`}
                 </span>
               </p>
-              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
+              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
                   {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
-              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
-                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? 'kill and the casualty' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
+              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
+                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? 'kill and the casualty' : state.worst === 'entangled' ? 'entanglement' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}
             </div>
           ) : null}

@@ -100,6 +100,7 @@ export const battleLiveStateSchema = z.object({
   rollAttempts: z.array(rollAttemptSchema).default([]),
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
+  bolasRecoveryTests: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), attemptId: z.string() })).default([]),
   bolasRecoveredEventIds: z.array(z.string()).default([]),
   bolasThrows: z.array(z.object({ warriorId: z.string(), at: z.string() })).default([]),
   /** Recorded Stupidity outcomes last through opponents’ turns until this warband’s next turn. */

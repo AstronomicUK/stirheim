@@ -121,3 +121,13 @@ it('derives entanglement across turns, removes reverted events and restores only
   expect(initial.bolasRecoveredEventIds).toEqual([]);
   expect(() => resolveBolasRecovery(initial, [first], 'skritch', 'Skritch', 7)).toThrow(/D6/);
 })
+
+
+it('requires an explained repeat Recovery attempt in the same own turn', () => {
+  const event = attack({ entangled: true, target_size: 1, out_of_action: false, wounds_lost: 0, kill: false });
+  const failed = resolveBolasRecovery(emptyBattleLiveState(), [event], 'skritch', 'Skritch', 1, undefined, 2, { turnKey: 'own:2', attemptId: 'a' });
+  expect(() => resolveBolasRecovery(failed, [event], 'skritch', 'Skritch', 6, undefined, 2, { turnKey: 'own:2', attemptId: 'b' })).toThrow(/another Recovery/);
+  expect(resolveBolasRecovery(failed, [event], 'skritch', 'Skritch', 6, undefined, 3, { turnKey: 'own:3', attemptId: 'c' }).bolasRecoveredEventIds).toEqual([event.id]);
+  const correction = resolveBolasRecovery(failed, [event], 'skritch', 'Skritch', 6, 1, 2, { turnKey: 'own:2', attemptId: 'b', reason: 'Agreed correction' });
+  expect(correction.rollAttempts[1].rolls.join(' ')).toContain('Agreed correction');
+})

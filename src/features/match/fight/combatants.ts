@@ -14,7 +14,7 @@ import { WEAPONS, findWeapon } from '../../../rules/data/weapons'
 import { armourClass } from '../../../rules/data/items/classify'
 import { itemEffect, type ItemEffect, type PreBattleEffect, warbandInAny } from '../../../rules/data/itemRules'
 import type { Item } from '../../../rules/types/items'
-import type { BattleLiveState } from '../../../domain'
+import { activeBolasEntanglements, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { Armour, NamedRule, Stats, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { unitTypeName } from '../../roster/shared/names'
@@ -25,6 +25,7 @@ export type CombatantKind = 'hero' | 'hiredSword' | 'henchman' | 'animal'
 
 /** One model that can be picked as attacker or target. A henchman group is one model of the group. */
 export interface Combatant {
+  entangled?: boolean
   /** Rules identity, distinct from the companion bookkeeping kind. */
   isAnimal?: boolean
   /** heroes.id or henchman_groups.id: what the battle sheet tallies against. */
@@ -599,4 +600,11 @@ export function defaultPrimary(melee: readonly Weapon[]): Weapon {
 /** Default off-hand: the first candidate (a dagger for most warriors). */
 export function defaultOffHand(melee: readonly Weapon[], primary: Weapon): Weapon | null {
   return offHandCandidates(melee, primary)[0] ?? null
+}
+
+
+/** Battle-only WS reduction; base roster characteristics and shared event tallies remain untouched. */
+export function withBolasEntanglement(warriors: Combatant[], events: readonly BattleEventRow[], warbandId: string, recovered: readonly string[] = []): Combatant[] {
+  const affected = new Set(activeBolasEntanglements(events, warbandId, recovered).map(e => e.payload.target_id));
+  return warriors.map(w => affected.has(w.id) ? { ...w, entangled: true, stats: { ...w.stats, WS: Math.max(0, w.stats.WS - 2) } } : w);
 }

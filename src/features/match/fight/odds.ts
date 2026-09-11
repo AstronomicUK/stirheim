@@ -397,6 +397,8 @@ function adjustForCoatings(input: AttackInput, weapon: Weapon, phase: WeaponKind
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const notes: string[] = []
   const primary = weapons[0]
+  if (setup.attacker.entangled) notes.push(`${setup.attacker.name} is entangled: cannot move or charge; melee Weapon Skill is reduced by 2. Shooting is unaffected. Resolve a 4+ escape roll in Recovery.`)
+  if (setup.defender.entangled) notes.push(`${setup.defender.name} is entangled: melee Weapon Skill is reduced by 2 until freed in Recovery.`)
   if (setup.context.targetStunned && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already stunned: the first hit takes it out of action automatically, no rolls needed.`)
   else if (setup.context.targetKnockedDown && setup.primary.type === 'melee') notes.push(`${setup.defender.name} is already knocked down: attacks hit automatically and it cannot parry.`)
   if (primary && primary.attacks === 0) {
@@ -413,7 +415,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
     if (w.input.barrageOnFailedWound) notes.push(`${w.weapon.name}: a hit that fails to wound grants another attack at −1 to hit, capped at 6+. The continuing attacks are included in the odds; a miss or successful wound ends the sequence.`)
     if (w.weapon.special.includes('reach3Inches')) notes.push(`${w.weapon.name}: may attack within 3 inches; check reach at the table.`)
     if (w.weapon.special.includes('manSizedWielderOnly')) notes.push(`${w.weapon.name}: only a man-sized or larger warrior may wield it; this does not restrict which enemies it can attack.`)
-    if (w.input.entangleInsteadOfWound) notes.push('Bolas: a hit entangles instead of wounding. Apply no movement and −2 Weapon Skill in hand-to-hand combat at the table; shooting is unaffected. In Recovery, 4+ on a D6 frees the model. A natural 1 to hit inflicts a separate Strength 3 hit on the wielder. Backfire damage and persistent entanglement remain table-managed. The Battle Sheet records one throw per individually identified warrior; track group members separately. These wound and OOA odds refer only to the target.')
+    if (w.input.entangleInsteadOfWound) notes.push('Bolas: a hit entangles instead of wounding. Apply no movement and −2 Weapon Skill in hand-to-hand combat at the table; shooting is unaffected. In Recovery, 4+ on a D6 frees the model. A natural 1 to hit inflicts a separate Strength 3 hit on the wielder. Backfire damage remains table-managed. The Battle Sheet records one throw and logged entanglement/Recovery for individually identified warriors; track group members separately. These wound and OOA odds refer only to the target.')
     if (!w.input.entangleInsteadOfWound && w.input.woundThreshold === IMPOSSIBLE) notes.push(`${w.weapon.name}: Strength ${w.strength} cannot wound Toughness ${setup.defender.stats.T}.`)
     if (w.weapon.vsTraits && w.weapon.vsTraits.traits.some((t) => setup.defender.traitIds.includes(t))) notes.push(w.weapon.id==='maximilian_holy_weapon' ? `${w.weapon.name}: +1 to wound against this Undead, Possessed, Carnival of Chaos or Beastmen target.` : `${w.weapon.name}: its bonus against ${w.weapon.vsTraits.traits.join(' and ')} applies to this target.`)
     if (w.weapon.saveModifierTwoHandedOnly) notes.push(setup.context.twoHanded ? `${w.weapon.name} swung two-handed: the save modifier applies.` : `${w.weapon.name}: the save modifier needs both hands on the club.`)
@@ -482,7 +484,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
   if (phase === 'melee') {
     if (primary.id === 'serpent_staff') toggles.push({ field: 'serpentStaffPower', label: 'Serpent Staff power', hint: 'One WS4 / S4 attack, striking first, instead of all normal attacks and parries this combat phase.' })
     if (defender && causesFearAgainst(defender.traitIds, defenderKit?.melee.some(w => w.special.includes('causesFearInAnimals')), attacker.isAnimal) && !ignoresFear(attacker.traitIds, { frenzyEnded: true })) toggles.push({ field: 'failedFearWhenCharged', label: 'Failed Fear when charged', hint: 'This warrior was charged by the fear-causing opponent and failed its Fear test: needs 6s to hit this round. A failed test to charge instead prevents the charge; it is not this setting.' })
-    toggles.push({ field: 'charging', label: 'Charging' })
+    if (!attacker.entangled) toggles.push({ field: 'charging', label: 'Charging' })
     if(attacker.traitIds.includes('frenzy')) toggles.push({field:'frenzyEnded',label:'Frenzy has ended',hint:'Select if this warrior was knocked down or stunned earlier in this battle. Their Attacks are no longer doubled.'})
     if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })
     const firstTurnMatters = (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks || [primary, ...(offHand ? [offHand] : []), ...(defenderKit?.melee ?? [])].some(w => w.initiativeFirstTurnBonus || w.special.includes('strikesFirstFirstTurn'))

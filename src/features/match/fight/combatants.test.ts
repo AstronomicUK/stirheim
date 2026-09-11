@@ -1,3 +1,4 @@
+import { battleEventRowSchema } from '../../../domain'
 import { computeOdds, combatContextFor } from './odds'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
 import { describe, expect, it } from 'vitest'
@@ -5,7 +6,7 @@ import { emptyBattleLiveState } from '../../../domain'
 import { findWarbandTemplate, WARBAND_TEMPLATES } from '../../../rules/data/warbandTemplates'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { setGroupOut, toggleHeroOut } from '../battle/sheet'
-import { canBeOffHand, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, loadoutFor, offHandCandidates, traitsFromRules, kindTraits } from './combatants'
+import { canBeOffHand, withBolasEntanglement, combatantLabel, combatantsOf, defaultOffHand, defaultPrimary, isTwoHanded, loadoutOf, loadoutFor, offHandCandidates, traitsFromRules, kindTraits } from './combatants'
 
 const stats = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
@@ -446,4 +447,19 @@ it('uses explicit animal unit rules for henchmen, never names or lack of XP', ()
   const fighters = combatantsOf(roster, undefined, roster.name, undefined)
   for (const id of animalIds) expect(fighters.find(f => f.id === id)?.isAnimal).toBe(true)
   for (const id of otherIds) expect(fighters.find(f => f.id === id)?.isAnimal).not.toBe(true)
+})
+
+
+it('reduces only battle WS for entanglement, floors at zero and restores after recovery or reversal', () => {
+  const roster = warband({ heroes: [hero('target', { stats: { ...stats, WS: 1 } })] });
+  const warriors = combatantsOf(roster, undefined, roster.name, undefined);
+  const event = battleEventRowSchema.parse({ id: 'aaaaaaaa-0000-4000-8000-000000000001', match_id: 'aaaaaaaa-0000-4000-8000-000000000002', actor_id: 'aaaaaaaa-0000-4000-8000-000000000003', actor_warband_id: null, at: '2026-09-11T15:00:00Z', kind: 'attack', summary: '', reverted_at: null, reverted_by: null, revert_note: null, payload: { attacker_warband_id: 'aaaaaaaa-0000-4000-8000-000000000004', attacker_id: 'x', attacker_kind: 'hero', attacker_name: 'X', target_warband_id: 'aaaaaaaa-0000-4000-8000-000000000005', target_id: 'target', target_kind: 'hero', target_name: 'Target', entangled: true } });
+  const id = event.payload.target_warband_id;
+  const affected = withBolasEntanglement(warriors, [event], id)[0];
+  expect(affected.stats.WS).toBe(0);
+  expect(affected.stats.BS).toBe(stats.BS);
+  expect(affected.entangled).toBe(true);
+  expect(warriors[0].stats.WS).toBe(1);
+  expect(withBolasEntanglement(warriors, [event], id, [event.id])[0]).toBe(warriors[0]);
+  expect(withBolasEntanglement(warriors, [{ ...event, reverted_at: event.at }], id)[0]).toBe(warriors[0]);
 })

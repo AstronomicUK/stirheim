@@ -3,9 +3,9 @@ import { useTurnAction, type BattleTurns } from '../../../api/battleTurns'
 import type { MatchParticipantView } from '../../../api/matches'
 import { Button, Notice, Sheet } from '../../../ui'
 
-export function TurnControls({ matchId, state, participants, myId, readOnly, loading, error, onBattleOver }: {
+export function TurnControls({ matchId, state, participants, myId, readOnly, loading, error, onBattleOver, hasBolasRecovery }: {
   matchId: string; state: BattleTurns | null | undefined; participants: MatchParticipantView[]; myId: string;
-  readOnly: boolean; loading: boolean; error?: string; onBattleOver?: () => void;
+  readOnly: boolean; loading: boolean; error?: string; onBattleOver?: () => void; hasBolasRecovery?: boolean;
 }) {
   const action = useTurnAction(matchId)
   const [order, setOrder] = useState(() => participants.map(p => p.warband_id))
@@ -42,6 +42,7 @@ export function TurnControls({ matchId, state, participants, myId, readOnly, loa
       <Sheet open={mine && !readOnly && !state.finished && !state.recovered && dismissed !== state.revision} title="Your turn!" onClose={() => setDismissed(state.revision)}>
         <div className="flex flex-col gap-4 p-4">
           <p>Recover your units: stunned becomes knocked down; knocked down models stand up. Wounds and out-of-action models stay as they are.</p>
+          {hasBolasRecovery ? <Button variant="secondary" onClick={() => setDismissed(state.revision)}>Resolve Bolas Recovery first</Button> : null}
           {action.error ? <Notice tone="error" title="Recovery failed">{action.error.message}</Notice> : null}
           <Button disabled={action.isPending} onClick={() => run('recover')}>Recover Units</Button>
         </div>

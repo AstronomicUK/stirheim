@@ -1,3 +1,4 @@
+import { BolasRecovery } from './battle/BolasRecovery'
 import { StupidityTests } from './battle/StupidityTests'
 import {useBattleBribes} from '../../api/battleBribes'
 import {CurseReminder} from '../roster/view/CurseReminder'
@@ -15,7 +16,7 @@ import { useBattleBoosts } from './battle/useBattleBoosts'
 import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
-import { applyBattleEvents, battleTotals, type AttackEventPayload, type BattleEventRow } from '../../domain'
+import { activeBolasEntanglements, applyBattleEvents, battleTotals, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -315,8 +316,9 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
         enemy={enemy}
       />
 
-      {inApp ? <TurnControls matchId={match.id} state={turns.data} participants={match.participants} myId={roster.id} readOnly={readOnly} loading={turns.isPending} error={turns.error?.message} onBattleOver={onBattleOver} /> : null}
+      {inApp ? <TurnControls matchId={match.id} state={turns.data} participants={match.participants} myId={roster.id} readOnly={readOnly} loading={turns.isPending} error={turns.error?.message} onBattleOver={onBattleOver} hasBolasRecovery={activeBolasEntanglements(events, roster.id, shown.bolasRecoveredEventIds).length > 0} /> : null}
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
+      {!readOnly && !turns.isPending && !turns.isError ? <BolasRecovery sheet={shown} events={events} warbandId={roster.id} turns={turns.data} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <StupidityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}
       {boostLines.length > 0 && !readOnly ? (

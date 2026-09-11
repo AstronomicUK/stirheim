@@ -3665,3 +3665,12 @@ A carried Torch is now selectable as the printed makeshift club: user Strength, 
 The Battle Sheet now saves a Bolas throw for each individually identified warrior when app resolution begins, even if it misses, and blocks another new throw after reload or a turn change. Bolas resolve one throw rather than gaining extra shots from attack-count bonuses. Players can also record a tabletop throw explicitly. An explained correction restores availability while preserving prior dice history. A new battle starts with fresh availability; nothing is removed permanently from the roster.
 
 117 domain/odds/roll-through tests passed; the final domain rerun (8 tests), build/typecheck and lint passed after the tabletop-recording control was added. Disposable 390px browser QA verified a missed throw, saved usage, reload, disabled second throw and explained correction. Multi-member henchmen still require tracking each member at the table; persistent entanglement/recovery and self-hit damage remain outstanding. No deployment.
+
+
+### #152 — Shared Bolas entanglement and Recovery (local, 11 September)
+
+Logging a Bolas hit now records entanglement in the shared battle log. Both sides derive the affected warrior's battle-only Weapon Skill reduction (-2, minimum 0); the saved roster and shooting stats remain unchanged. The affected warrior cannot select charging. Reverting the attack removes its derived condition. Multi-member groups remain explicitly table-managed.
+
+The defender gets a Recovery panel, reachable from the turn-start dialog. Recovery is available during their own turn; 4+ frees the warrior from the current throws. App dice are saved immediately, later edits remain visible, and another test in the same own turn requires an explanation. Failed tests remain active; successful Recovery survives reload and does not pre-clear future Bolas hits. Out-of-action warriors are excluded from the Recovery prompt.
+
+Full ordinary suite: 1837 passed, 176 database tests skipped. Build/typecheck/lint passed (existing audit warnings). Disposable 390px browser QA passed shared hit logging, defender reload, opponent-turn restriction, turn-start access, failed Recovery, explained correction, successful clearance and reload. Remaining Bolas scope: automatic self-hit damage and individual identities for multi-member groups. No deployment or live player data changes.

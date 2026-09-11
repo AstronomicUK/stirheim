@@ -25,6 +25,8 @@ export interface SuccessionView {
   /** The list's own rule, when it has one. */
   note: string | null;
   candidates: SuccessionCandidate[];
+  /** Equal leading candidates require a D6 decision at the table. */
+  tiedIds: string[];
   /** True when the rule says the warband cannot carry on without a specific hero (Clan Moulder with no Apprentice). */
   disbands: boolean;
 }
@@ -56,15 +58,20 @@ export function successionOptions(warband: RosterWarband, template: WarbandTempl
   });
   const named = (c: SuccessionCandidate) => (c.rank < 100 ? 0 : 1);
   candidates.sort((a, b) =>
-    rule?.by === "leadership"
+    rule?.by !== "experience"
       ? named(a) - named(b) || b.hero.stats.Ld - a.hero.stats.Ld || b.hero.xp - a.hero.xp
       : a.rank - b.rank || b.hero.xp - a.hero.xp,
   );
+  const first = candidates[0];
+  const tied = first ? candidates.filter(c =>
+    (rule?.by === "experience" ? c.rank === first.rank : named(c) === named(first)) &&
+    (rule?.by === "experience" || c.hero.stats.Ld === first.hero.stats.Ld) && c.hero.xp === first.hero.xp) : [];
+  const tiedIds = tied.length > 1 ? tied.map(c => c.hero.id) : [];
   if (rule?.candidateUnitIds && !rule.anyHero) {
     const named = candidates.filter((c) => c.rank < 100);
-    return { leaderUnitName: leader.name, note: rule.note, candidates: named, disbands: named.length === 0 && Boolean(rule.disbandsWithout) };
+    return { leaderUnitName: leader.name, note: rule.note, candidates: named, tiedIds: tiedIds.filter(id => named.some(c => c.hero.id === id)), disbands: named.length === 0 && Boolean(rule.disbandsWithout) };
   }
-  return { leaderUnitName: leader.name, note: rule?.note ?? null, candidates, disbands: false };
+  return { leaderUnitName: leader.name, note: rule?.note ?? null, candidates, tiedIds, disbands: false };
 }
 
 /** Make `heroId` the leader: same warrior, now of the leader's unit type, plus any skill the rule grants. */
@@ -81,7 +88,7 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
   const next: RosterHero = {
     ...hero,
     unitTemplateId: leader.id,
-    skillTableIds: [...new Set([...hero.skillTableIds, ...leader.skillTableIds])],
+    skillTableIds: [...hero.skillTableIds],
     skillIds: [...hero.skillIds, ...gained],
   };
   return {

@@ -437,7 +437,7 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
   const view = useMemo(() => successionOptions(detail.roster, template), [detail.roster, template])
   const [choice, setChoice] = useState('')
   if (!view) return null
-  const chosen = view.candidates.find((c) => c.hero.id === choice) ?? view.candidates[0]
+  const chosen = view.candidates.find((c) => c.hero.id === choice) ?? (view.tiedIds.length > 1 ? undefined : view.candidates[0])
 
   async function appoint() {
     if (!chosen) return
@@ -453,7 +453,8 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
   return (
     <Notice tone="warn" title={`The warband has no ${view.leaderUnitName}`}>
       <div className="flex flex-col gap-3">
-        <p>{view.note ?? 'A new leader must take over: pick the hero who steps up. They keep their profile, experience, skills and kit and are treated as the leader type from now on.'}</p>
+        <p>{view.note ?? 'The hero with the highest Leadership takes over; Experience breaks a tie. They retain their original skill lists, characteristics and equipment, and gain access to the leader’s equipment list.'}</p>
+        {view.tiedIds.length > 1 ? <p>These leading candidates are tied: {view.candidates.filter(c => view.tiedIds.includes(c.hero.id)).map(c => c.hero.name).join(', ')}. Roll a D6 at the table to decide, then select the new leader below.</p> : null}
         {view.disbands ? (
           <p className="text-accent">The list names no one left who may take over.</p>
         ) : view.candidates.length === 0 ? (
@@ -462,6 +463,7 @@ function SuccessionCard({ detail, template, onError }: { detail: WarbandDetail; 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <span className="flex-1">
               <SelectField label="New leader" value={chosen?.hero.id ?? ''} onChange={(e) => setChoice(e.target.value)}>
+                {!chosen ? <option value="" disabled>Select after deciding the tie</option> : null}
                 {view.candidates.map((c) => (
                   <option key={c.hero.id} value={c.hero.id}>
                     {c.hero.name} · {unitTypeName(template.id, c.hero.unitTemplateId)} · Ld {c.hero.stats.Ld} · {c.hero.xp} xp{c.reason ? ' · named by the list' : ''}

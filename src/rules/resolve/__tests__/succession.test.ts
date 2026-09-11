@@ -13,14 +13,15 @@ const warband = (templateId: string, heroes: RosterHero[]): RosterWarband => ({
 
 describe("leader succession", () => {
   const REIKLAND = findWarbandTemplate("mercenaries_reikland")!;
-  it("offers every hero when the list has no rule, most experienced first", () => {
-    const w = warband(REIKLAND.id, [hero("cap", "mercenaries_reikland_captain", { status: "dead" }), hero("a", "mercenaries_reikland_champions", { xp: 5 }), hero("b", "mercenaries_reikland_youngbloods", { xp: 9 })]);
+  it("offers heroes by Leadership first, using Experience only to break ties", () => {
+    const w = warband(REIKLAND.id, [hero("cap", "mercenaries_reikland_captain", { status: "dead" }), hero("a", "mercenaries_reikland_champions", { xp: 5, stats: { ...stats, Ld: 8 }, skillTableIds: ["combat"] }), hero("b", "mercenaries_reikland_youngbloods", { xp: 9 })]);
     expect(needsLeader(w, REIKLAND)).toBe(true);
     const view = successionOptions(w, REIKLAND)!;
     expect(view.leaderUnitName).toBe("Mercenary Captain");
-    expect(view.candidates.map((c) => c.hero.id)).toEqual(["b", "a"]);
+    expect(view.candidates.map((c) => c.hero.id)).toEqual(["a", "b"]);
     const next = appointLeader(w, REIKLAND, "a").value;
     expect(next.heroes.find((h) => h.id === "a")?.unitTemplateId).toBe("mercenaries_reikland_captain");
+    expect(next.heroes.find(h => h.id === "a")?.skillTableIds).toEqual(["combat"]);
     expect(needsLeader(next, REIKLAND)).toBe(false);
     expect(() => appointLeader(next, REIKLAND, "b")).toThrow(/already has/);
   });
@@ -50,4 +51,11 @@ describe("leader succession", () => {
     const w = warband(WH.id, [hero("c", "witch_hunters_captain", { status: "dead" }), hero("f", "witch_hunters_flagellants"), hero("z", "witch_hunters_witch_hunters")]);
     expect(successionOptions(w, WH)!.candidates.map((c) => c.hero.id)).toEqual(["z"]);
   });
+});
+
+it('identifies a genuine Leadership/Experience tie without silently deciding by roster order', () => {
+  const template = findWarbandTemplate('mercenaries_reikland')!;
+  const w = warband(template.id, [hero('a', 'mercenaries_reikland_champions', { xp: 8 }), hero('b', 'mercenaries_reikland_champions', { xp: 8 }), hero('c', 'mercenaries_reikland_youngbloods', { xp: 4 })]);
+  expect(successionOptions(w, template)?.tiedIds).toEqual(['a', 'b']);
+  expect(successionOptions({ ...w, heroes: w.heroes.map(h => h.id === 'b' ? { ...h, xp: 9 } : h) }, template)?.tiedIds).toEqual([]);
 });

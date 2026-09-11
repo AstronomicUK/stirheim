@@ -202,3 +202,12 @@ describe('rules skeleton', () => {
     expect(withSkeleton('## Terrain\n\nRuins.')).toBe('## Terrain\n\nRuins.')
   })
 })
+
+describe('campaign scenario selection', () => {
+  it('defaults to the core nine and respects an explicit empty selection', async () => {
+    const {enabledCampaignScenarios}=await import('./helpers')
+    expect(enabledCampaignScenarios().map(s=>s.id).sort()).toEqual(coreScenarios().map(s=>s.id).sort())
+    expect(enabledCampaignScenarios([])).toEqual([])
+    expect(enabledCampaignScenarios(['the_pool','the_pool','unknown']).map(s=>s.id)).toEqual(['the_pool'])
+  })
+})

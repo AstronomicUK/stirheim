@@ -596,3 +596,8 @@ Tom asked to review last night's issues. The eight workstreams, review findings 
 ### Second batch checkpoint — checklist persistence
 
 #224 now joins #221 as implemented/tested locally. Read `SECOND-FEEDBACK-BATCH.md` for the full checkpoint. Migration 72 is local only. Next independent implementation is #222 scenario-library enable/disable selection; do not re-run the completed first release or push intermediate changes.
+
+
+### Second batch checkpoint — scenario selection and menu drafts
+
+#221, #224 and #222 are implemented and tested locally. #223/#225 interactive navigation proposals are ready for Tom’s review; read `SECOND-FEEDBACK-BATCH.md`. Next independent work is shared English logs (#23), injury-roll override provenance (#226) and the missing Sold to the Pits prompt. Preserve the local-only batch and migration 72; no further deployment has occurred.

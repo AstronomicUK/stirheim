@@ -61,3 +61,14 @@ describe('settings form mapping', () => {
     expect(validateCampaignName('Stirheim')).toBeUndefined()
   })
 })
+
+it('preserves the enabled scenario list through unrelated settings edits and notices selection changes', () => {
+ const base=defaultSettingsForm()
+ const selected={...base,enabledScenarioIds:['the_pool','skirmish']}
+ expect(settingsFormEqual(base,selected)).toBe(false)
+ const result=settingsFromForm({...selected,startingGold:600})
+ expect(result.ok).toBe(true)
+ if(result.ok)expect(formFromSettings(result.settings).enabledScenarioIds).toEqual(['the_pool','skirmish'])
+ expect(settingsFormEqual(selected,{...selected,enabledScenarioIds:['skirmish','the_pool']})).toBe(true)
+ expect(settingsFormEqual(selected,{...selected,enabledScenarioIds:[]})).toBe(false)
+})

@@ -13,7 +13,7 @@ import { Button, Notice, PageHeader, SegmentedControl, SelectField, Spinner, Tex
 import { Card, Tag, TextLink } from '../campaign/bits'
 import { deriveMapState } from '../../rules/resolve/mapCampaign'
 import { DistrictPicker } from '../map/DistrictPicker'
-import { coreScenarios, filterScenarios, libraryScenarios } from '../scenarios/helpers'
+import { coreScenarios, filterScenarios, enabledCampaignScenarios } from '../scenarios/helpers'
 import { RandomScenario } from './schedule/RandomScenario'
 import { usePageTitle } from '../onboarding/usePageTitle'
 import { SCENARIO_ELIGIBILITY } from '../../rules/data/campaign/scenarioEligibility'
@@ -31,8 +31,6 @@ import {
 } from './schedule/helpers'
 
 const CORE = coreScenarios()
-const LIBRARY = libraryScenarios()
-const LIBRARY_PAGE = 25
 
 export function NewMatchPage() {
   const { id } = useParams<{ id: string }>()
@@ -101,14 +99,17 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
   const nameOf = (warbandId: string) => members.find((m) => m.warband_id === warbandId)?.warband.name ?? 'A warband'
 
   const customRows = useMemo(() => customScenariosFor(custom.data ?? [], campaign.id), [custom.data, campaign.id])
-  const libraryHits = useMemo(() => filterScenarios(LIBRARY, search), [search])
-  // What "roll for a scenario" draws from: the core table plus anything the group has written.
+  const enabledScenarios = useMemo(()=>enabledCampaignScenarios(settings.enabledScenarioIds),[settings.enabledScenarioIds])
+  const enabledCore = enabledScenarios.filter(s=>CORE.some(c=>c.id===s.id))
+  const enabledLibrary = enabledScenarios.filter(s=>!CORE.some(c=>c.id===s.id))
+  const libraryHits = filterScenarios(enabledLibrary, search)
+  // Random choices use the campaign-enabled built-ins plus the group’s custom scenarios.
   const rollableScenarios = useMemo(
     () => [
-      ...CORE.map((s, i) => ({ id: s.id, title: s.title, subtitle: `Core table, ${i + 1}` })),
+      ...enabledScenarios.map(s => ({ id: s.id, title: s.title, subtitle: s.setting })),
       ...customRows.map((r) => ({ id: `custom:${r.id}`, title: r.name, subtitle: r.summary || 'Written by your group' })),
     ],
-    [customRows],
+    [customRows, enabledScenarios],
   )
 
   const pickable: CampaignMemberView[] = matchup ? members.filter((m) => matchup.warbandIds.includes(m.warband_id)) : mode === 'gm' ? members : members.filter((m) => m.user_id !== user?.id)
@@ -127,6 +128,7 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    if(scenario.kind==='builtin' && !enabledScenarios.some(s=>s.id===scenario.id)){setError('This scenario is not enabled for this campaign. Choose another, or ask the GM to enable it in settings.');return}
     const result = validateNewMatch({ campaignId: campaign.id, warbandIds, scenario, randomlyChosen, scheduledLocal, notes, districtId }, { mode, myWarbandIds, requireDistrict: settings.mapCampaign && !decideLater })
     if (!result.ok) {
       setError(result.error)
@@ -281,7 +283,7 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
           options={rollableScenarios}
           disabled={schedule.isPending}
           onPick={(option) => {
-            setSource(option.id.startsWith('custom:') ? 'custom' : 'core')
+            setSource(option.id.startsWith('custom:') ? 'custom' : CORE.some(s=>s.id===option.id) ? 'core' : 'library')
             setRandomlyChosen(true)
             setScenario(option.id.startsWith('custom:') ? { kind: 'custom', id: option.id.slice('custom:'.length) } : { kind: 'builtin', id: option.id })
           }}
@@ -289,7 +291,7 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
 
         {source === 'core' ? (
           <PickList
-            items={CORE.map((s, i) => ({ pick: { kind: 'builtin', id: s.id } as ScenarioPick, number: i + 1, title: s.title, subtitle: s.description }))}
+            items={enabledCore.map((s, i) => ({ pick: { kind: 'builtin', id: s.id } as ScenarioPick, number: i + 1, title: s.title, subtitle: s.description }))}
             selected={scenario}
             onPick={choose}
             disabled={schedule.isPending}
@@ -298,13 +300,13 @@ export function NewMatchForm({ detail, matchup }: { detail: CampaignDetail; matc
           <>
             <TextField label="Search the library" type="search" placeholder="Title, description, author or source" autoComplete="off" value={search} onChange={(e) => setSearch(e.target.value)} />
             <p className="text-xs text-ink-dim" aria-live="polite">
-              {libraryHits.length} of {LIBRARY.length} scenarios{libraryHits.length > LIBRARY_PAGE ? `, showing the first ${LIBRARY_PAGE}` : ''}
+              {libraryHits.length} of {enabledLibrary.length} enabled library scenarios
             </p>
             {libraryHits.length === 0 ? (
-              <p className="py-4 text-center text-sm text-ink-dim">Nothing matches. Try a shorter search.</p>
+              <p className="py-4 text-center text-sm text-ink-dim">No enabled scenarios match. The GM can enable more in campaign settings.</p>
             ) : (
               <PickList
-                items={libraryHits.slice(0, LIBRARY_PAGE).map((s) => ({
+                items={libraryHits.map((s) => ({
                   pick: { kind: 'builtin', id: s.id } as ScenarioPick,
                   title: s.title,
                   subtitle: `${s.source} · ${s.author}${s.setting !== 'Mordheim' ? ` · ${s.setting}` : ''}`,

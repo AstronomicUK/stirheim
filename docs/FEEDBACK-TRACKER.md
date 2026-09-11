@@ -3232,6 +3232,8 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 222. Campaign scenario settings do not expose the full scenario library
 
+**Local fix — 2026-09-11:** Full built-in scenario selection now lives in Campaign Settings, persists with the existing save action, and controls new-battle manual/random selection. Existing battles and custom scenarios are retained. Thirty-five focused tests and real mobile save/reload/picker checks pass; build/typecheck pass. Not deployed; see `SECOND-FEEDBACK-BATCH.md`.
+
 **Status:** 🔲 Open
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10

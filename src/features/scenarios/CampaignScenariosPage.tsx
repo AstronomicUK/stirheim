@@ -23,7 +23,7 @@ export function CampaignScenariosPage() {
       {row.owner_id === user?.id ? <Link to={`/campaigns/${campaignId}/settings/scenarios/${row.id}/edit`} className="text-brass">Edit</Link> : <span className="text-xs text-ink-dim">Only its author can edit</span>}
     </div>)}
     {rows.length === 0 ? <p className="text-sm text-ink-dim">No custom scenarios for this campaign yet.</p> : null}
-    <Link to="/scenarios" className="text-brass">Browse the scenario library</Link>
+    <Link to={`/campaigns/${campaignId}/settings#scenario-library`} className="text-brass">Choose from the full scenario library in campaign settings</Link>
     <Link to={`/campaigns/${campaignId}/settings`} className="text-brass">Back to campaign settings</Link>
   </>
 }

@@ -6,6 +6,7 @@ import { campaignSettingsSchema, type CampaignSettings, type CombatMode, type Di
 import type { CampaignHouseRules, FirstSpellRule } from '../../rules/types/roster'
 
 export interface SettingsForm {
+  enabledScenarioIds?: string[]
   /** NaN while the field is blank or not a number. */
   startingGold: number
   /** null = no cap. NaN while the field holds something that is not a number. */
@@ -24,6 +25,7 @@ export type SettingsFormResult = { ok: true; settings: CampaignSettings } | { ok
 
 export function formFromSettings(settings: CampaignSettings): SettingsForm {
   return {
+    enabledScenarioIds: settings.enabledScenarioIds ? [...settings.enabledScenarioIds] : undefined,
     startingGold: settings.startingGold,
     maxRosters: settings.maxRosters,
     houseRules: { ...settings.houseRules, bans: { ...settings.houseRules.bans } },
@@ -46,6 +48,7 @@ export function settingsFromForm(form: SettingsForm): SettingsFormResult {
   if (Object.keys(errors).length) return { ok: false, errors }
 
   const parsed = campaignSettingsSchema.safeParse({
+    enabledScenarioIds: form.enabledScenarioIds,
     startingGold: form.startingGold,
     maxRosters: form.maxRosters,
     houseRules: form.houseRules,
@@ -69,6 +72,7 @@ export function settingsFromForm(form: SettingsForm): SettingsFormResult {
 export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
   return (
     Object.is(a.startingGold, b.startingGold) &&
+    JSON.stringify(a.enabledScenarioIds?.slice().sort()) === JSON.stringify(b.enabledScenarioIds?.slice().sort()) &&
     Object.is(a.maxRosters, b.maxRosters) &&
     a.dicePolicy === b.dicePolicy &&
     a.combatMode === b.combatMode &&

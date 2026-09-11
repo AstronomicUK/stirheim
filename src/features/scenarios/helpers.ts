@@ -163,3 +163,10 @@ export function rulesSkeleton(): string {
 export function withSkeleton(current: string): string {
   return current.trim() ? current : rulesSkeleton()
 }
+
+
+/** Existing campaigns start with the rulebook nine; an explicit empty list stays empty. */
+export function enabledCampaignScenarios(ids?: readonly string[]): ScenarioSummary[] {
+  const enabled = new Set(ids ?? CORE_RULEBOOK_SCENARIO_IDS)
+  return SCENARIOS.filter(s => enabled.has(s.id))
+}

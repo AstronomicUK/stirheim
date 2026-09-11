@@ -17,6 +17,7 @@ import { Card, Section, TextLink } from './bits'
 import { formatInviteCode } from './inviteCode'
 import { AliasField } from './AliasField'
 import { SettingsFields } from './SettingsFields'
+import { ScenarioSelection } from './ScenarioSelection'
 import { formFromSettings, settingsFormEqual, settingsFromForm, validateCampaignName, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
 export function CampaignSettingsPage() {
@@ -207,6 +208,8 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
           disabled={update.isPending}
         />
 
+        <ScenarioSelection value={form.enabledScenarioIds} onChange={enabledScenarioIds=>{setForm({...form,enabledScenarioIds});setSaved(false)}} disabled={update.isPending} />
+
         {saveError ? <Notice tone="error">{saveError}</Notice> : null}
         {saved && !dirty ? <Notice tone="success">Saved.</Notice> : null}
 
@@ -217,8 +220,8 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         </div>
       </form>
 
-      <Section title="Scenarios">
-        <TextLink to={`/campaigns/${campaign.id}/settings/scenarios`}>Manage scenarios</TextLink>
+      <Section title="Custom scenarios">
+        <TextLink to={`/campaigns/${campaign.id}/settings/scenarios`}>Manage custom scenarios</TextLink>
       </Section>
       <Section title="Members" aside={`${people.length} ${people.length === 1 ? 'player' : 'players'}`}>
         {people.length === 0 ? (

@@ -41,6 +41,8 @@ export const campaignHouseRulesSchema = z.object({
 }) satisfies z.ZodType<CampaignHouseRules, unknown>;
 
 export const campaignSettingsSchema = z.object({
+  /** Built-in scenarios available for new battles; absent means the rulebook nine. */
+  enabledScenarioIds: z.array(z.string()).optional(),
   /** Gold crowns a new warband in this campaign is built with. */
   startingGold: z.number().int().min(0).default(500),
   /** Cap on enrolled warbands; null = unlimited. Enforced by join_campaign(). */

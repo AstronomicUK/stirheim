@@ -47,7 +47,7 @@ export function ResolveSheet({ advance, subject, detail, template, bans, chooseS
   const record = useRecordAdvanceRoll(detail.warband.id)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const ctx: AdvanceContext = useMemo(() => ({ roster: detail.roster, template, thresholdXp: advance.threshold_xp, bans, houseRules }), [detail.roster, template, advance.threshold_xp, bans, houseRules])
+  const ctx: AdvanceContext = useMemo(() => ({ roster: detail.roster, template, thresholdXp: advance.threshold_xp, promotionReroll: advance.promotion_reroll ?? false, bans, houseRules }), [detail.roster, template, advance.threshold_xp, advance.promotion_reroll, bans, houseRules])
   const plan = useMemo(() => {
     if (!draft) return null
     return subject.kind === 'group' ? planGroup(draft, subject.group, ctx, skillTableName) : planHero(draft, subject, ctx)

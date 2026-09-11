@@ -1210,6 +1210,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          promotion_reroll: boolean
           resolution: Json | null
           resolved_at: string | null
           rolled: Json | null
@@ -1221,6 +1222,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          promotion_reroll?: boolean
           resolution?: Json | null
           resolved_at?: string | null
           rolled?: Json | null
@@ -1232,6 +1234,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          promotion_reroll?: boolean
           resolution?: Json | null
           resolved_at?: string | null
           rolled?: Json | null

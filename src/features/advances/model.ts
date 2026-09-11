@@ -559,6 +559,8 @@ export interface AdvanceContext {
   template: WarbandTemplate | undefined
   /** The experience threshold this advance was earned at (pending_advances.threshold_xp). */
   thresholdXp?: number
+  /** This is the remaining group’s reroll after one member was promoted. */
+  promotionReroll?: boolean
   /** Campaign bans: banned skills and spells are not offered. */
   bans?: CampaignBans
   /** The campaign's house rules (Rewards of the Shadowlord is a switch). */
@@ -934,6 +936,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
       return { ...plan, statOptions: options, need: 'stat' }
     }
     case 'ladsGotTalent': {
+      if (ctx.promotionReroll) return { ...plan, need: 'reroll', rerollReason: 'One member has already been promoted for this advance. The remaining group must re-roll any result of 10–12.' }
       const promotionRule = unitRules(group.unitTemplateId).promotion
       if (promotionRule && 'never' in promotionRule && promotionRule.casualty === 'executed') {
         const remaining = group.size - 1

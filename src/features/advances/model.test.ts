@@ -527,3 +527,16 @@ it('promoted Hurlers and Stubbles take Deathwish instead of a bonus Hero roll (#
     expect(result.next.henchmenGroups[0].size).toBe(1)
   }
 })
+
+it('a promotion remainder rerolls 10–12, while independently earned advances may promote (#178)', () => {
+  const draft = { ...setDice(emptyDraft(NEW_ID), 5, 5), newHeroName: 'Another Hero', skillTableIds: ['combat', 'speed'] }
+  for (const faces of [[4, 6], [5, 6], [6, 6]] as const) {
+    const blocked = planGroup(setDice(draft, faces[0], faces[1]), watchmen, { ...ctx, promotionReroll: true })
+    expect(blocked.need).toBe('reroll')
+    expect(blocked.result).toBeNull()
+    expect(blocked.rerollReason).toContain('already been promoted')
+  }
+  expect(planGroup(draft, watchmen, ctx).result?.resolution.outcome).toBe('promotion')
+  const normal = planGroup(setDice(draft, 1, 1), watchmen, { ...ctx, promotionReroll: true })
+  expect(normal.result?.resolution.outcome).toBe('stat')
+})

@@ -428,6 +428,7 @@ export type ReportStatus = MatchReportRow["status"];
 
 export const pendingAdvanceRowSchema = z
   .object({
+    promotion_reroll: z.boolean().optional(),
     id: uuidSchema,
     warband_id: uuidSchema,
     subject_type: advanceSubjectSchema,

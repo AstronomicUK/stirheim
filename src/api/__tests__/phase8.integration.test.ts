@@ -205,6 +205,26 @@ describe.skipIf(!enabled)('phase 8 functions', () => {
     }
   })
 
+  it('promotion remainder marker survives dice edits and rejects a second promotion (#178)', async () => {
+    const groupId = crypto.randomUUID()
+    const pending = await admin.from('pending_advances').insert({ warband_id: CLAWS_OF_ESHIN, subject_type: 'group', subject_id: groupId, threshold_xp: 2 }).select('id').single()
+    if (pending.error) throw pending.error
+    const result = await player.rpc('resolve_pending_advance', { p_advance_id: pending.data.id, p_changes: [], p_resolution: { outcome: 'promotion', followUps: [{ subjectType: 'group', subjectId: groupId, thresholdXp: 2 }, { subjectType: 'hero', subjectId: crypto.randomUUID(), thresholdXp: 2 }] } })
+    expect(result.error).toBeNull()
+    const remainder = await admin.from('pending_advances').select('id,promotion_reroll').eq('subject_id', groupId).is('resolved_at', null).single()
+    expect(remainder.data?.promotion_reroll).toBe(true)
+    expect((await player.from('pending_advances').update({ rolled: { dice: [6, 6], source: 'manual' } }).eq('id', remainder.data!.id)).error).toBeNull()
+    const reread = await player.from('pending_advances').select('promotion_reroll').eq('id', remainder.data!.id).single()
+    expect(reread.data?.promotion_reroll).toBe(true)
+    const blocked = await player.rpc('resolve_pending_advance', { p_advance_id: remainder.data!.id, p_changes: [{ table: 'warbands', op: 'update', data: { gold: 999 } }], p_resolution: { outcome: 'promotion' } })
+    expect(blocked.error?.message).toMatch(/must reroll/)
+    expect((await admin.from('pending_advances').select('resolved_at').eq('id', remainder.data!.id).single()).data?.resolved_at).toBeNull()
+    const accepted = await player.rpc('resolve_pending_advance', { p_advance_id: remainder.data!.id, p_changes: [], p_resolution: { outcome: 'stat', roll2d6: 2 } })
+    expect(accepted.error).toBeNull()
+    const fresh = await admin.from('pending_advances').insert({ warband_id: CLAWS_OF_ESHIN, subject_type: 'group', subject_id: groupId, threshold_xp: 5 }).select('promotion_reroll').single()
+    expect(fresh.data?.promotion_reroll).toBe(false)
+  })
+
   it('record_trade applies the batch, keeps the once-per-phase state, and refuses repeats', async () => {
     const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN], p_scenario_rules_id: 'skirmish' })
     if (m.error) throw m.error

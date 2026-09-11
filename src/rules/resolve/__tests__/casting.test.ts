@@ -1,3 +1,4 @@
+import {dispelsFor,selectDispelSource} from '../casting'
 import { describe, expect, it } from "vitest";
 import type { RosterHero } from "../../types/roster";
 import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll, profileForSpell, type CastState } from "../casting";
@@ -242,7 +243,7 @@ describe("the persisted log and diceManual say app-rolled vs entered by hand (#2
 
     const source = { id: "elven_runestones", name: "Elven Runestones", detail: "x", against: "difficulty" as const };
     const cast = applyCastRoll(startCast(p, spell, { enemyDispel: [source] }), [6, 6]);
-    expect(has(applyCastRoll(cast, [6, 6], true), /Dispel attempt: rolled 6 \+ 6 \(entered by hand\)/)).toBe(true);
+    expect(has(applyCastRoll(cast, [6, 6], true), /Dispel attempt.*: rolled 6 \+ 6 \(entered by hand\)/)).toBe(true);
 
     const aptP = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_magical_aptitude"] }));
     const aptCast = applyCastRoll(startCast(aptP, aptP.lore.spells[0]), [6, 6])
@@ -264,4 +265,29 @@ it('applies one Staff of Darkness bonus from actual new or legacy equipment',()=
  }
  const absent=profileOf(hero({equipment:[{itemId:'dark_emissary_staff',quantity:0}]}))
  expect(startCast(absent,absent.spells[0].spell).bonus).toBe(0)
+})
+
+it('identifies a legacy Truthsayer staff and lets the player select a named dispeller',()=>{
+ const bearer={...hero({id:'truth',name:'Truthsayer',equipment:[{itemId:'halberd',quantity:1,notes:'Staff of Light: also dispels one enemy spell per turn on 4+.'}]}),hiredSwordId:'truthsayer'}
+ const sources=dispelsFor(bearer)
+ expect(sources).toContainEqual(expect.objectContaining({id:'staff_of_light',ownerId:'truth',limit:'perTurn',against:{threshold:4}}))
+ const p=profileOf(hero());const spell=p.spells[0].spell
+ const cast=applyCastRoll(startCast(p,spell,{enemyDispel:[{id:'runes',name:'Runestones',detail:'',against:'difficulty'},...sources]}),[6,6])
+ const selected=selectDispelSource(cast,1)
+ expect(selected.pending?.dice).toBe(1)
+ const resolved=applyCastRoll(selected,[4],true)
+ expect(resolved.outcome).toBe('dispelled')
+ expect(resolved.dispelRolled).toMatchObject({source:{ownerId:'truth'},roll:4,manual:true})
+ expect(resolved.log.some(l=>l.text.includes('Truthsayer: Staff of Light'))).toBe(true)
+ expect(declineCastStep(selected).dispelRolled).toBeUndefined()
+ expect(dispelsFor({...bearer,equipment:[]})).toEqual([])
+})
+
+it('offers flat-threshold dispelling for an automatic spell without inventing a Difficulty',()=>{
+ const p=profileOf(hero());const spell={...p.spells[0].spell,difficulty:null}
+ const cast=startCast(p,spell,{enemyDispel:[{id:'runes',name:'Runestones',detail:'',against:'difficulty'},{id:'staff_of_light',name:'Staff of Light',detail:'',against:{threshold:4}}]})
+ expect(cast.pending?.kind).toBe('dispel')
+ expect(cast.enemyDispel.map(s=>s.id)).toEqual(['staff_of_light'])
+ expect(applyCastRoll(cast,[4]).outcome).toBe('dispelled')
+ expect(applyCastRoll(cast,[2]).outcome).toBe('automatic')
 })

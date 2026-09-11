@@ -51,6 +51,86 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_dispels: {
+        Row: {
+          active_warband_id: string
+          actor_id: string
+          at: string
+          caster_warband_id: string
+          id: string
+          manual: boolean
+          match_id: string
+          roll: number
+          round: number
+          source_hero_id: string
+          source_id: string
+          source_name: string
+          source_warband_id: string
+          spell_name: string
+        }
+        Insert: {
+          active_warband_id: string
+          actor_id: string
+          at?: string
+          caster_warband_id: string
+          id: string
+          manual: boolean
+          match_id: string
+          roll: number
+          round: number
+          source_hero_id: string
+          source_id: string
+          source_name: string
+          source_warband_id: string
+          spell_name: string
+        }
+        Update: {
+          active_warband_id?: string
+          actor_id?: string
+          at?: string
+          caster_warband_id?: string
+          id?: string
+          manual?: boolean
+          match_id?: string
+          roll?: number
+          round?: number
+          source_hero_id?: string
+          source_id?: string
+          source_name?: string
+          source_warband_id?: string
+          spell_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_dispels_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "battle_dispels_caster_warband_id_fkey"
+            columns: ["caster_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_dispels_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_dispels_source_warband_id_fkey"
+            columns: ["source_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_events: {
         Row: {
           actor_id: string
@@ -1413,6 +1493,7 @@ export type Database = {
         Returns: undefined
       }
       apply_battle_report: { Args: { p_report_id: string }; Returns: undefined }
+      apply_rawhide_settlement: { Args: { p_report_id: string }; Returns: Json }
       approve_battle_report: {
         Args: { p_report_id: string }
         Returns: Database["public"]["Enums"]["match_state"]
@@ -1607,6 +1688,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_staff_dispel: {
+        Args: {
+          p_active_warband_id: string
+          p_caster_warband_id: string
+          p_id: string
+          p_manual: boolean
+          p_match_id: string
+          p_roll: number
+          p_round: number
+          p_source_hero_id: string
+          p_spell_name: string
+        }
+        Returns: Json
+      }
       record_trade: {
         Args: {
           p_changes?: Json
@@ -1664,6 +1759,10 @@ export type Database = {
         Returns: undefined
       }
       revert_battle_report: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
+      revert_rawhide_settlement: {
         Args: { p_report_id: string }
         Returns: undefined
       }
@@ -1754,6 +1853,14 @@ export type Database = {
       use_trap_supply: {
         Args: { p_hero_id: string; p_match_id: string }
         Returns: number
+      }
+      validate_lycanthrope_equipment: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
+      validate_medicine_chests: {
+        Args: { p_report_id: string }
+        Returns: undefined
       }
       withdraw_battle_prompt: {
         Args: { p_prompt_id: string }

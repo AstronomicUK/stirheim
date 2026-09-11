@@ -824,7 +824,7 @@ export function hiredSwordStartingEquipment(id: string, detail: HiredSwordDetail
     {itemId:'dark_emissary_spiral',quantity:1},
   ];
   if(id==='truthsayer') return [
-    {itemId:'halberd',quantity:1,notes:'Staff of Light: also dispels one enemy spell per turn on 4+.'},
+    {itemId:'staff_of_light',quantity:1},
     {itemId:'truthsayer_triskele',quantity:1},
   ];
   if(id==='luthor_wolfenbaum') {

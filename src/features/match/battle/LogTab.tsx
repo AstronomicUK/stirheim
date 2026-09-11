@@ -2,6 +2,7 @@
 // first, with who logged it and a revert for mistakes. A reverted entry stays, struck through,
 // with the note, so the record is honest.
 
+import {useBattleDispels} from '../../../api/battleDispels'
 import { useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import { useRevertBattleEvent } from '../../../api/matches'
@@ -20,6 +21,7 @@ export interface LogTabProps {
 }
 
 export function LogTab({ matchId, events, sessions, participants, canRevert }: LogTabProps) {
+  const dispels=useBattleDispels(matchId)
   const [reverting, setReverting] = useState<BattleEventRow | null>(null)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -50,6 +52,9 @@ export function LogTab({ matchId, events, sessions, participants, canRevert }: L
           <ol className="mt-2 flex flex-col gap-1 text-sm text-ink-dim">{a.rolls.map((line, i) => <li key={i}>{line}</li>)}</ol>
         </Card>)}
       </Section>
+      {dispels.data?.length ? <Section title="Staff of Light attempts">
+        {[...dispels.data].reverse().map(d=><Card key={d.id} className="px-4 py-3"><p className="text-sm font-semibold">Round {d.round}: {d.source_name} — {d.spell_name}</p><p className="text-sm text-ink-dim">During {byWarband.get(d.active_warband_id)?.warband_name??'the opposing warband'}’s turn: rolled {d.roll} ({d.manual?'entered by hand':'rolled by the app'}) against 4+. {d.roll>=4?'Spell dispelled.':'Dispel failed.'} This staff’s attempt was spent.</p></Card>)}
+      </Section> : null}
       <Section title="Combat log" aside={events.length > 0 ? `${events.filter((e) => e.reverted_at === null).length} live` : undefined}>
         <p className="text-sm text-ink-dim">
           Results logged from the attack calculator on any phone at the table. Each one adds to the attacker&apos;s kills and the target&apos;s casualties on both

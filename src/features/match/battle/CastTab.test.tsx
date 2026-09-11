@@ -7,6 +7,9 @@ vi.mock('react', async original => ({ ...await original<typeof import('react')>(
 vi.mock('./casters', () => ({ castersOf: () => [{ ...fixture.caster, spells: [{ spell: fixture.spell, difficulty: null }] }] }))
 vi.mock('../fight/useEnemyRosters', () => ({ useEnemyRosters: () => ({ warbands: [] }) }))
 vi.mock('../../../rules/resolve/casting', async original => ({ ...await original<typeof import('../../../rules/resolve/casting')>(), profileForSpell: () => fixture.caster, startCast: () => ({ profile: fixture.caster, spell: fixture.spell, done: true, outcome: 'automatic', log: [{ text: 'Automatically cast.' }], used: [], difficulty: null }) }))
+vi.mock('../../../api/battleTurns',()=>({useBattleTurns:()=>({data:null})}))
+vi.mock('../../../api/battleDispels',()=>({useBattleDispels:()=>({data:[]})}))
+vi.mock('@tanstack/react-query',()=>({useQueryClient:()=>({invalidateQueries:vi.fn()})}))
 type Node = ReactElement<Record<string, any>>
 function nodes(value: any): Node[] { if (Array.isArray(value)) return value.flatMap(nodes); if (!value || typeof value !== 'object' || !value.props) return []; return [value, ...nodes(value.props.children)] }
 it('records the displayed shared round instead of the stale stored sheet turn, including after reload', () => {

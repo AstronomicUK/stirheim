@@ -57,6 +57,9 @@ export interface CastReroll {
 }
 
 export interface DispelSource {
+  ownerId?: string;
+  ownerName?: string;
+  limit?: "perTurn";
   id: string;
   name: string;
   detail: string;
@@ -306,7 +309,9 @@ export function profileForSpell(profile: CasterProfile, spellId: string): Caster
 
 /** Everything on the roster that can try to stop an enemy spell. */
 export function dispelsFor(hero: RosterHero): DispelSource[] {
-  return casterKit(hero, "spell").dispel;
+  const sources=casterKit(hero, "spell").dispel;
+  if(hero.equipment.some(i=>i.quantity>0 && (i.itemId==='staff_of_light' || (!i.itemId && legacyHiredItemId(i.customName)==='staff_of_light') || ('hiredSwordId' in hero && hero.hiredSwordId==='truthsayer' && i.itemId==='halberd' && i.notes?.startsWith('Staff of Light:'))))) sources.push({id:'staff_of_light',name:'Staff of Light',detail:'One attempt per turn, whether successful or not.',against:{threshold:4},limit:'perTurn'});
+  return sources.map(source=>({...source,ownerId:hero.id,ownerName:hero.name}));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -327,6 +332,7 @@ export interface CastStep {
   rerollId?: string;
   /** Set on a dispel step: what the roll needs to beat, so resolution reads it instead of re-deriving it from the label text. */
   dispelAgainst?: DispelSource["against"];
+  dispelSource?: DispelSource;
 }
 
 export type CastOutcome = "automatic" | "cast" | "failed" | "dispelled";
@@ -356,6 +362,7 @@ export interface CastState {
   done: boolean;
   /** Dispel sources actually available to whoever is opposing this cast; empty means nobody can. */
   enemyDispel: DispelSource[];
+  dispelRolled?: { source: DispelSource; roll: number; manual: boolean };
 }
 
 const CAST_STEP = (over: Partial<CastStep> & Pick<CastStep, "kind" | "label" | "detail">): CastStep => ({ dice: 2, optional: false, ...over });
@@ -402,7 +409,9 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
   if (spell.difficulty === null) {
     state.outcome = "automatic";
     state.log.push({ text: `${spell.name} is cast automatically — no Difficulty roll.`, tone: "good" });
-    return afterCast(state);
+    // Without a numerical Difficulty, only fixed-threshold dispels have a defined roll.
+    state.enemyDispel=state.enemyDispel.filter(source=>source.against!=='difficulty');
+    return offerDispel(state);
   }
   state.pending = CAST_STEP({
     kind: "cast",
@@ -467,7 +476,8 @@ export function applyCastRoll(state: CastState, values: number[], manual?: boole
       const sum = values.length > 1 ? values[0] + values[1] : values[0];
       const target = step.dispelAgainst === "difficulty" ? (next.difficulty ?? 0) : (step.dispelAgainst?.threshold ?? 0);
       const dispelled = sum >= target;
-      next.log.push({ text: `Dispel attempt: rolled ${values.join(" + ")}${rollTag}${values.length > 1 ? ` = ${sum}` : ""} against ${target}+. ${dispelled ? "The spell fails to work." : "The spell works normally."}`, tone: dispelled ? "bad" : "good" });
+      if(step.dispelSource) next.dispelRolled={source:step.dispelSource,roll:sum,manual:manual??false};
+      next.log.push({ text: `Dispel attempt${step.dispelSource ? ` (${step.dispelSource.ownerName ?? "Warrior"}: ${step.dispelSource.name})` : ""}: rolled ${values.join(" + ")}${rollTag}${values.length > 1 ? ` = ${sum}` : ""} against ${target}+. ${dispelled ? "The spell fails to work." : "The spell works normally."}`, tone: dispelled ? "bad" : "good" });
       if (dispelled) next.outcome = "dispelled";
       return afterCast(next);
     }
@@ -562,6 +572,11 @@ function succeed(state: CastState): CastState {
   const next: CastState = { ...state, log: [...state.log] };
   next.outcome = "cast";
   next.log.push({ text: `${next.spell.name} is cast.`, tone: "good" });
+  return offerDispel(next);
+}
+
+function offerDispel(state:CastState):CastState {
+  const next={...state};
   // Only offer a dispel roll when someone on the table actually has a way to attempt one — most
   // games have nobody with Elven Runestones, Blessed by Morr, or the like, and this used to ask
   // regardless.
@@ -576,8 +591,17 @@ function succeed(state: CastState): CastState {
     detail: `${source.detail} Needs ${target}+.`,
     optional: true,
     dispelAgainst: source.against,
+    dispelSource: source,
   });
   return next;
+}
+
+export function selectDispelSource(state:CastState, index:number):CastState {
+ if(state.pending?.kind!=='dispel') return state;
+ const source=state.enemyDispel[index];
+ if(!source) return state;
+ const target=source.against==='difficulty'?state.difficulty:source.against.threshold;
+ return {...state,pending:{...state.pending,dice:source.against==='difficulty'?2:1,label:`${source.name}: any dispel?`,detail:`${source.detail} Needs ${target}+.`,dispelAgainst:source.against,dispelSource:source}};
 }
 
 function afterCast(state: CastState): CastState {

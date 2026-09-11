@@ -1,3 +1,4 @@
+import { defaultCampaignHouseRules } from '../../rules/types/roster'
 import { describe, expect, it } from 'vitest'
 import { toRosterWarband, type PendingAdvanceRow } from '../../domain'
 import { CAPTAIN_ID, REIKLAND_ID, WATCHMEN_ID, reiklandGroups, reiklandHeroes, reiklandItems, reiklandWatch } from '../../domain/__tests__/fixtures'
@@ -539,4 +540,28 @@ it('a promotion remainder rerolls 10–12, while independently earned advances m
   expect(planGroup(draft, watchmen, ctx).result?.resolution.outcome).toBe('promotion')
   const normal = planGroup(setDice(draft, 1, 1), watchmen, { ...ctx, promotionReroll: true })
   expect(normal.result?.resolution.outcome).toBe('stat')
+})
+
+it('optional dismissal and promotion are planned together, preserving restrictions and the original roster (#211)', () => {
+  const full = { ...roster, heroes: [...roster.heroes, { ...captain, id: 'fifth' }, { ...captain, id: 'sixth' }] }
+  const houseRules = { ...defaultCampaignHouseRules(), dismissHeroForTalent: true }
+  const context = { roster: full, template, houseRules }
+  const draft = { ...setDice(emptyDraft(NEW_ID), 5, 5), newHeroName: 'Replacement', skillTableIds: ['combat', 'speed'] }
+  const waiting = planGroup(draft, watchmen, context)
+  expect(waiting.dismissalOptions).toHaveLength(6)
+  expect(waiting.need).toBe('promotion')
+  expect(waiting.result).toBeNull()
+  const selected = { ...draft, dismissHeroId: captain.id }
+  const result = planGroup(selected, watchmen, context).result!
+  expect(result.next.heroes.filter(h => h.status === 'active')).toHaveLength(6)
+  expect(result.next.heroes.find(h => h.id === captain.id)?.status).toBe('retired')
+  expect(result.next.heroes.find(h => h.id === NEW_ID)?.name).toBe('Replacement')
+  expect(result.resolution.dismissedHeroId).toBe(captain.id)
+  expect(result.resolution.text).toContain(`replacing dismissed Hero ${captain.name}`)
+  expect(full.heroes.find(h => h.id === captain.id)?.status).toBe('active')
+  expect(planGroup({ ...selected, skillTableIds: ['no-such-table', 'combat'] }, watchmen, context).result).toBeNull()
+  expect(planGroup(selected, watchmen, { ...context, houseRules: defaultCampaignHouseRules() }).need).toBe('reroll')
+  expect(planGroup(selected, watchmen, { ...context, promotionReroll: true }).need).toBe('reroll')
+  const invalid = planGroup({ ...selected, dismissHeroId: 'not-an-active-hero' }, watchmen, context)
+  expect(invalid.result).toBeNull()
 })

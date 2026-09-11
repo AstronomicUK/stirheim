@@ -111,6 +111,11 @@ export interface HouseRuleSwitch {
 /** One switch per house rule, with the one-line explanation the form shows under it. */
 export const HOUSE_RULE_SWITCHES: HouseRuleSwitch[] = [
   {
+    key: 'dismissHeroForTalent',
+    label: 'Make room for Lad’s Got Talent',
+    description: 'At the Hero limit, allow a player to dismiss an existing Hero and promote the henchman instead of rerolling. Both changes are confirmed together; dismissed equipment goes to the stash.',
+  },
+  {
     key: 'strengthArmourPiercing',
     label: 'Strength erodes armour saves',
     description: 'Core rulebook chart: a Strength 4 hit worsens the save by 1, Strength 5 by 2, and so on. Off by house rule.',

@@ -60,7 +60,7 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
               <ToggleRow
                 label={rule.label}
                 description={rule.description}
-                checked={form.houseRules[rule.key]}
+                checked={form.houseRules[rule.key] ?? false}
                 disabled={disabled}
                 onChange={(checked) => onChange({ ...form, houseRules: { ...form.houseRules, [rule.key]: checked } })}
               />

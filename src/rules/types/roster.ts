@@ -221,6 +221,8 @@ export function emptyCampaignBans(): CampaignBans {
 export type FirstSpellRule = "random" | "chooseFreely" | "rollTwicePickOne";
 
 export interface CampaignHouseRules {
+  /** Optional: dismiss an existing Hero to accept Lad’s Got Talent at the Hero cap. */
+  dismissHeroForTalent: boolean;
   /** Strength erodes armour saves (core chart). Off by house rule. */
   strengthArmourPiercing: boolean;
   /** Use the expanded per-weapon-type critical hit charts (Optional Rules). */
@@ -245,6 +247,7 @@ export interface CampaignHouseRules {
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
   return {
+    dismissHeroForTalent: false,
     strengthArmourPiercing: false,
     optionalCriticalTables: true,
     halfPriceArmour: true,

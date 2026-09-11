@@ -83,5 +83,8 @@ export function describeHouseRules(rules: CampaignHouseRules): string[] {
     rules.opposedParryWS
       ? "Parry is an opposed Weapon Skill roll: each side adds WS to their die, and the defender must beat (or match, with Master of Blades) the attacker's total (house rule)."
       : "Parry succeeds by beating the attacker's to-hit roll on a D6 (rulebook).",
+    rules.dismissHeroForTalent
+      ? "At the Hero limit, a player may dismiss an existing Hero to accept Lad’s Got Talent (house rule)."
+      : "At the Hero limit, Lad’s Got Talent must be re-rolled.",
   ];
 }

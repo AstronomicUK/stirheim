@@ -306,6 +306,13 @@ function GroupChoice({ draft, plan, update }: StepProps<GroupPlan>) {
   if (plan.roll?.kind === 'ladsGotTalent') {
     return (
       <Block title="The lad's got talent">
+        {plan.dismissalOptions.length > 0 ? <Notice tone="warn" title="Your warband is at the maximum number of heroes. Do you want to dismiss an existing hero?">
+          <SelectField label="Hero to dismiss" value={draft.dismissHeroId ?? ''} onChange={e => update(d => ({ ...d, dismissHeroId: e.target.value }))}>
+            <option value="">Choose a Hero</option>
+            {plan.dismissalOptions.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </SelectField>
+          <p className="mt-2 text-sm">Their equipment returns to the stash. Dismissal and promotion happen together when you confirm.</p>
+        </Notice> : null}
         <p className="text-sm leading-relaxed text-ink-dim">
           One member becomes a hero of the same type, keeping his experience and characteristics, and takes one of each item the group carries.
           {plan.dissolvesGroup ? ' He is the last member, so the group leaves the roster.' : ''}

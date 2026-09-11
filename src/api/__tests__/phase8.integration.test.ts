@@ -225,6 +225,23 @@ describe.skipIf(!enabled)('phase 8 functions', () => {
     expect(fresh.data?.promotion_reroll).toBe(false)
   })
 
+  it('failed replacement promotion rolls back the proposed Hero dismissal (#211)', async () => {
+    const pending = await admin.from('pending_advances').insert({ warband_id: CLAWS_OF_ESHIN, subject_type: 'group', subject_id: crypto.randomUUID(), threshold_xp: 2 }).select('id').single()
+    if (pending.error) throw pending.error
+    const before = await admin.from('heroes').select('status').eq('id', SKRITCH).single()
+    const response = await player.rpc('resolve_pending_advance', {
+      p_advance_id: pending.data.id,
+      p_resolution: { outcome: 'promotion', dismissedHeroId: SKRITCH },
+      p_changes: [
+        { table: 'heroes', op: 'update', id: SKRITCH, data: { status: 'retired' } },
+        { table: 'heroes', op: 'insert', id: SKRITCH, data: { name: 'Invalid duplicate Hero', unit_type_rules_id: 'skaven_night_runners', stats: STATS } },
+      ],
+    })
+    expect(response.error).not.toBeNull()
+    expect((await admin.from('heroes').select('status').eq('id', SKRITCH).single()).data).toEqual(before.data)
+    expect((await admin.from('pending_advances').select('resolved_at').eq('id', pending.data.id).single()).data?.resolved_at).toBeNull()
+  })
+
   it('record_trade applies the batch, keeps the once-per-phase state, and refuses repeats', async () => {
     const m = await gm.rpc('schedule_match', { p_campaign_id: CAMPAIGN, p_warband_ids: [REIKLAND_WATCH, CLAWS_OF_ESHIN], p_scenario_rules_id: 'skirmish' })
     if (m.error) throw m.error

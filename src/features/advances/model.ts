@@ -1,3 +1,4 @@
+import { dismissWarrior } from '../../rules/resolve/recruitment'
 import { grantMerchantGuardian, hasGuardianSkill } from '../../rules/resolve/hiredCompanions'
 // Pure helpers for the advancement screen: grouping pending advances by warrior, the persisted
 // draft of one advance being rolled, and turning that draft plus the loaded roster into a plan
@@ -254,6 +255,8 @@ export function advanceAuditText(draft: AdvanceRollAudit): string {
 }
 
 export interface AdvanceDraft extends AdvanceRollAudit {
+  dismissHeroId?: string
+
   maximaRulingConfirmed?: boolean
   agreedRacialMaxima?: Stats
   agreedRacialMaximaReason?: string
@@ -306,7 +309,7 @@ export function diceTotal(draft: Pick<AdvanceDraft, 'dice'>): number | null {
 
 /** Anything chosen after the roll is forgotten when the roll changes. */
 function clearChoices(draft: AdvanceDraft): AdvanceDraft {
-  return { ...draft, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill', reward: emptyRewardChoices() }
+  return { ...draft, dismissHeroId: undefined, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill', reward: emptyRewardChoices() }
 }
 
 export function setDie(draft: AdvanceDraft, index: 0 | 1, value: number | null, source?: RollSource): AdvanceDraft {
@@ -471,6 +474,8 @@ export interface AdvanceResolution extends AdvanceRollAudit {
   spellId?: string
   spellName?: string
   loreId?: string
+  dismissedHeroId?: string
+  dismissedHeroName?: string
   promotionGrant?: string
   casualtySummary?: string
   newHeroId?: string
@@ -524,7 +529,7 @@ export function summaryText(p: ResolutionParts): string {
       body = p.casualtySummary ?? 'one henchman is removed'
       break
     case 'promotion':
-      body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero${p.promotionGrant ? ` and learns ${p.promotionGrant} instead of the immediate Hero advance roll` : ''}`
+      body = `The lad's got talent — ${p.newHeroName ?? 'a henchman'} becomes a hero${p.dismissedHeroName ? `, replacing dismissed Hero ${p.dismissedHeroName}` : ''}${p.promotionGrant ? ` and learns ${p.promotionGrant} instead of the immediate Hero advance roll` : ''}`
       break
     case 'reward':
       body = `${p.rewardSummary ?? `Rewards of the Shadowlord: ${p.rewardTitle ?? ''}`}`.trimEnd()
@@ -564,7 +569,7 @@ export interface AdvanceContext {
   /** Campaign bans: banned skills and spells are not offered. */
   bans?: CampaignBans
   /** The campaign's house rules (Rewards of the Shadowlord is a switch). */
-  houseRules?: Pick<CampaignHouseRules, 'rewardsOfTheShadowlord'> | null
+  houseRules?: Pick<CampaignHouseRules, 'rewardsOfTheShadowlord'> & Partial<Pick<CampaignHouseRules, 'dismissHeroForTalent'>> | null
 }
 
 export interface AdvanceResult {
@@ -846,6 +851,7 @@ export interface GroupPlan {
   tableOptions: SkillTableOption[]
   heroCapacity: number | null
   promotionGrant: string | null
+  dismissalOptions: { id: string; name: string }[]
   /** True when promoting the last member removes the group. */
   dissolvesGroup: boolean
   result: AdvanceResult | null
@@ -870,6 +876,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
       })
       .map((id) => ({ id, name: tableName(id) })),
     promotionGrant: unitRules(group.unitTemplateId).promotionAdvanceSkill ? 'Deathwish' : null,
+    dismissalOptions: [],
     heroCapacity: capacity,
     dissolvesGroup: group.size <= 1,
     result: null,
@@ -955,20 +962,26 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
         return { ...plan, need: 'reroll', rerollReason: promotionRule.note }
       }
       const active = ctx.roster.heroes.filter((h) => h.status === 'active').length
+      let dismissed: RosterHero | undefined
       if (capacity !== null && active >= capacity) {
-        return { ...plan, need: 'reroll', rerollReason: `The warband already has its maximum of ${capacity} heroes; roll again.` }
+        if (!ctx.houseRules?.dismissHeroForTalent) return { ...plan, need: 'reroll', rerollReason: `The warband already has its maximum of ${capacity} heroes; roll again.` }
+        plan.dismissalOptions = ctx.roster.heroes.filter(h => h.status === 'active').map(h => ({ id: h.id, name: h.name }))
+        dismissed = ctx.roster.heroes.find(h => h.id === draft.dismissHeroId && h.status === 'active')
+        if (!dismissed) return { ...plan, need: 'promotion' }
       }
       const name = draft.newHeroName.trim()
       if (name.length === 0 || draft.skillTableIds.length !== 2) return { ...plan, need: 'promotion' }
       try {
-        const r = promoteHenchman(ctx.roster, group.id, name, draft.skillTableIds, draft.newHeroId, capacity !== null ? { heroCapacity: capacity } : undefined)
+        const dismissal = dismissed ? dismissWarrior(ctx.roster, dismissed.id) : null
+        const r = promoteHenchman(dismissal?.value ?? ctx.roster, group.id, name, draft.skillTableIds, draft.newHeroId, capacity !== null ? { heroCapacity: capacity } : undefined)
         return {
           ...plan,
           result: {
             next: r.value,
-            events: r.events,
+            events: [...(dismissal?.events ?? []), ...r.events],
             resolution: buildResolution({
               ...base,
+              ...(dismissed ? { dismissedHeroId: dismissed.id, dismissedHeroName: dismissed.name } : {}),
               outcome: 'promotion',
               ...(plan.promotionGrant ? { promotionGrant: plan.promotionGrant } : {}),
               newHeroId: draft.newHeroId,

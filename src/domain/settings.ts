@@ -28,6 +28,7 @@ export const campaignBansSchema = z.object({
 }) satisfies z.ZodType<CampaignBans, unknown>;
 
 export const campaignHouseRulesSchema = z.object({
+  dismissHeroForTalent: z.boolean().default(false),
   strengthArmourPiercing: z.boolean().default(false),
   optionalCriticalTables: z.boolean().default(true),
   halfPriceArmour: z.boolean().default(true),

@@ -38,7 +38,7 @@ import { findSpell } from "../data/campaign/magic";
 import { findUnitTemplate, findWarbandTemplate } from "../data/warbandTemplates/index";
 import { RulesError } from "./errors";
 import { isBanned } from "./houseRules";
-import { skillRestrictionBlock } from "./skillRestrictions";
+import { CORE_SKILL_RESTRICTIONS, skillRestrictionBlock } from "./skillRestrictions";
 import { unitRules } from "../data/campaignRules";
 import { STAT_NAMES } from "./injuries";
 
@@ -472,7 +472,7 @@ const CORE_TABLE_NAMES: Record<string, string> = {
 };
 
 function coreSkillEntry(s: Skill): AvailableSkill {
-  return { id: s.id, name: s.name, description: s.description };
+  return { id: s.id, name: s.name, description: s.description, ...(CORE_SKILL_RESTRICTIONS[s.id] ? { restriction: CORE_SKILL_RESTRICTIONS[s.id] } : {}) };
 }
 
 function warbandSkillEntry(s: WarbandSkill): AvailableSkill {

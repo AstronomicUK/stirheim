@@ -144,3 +144,48 @@ describe("skill restrictions", () => {
     expect(banned.find((t) => t.tableId === "combat")!.skills.some((s) => s.id === "strike_to_injure")).toBe(false);
   });
 });
+
+
+it('offers WEB herder skills to the actual Squig Herder, warning the Boss and other heroes', () => {
+  const template = findWarbandTemplate('night_goblins_web')!;
+  for (const id of ['gassy_squigs', 'threaten', 'trainin']) {
+    const skillId = `night_goblins_web_squig_herder_skills_${id}`;
+    const herder = availableSkills(hero('herder', 'night_goblins_web_squig_herder'), template.id).flatMap(t => t.skills).find(s => s.id === skillId);
+    const boss = availableSkills(hero('boss', 'night_goblins_web_boss'), template.id).flatMap(t => t.skills).find(s => s.id === skillId);
+    expect(herder).toBeDefined(); expect(herder?.blocked).toBeUndefined();
+    expect(boss?.blocked).toContain('are not Squig Herders');
+  }
+});
+
+it('warns non-casters but permits a native or promoted Sorcerous Society wizard', () => {
+  const template = findWarbandTemplate('sorcerous_society')!;
+  const restriction = 'This skill may only be taken by a warrior capable of casting spells. It may not be used by Sisters of Sigmar or Warrior Priests';
+  const check = (h: RosterHero) => skillRestrictionBlock(restriction, { hero: h, template, skillId: 'sorcerous_society_additional_academic_skills_magical_aptitude' });
+  expect(check(hero('c', 'companions'))).toContain('capable of casting spells');
+  expect(check(hero('m', 'mages'))).toBeNull();
+  expect(check(hero('u', 'untrained', { flags: { magicLoreId: 'lesser_magic' } }))).toBeNull();
+  expect(check(hero('u', 'untrained'))).toContain('capable of casting spells');
+});
+
+it('core skill warnings retain entries for player overrides and distinguish prayers from spells', () => {
+  const pick = (h: RosterHero, template: string, id: string) => availableSkills({ ...h, skillTableIds: ['academic'] }, template).flatMap(t => t.skills).find(s => s.id === id);
+  const champion = hero('c', 'mercenaries_reikland_champions');
+  expect(pick(champion, 'mercenaries_reikland', 'sorcery')?.blocked).toContain('capable of casting spells');
+  expect(pick({ ...champion, flags: { magicLoreId: 'lesser_magic' } }, 'mercenaries_reikland', 'sorcery')?.blocked).toBeUndefined();
+  expect(pick({ ...champion, flags: { magicLoreId: 'prayers_of_sigmar' } }, 'mercenaries_reikland', 'warrior_wizard')?.blocked).toContain('prayers alone');
+  expect(pick(champion, 'mercenaries_reikland', 'battle_tongue')?.blocked).toContain('leader');
+  expect(pick(hero('l', 'mercenaries_reikland_captain'), 'mercenaries_reikland', 'battle_tongue')?.blocked).toBeUndefined();
+  expect(pick(hero('s', 'sisters_of_sigmar_matriarch'), 'sisters_of_sigmar', 'sorcery')?.blocked).toContain('Sisters of Sigmar');
+  expect(pick(hero('s', 'sisters_of_sigmar_matriarch'), 'sisters_of_sigmar', 'arcane_lore')?.blocked).toContain('Arcane Lore');
+  expect(pick(champion, 'mercenaries_reikland', 'arcane_lore')?.blocked).toBeUndefined();
+  expect(pick(hero('v', 'undead_vampire'), 'the_undead', 'battle_tongue')?.blocked).toContain('Undead leaders');
+  expect(pick(hero('n', 'undead_necromancer', { flags: { temporaryLeader: true } }), 'the_undead', 'battle_tongue')?.blocked).toBeUndefined();
+});
+
+it('warns a Youngun below Proven Warrior’s printed 25 XP requirement', () => {
+  const template = findWarbandTemplate('black_orcs')!;
+  const h = hero('young', 'black_orcs_youngun', { xp: 24 });
+  const entry = availableSkills(h, template.id).flatMap(t => t.skills).find(s => s.id === 'black_orcs_skills_proven_warrior');
+  expect(entry?.blocked).toContain('25 Experience');
+  expect(entry?.restriction).toContain('Black Orc blood');
+});

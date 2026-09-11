@@ -4,6 +4,9 @@
 // common shapes and says why a hero should not take the skill; the picker shows the reason and lets
 // the player take it anyway, on the record. Anything it cannot read stays a plain note.
 
+import { loreForCaster, PRAYER_LORE_IDS } from "./casting";
+import { warbandRules } from "../data/campaignRules";
+import { SPELL_LORES } from "../data/campaign/magic";
 import { SKILLS } from "../data/skills";
 import { WARBAND_SKILL_TABLES } from "../data/campaign/warbandSkills";
 import { findUnitTemplate } from "../data/warbandTemplates";
@@ -33,7 +36,7 @@ export const SUBJECT_UNITS: Record<string, string[]> = {
   skinks: ["lizardmen_skink_priest", "lizardmen_skink_great_crest", "lizardmen_skink_brave"],
   saurus: ["lizardmen_saurus_totem_warrior", "lizardmen_saurus_brave"],
   "warrior priest": ["warrior_priest", "witch_hunters_warrior_priest"],
-  "squig herders": ["night_goblins_web_boss", "night_goblins_big_boss"],
+  "squig herders": ["night_goblins_web_squig_herder"],
   "strigany heroes": ["seer", "domnu"],
   "strigoi vampire": ["strigoi_vampire"],
   rememberer: ["dwarf_slayer_cult_rememberer_hero"],
@@ -85,6 +88,22 @@ export interface SkillRestrictionContext {
   skillId?: string;
 }
 
+/** Printed core eligibility clauses. These annotate the picker, never remove its override. */
+export const CORE_SKILL_RESTRICTIONS: Record<string, string> = {
+  battle_tongue: "Only the warband leader may take this skill. Undead leaders may not use it.",
+  sorcery: "Only spellcasting Heroes may take this skill. Sisters of Sigmar and Warrior Priests may not use it.",
+  warrior_wizard: "Only spellcasters may take this skill.",
+  arcane_lore: "Witch Hunters, Sisters of Sigmar and Warrior Priests may not take this skill.",
+};
+
+function spellcaster(ctx: SkillRestrictionContext): boolean {
+  const prayer = (id: string) => (PRAYER_LORE_IDS as readonly string[]).includes(id);
+  if (SPELL_LORES.some(lore => !prayer(lore.id) && lore.spells.some(spell => ctx.hero.spellIds.includes(spell.id)))) return true;
+  const unit = ctx.template && findUnitTemplate(ctx.template, ctx.hero.unitTemplateId);
+  const lore = loreForCaster(ctx.hero, ctx.template?.name, unit?.name);
+  return Boolean(lore && !prayer(lore.id)) || Boolean(unit?.specialRules.some(rule => /^wizard$/i.test(rule.name)));
+}
+
 /**
  * Why this hero should not take a skill with this restriction text, or null when the text allows it
  * or says nothing this reader understands.
@@ -94,6 +113,12 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
   const text = restriction.trim();
   const lower = text.toLowerCase();
   const unit = ctx.template ? findUnitTemplate(ctx.template, ctx.hero.unitTemplateId) : undefined;
+
+  if ((ctx.skillId === 'sorcery' || ctx.skillId === 'sorcerous_society_additional_academic_skills_magical_aptitude') && (ctx.template?.id === 'sisters_of_sigmar' || unitMatches(ctx.hero.unitTemplateId, unit?.name ?? '', 'warrior priest'))) return 'Sisters of Sigmar and Warrior Priests may not take this skill.';
+  if (ctx.skillId === 'arcane_lore' && (['witch_hunters', 'sisters_of_sigmar'].includes(ctx.template?.id ?? '') || unitMatches(ctx.hero.unitTemplateId, unit?.name ?? '', 'warrior priest'))) return 'Witch Hunters, Sisters of Sigmar and Warrior Priests may not take Arcane Lore.';
+  if (ctx.skillId === 'battle_tongue' && (warbandRules(ctx.template?.id ?? '').undeadUnitIds?.includes(ctx.hero.unitTemplateId) || /vampire|necrarch|strigoi/i.test(ctx.hero.unitTemplateId) || unit?.specialRules.some(rule => /^undead$/i.test(rule.name)))) return 'Undead leaders may not use Battle Tongue.';
+  if (/only/.test(lower) && /spellcast|capable of casting spells/.test(lower) && !spellcaster(ctx)) return 'Only a warrior capable of casting spells may take this skill; prayers alone do not qualify.';
+  if (ctx.skillId === 'black_orcs_skills_proven_warrior' && ctx.hero.xp < 25) return "Proven Warrior requires at least 25 Experience and the purchased Black Orc Blood upgrade.";
 
   // Prerequisite skills: "Requires the Strongman skill", "with the Rotten Body special skill", "must have the X skill".
   const prereq = /(?:requires?|must (?:already )?have|with) (?:the )?([a-z' -]+?) (?:special |strength |combat |shooting |speed |academic )?(?:skill|ability)/i.exec(text);
@@ -143,7 +168,7 @@ export function skillRestrictionBlock(restriction: string | undefined, ctx: Skil
     /^only for (?:the )?([a-z' -]+?)\.?$/i.exec(text);
   if (only && unit) {
     const subject = only[1].trim();
-    if (/leader|spellcaster|warrior capable of casting/i.test(subject)) return null;
+    if (/leader|spellcast|warrior capable of casting/i.test(subject)) return null;
     if (!unitMatches(unit.id, unit.name, subject)) return `${text.replace(/\.$/, "")}: ${unit.name} are not ${subject.replace(/^the /i, "")}.`;
   }
   return null;

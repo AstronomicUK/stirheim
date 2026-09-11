@@ -18,17 +18,15 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 ## Current checkpoint — 11 September, local batch
 
-**Still local; the 20-item batch is not ready to deploy.** Normal reward paths are implemented for **102 of 103 scenarios**. This measures reward paths, not complete automation of every related campaign rule.
+**Implementation scope complete; final release verification is underway. Nothing deployed yet.** There are **102 implemented scenario reward paths**. Tom explicitly deferred the remaining Khemri-dependent Defend the Oasis aftermath and the wider Khemri campaign system on 11 September. Track this as very low-priority future upgrade #227, including a possible campaign setting that controls scenario availability. No additional Khemri implementation is required for this batch.
 
-Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian interception are now locally verified (milestones 45–49). The remaining scenario path is Defend the Oasis.
+The original-scope evidence map and release gates are in `BETWEEN-BATTLES-RELEASE-CHECKLIST.md`. Approved manual rulings and bespoke custom equipment remain explicit; this release does not claim full automation of every optional campaign system.
 
-Other open work: final original-scope reconciliation and release preparation; the named #66 exploration consequences have been implemented locally. The combined recruitment/reward/start checks passed at milestone 58. Bespoke custom equipment is not automatically a release blocker under original #74. Ogre Slaver identity remains unconfirmed and is now explicitly presented for table review. Do not close broader tracker entries based on partial milestones.
+Latest evidence: full ordinary suite 1,671 passed, followed by 17 focused exploration-aid tests and typecheck after the final Pathfinder case. Last separate database suite: 166 passed. Build and lint pass with existing warnings. Final release checks will refresh these totals.
 
-Validation: **1,671 ordinary tests pass; the last separate local database run passed all 166 tests**. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 65 (native/hired exploration aids and mobile saved-report checks; 17 focused tests pass after the final Pathfinder coverage addition). Mobile checks use disposable local records and actual 390px viewport constraints.
+All 33 batch migrations (39–71) remain local only; the linked production dry run matches that expected set. Netlify auto-builds were paused at the read-only preflight check. Recheck before the single authorised push/deployment to avoid duplicate builds. Preserve pre-existing dirty audit/tracker work.
 
-Migrations through 71 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
-
-Pending scope question: Defend the Oasis relies on Khemri’s wider water/carrying-capacity/exploration/trading system. An asynchronous question asks whether this batch should provide scenario-specific recorded support or expand into the full Khemri campaign system. No response was received at this checkpoint; other scenario work is independent. The original [Town Cryer compilation](https://broheim.net/downloads/campaigns/khemri/Khemri%20Town%20Cryer%20Compilation.pdf), PDF pages 5–7 and 38, confirms that these are campaign systems rather than just a gold reward. Do not silently claim full Khemri support.
+**Scope answer received:** the earlier Oasis question is resolved by deferral, not by implementing a partial water system. The heartbeat may resume to finish release and then the authorised second batch.
 
 The following milestone sections are chronological history; earlier “remaining” lists and test totals describe those earlier checkpoints.
 

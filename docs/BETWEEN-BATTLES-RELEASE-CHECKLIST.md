@@ -13,7 +13,7 @@ Local review at checkpoint `18ee565`, 11 September 2026. **Not released.** This 
 | #123 | Troll alternatives, individual Fanatic supplies/Looney, Trapmaster costs, Pirate mixed crew; 13, 22–23, 27; upkeep/report integration and mobile sacrifice checks. | Uses the printed unit-specific alternatives. |
 | #219 | Named warning, locked recomputation and atomic unpaid departure at actual battle start; 2, 4, 58; database and real mobile/desktop start/cancel checks. | Scheduling/joining does not dismiss characters. |
 | #220 | Personae under Recruit; shared rare-item/persona search allowance persists; 1, 6, 58; transaction and mobile checks. | Existing search limitations preserved. |
-| #72 | 102/103 scenario reward paths, source-specific XP/items/currencies and logged override distinction; scenario audit and reward/report test suites, combined mobile checks and later transactional scenarios. | **Defend the Oasis requires the pending scope decision. This item and the batch remain open.** |
+| #72 | 102/103 scenario reward paths, source-specific XP/items/currencies and logged override distinction; scenario audit and reward/report test suites, combined mobile checks and later transactional scenarios. | Tom deferred Khemri-dependent Defend the Oasis aftermath on 11 September to very low-priority #227; no longer a batch implementation blocker. |
 | #187 | Independent exploration conditions, warband branches, actual recruits and equipment consequences; 4, 9–10, 28–30, 60–64; report-model, transaction and real mobile filing/withdrawal checks. | Choice-dependent outcomes require their actual inputs. |
 | #188 | Fixed/dice quantities retained and unresolved rolls gate progression; 3–4; report-model and reward tests. | Approved explained corrections remain available. |
 | #190 | Persistent campaign artefact ledger, serialized claims, duplicate explanations and discovery retention; 5, 15; artefact integration tests. | Ambiguous historical free text is not silently converted into discoveries. |
@@ -43,11 +43,11 @@ Netlify API reports the linked `AstronomicUK/stirheim` repository on `main`, wit
 
 ## Release gates, in order
 
-1. Resolve the Oasis scope question, implement the chosen remaining reward path, and verify it with local rules/transaction/mobile tests. Update the scenario audit and affected tracker evidence.
+1. **Resolved by Tom:** defer all rules depending on the full Khemri campaign system to #227 (very low priority), including Defend the Oasis aftermath. A setting-based scenario library is a future proposal. Do not implement a partial water system for this release.
 2. Run the final checks appropriate to those changes; ensure the final build and database types match the migrations. Review the final changes and migration plan. Preserve pre-existing dirty audit work; selectively stage only intended tracker changes.
-3. Coordinate the 33 pending database migrations (plus any new Oasis migration) with the new frontend. Apply the linked migrations only as part of the authorised release; do not reset or seed production. Confirm the final migration history before publishing the frontend.
+3. Coordinate the 33 pending database migrations with the new frontend. Apply the linked migrations only as part of the authorised release; do not reset or seed production. Confirm the final migration history before publishing the frontend.
 4. Make the single final push. Recheck Netlify's automatic-build state: if paused, make one deliberate production deployment; if enabled and the push triggers one, use that build instead of starting another.
 5. Confirm the served application assets match the tested release and perform read-only live smoke checks. Do not mutate the existing CoC–Dwarves battle or other player histories for QA. Record deployment evidence before marking release completion.
 6. Only after the main release is verified, start queued #221–226 and #23/#54 follow-ups. Menu redesigns require proposals, as recorded in the user request.
 
-No additional production approval is required: Tom explicitly authorised the completed batch's overnight deployment. The remaining question is product scope, not a request for deployment permission.
+No additional production approval is required: Tom explicitly authorised the completed batch's overnight deployment. The Khemri scope question is resolved by explicit deferral.

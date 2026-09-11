@@ -2897,3 +2897,19 @@ code effect or any other tracker item naming them.
 
 **Notes:** (investigation, fix approach, commit link — filled in as work happens)
 -->
+
+
+### 227. Optional Khemri campaign system and setting-based scenario availability
+
+**Status:** 💡 Potential future upgrade — deferred
+**Priority:** ⚪ Very low
+**Reported:** Tom, 2026-09-11
+**Related:** #72 scenario rewards; #222 full scenario library access.
+
+> I think if there are rules that depend on a full khemri system, leave them for now and put it as a very low on the potential future upgrades. We could have a campaign setting option which will change which scenarios are available
+
+**Scope decision:** Defer rules requiring Khemri’s wider water supply, carrying capacity, exploration and trading systems, including the dependent Defend the Oasis aftermath. These are excluded from the current Between Battles release; do not invent a partial gold/shard equivalent or claim the complete Khemri system is supported. Existing scenario text and ordinary supported rules can remain.
+
+**Future proposal:** An optional campaign setting/theme (for example Mordheim or Khemri) could determine the relevant scenario library and enable that setting’s supported campaign rules. Design this separately, preserving campaign-specific scenario selection and approved overrides. This is a suggestion for later review, not a request to change scenario availability now.
+
+**Batch reconciliation:** #72 has 102 implemented scenario reward paths; the remaining Khemri-dependent path is now explicitly deferred here by Tom, rather than an unanswered release blocker. Final release verification still applies.

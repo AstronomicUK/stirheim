@@ -240,3 +240,8 @@ Roster and battle views show the curse profile and rules. Transformation trigger
 Validation: 1,599 ordinary tests and all 152 local database tests passed; the latest focused 79 tests also pass after excluding feral departures from exploration. Typechecked build and lint passed with existing warnings. Disposable 390px mobile checks verify curse acquisition/healthy-profile review through reload and withdrawal, and a later named henchman transformation with one recovered sword, persisted group reduction and complete withdrawal restoration. Scripts: `/tmp/stirheim-lycanthrope-cure-mobile-qa.mjs` and `/tmp/stirheim-lycanthrope-group-mobile-qa.mjs`.
 
 Reward-path coverage is now **102/103**. Defend the Oasis still awaits the recorded scope decision; bespoke hired equipment/effects, Guardian and final combined release checks remain outstanding. No push or production deployment.
+
+
+## Scope decision — 11 September 2026
+
+Tom explicitly deferred rules dependent on a full Khemri campaign system, including Defend the Oasis water/carrying/exploration/trading aftermath. Track as #227, a very low-priority potential future upgrade with an optional campaign setting controlling relevant scenario availability. The current batch therefore contains 102 implemented reward paths and one explicitly deferred system-dependent path. Do not report 103 implemented paths or silently convert water to ordinary gold/shards. Earlier pending-scope notes are historical; this answer resolves that release blocker.

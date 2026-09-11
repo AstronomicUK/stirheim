@@ -324,6 +324,8 @@ it.each([
   ['norse', 'norse_wulfen', 'hero', 4, 2],
   ['skaven', 'skaven_rat_ogre', 'group', 5, 3],
   ['skaven_pestilens', 'skaven_pestilens_rat_ogre', 'group', 5, 3],
+  ['restless_dead_variant', 'restless_dead_variant_zombies', 'group', 3, 1],
+  ['restless_dead_variant', 'restless_dead_variant_bone_goliath', 'group', 5, 3],
 ] as const)('uses printed natural attacks for %s %s (#163)', (_warbandTemplateId, unitTemplateId, kind, strength, attacks) => {
   const template = WARBAND_TEMPLATES.find(t => [...t.heroTemplates, ...t.henchmanTemplates].some(u => u.id === unitTemplateId))
   expect(template).toBeDefined()

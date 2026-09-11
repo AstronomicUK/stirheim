@@ -345,10 +345,10 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   pilgrims_of_the_dark_shroud: { neverLeads: true },
   wolfhounds: ANIMAL,
   restless_dead_variant_grave_guards: { noRareSearch: true },
-  restless_dead_variant_zombies: UNDEAD_HENCHMAN,
+  restless_dead_variant_zombies: { ...UNDEAD_HENCHMAN, naturalWeapons: true },
   restless_dead_variant_skeletons: UNDEAD_HENCHMAN,
   restless_dead_variant_wights: { promotion: { tables: ["combat", "strength"], note: "A promoted Wight takes Combat and Strength skills only and may not search for rare items." }, racialProfile: "Grave Guard (Restless Dead)" },
-  restless_dead_variant_bone_goliath: { ...NO_XP, large: true, promotion: { never: true, note: "A construct is never promoted." } },
+  restless_dead_variant_bone_goliath: { ...NO_XP, naturalWeapons: true, large: true, promotion: { never: true, note: "A construct is never promoted." } },
 
   // Hired swords and Dramatis Personae whose entry name carries no race keyword the
   // resolveRacialProfile() guesser can match, so they default to Human maxima incorrectly.

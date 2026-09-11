@@ -3374,3 +3374,7 @@ Source-confirmed Wulfen/Rat Ogre natural attacks now retain printed Strength/Att
 ### #165/#171 combat follow-up — 11 September
 
 Augur Blessed Sight and Assassin Adept Perfect Killer now affect both combat phases. Misericordia always rolls two dice and uses the higher for criticals as well as wounds; all 36 ordered pairs verified. 294 engine/fight tests pass. Source/evidence in PRIORITY-RULES-PROJECT-2026-09-11.md. Local only.
+
+### #163 further natural-attack coverage — 11 September
+
+Restless Dead variant Zombies and Bone Goliaths now automatically receive natural attacks when unequipped, instead of requiring the player to manually equip Zombie Claws. Confirmed source clauses: reference/rules/warbands/restless-dead-variant.md:305–308,399–401 explicitly prohibit equipment and waive unarmed penalties. Real catalogue → roster → combatant → odds regressions preserve Zombie S3/A1 and Goliath S5/A3, no extra off-hand or fist armour bonus. 45 combatant/simulator tests passed. Local only; #163 remains partial pending wider creature catalogue review.

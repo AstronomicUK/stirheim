@@ -174,8 +174,8 @@ function beginAttack(state: RollState): RollState {
     return askWound(log(fresh, `${attackName(state)}: automatic hit — the target is knocked down.`, 'good'))
   }
   if (plan.input.automaticHits) {
-    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : 'automatic spell hit'}.`, 'good')
-    return plan.input.automaticHitReason === 'zeroWeaponSkill' ? offerCharmOrContinue(hit) : askWound(hit)
+    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
+    return plan.input.automaticHitReason ? offerCharmOrContinue(hit) : askWound(hit)
   }
   const t = plan.input.hitThreshold
   return {

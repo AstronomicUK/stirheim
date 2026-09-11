@@ -478,3 +478,18 @@ it('staff activation forfeits defender parries even if different equipment is se
   expect(computeOdds(fight).weapons[0].input.parryEligible).toBe(false);
   expect(computeOdds(fight).strikeOrder).toContain("Skritch's Serpent Staff attacks first");
 });
+
+it('both blunderbusses automatically deliver one S3 hit per model in the line (#154)', () => {
+  for (const id of ['blunderbuss', 'chaos_dwarf_blunderbuss']) {
+    const gunner = combatant('Gunner', [{ itemId: id, quantity: 1 }], { stats: { ...base, BS: 0, A: 4 }, skillIds: ['quick_shot'] })
+    const fight = setup(gunner, skaven, id, null)
+    const odds = computeOdds({ ...fight, context: { ...fight.context, cover: true, longRange: true, movedThisTurn: true } })
+    expect(odds.attacks).toBe(1)
+    expect(odds.weapons[0].strength).toBe(3)
+    expect(odds.weapons[0].pHit).toBe(1)
+    expect(odds.weapons[0].pWound).toBeCloseTo(1 / 2)
+    expect(odds.weapons[0].input.automaticHitReason).toBe('blunderbussLine')
+    expect(odds.notes.join(' ')).toContain('including friends')
+    expect(relevantToggles(gunner, 'ranged', fight.primary).some(t => ['cover', 'longRange', 'movedThisTurn'].includes(t.field))).toBe(false)
+  }
+})

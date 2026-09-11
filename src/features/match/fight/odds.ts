@@ -372,6 +372,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (primary?.input.automaticHitReason === 'zeroWeaponSkill') notes.push(`${setup.defender.name} has Weapon Skill 0: melee attacks hit automatically, then wound, save and resolve injuries normally.`)
   if (primary && primary.input.autoWoundOnNaturalSixToHit && !primary.input.automaticHits && !primary.input.autoHitKnockedDown) notes.push('A natural 6 to hit wounds automatically; roll to wound anyway to check for a critical.')
   for (const w of weapons) {
+    if (w.input.automaticHitReason === 'blunderbussLine') notes.push(`${w.weapon.name}: check the straight 16-inch by 1-inch line at the table. These odds resolve one automatic Strength 3 hit on the selected model. Every model in the line, including friends, must be resolved separately. ${w.weapon.special.includes('fireOncePerBattle') ? 'Fire only once per battle; firing history is not yet enforced here.' : 'Reload for a complete turn between shots; firing history is not yet enforced here.'}`)
     if (w.input.barrageOnFailedWound) notes.push(`${w.weapon.name}: a hit that fails to wound grants another attack at −1 to hit, capped at 6+. The continuing attacks are included in the odds; a miss or successful wound ends the sequence.`)
     if (w.weapon.special.includes('reach3Inches')) notes.push(`${w.weapon.name}: may attack within 3 inches; check reach at the table.`)
     if (w.weapon.special.includes('manSizedWielderOnly')) notes.push(`${w.weapon.name}: only a man-sized or larger warrior may wield it; this does not restrict which enemies it can attack.`)
@@ -453,6 +454,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: 'Hatred: reroll misses in the first turn against a hated enemy.' })
     if (defenderKit?.armour.pavise) toggles.push({ field: 'paviseFront', label: 'Their pavise faces you', hint: 'A pavise counts as a shield only against a charge to the front.', defaultOn: true })
   } else {
+    if (primary.special.includes('autoHitLine16inLongBy1inWide')) return toggles
     const penalties = missilePenaltyRules(primary)
     const extraRange = skills.reduce((sum, skill) => sum + (skill.effect.type === 'rangeExtension' ? skill.effect.value ?? 0 : 0), 0)
     const maxRange = primary.rangedProfile?.maxRange != null ? primary.rangedProfile.maxRange + extraRange : null

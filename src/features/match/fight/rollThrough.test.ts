@@ -559,3 +559,10 @@ it('Barrage inserts new hit rolls without losing pre-collected later attacks', (
   expect(s.done).toBe(true)
   expect(s.outcomes).toEqual(['noWound', 'miss', 'saved'])
 })
+
+it('a blunderbuss line hit starts at the wound roll and is not described as a spell (#154)', () => {
+  const state = startPhase([plan('Blunderbuss', { automaticHits: true, automaticHitReason: 'blunderbussLine' })], 1, 0)
+  expect(state.pending?.kind).toBe('wound')
+  expect(state.log.map(l => l.text).join(' ')).toContain('model is in the blunderbuss line')
+  expect(state.log.map(l => l.text).join(' ')).not.toContain('spell')
+})

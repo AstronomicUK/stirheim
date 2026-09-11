@@ -80,6 +80,9 @@ function isFirstTurnOfCombat(context: CombatContext): boolean {
 export function computeAttackCount(character: Character, weapon: Weapon, isPrimary: boolean, context: CombatContext, customSkills: Skill[] = []): number {
   if (context.failedStupidity && character.traits.includes("stupidity")) return 0;
   if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
+  // A blunderbuss shot places one hit on each model in its line, not extra
+  // shots from the firer's Attacks or shooting skills (02:997-1020).
+  if (weapon.special.includes("autoHitLine16inLongBy1inWide")) return 1;
   const skills = resolveSkills(character.skills, customSkills);
 
   const skillBonus = () => {
@@ -357,8 +360,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
 
   return {
     hitThreshold,
-    automaticHits: weapon.type === "melee" && defender.WS === 0 || undefined,
-    automaticHitReason: weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
+    automaticHits: weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.type === "melee" && defender.WS === 0 || undefined,
+    automaticHitReason: weapon.special.includes("autoHitLine16inLongBy1inWide") ? "blunderbussLine" : weapon.type === "melee" && defender.WS === 0 ? "zeroWeaponSkill" : undefined,
     woundThreshold,
     armourThreshold,
     dodgeThreshold: dodgeSkill?.effect.threshold,

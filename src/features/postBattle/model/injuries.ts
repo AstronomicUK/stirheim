@@ -1,3 +1,4 @@
+import {injuryRollHistory} from './injuryRollHistory'
 // Serious injuries for the report: replays the dice the player entered through the Phase 2
 // resolvers and says what is still needed (a D66, a sub-roll, the Multiple Injuries count).
 //
@@ -77,6 +78,7 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
   })
   const multiple = applied.length > 1
   return {
+    ...(injuryRollHistory(flow).length ? {rollHistory: injuryRollHistory(flow)} : {}),
     subjectType: 'hero',
     subjectId: hero.id,
     subjectName: hero.name,

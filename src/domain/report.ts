@@ -46,6 +46,7 @@ export const heroInjuryLineSchema = z.object({
   subjectName: z.string(),
   /** Heroes roll D66; hired swords roll D6 (house reading, see PLANNING). */
   rolls: z.array(z.number().int()),
+  rollHistory: z.array(z.string()).optional(),
   injuryCode: z.string().nullable(),
   injuryName: z.string(),
   effect: z.string(),

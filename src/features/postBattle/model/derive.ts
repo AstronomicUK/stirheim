@@ -1,3 +1,4 @@
+import {describeInjuryAttempt} from './injuryRollHistory'
 import {applyShrineBlessing} from './shrineBlessing'
 import {woodsCasualtyDraft,woodsInjuryDraft,lycanthropeReport,applyLycanthropeReport} from './lycanthropeReport'
 import {medicineChestUses} from './medicineChest'
@@ -385,6 +386,16 @@ export function veteranPoolOf(draft: ReportDraft): number | null {
 export function reportAdjustments(draft: ReportDraft, participants: Participants, injuries: InjuriesDerived, exploration: ExplorationDerived): ReportAdjustment[] {
   const out: ReportAdjustment[] = []
   const nameOf = (id: string) => participants.heroes.find((h) => h.id === id)?.name ?? participants.hiredSwords.find((s) => s.id === id)?.name ?? id
+  for (const [id, flow] of Object.entries(draft.heroInjuries)) {
+    if (!draft.heroesOut.includes(id)) continue
+    const attempts=flow.previousAttempts??[]
+    attempts.forEach((attempt,i)=>out.push({
+      label: `${nameOf(id)}: injury roll replacement ${i+1}`,
+      suggested: describeInjuryAttempt(attempt),
+      used: describeInjuryAttempt(attempts[i+1]??flow) || (draft.injurySkips[id]!==undefined?'no roll (recovered)':'no replacement result'),
+      reason: attempt.reason,
+    }))
+  }
   for (const [id, reason] of Object.entries(draft.injurySkips)) {
     if (!draft.heroesOut.includes(id)) continue
     out.push({ label: `${nameOf(id)}: injury roll`, suggested: 'roll', used: 'no roll (recovered)', reason: reason.trim() })

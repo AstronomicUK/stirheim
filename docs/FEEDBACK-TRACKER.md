@@ -3278,13 +3278,15 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 226. Post-battle history does not clearly identify deliberately overridden injury dice
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed locally — awaiting batched release
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10
 
 > I purposely fudged a dice roll and changed the engineer's dice roll to a result I wanted: nowhere is that clear in that heaping dump of data.
 
 **Acceptance:** In the visible report/history, clearly name the warrior and identify manual entry/override, original app result where retained, replacement result, and supplied explanation. Retain roll chronology and distinguish ordinary manual tabletop entry from replacing an app roll. Verify saving, applying and reloading the report. Do not invent an original result for historical records lacking it. Related to #20/#207 roll transparency and reopened #23 presentation, but specifically track post-battle injury overrides. Player overrides remain explicitly approved; do not remove them.
+
+**Local fix — 2026-09-11:** Restarting a hero/Persona D66 injury attempt now requires a reason and retains the original attempt, subsequent replacements and known app/tabletop source. Ordinary manual tabletop entry is not called an override. The report schema, review, saved report and readable history retain this chronology; existing records without source data remain honest. Eighty focused model/history tests, typecheck and a real 390px app-roll → replacement 65 → reload → file/apply → saved report/history check pass on disposable local data. No deployment.
 
 ### 227. Optional Khemri campaign system and setting-based scenario availability
 

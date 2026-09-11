@@ -58,7 +58,7 @@ export function SwitchRow({ label, description, checked, onChange, disabled = fa
 
 export interface D66EntryProps {
   /** Called once with a valid 11-66 result. */
-  onCommit: (d66: number) => void
+  onCommit: (d66: number, source: 'app' | 'tabletop') => void
   confirmLabel?: string
   disabled?: boolean
 }
@@ -70,8 +70,8 @@ export function D66Entry({ onCommit, confirmLabel = 'Confirm roll', disabled = f
   const [key, setKey] = useState(0)
   const ready = tens !== null && units !== null
 
-  function commit(value: number) {
-    onCommit(value)
+  function commit(value: number, source: 'app' | 'tabletop') {
+    onCommit(value, source)
     setTens(null)
     setUnits(null)
     setKey((k) => k + 1)
@@ -82,10 +82,10 @@ export function D66Entry({ onCommit, confirmLabel = 'Confirm roll', disabled = f
       <DieField key={`t${key}`} label="Tens" sides={6} value={tens} onChange={setTens} disabled={disabled} />
       <DieField key={`u${key}`} label="Units" sides={6} value={units} onChange={setUnits} disabled={disabled} />
       <div className="flex flex-1 flex-wrap justify-end gap-2">
-        <Button variant="secondary" disabled={disabled} onClick={() => commit(rollDie(D66_SIDES))}>
+        <Button variant="secondary" disabled={disabled} onClick={() => commit(rollDie(D66_SIDES), 'app')}>
           Roll for me
         </Button>
-        <Button variant="primary" disabled={disabled || !ready} onClick={() => ready && commit(tens * 10 + units)}>
+        <Button variant="primary" disabled={disabled || !ready} onClick={() => ready && commit(tens * 10 + units, 'tabletop')}>
           {confirmLabel}
         </Button>
       </div>

@@ -221,11 +221,12 @@ function HeroInjury({ line }: { line: HeroInjuryLine }) {
           <span className="truncate text-sm text-ink">{line.subjectName}</span>
           <span className="text-xs text-ink-dim">
             {line.injuryName}
-            {line.rolls.length > 0 ? ` · rolled ${line.rolls.join('')}` : ''}
+            {line.rolls.length > 0 ? ` · rolled ${line.rolls.join(', ')}` : ''}
           </span>
         </span>
         <Tag tone={OUTCOME_TONES[line.outcome]}>{OUTCOME_LABELS[line.outcome]}</Tag>
       </div>
+      {line.rollHistory?.map((event,i)=><p key={i} className="text-xs text-ink-dim">{event}</p>)}
       {line.effect.trim() ? <p className="text-sm leading-relaxed text-ink-dim">{line.effect}</p> : null}
     </div>
   )

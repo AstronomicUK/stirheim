@@ -82,6 +82,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
                       <Tag tone={line.outcome === 'recovered' ? 'brass' : line.outcome === 'injured' ? 'warn' : 'danger'}>{line.injuryName}</Tag>
                     )}
                   </div>
+                  {line.subjectType !== 'group' ? line.rollHistory?.map((event,i)=><p key={i} className="text-xs text-ink-dim">{event}</p>) : null}
                   <p className="text-xs text-ink-dim">
                     Rolled {line.rolls.join(', ')}
                     {line.subjectType !== 'group' && line.effect ? ` · ${line.effect}` : ''}

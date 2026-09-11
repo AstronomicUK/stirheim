@@ -73,17 +73,18 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               {resolution.line ? <p className="text-sm">{resolution.line.effect}</p> : null}
             </Card> : <HeroInjuryCard
               key={hero.id}
+              restartReasonRequired
               name={hero.name}
               type={warriorTypeLabel(ctx, hero)}
               resolution={resolution}
               medicine={<MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/>}
               skip={draft.injurySkips[hero.id]}
               onSkip={(reason) => update((d) => setInjurySkip(d, hero.id, reason))}
-              onD66={(d66) => update((d) => addHeroInjuryRoll(d, hero.id, d66))}
+              onD66={(d66, source) => update((d) => addHeroInjuryRoll(d, hero.id, d66, source))}
               onSubRoll={(index, v) => update((d) => (v === null ? d : setHeroInjurySubRoll(d, hero.id, index, v)))}
               onDistrictRoll={(index, v) => update((d) => (v === null ? d : setHeroDistrictRoll(d, hero.id, index, v)))}
               onCount={(v) => update((d) => (v === null ? d : setHeroInjuryCount(d, hero.id, v)))}
-              onReset={() => update((d) => resetHeroInjury(d, hero.id))}
+              onReset={reason => update((d) => resetHeroInjury(d, hero.id, reason))}
             />
           ))}
         </Section>
@@ -91,14 +92,14 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       {hiredSwords.length > 0 ? (
         <Section title="Hired swords and Dramatis Personae">
           {hiredSwords.map(({ sword, resolution }) => (
-            resolution.heroFlow ? <HeroInjuryCard key={sword.id} name={sword.name} type="Dramatis Persona · D66" resolution={resolution.heroFlow}
+            resolution.heroFlow ? <HeroInjuryCard restartReasonRequired key={sword.id} name={sword.name} type="Dramatis Persona · D66" resolution={resolution.heroFlow}
               medicine={<MedicineChest heroId={sword.id} draft={draft} items={ctx.items} resolution={resolution.heroFlow} update={update}/>}
               skip={draft.injurySkips[sword.id]} onSkip={reason => update(d => setInjurySkip(d, sword.id, reason))}
-              onD66={d66 => update(d => addHeroInjuryRoll(d, sword.id, d66))}
+              onD66={(d66, source) => update(d => addHeroInjuryRoll(d, sword.id, d66, source))}
               onSubRoll={(index,v) => update(d => v === null ? d : setHeroInjurySubRoll(d,sword.id,index,v))}
               onDistrictRoll={(index,v) => update(d => v === null ? d : setHeroDistrictRoll(d,sword.id,index,v))}
               onCount={v => update(d => v === null ? d : setHeroInjuryCount(d,sword.id,v))}
-              onReset={() => update(d => resetHeroInjury(d,sword.id))} /> : <Card key={sword.id} className="flex flex-col gap-3 px-4 py-3">
+              onReset={reason => update(d => resetHeroInjury(d,sword.id,reason))} /> : <Card key={sword.id} className="flex flex-col gap-3 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{sword.name}</p>
@@ -292,21 +293,24 @@ function SkipRow({ skip, onSkip }: { skip: string | undefined; onSkip: (reason: 
 }
 
 interface HeroInjuryCardProps {
+  restartReasonRequired?: boolean
   medicine?: ReactNode
   name: string
   type: string
   resolution: HeroInjuryResolution
   skip: string | undefined
   onSkip: (reason: string | null) => void
-  onD66: (d66: number) => void
+  onD66: (d66: number, source: 'app' | 'tabletop') => void
   onSubRoll: (rollIndex: number, value: number | null) => void
   onDistrictRoll: (rollIndex: number, value: number | null) => void
   onCount: (value: number | null) => void
-  onReset: () => void
+  onReset: (reason: string) => void
 }
 
-export function HeroInjuryCard({ medicine, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
+export function HeroInjuryCard({ restartReasonRequired = false, medicine, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
+  const [restarting, setRestarting] = useState(false)
+  const [restartReason, setRestartReason] = useState('')
   const { steps, pending, outcome } = resolution
   const lastApplied = [...steps].reverse().find((s) => !s.rerolled)
   const chartText = lastApplied ? lookupHeroInjury(lastApplied.d66).text : null
@@ -369,11 +373,19 @@ export function HeroInjuryCard({ medicine, name, type, resolution, skip, onSkip,
           <span />
         )}
         {steps.length > 0 ? (
-          <button type="button" onClick={onReset} className="min-h-11 text-xs text-ink-dim underline-offset-4 hover:text-accent-strong hover:underline">
+          <button type="button" onClick={() => restartReasonRequired ? setRestarting(true) : onReset('')} className="min-h-11 text-xs text-ink-dim underline-offset-4 hover:text-accent-strong hover:underline">
             Start this hero again
           </button>
         ) : null}
       </div>
+      {restarting ? <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+        <p className="text-xs text-ink-dim">The original dice and your reason will stay in the battle report.</p>
+        <TextField label="Reason for replacing the injury rolls" value={restartReason} onChange={e=>setRestartReason(e.target.value)} />
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={!restartReason.trim()} onClick={()=>{onReset(restartReason);setRestarting(false);setRestartReason('')}}>Replace injury rolls</Button>
+          <Button variant="secondary" onClick={()=>setRestarting(false)}>Keep current rolls</Button>
+        </div>
+      </div> : null}
       {showText && chartText ? <Markdown source={chartText} className="text-sm" /> : null}
     </Card>
   )

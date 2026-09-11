@@ -3658,3 +3658,10 @@ Extended explicit animal identity to the existing Animal category in unit rules,
 A carried Torch is now selectable as the printed makeshift club: user Strength, -1 to hit and Concussion. It uses the conditional Fear-in-animals handling, without granting universal Fear. Added an explicit reminder that Torch wounds cannot be regenerated, the spotting bonus is 4 inches and the Torch lasts one game. No invented Gromril/Ilthilmar Torch variants are generated. Source: 02-weapons-armour-equipment.md:2233–2240.
 
 59 odds/catalogue tests, build/typecheck/lint passed (existing audit warnings). Disposable 390px browser check passed: Torch appears from equipment, starts its melee hit roll, no page errors or overflow. Regeneration suppression, building fires and one-game consumption remain table-managed as stated in the UI; no full fire-system completion claim. Local only.
+
+
+### #152 — Bolas once-per-battle throws (local, 11 September)
+
+The Battle Sheet now saves a Bolas throw for each individually identified warrior when app resolution begins, even if it misses, and blocks another new throw after reload or a turn change. Bolas resolve one throw rather than gaining extra shots from attack-count bonuses. Players can also record a tabletop throw explicitly. An explained correction restores availability while preserving prior dice history. A new battle starts with fresh availability; nothing is removed permanently from the roster.
+
+117 domain/odds/roll-through tests passed; the final domain rerun (8 tests), build/typecheck and lint passed after the tabletop-recording control was added. Disposable 390px browser QA verified a missed throw, saved usage, reload, disabled second throw and explained correction. Multi-member henchmen still require tracking each member at the table; persistent entanglement/recovery and self-hit damage remain outstanding. No deployment.

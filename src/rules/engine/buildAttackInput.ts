@@ -82,7 +82,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   if (context.serpentStaffPower) return isPrimary && weapon.id === "serpent_staff" ? 1 : 0;
   // A blunderbuss shot places one hit on each model in its line, not extra
   // shots from the firer's Attacks or shooting skills (02:997-1020).
-  if (weapon.special.includes("autoHitLine16inLongBy1inWide")) return 1;
+  if (weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.id === "bolas") return 1;
   const skills = resolveSkills(character.skills, customSkills);
 
   const skillBonus = () => {

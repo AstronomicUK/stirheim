@@ -100,6 +100,7 @@ export const battleLiveStateSchema = z.object({
   rollAttempts: z.array(rollAttemptSchema).default([]),
   /** Staff command forfeits the bearer's normal attacks and parries for this combat phase. */
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
+  bolasThrows: z.array(z.object({ warriorId: z.string(), at: z.string() })).default([]),
   /** Recorded Stupidity outcomes last through opponents’ turns until this warband’s next turn. */
   stupidityResults: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), failed: z.boolean() })).default([]),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
@@ -265,5 +266,24 @@ export function recordStupidityTest(state: BattleLiveState, warriorId: string, t
     id: roll.attemptId ?? crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
     label: `${name}: Stupidity test ${failed ? 'failed' : 'passed'}`,
     rolls: [diceText, resultText, ...(roll.originalMovementDie !== undefined && (!failed || roll.inCombat) ? [`App movement roll ${roll.originalMovementDie} was not used for the final situation.`] : []), ...(roll.correctionReason?.trim() ? [`Recorded test replaced: ${roll.correctionReason.trim()}.`] : []), ...(roll.leadership !== roll.baseLeadership ? [`Leadership ${roll.leadership} instead of ${roll.baseLeadership}: ${roll.leadershipReason!.trim()}.`] : []), movementText],
+  });
+}
+
+
+/** One declared Bolas throw per individual warrior per battle; no round-based expiry. */
+export function recordBolasThrow(state: BattleLiveState, warriorId: string, name: string, turn = state.turn, tabletop = false): BattleLiveState {
+  if (state.bolasThrows.some(use => use.warriorId === warriorId)) return state;
+  const at = new Date().toISOString();
+  return withRollAttempt({ ...state, bolasThrows: [...state.bolasThrows, { warriorId, at }] }, {
+    id: crypto.randomUUID(), at, turn, kind: 'attack', status: 'complete', label: `${name}: Bolas throw declared`,
+    rolls: [tabletop ? 'Player recorded a tabletop Bolas throw; no app dice roll is implied. Used for this battle and recovered afterwards.' : 'Bolas marked used for this battle before resolving the throw. A miss still uses them. They are recovered after the battle.'],
+  });
+}
+
+export function correctBolasThrow(state: BattleLiveState, warriorId: string, name: string, reason: string, turn = state.turn): BattleLiveState {
+  if (!reason.trim() || !state.bolasThrows.some(use => use.warriorId === warriorId)) return state;
+  return withRollAttempt({ ...state, bolasThrows: state.bolasThrows.filter(use => use.warriorId !== warriorId) }, {
+    id: crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete', label: `${name}: Bolas use corrected`,
+    rolls: [`Restored the Bolas throw by player correction: ${reason.trim()}. Existing dice history is retained.`],
   });
 }

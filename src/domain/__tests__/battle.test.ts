@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combatPhaseKey, correctSerpentStaff, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
+import { recordBolasThrow, correctBolasThrow, combatPhaseKey, correctSerpentStaff, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, battleTotals, emptyBattleLiveState, parseBattleLiveState, routThreshold, tallyFor, withTally, withRollAttempt, type RollAttempt } from "../battle";
 
 describe("battle live state", () => {
   it("retains failed and restarted dice through storage without applying casualties or consuming casts", () => {
@@ -94,3 +94,18 @@ it('keeps a recorded Stupidity failure through opponents’ turns and clears its
   expect(parseBattleLiveState({ turn: 1 }).stupidityResults).toEqual([]);
   expect(warbandTurnKey('mine', 3)).toBe('legacy:3');
 });
+
+
+it('keeps one Bolas declaration across turns and reloads, with explicit recorded corrections', () => {
+  const first = recordBolasThrow(emptyBattleLiveState(), 'hero', 'Hero', 1);
+  const later = parseBattleLiveState(JSON.parse(JSON.stringify({ ...first, turn: 4 })));
+  expect(recordBolasThrow(later, 'hero', 'Hero')).toBe(later);
+  expect(later.bolasThrows).toHaveLength(1);
+  expect(correctBolasThrow(later, 'hero', 'Hero', ' ')).toBe(later);
+  const corrected = correctBolasThrow(later, 'hero', 'Hero', 'Accidental declaration');
+  expect(corrected.bolasThrows).toHaveLength(0);
+  expect(corrected.rollAttempts).toHaveLength(2);
+  expect(corrected.rollAttempts[1].rolls.join(' ')).toContain('Accidental declaration');
+  expect(recordBolasThrow(corrected, 'hero', 'Hero').bolasThrows).toHaveLength(1);
+  expect(emptyBattleLiveState().bolasThrows).toHaveLength(0);
+})

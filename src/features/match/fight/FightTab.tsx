@@ -6,7 +6,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
+import { recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -127,6 +127,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const offHandValid = offHand ? offHandOptions.includes(offHand) : true
 
   const [staffCorrection, setStaffCorrection] = useState('')
+  const [bolasCorrection, setBolasCorrection] = useState('')
   const [toggles, setToggles] = useState<Record<string, boolean>>({})
   // The roll-through lives in a sheet the dice button opens, rather than a slab down the page.
   const [rolling, setRolling] = useState(false)
@@ -153,6 +154,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const [seenPhase, setSeenPhase] = useState(phaseKey)
   if (seenPhase !== phaseKey) { setSeenPhase(phaseKey); setRolling(false); setRollSetup(null); setStaffCorrection('') }
   const staffUse = attacker ? serpentStaffUse(sheet, attacker.id, phaseKey) : undefined
+  const individualBolas = primary?.id === 'bolas' && attacker && (attacker.kind !== 'henchman' || (attacker.groupSize ?? 1) <= 1)
+  const bolasUsed = Boolean(individualBolas && sheet.bolasThrows.some(use => use.warriorId === attacker.id))
   const defenderSession = defender ? sessions.find((s) => s.warband_id === defender.warbandId) : undefined
   const defenderStaffUse = defender && defenderSession ? serpentStaffUse(defenderSession.live_state, defender.id, phaseKey) : undefined
   const staffDefenderWeapon = defenderStaffUse ? defenderCarriedKit?.melee.find(w => w.id === 'serpent_staff') : undefined
@@ -258,6 +261,14 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                   </option>
                 ))}
               </SelectField>
+              {primary.id === 'bolas' ? <div className="flex flex-col gap-2 rounded border border-brass p-3 text-xs">
+                <p>{!individualBolas ? 'Each model may throw Bolas once per battle. Track each group member at the table.' : bolasUsed ? 'Bolas already thrown in this battle.' : 'Beginning this throw marks the Bolas used for this battle, even if it misses.'}</p>
+                {individualBolas && !bolasUsed ? <Button variant="secondary" disabled={readOnly || !edit} onClick={() => edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn, true))}>Record tabletop throw</Button> : null}
+                {bolasUsed ? <>
+                  <TextField label="Bolas correction reason" value={bolasCorrection} onChange={e => setBolasCorrection(e.target.value)} hint="Explain an accidental declaration or an agreed table exception; dice history is retained." />
+                  <Button variant="secondary" disabled={readOnly || !edit || !bolasCorrection.trim()} onClick={() => { edit?.(s => correctBolasThrow(s, attacker.id, attacker.name, bolasCorrection, sheet.turn)); setBolasCorrection('') }}>Correct Bolas use</Button>
+                </> : null}
+              </div> : null}
               {primary.id === 'serpent_staff' || staffUse ? <div className="flex flex-col gap-2 rounded border border-brass p-3 text-xs">
                 <p className="font-semibold">Serpent Staff power</p>
                 {staffUse ? <>
@@ -436,7 +447,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={psychologyLoading || needsInterception || readOnly || Boolean(active.failedStupidity) || Boolean(staffUse?.used)} onClick={() => { setRollSetup(odds); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={psychologyLoading || needsInterception || readOnly || Boolean(active.failedStupidity) || Boolean(staffUse?.used) || bolasUsed} onClick={() => { if (bolasUsed) return; setRollSetup(odds); if (individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}

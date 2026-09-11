@@ -14,10 +14,11 @@ export interface SettingsFieldsProps {
   errors: SettingsFormErrors
   rules: string
   onRulesChange: (rules: string) => void
+  section?: string
   disabled?: boolean
 }
 
-export function SettingsFields({ form, onChange, errors, rules, onRulesChange, disabled = false }: SettingsFieldsProps) {
+export function SettingsFields({ form, onChange, errors, rules, onRulesChange, disabled = false, section }: SettingsFieldsProps) {
   const [preview, setPreview] = useState(false)
   const dice = DICE_POLICY_OPTIONS.find((o) => o.value === form.dicePolicy)
   const combat = COMBAT_MODE_OPTIONS.find((o) => o.value === form.combatMode)
@@ -25,6 +26,7 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
 
   return (
     <>
+      <div hidden={!!section && section !== 'General'} className="flex flex-col gap-6">
       <CampaignTypeChooser mapCampaign={form.mapCampaign} onChange={(mapCampaign) => onChange({ ...form, mapCampaign })} disabled={disabled} />
 
       <Section title="Treasury">
@@ -49,6 +51,8 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
         </div>
       </Section>
 
+      </div>
+      <div hidden={!!section && section !== 'Rules & bans'} className="flex flex-col gap-6">
       <Section title="House rules">
         <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low px-4">
           {HOUSE_RULE_SWITCHES.filter((rule) => !rule.parent || form.houseRules[rule.parent]).map((rule) => (
@@ -146,6 +150,7 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
           />
         )}
       </Section>
+      </div>
     </>
   )
 }

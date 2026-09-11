@@ -24,6 +24,6 @@ export function CampaignScenariosPage() {
     </div>)}
     {rows.length === 0 ? <p className="text-sm text-ink-dim">No custom scenarios for this campaign yet.</p> : null}
     <Link to={`/campaigns/${campaignId}/settings#scenario-library`} className="text-brass">Choose from the full scenario library in campaign settings</Link>
-    <Link to={`/campaigns/${campaignId}/settings`} className="text-brass">Back to campaign settings</Link>
+    <Link to={`/campaigns/${campaignId}/settings?section=Scenarios`} className="text-brass">Back to campaign settings</Link>
   </>
 }

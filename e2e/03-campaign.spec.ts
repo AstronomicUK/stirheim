@@ -24,6 +24,7 @@ test.describe('campaign', () => {
 
     await expect(page.getByRole('heading', { name: CAMPAIGN.name })).toBeVisible()
     await expect(page.getByText(`Run by ${GM.displayName}.`)).toBeVisible()
+    await page.getByRole('navigation', { name: 'Campaign sections', exact: true }).getByRole('button', { name: 'Warbands', exact: true }).click()
     // The activity feed links warband names too, so look inside the Warbands section.
     const warbands = page.getByRole('heading', { name: 'Warbands' }).locator('xpath=ancestor::section[1]')
     await expect(warbands.getByRole('link', { name: new RegExp(REIKLAND_WATCH.name) })).toBeVisible()
@@ -40,6 +41,7 @@ test.describe('campaign', () => {
     await expect(page.getByText(CAMPAIGN.inviteCode, { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Copy code' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
+    await page.getByRole('navigation', { name: 'Campaign sections', exact: true }).getByRole('button', { name: 'Battles', exact: true }).click()
     await expect(page.getByRole('link', { name: 'Schedule a battle' })).toHaveAttribute('href', `/campaigns/${CAMPAIGN.id}/matches/new`)
   })
 })

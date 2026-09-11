@@ -618,3 +618,9 @@ Only #223/#225 menu implementation awaits Tom’s A/B layout answer. A fresh con
 ### Corrected #226 scope — advancement roll history
 
 Tom clarified that his fudged roll was an advancement. #226 now correctly covers advancement 2D6 and characteristic follow-up provenance, optional explanation, pick-later/final resolution and saved battle-report/warband history. Verified with a real local mobile report and targeted/full tests; read `SECOND-FEEDBACK-BATCH.md`. The injury-history improvement remains. No deployment. Menu choice A/B is still the only input needed before #223/#225; heartbeat remains paused until that answer.
+
+### #223 / #225 — visible section navigation implemented locally (11 September)
+
+Tom selected Mobile B for both phone and desktop. Both campaign screens now use the same visible rectangular section buttons: three columns on mobile, one wrapping row on desktop. Settings: General, Rules & bans, Scenarios, Players, Management. Campaign: Overview, Warbands, Battles, Map (map campaigns only), Activity, Rules. Existing primary navigation remains. Selected sections survive refresh; settings share one draft and Save changes action across sections, and validation returns to General when its fields need attention. “Done” now reads “Back to campaign”. Custom-scenario return links reopen Scenarios.
+
+Production build passed. Disposable browser verification passed at 390px and 1280px: section visibility, cross-section gold/scenario edits saved together, reload persistence, no mobile overflow or page errors, and one-row desktop navigation. Browser campaign tests updated to select the relevant sections. No deployment; retain for the combined release.

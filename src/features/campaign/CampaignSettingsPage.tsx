@@ -17,6 +17,8 @@ import { Card, Section, TextLink } from './bits'
 import { formatInviteCode } from './inviteCode'
 import { AliasField } from './AliasField'
 import { SettingsFields } from './SettingsFields'
+import { CampaignSections } from './CampaignSections'
+import { useCampaignSection } from './useCampaignSection'
 import { ScenarioSelection } from './ScenarioSelection'
 import { formFromSettings, settingsFormEqual, settingsFromForm, validateCampaignName, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
@@ -65,6 +67,8 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
   const { campaign, settings, members } = detail
   usePageTitle(`${campaign.name}: settings`)
   const navigate = useNavigate()
+  const sections = ['General', 'Rules & bans', 'Scenarios', 'Players', 'Management']
+  const [section, setSection] = useCampaignSection(sections)
   const update = useUpdateCampaign(campaign.id)
   const regenerate = useRegenerateInviteCode(campaign.id)
   const remove = useDeleteCampaign()
@@ -106,6 +110,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
     const result = settingsFromForm(form)
     if (nameError || !result.ok) {
       setErrors({ name: nameError, ...(result.ok ? {} : result.errors) })
+      setSection('General')
       return
     }
     setErrors({})
@@ -173,11 +178,13 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
               <h1 className="font-headline text-3xl leading-tight text-ink">{campaign.name}</h1>
             </div>
             <div className="shrink-0 pt-1">
-              <TextLink to={`/campaigns/${campaign.id}`}>Done</TextLink>
+              <TextLink to={`/campaigns/${campaign.id}`}>Back to campaign</TextLink>
             </div>
           </div>
         </header>
 
+        <CampaignSections options={sections} value={section} onChange={setSection} label="Campaign settings sections" />
+        <div hidden={section !== 'General'}>
         <TextField
           label="Campaign name"
           value={name}
@@ -192,7 +199,9 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
           }}
         />
 
+        </div>
         <SettingsFields
+          section={section}
           form={form}
           onChange={(next) => {
             setForm(next)
@@ -208,8 +217,11 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
           disabled={update.isPending}
         />
 
+        <div hidden={section !== 'Scenarios'} className="flex flex-col gap-6">
         <ScenarioSelection value={form.enabledScenarioIds} onChange={enabledScenarioIds=>{setForm({...form,enabledScenarioIds});setSaved(false)}} disabled={update.isPending} />
 
+        <TextLink to={`/campaigns/${campaign.id}/settings/scenarios`}>Manage custom scenarios</TextLink>
+        </div>
         {saveError ? <Notice tone="error">{saveError}</Notice> : null}
         {saved && !dirty ? <Notice tone="success">Saved.</Notice> : null}
 
@@ -220,9 +232,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         </div>
       </form>
 
-      <Section title="Custom scenarios">
-        <TextLink to={`/campaigns/${campaign.id}/settings/scenarios`}>Manage custom scenarios</TextLink>
-      </Section>
+      <div hidden={section !== 'Players'} className="flex flex-col gap-6">
       <Section title="Members" aside={`${people.length} ${people.length === 1 ? 'player' : 'players'}`}>
         {people.length === 0 ? (
           <p className="text-sm text-ink-dim">Nobody has enrolled yet.</p>
@@ -299,6 +309,8 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         </Card>
       </Section>
 
+      </div>
+      <div hidden={section !== 'Management'}>
       <Section title="Danger zone">
         {actionError ? <Notice tone="error">{actionError}</Notice> : null}
         <Card className="flex flex-col gap-3 px-4 py-3">
@@ -323,6 +335,7 @@ function SettingsView({ detail, saved, setSaved }: { detail: CampaignDetail; sav
         </Card>
       </Section>
 
+      </div>
       <Sheet
         open={codeOpen}
         onClose={() => setCodeOpen(false)}

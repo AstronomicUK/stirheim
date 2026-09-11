@@ -4,7 +4,7 @@ import { useCampaign, useCampaignActivity, useLeaveCampaign, type CampaignDetail
 import { useCampaignMatches, type MatchSummary } from '../../api/matches'
 import { useSession } from '../../app/session'
 import { describeHouseRules } from '../../rules/resolve/houseRules'
-import { Button, Icon, Markdown, Notice, Sheet, Spinner, TwoColumn, type IconName } from '../../ui'
+import { Button, Icon, Markdown, Notice, Sheet, Spinner, type IconName } from '../../ui'
 import { CampaignBattles } from '../match/shared/CampaignBattles'
 import { GmChecklist } from '../onboarding/GmChecklist'
 import { MapSummary } from '../map/MapSummary'
@@ -16,6 +16,8 @@ import { AliasField } from './AliasField'
 import { InviteCard } from './InviteCard'
 import { MatchupMaker } from './MatchupMaker'
 import { usePendingAdvanceCounts } from '../../api/advances'
+import { CampaignSections } from './CampaignSections'
+import { useCampaignSection } from './useCampaignSection'
 import { combatModeLabel, dicePolicyLabel } from './settingsForm'
 
 export function CampaignPage() {
@@ -46,6 +48,8 @@ export function CampaignPage() {
 function CampaignView({ detail }: { detail: CampaignDetail }) {
   const { campaign, settings, gm_display_name, members, former_members } = detail
   const navigate = useNavigate()
+  const sections = ['Overview', 'Warbands', 'Battles', ...(settings.mapCampaign ? ['Map'] : []), 'Activity', 'Rules']
+  const [section, setSection] = useCampaignSection(sections)
   const user = useSession((s) => s.user)
   const activity = useCampaignActivity(campaign.id)
   // Same query CampaignBattles runs, so this is a cache read; it only feeds the GM checklist.
@@ -105,9 +109,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         </Notice>
       ) : null}
 
-      <TwoColumn
-        rail={
-          <>
+      <CampaignSections options={sections} value={section} onChange={setSection} label="Campaign sections" />
+      <div hidden={section !== 'Overview'} className="flex flex-col gap-6">
       {isGm && !campaign.archived ? <GmChecklist key={campaign.id} campaignId={campaign.id} memberCount={members.length} matchCount={matches.data?.length ?? 0} /> : null}
 
       <InviteCard code={campaign.invite_code} archived={campaign.archived} campaignName={campaign.name} />
@@ -117,6 +120,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         </Card>
       ) : null}
 
+      </div>
+      <div hidden={section !== 'Rules'} className="flex flex-col gap-6">
       <Section title="Settings and house rules">
         <Card className="flex flex-col gap-3 px-4 py-3">
           <dl className="grid grid-cols-2 gap-3">
@@ -145,9 +150,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         </Card>
       </Section>
 
-          </>
-        }
-      >
+      </div>
+      <div hidden={section !== 'Warbands'} className="flex flex-col gap-6">
       <Section title="Warbands" aside={`${members.length} enrolled${settings.maxRosters ? ` of ${settings.maxRosters}` : ''}`}>
         {members.length === 0 ? (
           <Card className="px-4 py-4">
@@ -166,12 +170,18 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         ) : null}
       </Section>
 
+      </div>
+      <div hidden={section !== 'Map'}>
       {settings.mapCampaign ? <MapSummary campaignId={campaign.id} members={members} former={former_members} /> : null}
 
+      </div>
+      <div hidden={section !== 'Battles'} className="flex flex-col gap-6">
       <CampaignBattles campaignId={campaign.id} userId={user?.id} isGm={isGm} isMember={mine.length > 0} archived={campaign.archived} />
 
       {isGm && !campaign.archived ? <MatchupMaker key={campaign.id} detail={detail} /> : null}
 
+      </div>
+      <div hidden={section !== 'Activity'}>
       <Section title="Recent activity">
         {activity.isPending ? (
           <div className="flex justify-center py-4">
@@ -186,6 +196,8 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         )}
       </Section>
 
+      </div>
+      <div hidden={section !== 'Warbands'}>
       {mine.length > 0 ? (
         <div className="flex flex-col gap-2 pt-2">
           <Button
@@ -202,7 +214,7 @@ function CampaignView({ detail }: { detail: CampaignDetail }) {
         </div>
       ) : null}
 
-      </TwoColumn>
+      </div>
 
       <Sheet
         open={leaveOpen}

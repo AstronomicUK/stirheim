@@ -98,3 +98,9 @@ Tom clarified that the deliberately changed roll was an advancement, not an inju
 ### Further activity clarity — 11 September
 
 **Further log clarity (11 September):** advancement details now show app-roll → manual-change history as plain sentences, followed by the concise outcome; no generic “Changed rolled from none” or full chart instructions. Historical results without provenance are explicitly labelled as having no recorded dice history. Routine pending status, revision, submission timestamps, default non-rout and zero exploration gold are omitted; battle results and applied awards remain visible. Focused activity tests (35) and production build passed. Kept local for the combined release.
+
+### #223 / #225 — visible section navigation implemented locally (11 September)
+
+Tom selected Mobile B for both phone and desktop. Both campaign screens now use the same visible rectangular section buttons: three columns on mobile, one wrapping row on desktop. Settings: General, Rules & bans, Scenarios, Players, Management. Campaign: Overview, Warbands, Battles, Map (map campaigns only), Activity, Rules. Existing primary navigation remains. Selected sections survive refresh; settings share one draft and Save changes action across sections, and validation returns to General when its fields need attention. “Done” now reads “Back to campaign”. Custom-scenario return links reopen Scenarios.
+
+Production build passed. Disposable browser verification passed at 390px and 1280px: section visibility, cross-section gold/scenario edits saved together, reload persistence, no mobile overflow or page errors, and one-row desktop navigation. Browser campaign tests updated to select the relevant sections. No deployment; retain for the combined release.

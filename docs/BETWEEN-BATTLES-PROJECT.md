@@ -18,15 +18,15 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 ## Current checkpoint — 11 September, local batch
 
-**Implementation scope complete; final release verification is underway. Nothing deployed yet.** There are **102 implemented scenario reward paths**. Tom explicitly deferred the remaining Khemri-dependent Defend the Oasis aftermath and the wider Khemri campaign system on 11 September. Track this as very low-priority future upgrade #227, including a possible campaign setting that controls scenario availability. No additional Khemri implementation is required for this batch.
+**The agreed Between Battles batch is deployed and served assets are verified.** Released commit `904e2a8` in the single Netlify production deployment `6aa3800220c409a532e3f32e` on 11 September 2026. One Git push and one production deployment were performed; automatic Netlify builds stayed paused.
 
-The original-scope evidence map and release gates are in `BETWEEN-BATTLES-RELEASE-CHECKLIST.md`. Approved manual rulings and bespoke custom equipment remain explicit; this release does not claim full automation of every optional campaign system.
+All **33 migrations (39–71)** applied successfully to production, without reset or seeding. A subsequent linked dry run confirms no pending migrations. Final local verification: **1,672 ordinary tests, 166 database tests**, build/typecheck/lint passing with documented existing warnings. All **98 served HTML/JS/CSS files** match the tested production build byte-for-byte; sign-in/campaigns/battles routes respond successfully. No live player history was changed for testing. Hosted CI run `34561410564` was still running at this checkpoint; its separate result is not claimed green.
 
-Latest evidence: full ordinary suite 1,671 passed, followed by 17 focused exploration-aid tests and typecheck after the final Pathfinder case. Last separate database suite: 166 passed. Build and lint pass with existing warnings. Final release checks will refresh these totals.
+There are **102 implemented scenario reward paths**. Tom explicitly deferred the remaining Khemri-dependent Defend the Oasis aftermath and the full Khemri campaign system to very low-priority future upgrade **#227**, including an optional campaign setting that controls available scenarios. Approved overrides, source-ruling choices and intentionally custom equipment remain as described in the release checklist.
 
-All 33 batch migrations (39–71) remain local only; the linked production dry run matches that expected set. Netlify auto-builds were paused at the read-only preflight check. Recheck before the single authorised push/deployment to avoid duplicate builds. Preserve pre-existing dirty audit/tracker work.
+The 20 original tracker entries now carry release evidence within their agreed scope. Pre-existing dirty audit/tracker work is preserved. Post-deployment evidence is committed locally only to honour the single-push release; carry these documentation changes with the next batch's eventual push.
 
-**Scope answer received:** the earlier Oasis question is resolved by deferral, not by implementing a partial water system. The heartbeat may resume to finish release and then the authorised second batch.
+**Next authorised work:** check the hosted CI result, then queued #221–226 and reopened #23/#54 follow-ups as a second batch. Menu redesigns need proposals before implementation. Continue using disposable local test records; avoid intermediate Netlify deployments.
 
 The following milestone sections are chronological history; earlier “remaining” lists and test totals describe those earlier checkpoints.
 

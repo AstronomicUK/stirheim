@@ -1605,7 +1605,9 @@ Still open: routing a persona's injury roll through the hero D66 chart instead o
 
 ### 61. Hired swords and Dramatis Personae: entry data the app has but never reads (skills, kit, racial maxima, unusual fees)
 
-**Status:** 🟡 Partially fixed
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the same hired swords and Dramatis Personae rules audit as #60, reviewed by Tom
 
@@ -1685,7 +1687,9 @@ missing Cavalry table, unresolved kit items, and the fee/upkeep edge cases) are 
 
 ### 66. Exploration chart: the six-dice cap is applied to the wrong half of the sentence, plus five smaller gaps
 
-**Status:** 🟡 Partially fixed
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the exploration rules audit, reviewed by Tom, sent directly for the tracker
 
@@ -1805,7 +1809,9 @@ Five more (Sawbones, Power in the Stones, the two vampire skill-list rulesets, S
 
 ### 72. Scenario experience awards and non-wyrdstone rewards are never applied, and the scraped "experience" field is unreliable
 
-**Status:** 🟡 Partially fixed — the scenario's own experience text is now shown; auto-applying it, the extraction gap, and the other two findings remain open
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the scenarios rules audit; pre-authorised overnight, not yet personally reviewed by Tom
 
@@ -1839,7 +1845,9 @@ Deployment, terrain, starting/ending the game, victory conditions and per-scenar
 
 ### 74. Two hired-sword kit lines are visibly mis-parsed, plus real items hiding in unresolved prose
 
-**Status:** 🟡 Partially fixed
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the aliases and unresolved-names audit (#18, the last of the series); pre-authorised overnight, not yet personally reviewed by Tom
 
@@ -2561,7 +2569,9 @@ targeting-rules items.
 
 ### 87. Remove the "Roll advancements later" option; only deferring the skill choice after rolling should remain
 
-**Status:** ✅ Fixed
+**Between Battles release — 2026-09-11:** ✅ Deployed within the agreed original batch scope in `904e2a8`, Netlify deploy `6aa3800220c409a532e3f32e`. Final checks: 1,672 ordinary tests, 166 local database tests, build/typecheck/lint; all 98 served HTML/JS/CSS files match the tested build. Source/evidence and explicit manual/custom boundaries: [release checklist](BETWEEN-BATTLES-RELEASE-CHECKLIST.md). Khemri-dependent rules are deliberately deferred to very low-priority #227 at Tom’s request, not claimed implemented. Historical partial-status notes below describe earlier checkpoints.
+
+**Status:** ✅ Fixed within agreed batch scope — deployed 2026-09-11
 **Priority:** 🟡 Low
 **Reported:** 2026-09-08
 

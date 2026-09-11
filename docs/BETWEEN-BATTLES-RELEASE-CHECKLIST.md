@@ -1,6 +1,6 @@
 # Between Battles — release checklist
 
-Local review at checkpoint `18ee565`, 11 September 2026. **Not released.** This is an original-scope evidence map, not a declaration that every wider Mordheim campaign system or bespoke character power is automated. Detailed source citations, executable tests and disposable browser evidence are recorded in `BETWEEN-BATTLES-PROJECT.md` under the milestone numbers below.
+**Released 11 September 2026:** commit `904e2a8`, Netlify deployment `6aa3800220c409a532e3f32e`. All 33 production migrations applied; follow-up dry run reports up to date. All 98 served HTML/JS/CSS files match the tested build. This is an original-scope evidence map, not a declaration that every wider Mordheim campaign system or bespoke character power is automated. Detailed source citations, executable tests and disposable browser evidence are recorded in `BETWEEN-BATTLES-PROJECT.md` under the milestone numbers below.
 
 ## Original 20 items
 
@@ -51,3 +51,8 @@ Netlify API reports the linked `AstronomicUK/stirheim` repository on `main`, wit
 6. Only after the main release is verified, start queued #221–226 and #23/#54 follow-ups. Menu redesigns require proposals, as recorded in the user request.
 
 No additional production approval is required: Tom explicitly authorised the completed batch's overnight deployment. The Khemri scope question is resolved by explicit deferral.
+
+
+## Release completed
+
+The sequence above completed with one push and one production deployment. Local suites: 1,672 ordinary and 166 database tests passed. Served routes returned successfully. Hosted CI run 34561410564 remains a separate follow-up; it was running at the release evidence checkpoint. Post-release documentation stays local for the next batched push.

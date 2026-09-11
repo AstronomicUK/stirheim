@@ -434,3 +434,14 @@ it('only held defender weapons grant parry and strike-order effects (#156)', () 
   expect(fight.defenderKit.melee).toHaveLength(3)
   expect(fight.defenderKit.armour.shield).toBe(true) // Selecting hands never edits the carried kit.
 })
+
+
+it('Merchant Pike gains Initiative only in the opening round (#156)', () => {
+  const pikeman = combatant('Pikeman', [{ itemId: 'pike_merchant_caravans', quantity: 1 }])
+  const fight = setup(pikeman, captain, 'pike_merchant_caravans', null)
+  expect(computeOdds({ ...fight, context: { ...fight.context, charging: true } }).strikeOrder).toContain('charging')
+  const againstPike = setup(captain, pikeman, 'sword', null)
+  expect(computeOdds({ ...againstPike, context: { ...againstPike.context, charging: true } }).strikeOrder).toContain('Pikeman strikes first: Initiative 4')
+  expect(computeOdds(againstPike).strikeOrder).toContain('Equal Initiative (3 each)')
+  expect(relevantToggles(captain, 'melee', againstPike.primary, againstPike.defenderKit).some(t => t.field === 'firstTurnOfCombat')).toBe(true)
+})

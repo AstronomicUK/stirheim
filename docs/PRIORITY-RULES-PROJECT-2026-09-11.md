@@ -148,3 +148,9 @@ Next implementation: finish defender hand selection for #156. FightTab currently
 kitWithSelectedWeapons limits melee list for parries/order, removes shield/buckler/kite shield in melee when hands full but retains shooting shield protection. FightTab defender choice keyed by warrior id, missing-defender guard, main/offhand controls. Simulator defence/reverse odds uses existing chosen weapons. 158 focused tests +build/lint pass; final tsc after null guard passes. Real disposable mobile script /tmp/stirheim-defender-hands-mobile-qa.mjs passes selection changes, strike-order change, WS0 rolling and navigation. Earlier fixture-default failures corrected by selecting acting warband and attacker sword explicitly. No live changes/deploy.
 
 Next: #156 remaining specialist Pike/Whipcrack order; #149 exact Barrage or #150 complete alternative staff constraints above. Need final batch full suite/QA once scope settles, not another deploy per fix.
+
+## Combat milestone 19 — #156/#152 Pike specifics (local)
+
+Merchant Pike initiativeFirstTurnBonus1 applied only opening round; firstTurn toggle relevance now considers selected defender gear as well. Tilean Pike twoHanded tag fixes offhand/shield handling; manSizedWielderOnly replaces misleading largeCreaturesOnly, with explicit reach/wielder table notes. Source02:538–560. Thirty-nine odds tests +build/typecheck/lint pass; explanatory note strings afterward. No deploy. Still partial: Tilean Pike over Spear precedence and Whipcrack separate bonus strike, plus broader special effects.
+
+Next tackle one larger sequence (#149 Rapier exact additional-attack loop or #150 full staff mode) using earlier source constraints. Avoid mislabelling table-only constraints as automated.

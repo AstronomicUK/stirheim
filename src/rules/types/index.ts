@@ -82,6 +82,8 @@ export interface Weapon {
   bonusAttacks?: number;
   /** Flat Initiative bonus from the weapon itself (e.g. an Ithilmar weapon's own +1). Recorded for completeness, matching Initiative's `not modeled` status elsewhere (Stat/Skill Gain Analysers) — Initiative isn't wired into the probability engine, so this is informational only until it is. Undefined = +0. */
   initiativeModifier?: number;
+  /** Additional Initiative only in the first round of melee. */
+  initiativeFirstTurnBonus?: number;
   /** Flat Weapon Skill bonus while fighting with this weapon (Cathayan Longsword "Mastercrafted" +1). */
   wsBonus?: number;
   /** Extra attacks in the first turn of a hand-to-hand combat (Chain Sticks "Flurry" +2). */

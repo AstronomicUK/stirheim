@@ -382,3 +382,11 @@ it.each(['sisters_of_sigmar_augur', 'skaven_assassin_adept'])('carries %s innate
     }
   }
 });
+
+
+it('only learned Fearsome grants the fear trait to roster fighters (#59/#70)', () => {
+  const r = warband({ heroes: [hero('fearsome', { skillIds: ['fearsome'] }), hero('ordinary')] })
+  const cs = combatantsOf(r, undefined, 'QA', undefined)
+  expect(cs.find(c => c.id === 'fearsome')?.traitIds).toContain('causes_fear')
+  expect(cs.find(c => c.id === 'ordinary')?.traitIds).not.toContain('causes_fear')
+})

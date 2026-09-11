@@ -94,3 +94,9 @@ Next: Just Squigs is only in Night Goblins WEB source3150, absent from non-web27
 Only night_goblins_web_cave_squigs gains routModelWeight0.5 +routCasualtyWeight0.5 (source1c:3150). rosterRoutThreshold rounds quarter to reachable half increments when present; example5Goblins+2Squigs→6count→1.5threshold. Non-web unchanged. EnemyView/single-enemy top strip use weighted per-warband totals; multiplayer aggregate no longer invents shared threshold. Fifty-two battle/animal tests +typecheck/build/lint pass, existing warnings. No deployment.
 
 Next #68: Merchant Bribery and Trade Wagon abandonment, source read needed and reconcile any existing implementation before coding. Per-member stun identity remains explicitly table-confirmed. Counting and leader integration now locally covered; don't redo. Broader combat #59/#69/#70/#149–160 then remaining priority groups.
+
+## Combat milestone 12 — #59/#70 Fearsome trait (local)
+
+Learned Fearsome now grants causes_fear via exact traitsFromSkills to roster combatants and simulator previews. Description clarifies tabletop Fear tests; no false claim of automated Fear math. Source03:503–507. Forty-seven focused tests and typecheck/build/lint pass, existing warnings. No deploy. #59/#70 stay partial.
+
+Read Bribery source1c:2298: LEARNED Merchant skill, not warband innate; pay5gc per non-Hero still in game including hired swords; exclude one existing casualty, may still need test, repeatable. Needs atomic gold deduction +persistent battle accounting, not a reminder-only closure. Abandonment1c:2457 requires failed Rout/no driver and winner loot/keep/ransom +rare-search lock except if all Merchant models OOA. No implementation yet. #156 inspected: still uses ALL defender melee gear and conflates first-turn/when-charged; Strongman itself already respected. Next independent combat work can address #156 or remaining #70 mechanics while designing transaction-backed Bribery.

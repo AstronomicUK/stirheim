@@ -13,7 +13,7 @@ import { equipmentOptionsFor, unitStartingStats, type EquipmentOption } from '..
 import { unitRules } from '../../rules/data/campaignRules'
 import type { CombatContext, Stats, UnitTemplate, WarbandTemplate, Weapon, WeaponKind } from '../../rules/types'
 import type { CampaignHouseRules, RosterItem } from '../../rules/types/roster'
-import { kindTraits, traitsFromRules, type Combatant, type Loadout } from '../match/fight/combatants'
+import { kindTraits, traitsFromRules, traitsFromSkills, type Combatant, type Loadout } from '../match/fight/combatants'
 import { toCharacter, toDefender } from '../match/fight/odds'
 
 /** Where a side comes from. */
@@ -67,7 +67,7 @@ export function combatantFromTemplate(side: TemplateSide, name?: string): Combat
   const stats: Stats = unitStartingStats(unit)
   const equipment: RosterItem[] = side.itemIds.map((itemId) => ({ itemId, quantity: 1 }))
   const race = unitRules(unit.id).excludeRaceTraits ? [] : template.raceTraits
-  const traits = [...new Set([...race, ...(unitRules(unit.id).naturalWeapons ? ['natural_weapons'] : []), ...(unit.traitIds ?? []), ...traitsFromRules(unit.specialRules), ...kindTraits(template.id, unit.id, unit.specialRules)])]
+  const traits = [...new Set([...race, ...traitsFromSkills(side.skillIds), ...(unitRules(unit.id).naturalWeapons ? ['natural_weapons'] : []), ...(unit.traitIds ?? []), ...traitsFromRules(unit.specialRules), ...kindTraits(template.id, unit.id, unit.specialRules)])]
   return {
     id: `template:${template.id}:${unit.id}`,
     kind: unit.role === 'hero' ? 'hero' : 'henchman',

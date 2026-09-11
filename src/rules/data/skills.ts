@@ -177,7 +177,7 @@ export const SKILLS: Skill[] = [
     modeled: false,
     effect: { type: "notModeled" },
     conditional: false,
-    description: "Psychology effect — no Hit/Wound/Injury impact.",
+    description: "Causes fear in opposing models. Resolve the required Fear tests at the table.",
   },
   {
     id: "strongman",

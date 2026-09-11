@@ -104,8 +104,13 @@ function unique(ids: string[]): string[] {
   return ids.filter((id, i) => ids.indexOf(id) === i)
 }
 
+/** Exact learned-skill grants, never inferred from unchosen skill-list prose. */
+export function traitsFromSkills(skillIds: readonly string[]): string[] {
+  return skillIds.includes('fearsome') ? ['causes_fear'] : []
+}
+
 function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly NamedRule[], base: string[], isLarge: boolean | undefined): string[] {
-  const ids = [...base, ...traitsFromRules(rules)]
+  const ids = [...base, ...traitsFromRules(rules), ...traitsFromSkills(warrior.skillIds)]
   if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'veskit_high_executioner_of_clan_eshin' && !warrior.flags.hireCompanion) ids.push('veskit_no_pain','veskit_metallic_body')
   if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'maximilian_the_mad' && !warrior.flags.hireCompanion) ids.push('frenzy')
   if (warrior.flags.frenzy) ids.push('frenzy')

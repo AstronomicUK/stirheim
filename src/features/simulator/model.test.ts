@@ -55,3 +55,10 @@ it('published Wulfen previews use natural weapons without saved equipment', () =
   expect(loadoutFor(c).melee[0]).toMatchObject({ id: 'natural_weapons', strength: 'user' })
   expect(c.stats).toMatchObject({ S: 4, A: 2 })
 });
+
+
+it('Fearsome is visible on a custom unit only while the skill is selected', () => {
+  const side = defaultTemplateSide('mercenaries_reikland')
+  expect(combatantFromTemplate({ ...side, skillIds: ['fearsome'] })?.traitIds).toContain('causes_fear')
+  expect(combatantFromTemplate({ ...side, skillIds: [] })?.traitIds).not.toContain('causes_fear')
+})

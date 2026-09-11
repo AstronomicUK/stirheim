@@ -13,7 +13,7 @@ export function canUseExtraTough(hero: Pick<RosterHero, 'skillIds'>, flow: HeroI
   return !roll.medicine && roll.subRoll === null && roll.districtRoll == null
 }
 
-export function useExtraTough(draft: ReportDraft, hero: Pick<RosterHero, 'id' | 'skillIds'>, d66: number, source: 'app' | 'tabletop'): ReportDraft {
+export function applyExtraToughReroll(draft: ReportDraft, hero: Pick<RosterHero, 'id' | 'skillIds'>, d66: number, source: 'app' | 'tabletop'): ReportDraft {
   const flow = draft.heroInjuries[hero.id]
   if (!canUseExtraTough(hero, flow)) return draft
   lookupHeroInjury(d66)

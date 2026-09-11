@@ -38,6 +38,8 @@ export interface AppliedInjury {
 
 /** Persistent conditions that change how a warrior plays or is administered. */
 export interface WarriorFlags {
+  studiedAlchemistNotebook?: boolean;
+  studiedTrainingManual?: boolean;
   /** Balewolf curse acquired after a particular battle; the normal profile remains the roster profile. */
   lycanthrope?: {contractedAfter:string};
   /** Story Teller upgrade purchased instead of Wizard at recruitment. */

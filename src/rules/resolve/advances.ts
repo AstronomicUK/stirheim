@@ -223,7 +223,7 @@ function matchKeyword(text: string, warbandId: string): string | undefined {
 }
 
 /** Work out which RACIAL_MAXIMUMS profile caps a hero, with a warning event when we had to guess. */
-export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "unitTemplateId">, warbandTemplateId: string): Resolution<RacialProfileMatch> {
+export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "unitTemplateId"> & Partial<Pick<RosterHero, "flags">>, warbandTemplateId: string): Resolution<RacialProfileMatch> {
   const template = findWarbandTemplate(warbandTemplateId);
   const unit = template ? findUnitTemplate(template, hero.unitTemplateId) : undefined;
   const unitName = unit?.name ?? hero.name;
@@ -269,9 +269,9 @@ export function resolveRacialProfile(hero: Pick<RosterHero, "id" | "name" | "uni
     events.push({ kind: "warning", subjectId: hero.id, message: `Racial profile "${profile}" is not in RACIAL_MAXIMUMS; using Human for ${hero.name}.`, data: { profile } });
     const human = findRacialMaximum("Human");
     if (!human) throw new RangeError("RACIAL_MAXIMUMS has no Human row");
-    return { value: { profile: "Human", maxima: { ...human.stats }, matchedBy: "fallback" }, events };
+    return { value: { profile: "Human", maxima: { ...human.stats, WS: Math.min(10, human.stats.WS + (hero.flags?.studiedTrainingManual ? 1 : 0)) }, matchedBy: "fallback" }, events };
   }
-  return { value: { profile: row.profile, maxima: { ...row.stats }, matchedBy }, events };
+  return { value: { profile: row.profile, maxima: { ...row.stats, WS: Math.min(10, row.stats.WS + (hero.flags?.studiedTrainingManual ? 1 : 0)) }, matchedBy }, events };
 }
 
 /** Racial maximum characteristics for a hero (Human when the race cannot be determined). */

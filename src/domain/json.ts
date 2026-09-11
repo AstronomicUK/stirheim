@@ -43,6 +43,8 @@ export const appliedInjuriesSchema = z.array(appliedInjurySchema);
 
 /** heroes.flags */
 export const warriorFlagsSchema = z.object({
+  studiedAlchemistNotebook: z.boolean().optional(),
+  studiedTrainingManual: z.boolean().optional(),
   lycanthrope: z.object({contractedAfter:z.string()}).optional(),
   chronicler: z.boolean().optional(),
   luthorRole: z.enum(['crimson','wizard','archer']).optional(),

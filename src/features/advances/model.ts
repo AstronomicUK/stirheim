@@ -179,7 +179,7 @@ function humanMaxima(): Stats {
 export function heroMaxima(hero: RosterHero, warbandTemplateId: string): MaximaInfo {
   const match = resolveRacialProfile(hero, warbandTemplateId)
   const warning = match.events.find((e) => e.kind === 'warning')
-  return { maxima: match.value.maxima, profile: match.value.profile, note: warning ? warning.message : null }
+  return { maxima: match.value.maxima, profile: match.value.profile, note: [warning?.message, hero.flags.studiedTrainingManual ? 'Training Manual: +1 to maximum Weapon Skill.' : null].filter(Boolean).join(' ') || null }
 }
 
 /**

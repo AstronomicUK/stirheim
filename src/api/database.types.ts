@@ -1820,6 +1820,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["match_state"]
       }
+      study_exploration_book: {
+        Args: { p_book_id: string; p_hero_id: string; p_warband_id: string }
+        Returns: undefined
+      }
       submit_battle_report: {
         Args: {
           p_amend_note?: string

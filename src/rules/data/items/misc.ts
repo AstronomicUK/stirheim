@@ -1362,7 +1362,7 @@ export const MISC_ITEMS: Item[] = [
   // #66: exploration-chart treasures that used to land as untyped, unpriced custom stash lines
   // with none of their rules text carried across. Found only (Exploration), never bought, hence
   // availability "special" rather than a rarity number. Equipped gems now supply their bearer’s
-  // rare-search bonus. Notebook/manual study and its permanent benefits remain separate work.
+  // rare-search bonus. Notebook/manual study is recorded separately as a lasting Hero benefit.
   {
     id: "quartz_stones",
     name: "Quartz Stones",

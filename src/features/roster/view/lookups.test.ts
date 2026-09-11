@@ -97,3 +97,17 @@ it('shows the granted Wight Blades rule only for promoted standard-list Wights',
   expect(warriorSpecialRules(template, 'restless_dead_wights', null).some(r => r.name === 'Wight Blades')).toBe(false)
   expect(warriorSpecialRules(findWarbandTemplate('the_restless_dead_variant'), 'restless_dead_variant_wights', null, undefined, true).some(r => r.name === 'Wight Blades')).toBe(false)
 })
+
+it('promoted Snotlings gain full Mob Rule and Rigors text, and Runts lose Teeny Hands (#114)', () => {
+  const template = findWarbandTemplate('snotlings')
+  for (const unitId of ['runts', 'snotling_shoota_team']) {
+    const rules = warriorSpecialRules(template, unitId, null, undefined, true)
+    expect(rules.filter(r => r.name === 'Mob Rule')).toHaveLength(1)
+    expect(rules.find(r => r.name === 'Mob Rule')?.text).toContain('maximum of 10')
+    expect(rules.find(r => r.name === 'The Rigors of Leadership')?.text).toContain('+2 experience')
+    expect(rules.some(r => r.name === 'Teeny Hands')).toBe(false)
+    expect(warriorSpecialRules(template, unitId, null).some(r => r.name === 'Mob Rule')).toBe(false)
+  }
+  expect(warriorSpecialRules(template, 'runts', null).some(r => r.name === 'Teeny Hands')).toBe(true)
+  expect(warriorSpecialRules(template, 'bigsnotz', null, undefined, true).filter(r => r.name === 'Mob Rule')).toHaveLength(1)
+})

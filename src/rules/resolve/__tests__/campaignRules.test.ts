@@ -93,6 +93,15 @@ describe("recruitment and the builder", () => {
 });
 
 describe("injuries", () => {
+  it("Snotling Mob injury roll 3 survives, unlike Shoota Teams and Runts (#125)", () => {
+    for (const [unitId, deaths] of [["snotling_mobs", 2], ["snotling_shoota_team", 3], ["runts", 4]] as const) {
+      for (let die = 1; die <= 6; die++) {
+        const before = group("g", unitId, 2);
+        expect(applyHenchmanInjury(before, die).value?.size, `${unitId}: ${die}`).toBe(die <= deaths ? 1 : 2);
+        expect(before.size).toBe(2);
+      }
+    }
+  });
   it("a Troll never rolls, a Hobgoblin leaves on 1-3, everyone else dies on 1-2", () => {
     expect(henchmanInjuryException(group("t", "orc_mob_troll", 1))?.deadOn).toEqual([]);
     const hobs = group("h", "sons_of_hashut_hobgoblins", 4);

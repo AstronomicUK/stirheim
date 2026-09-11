@@ -1,6 +1,7 @@
 // Pure display helpers for the roster screens: names for rules ids, experience progress, flag
 // tags. Nothing here touches React or the network, so it is unit-tested in node.
 
+import { unitRules } from '../../../rules/data/campaignRules'
 import { findItem } from '../../../rules/data/items'
 import { findHiredSword } from '../../../rules/data/campaign/hiredSwords'
 import { nextThreshold, xpThresholds, type AdvanceRate } from '../../../rules/data/campaign/experience'
@@ -161,6 +162,11 @@ export function warriorSpecialRules(template: WarbandTemplate | undefined, unitI
   }
   if (template && unitId) {
     const rules = findUnitTemplate(template, unitId)?.specialRules ?? []
+    if (isHero && unitRules(unitId).rigorsOfLeadership) {
+      const grants = findUnitTemplate(template, 'bullied_goblin')?.specialRules.filter(rule => ['Mob Rule', 'The Rigors of Leadership'].includes(rule.name)) ?? []
+      const grantNames = new Set(grants.map(rule => rule.name))
+      return [...rules.filter(rule => !grantNames.has(rule.name) && !(unitId === 'runts' && rule.name === 'Teeny Hands')), ...grants]
+    }
     if (isHero && unitId === 'restless_dead_wights') {
       const blades = findUnitTemplate(template, 'restless_dead_grave_guards')?.specialRules.find(rule => /^wight blades$/i.test(rule.name))
       return blades ? [...rules, blades] : rules

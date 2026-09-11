@@ -237,3 +237,10 @@ Investigation fornext: warriorSpecialRules inroster/view/lookups.ts calledbyWarr
 ## Experience/combat milestone 6 — #114 Wight Blades (local)
 
 Removedambiguouswightheading→varianttrait parser. kindTraits exactstandardGraveGuard andhero-onlystandardWight grant wight_blades_auto_wound; variantGraveGuardkeeps5plus; no variantWightgrant. Engine standardtraitmakesmelee6hitautowound independentofpoisonimmunity, normalcriticalcheck; rangedunaffected. ExistingrolleralreadyhandlesautoWoundOnNaturalSixToHit withgenericnotes; itsregressiontests pass. Simulationtemplaterole passedtokindTraits;rostercombatantshero=true. warriorSpecialRules addedoptional5thisHeroarg, WarriorCard+battlenamespassit;promotedstandardWightappendssourceGraveGuardrule. UIgranttestandactualcombatantconversiontestpass. Build/lint+297engine/battle/simtests;finaltsc+63roster/battletests pass. No browserQA thismilestone; no deploy. #114otherconsequencesremain. Next Snotlingderivedpromotionrules orspecialTLGToutcomes/#112killXP; keepremainingcombatlargerflowsinview.
+
+
+## Experience/injury milestone 7 — Snotling promotion display and #125 (local)
+
+warriorSpecialRules hero+Rigorsmetadata pulls fullMobRule/RigorsfromBulliedGoblin, deduplicatesabbreviatedheadings;promotedRuntsloseTeenyHandsdisplay. Henchmenunchanged. RigorsXPalreadymechanical; nearbySnotcount/Ldbonusstilltablemanaged, no claimautomaticMobRulecalculation orunpromotedRuntequipmentenforcement. #114partial. #125adjacentHIGHfixed: MobdeadOn1–2 not1–3;Shoota1–3/Runts1–4retained,all18die/unitoutcomestested. Sourcegrade2apart2MobNotSoSmall rule. Build/lint+47display/XP/advancespass;finaltsc+261campaign/postbattlepass. No deploy/livechanges.
+
+Next substantial remainingexperience: #114OrcGoblin/ArabianSlave death ratherthanreroll, Wretchrepeatedresultinjury,SlayerDeathWishreplacementroll,Chapelknighthood/Lustrianreplacement,Sorcerousroletransition; #112enemykillXP. Manyarebackend/UItransactionalflows; do notclaimcompletefromtextalone. #121–122succession/#62half-rate/#178/#211 stillreconcile. Combatremainingasabove.

@@ -225,3 +225,10 @@ Added Druchii, Snotling, Ogre(OgreHuntingParty), Gnoblar(OgreHuntingParty) data 
 ## Experience milestone 4 — #118 Chosen of Chaos maxima (local)
 
 resolveRacialProfile accepts optionalskillIds; exact learned marauders_of_chaos_skills_chosen_of_chaos overrides originalprofile withWarriorOfChaos, matchedBy=skill. Namealone notenough; removing skill restoresbase; no autocharacteristicincrease; TrainingManual stacks maximumWS.65focusedtests/build/typecheck/lintpass existing3warnings. #118fixedlocal; Heroequipmentlist consequence remainsbroader#59/equipment scope, notclaimedfixed. No deploy. Next#114specialpromotion or#112enemykillXP; oldercombat outstanding asabove.
+
+
+## Experience milestone 5 — #114 promoted Wight rare searches (local)
+
+Both restless_dead_wights and restless_dead_variant_wights now noRareSearch:true; eligibleSearchers already filters thismetadata. ExistingandnewpromotedHeroes covered byunitidentity.47tests/build/typecheck/lintpass existingwarnings. Sourcegrade1c3459 +restless-dead-variant381–387 confirmedboth. VariantpromotiondoesNOTgrantWightBladesinthatclause; donotcopy standardgrantblindly. #114partial.
+
+Investigation fornext: warriorSpecialRules inroster/view/lookups.ts calledbyWarriorCard/GroupCard andbattle/names.ts; lacksroleparameter, so promotedRunts stilldisplayTeenyHands andlackMobRule. Rigors XP/maxima alreadycovered dynamically. No catalogue MobRule/Rigors skillentries; preferderivedpromotionrules withrole context ratherthanaddingselectableskills incorrectly. StandardWightBlades6hitautowound vsvariant5+crit differ; combatants.ts traitsFromRules hasgeneric /wight blades/=>wight_blades_5plus so standardGraveGuardmaywronglygainvarianttrait. Enginehaswight_bladecatalogueweapon autoWoundOnHit6 but standardtraitforallheldweaponsnotimplemented. ReviewthisbeforeclosingWightgrant. Other#114effects stillopen; prioritycombatleftasabove. No deploy.

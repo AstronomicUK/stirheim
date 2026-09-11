@@ -309,7 +309,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   restless_dead_grave_guards: { noRareSearch: true },
   restless_dead_zombies: UNDEAD_HENCHMAN,
   restless_dead_skeletons: UNDEAD_HENCHMAN,
-  restless_dead_wights: { promotion: { tables: ["combat", "strength"], note: "A promoted Wight takes Combat and Strength skills only and may not search for rare items." }, racialProfile: "Grave Guard (Restless Dead)" },
+  restless_dead_wights: { noRareSearch: true, promotion: { tables: ["combat", "strength"], note: "A promoted Wight takes Combat and Strength skills only and may not search for rare items." }, racialProfile: "Grave Guard (Restless Dead)" },
   restless_dead_scarecrows: UNDEAD_HENCHMAN,
   sons_of_hashut_hobgoblins: {
     excludeRaceTraits: true,
@@ -363,7 +363,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   restless_dead_variant_grave_guards: { noRareSearch: true },
   restless_dead_variant_zombies: { ...UNDEAD_HENCHMAN, naturalWeapons: true },
   restless_dead_variant_skeletons: UNDEAD_HENCHMAN,
-  restless_dead_variant_wights: { promotion: { tables: ["combat", "strength"], note: "A promoted Wight takes Combat and Strength skills only and may not search for rare items." }, racialProfile: "Grave Guard (Restless Dead)" },
+  restless_dead_variant_wights: { noRareSearch: true, promotion: { tables: ["combat", "strength"], note: "A promoted Wight takes Combat and Strength skills only and may not search for rare items." }, racialProfile: "Grave Guard (Restless Dead)" },
   restless_dead_variant_bone_goliath: { ...NO_XP, naturalWeapons: true, large: true, promotion: { never: true, note: "A construct is never promoted." } },
 
   // Hired swords and Dramatis Personae whose entry name carries no race keyword the

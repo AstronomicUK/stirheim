@@ -112,6 +112,17 @@ describe('diceTotal', () => {
 })
 
 describe('eligibleSearchers', () => {
+  it('promoted Wights cannot search, while living Necromancers still can (#114)', () => {
+    for (const prefix of ['restless_dead', 'restless_dead_variant']) {
+      const warband = makeWarband({ heroes: [
+        makeHero({ id: 'w', unitTemplateId: `${prefix}_wights` }),
+        makeHero({ id: 'g', unitTemplateId: `${prefix}_grave_guards` }),
+        makeHero({ id: 'n', unitTemplateId: `${prefix}_necromancer` }),
+      ] })
+      expect(eligibleSearchers(warband, []).map(h => h.id)).toEqual(['n'])
+      expect(eligibleSearchers(warband, ['n'])).toEqual([])
+    }
+  })
   it('lists active heroes who have not searched, in roster order, never hired swords', () => {
     const warband = makeWarband({
       heroes: [makeHero({ id: 'a', name: 'A' }), makeHero({ id: 'b', name: 'B', status: 'dead' }), makeHero({ id: 'c', name: 'C' })],

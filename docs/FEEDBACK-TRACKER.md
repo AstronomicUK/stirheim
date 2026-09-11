@@ -3501,3 +3501,8 @@ Fixed locally, awaiting combined deployment: Druchii use their printed T3 maximu
 ## 2026-09-11 Chosen of Chaos maximum profile — #118 (local)
 
 #118 fixed locally, awaiting combined deployment. The learned Chosen of Chaos skill selects the Warrior Of Chaos maximum profile before original unit/race lookup. Merely naming a hero Chosen of Chaos does not grant it; removing the skill restores the original maximum. Current characteristics are not automatically increased. The Training Manual maximum-WS adjustment still applies. This closes the maximum-profile issue only; equipment-list consequences remain part of the broader skill/equipment work. Source: grade-1c.md:1979,1994. Build/typecheck/lint and65 focused tests pass, with three existing audit-script lint warnings. No deployment or live data changes.
+
+
+## 2026-09-11 promoted Wight searches — #114 partial (local)
+
+Promoted Wights in both Restless Dead lists are now excluded from rare-item search selection, as their source clauses require; living Necromancers remain eligible. This works from the retained unit identity for existing as well as newly promoted Wights. Sources: grade-1c.md:3459 and restless-dead-variant.md:381–387. Build/typecheck/lint and47 focused tests pass; three existing audit-script lint warnings remain. #114 stays partially complete: the other special promotion consequences remain outstanding, including the standard-list Wight Blades grant. The variant's promotion clause does not itself grant Wight Blades, so do not copy that rule across lists. Local only; no live data changes.

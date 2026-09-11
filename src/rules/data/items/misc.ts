@@ -1083,6 +1083,7 @@ export const MISC_ITEMS: Item[] = [
   },
   {
     id: "torch",
+    weaponId: "torch",
     name: "Torch",
     category: "misc",
     price: { base: 2, text: "2 gc" },

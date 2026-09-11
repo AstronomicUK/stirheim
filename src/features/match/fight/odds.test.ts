@@ -605,3 +605,17 @@ it('Beastlash Fear affects an animal that failed when charged, without giving un
   const noWhip = loadoutOf([{ itemId: 'dagger', quantity: 1 }])
   expect(computeOdds({ ...failed, defenderKit: noWhip }).weapons[0].input.hitThreshold).toBe(4)
 })
+
+
+it('a carried Torch is a club at minus one to hit and frightens identified animals', () => {
+  const torchbearer = combatant('Torchbearer', [{ itemId: 'torch', quantity: 1 }])
+  const fight = setup(torchbearer, skaven, 'torch', null)
+  const odds = computeOdds(fight)
+  expect(odds.weapons[0].input.hitThreshold).toBe(5)
+  expect(odds.weapons[0].input.concussion).toBe(true)
+  expect(odds.weapons[0].strength).toBe(base.S)
+  expect(toDefender(torchbearer, fight.attackerKit).causesFearInAnimals).toBe(true)
+  expect(odds.notes.join(' ')).toContain('cannot be regenerated')
+  expect(findWeapon('gromril_torch')).toBeUndefined()
+  expect(findWeapon('ithilmar_torch')).toBeUndefined()
+})

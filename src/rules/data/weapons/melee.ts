@@ -102,6 +102,7 @@ export const MELEE_WEAPONS: Weapon[] = [
   { id: "sword", name: "Sword", type: "melee", strength: "user", critCategory: "bladed", concussion: false, parry: true, isSword: true, special: [], rangedProfile: null },
   { id: "sword_breaker", name: "Sword Breaker", type: "melee", strength: "user", critCategory: "bladed", concussion: false, parry: true, special: ["breaksOpponentWeaponOnParry4Plus"], rangedProfile: null },
   { id: "tenderiser", name: "Tenderiser", type: "melee", strength: "user", critCategory: "bludgeoning", concussion: true, special: [], rangedProfile: null },
+  { id: "torch", name: "Torch", type: "melee", strength: "user", toHitBonus: -1, critCategory: "bludgeoning", concussion: true, special: ["causesFearInAnimals", "torchFire"], rangedProfile: null },
   { id: "trident", name: "Trident", type: "melee", strength: "user", critCategory: "thrusting", concussion: false, parry: true, special: ["strikesFirstWhenCharged"], rangedProfile: null },
   { id: "weeping_blades", name: "Weeping Blades", type: "melee", strength: "user", critCategory: "bladed", concussion: false, parry: true, isSword: true, paired: true, autoWoundOnNaturalSixToHit: true, poisoned: true, special: ["permanentPoison"], rangedProfile: null },
 ];

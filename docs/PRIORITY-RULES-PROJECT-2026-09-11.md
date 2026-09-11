@@ -414,3 +414,12 @@ Extended explicit animal identity to the existing Animal category in unit rules,
 105 combatant/odds/animal tests and build/typecheck/lint passed (existing audit warnings). The underlying category includes the printed Animal special rule for Kroxigor; existing Fear immunity still applies. Custom units, mounts and hired companions outside the existing companion catalogue remain separate scope. Local only.
 
 Checkpoint 15:42 London: UnitCampaignRules.isAnimal true on existing ANIMAL metadata; hero/group combatants propagate it. No new broad inference from gainsExperience=false or names. Source spot checks warbands/grade-1b-part1:2820, grade-1c:2200/2770/3152, grade-2a-part2:859, grade-1b-part2:402–408. 105 focused tests passed. Test initially omitted explicit combatantsOf undefined arguments; corrected before final successful build. No browser QA or DB changes. Continue remaining persistent combat effects and action sequencing; local commits only. Latest broader suite1830pass/176DBskipped preceded Beastlash/animal updates.
+
+
+### #152 — Torch combat profile (local, 11 September)
+
+A carried Torch is now selectable as the printed makeshift club: user Strength, -1 to hit and Concussion. It uses the conditional Fear-in-animals handling, without granting universal Fear. Added an explicit reminder that Torch wounds cannot be regenerated, the spotting bonus is 4 inches and the Torch lasts one game. No invented Gromril/Ilthilmar Torch variants are generated. Source: 02-weapons-armour-equipment.md:2233–2240.
+
+59 odds/catalogue tests, build/typecheck/lint passed (existing audit warnings). Disposable 390px browser check passed: Torch appears from equipment, starts its melee hit roll, no page errors or overflow. Regeneration suppression, building fires and one-game consumption remain table-managed as stated in the UI; no full fire-system completion claim. Local only.
+
+Checkpoint 15:49 London: /tmp/stirheim-torch-mobile-qa.mjs PASS disposable fixtures cleaned. weaponId on misc Torch, melee profile toHitBonus-1/concussion, excludes materialVariants. Existing itemRules Torch consumable battle unchanged; loadout item weapon branch uses profile, no new automatic consumption promised. /tmp/stirheim-torch-{tests,build,lint}.log pass. Next return persistent action consequences/sequencing or remaining combat rules; no push/deploy. The creature identity framework now handles existing ANIMAL metadata, Wardogs explicitly and excludes Gnoblar companions; no generic name guessing.

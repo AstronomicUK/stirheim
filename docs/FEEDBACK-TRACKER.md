@@ -3651,3 +3651,10 @@ Wielding a Beastlash now exposes the existing failed-Fear-when-charged control a
 Extended explicit animal identity to the existing Animal category in unit rules, so animal henchmen such as Warhounds, Giant Rats, Wolves, Slavehounds, Piggies and Sabretusks can use the Beastlash Fear handling. Uses the catalogue category, not a model's name or simply its lack of experience gains. Human henchmen, Zombies and Nurglings are not classified as animals by this change; Gnoblar companions remain excluded.
 
 105 combatant/odds/animal tests and build/typecheck/lint passed (existing audit warnings). The underlying category includes the printed Animal special rule for Kroxigor; existing Fear immunity still applies. Custom units, mounts and hired companions outside the existing companion catalogue remain separate scope. Local only.
+
+
+### #152 — Torch combat profile (local, 11 September)
+
+A carried Torch is now selectable as the printed makeshift club: user Strength, -1 to hit and Concussion. It uses the conditional Fear-in-animals handling, without granting universal Fear. Added an explicit reminder that Torch wounds cannot be regenerated, the spotting bonus is 4 inches and the Torch lasts one game. No invented Gromril/Ilthilmar Torch variants are generated. Source: 02-weapons-armour-equipment.md:2233–2240.
+
+59 odds/catalogue tests, build/typecheck/lint passed (existing audit warnings). Disposable 390px browser check passed: Torch appears from equipment, starts its melee hit roll, no page errors or overflow. Regeneration suppression, building fires and one-game consumption remain table-managed as stated in the UI; no full fire-system completion claim. Local only.

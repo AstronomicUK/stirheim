@@ -29,7 +29,7 @@ import { MELEE_WEAPONS } from "./melee";
  * absurd in practice, and 14 entries' worth of clutter (both material qualities) in an already
  * 173-long hand-to-hand list.
  */
-const IMPROVISED_IDS = new Set(["ladle", "kitchen_knife", "censer", "brazier_iron", "boat_hook", "cat_o_nine_tails", "boss_pole"]);
+const IMPROVISED_IDS = new Set(["torch", "ladle", "kitchen_knife", "censer", "brazier_iron", "boat_hook", "cat_o_nine_tails", "boss_pole"]);
 
 export function isMaterialVariantBase(weapon: Weapon): boolean {
   if (weapon.type !== "melee" || weapon.strength !== "user") return false;

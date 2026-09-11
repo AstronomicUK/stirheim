@@ -591,3 +591,8 @@ Next action is the already-authorised coordinated production migration, single p
 ### Second batch started — 11 September
 
 Tom asked to review last night's issues. The eight workstreams, review findings and next steps are recorded in `SECOND-FEEDBACK-BATCH.md`. #221 is implemented and verified locally; the other seven remain open. Hosted CI's ordinary test job passed, but two browser scenarios failed and three did not run; details and follow-up are in that checkpoint. Main release's served-asset verification remains valid; do not claim hosted CI passed. Continue the second batch locally without intermediate deployment.
+
+
+### Second batch checkpoint — checklist persistence
+
+#224 now joins #221 as implemented/tested locally. Read `SECOND-FEEDBACK-BATCH.md` for the full checkpoint. Migration 72 is local only. Next independent implementation is #222 scenario-library enable/disable selection; do not re-run the completed first release or push intermediate changes.

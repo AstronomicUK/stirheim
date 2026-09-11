@@ -3252,6 +3252,8 @@ Local batch progress: #66/#187 faction-specific location XP/gold and free Prison
 
 ### 224. GM Checklist cannot be completed and dismissal does not persist
 
+**Local fix — 2026-09-11:** Personal campaign checklist now persists in the account database, with tickable steps, completion, dismissal and reopening. Three access/persistence database tests and real mobile reload checks pass; typecheck/lint pass. Migration 72 is local only; not deployed. See `SECOND-FEEDBACK-BATCH.md`.
+
 **Status:** 🔲 Open
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-10

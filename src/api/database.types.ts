@@ -516,6 +516,35 @@ export type Database = {
           },
         ]
       }
+      gm_checklists: {
+        Row: {
+          campaign_id: string
+          completed_steps: string[]
+          status: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          completed_steps?: string[]
+          status?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          completed_steps?: string[]
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_checklists_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       henchman_groups: {
         Row: {
           campaign_state: Json

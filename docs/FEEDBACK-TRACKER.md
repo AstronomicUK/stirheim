@@ -3550,3 +3550,10 @@ A group's follow-up after promotion now carries a durable database flag. The rem
 Added the campaign house-rule switch “Make room for Lad’s Got Talent”, off by default for new and existing campaigns. At the Hero cap it offers the requested dismissal prompt and an active-Hero selector. Dismissal and promotion are planned and confirmed together; normal dismissal retains a retired history record and returns equipment to the stash. The advancement history names the dismissed and replacement Heroes. With the switch off, the cap still forces a reroll; #178 and unit-specific promotion restrictions take precedence. Invalid choices produce no roster changes.
 
 Build/typecheck/lint pass. The 72 focused advancement/settings/domain/house-rule tests pass across the final runs after updating default-value expectations; all6 local advancement/trading database tests pass, including rollback of dismissal when the replacement insert fails. Three old audit-script lint warnings remain. Actual mobile enabled/disabled settings and replacement flow still require verification before this entry is marked complete. No migration, deployment or live roster changes.
+
+
+## 2026-09-11 Hero replacement mobile verification — #211 complete locally
+
+Verified the full mobile flow using a disposable local campaign: the setting starts off and blocks capped promotion; enabling it through Campaign Settings saves correctly; choosing the outgoing Hero and promotion options shows a joint review; confirmation keeps six active Heroes, retires the selected Hero, moves their sword to the stash, creates the replacement and records both names. Reload and mobile width checks pass. #211 is ready for the combined deployment.
+
+Midday regression check: all1,803 ordinary tests pass. Local database run passed175 tests with one scenario-equipment timeout; rerunning that entire26-test file passed, verifying all176 database tests across the runs. No production changes. Updated the old racial-profile-count test from31 to35 for the four already-verified printed maximum profiles.

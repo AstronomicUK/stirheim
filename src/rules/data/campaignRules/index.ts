@@ -67,6 +67,8 @@ export interface UnitCampaignRules {
   naturalWeapons?: boolean;
   /** Casualty contribution to Rout tests; does not reduce the starting model count. */
   routCasualtyWeight?: number;
+  /** All fighting members of this unit type collectively count as one for Rout. */
+  routCollective?: boolean;
   /** How each model counts for the wyrdstone income chart (default 1); for a group, per model. */
   incomeCountsAs?: number;
   /** The whole group counts as this many models for income (Snotling mobs count as one). */
@@ -291,10 +293,10 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   night_goblins_fanatics: { ...NO_XP, promotion: { never: true, note: "Fanatics are never promoted." } },
   night_goblins_cave_squigs: { ...ANIMAL, relation: { noMoreThan: { unitIds: ["night_goblins_warriors"], label: "the Night Goblins" } } },
   night_goblins_troll: TROLL,
-  night_goblins_snotling_mob: { promotion: { never: true, note: "Snotling Mobs are never promoted." }, groupIncomeCountsAs: 1 },
+  night_goblins_snotling_mob: { routCollective: true, promotion: { never: true, note: "Snotling Mobs are never promoted." }, groupIncomeCountsAs: 1 },
   night_goblins_web_warriors: { promotion: { tables: ["combat", "shooting", "speed", "warband-unique"], note: "Promoted Night Goblin henchmen may not take Strength skills." } },
   night_goblins_web_cave_squigs: { ...ANIMAL, relation: { noMoreThan: { unitIds: ["night_goblins_web_warriors"], label: "the Night Goblin Warriors" } } },
-  night_goblins_web_snotlings: { promotion: { never: true, note: "Snotlings are never promoted." }, groupIncomeCountsAs: 1 },
+  night_goblins_web_snotlings: { routCollective: true, promotion: { never: true, note: "Snotlings are never promoted." }, groupIncomeCountsAs: 1 },
   night_goblins_web_great_squig: { ...ANIMAL, large: true, relation: { exclusiveWith: { unitIds: ["night_goblins_web_troll"], label: "a Troll (Great Squig or Troll, not both)" } } },
   night_goblins_web_troll: { ...TROLL, relation: { exclusiveWith: { unitIds: ["night_goblins_web_great_squig"], label: "a Great Squig (Great Squig or Troll, not both)" } } },
   restless_dead_grave_guards: { noRareSearch: true },

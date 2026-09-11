@@ -94,6 +94,25 @@ export function startingModels(roster: RosterWarband, sheet?: BattleLiveState): 
   return warriors + fightingGroups(roster).reduce((n, g) => n + g.size, 0) + animalsFighting(roster).filter((a) => a.kind.countsForRout).length
 }
 
+/** Collective Rout units may be split across roster rows; pool by unit type. */
+function routCollectives(roster: RosterWarband, state?: BattleLiveState): Map<string, { size: number; out: number }> {
+  const pools = new Map<string, { size: number; out: number }>()
+  for (const group of fightingGroups(roster)) {
+    if (!unitRules(group.unitTemplateId).routCollective) continue
+    const pool = pools.get(group.unitTemplateId) ?? { size: 0, out: 0 }
+    pool.size += group.size
+    pool.out += state ? Math.min(group.size, groupOut(state, group.id)) : 0
+    pools.set(group.unitTemplateId, pool)
+  }
+  return pools
+}
+
+export function routStartingModels(roster: RosterWarband, state?: BattleLiveState): number {
+  let models = startingModels(roster, state)
+  for (const pool of routCollectives(roster).values()) models -= pool.size - 1
+  return models
+}
+
 /** Out-of-action tallies of animals that never count for rout tests (Gnoblars). */
 function insignificantOut(state: BattleLiveState): number {
   return state.tallies.reduce((n, t) => {
@@ -110,6 +129,10 @@ export function routCasualties(state: BattleLiveState, roster?: RosterWarband): 
   for (const group of roster?.henchmenGroups ?? []) {
     const weight = unitRules(group.unitTemplateId).routCasualtyWeight ?? 1
     count -= groupOut(state, group.id) * (1 - weight)
+  }
+  if (roster) for (const pool of routCollectives(roster, state).values()) {
+    count -= pool.out
+    if (pool.out >= pool.size) count += 1
   }
   return Math.max(0, count)
 }
@@ -243,6 +266,7 @@ export interface SheetTotals {
   ownOutOfAction: number
   startingModels: number
   routCasualties: number
+  routModels: number
   wyrdstoneFound: number
   /** Models out of action at which the rout test is due. */
   routAt: number
@@ -251,7 +275,7 @@ export interface SheetTotals {
 export function sheetTotals(state: BattleLiveState, roster: RosterWarband): SheetTotals {
   const totals = battleTotals(state)
   const models = startingModels(roster, state)
-  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: routCasualties(state, roster), wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(models) }
+  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: routCasualties(state, roster), routModels: routStartingModels(roster, state), wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(routStartingModels(roster, state)) }
 }
 
 export type RoutStatus = 'none' | 'test' | 'routed'
@@ -263,7 +287,7 @@ export type RoutStatus = 'none' | 'test' | 'routed'
 export function routStatus(state: BattleLiveState, models: number, roster?: RosterWarband): RoutStatus {
   if (state.routed) return 'routed'
   if (models <= 0) return 'none'
-  return routCasualties(state, roster) >= routThreshold(models) ? 'test' : 'none'
+  return routCasualties(state, roster) >= routThreshold(roster ? routStartingModels(roster, state) : models) ? 'test' : 'none'
 }
 
 // ---------------------------------------------------------------------------------------------

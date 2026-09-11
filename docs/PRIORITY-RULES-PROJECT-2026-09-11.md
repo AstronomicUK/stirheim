@@ -82,3 +82,9 @@ Next #68 rout counting: startingModels still sums every group member; insignific
 Typed routCasualtyWeight: Orc Mob Goblins/Squigs 0.5, Cathay Raging Peasants/Maneater Sabretusks 0. Actual casualties remain distinct; sheetTotals.routCasualties and routStatus share the resolver, with a visible explanation when adjusted. Starting denominator unchanged for these clauses. Source1a:2694,2711 /1c:237,1924. Audit incorrectly attributed Ignored Sabretusks to Ogre Hunting Party; actual source is Maneaters. Forty-nine battle/animal tests, typecheck/build/lint pass. No deployment/database changes.
 
 Next: Night Goblin Just Squigs affects both starting count and casualties, and Snotling mobs count as one (different mob/all-warband wording across two lists). Read 1c:2816,3150,3172 and Snotling warband source before deciding grouping. startingModels is also used by enemy casualty UI, so keep actual model display distinct if introducing weighted denominator. Bribery and wagon abandonment remain.
+
+## Combat milestone 10 — #68 Snotling collectives (local)
+
+night_goblins_snotling_mob /night_goblins_web_snotlings pool by unit type across fighting groups, count as one starting Rout model, and one casualty only after final member lost. Actual startingModels/ownOutOfAction retained; separate routModels plus routCasualties drive test/own top-strip/warning. Fifty-one battle/animal tests and typecheck/build/lint pass. Source1c:2798–2816,3154–3172. No deployment.
+
+Next: Just Squigs is only in Night Goblins WEB source3150, absent from non-web2760–2772; do not apply broadly. Needs denominator+casualty half weights with correct reachable quarter threshold. EnemyStanding currently aggregates enemy models into a fictitious one-warband Rout threshold; fix to per-warband advice or omit aggregate prediction, keeping actual casualties. EnemyView also inspect. Bribery/wagon abandonment still open.

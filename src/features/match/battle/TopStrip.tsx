@@ -74,7 +74,7 @@ export function TopStrip({ scenario, warbands, turn, onTurn, totals, enemy, rout
           icon="models"
           label="Warband OOA"
           value={`${totals.ownOutOfAction}/${totals.startingModels}`}
-          sub={rout === 'routed' ? 'routed' : toTest(totals.ownOutOfAction, totals.routAt)}
+          sub={rout === 'routed' ? 'routed' : totals.routCasualties !== totals.ownOutOfAction || totals.routModels !== totals.startingModels ? `Rout count ${totals.routCasualties}/${totals.routAt}` : toTest(totals.routCasualties, totals.routAt)}
           tone={rout === 'none' ? 'plain' : 'warn'}
         />
         <Tile

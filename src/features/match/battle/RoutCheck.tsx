@@ -70,10 +70,10 @@ export function RoutCheck({ roster, template, sheet, totals, edit, onBattleOver,
           <div>
             <p className="font-headline text-xl leading-tight text-ink">Rout check</p>
             <p className="text-sm text-ink-dim">
-              {totals.ownOutOfAction} of {totals.startingModels} models are out of action (a quarter is {totals.routAt}). The rules call for a
+              {totals.ownOutOfAction} of {totals.startingModels} models are out of action (Rout threshold: {totals.routAt}). The rules call for a
               Leadership test at the start of each of your turns until the battle ends.
             </p>
-            {totals.routCasualties !== totals.ownOutOfAction ? <p className="text-sm text-ink-dim">Special unit rules make those casualties count as {totals.routCasualties} for Rout tests.</p> : null}
+            {totals.routCasualties !== totals.ownOutOfAction || totals.routModels !== totals.startingModels ? <p className="text-sm text-ink-dim">Special unit rules give a starting Rout count of {totals.routModels}; those casualties count as {totals.routCasualties}.</p> : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

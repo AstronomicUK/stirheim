@@ -166,7 +166,7 @@ describe('totals and rout', () => {
     let s = addEnemyOut(emptyBattleLiveState(), 'captain', 2)
     s = setGroupOut(s, 'watch', 1, 3)
     s = setWyrdstoneFound(s, 1)
-    expect(sheetTotals(s, roster)).toEqual({ enemiesOutOfAction: 2, ownOutOfAction: 1, startingModels: 6, routCasualties: 1, wyrdstoneFound: 1, routAt: 2 })
+    expect(sheetTotals(s, roster)).toEqual({ enemiesOutOfAction: 2, ownOutOfAction: 1, startingModels: 6, routModels: 6, routCasualties: 1, wyrdstoneFound: 1, routAt: 2 })
   })
 
   it('warns once a quarter of the models are down, until routed', () => {
@@ -269,4 +269,18 @@ describe('special Rout casualty weights (#68)', () => {
     sheet = toggleHeroOut(sheet, 'leader')
     expect(routStatus(sheet, startingModels(r), r)).toBe('test')
   })
+})
+
+
+it.each(['night_goblins_snotling_mob', 'night_goblins_web_snotlings'])('counts %s collectively, even across roster groups', unitTemplateId => {
+  const r: RosterWarband = { ...roster, heroes: [hero('leader'), hero('other')], hiredSwords: [], henchmenGroups: [{ ...group('s1', 3), unitTemplateId }, { ...group('s2', 2), unitTemplateId }] }
+  let sheet = setGroupOut(emptyBattleLiveState(), 's1', 3, 3)
+  sheet = setGroupOut(sheet, 's2', 1, 2)
+  expect(sheetTotals(sheet, r)).toMatchObject({ startingModels: 7, ownOutOfAction: 4, routModels: 3, routCasualties: 0, routAt: 1 })
+  expect(routStatus(sheet, startingModels(r), r)).toBe('none')
+  sheet = setGroupOut(sheet, 's2', 2, 2)
+  expect(sheetTotals(sheet, r).routCasualties).toBe(1)
+  expect(routStatus(sheet, startingModels(r), r)).toBe('test')
+  sheet = setGroupOut(sheet, 's2', 0, 2)
+  expect(routStatus(sheet, startingModels(r), r)).toBe('none')
 })

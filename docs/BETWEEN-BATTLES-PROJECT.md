@@ -22,7 +22,7 @@ Implement cohesive local milestones, documenting source rules and meaningful tes
 
 Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian interception are now locally verified (milestones 45–49). The remaining scenario path is Defend the Oasis.
 
-Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
+Other open work: #66’s permanent notebook/manual learning and remaining named location consequences (Shrine blessing, Merchant House Haggle choice and The Pit); final original-scope reconciliation and release preparation. The combined recruitment/reward/start checks passed at milestone 58. Bespoke custom equipment is not automatically a release blocker under original #74. Ogre Slaver identity remains unconfirmed and is now explicitly presented for table review. Do not close broader tracker entries based on partial milestones.
 
 Validation: **1,636 ordinary tests pass; the last separate local database run passed all 156 tests**. Typechecked build and lint pass with existing warnings. Latest implementation checkpoint: milestone 58 (combined workflows rechecked; two subsequent mapping fixes pass 58 focused tests). Mobile checks use disposable local records and actual 390px viewport constraints.
 
@@ -495,3 +495,14 @@ A fresh all-entry custom-kit probe is saved at `/tmp/stirheim-remaining-custom-k
 **Scope reminder:** original tracker #74 explicitly says bespoke gear with no catalogue entry is intentionally custom and correct as-is. Therefore the raw custom-kit inventory is not itself a count of mandatory parser fixes or release blockers. Its descriptive-only/bespoke entries must be distinguished from ordinary unresolved aliases and #61’s actual starting-skill/fee/maxima requirements. This does not close #61/#74 or erase their separately documented unfinished mechanics. Remaining source/scope decisions and original-scope reconciliation still need completion before release.
 
 Validation for the two mapping fixes: all 58 focused equipment/combat/catalogue tests pass; typechecked build and lint pass with existing warnings. The prior full ordinary run is 1,636 passing; database suite is 156 passing. No migration, push or production deployment. Fourteen custom-equipment character/role entries remain in the mapping inventory; Nicodemus’s alternate spell mode is listed separately.
+
+
+### Local milestone 59 — original-scope review and displayed gems (not deployed)
+
+The original #66 includes more than the location gold/shard branches: Alchemist’s Notebook permanent Academic access, Training Manual permanent Combat access and +1 racial WS limit, Shrine weapon blessing, Merchant House Haggle choice, and The Pit’s selected-Hero consequence. A fresh consumer search found no implementation of the notebook/manual study actions or the named Shrine/Haggle effects. These are concrete outstanding original-scope work, unlike #74’s intentionally custom bespoke equipment. Verify The Pit’s actual outcome flow before claiming it complete. Earlier broad reward-path counts never implied completion of these exploration consequences.
+
+Equipped Jewelsmith Quartz Stones, Amethyst, Necklace and Ruby now give their actual searching Hero +1 to rare-item rolls. The existing Smuggled Gems benefit uses the same displayed-wealth helper; quantities/multiple stones do not multiply it. Stash, sold/zero-quantity items and custom names do not grant a bonus. The shop names the displayed-gem benefit. Source: `03a-income-page-rescrape.md:319–327`. Permanent study benefits remain open and are not simulated by merely carrying a book.
+
+Ogre Hunting Party recruitment now presents Ogre Slave Master as “Check the restriction” while no Hunter is present, explaining that the source’s “Ogre Slaver” name is not confirmed to identify this catalogue entry. With a Hunter present it remains restricted. This follows the existing player-review policy and does not silently invent a synonym. The published identity question remains unresolved; returning-Hunter departure still applies to hired Ogres.
+
+Validation: all 72 targeted trading/recruitment tests pass; typechecked build and lint pass with existing warnings. No new database migration, push or deployment. Next work is the actual #66 consequences above, then the remaining original-scope/release review; Defend the Oasis still awaits its earlier scope answer.

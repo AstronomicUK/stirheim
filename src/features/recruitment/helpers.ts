@@ -357,6 +357,7 @@ function conditionalHiringRule(entry:HiredSwordSummary,template:WarbandTemplate,
  if(template.id==='maneaters'&&active.some(h=>h.skillIds.includes('maneaters_skills_dog_of_war')))return as('mercenaries_reikland')
  if(template.id==='ogre_hunting_party') {
   const noHunter=!active.some(h=>h.unitTemplateId==='ogre_hunting_party_ogre_hunter')
+  if(noHunter&&entry.id==='ogre_slave_master')return {kind:'check',reason:'Distasteful Company names an Ogre Slaver while there is no Ogre Hunter. This catalogue entry is the Ogre Slave Master; the sources do not confirm that they are the same hire. Agree whether the exception applies before recruiting. Any hired Ogre must leave when an Ogre Hunter returns.'}
   return verdict(['hobgoblin_scout','gnoblar_botcher','ninja_gnoblar'].includes(entry.id)||(noHunter&&['ogre_bodyguard','ogre_slaver'].includes(entry.id)),'Distasteful Company: Hobgoblin Scout, Gnoblar Botcher and Ninja Gnoblar only; Ogre Bodyguard/Slaver are allowed while there is no Ogre Hunter, and must leave when a Hunter returns.')
  }
  if(template.id==='marauders_of_chaos') {

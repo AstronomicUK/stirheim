@@ -294,6 +294,13 @@ describe('source-conditioned warband hiring',()=>{
   expect(check('ogre_hunting_party','ogre_bodyguard',r)?.kind).toBe('restricted')
   expect(check('ogre_hunting_party','ninja_gnoblar',r)?.kind).toBe('allowed')
  })
+ it('asks for a ruling on the unmatched Ogre Slaver name only while the exception can apply',()=>{
+  const result=check('ogre_hunting_party','ogre_slave_master')
+  expect(result?.kind).toBe('check')
+  expect(result?.reason).toContain('sources do not confirm')
+  const r=warband();r.heroes[0].unitTemplateId='ogre_hunting_party_ogre_hunter'
+  expect(check('ogre_hunting_party','ogre_slave_master',r)?.kind).toBe('restricted')
+ })
  it('recognises Wizards beyond the old four IDs, and the Elf Mage exception',()=>{
   expect(check('sorcerous_society','warlock')?.kind).toBe('restricted')
   expect(check('sorcerous_society','witch')?.kind).toBe('restricted')

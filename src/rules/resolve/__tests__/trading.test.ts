@@ -5,6 +5,7 @@ import { defaultCampaignHouseRules } from "../../types/roster";
 import { RulesError } from "../errors";
 import {
   buyItem,
+  displayedGemRareBonus,
   canSearch,
   canSellWyrdstone,
   isHalfPriceEligible,
@@ -310,3 +311,15 @@ it('charges the agreed whole purchase total, including discounted multi-item pur
   expect(() => buyItem(warband, item('sword'), 10, { kind: 'stash' }, 2, undefined, 14)).toThrow()
   expect(() => buyItem(warband, item('sword'), 10, { kind: 'stash' }, 2, undefined, -1)).toThrow()
 })
+
+
+describe('displayed exploration gems (#66)', () => {
+  it.each(['quartz_stones', 'amethyst', 'jewelsmith_necklace', 'ruby', 'scenario_smuggled_gems'])('grants the bearer a rarity bonus for %s', itemId => {
+    expect(displayedGemRareBonus([{itemId, quantity: 1}])).toBe(1);
+  });
+  it('does not multiply the bonus by stones, and ignores sold or unrelated items', () => {
+    expect(displayedGemRareBonus([{itemId:'ruby', quantity:3}, {itemId:'amethyst', quantity:1}])).toBe(1);
+    expect(displayedGemRareBonus([{itemId:'ruby', quantity:0}, {itemId:null, customName:'ruby', quantity:1}])).toBe(0);
+    expect(displayedGemRareBonus([])).toBe(0);
+  });
+});

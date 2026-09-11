@@ -10,6 +10,12 @@ import { minMax } from "./dice";
 import { RulesError } from "./errors";
 import { moveBlockReason, sellBlockReason } from "./itemRestrictions";
 
+/** Displayed treasure helps its bearer find rare goods; extra stones do not multiply the bonus. */
+export function displayedGemRareBonus(equipment: readonly RosterItem[]): number {
+  const gems = new Set(['quartz_stones', 'amethyst', 'jewelsmith_necklace', 'ruby', 'scenario_smuggled_gems']);
+  return equipment.some(item => item.quantity > 0 && item.itemId !== null && gems.has(item.itemId)) ? 1 : 0;
+}
+
 // ---- Prices ----
 
 export interface ItemPriceQuote {

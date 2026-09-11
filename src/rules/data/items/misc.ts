@@ -1361,10 +1361,8 @@ export const MISC_ITEMS: Item[] = [
   },
   // #66: exploration-chart treasures that used to land as untyped, unpriced custom stash lines
   // with none of their rules text carried across. Found only (Exploration), never bought, hence
-  // availability "special" rather than a rarity number. The "keep instead of selling" bonuses
-  // described below (rare-item search bonus; extra skill lists; a racial-maximum WS override) have
-  // no mechanical hook anywhere in the app yet — same open-ended category as the Sorcerous
-  // Society's Elemental Lores in #58 — so these are priced and sellable, not yet wired to a choice.
+  // availability "special" rather than a rarity number. Equipped gems now supply their bearer’s
+  // rare-search bonus. Notebook/manual study and its permanent benefits remain separate work.
   {
     id: "quartz_stones",
     name: "Quartz Stones",

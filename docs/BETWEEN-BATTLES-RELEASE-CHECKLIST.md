@@ -29,8 +29,8 @@ Local review at checkpoint `18ee565`, 11 September 2026. **Not released.** This 
 
 ## Verification checkpoint
 
-- Full ordinary suite at milestone 65: 1,671 passed. Subsequent focused exploration-aid suite: 17 passed, including the added Pathfinder case. Typecheck passes after that final change.
-- Last separate local database suite: 166 passed across 31 files. No database changes after that run.
+- Final full ordinary suite: **1,672 passed**, including the Pathfinder case. Typecheck passes.
+- Final separate local database suite: **166 passed across 31 files**. No semantic database changes after that run.
 - Typechecked production build and lint pass, with the documented existing warnings.
 - Combined recruitment/rewards/start-battle browser verification passed at 58; later affected paths have their own actual 390px mobile filing/reload/withdrawal checks through 65. No live player histories were used.
 - Tests validate the implemented paths; the 102/103 measure is reward-path coverage, not complete combat/campaign automation for every source.

@@ -579,3 +579,10 @@ Defend the Oasis remains the outstanding scope question; a fresh asynchronous qu
 The linked Supabase **dry run** succeeded and reported the expected 33 pending migrations (39–71), no seeds and no roles. It did not apply SQL or modify player histories. Netlify automatic builds remain paused per the prior read-only API check; one deliberate release will be needed unless that setting changes. No push or deployment occurred.
 
 Independent release preparation is at a useful stop while the Oasis scope question awaits Tom. The overnight heartbeat can pause here rather than repeatedly re-auditing completed paths or silently expanding into full Khemri rules. Resume from the release checklist after the scope reply; the second batch remains authorised only after the main release is verified.
+
+
+### Final pre-release verification — 11 September
+
+The user resolved the sole remaining scope decision by deferring Khemri-dependent rules to #227. **1,672 ordinary tests and all 166 local database tests now pass.** Production build, typecheck and lint pass with the previously documented warnings. The built app targets the linked production Supabase project, not the disposable local database. Remote main has no divergent commits. Final diff review found only redundant trailing blank lines in eight batch files; these were removed without changing logic or SQL statements. No additional implementation or rules decision remains before release.
+
+Next action is the already-authorised coordinated production migration, single push and single Netlify deployment, followed by served-asset verification. The expected migration set is 39–71; no production reset or seeding.

@@ -329,5 +329,3 @@ end;
 $$;
 
 revoke all on function public.apply_battle_report(uuid) from public, authenticated;
-
-

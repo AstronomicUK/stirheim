@@ -54,4 +54,3 @@ export function rockLoot(rolls: RockLootRoll[], context: RockLootContext) {
   }
   return out
 }
-

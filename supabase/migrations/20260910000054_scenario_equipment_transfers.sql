@@ -416,4 +416,3 @@ begin
   update public.match_reports set undo = null where id = p_report_id;
 end;
 $$;
-

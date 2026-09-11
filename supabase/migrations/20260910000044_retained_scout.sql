@@ -33,4 +33,3 @@ end;
 $$;
 revoke all on function public.unpaid_match_hires(uuid) from public;
 grant execute on function public.unpaid_match_hires(uuid) to authenticated;
-

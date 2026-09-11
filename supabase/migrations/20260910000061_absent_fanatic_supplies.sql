@@ -50,4 +50,3 @@ begin
   end loop;
 end; $$;
 revoke all on function public.prepare_fanatic_supplies(uuid) from public,authenticated;
-

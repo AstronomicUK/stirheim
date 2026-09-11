@@ -1,3 +1,4 @@
+import { SuccessorCommandCard } from './view/SuccessorCommandCard'
 import { LeaderWaitingCard } from './view/LeaderWaitingCard'
 import { collapsedWarbandReason } from '../../rules/resolve/leaderReplacement'
 import { useRosterEvent } from '../../api/rosterEvents'
@@ -213,6 +214,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       ) : null}
       {canEdit && template && !warband.archived ? <SuccessionCard detail={detail} template={template} onError={setActionError} onRetire={toggleArchive} retiring={update.isPending} /> : null}
 
+      <SuccessorCommandCard detail={detail} canEdit={canEdit} />
       <LeaderWaitingCard detail={detail} canEdit={canEdit} />
       <NecrarchSuccessionCard detail={detail} canEdit={canEdit} onError={setActionError} />
       <LustrianPromotionCard detail={detail} canEdit={canEdit} onError={setActionError} />

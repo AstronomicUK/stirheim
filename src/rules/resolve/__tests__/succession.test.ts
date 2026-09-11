@@ -1,3 +1,5 @@
+import { mazzalupoCommands, resolveSuccessorCommand } from '../mazzalupoCommands'
+import { loreForHero } from '../../../features/advances/model'
 import { inheritedLeadershipRules } from '../../../features/roster/view/lookups'
 import { recruitHero, canRecruit } from '../recruitment';
 import { currentLeader, validateRoster, unitCount } from '../roster';
@@ -153,4 +155,37 @@ it('keeps the Priest of Morr as priest after a Dreamer dies and bars another Dre
  expect(canRecruit(w,t,'dreamwalkers_dreamer').ok).toBe(false)
  expect(currentLeader(w.heroes,t)?.id).toBe('priest')
  expect(w.heroes[1].unitTemplateId).toBe('dreamwalkers_priest_of_morr')
+})
+
+
+it('lets Strigos survive under a human successor without granting vampire powers',()=>{
+ const t=findWarbandTemplate('survivors_of_strigos')!
+ const unit=t.heroTemplates.find(u=>u.id!=='strigoi_vampire')!
+ const w=warband(t.id,[hero('v','strigoi_vampire',{status:'dead'}),hero('h',unit.id)])
+ expect(successionOptions(w,t)?.disbands).toBe(false)
+ const next=appointLeader(w,t,'h').value
+ expect(next.heroes[1].unitTemplateId).toBe(unit.id)
+ expect(next.heroes[1].stats).toEqual(w.heroes[1].stats)
+ expect(currentLeader(next.heroes,t)?.id).toBe('h')
+ expect(inheritedLeadershipRules(t,next.heroes[1].flags.leaderRoleId).map(r=>r.name)).toEqual(['Leader'])
+ expect(canRecruit({...next,gold:500},t,'strigoi_vampire').ok).toBe(false)
+})
+
+
+it('grants a Mazzalupo successor one random Command without making a wizard',()=>{
+ const t=findWarbandTemplate('mazzalupo')!
+ const w=warband(t.id,[hero('old','mazzalupo_wandering_knight',{status:'dead'}),hero('new','mazzalupo_squire')])
+ const appointed=appointLeader(w,t,'new').value
+ expect(appointed.heroes[1].flags.successorCommandPending).toBe(true)
+ expect(appointed.heroes[1].unitTemplateId).toBe('mazzalupo_squire')
+ expect(inheritedLeadershipRules(t,appointed.heroes[1].flags.leaderRoleId).map(r=>r.name)).toEqual(['Leader','Commands'])
+ for(let die=1;die<=6;die++) {
+   const result=resolveSuccessorCommand(appointed,'new',die,'App rolled 2; Player entered '+die)
+   expect(result.value.heroes[1].flags.commandIds).toEqual([mazzalupoCommands()[die-1].id])
+   expect(result.value.heroes[1].spellIds).toEqual([])
+   expect(loreForHero(result.value.heroes[1],t)).toBeNull()
+   expect(result.events[0].message).toContain('App rolled 2; Player entered '+die)
+   expect(()=>resolveSuccessorCommand(result.value,'new',die,'')).toThrow(/no pending/)
+ }
+ expect(()=>resolveSuccessorCommand(appointed,'new',7,'')).toThrow(/D6/)
 })

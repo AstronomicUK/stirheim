@@ -1,3 +1,4 @@
+import { mazzalupoCommands } from '../../rules/resolve/mazzalupoCommands'
 // Turns audit_log rows into the one-line entries the campaign dashboard shows: "Ana edited Claws
 // of Eshin by hand (gold 25 -> 30)". Pure; the table/action/reason/before/after shape comes from
 // the audit_row() trigger in supabase/migrations/20260904000003_audit.sql.
@@ -402,6 +403,8 @@ export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
         if (BORING_FIELDS.has(child) || sameValue(oldFields[child], newFields[child])) continue
         if (child === 'leaderLostInMatch') { out.push({label:'Replacement leader',before:'No waiting game recorded',after:'Must play one further game before recruiting'}); continue }
         if (child === 'leaderReplacementReadyAfter') { out.push({label:'Replacement leader',before:oldFields[child]?'Waiting game completed':'Waiting game outstanding',after:newFields[child]?'Waiting game completed — may recruit':'Waiting game outstanding'}); continue }
+        if (child === 'commandIds') { const names=(value:unknown)=>Array.isArray(value)?mazzalupoCommands().filter(c=>value.includes(c.id)).map(c=>c.name).join(', '):'None'; out.push({label:'Known Commands',before:names(oldFields[child]),after:names(newFields[child])}); continue }
+        if (child === 'successorCommandPending') { out.push({label:'Successor Command',before:oldFields[child]?'Awaiting D6':'None pending',after:newFields[child]?'Awaiting D6':'Learned'}); continue }
         if (child === 'leaderMagicChoice') { out.push({label:'Next advance',before:oldFields[child]?'Spell or prayer choice available':'Normal advancement',after:newFields[child]?'Spell or prayer choice available':'Normal advancement'}); continue }
         if (child === 'protectoratePrayerChoice') { out.push({label:'Next advance',before:oldFields[child]?'Prayer or normal roll':'Normal advancement',after:newFields[child]?'Prayer or normal roll':'Normal advancement'}); continue }
         if (child === 'lustrianReplacementOf') { out.push({label:'Hero replacement',before:oldFields[child]?'Inherited a lost Hero’s position':'Not a replacement',after:newFields[child]?'Inherited a lost Hero’s position':'Not a replacement'}); continue }

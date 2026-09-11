@@ -292,6 +292,8 @@ export function isPlainNote(name: string): boolean {
 
 /** A Black Orc successor inherits leadership and Oi Behave, never the Boss’s species/armour rule. */
 export function inheritedLeadershipRules(template: WarbandTemplate | undefined, leaderRoleId?: string): NamedRule[] {
+  if (template?.id === 'mazzalupo' && leaderRoleId === 'mazzalupo_wandering_knight') return findUnitTemplate(template, leaderRoleId)?.specialRules.filter(r => ['Leader','Commands'].includes(r.name)) ?? []
+  if (template?.id === 'survivors_of_strigos' && leaderRoleId === 'strigoi_vampire') return findUnitTemplate(template, leaderRoleId)?.specialRules.filter(r => r.name === 'Leader') ?? []
   if (template?.id !== 'black_orcs' || leaderRoleId !== 'black_orcs_black_orc_boss') return []
   return findUnitTemplate(template, leaderRoleId)?.specialRules.filter(r => ['Leader','Oi Behave!'].includes(r.name)) ?? []
 }

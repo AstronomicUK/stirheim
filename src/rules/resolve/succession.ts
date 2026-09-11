@@ -91,11 +91,11 @@ export function appointLeader(warband: RosterWarband, template: WarbandTemplate,
   if (!successionOptions(warband, template)?.candidates.some(c => c.hero.id === heroId)) throw new RulesError("succession.ineligible", `${hero.name} is not eligible to succeed this leader.`);
   const fromUnit = findUnitTemplate(template, hero.unitTemplateId);
   const gained = (rule?.grantsSkillIds ?? []).filter((id) => !hero.skillIds.includes(id));
-  const retainType = rule?.temporary || template.id === 'black_orcs';
+  const retainType = rule?.temporary || ['black_orcs','survivors_of_strigos','mazzalupo'].includes(template.id);
   const next: RosterHero = {
     ...hero,
     unitTemplateId: retainType ? hero.unitTemplateId : leader.id,
-    flags: { ...hero.flags, ...(template.id === 'black_orcs' ? {leaderRoleId:leader.id} : {}), ...(template.id === 'protectorate_of_sigmar' ? { protectoratePrayerChoice: true } : {}), ...(['sisters_of_sigmar','cult_of_the_possessed','carnival_of_chaos'].includes(template.id) ? {leaderMagicChoice:true} : {}), ...(rule?.temporary ? { temporaryLeader: true } : {}) },
+    flags: { ...hero.flags, ...(['black_orcs','survivors_of_strigos','mazzalupo'].includes(template.id) ? {leaderRoleId:leader.id} : {}), ...(template.id === 'protectorate_of_sigmar' ? { protectoratePrayerChoice: true } : {}), ...(['sisters_of_sigmar','cult_of_the_possessed','carnival_of_chaos'].includes(template.id) ? {leaderMagicChoice:true} : {}), ...(template.id === 'mazzalupo' ? {successorCommandPending:true} : {}), ...(rule?.temporary ? { temporaryLeader: true } : {}) },
     skillTableIds: [...new Set([...hero.skillTableIds, ...(rule?.grantsSkillTableIds ?? [])])],
     skillIds: [...hero.skillIds, ...gained],
   };

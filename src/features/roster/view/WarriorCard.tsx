@@ -1,3 +1,4 @@
+import { mazzalupoCommands } from '../../../rules/resolve/mazzalupoCommands'
 import { inheritedLeadershipRules } from './lookups'
 import {CurseReminder} from './CurseReminder'
 import { useState } from 'react'
@@ -90,6 +91,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
           </div>
         ) : null}
 
+        {hero.flags.commandIds?.length ? <div className="flex flex-col gap-1"><p className="text-[10px] uppercase tracking-wider text-ink-dim">Known Commands</p><RuleList rules={mazzalupoCommands().filter(command=>hero.flags.commandIds?.includes(command.id))}/></div> : null}
         {hero.spells.length > 0 ? (
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-wider text-ink-dim">Spells</p>

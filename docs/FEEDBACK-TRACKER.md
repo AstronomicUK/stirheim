@@ -3852,3 +3852,7 @@ Undead/Lizardmen waiting game now excludes the leader’s death battle and repea
 
 ### #122 overnight follow-up — core successor magic and recruitment (local)
 Sisters/Possessed/Carnival successor first-advance spell/prayer choice implemented without free magic or fake rolls. Lost Dame must be replaced before recruiting other warriors. Dreamwalker leadership now prioritises living Dreamer then Priest, with dead-Dreamer replacement prohibited; initial certification remains outstanding. 1,996 ordinary tests, build and mobile Carnival both-path save verification pass. Not pushed/deployed; source-specific remaining clauses and questions remain open.
+
+
+### #122 overnight follow-up — Strigos and Mazzalupo (local)
+Strigos now survives its Vampire under an eligible human successor, preserving profile and barring new Vampire recruitment. Mazzalupo successor retains original unit, inherits Commands, rolls/saves one separate non-spell Command with visible rules and dice-edit history. 1,998 ordinary tests/build and mobile Command save/reload checks pass. No push/deployment; decision-dependent clauses remain open. Full Commands combat/advancement is broader than this succession fix.

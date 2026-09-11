@@ -3860,3 +3860,7 @@ Strigos now survives its Vampire under an eligible human successor, preserving p
 
 ### #122 overnight follow-up — Dreamer certification; combined release ready
 Initial and subsequent Dreamer certification now records D6/history, blocks recruitment without 4+, waits for another latest battle report after failure, and saves initial result atomically (migration76). Mobile reload checks, 2,001 ordinary tests,178local DB tests,16isolated browser regressions and build pass. Combined finished #114/#122/#163/#112 scope is release-ready; unresolved source choices stay open, not marked complete. Production migrations75/76 and one Netlify deploy pending.
+
+
+### Overnight combined release — DEPLOYED
+Finished #163/#112 and implemented #114/#122 clauses deployed together from d17cb00 on Netlify6aa4750b9e2cb9a410a0a9d0. Production migrations75/76 applied; no migrations remain. All110served files match the tested build. Pre-release2,001ordinary/178DB/16browser checks passed. One manual deployment with automatic builds paused. Question-dependent #114/#122 clauses stay open; see overnight checkpoint.

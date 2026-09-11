@@ -109,8 +109,15 @@ function routCollectives(roster: RosterWarband, state?: BattleLiveState): Map<st
 
 export function routStartingModels(roster: RosterWarband, state?: BattleLiveState): number {
   let models = startingModels(roster, state)
+  for (const group of fightingGroups(roster)) models -= group.size * (1 - (unitRules(group.unitTemplateId).routModelWeight ?? 1))
   for (const pool of routCollectives(roster).values()) models -= pool.size - 1
   return models
+}
+
+/** Round a quarter up to a reachable casualty count, including half-model units. */
+export function rosterRoutThreshold(roster: RosterWarband, state?: BattleLiveState): number {
+  const step = fightingGroups(roster).some(g => unitRules(g.unitTemplateId).routCasualtyWeight === 0.5) ? 0.5 : 1
+  return Math.ceil(routStartingModels(roster, state) / 4 / step) * step
 }
 
 /** Out-of-action tallies of animals that never count for rout tests (Gnoblars). */
@@ -275,7 +282,7 @@ export interface SheetTotals {
 export function sheetTotals(state: BattleLiveState, roster: RosterWarband): SheetTotals {
   const totals = battleTotals(state)
   const models = startingModels(roster, state)
-  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: routCasualties(state, roster), routModels: routStartingModels(roster, state), wyrdstoneFound: state.wyrdstoneFound, routAt: routThreshold(routStartingModels(roster, state)) }
+  return { ...totals, ownOutOfAction: totals.ownOutOfAction - insignificantOut(state), startingModels: models, routCasualties: routCasualties(state, roster), routModels: routStartingModels(roster, state), wyrdstoneFound: state.wyrdstoneFound, routAt: rosterRoutThreshold(roster, state) }
 }
 
 export type RoutStatus = 'none' | 'test' | 'routed'
@@ -287,7 +294,7 @@ export type RoutStatus = 'none' | 'test' | 'routed'
 export function routStatus(state: BattleLiveState, models: number, roster?: RosterWarband): RoutStatus {
   if (state.routed) return 'routed'
   if (models <= 0) return 'none'
-  return routCasualties(state, roster) >= routThreshold(roster ? routStartingModels(roster, state) : models) ? 'test' : 'none'
+  return routCasualties(state, roster) >= (roster ? rosterRoutThreshold(roster, state) : routThreshold(models)) ? 'test' : 'none'
 }
 
 // ---------------------------------------------------------------------------------------------

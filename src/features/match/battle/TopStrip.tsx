@@ -5,7 +5,7 @@ import type { RoutStatus, SheetTotals } from './sheet'
 export interface EnemyStanding {
   outOfAction: number
   models: number
-  routAt: number
+  routSummary?: string
 }
 
 export interface TopStripProps {
@@ -81,7 +81,7 @@ export function TopStrip({ scenario, warbands, turn, onTurn, totals, enemy, rout
           icon="enemy"
           label="Enemies OOA"
           value={enemy ? `${enemy.outOfAction}/${enemy.models}` : String(totals.enemiesOutOfAction)}
-          sub={enemy ? toTest(enemy.outOfAction, enemy.routAt) : undefined}
+          sub={enemy?.routSummary}
         />
         <Tile icon="wyrdstone" label="Wyrdstone" value={String(totals.wyrdstoneFound)} />
       </div>

@@ -13,7 +13,7 @@ import { useBattleBoosts } from './battle/useBattleBoosts'
 import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
 import { useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
-import { applyBattleEvents, battleTotals, routThreshold, type AttackEventPayload, type BattleEventRow } from '../../domain'
+import { applyBattleEvents, battleTotals, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
@@ -282,7 +282,13 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
       const theirs = sessions.find((x) => x.warband_id === p.warband_id)
       return n + (theirs ? battleTotals(theirs.live_state).ownOutOfAction : 0)
     }, 0)
-    return { outOfAction: out, models, routAt: routThreshold(models) }
+    const only = enemyRosters.warbands.length === 1 ? enemyRosters.warbands[0] : undefined
+    const onlySheet = only ? sessions.find(x => x.warband_id === only.roster.id)?.live_state : undefined
+    const routTotals = only && onlySheet ? sheetTotals(onlySheet, only.roster) : undefined
+    const routSummary = others.length > 1 ? 'Rout tests are per warband'
+      : onlySheet?.routed ? 'routed'
+      : routTotals ? `Rout count ${routTotals.routCasualties}/${routTotals.routAt}` : undefined
+    return { outOfAction: out, models, routSummary }
   }, [others, enemyRosters.warbands, sessions])
   const canCast = useMemo(() => castersOf(roster, template).length > 0, [roster, template])
   const sideTab: Tab = tab

@@ -88,3 +88,9 @@ Next: Night Goblin Just Squigs affects both starting count and casualties, and S
 night_goblins_snotling_mob /night_goblins_web_snotlings pool by unit type across fighting groups, count as one starting Rout model, and one casualty only after final member lost. Actual startingModels/ownOutOfAction retained; separate routModels plus routCasualties drive test/own top-strip/warning. Fifty-one battle/animal tests and typecheck/build/lint pass. Source1c:2798–2816,3154–3172. No deployment.
 
 Next: Just Squigs is only in Night Goblins WEB source3150, absent from non-web2760–2772; do not apply broadly. Needs denominator+casualty half weights with correct reachable quarter threshold. EnemyStanding currently aggregates enemy models into a fictitious one-warband Rout threshold; fix to per-warband advice or omit aggregate prediction, keeping actual casualties. EnemyView also inspect. Bribery/wagon abandonment still open.
+
+## Combat milestone 11 — #68 web Squigs and enemy display (local)
+
+Only night_goblins_web_cave_squigs gains routModelWeight0.5 +routCasualtyWeight0.5 (source1c:3150). rosterRoutThreshold rounds quarter to reachable half increments when present; example5Goblins+2Squigs→6count→1.5threshold. Non-web unchanged. EnemyView/single-enemy top strip use weighted per-warband totals; multiplayer aggregate no longer invents shared threshold. Fifty-two battle/animal tests +typecheck/build/lint pass, existing warnings. No deployment.
+
+Next #68: Merchant Bribery and Trade Wagon abandonment, source read needed and reconcile any existing implementation before coding. Per-member stun identity remains explicitly table-confirmed. Counting and leader integration now locally covered; don't redo. Broader combat #59/#69/#70/#149–160 then remaining priority groups.

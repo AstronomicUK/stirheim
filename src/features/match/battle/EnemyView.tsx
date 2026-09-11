@@ -9,7 +9,7 @@ import { Icon, Notice, Spinner, type IconName } from '../../../ui'
 import { Card, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
 import { groupRules, groupTypeName, warriorRules, warriorTags, warriorTypeName, type CardTag } from './names'
-import { conditionsFor, fightingGroups, groupOut, isHeroOut, perModelKit, splitWarriors, startingModels, type SheetWarrior } from './sheet'
+import { conditionsFor, fightingGroups, groupOut, isHeroOut, perModelKit, splitWarriors, sheetTotals, startingModels, type SheetWarrior } from './sheet'
 
 export interface EnemyViewProps {
   matchId: string
@@ -78,6 +78,7 @@ function EnemyWarband({
   const template = useMemo(() => (roster ? findWarbandTemplate(roster.warbandTemplateId) : undefined), [roster])
 
   const totals = session ? battleTotals(session.live_state) : null
+  const routTotals = session && roster ? sheetTotals(session.live_state, roster) : undefined
   const models = roster ? startingModels(roster, session?.live_state) : null
 
   return (
@@ -92,6 +93,7 @@ function EnemyWarband({
               {models !== null ? ` / ${models}` : ''} out of action
             </span>
             <span>{totals.enemiesOutOfAction} enemies out</span>
+            {routTotals ? <span>Rout count {routTotals.routCasualties}/{routTotals.routAt}</span> : null}
             {session.live_state.wyrdstoneFound > 0 ? <span>{session.live_state.wyrdstoneFound} wyrdstone</span> : null}
             {session.live_state.routed ? <Tag tone="danger">Routed</Tag> : null}
           </div>

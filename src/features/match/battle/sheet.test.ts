@@ -284,3 +284,15 @@ it.each(['night_goblins_snotling_mob', 'night_goblins_web_snotlings'])('counts %
   sheet = setGroupOut(sheet, 's2', 0, 2)
   expect(routStatus(sheet, startingModels(r), r)).toBe('none')
 })
+
+
+it('uses half-model starting and casualty counts only for web Night Goblin Squigs', () => {
+  const r: RosterWarband = { ...roster, heroes: Array.from({ length: 5 }, (_, i) => hero(`g${i}`)), hiredSwords: [], henchmenGroups: [{ ...group('squigs', 2), unitTemplateId: 'night_goblins_web_cave_squigs' }] }
+  let sheet = setGroupOut(emptyBattleLiveState(), 'squigs', 1, 2)
+  expect(sheetTotals(sheet, r)).toMatchObject({ startingModels: 7, routModels: 6, routCasualties: 0.5, routAt: 1.5 })
+  expect(routStatus(sheet, 7, r)).toBe('none')
+  sheet = toggleHeroOut(sheet, 'g0')
+  expect(routStatus(sheet, 7, r)).toBe('test')
+  const otherList = { ...r, henchmenGroups: [{ ...r.henchmenGroups[0], unitTemplateId: 'night_goblins_cave_squigs' }] }
+  expect(sheetTotals(sheet, otherList)).toMatchObject({ routModels: 7, routCasualties: 2, routAt: 2 })
+})

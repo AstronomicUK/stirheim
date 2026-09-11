@@ -85,6 +85,7 @@ export const battleLiveStateSchema = z.object({
   /** "Leader used Leadership for rout test", scenario notes, etc. */
   notes: z.string().default(""),
   /** Pre-battle prompts answered on the sheet: "tarot:<heroId>" -> "passed" | "failed" | "disaster", list rules by key. */
+  guidingDreamTargets: z.record(z.string(), z.object({ id: z.string(), warbandId: z.string(), name: z.string() })).default({}),
   preBattle: z.record(z.string(), z.string()).default({}),
   /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
   itemsUsed: z.record(z.string(), z.array(z.string())).default({}),

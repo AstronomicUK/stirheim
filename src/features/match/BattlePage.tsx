@@ -1,3 +1,4 @@
+import { GuidingDreamTargets } from './battle/GuidingDreamTargets'
 import { BolasRecovery } from './battle/BolasRecovery'
 import { StupidityTests } from './battle/StupidityTests'
 import {useBattleBribes} from '../../api/battleBribes'
@@ -321,6 +322,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
       {!readOnly && !turns.isPending && !turns.isError ? <BolasRecovery sheet={shown} events={events} warbandId={roster.id} turns={turns.data} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <StupidityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}
+      {!readOnly && roster.warbandTemplateId === 'dreamwalkers_cult_of_morr' ? <GuidingDreamTargets matchId={match.id} others={others} roster={roster} sheet={shown} edit={handle.edit} /> : null}
       {boostLines.length > 0 && !readOnly ? (
         <Notice tone="info" title="From the map">
           {boostLines.join('. ')}.

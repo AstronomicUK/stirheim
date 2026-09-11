@@ -11,3 +11,5 @@ export * from "./battle";
 export * from "./battleEvent";
 export * from "./report";
 export * from "./csv";
+
+export * from "./guidingDream";

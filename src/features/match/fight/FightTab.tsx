@@ -18,7 +18,7 @@ import type { CampaignHouseRules, RosterWarband } from '../../../rules/types/ros
 import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, Spinner, Stepper, TextField } from '../../../ui'
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
-import { combatantLabel, combatantsOf, withBolasEntanglement, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
+import { combatantLabel, combatantsOf, withGuidingDream, withBolasEntanglement, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
 import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
@@ -88,8 +88,10 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   // fight — otherwise it silently falls back to a melee weapon default, defeating the point of
   // having tapped Ranged specifically.
   const rangedDefault = startWith === 'ranged' ? mine.find((c) => !c.out && loadoutFor(c).ranged.length > 0) : undefined
-  const attacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
-  const defender = targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
+  const selectedAttacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
+  const selectedDefender = targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
+  const attacker = selectedAttacker ? withGuidingDream(selectedAttacker, selectedDefender, sheet) : selectedAttacker
+  const defender = selectedDefender ? withGuidingDream(selectedDefender, selectedAttacker, sessions.find(s => s.warband_id === selectedDefender.warbandId)?.live_state) : selectedDefender
   // Pin the defaults once chosen (state adjusted during render, the React way), so a logged kill that marks
   // the target out of action does not swap the fight under the player.
   if (attackerId === null && attacker) setAttackerId(attacker.id)

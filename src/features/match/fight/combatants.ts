@@ -14,7 +14,7 @@ import { WEAPONS, findWeapon } from '../../../rules/data/weapons'
 import { armourClass } from '../../../rules/data/items/classify'
 import { itemEffect, type ItemEffect, type PreBattleEffect, warbandInAny } from '../../../rules/data/itemRules'
 import type { Item } from '../../../rules/types/items'
-import { activeBolasEntanglements, type BattleEventRow, type BattleLiveState } from '../../../domain'
+import { guidingDreamKind, activeBolasEntanglements, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { Armour, NamedRule, Stats, WarbandTemplate, Weapon } from '../../../rules/types'
 import type { RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { unitTypeName } from '../../roster/shared/names'
@@ -25,6 +25,7 @@ export type CombatantKind = 'hero' | 'hiredSword' | 'henchman' | 'animal'
 
 /** One model that can be picked as attacker or target. A henchman group is one model of the group. */
 export interface Combatant {
+  guidingDream?: 'movement' | 'hit' | 'strength' | 'frenzy'
   entangled?: boolean
   /** Rules identity, distinct from the companion bookkeeping kind. */
   isAnimal?: boolean
@@ -296,6 +297,14 @@ export function loadoutFor(c: Combatant): Loadout {
   if (kit.melee.length === 0) {
     if (c.unarmedProfile) kit.melee.push({ ...NATURAL_WEAPONS, ...c.unarmedProfile })
     else if (c.traitIds.includes('natural_weapons')) kit.melee.push(NATURAL_WEAPONS)
+  }
+  if (c.guidingDream) {
+    kit.assumptions.push(c.guidingDream === 'movement' ? 'Guiding Dream: −1 inch Movement this battle; apply positioning at the table.' : `Guiding Dream against this designated Hero: ${c.guidingDream === 'hit' ? '+1 to hit' : c.guidingDream === 'strength' ? '+1 Strength' : 'Frenzy'}.`)
+    if (c.guidingDream === 'hit') {
+      if (!kit.melee.length) kit.melee.push(defaultPrimary([]))
+      const improve = (w: Weapon): Weapon => ({ ...w, toHitBonus: (w.toHitBonus ?? 0) + 1 })
+      kit.melee = kit.melee.map(improve); kit.ranged = kit.ranged.map(improve)
+    }
   }
   return kit
 }
@@ -607,4 +616,16 @@ export function defaultOffHand(melee: readonly Weapon[], primary: Weapon): Weapo
 export function withBolasEntanglement(warriors: Combatant[], events: readonly BattleEventRow[], warbandId: string, recovered: readonly string[] = []): Combatant[] {
   const affected = new Set(activeBolasEntanglements(events, warbandId, recovered).map(e => e.payload.target_id));
   return warriors.map(w => affected.has(w.id) ? { ...w, entangled: true, stats: { ...w.stats, WS: Math.max(0, w.stats.WS - 2) } } : w);
+}
+
+
+/** A saved vision applies to its Dreamer and designated enemy only, without editing the roster. */
+export function withGuidingDream(warrior: Combatant, opponent: Combatant | undefined, sheet: BattleLiveState | undefined): Combatant {
+  if (!sheet) return warrior
+  const kind = guidingDreamKind(sheet, warrior.id)
+  if (!kind) return warrior
+  if (kind === 'movement') return { ...warrior, guidingDream: kind, stats: { ...warrior.stats, M: Math.max(0, warrior.stats.M - 1) } }
+  const target = sheet.guidingDreamTargets[warrior.id]
+  if (!opponent || opponent.kind !== 'hero' || target?.id !== opponent.id || target.warbandId !== opponent.warbandId) return warrior
+  return { ...warrior, guidingDream: kind, stats: kind === 'strength' ? { ...warrior.stats, S: warrior.stats.S + 1 } : warrior.stats, traitIds: kind === 'frenzy' ? [...new Set([...warrior.traitIds, 'frenzy'])] : warrior.traitIds }
 }

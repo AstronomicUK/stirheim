@@ -307,6 +307,42 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
  * Strike Last weapons always last, and each weapon's own Initiative modifier.
  */
 export function strikeOrder(setup: FightSetup): string {
+  const normal = normalStrikeOrder(setup)
+  if (setup.primary.type !== 'melee') return normal
+  const defenderWhip = !setup.defenderStaffPower && setup.defenderKit.melee.find(w => w.special.includes('whipcrackBonusAttack'))
+  if (setup.context.charging && defenderWhip) {
+    const [aI, dI] = strikeInitiatives(setup)
+    const whirlwind = defenderWhip.special.includes('whirlwindStrikeFirstWhenCharged')
+    const bonus = whirlwind ? 'two bonus attacks' : 'bonus attack'
+    const chargerLast = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])].some(w => w.special.includes('strikesLast') && !(w.special.includes('twoHanded') && [...setup.attacker.skillIds, ...setup.attackerKit.skillIds].includes('strongman')))
+    const priority = chargerLast
+      ? `${setup.defender.name}'s ${bonus} ${whirlwind ? 'go' : 'goes'} before the charger’s Strike Last attacks.`
+      : dI > aI
+      ? `${setup.defender.name}'s ${bonus} ${whirlwind ? 'go' : 'goes'} before ${setup.attacker.name}'s charge (Initiative ${dI} against ${aI}).`
+      : aI > dI
+        ? `${setup.attacker.name}'s charge goes before the ${bonus} (Initiative ${aI} against ${dI}).`
+        : `The ${bonus} and the charge have equal Initiative (${aI}): roll off for their order.`
+    const rule = whirlwind
+      ? `Whirlwind of Death: ${setup.defender.name}'s Dance of Doom attack and off-hand bonus attack gain Strike First. The Dance of Doom attack must target a charger; several chargers do not grant extra attacks.`
+      : `Separate Whipcrack attack: ${setup.defender.name} gains one Strike First attack with ${defenderWhip.name}, against the charger only. This is one bonus in total, even with two whips or several chargers.`
+    return `Normal attacks: ${normal} ${rule} ${priority}`
+  }
+  const attackerWhip = [setup.primary, ...(setup.offHand ? [setup.offHand] : [])].find(w => w.special.includes('whipcrackBonusAttack'))
+  if (!setup.context.serpentStaffPower && !setup.context.charging && setup.context.firstTurnOfCombat && attackerWhip) {
+    if (attackerWhip.special.includes('whirlwindStrikeFirstWhenCharged')) return `Normal attacks: ${normal} If ${setup.attacker.name} was charged, Whirlwind of Death grants Strike First to their Dance of Doom attack and off-hand bonus attack. Compare Initiative with the charge and roll off if equal; all other attacks keep their normal order.`
+    return `Normal attacks: ${normal} If ${setup.attacker.name} was charged, only their one Whipcrack bonus attack gains Strike First against that charger; compare its Initiative with the charge and roll off if equal. Two whips or several chargers still grant only one bonus attack.`
+  }
+  return normal
+}
+
+function strikeInitiatives(setup: FightSetup): [number, number] {
+  const firstTurn = setup.context.charging || setup.context.firstTurnOfCombat
+  const initiative = (w: Weapon) => (w.initiativeModifier ?? 0) + (firstTurn ? w.initiativeFirstTurnBonus ?? 0 : 0)
+  const value = (base: number, weapons: Weapon[]) => base + Math.max(0, ...weapons.map(initiative)) + Math.min(0, ...weapons.map(initiative))
+  return [value(setup.attacker.stats.I, [setup.primary, ...(setup.offHand ? [setup.offHand] : [])]), value(setup.defender.stats.I, setup.defenderKit.melee)]
+}
+
+function normalStrikeOrder(setup: FightSetup): string {
   if (setup.primary.type === 'ranged') return 'Shooting: no strike order.'
   const a = setup.attacker
   const d = setup.defender
@@ -320,9 +356,7 @@ export function strikeOrder(setup: FightSetup): string {
   const aLast = last(aWeapons,a,setup.attackerKit)
   const dLast = last(dWeapons,d,setup.defenderKit)
   const firstTurn = setup.context.charging || setup.context.firstTurnOfCombat
-  const initiative = (w: Weapon) => (w.initiativeModifier ?? 0) + (firstTurn ? w.initiativeFirstTurnBonus ?? 0 : 0)
-  const aI = a.stats.I + Math.max(0, ...aWeapons.map(initiative), 0) + Math.min(0, ...aWeapons.map(initiative), 0)
-  const dI = d.stats.I + Math.max(0, ...dWeapons.map(initiative), 0) + Math.min(0, ...dWeapons.map(initiative), 0)
+  const [aI, dI] = strikeInitiatives(setup)
   if (aLast.length && !dLast.length) return `${d.name} strikes first: ${a.name}'s ${aLast[0].name} always strikes last.`
   if (dLast.length && !aLast.length) return `${a.name} strikes first: ${d.name}'s ${dLast[0].name} always strikes last.`
   // The Tilean Pike explicitly beats a charging spear in the opening round

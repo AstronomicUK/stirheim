@@ -506,3 +506,38 @@ it('includes the off-hand Whipcrack attack in the displayed weapon counts and co
   expect(odds.chain.anyHit).toBeCloseTo(1 - Math.pow(0.5, 3), 10)
   expect(computeOdds({ ...fight, context: { ...fight.context, charging: false } }).attacks).toBe(2)
 })
+
+it('separates a charged defender’s single Whipcrack attack from their normal strike order', () => {
+  const d = combatant('Whip defender', [{ itemId: 'sword', quantity: 1 }, { itemId: 'steel_whip', quantity: 1 }], { stats: { ...base, I: 5 } })
+  const fight = setup(captain, d, 'sword', null)
+  fight.context = { ...fight.context, charging: true }
+  const fast = computeOdds(fight).strikeOrder
+  expect(fast).toContain('Normal attacks: Captain strikes first: charging.')
+  expect(fast).toContain("Whip defender's bonus attack goes before Captain's charge (Initiative 5 against 3)")
+  expect(fast).toContain('against the charger only')
+  expect(fast).toContain('one bonus in total')
+  expect(computeOdds({ ...fight, defender: { ...d, stats: { ...base, I: 2 } } }).strikeOrder).toContain("Captain's charge goes before the bonus attack")
+  expect(computeOdds({ ...fight, defender: { ...d, stats: { ...base, I: 3 } } }).strikeOrder).toContain('equal Initiative (3): roll off')
+  expect(computeOdds({ ...fight, defenderKit: kitWithSelectedWeapons(fight.defenderKit, findWeapon('sword')!, null) }).strikeOrder).not.toContain('Whipcrack')
+  expect(computeOdds({ ...fight, context: { ...fight.context, charging: false } }).strikeOrder).not.toContain('Whipcrack')
+});
+
+it('gives Whirling Blades exactly two early bonus attacks, keeping normal attacks separate', () => {
+  const d = combatant('Doomseeker', [{ itemId: 'whirling_blades', quantity: 1 }], { stats: { ...base, I: 5 } })
+  const fight = setup(captain, d, 'sword', null)
+  fight.context = { ...fight.context, charging: true }
+  const advice = computeOdds(fight).strikeOrder
+  expect(advice).toContain('Normal attacks: Captain strikes first: charging.')
+  expect(advice).toContain('Whirlwind of Death')
+  expect(advice).toContain("Doomseeker's two bonus attacks go before Captain's charge")
+  expect(advice).not.toContain('gains one Strike First attack')
+})
+
+it('does not let a high-Initiative Strike Last charger jump ahead of Whipcrack', () => {
+  const a = combatant('Heavy charger', [{ itemId: 'double_handed_weapon', quantity: 1 }], { stats: { ...base, I: 8 } })
+  const d = combatant('Whip defender', [{ itemId: 'steel_whip', quantity: 1 }])
+  const fight = setup(a, d, 'double_handed_sword', null)
+  fight.context = { ...fight.context, charging: true }
+  expect(computeOdds(fight).strikeOrder).toContain('before the charger’s Strike Last attacks')
+  expect(computeOdds({ ...fight, attacker: { ...a, skillIds: ['strongman'] } }).strikeOrder).toContain("Heavy charger's charge goes before the bonus attack")
+})

@@ -24,7 +24,7 @@ Rawhide, Medicine Chest rerolls, The Thing in the Woods aftermath and Guardian i
 
 Other open work: remaining bespoke hired-character equipment/effects, unresolved Ogre Slaver identity, final combined report/recruitment/battle-start checks and tracker reconciliation. Do not close broader tracker entries based on partial milestones.
 
-Validation: **1,616 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
+Validation: **1,623 ordinary tests pass; the last separate local database run passed all 152 tests**; typechecked build and lint pass with existing warnings. The full ordinary suite includes Guardian and Albion equipment changes. Mobile checks use disposable local records and actual 390px viewport constraints.
 
 Migrations through 67 have been applied locally only. No push, Netlify deployment or production migration has occurred. Pre-existing dirty audit/tracker documents remain intact.
 
@@ -435,3 +435,14 @@ Integrating Drenok also fixes #59’s Strongman omission in strike-order advice:
 Validation: **1,616 ordinary tests pass**, typechecked build and lint pass with existing warnings. Tests cover Strength and injury combinations, phase-specific armour/ward saves, source kit, Strongman on attacker/defender and an unrelated strike-last counterexample. The disposable 390px Icefang mobile check passes (`/tmp/stirheim-icefang-mobile-qa.mjs`). No migration, push or deployment.
 
 The unmapped equipment inventory now has 21 character/role entries. Broader character abilities are not automatically completed by mapping their kit. Continue remaining source/equipment checks, Staff of Light’s usage ledger and final combined release checks while the Oasis scope question remains pending.
+
+
+### Local milestone 53 — Veskit combat kit and No Pain (#61/#74, not deployed)
+
+Full source `05-dramatis-personae.md:454–468` reviewed. Veskit’s unique claws use fixed Strength 5 and -3 weapon save modifier, without adding another attack to the printed A4. They supply two parry attempts without borrowing Master of Blades’ beat-or-match benefit. Built-in Warplock Pistols shoot every turn. Exact legacy claw-assembly records expose the built-in pistols without duplicating a separately recorded pistol item. New hires save distinct catalogue IDs. The metallic body provides its intrinsic 3+ armour save, subject to ordinary modifiers, independent of carried armour.
+
+Veskit’s No Pain is separate from ordinary Undead No Pain: injury-chart knocked-down and stunned results are ignored; wounds are still lost and OOA still applies. Pure probabilities, multiple-wound injury rolls and the interactive dice flow agree. The manual spell-damage helper also offers this explicit injury rule. Other special effects that knock a model down without an injury-chart roll are not silently suppressed.
+
+The result screen now allows actual wound loss to be logged even when the associated injury is ignored, and does not describe that damage as an earlier miss. The shared event stores wound loss and no OOA, with the No Pain explanation in its rolls. Mobile verification used a disposable 390px battle and checked the actual saved event (`/tmp/stirheim-veskit-mobile-qa.mjs`).
+
+Validation: the full suite passed **1,623 ordinary tests**; a subsequent regression for an earlier miss followed by an ignored injury passes with all 44 roll-through tests. Typechecked build and lint pass with existing warnings. No migration, push or deployment. The remaining unmapped inventory has 20 character/role entries; larger mapped-item effects, source ambiguities, Oasis scope and combined release checks remain outstanding.

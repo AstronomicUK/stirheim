@@ -14,7 +14,6 @@ Generated from current starting equipment and combat loadout mapping. These are 
 | Cursed Hillman | Heavy fur cloak |
 | Dwarf Slayer Pirate | many many Pistols |
 | Halfling Knight | Hound; Barding |
-| Veskit, high executioner of clan eshin | Eshin Fighting Claws (the extra attack is included in his profile) |
 | Nicodemus, the cursed pilgrim | enormous Wizard's staff (see Special Rules) |
 | Crow Master, The | Mantle of Crows; Needle & Thread |
 | Dijin Katal, The Renegade Assassin | Druchii Assassin’s Cloak |
@@ -29,3 +28,5 @@ Generated from current starting equipment and combat loadout mapping. These are 
 Completed at milestone 51: Aenur/Ienh-Khain; Ninja Gnoblar Bo and shurikens; Thief’s Cloak; Hunter’s Cloak (visibility remains a tabletop rule, now explicitly shown). 23 listed character/role entries remain.
 
 Milestone 52 maps Drenok’s axe/hide and Abdul’s robes/pendant; 21 listed character/role entries remain. Gwen’s rolling pin is mapped but her unspecified knives remain explicit. The Eye Pendant Leadership prerequisite is a tabletop reminder, and wider special abilities such as Drenok’s Berserker still require review separately from equipment.
+
+Milestone 53 completes Veskit’s combat kit and distinct No Pain handling. 20 listed entries remain. Whip source review: Mule Skinner/Heinrich explicitly reference S-1, +1 enemy save, un-parryable attacks and disarm; Reach-to-Whipcrack is a recommendation, not an unqualified mandatory rewrite. Norse Rune Staff has no separate weapon profile in the scraped entry. Nicodemus explicitly uses a two-handed club/parry mode or an off-hand club with Sword of Rezhebel; preserve that distinction.

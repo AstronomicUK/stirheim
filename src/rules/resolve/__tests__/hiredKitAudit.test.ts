@@ -88,3 +88,8 @@ it('recruits Drenok and Abdul with catalogue kit and keeps Gwen’s unknown kniv
  expect(kitFor('busty_gwen')).toContainEqual({itemId:'gwen_rolling_pin',quantity:1})
  expect(kitFor('busty_gwen')).toContainEqual({itemId:null,customName:'Knives',quantity:1})
 })
+
+it('keeps Veskit’s claw assembly and built-in pistols as unique equipment',()=>{
+ const kit=hiredSwordStartingEquipment('veskit_high_executioner_of_clan_eshin',findHiredSword('veskit_high_executioner_of_clan_eshin')!.detail)
+ expect(kit.map(i=>i.itemId)).toEqual(['veskit_eshin_claws','veskit_warplock_pistols'])
+})

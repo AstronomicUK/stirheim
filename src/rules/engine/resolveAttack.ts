@@ -65,6 +65,8 @@ export interface AttackInput {
   stunAvoidanceThreshold?: number;
   /** No Pain: every Stunned result becomes Knocked Down. */
   stunnedBecomesKnockedDown?: boolean;
+  /** Veskit ignores both non-OOA injury results; wounds are still lost. */
+  ignoreKnockedDownAndStunned?: boolean;
   /** Undead Construct: each Injury roll is ignored on this D6 or better (wound still lost). */
   injuryIgnoreThreshold?: number;
   /** Natural D6 faces on the wound roll that can trigger a critical hit. Default [6]; empty for weapons that can never crit (Blowpipe). */
@@ -133,6 +135,7 @@ function injuryModsOf(input: AttackInput, extraInjuryBonus: number, ignoreHelmet
     hardToKill: input.hardToKill,
     stunAvoidanceThreshold: ignoreHelmet ? undefined : input.stunAvoidanceThreshold,
     stunnedBecomesKnockedDown: input.stunnedBecomesKnockedDown,
+    ignoreKnockedDownAndStunned: input.ignoreKnockedDownAndStunned,
     injuryIgnoreThreshold: input.injuryIgnoreThreshold,
   };
 }

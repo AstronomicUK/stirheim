@@ -795,19 +795,19 @@ function RollSection({ odds, attacker, defender, defenderKit, readOnly, onLog, o
                     ? `${defender.name} is out of action.`
                     : state.worst === 'stunned' || state.worst === 'knockedDown'
                       ? `${defender.name} is ${OUTCOME_LABEL[state.worst].toLowerCase()}.`
-                      : state.worst === 'wounded'
+                      : state.woundsLost > odds.woundsAlreadyLost
                         ? `${defender.name} is down to ${Math.max(0, defender.stats.W - state.woundsLost)} of ${defender.stats.W} Wounds but still standing.`
                         : `${defender.name} is unharmed.`}
                 </span>
               </p>
-              {state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst) && !readOnly ? (
+              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
                   {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
-              {state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst) ? (
+              {(state.woundsLost > odds.woundsAlreadyLost || state.worst && ['wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
                 <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? 'kill and the casualty' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}
             </div>

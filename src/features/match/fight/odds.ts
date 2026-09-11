@@ -108,6 +108,8 @@ export function toCharacter(c: Combatant, kit: Loadout): Character {
 
 export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
   const traits = [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))]
+  if (kit.melee.some(w=>w.special.includes('veskitTwoParries'))) traits.push('veskit_two_parries')
+  const metallicBody = traits.includes('veskit_metallic_body')
   const ballAndChain = kit.melee.reduce((n, w) => n + (w.defenderToBeHitModifier ?? 0), 0)
   const parryFixed = kit.melee.filter((w) => w.parry && w.parryThreshold !== undefined).map((w) => w.parryThreshold as number)
   return {
@@ -125,7 +127,7 @@ export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
     missileWardSaveThreshold: kit.missileWardSaveThreshold,
     toBeHit: { melee: kit.toBeHit.melee + ballAndChain, missile: kit.toBeHit.missile },
     saveBonus: kit.saveBonus.melee || kit.saveBonus.missile ? kit.saveBonus : undefined,
-    ownSave: kit.ownSave ?? undefined,
+    ownSave: metallicBody ? {melee:Math.min(3,kit.ownSave?.melee??3),missile:Math.min(3,kit.ownSave?.missile??3)} : kit.ownSave ?? undefined,
     afterSaveThreshold: kit.afterSaveThreshold ?? undefined,
     stunSave: kit.stunSave ?? undefined,
     // Only when every parry item parries on the fixed roll (a Starblade alone); mixed kit keeps the normal parry.
@@ -368,6 +370,8 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
     notes.push(left <= 0 ? `${setup.defender.name} is already at zero Wounds: every wound through rolls for injury.` : `${setup.defender.name} has ${left} of ${setup.defender.stats.W} Wounds left: injury is only rolled once the last is lost.`)
   }
   if (setup.parryUsed) notes.push(`${setup.defender.name} has already parried this turn.`)
+  if(setup.defender.traitIds.includes('veskit_metallic_body')) notes.push('Metallic Body: Veskit has a 3+ armour save; normal save modifiers apply.')
+  if(setup.defender.traitIds.includes('veskit_no_pain')) notes.push('Veskit’s No Pain: ignore knocked-down and stunned injury results; wounds are still lost and out-of-action results still apply.')
   // Strike order has its own line (FightOdds.strikeOrder).
   if (setup.defenderKit.wardSaveThreshold !== null) notes.push(`Ward save ${setup.defenderKit.wardSaveThreshold}+ against every wound.`)
   if (setup.defenderKit.armour.pavise) notes.push(setup.primary.type === 'ranged' ? 'Pavise: the target counts as in cover (-1 to hit).' : 'Pavise: counts as a shield only while it faces the attacker.')

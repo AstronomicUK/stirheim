@@ -413,3 +413,25 @@ describe('the persisted log says app-rolled vs entered by hand (#1)', () => {
     expect(texts.some((t) => t.includes('D3') && t.includes('(entered by hand)'))).toBe(true)
   })
 })
+
+
+describe('Veskit’s No Pain',()=>{
+ for(const die of [1,3,5])it(`resolves injury ${die} without suppressing out of action`,()=>{
+  let state=startPhase([plan('Hit',{automaticHits:true,woundThreshold:2,armourThreshold:IMPOSSIBLE,critTriggerFaces:[],ignoreKnockedDownAndStunned:true})],1,0)
+  state=applyRoll(state,4)
+  expect(state.pending?.kind).toBe('injury')
+  state=applyRoll(state,die)
+  expect(state.done).toBe(true)
+  expect(state.outcomes[0]).toBe(die===5?'outOfAction':'ignored')
+  expect(state.woundsLost).toBe(1)
+ })
+})
+
+it('does not describe a wound with an ignored injury as an earlier missed attack',()=>{
+ const hit=plan('Sword',{armourThreshold:IMPOSSIBLE,critTriggerFaces:[],ignoreKnockedDownAndStunned:true})
+ let state=startPhase([hit,hit],1,0)
+ for(const die of [1,4,4,1])state=applyRoll(state,die)
+ expect(state.done).toBe(true)
+ expect(state.worst).toBe('ignored')
+ expect(state.woundsLost).toBe(1)
+})

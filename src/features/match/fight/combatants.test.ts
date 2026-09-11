@@ -264,3 +264,14 @@ it('retains the Ninja’s Stealthy reminder with its usable throwing weapon',()=
  expect(kit.assumptions.some(n=>n.includes('Stealthy'))).toBe(true)
  expect(kit.ignored).toEqual([])
 })
+
+it('recognises Veskit’s legacy claw assembly and its built-in pistols without duplicates',()=>{
+ const legacy={itemId:null,customName:'Eshin Fighting Claws (the extra attack is included in his profile)',quantity:1}
+ for(const equipment of [[legacy],[legacy,{itemId:'veskit_warplock_pistols',quantity:1}]]){
+  const kit=loadoutOf(equipment)
+  expect(kit.melee[0].id).toBe('veskit_eshin_claws')
+  expect(kit.ranged.map(w=>w.id)).toEqual(['veskit_warplock_pistols'])
+ }
+ const band=warband({hiredSwords:[hiredSword('veskit',{hiredSwordId:'veskit_high_executioner_of_clan_eshin'})]})
+ expect(combatantsOf(band,undefined,band.name,undefined)[0].traitIds).toEqual(expect.arrayContaining(['veskit_no_pain','veskit_metallic_body']))
+})

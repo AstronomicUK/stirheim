@@ -35,7 +35,7 @@ export interface AttackPlan {
 
 export type Outcome = 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 0, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
   miss: 'Missed',
@@ -371,6 +371,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       const [koMax, stunnedMax] = resolveInjuryBand(input.concussion, input.trueGrit, input.hardToKill, input.injuryRemap)
       const result: 'knockedDown' | 'stunned' | 'outOfAction' = modified <= koMax ? 'knockedDown' : modified <= stunnedMax ? 'stunned' : 'outOfAction'
       const s = log(state, `Injury: rolled ${roll}${rollTag}${bonus ? ` (${modified} after +${bonus})` : ''}. ${OUTCOME_LABEL[result]}.`, result === 'outOfAction' ? 'good' : 'neutral')
+      if (input.ignoreKnockedDownAndStunned && result !== 'outOfAction') return injuryRolled(log(s, "Veskit’s No Pain: ignores the knocked-down or stunned result; the wound is still lost.", 'bad'), null)
       return injuryRolled(s, result)
     }
     case 'stunSave': {

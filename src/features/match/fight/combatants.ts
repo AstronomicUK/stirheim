@@ -103,6 +103,7 @@ function unique(ids: string[]): string[] {
 
 function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly NamedRule[], base: string[], isLarge: boolean | undefined): string[] {
   const ids = [...base, ...traitsFromRules(rules)]
+  if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'veskit_high_executioner_of_clan_eshin' && !warrior.flags.hireCompanion) ids.push('veskit_no_pain','veskit_metallic_body')
   if (warrior.flags.frenzy) ids.push('frenzy')
   if (warrior.flags.hates) ids.push('hatred')
   if (warrior.flags.nurglesRot) ids.push('nurgles_rot')
@@ -372,6 +373,10 @@ export function loadoutOf(equipment: readonly RosterItem[]): Loadout {
     if (!item) {
       out.ignored.push(entry.itemId ?? entry.customName ?? 'Unnamed item')
       continue
+    }
+    if (!entry.itemId && item.id === 'veskit_eshin_claws' && !equipment.some(e=>e.itemId==='veskit_warplock_pistols'&&e.quantity>0)) {
+      const pistol=findWeapon('veskit_warplock_pistols')
+      if(pistol&&!out.ranged.some(w=>w.id===pistol.id))out.ranged.push(pistol)
     }
     const effect = itemEffect(item.id)
     if (item.id === 'toughened_leathers') toughenedLeathers = true

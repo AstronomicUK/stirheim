@@ -361,6 +361,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     hardToKill,
     stunAvoidanceThreshold,
     stunnedBecomesKnockedDown,
+    ignoreKnockedDownAndStunned: defender.activeTraitIds.includes("veskit_no_pain") || undefined,
     injuryIgnoreThreshold,
     critTriggerFaces,
     critTable,
@@ -399,6 +400,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
 export function computeMaxParries(defender: DefenderProfile, customSkills: Skill[] = []): number {
   const defenderSkills = resolveSkills(defender.activeSkillIds, customSkills);
   const masterOfBlades = defenderSkills.some((s) => s.id === "master_of_blades");
+  if (defender.parryWeaponCount >= 1 && defender.activeTraitIds.includes("veskit_two_parries")) return 2;
   if (defender.parryWeaponCount >= 2 && masterOfBlades) return 2;
   if (defender.parryWeaponCount >= 1) return 1;
   return 0;

@@ -871,6 +871,7 @@ const ROLL_KIND_HEADING: Record<RollKind, string> = {
   dodge: 'Dodge',
   wound: 'To Wound',
   woundReroll: 'To Wound',
+  woundSecond: 'To Wound',
   critTable: 'Critical Hit',
   multiWound: 'Wounds Caused',
   save: 'Armour Save',

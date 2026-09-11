@@ -137,9 +137,9 @@ describe("weapon rules the engine now reads", () => {
 
   it("Misericordia rolls 2D6 to wound against a knocked-down target", () => {
     const input = buildAttackInput({ attacker: attacker(), weapon: W("misericordia"), defender: defender(), context: ctx({ targetKnockedDown: true }) });
-    expect(input.rerollToWound).toBe(true);
+    expect(input.woundHighestOfTwo).toBe(true);
     const plain = buildAttackInput({ attacker: attacker(), weapon: W("misericordia"), defender: defender(), context: ctx() });
-    expect(plain.rerollToWound).toBeUndefined();
+    expect(plain.woundHighestOfTwo).toBeUndefined();
   });
 
   it("a Ball and Chain makes its wielder harder to hit", () => {

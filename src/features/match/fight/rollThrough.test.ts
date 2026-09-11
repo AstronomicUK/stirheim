@@ -478,3 +478,19 @@ it('keeping the charm after a failed Dodge does not mark it spent', () => {
   expect(state.charmUsed).toBe(false)
   expect(state.pending?.kind).toBe('wound')
 });
+
+
+it('Misericordia always takes both dice and uses their maximum across all 36 pairs', () => {
+  for (let first = 1; first <= 6; first++) for (let second = 1; second <= 6; second++) {
+    let state = startPhase([plan('Misericordia', { autoHitKnockedDown: true, woundHighestOfTwo: true })], 1, 0)
+    state = applyRoll(state, first, false)
+    expect(state.pending?.kind).toBe('woundSecond')
+    state = applyRoll(state, second, true)
+    const max = Math.max(first, second)
+    if (max === 6) expect(state.pending?.kind).toBe('critTable')
+    else if (max >= 4) expect(state.pending?.kind).toBe('save')
+    else expect(state.worst).toBe('noWound')
+    expect(state.log.some(l => l.text.includes(`first die ${first} (rolled by the app)`))).toBe(true)
+    expect(state.log.some(l => l.text.includes(`second die ${second} (entered by hand)`))).toBe(true)
+  }
+});

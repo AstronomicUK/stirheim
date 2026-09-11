@@ -3370,3 +3370,7 @@ Source 03:421–425 verified. Terrain/pavise cover now checks the shooter’s sk
 ### #163/#164 combat follow-up — 11 September
 
 Source-confirmed Wulfen/Rat Ogre natural attacks now retain printed Strength/Attacks without fist penalties in roster and simulator paths. Wider creature review remains in #163. #164 living Tomb Scorpions and Strigos followers no longer inherit Undead rules; the Strigoi Vampire retains them. 41 focused tests pass. Details: PRIORITY-RULES-PROJECT-2026-09-11.md. Local only.
+
+### #165/#171 combat follow-up — 11 September
+
+Augur Blessed Sight and Assassin Adept Perfect Killer now affect both combat phases. Misericordia always rolls two dice and uses the higher for criticals as well as wounds; all 36 ordered pairs verified. 294 engine/fight tests pass. Source/evidence in PRIORITY-RULES-PROJECT-2026-09-11.md. Local only.

@@ -360,3 +360,23 @@ it('keeps explicitly living Tomb Scorpions and Strigos followers out of Undead r
   const vampire = combatantsOf(warband({ warbandTemplateId: template.id, heroes: [hero('vampire', { unitTemplateId: 'strigoi_vampire' })] }), template, 'QA', undefined)[0]
   expect(vampire.traitIds).toContain('undead')
 });
+
+
+it.each(['sisters_of_sigmar_augur', 'skaven_assassin_adept'])('carries %s innate attack rules into melee and shooting (#165)', unitTemplateId => {
+  const template = WARBAND_TEMPLATES.find(t => t.heroTemplates.some(u => u.id === unitTemplateId))!
+  expect(template).toBeDefined()
+  const unit = template.heroTemplates.find(u => u.id === unitTemplateId)!
+  const attacker = combatantsOf(warband({ warbandTemplateId: template.id, heroes: [hero('innate', { unitTemplateId, stats: unit.stats!, equipment: [item('sword'), item('bow')] })] }), template, 'QA', undefined)[0]
+  const defender = combatantsOf(warband({ heroes: [hero('target', { equipment: [item('heavy_armour')] })] }), undefined, 'QA', undefined)[0]
+  const attackerKit = loadoutFor(attacker), defenderKit = loadoutFor(defender), houseRules = defaultCampaignHouseRules()
+  for (const primary of [attackerKit.melee[0], attackerKit.ranged[0]]) {
+    const setup = { attacker, defender, attackerKit, defenderKit, primary, offHand: null, context: combatContextFor(houseRules), houseRules }
+    const result = computeOdds(setup).weapons[0]
+    const plain = computeOdds({ ...setup, attacker: { ...attacker, traitIds: [] } }).weapons[0]
+    if (unitTemplateId === 'skaven_assassin_adept') expect(result.input.armourThreshold).toBe(Number(plain.input.armourThreshold) + 1)
+    else {
+      expect(result.input.rerollToHit).toBe(true)
+      expect(result.pHit).toBeCloseTo(1 - (1 - plain.pHit) ** 2)
+    }
+  }
+});

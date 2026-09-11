@@ -1115,3 +1115,13 @@ it("Sea Dragon Cloak's own armour save receives the enabled Strength reduction (
     expect(buildAttackInput({ ...base, houseRules: defaultHouseRules(), weapon: W("sword") }).armourThreshold).toBe(5);
   }
 });
+
+
+it("Misericordia keeps the higher wound die for criticals as well as wounds (#171)", () => {
+  const input = buildAttackInput({ attacker: testCharacter(), weapon: W("misericordia"), defender: testDefender(), context: testContext({ targetKnockedDown: true }) });
+  const result = resolveSingleAttack(input);
+  expect(result.pWound).toBeCloseTo(27 / 36);
+  expect(result.pWoundTriggerEligible).toBeCloseTo(11 / 36);
+  expect(result.pWoundNormal).toBeCloseTo(16 / 36);
+  expect(resolveSingleAttack({ ...input, woundThreshold: 6 }).pWoundTriggerEligible).toBe(0);
+});

@@ -9,7 +9,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -64,6 +64,7 @@ interface SaveStep {
 
 /** Scratch state for the attack being rolled. */
 interface Current {
+  firstWoundRoll?: number
   dodgeResolved?: boolean
   hitRoll: number | null
   rerolled: boolean
@@ -239,7 +240,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   const plan = state.plans[state.index]
   const input = plan.input
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
-  const rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
+  let rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
     case 'hit':
     case 'hitReroll': {
@@ -289,7 +290,16 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       return offerCharmOrContinue(log({ ...state, cur: { ...state.cur, dodgeResolved: true } }, `Dodge: rolled ${roll}${rollTag}. Failed.`, 'good'))
     }
     case 'wound':
-    case 'woundReroll': {
+    case 'woundReroll':
+    case 'woundSecond': {
+      if (pending.kind === 'wound' && input.woundHighestOfTwo) {
+        return { ...log(state, `To wound: first die ${roll}${rollTag}; roll the second die and keep the higher.`), cur: { ...state.cur, firstWoundRoll: roll }, pending: { kind: 'woundSecond', who: 'attacker', label: 'To wound (second die)', detail: 'Roll even if the first die succeeded; the higher die decides wounds and critical hits.' } }
+      }
+      if (pending.kind === 'woundSecond') {
+        state = log(state, `To wound: second die ${roll}${rollTag}.`)
+        roll = Math.max(state.cur.firstWoundRoll ?? roll, roll)
+        rollTag = ' (higher of the two dice)'
+      }
       const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6
       const wounded = auto || passes(roll, input.woundThreshold)
       if (wounded && roll === 6 && plan.rot && !state.rotPassed) state = log({ ...state, rotPassed: true }, "A 6 to wound from a carrier of Nurgle's Rot: the target contracts the Rot.", 'good')

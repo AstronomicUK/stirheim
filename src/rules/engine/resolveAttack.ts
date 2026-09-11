@@ -79,6 +79,8 @@ export interface AttackInput {
   rerollToHit?: boolean;
   /** Reroll a failed to-wound roll once (no seeded skill grants this, but the effect type is supported). */
   rerollToWound?: boolean;
+  /** Roll two wound dice and use the higher for success AND critical triggers. */
+  woundHighestOfTwo?: boolean;
   /** Poison / Wight Blades: a natural 6 on the to-hit roll wounds automatically; the to-wound roll is still made to check for a critical. */
   autoWoundOnNaturalSixToHit?: boolean;
   /** Defender has a Parry item, the attack is melee and parryable, and the attacker's Strength isn't double-or-more the defender's. */
@@ -311,7 +313,8 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     };
   }
   const pHitBase = input.autoHitKnockedDown || input.automaticHits ? 1 : probabilityAtLeast(input.hitThreshold);
-  const pWoundIfHitBase = probabilityAtLeast(input.woundThreshold);
+  const singleWound = probabilityAtLeast(input.woundThreshold);
+  const pWoundIfHitBase = input.woundHighestOfTwo ? 1 - (1 - singleWound) ** 2 : singleWound;
   // Reroll a failure once (Expert Swordsman / Hatred): P(success on either roll) = 1 - P(fail)^2.
   const pHit = input.rerollToHit ? 1 - (1 - pHitBase) * (1 - pHitBase) : pHitBase;
   // Note: rerollToWound (no seeded skill grants this) boosts the overall wound chance but does not
@@ -331,7 +334,9 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     pWound = pHit * (1 - pDodge) * pWoundIfHit;
   }
 
-  const triggerFraction = triggerEligibleFraction(input.woundThreshold, input.critTriggerFaces);
+  const triggerFraction = input.woundHighestOfTwo
+    ? Array.from({ length: 6 }, (_, i) => i + 1).reduce((p, face) => p + (input.woundThreshold !== IMPOSSIBLE && face > input.woundThreshold && input.critTriggerFaces.includes(face) ? (2 * face - 1) / 36 : 0), 0)
+    : triggerEligibleFraction(input.woundThreshold, input.critTriggerFaces);
   // triggerFraction already implies wounding (a trigger face always exceeds the threshold), so it's a fraction of pHit*(1-pDodge) directly, not of pWound.
   const pWoundTriggerEligible = pHit * (1 - pDodge) * triggerFraction;
   const pWoundNormal = Math.max(0, pWound - pWoundTriggerEligible);

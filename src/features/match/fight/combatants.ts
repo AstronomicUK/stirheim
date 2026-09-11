@@ -59,6 +59,8 @@ export interface Combatant {
 
 /** Special-rule headings that map to a modelled trait. Matched on the rule name only, never the text. */
 const TRAIT_BY_RULE_NAME: [RegExp, string][] = [
+  [/^blessed sight$/i, 'blessed_sight'],
+  [/^perfect killer$/i, 'perfect_killer'],
   [/^invincible swordsman$/i, 'invincible_swordsman'],
   [/frenzy/i, 'frenzy'],
   [/\bhatred\b|^hates?\b/i, 'hatred'],

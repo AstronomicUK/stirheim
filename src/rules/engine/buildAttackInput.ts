@@ -263,7 +263,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     const bonus = weapon.ignoresArmourSaveExceptShield ? 0 : (weapon.type === "melee" ? defender.saveBonus?.melee : defender.saveBonus?.missile) ?? 0;
     if (bonus > 0) base = base === IMPOSSIBLE ? (defender.saveBonus?.savesFromNothing ? 7 - bonus : IMPOSSIBLE) : Math.max(2, base - bonus);
     // The Ogre Club's Crushing Attack needs both hands on the club.
-    const modifier = weapon.saveModifierTwoHandedOnly && !context.twoHanded ? 0 : (weapon.saveModifier ?? 0);
+    const modifier = (weapon.saveModifierTwoHandedOnly && !context.twoHanded ? 0 : (weapon.saveModifier ?? 0)) + (attacker.traits.includes("perfect_killer") ? 1 : 0);
     if (base === IMPOSSIBLE) {
       armourThreshold = modifier < 0 ? saveThresholdOrImpossible(7 + modifier) : IMPOSSIBLE;
     } else {
@@ -318,7 +318,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   // (01:1110 — any melee weapon, first turn vs a hated enemy) both grant a to-hit reroll.
   const expertSwordsman = weapon.type === "melee" && Boolean(weapon.isSword) && hasActiveEffect(attackerSkills, context, weapon.type, "rerollToHit");
   const hatred = weapon.type === "melee" && attacker.traits.includes("hatred") && context.vsHatedEnemy;
-  const rerollToHit = expertSwordsman || hatred;
+  const rerollToHit = expertSwordsman || hatred || attacker.traits.includes("blessed_sight");
 
   // ---- Parry (01:836-848; Sword / Buckler / Dwarf Axe rules; Master of Blades) ----
   const masterOfBlades = defenderSkills.some((s) => s.id === "master_of_blades" && isActive(s, context));
@@ -336,7 +336,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
         : parrySuccessProbability(hitThreshold, masterOfBlades, defender.parryReroll)
     : 0;
   // Misericordia against a knocked-down target: 2D6 to wound, keep the highest.
-  const rerollToWound = Boolean(weapon.toWoundHighestOf2D6VsKnockedDown && context.targetKnockedDown);
+  const woundHighestOfTwo = Boolean(weapon.toWoundHighestOf2D6VsKnockedDown && context.targetKnockedDown);
   // Attacking stunned and knocked down warriors in hand-to-hand combat (01:947-959): a knocked-down
   // target is hit automatically (still wounded and saved against normally); a stunned target is
   // taken out of action by the first hit, no rolls at all. Ranged attacks are unaffected — the rule
@@ -371,7 +371,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     critTable,
     critTableRollModifier,
     rerollToHit,
-    rerollToWound: rerollToWound || undefined,
+    woundHighestOfTwo: woundHighestOfTwo || undefined,
     autoWoundOnNaturalSixToHit: autoWound,
     parryEligible,
     parrySuccessProbGivenAttempt,

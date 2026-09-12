@@ -4087,3 +4087,7 @@ Original Outlaw Hero recruitment now offers optional30gc Hunting Arrows with no 
 Validation:58focused and2,062ordinarytests pass; build/typecheck pass; lint3oldwarnings. Disposable390px mobileQA createdoriginalOutlaw, recruited60gcLeader plus30gcarrows, verified110gc remainingfrom200, hero/itemownership, reasonhistory,reload/nooverflow/pageerrors andcleanup. Unitchecks covernooption, insufficientfunds, hirecostoverride, bans, wrongwarband, MarksmanvsRedux. Logs /tmp/stirheim-recruit-arrows-{tests,types,all-tests,build,lint,browser}.log. NoSQL/push/deploy.
 
 Main#67 now has a currentlocal-progress summary above historicnotes. Remaining follow-up: pre-sale required-bowwarning (moving alreadycovered), then finalreview beforemarkingwholeitemclosed. Allsourcechangesheldlocal. Morningquestions unchanged.
+
+
+## Local follow-up — #67 required equipment sales
+Selling a warrior’s last required Outlaw bow now warns before confirmation and requires a saved player exception reason. The existing rule also covers a group falling below one bow per model; Clerics and spare bows remain exempt. Approved overrides remain available. Mobile QA on a disposable local warband verified the disabled confirmation, saved explanation, removed item and correct 5gc payment, with no page errors or overflow. All 25 equipment-list tests and the production build pass. No migration, push or deployment. Broad #67 remains pending final review.

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { sellItem } from '../../rules/resolve/trading'
-import { sellBlockReason } from '../../rules/resolve/itemRestrictions'
-import { Button, NumberField, Notice, Sheet, Stepper } from '../../ui'
+import { equipmentRemovalWarnings, sellBlockReason, type ItemHolder } from '../../rules/resolve/itemRestrictions'
+import { Button, NumberField, Notice, Sheet, Stepper, TextField } from '../../ui'
 import { itemName } from '../roster/shared/names'
 import { Tag } from '../roster/view/bits'
 import { sellForGold, sellListing, type SaleLine } from './helpers'
@@ -70,16 +70,27 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
   const { roster, pending, run, error, clearError, canTrade } = trade
   const [quantity, setQuantity] = useState(1)
   const [manualGold, setManualGold] = useState<number | null>(null)
+  const [overrideReason, setOverrideReason] = useState('')
+  const location = line.location
+  let holder: ItemHolder | undefined
+  if (location.kind === 'hero') {
+    const hero = roster.heroes.find(h => h.id === location.id)
+    if (hero) holder = { kind: 'hero', id: hero.id, name: hero.name, unitTemplateId: hero.unitTemplateId, equipment: hero.equipment }
+  } else if (location.kind === 'henchmanGroup') {
+    const group = roster.henchmenGroups.find(g => g.id === location.id)
+    if (group) holder = { kind: 'henchmanGroup', id: group.id, name: group.name, unitTemplateId: group.unitTemplateId, size: group.size, equipment: group.equipment }
+  }
+  const warnings = holder ? equipmentRemovalWarnings(roster, holder, line.item.itemId, quantity) : []
   const computed = line.each === null ? null : line.each * quantity
   const gold = computed ?? manualGold
-  const ready = canTrade && gold !== null && Number.isInteger(gold) && gold >= 0
+  const ready = canTrade && gold !== null && Number.isInteger(gold) && gold >= 0 && (!warnings.length || Boolean(overrideReason.trim()))
 
   async function confirm() {
-    if (gold === null) return
+    if (!ready || gold === null) return
     const ok = await run(() => {
       if (line.item.itemId !== null && line.base !== null) return sellItem(roster, line.location, line.item.itemId, quantity, line.base).value
       return sellForGold(roster, line.location, line.item, quantity, gold)
-    })
+    }, warnings.length ? { reason: `${itemName(line.item)} sold from ${line.holder} despite: ${warnings.join(' ')} Reason: ${overrideReason.trim()}` } : undefined)
     if (ok) onClose()
   }
 
@@ -125,6 +136,10 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
             onChange={setManualGold}
           />
         )}
+        {warnings.length > 0 ? <>
+          <Notice tone="warn">{warnings.join(' ')}</Notice>
+          <TextField label="Reason for selling anyway" value={overrideReason} onChange={e => setOverrideReason(e.target.value)} placeholder="The table agreed …" hint="Saved with this equipment sale." />
+        </> : null}
         {line.item.notes ? <p className="text-xs text-ink-dim">{line.item.notes}</p> : null}
       </div>
     </Sheet>

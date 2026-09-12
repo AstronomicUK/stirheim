@@ -142,3 +142,17 @@ Regression evidence: Dark Venom vs an immune T3 target stays S3 with 25% hit-and
 Report poison counting now combines legacy uses with explicit applications rather than silently dropping a legacy use from another warrior sharing a stash row. A corrected explicit application supersedes only that warrior/item's old tick. Missing/insufficient stock remains a Review problem. Ninety-six focused odds/report/group-equipment tests pass, compilation and lint pass (existing audit warnings only).
 
 Next UI wiring detail: FightTab's `physicalBindings` currently comes from `odds.weapons` after odds calculation. To pass keys into odds without a cycle, derive the poison bindings from selected primary/off-hand profiles first (or use a separate small binding helper), then pass those keys into `computeOdds`. Keep extra/natural attack bindings and Sword Breaker behaviour intact. Show the physical-copy chooser when poison applications exist, not only for Sword Breaker. Replace the core poison tick with the application control and read recorded effects for each player's sheet. No UI claim yet and no deployment.
+
+### Claude invited to resume after usage reset
+
+Tom authorised renewed parallel work. Handoff `ed8d5551` sent to `Stirheim Developer [8aefaa]`: finish core magic personal/area protections and five-lore acceptance, then Priority 5 reconciliation (especially #53). Codex released CastTab, casting resolver/test, magic types/data, nativeCaster test and the magic checkpoint. Claude must acknowledge/claim before editing. Codex retains battle shared state, FightTab/odds, equipment and report integration; shared interface requests should be coordinated explicitly. No acknowledgement at dispatch, so do not claim Claude has started yet.
+
+Codex continues poisons, then remaining combat/equipment clauses and final integration. Existing approved rulings are unchanged. No deployment or push authorised by this handoff. The automation's old Priority 1 ownership instructions are stale: honour this current split and the bus claims.
+
+### Poison selection UI — 12 September, mobile and report acceptance
+
+Added an explicit vial/physical-weapon selector to the battle sheet. Legacy unscoped poison ticks pause their bonus until selected or corrected with a reason. Both hand selectors distinguish separate copies; used vials cannot exceed stock. Corrections remove future coating and preserve earlier attack results with an explanation.
+
+Verified disposable local mobile battle: two sword copies, two-vial stack, selection persistence after reload, stock exhaustion and explained correction. Filed the actual post-battle report with one active and one corrected application: exactly one vial deducted; withdrawing the report restored the original two-vial stack. Focused poison/odds/report checks pass; TypeScript and lint pass (only existing audit probe warnings). QA scripts: /tmp/stirheim-poison-mobile-qa.mjs and /tmp/stirheim-poison-report-qa.mjs.
+
+Individual blades of paired weapon profiles remain a separate integration gap; the UI explicitly excludes them instead of granting both blades a one-vial coating. Do not mark the entire poison workstream complete yet. Next: pistol/brace firing and the remaining combat integration checks. No push or deployment.

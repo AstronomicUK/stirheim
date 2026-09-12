@@ -1,3 +1,4 @@
+import { itemEffect } from '../../../rules/data/itemRules'
 import { withRollAttempt, type BattleLiveState } from '../../../domain/battle'
 import type { BattleEventRow } from '../../../domain/battleEvent'
 import type { ItemRow } from '../../../domain'
@@ -38,4 +39,11 @@ export function correctPoisonApplication(sheet: BattleLiveState, id: string, rea
     label: `${use.warriorName}: poison application corrected`,
     rolls: [`Vial restored and coating removed: ${reason.trim()}. Earlier attack results are unchanged; correct affected attacks separately in the combat log.`],
   })
+}
+
+
+export function recordedPoisonEffects(sheet: BattleLiveState, warriorId: string) {
+  return sheet.poisonApplications.filter(use => use.warriorId === warriorId && !use.correction).map(use => ({
+    ...itemEffect(use.itemRulesId)!.preBattle!, weaponChoiceId: `${use.weapon.itemId}:${use.weapon.copyIndex}`,
+  }))
 }

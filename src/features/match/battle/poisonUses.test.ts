@@ -3,7 +3,7 @@ import { emptyBattleLiveState, parseBattleLiveState } from '../../../domain/batt
 import { weaponLossSnapshot } from '../../../domain/weaponLoss'
 import type { ItemRow, BattleEventRow } from '../../../domain'
 import type { Combatant } from '../fight/combatants'
-import { applyPoisonToWeapon, correctPoisonApplication, poisonVialsRemaining } from './poisonUses'
+import { applyPoisonToWeapon, correctPoisonApplication, poisonVialsRemaining, recordedPoisonEffects } from './poisonUses'
 const band='11111111-1111-4111-8111-111111111111', hero='22222222-2222-4222-8222-222222222222'
 const warrior={id:hero,name:'Captain',kind:'hero',warbandId:band,out:false,traitIds:[]} as unknown as Combatant
 const sword={id:'33333333-3333-4333-8333-333333333333',warband_id:band,holder_type:'hero',holder_id:hero,item_rules_id:'sword',quantity:2,custom_name:null,notes:''} as ItemRow
@@ -32,4 +32,11 @@ it('rejects double coating, broken or missing copies and foreign stock',()=>{
 it('permits an explicitly selected stash vial but not a blackpowder weapon',()=>{
  expect(apply(emptyBattleLiveState(),0,'first',{...vial,holder_type:'stash',holder_id:null}).poisonApplications[0].itemRowId).toBe(vial.id)
  expect(()=>applyPoisonToWeapon(emptyBattleLiveState(),warrior,vial,[{...sword,item_rules_id:'pistol'}],[],'pistol',`${sword.id}:0`,'first')).toThrow('blackpowder')
+})
+
+it('restores only active, physical-weapon effects after reloading and correction', () => {
+ const saved = parseBattleLiveState(JSON.parse(JSON.stringify(apply(apply(), 1, 'second'))))
+ expect(recordedPoisonEffects(saved, hero).map(effect => effect.weaponChoiceId)).toEqual([`${sword.id}:0`, `${sword.id}:1`])
+ expect(recordedPoisonEffects(saved, 'another-warrior')).toEqual([])
+ expect(recordedPoisonEffects(correctPoisonApplication(saved, 'first', 'Wrong sword'), hero).map(effect => effect.weaponChoiceId)).toEqual([`${sword.id}:1`])
 })

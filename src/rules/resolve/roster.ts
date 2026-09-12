@@ -317,6 +317,9 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
       case "armour":
         if (catalogue.category === "armour" && !helmet) return `${name} is armour, which this warrior may not wear`;
         break;
+      case "lances":
+        if (catalogue.id.replace(/^(gromril|ithilmar)_/, "") === "lance") return `${name}: the Paragon's Vow of Poverty forbids using a lance`;
+        break;
       case "heavyArmour":
         if (isBodyArmour(catalogue) && isHeavyArmourClass(catalogue)) return `${name} is heavy armour, which this warrior may not wear`;
         break;

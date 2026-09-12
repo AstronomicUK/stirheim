@@ -162,3 +162,23 @@ it('distinguishes Ogre and Trollslayer entries on their shared Pit Fighter list'
     expect(itemRestrictionWarnings(slayer, findItem(item)!, holder(slayer.heroes[0])).join(' ')).toContain('may not wear')
   }
 })
+
+
+it('separates Order of the Mare shared-list access and preserves the Paragon vow', () => {
+  const r = (unit: string, skills: string[] = []) => roster('order_of_the_mare', hero(unit, skills))
+  for (const id of ['spear', 'halberd', 'bow']) {
+    expect(warning(r('pilgrims'), id)).toBeNull()
+    expect(warning(r('gallant'), id)).toContain('not on')
+  }
+  for (const unit of ['paragon', 'gallant', 'redeemed_knights']) {
+    expect(warning(r(unit), 'heavy_armour')).toBeNull()
+    expect(warning(r(unit), 'lance')).toBeNull()
+  }
+  expect(warning(r('pilgrims'), 'heavy_armour')).toContain('not on')
+  expect(warning(r('pilgrims'), 'lance')).toContain('not on')
+  expect(warning(r('esquiresses'), 'spear')).toBeNull()
+  expect(warning(r('bowmen'), 'spear')).toContain('not on')
+  const paragon = r('paragon', ['weapons_training'])
+  expect(itemRestrictionWarnings(paragon, findItem('lance')!, holder(paragon.heroes[0])).join(' ')).toContain('Vow of Poverty')
+  expect(equipmentBanReason('order_of_the_mare', 'gallant', { itemId: 'lance', quantity: 1 })).toBeNull()
+})

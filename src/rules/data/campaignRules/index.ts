@@ -14,6 +14,7 @@ import type { StatKey } from "../../types/common";
 
 export type EquipmentBan =
   | "armour" // no body armour or shields (helmets allowed unless "helmets" is also listed)
+  | "lances" // Paragon Vow of Poverty
   | "heavyArmour"
   | "helmets"
   | "missile" // no missile weapons of any kind
@@ -354,6 +355,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   ogre_hunting_party_trappers: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
   ogre_hunting_party_sabre_baiter: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
   ogre_hunting_party_sabretusk_cubs: ANIMAL,
+  paragon: { equipmentBans: ["lances"] },
   pilgrims: { neverLeads: true, promotion: { never: true, note: "Peasants: Pilgrims never become heroes; roll again." } },
   companion_filly: { ...ANIMAL, relation: { onlyWith: { unitIds: ["dame_of_the_mare"], label: "the Dame of the Mare" } } },
   hounds: ANIMAL,

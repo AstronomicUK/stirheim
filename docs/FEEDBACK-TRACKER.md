@@ -3994,3 +3994,10 @@ Moulder Beastwhip/Thingcatcher entries now identify Packmaster/Apprentices; Stor
 Validation:14focused and2,046ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests distinguish eachallowed/excludedunit, WeaponsTraining andindependentSlayerarmourban. Puredata additions using existing verifiedwarningUI; no new browser/DBQA. Logs /tmp/stirheim-specialist-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy; nextbatchlocal.
 
 OrderMare next: exactunitIDs paragon/gallant/redeemed_knights are Knights; pilgrims footman; esquiresses archer. BUT Paragon has VowofPoverty forbiddingLance evenwithaccess; source/data explicitlysaysso. Need thatspecificwarning alongside listqualifiers, preservingweaponoverrides. Also noticed PitFighter source grade1bpart2:1479 says access to specialTrident fromTradingPost outsidestartinglist; currentnewgenericlistcheckcouldflagordinaryPitKingTrident. Checkpreciselybeforeadding blanketpermission. Keep#67partial. Morningquestionsunchanged.
+
+
+## Next local batch — #67 Order of the Mare equipment distinctions
+
+Footman entries now distinguish Pilgrim spear/halberd/bow from Knight lance/heavy armour; Archer spear identifies Esquiresses. Knights are the printed Paragon, Gallant and Redeemed Knight types. Paragon separately warns against lances under Vow of Poverty, including with Weapons Training. Existing exceptions remain selectable and logged. Sources grade-2a-part2.md:71–108,156. This does not claim mount pricing/access or every Order rule complete.
+
+Validation:15 focused and2,047 ordinary tests pass; build/typecheck pass; lint only3oldwarnings. Regression checks permitted/excluded types, different shared lists, Paragon vow and Gallant lance permission. No UI/DB changes or new browserQA. Logs /tmp/stirheim-mare-equipment-{tests,all-tests,build,lint}.log. Local only; noSQL/push/deploy. #67 remains partial. Next independent work: remaining item restrictions/creation-only exceptions or full SwordBreaker lifecycle. PitFighter specialTrident tradeaccess source remains a follow-up to review. Morning questions unchanged.

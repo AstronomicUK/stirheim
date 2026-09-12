@@ -1,3 +1,4 @@
+import { itemEffect } from '../../../rules/data/itemRules'
 import { blessedWaterWeapon } from '../../../rules/engine/blessedWater'
 import { describe, expect, it } from 'vitest'
 import { findWeapon } from '../../../rules/data/weapons'
@@ -919,4 +920,27 @@ it('uses weapon identity for the poison prohibition, even when a pistol profile 
   const coated = applyPreBattle(a, kit, [{ label: 'Black Lotus', appliesTo: 'nonBlackpowder', autoWoundOnSixToHit: true }])
   expect(coated.kit.melee[0].poisoned).toBeUndefined()
   expect(coated.kit.ranged[0].poisoned).toBe(true)
+})
+
+
+it('ignores Dark Venom against poison immunity while retaining the user’s separate drug bonus', () => {
+  const a = combatant('Captain', [{ itemId: 'sword', quantity: 1 }])
+  const immune = combatant('Immune target', [], { traitIds: ['immune_to_poison'] })
+  const venom = itemEffect('dark_venom')!.preBattle!
+  const fight = setup(a, immune, 'sword', null, { attackerPreBattle: [venom] })
+  const result = computeOdds(fight)
+  expect(result.weapons[0].strength).toBe(3)
+  expect(result.weapons[0].pWound).toBeCloseTo(0.25)
+  expect(computeOddsSensitivity(fight).woundRows[0].values[2]).toBeCloseTo(0.25)
+  const drug = { label: 'Crimson Shade', appliesTo: 'self' as const, strengthBonus: 1 }
+  expect(computeOdds({ ...fight, attackerPreBattle: [venom, drug] }).weapons[0].strength).toBe(4)
+  expect(computeOdds({ ...fight, defender: { ...immune, traitIds: [] } }).weapons[0].strength).toBe(4)
+})
+
+it('recognises item-granted poison immunity without granting immunity to ordinary opponents', () => {
+  const a = combatant('Captain', [{ itemId: 'sword', quantity: 1 }])
+  const d = combatant('Ring wearer', [{ itemId: 'venom_ring', quantity: 1 }])
+  const result = computeOdds(setup(a, d, 'sword', null, { attackerPreBattle: [itemEffect('dark_venom')!.preBattle!, itemEffect('black_lotus')!.preBattle!] }))
+  expect(result.weapons[0].strength).toBe(3)
+  expect(result.weapons[0].input.autoWoundOnNaturalSixToHit).toBe(false)
 })

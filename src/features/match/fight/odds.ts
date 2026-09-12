@@ -232,9 +232,21 @@ export interface FightOdds {
   strikeOrder: string
 }
 
+/** Immunity removes only the incoming coating, not either warrior's own drugs. */
+function dosedOpponents(setup: FightSetup) {
+  const attackerEffects = setup.attackerPreBattle ?? []
+  const defenderEffects = setup.defenderPreBattle ?? []
+  const attacker = applyPreBattle(setup.attacker, setup.attackerKit, attackerEffects)
+  const defender = applyPreBattle(setup.defender, setup.defenderKit, defenderEffects)
+  const immune = (model: ReturnType<typeof applyPreBattle>) => [...model.combatant.traitIds, ...model.kit.traitIds].includes('immune_to_poison')
+  return {
+    dosed: immune(defender) ? applyPreBattle(setup.attacker, setup.attackerKit, attackerEffects.filter(effect => !effect.poisonCoating)) : attacker,
+    targetDosed: immune(attacker) ? applyPreBattle(setup.defender, setup.defenderKit, defenderEffects.filter(effect => !effect.poisonCoating)) : defender,
+  }
+}
+
 export function computeOdds(setup: FightSetup): FightOdds {
-  const dosed = applyPreBattle(setup.attacker, setup.attackerKit, setup.attackerPreBattle ?? [])
-  const targetDosed = applyPreBattle(setup.defender, setup.defenderKit, setup.defenderPreBattle ?? [])
+  const { dosed, targetDosed } = dosedOpponents(setup)
   const attacker = toCharacter(dosed.combatant, dosed.kit)
   const defender = toDefender(targetDosed.combatant, targetDosed.kit)
   if (setup.defenderStaffPower) { defender.parryWeaponCount = 0; defender.parryReroll = false }
@@ -309,12 +321,11 @@ export interface OddsSensitivity {
 }
 
 export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
-  const dosed = applyPreBattle(setup.attacker, setup.attackerKit, setup.attackerPreBattle ?? [])
-  const targetDosed = applyPreBattle(setup.defender, setup.defenderKit, setup.defenderPreBattle ?? [])
+  const { dosed, targetDosed } = dosedOpponents(setup)
   const attacker = toCharacter(dosed.combatant, dosed.kit)
   const baseDefender = toDefender(targetDosed.combatant, targetDosed.kit)
   const phase: WeaponKind = setup.primary.type
-  const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => k.id === w.id) ?? w
+  const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => w.choiceId !== undefined ? k.choiceId === w.choiceId : k.id === w.id) ?? w
   const primary = pick(setup.primary)
   const offHand = setup.offHand ? pick(setup.offHand) : null
   const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]

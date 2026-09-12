@@ -63,8 +63,8 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   // ---- Poisons and coatings (used up per battle) ----
   // Core poisons: "Poison may not be used with blackpowder weapons" (02:1966), so a coating never touches
   // a pistol or handgun. (One vial poisons one weapon — 02:1967 — is still pending a weapon choice on the tick.)
-  dark_venom: { consumable: "battle", preBattle: { label: "Weapon coated with Dark Venom", appliesTo: "nonBlackpowder", strengthBonus: 1 } },
-  black_lotus: { consumable: "battle", preBattle: { label: "Weapon coated with Black Lotus", appliesTo: "nonBlackpowder", autoWoundOnSixToHit: true } },
+  dark_venom: { consumable: "battle", preBattle: { label: "Weapon coated with Dark Venom", poisonCoating: true, appliesTo: "nonBlackpowder", strengthBonus: 1 } },
+  black_lotus: { consumable: "battle", preBattle: { label: "Weapon coated with Black Lotus", poisonCoating: true, appliesTo: "nonBlackpowder", autoWoundOnSixToHit: true } },
   spider_spittle: { consumable: "battle", preBattle: { label: "Weapon laced with Spider Spittle", appliesTo: "allWeapons", note: "A warrior hit must pass a Toughness test or is paralysed (table rule)." } },
   manticore_spoor: { consumable: "battle", preBattle: { label: "Weapon smeared with Manticore Spoor", appliesTo: "allWeapons", note: "A wounded model rolls a D6 each turn: 1 loses a wound, 6 ends the poison (table rule)." } },
   reptile_venom: { consumable: "battle", preBattle: { label: "Reptile Venom on the missile weapon", appliesTo: "ranged", strengthBonus: 1, strengthBonusNoSaveModifier: true } },

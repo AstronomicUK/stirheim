@@ -74,6 +74,42 @@ export type Database = {
           },
         ]
       }
+      app_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          dedupe_key: string | null
+          href: string
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          dedupe_key?: string | null
+          href?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          dedupe_key?: string | null
+          href?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -651,6 +687,160 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      feedback_issues: {
+        Row: {
+          created_at: string
+          duplicate_of: number | null
+          id: number
+          kind: string
+          notes: string
+          priority: string
+          release_id: string | null
+          reported_by: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duplicate_of?: number | null
+          id?: number
+          kind: string
+          notes: string
+          priority?: string
+          release_id?: string | null
+          reported_by: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duplicate_of?: number | null
+          id?: number
+          kind?: string
+          notes?: string
+          priority?: string
+          release_id?: string | null
+          reported_by?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_issues_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "feedback_issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_issues_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_maintainers: {
+        Row: {
+          added_at: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feedback_releases: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string
+          published_at: string | null
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string
+          published_at?: string | null
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      feedback_submissions: {
+        Row: {
+          created_at: string
+          issue_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          issue_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          issue_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_submissions_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: true
+            referencedRelation: "feedback_issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_subscriptions: {
+        Row: {
+          created_at: string
+          issue_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          issue_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          issue_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_subscriptions_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_issues"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1812,6 +2002,11 @@ export type Database = {
         Args: { p_number: number; p_parent: string; p_state: Json }
         Returns: Json
       }
+      feedback_canonical: { Args: { p_issue_id: number }; Returns: number }
+      follow_feedback: {
+        Args: { p_follow: boolean; p_issue_id: number }
+        Returns: undefined
+      }
       generate_invite_code: { Args: never; Returns: string }
       get_rawhide_cargo: { Args: { p_match_id: string }; Returns: Json }
       hunt_snake: {
@@ -1832,7 +2027,9 @@ export type Database = {
       }
       is_campaign_gm: { Args: { p_campaign_id: string }; Returns: boolean }
       is_campaign_member: { Args: { p_campaign_id: string }; Returns: boolean }
+      is_feedback_maintainer: { Args: never; Returns: boolean }
       is_match_participant: { Args: { p_match_id: string }; Returns: boolean }
+      is_service_role: { Args: never; Returns: boolean }
       is_stats_profile: { Args: { v: Json }; Returns: boolean }
       join_campaign: {
         Args: { p_invite_code: string; p_warband_id: string }
@@ -1875,10 +2072,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_notification_read: { Args: { p_id: string }; Returns: undefined }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
       may_act_for_warband: {
         Args: { p_match_id: string; p_warband_id: string }
         Returns: boolean
+      }
+      merge_feedback: {
+        Args: { p_issue_id: number; p_target_id: number }
+        Returns: undefined
       }
       move_warband_campaign: {
         Args: { p_invite_code: string; p_warband_id: string }
@@ -1968,6 +2170,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      publish_feedback_release: {
+        Args: { p_release_id: string }
+        Returns: undefined
+      }
       record_haggled_trade: {
         Args: {
           p_changes: Json
@@ -2028,6 +2234,7 @@ export type Database = {
         Args: { p_report_id: string }
         Returns: undefined
       }
+      require_feedback_maintainer: { Args: never; Returns: undefined }
       reserve_report_trade_wagon: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -2083,6 +2290,19 @@ export type Database = {
       }
       revert_rawhide_settlement: {
         Args: { p_report_id: string }
+        Returns: undefined
+      }
+      review_feedback: {
+        Args: {
+          p_expected_updated_at: string
+          p_issue_id: number
+          p_kind: string
+          p_notes: string
+          p_priority: string
+          p_release_id?: string
+          p_status: string
+          p_title: string
+        }
         Returns: undefined
       }
       roll_off_match_district: {
@@ -2162,6 +2382,10 @@ export type Database = {
           p_warband_id: string
         }
         Returns: Database["public"]["Enums"]["match_state"]
+      }
+      submit_feedback: {
+        Args: { p_kind: string; p_notes: string; p_title: string }
+        Returns: number
       }
       trade_wagon_rare_search_blocked: {
         Args: { p_warband_id: string }

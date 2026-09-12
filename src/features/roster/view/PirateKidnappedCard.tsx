@@ -74,7 +74,7 @@ export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }
       </> : null}
       {previewError ? <p className="text-sm text-ink-dim">{previewError}</p> : null}
       {preview ? <Notice tone="info" title={preview.outcome === 'crew' ? 'The dice say: joins the Crew' : 'The dice say: becomes a Swabbie'}>{preview.message}</Notice> : null}
-      <Button disabled={!preview || !owner} pending={propose.isPending} onClick={() => { if (preview && owner) propose.mutate({ caseId: item.id, choice: preview.choice, owner, captor, nextOwner: preview.nextOwner, nextCaptor: preview.nextCaptor, message: preview.message }) }}>{gm ? 'Record Kidnapped! outcome' : `Propose Kidnapped! outcome to ${otherName}’s player`}</Button>
+      <Button disabled={!preview || !owner} pending={propose.isPending} onClick={() => { if (preview && owner) propose.mutate({ caseId: item.id, choice: preview.choice, owner, captor, nextOwner: preview.nextOwner, nextCaptor: preview.nextCaptor, message: preview.message }) }}>{gm ? 'Record Kidnapped! outcome' : `Propose Kidnapped! outcome to the player of ${otherName}`}</Button>
     </> : null}
     {bothRolled && !canPirate ? <p className="text-sm text-ink-dim">Both sides have rolled. The Pirate player proposes the outcome the dice dictate; you will be asked to accept it.</p> : null}
     {gm && (contest.pirates || contest.victim) ? <div className="flex flex-wrap items-end gap-2">

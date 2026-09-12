@@ -45,6 +45,11 @@ describe.skipIf(!enabled)('Casualty tokens: one standing event per model going d
   expect((await mark(reik,2,{metadata_only:false})).error?.message).toMatch(/must carry metadata_only/)
   expect((await mark(reik,2,{manual_casualty_index:5})).error?.message).toMatch(/equal to the token index/)
   expect((await mark(reik,2,{kill:true})).error?.message).toMatch(/no kill/)
+  // Slots must exist: the group has three models, so slot 3 is refused; a Hero has slot 0 only.
+  expect((await mark(reik,3)).error?.message).toMatch(/slot 3 does not exist: the group has 3 models/)
+  const heroToken=`casualty:${match}:${cw}:${skrit}:manual:1`
+  expect((await moulder.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:cw,p_payload:{...payload(1),casualty_token:heroToken,target_warband_id:cw,target_id:skrit,target_kind:'hero',attacker_warband_id:vw,attacker_id:group,attacker_kind:'group',attacker_name:'Warriors'}})).error?.message).toMatch(/single casualty slot/)
+  expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(0),casualty_token:`casualty:${match}:${vw}:${crypto.randomUUID()}:manual:0`,target_id:'00000000-0000-4000-8000-000000000000'}})).error?.message).toMatch(/names a different target|names no warrior/)
   expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(2),casualty_token:`casualty:${crypto.randomUUID()}:${vw}:${group}:manual:2`}})).error?.message).toMatch(/does not belong to this match/)
   expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(2),casualty_token:`casualty:${match}:${vw}:${group}:2`}})).error?.message).toMatch(/not a manual casualty token/)
   expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(2),target_id:skrit}})).error?.message).toMatch(/names a different target/)

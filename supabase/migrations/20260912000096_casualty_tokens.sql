@@ -40,6 +40,14 @@ begin
      or coalesce((p_payload->>'wounds_lost')::int, 0) <> 0 or not coalesce((p_payload->>'out_of_action')::boolean, false) or coalesce(p_payload->>'kind', 'attack') <> 'attack' then
     raise exception 'A casualty marker must carry metadata_only, manual_casualty_index equal to the token index, capture_source table, a capture_reason, out_of_action, no kill and no wounds.' using errcode = '22023';
   end if;
+  -- The slot must exist: a group's raw slots run 0..size-1; a Hero or an animal has slot 0 only.
+  if v_target like 'animal:%' or exists (select 1 from public.heroes h where h.id::text = v_target and h.warband_id = parts[3]::uuid) then
+    if n <> 0 then raise exception 'A Hero or an animal has a single casualty slot (0).' using errcode = '22023'; end if;
+  elsif exists (select 1 from public.henchman_groups g where g.id::text = v_target and g.warband_id = parts[3]::uuid) then
+    if n >= (select g.size from public.henchman_groups g where g.id::text = v_target) then raise exception 'Casualty slot % does not exist: the group has % models.', n, (select g.size from public.henchman_groups g where g.id::text = v_target) using errcode = '22023'; end if;
+  else
+    raise exception 'The casualty token names no warrior of that warband.' using errcode = '22023';
+  end if;
   -- Recorded by the victim's player (their own warband) or the GM, for two warbands at this table.
   if p_actor_warband_id is distinct from parts[3]::uuid then raise exception 'A casualty is recorded by the warband that suffered it.' using errcode = '22023'; end if;
   if not exists (select 1 from public.match_participants where match_id = p_match_id and warband_id = p_actor_warband_id)

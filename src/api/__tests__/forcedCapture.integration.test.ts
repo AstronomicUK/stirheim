@@ -71,6 +71,8 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect((await file([cap(1,events[0]),cap(1,events[1])])).error?.message).toMatch(/casualty 2 of the group, not 1/)
   expect((await file([cap(1,events[0]),cap(2,events[0])])).error?.message).toMatch(/casualty 1 of the group, not 2|used twice/)
   expect((await file([cap(3,events[2])],{size:2})).error?.message).toMatch(/no unreverted Subjugator capture event/)
+  expect((await file([cap(9,events[0])],{size:2})).error?.message).toMatch(/casualty 9 does not exist; Warriors had 3 models/)
+  expect((await file([cap(0,events[0])],{size:2})).error?.message).toMatch(/casualty 0 does not exist/)
   expect((await file([cap(1,events[0]),cap(2,events[1])],{rolls:[1,1],dead:2,size:0})).error?.message).toMatch(/had 3 models before the battle but the report loses 2 dead and 2 captured/)
   expect((await file([cap(1,events[0],{kit:kit(2)}),cap(2,events[1],{kit:kit(2)})])).error?.message).toMatch(/casualties took only 2 of sword/)
   expect((await file([cap(1,events[0]),cap(2,events[1])],{swordsLost:4})).error?.message).toMatch(/records 4 of sword lost from Warriors but the group only carried 3/)

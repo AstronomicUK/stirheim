@@ -45,6 +45,9 @@ begin
     for cap in select x from jsonb_array_elements(line->'captured') x loop
       if (cap->>'reason') is distinct from 'subjugator' then raise exception 'Captured henchmen: unsupported capture reason %.', cap->>'reason' using errcode = '22023'; end if;
       if (cap->>'eventId') !~* '^[0-9a-f]{8}-' or (cap->>'captorWarbandId') !~* '^[0-9a-f]{8}-' then raise exception 'Captured henchmen: event and captor ids are required.' using errcode = '22023'; end if;
+      if (cap->>'modelIndex') !~ '^[0-9]+$' or (cap->>'modelIndex')::int < 1 or (cap->>'modelIndex')::int > (g->>'size')::int then
+        raise exception 'Captured henchmen: casualty % does not exist; % had % models before the battle.', cap->>'modelIndex', grow.name, g->>'size' using errcode = '22023';
+      end if;
       select * into ev from public.battle_events
         where id = (cap->>'eventId')::uuid and match_id = new.match_id and kind = 'attack' and reverted_at is null
           and coalesce((payload->>'out_of_action')::boolean, false) and payload->>'capture_reason' = 'subjugator'

@@ -26,7 +26,9 @@ export function withBrokenWeapons<T extends { id: string; warbandId: string; gro
     const losses = rows.filter(row => row.warband_id === warrior.warbandId && row.holder_id === warrior.id && row.quantity > weaponQuantityRemaining(row, events))
     if (!losses.length) return warrior
     const equipment = warrior.equipment.map(entry => ({ ...entry }))
-    const models = Math.max(1, warrior.groupSize ?? 1)
+    const size = Math.max(1, warrior.groupSize ?? 1)
+    // Match perModelKit: unevenly equipped groups retain raw stack counts.
+    const models = rows.filter(row => row.warband_id === warrior.warbandId && row.holder_id === warrior.id).every(row => row.quantity % size === 0) ? size : 1
     for (const row of losses) {
       let remove = Math.ceil(row.quantity / models) - Math.ceil(weaponQuantityRemaining(row, events) / models)
       const original = toRosterItem(row)

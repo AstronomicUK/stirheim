@@ -50,3 +50,10 @@ it('does not remove intact group members weapons when one copy breaks', () => {
  expect(withBrokenWeapons([fighter], [groupRow], [event(weaponLossSnapshot(groupRow, 'sword', 'Sword'))])[0].equipment[0].quantity).toBe(1)
  expect(withBrokenWeapons([fighter], [groupRow], [event(weaponLossSnapshot(groupRow, 'sword', 'Sword', 3))])[0].equipment).toEqual([])
 })
+
+
+it('subtracts the actual lost copy when an uneven group uses raw equipment counts', () => {
+ const groupRow = { ...row, holder_type: 'group' as const, quantity: 2 }
+ const fighter = { id: warrior, warbandId: band, groupSize: 3, equipment: [{ itemId: 'sword', quantity: 2, notes: 'Family heirloom' }] }
+ expect(withBrokenWeapons([fighter], [groupRow], [event(weaponLossSnapshot(groupRow, 'sword', 'Sword'))])[0].equipment[0].quantity).toBe(1)
+})

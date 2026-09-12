@@ -38,3 +38,8 @@ it('makes removed warriors and cleared report facts visible in amendments',()=>{
  expect(prose).toContain('Treasury: 0 gc in this report.')
  expect(prose).not.toContain('Removed Noble')
 })
+
+it('shows a captured group member without a zero-deaths distraction or raw kit data',()=>{
+ const changes=reportActivityChanges(entry({after:{injuries:[{subjectType:'group',subjectName:'Warriors',rolls:[],dead:0,captured:[{modelIndex:1,eventId:'internal',kit:[{sourceItemId:'internal',quantity:2}]}]}]}}))
+ expect(changes.map(c=>c.sentence)).toEqual(['Warriors: 1 model captured by Subjugator of Mankind; no injury roll for that model.'])
+})

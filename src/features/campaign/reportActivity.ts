@@ -44,10 +44,12 @@ export function reportActivityChanges(entry:CampaignActivity):FieldChange[]{
  if(changed('ooa'))list(record.ooa).forEach((casualty,i)=>add(`Out of action ${i}`,`${text(casualty.subjectName,'Warrior')}: ${number(casualty.count)??1} taken out of action${strings(casualty.by).length?` by ${strings(casualty.by).join(', ')}`:''}.`))
  if(changed('injuries'))list(record.injuries).forEach((injury,i)=>{
   const name=text(injury.subjectName,'Warrior'),rolls=dice(injury.rolls)
+  const captures=list(injury.captured).length
+  if(captures)add(`Capture ${i}`,`${name}: ${captures} ${captures===1?'model captured':'models captured'} by Subjugator of Mankind; no injury roll for ${captures===1?'that model':'those models'}.`)
   const result=text(injury.injuryName)|| (number(injury.dead)!==null?`${number(injury.dead)} ${number(injury.dead)===1?'model':'models'} died`:text(injury.outcome,'injury recorded'))
   const pits=(text(injury.injuryCode)==='sold_to_the_pits'||/sold to the pits/i.test(result)) && injury.outcome!=='recovered'
   strings(injury.rollHistory).forEach((event,j)=>add(`Injury history ${i} ${j}`,`${name}: ${event}`))
-  add(`Injury ${i}`,`${name}: ${result}.${rolls?` Injury dice: ${rolls}.`:''}${pits?' A pit fight must be resolved.':''}`,text(injury.effect))
+  if(!(captures&&!rolls&&number(injury.dead)===0))add(`Injury ${i}`,`${name}: ${result}.${rolls?` Injury dice: ${rolls}.`:''}${pits?' A pit fight must be resolved.':''}`,text(injury.effect))
  })
  if(changed('exploration')&&record.exploration){
   const e=row(record.exploration),rolls=dice(e.rolls),location=text(e.locationName)

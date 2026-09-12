@@ -62,3 +62,8 @@ describe('postBattleRollLines', () => {
     expect(postBattleRollLines(report())).toEqual([])
   })
 })
+
+it('describes a forced capture without pretending an injury die was rolled',()=>{
+ const lines=postBattleRollLines(report({injuries:[{subjectType:'hero',subjectId:'h',subjectName:'Captain',rolls:[],outcome:'captured',injuryCode:'captured',injuryName:'Captured',effect:'Subjugator of Mankind'}]}))
+ expect(lines).toEqual(['Captain: captured without an injury roll — Subjugator of Mankind.'])
+})

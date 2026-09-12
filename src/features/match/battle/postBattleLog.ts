@@ -19,7 +19,7 @@ export function postBattleRollLines(report: ReportView): string[] {
       if(line.captured?.length)lines.push(`${line.subjectName}: ${line.captured.length} captured by Subjugator of Mankind without an injury roll.`)
       if(line.rolls.length || !line.captured?.length)lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.dead} dead, ${survived} recovered.`)
     } else {
-      lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.injuryName} (${OUTCOME_TEXT[line.outcome] ?? line.outcome}).`)
+      lines.push(line.outcome==='captured'&&!line.rolls.length?`${line.subjectName}: captured without an injury roll — ${line.effect||line.injuryName}.`:`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.injuryName} (${OUTCOME_TEXT[line.outcome] ?? line.outcome}).`)
       for(const event of line.rollHistory??[])lines.push(`${line.subjectName}: ${event}`)
     }
   }

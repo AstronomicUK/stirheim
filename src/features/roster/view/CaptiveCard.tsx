@@ -85,6 +85,7 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
   {item.state==='resolved'?<>
    <Notice tone="info" title="Recorded outcome">{item.resolution_message}</Notice>
    {gm||bothMine?<div className="flex flex-wrap items-end gap-2">
+    <p className="w-full text-sm text-ink-dim">If another captive outcome changed either roster afterwards, reverse the newer outcome first.</p>
     <TextField label="Reason to reverse" value={reason} onChange={e=>setReason(e.target.value)} placeholder="What was recorded wrongly"/>
     <Button variant="danger" disabled={reason.trim().length<5} pending={reverse.isPending} onClick={()=>reverse.mutate({caseId:item.id,reason})}>Reverse and restore both rosters</Button>
     {gm?<Button variant="ghost" disabled={reason.trim().length<5} pending={reverse.isPending} onClick={()=>reverse.mutate({caseId:item.id,reason,releaseOnly:true})}>Release without restoring (GM)</Button>:null}

@@ -37,3 +37,10 @@ it('rejects unavailable warriors, prohibited kinds and stock belonging elsewhere
     expect(() => declareBlessedWater(emptyBattleLiveState(), warrior, { ...item, ...changed }, 'one')).toThrow('available vial')
   }
 })
+
+it('also protects damage linked by the persisted throw identity in a shared event payload', () => {
+  const sheet = declareBlessedWater(emptyBattleLiveState(), warrior, item, 'one')
+  const event = { id: 'attack', reverted_at: null, payload: { blessedWaterUseId: 'one' } } as BattleEventRow
+  expect(() => correctBlessedWater(sheet, 'one', 'Wrong target', [event])).toThrow('Undo')
+  expect(blessedWaterRemaining(correctBlessedWater(sheet, 'one', 'Wrong target', [{ ...event, reverted_at: 'now' }]), item)).toBe(2)
+})

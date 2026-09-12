@@ -49,6 +49,7 @@ export const attackEventPayloadSchema = z.object({
   grapeTargetKey: z.string().optional(),
   pigeonLaunchId: z.string().optional(),
   pigeonTargetKey: z.string().optional(),
+  blessedWaterUseId: z.string().optional(),
   lineShotId: z.string().optional(),
   lineShotTargetKey: z.string().optional(),
   /** Every roll of the walk-through, in order: "rolled 5 to hit. Hit.", "Armour save: rolled 2. Failed." ... */

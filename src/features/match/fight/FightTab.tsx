@@ -1,3 +1,5 @@
+import { blessedWaterWeapon } from '../../../rules/engine/blessedWater'
+import { blessedWaterRemaining, declareBlessedWater, correctBlessedWater } from '../battle/blessedWaterUses'
 import { reloadTurnsFor } from './reloadRules'
 import { BlackpowderLosses } from './BlackpowderLosses'
 import { physicalWeaponChoices, withBrokenWeapons } from './weaponLoss'
@@ -32,7 +34,7 @@ import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, 
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
 import { combatantLabel, combatantsOf, withGuidingDream, withBolasEntanglement, emptyLoadout, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
-import { combatContextFor, computeOdds, preBattleWithRolls, preBattleRollsOwed, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
+import { toCharacter, combatContextFor, computeOdds, preBattleWithRolls, preBattleRollsOwed, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { conditionsFor, itemsUsedBy, itemRollsBy, setItemRoll, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollKind, type RollState } from './rollThrough'
@@ -158,13 +160,15 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   // Weapon choice follows the attacker: a new attacker gets sensible defaults.
   const [physicalSelection, setPhysicalSelection] = useState<Record<string, string>>({})
   const [choice, setChoice] = useState<WeaponChoice | null>(null)
-  const weapons: Weapon[] = attackerKit ? [...(attackerKit.melee.length > 0 ? attackerKit.melee : [defaultPrimary([])]), ...attackerKit.ranged] : []
+  const waterRows = attacker && !selfDamage && !attacker.traitIds.some(trait => trait === 'undead' || trait === 'possessed') ? items.filter(item => item.warband_id === roster.id && item.holder_id === attacker.id && item.item_rules_id === 'blessed_water' && item.quantity > 0) : []
+  const waterWeapon = waterRows.length && attacker && attackerKit ? blessedWaterWeapon(toCharacter(attacker, attackerKit)) : null
+  const weapons: Weapon[] = attackerKit ? [...(attackerKit.melee.length > 0 ? attackerKit.melee : [defaultPrimary([])]), ...attackerKit.ranged, ...(waterWeapon ? [waterWeapon] : [])] : []
   const melee = attackerKit && attackerKit.melee.length > 0 ? attackerKit.melee : weapons.slice(0, 1)
   const current: WeaponChoice | null = attacker
     ? choice && choice.attackerId === attacker.id && choice.primary < weapons.length
       ? choice
       : (() => {
-          const ranged = startWith === 'ranged' ? (attackerKit?.ranged ?? []) : []
+          const ranged = startWith === 'ranged' ? weapons.filter(weapon => weapon.type === 'ranged') : []
           if (ranged.length > 0) return { attackerId: attacker.id, primary: weapons.indexOf(ranged[0]), offHand: -1 }
           const primary = defaultPrimary(melee)
           const primaryIndex = Math.max(0, weapons.indexOf(primary))
@@ -173,6 +177,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
         })()
     : null
   const primary = current ? weapons[current.primary] : null
+  const isBlessedWater = primary?.id === 'blessed_water'
+  const [waterRowId, setWaterRowId] = useState('')
+  const waterRow = waterRows.find(row => row.id === waterRowId) ?? waterRows.find(row => blessedWaterRemaining(sheet, row) > 0) ?? waterRows[0]
+  const waterUnavailable = Boolean(isBlessedWater && (!waterRow || blessedWaterRemaining(sheet, waterRow) < 1))
+  const [waterCorrection, setWaterCorrection] = useState('')
+  const [waterError, setWaterError] = useState<string | null>(null)
   // First generic core cadence path: handguns. Pistols need brace/per-copy attack allocation separately.
   const [handgunCorrection, setHandgunCorrection] = useState('')
   const isCoreHandgun = !selfDamage && primary?.id === 'handgun'
@@ -301,7 +311,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   }
 
   if (mine.length === 0) return <Notice tone="info" title="Nobody to attack with">None of your warriors are fit to fight this game.</Notice>
-  if (startWith === 'ranged' && !selfDamage && pendingExplosions.length === 0 && !mine.some((c) => !c.out && loadoutFor(c).ranged.length > 0)) {
+  if (startWith === 'ranged' && !selfDamage && pendingExplosions.length === 0 && !mine.some((c) => !c.out && (loadoutFor(c).ranged.length > 0 || (!c.traitIds.some(trait => trait === 'undead' || trait === 'possessed') && items.some(item => item.holder_id === c.id && item.item_rules_id === 'blessed_water' && item.quantity > 0))))) {
     return <Notice tone="info" title="No eligible units in your warband">Nobody fit to fight is carrying a ranged weapon.</Notice>
   }
 
@@ -388,6 +398,20 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   return (
     <>
+      {isBlessedWater && attacker ? <Notice>
+        <p>Blessed Water: throw up to {2 * (odds?.weapons[0]?.strength ?? attacker.stats.S)}″. One vial per throw, including misses. No range or movement penalty. A hit automatically wounds Undead, Daemons or Possessed; no armour save.</p>
+        {waterRows.length > 1 ? <SelectField label="Vial stack" value={waterRow?.id ?? ''} onChange={event => setWaterRowId(event.target.value)}>{waterRows.map((row, index) => <option key={row.id} value={row.id}>Stack {index + 1}: {blessedWaterRemaining(sheet, row)} available</option>)}</SelectField> : <p>{waterRow ? blessedWaterRemaining(sheet, waterRow) : 0} vials available.</p>}
+        {sheet.blessedWaterUses.some(use => use.warriorId === attacker.id && !use.correction) && edit && !readOnly ? <>
+          <TextField label="Reason to correct the latest throw" value={waterCorrection} onChange={event => setWaterCorrection(event.target.value)} />
+          <Button variant="secondary" disabled={!waterCorrection.trim()} onClick={() => {
+            const use = [...sheet.blessedWaterUses].reverse().find(use => use.warriorId === attacker.id && !use.correction)
+            if (!use) return
+            try { correctBlessedWater(sheet, use.id, waterCorrection, events); edit(state => correctBlessedWater(state, use.id, waterCorrection, events)); setWaterCorrection(''); setWaterError(null) }
+            catch (error) { setWaterError(error instanceof Error ? error.message : 'Could not correct the throw.') }
+          }}>Correct latest throw</Button>
+        </> : null}
+        {waterError ? <p>{waterError}</p> : null}
+      </Notice> : null}
       <BlackpowderLosses sheet={sheet} events={events} readOnly={readOnly} onLog={onLogEvent} names={Object.fromEntries(mine.map(w=>[w.id,w.name]))}/>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
       {events.some(e => !e.reverted_at && e.payload.brokenWeapons?.some(loss => loss.warbandId === roster.id)) ? <Notice tone="warn" title="Broken equipment">Broken copies are excluded from available weapons. Groups with some intact copies can still select the weapon: use those only for the members who carry them. Revert the break in the battle Log to correct it.</Notice> : null}
@@ -652,10 +676,19 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={Boolean(handgunBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (handgunBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={waterUnavailable || Boolean(handgunBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (waterUnavailable || handgunBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
+            restartBlocked={waterUnavailable}
+            beforeStart={isBlessedWater ? id => {
+              if (!edit || !waterRow) return false
+              try {
+                declareBlessedWater(sheet, attacker, waterRow, id)
+                edit(state => declareBlessedWater(state, attacker, waterRow, id))
+                return true
+              } catch (error) { setWaterError(error instanceof Error ? error.message : 'No vial available.'); return false }
+            } : undefined}
             onRestart={isSwivel && !areaTarget && edit ? id => edit(s => correctBlackpowderShot(s, id, 'Player restarted the attack roller; earlier dice are preserved.')) : undefined}
             onProgress={edit ? (previous, next, attemptId, rolled) => {
               if (next.critUsed && areaId) edit(s => ({ ...s, areaCriticals: { ...s.areaCriticals, [areaId]: true } }))
@@ -698,8 +731,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   }
                 : undefined
             }
-            onLog={(state) =>
+            onLog={(state, attemptId) =>
               onLogEvent({
+                blessedWaterUseId: isBlessedWater ? attemptId : undefined,
                 attacker_warband_id: attacker.warbandId,
                 attacker_id: attacker.id,
                 attacker_kind: attacker.kind === 'henchman' || attacker.kind === 'animal' ? 'group' : 'hero',
@@ -936,7 +970,9 @@ interface RollSectionProps {
   defenderKit: Loadout
   readOnly: boolean
   /** Write the finished fight to the shared combat log. */
-  onLog: (state: RollState) => Promise<void>
+  beforeStart?: (attemptId: string) => boolean
+  restartBlocked?: boolean
+  onLog: (state: RollState, attemptId: string) => Promise<void>
   /** Called once when the last roll lands, so the tab can carry Wounds and the parry into the next fight. */
   onFinished: (state: RollState) => void
   /** The target's Lucky Charm has not been rolled for yet this battle. */
@@ -956,7 +992,7 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
+function RollSection({ beforeStart, restartBlocked = false, heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
@@ -976,7 +1012,9 @@ function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProg
   }
 
   function start() {
-    attempt.current = { id: crypto.randomUUID(), at: new Date().toISOString() }
+    const nextAttempt = { id: crypto.randomUUID(), at: new Date().toISOString() }
+    if (beforeStart && !beforeStart(nextAttempt.id)) { setLogError('No vial is available. Close this roller and check the Blessed Water stock.'); return }
+    attempt.current = nextAttempt
     const plans: AttackPlan[] = odds.weapons.flatMap((w, weaponIndex) =>
       Array.from({ length: w.attacks }, () => ({
         heldWeapon: heldWeapons[weaponIndex],
@@ -1004,7 +1042,7 @@ function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProg
     setLogged('saving')
     setLogError(null)
     try {
-      await onLog(state)
+      await onLog(state, attempt.current.id)
       setLogged('yes')
     } catch (e) {
       setLogged('failed')
@@ -1143,7 +1181,9 @@ function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProg
           <Button
             variant="ghost"
             block
+            disabled={restartBlocked}
             onClick={() => {
+              if (restartBlocked) return
               if (stateRef.current && stateRef.current.log.length > 0) {
                 record(stateRef.current, 'restarted')
                 setPastAttempts((p) => [...p, stateRef.current!.log])

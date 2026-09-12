@@ -36,6 +36,7 @@ export function correctBlessedWater(sheet: BattleLiveState, id: string, reason: 
   const use = sheet.blessedWaterUses.find(entry => entry.id === id)
   if (!use || use.correction) return sheet
   if (!reason.trim()) throw new Error('Explain why the Blessed Water throw is being corrected.')
+  if (events.some(event => !event.reverted_at && event.payload?.blessedWaterUseId === id)) throw new Error('Undo the linked attack in the combat log before restoring its vial.')
   if (use.attackEventId && !events.find(event => event.id === use.attackEventId)?.reverted_at) throw new Error('Undo the linked attack in the combat log before restoring its vial.')
   return withRollAttempt({ ...sheet, blessedWaterUses: sheet.blessedWaterUses.map(entry => entry.id === id ? { ...entry, correction: reason.trim() } : entry) }, {
     id: `correct-vial:${id}`, at: new Date().toISOString(), turn: sheet.turn, kind: 'attack', status: 'complete',

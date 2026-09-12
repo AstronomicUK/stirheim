@@ -1,3 +1,4 @@
+import { blessedWaterAttack } from '../../../rules/engine/blessedWater'
 import { isChaosWarhound } from '../../../rules/resolve/barbedWhip'
 import { ignoresFear, causesFearAgainst } from '../../../rules/engine/psychology'
 // From two combatants and a situation to the numbers on the screen: the engine's exact
@@ -248,7 +249,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context).map(({ weapon, count: full }) => {
     const attacks = Math.min(full, Math.max(0, remaining))
     remaining -= attacks
-    const raw = buildAttackInput({ attacker, weapon, defender, context, houseRules })
+    const raw = weapon.id === 'blessed_water' ? blessedWaterAttack({ attacker, defender, context, houseRules }) : buildAttackInput({ attacker, weapon, defender, context, houseRules })
     const input = adjustForCoatings(raw, weapon, phase, dosed.kit)
     const single = resolveSingleAttack(input)
     const { ws, strength } = effectiveOffensiveStats(attacker, weapon, context)

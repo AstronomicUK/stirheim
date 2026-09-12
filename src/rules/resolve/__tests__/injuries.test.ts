@@ -179,6 +179,8 @@ describe("applyHeroInjury", () => {
     expect(applyHeroInjury(makeHero(), 56).value.needsSubRoll).toBeDefined();
     const res = applyHeroInjury(makeHero(), 56, 4);
     expect(res.value.hero.flags.hates).toBe("The leader of the warband that caused the injury.");
+    // #96: the scope is recorded for the report to resolve; the resolver itself never guesses who.
+    expect(res.value.hero.flags.bitterEnmity).toEqual({ scope: "leader", roll: 4, text: "The leader of the warband that caused the injury.", source: "unresolved" });
   });
 
   it("Multiple Injuries returns needsMoreRolls and names the re-roll codes", () => {

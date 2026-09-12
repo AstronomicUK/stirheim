@@ -2,7 +2,8 @@ import { ExtraTough } from './ExtraTough'
 import {LycanthropeAftermath} from './LycanthropeAftermath'
 import {MedicineChest} from './MedicineChest'
 import type {ReactNode} from 'react'
-import { setPlantCasualty } from '../model/state'
+import { setPlantCasualty, setHeroEnmityTarget } from '../model/state'
+import { describeBitterEnmity, resolveBitterEnmityTarget } from '../../../rules/resolve/bitterEnmity'
 import { useState } from 'react'
 import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
 import { HENCHMAN_INJURY } from '../../../rules/data/campaign/injuries'
@@ -79,6 +80,31 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               type={warriorTypeLabel(ctx, hero)}
               resolution={resolution}
               medicine={<><ExtraTough hero={hero} draft={draft} update={update}/><MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/></>}
+              enmity={resolution.hero.flags.bitterEnmity && resolution.hero.flags.bitterEnmity !== hero.flags.bitterEnmity ? (() => {
+                // Bitter Enmity rolled here (#96): show who it is from the battle record, or ask.
+                const flow = draft.heroInjuries[hero.id]
+                const resolved = resolveBitterEnmityTarget({ ...resolution.hero.flags.bitterEnmity, matchId: ctx.matchId }, ctx.takenOutByDetail?.[hero.id]?.[0], ctx.enemies ?? [], flow?.enmityTarget ?? null)
+                const value = flow?.enmityTarget ? `${flow.enmityTarget.warbandId}|${flow.enmityTarget.modelId ?? ''}` : ''
+                return (
+                  <div className="flex flex-col gap-2 rounded border border-border px-3 py-2 text-xs">
+                    <p><span className="font-semibold">Bitter Enmity:</span> hates {describeBitterEnmity(resolved)}{resolved.source === 'attribution' ? ' — from the battle sheet' : resolved.source === 'chosen' ? ' — as you chose' : ' — decide at the table unless you name them below'}.</p>
+                    {resolved.source !== 'attribution' && (ctx.enemies?.length ?? 0) > 0 ? (
+                      <SelectField label="Who caused the injury?" value={value} onChange={(e) => update((d) => {
+                        const [warbandId, modelId] = e.target.value.split('|')
+                        return setHeroEnmityTarget(d, hero.id, warbandId ? { warbandId, modelId: modelId || null } : null)
+                      })}>
+                        <option value="">Not known — leave it to the table</option>
+                        {(ctx.enemies ?? []).map((enemy) => (
+                          <optgroup key={enemy.id} label={enemy.name}>
+                            <option value={`${enemy.id}|`}>{enemy.name} — a henchman or unknown model (counts as the leader)</option>
+                            {enemy.models.filter((m) => m.kind !== 'group').map((m) => <option key={m.id} value={`${enemy.id}|${m.id}`}>{m.name}</option>)}
+                          </optgroup>
+                        ))}
+                      </SelectField>
+                    ) : null}
+                  </div>
+                )
+              })() : undefined}
               skip={draft.injurySkips[hero.id]}
               onSkip={(reason) => update((d) => setInjurySkip(d, hero.id, reason))}
               onD66={(d66, source) => update((d) => addHeroInjuryRoll(d, hero.id, d66, source))}
@@ -302,6 +328,8 @@ function SkipRow({ skip, onSkip }: { skip: string | undefined; onSkip: (reason: 
 interface HeroInjuryCardProps {
   restartReasonRequired?: boolean
   medicine?: ReactNode
+  /** Bitter Enmity target line and, when the record cannot say, the who-caused-it choice (#96). */
+  enmity?: ReactNode
   name: string
   type: string
   resolution: HeroInjuryResolution
@@ -314,7 +342,7 @@ interface HeroInjuryCardProps {
   onReset: (reason: string) => void
 }
 
-export function HeroInjuryCard({ restartReasonRequired = false, medicine, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
+export function HeroInjuryCard({ restartReasonRequired = false, medicine, enmity, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
   const [restarting, setRestarting] = useState(false)
   const [restartReason, setRestartReason] = useState('')
@@ -356,6 +384,7 @@ export function HeroInjuryCard({ restartReasonRequired = false, medicine, name, 
         <p className="mt-1 text-xs">Win: 50 gc and +2 Experience for a hero, keeping equipment. Dramatis Personae do not gain Experience. Lose: an injury roll restricted to 11–35; a survivor loses weapons and armour.</p>
       </div> : null}
       {medicine}
+      {enmity}
       {steps.length === 0 ? <SkipRow skip={skip} onSkip={onSkip} /> : null}
       {pending.kind === 'subRoll' ? (
         <div className="flex flex-col gap-2">

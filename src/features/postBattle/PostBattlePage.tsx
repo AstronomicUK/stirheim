@@ -18,6 +18,8 @@ import { applyWizardAdvances } from './applyAdvances'
 import { useSession } from '../../app/session'
 import type { BattleLiveState } from '../../domain'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
+import { currentLeader } from '../../rules/resolve/roster'
+import type { EnemyWarbandInfo } from '../../rules/resolve/bitterEnmity'
 import { Button, Notice, Sheet, Spinner } from '../../ui'
 import { buildReport, deriveReport, seedFromBattleSheet, setStep, STEP_IDS, type ReportContext, type ReportDraft } from './model'
 import { forgetReportStore, reportStore, useReportStore } from './store'
@@ -197,6 +199,23 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
 
   const opponents = useMemo(() => match.participants.filter((p) => p.warband_id !== participant.warband_id), [match.participants, participant.warband_id])
   const enemyRosters = useQueries({ queries: opponents.map(o => ({ queryKey: matchKeys.roster(match.id, o.warband_id), queryFn: () => fetchMatchRoster(o.warband_id, match.id) })) })
+  // The enemy warbands as Bitter Enmity can name them (#96): leader, type and every model.
+  const enemyData = enemyRosters.map((q) => q.data)
+  const enemies = useMemo<EnemyWarbandInfo[]>(() => enemyData.flatMap((d) => {
+    if (!d) return []
+    const template = findWarbandTemplate(d.roster.warbandTemplateId)
+    const leader = template ? currentLeader(d.roster.heroes, template) : undefined
+    return [{
+      id: d.roster.id, name: d.roster.name, typeId: d.roster.warbandTemplateId, typeName: template?.name ?? d.roster.warbandTemplateId,
+      leaderId: leader?.id, leaderName: leader?.name,
+      models: [
+        ...d.roster.heroes.map((h) => ({ id: h.id, name: h.name, kind: 'hero' as const })),
+        ...d.roster.hiredSwords.map((s) => ({ id: s.id, name: s.name, kind: 'hiredSword' as const })),
+        ...d.roster.henchmenGroups.map((g) => ({ id: g.id, name: g.name, kind: 'group' as const })),
+      ],
+    }]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [JSON.stringify(enemyData.map((d) => d?.roster.id))])
   const killEvents = useBattleEvents(match.id)
   const killSheets = useBattleSessions(match.id)
   const specialKillXp = specialKillsFromEvents(killEvents.data ?? [], participant.warband_id, enemyRosters.flatMap(r => r.data ? [r.data.roster] : []), killSheets.data ?? [])
@@ -240,8 +259,10 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       rotVictims,
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
       takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
+      takenOutByDetail: liveState?.takenOutBy ?? {},
+      enemies,
     }),
-    [killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, rotVictims, settings?.mapCampaign, district, perks],
+    [killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

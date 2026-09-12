@@ -90,6 +90,19 @@ export const warriorFlagsSchema = z.object({
   causesFear: z.boolean().optional(),
   captured: z.boolean().optional(),
   hates: z.string().optional(),
+  bitterEnmity: z.object({
+    scope: z.enum(["individual", "leader", "warband", "warbandType"]),
+    roll: z.number().int().min(1).max(6),
+    text: z.string(),
+    source: z.enum(["attribution", "chosen", "unresolved"]),
+    matchId: z.string().optional(),
+    warriorId: z.string().optional(),
+    warriorName: z.string().optional(),
+    warbandId: z.string().optional(),
+    warbandName: z.string().optional(),
+    warbandTypeId: z.string().optional(),
+    warbandTypeName: z.string().optional(),
+  }).optional(),
   /** Has contracted Nurgle's Rot (Toughness test before each battle). */
   nurglesRot: z.boolean().optional(),
   /** Item ids the warrior is addicted to (Crimson Shade). */

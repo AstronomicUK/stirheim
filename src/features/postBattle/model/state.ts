@@ -46,6 +46,8 @@ export interface HeroInjuryFlow {
   countRoll: number | null
   /** Discarded attempts survive a restart; missing on older drafts. */
   previousAttempts?: { rolls: HeroInjuryFlow['rolls']; countRoll: number | null; reason: string }[]
+  /** Bitter Enmity (#96): who caused the injury, when the battle record could not say and the player names them. Null = left for the table. */
+  enmityTarget?: { warbandId: string; modelId: string | null } | null
 }
 
 export interface FoundItem {
@@ -375,6 +377,12 @@ export function setHeroInjurySubRoll(draft: ReportDraft, heroId: string, rollInd
   if (rollIndex < 0 || rollIndex >= flow.rolls.length) return draft
   const rolls = flow.rolls.map((r, i) => (i === rollIndex ? { ...r, subRoll } : r))
   return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, rolls } } }
+}
+
+/** Bitter Enmity (#96): the player's answer to "who caused the injury?" — an enemy model, an enemy warband alone, or null to leave it to the table. */
+export function setHeroEnmityTarget(draft: ReportDraft, heroId: string, target: { warbandId: string; modelId: string | null } | null): ReportDraft {
+  const flow = flowOf(draft, heroId)
+  return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, enmityTarget: target } } }
 }
 
 export function setHeroDistrictRoll(draft: ReportDraft, heroId: string, rollIndex: number, districtRoll: number): ReportDraft {

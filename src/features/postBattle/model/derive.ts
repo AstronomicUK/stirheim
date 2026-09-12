@@ -58,7 +58,8 @@ import type { BattleReport, HenchmanInjuryLine, HeroInjuryLine, ItemRow, OoaLine
 import { REPORT_VERSION } from '../../../domain'
 import { xpThresholds, type AdvanceRate } from '../../../rules/data/campaign/experience'
 import type { WarbandTemplate } from '../../../rules/types'
-import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
+import type { BitterEnmityTarget, RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from '../../../rules/types/roster'
+import { resolveBitterEnmityTarget, type EnemyWarbandInfo } from '../../../rules/resolve/bitterEnmity'
 import { deriveExploration, type ExplorationDerived } from './exploration'
 import { resolveGroupInjuries, resolveHeroInjuryFlow, resolveHiredSwordInjury, type GroupInjuryResolution, type HeroInjuryResolution, type HiredSwordInjuryResolution, type InjuryOutcome } from './injuries'
 import { participantsOf, type Participants } from './participants'
@@ -120,6 +121,10 @@ export interface ReportContext {
   map?: MapReportContext | null
   /** From the battle sheet: who took each warrior out, one entry per model (names already resolved). */
   takenOutBy?: Record<string, string[]>
+  /** The same record with ids, for Bitter Enmity attribution (#96): warrior id -> who took each model out. */
+  takenOutByDetail?: Record<string, { warbandId: string | null; modelId: string | null; name: string }[]>
+  /** The enemy warbands at the table, for Bitter Enmity targets (#96). */
+  enemies?: readonly EnemyWarbandInfo[]
 }
 
 export interface MapReportContext {
@@ -527,6 +532,12 @@ function poisonCountsFor(ctx: ReportContext) {
   return counts
 }
 
+/** The structured Bitter Enmity target for a hero whose injury roll set one in this report (#96). */
+export function bitterEnmityFor(heroId: string, base: BitterEnmityTarget, ctx: ReportContext, draft: ReportDraft): BitterEnmityTarget {
+  const resolved = resolveBitterEnmityTarget({ ...base, matchId: ctx.matchId }, ctx.takenOutByDetail?.[heroId]?.[0], ctx.enemies ?? [], draft.heroInjuries[heroId]?.enmityTarget ?? null)
+  return resolved
+}
+
 export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportApplied['item_patches'] {
   const patches: ReportApplied['item_patches'] = []
   const rows = ctx.items
@@ -599,6 +610,11 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
       patch.stats = after.stats
       patch.injuries = after.injuries
       patch.flags = after.flags
+      // Bitter Enmity rolled in this report (#96): fix who it is from the battle record or the
+      // player's choice; a target already on the hero from an earlier battle is left alone.
+      if (after.flags.bitterEnmity && after.flags.bitterEnmity !== hero.flags.bitterEnmity) {
+        patch.flags = { ...after.flags, bitterEnmity: bitterEnmityFor(hero.id, after.flags.bitterEnmity, ctx, draft) }
+      }
       if (after.status === 'dead' && hero.status !== 'dead' && delayedLeaderUnit(ctx.roster.warbandTemplateId) === hero.unitTemplateId) patch.flags = {...after.flags,leaderLostInMatch:ctx.matchId,leaderReplacementReadyAfter:undefined}
       if (after.status !== hero.status) patch.status = after.status
       if (after.equipment.length === 0 && hero.equipment.length > 0) removeItemIds.push(...heldItemIds(ctx.items, hero.id))

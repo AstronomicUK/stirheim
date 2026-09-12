@@ -39,6 +39,7 @@ import type {
 } from "../types/roster";
 import { HENCHMAN_INJURY, lookupHeroInjury } from "../data/campaign/injuries";
 import { RulesError } from "./errors";
+import { bitterEnmityScope } from "./bitterEnmity";
 import { unitRules, type InjuryException } from "../data/campaignRules";
 
 /** Injury codes that must be re-rolled while resolving Multiple Injuries. */
@@ -284,7 +285,9 @@ function applyEffects(
         const outcome: InjurySubOutcome | undefined = effect.outcomes.find((o) => inBand(subRoll, o.band));
         if (!outcome) throw new RangeError(`${injury.name}: sub-roll ${subRoll} is not a valid ${effect.die} result`);
         if (state.bitterEnmity) {
-          state.hero = { ...state.hero, flags: { ...state.hero.flags, hates: outcome.text } };
+          // The prose stays for every reader; the structured scope lets the report fix who it is (#96)
+          // from the battle record or the player's choice — never from a guess, hence `unresolved` here.
+          state.hero = { ...state.hero, flags: { ...state.hero.flags, hates: outcome.text, bitterEnmity: { scope: bitterEnmityScope(subRoll), roll: subRoll, text: outcome.text, source: "unresolved" } } };
           state.effectTexts.push(`Hates: ${outcome.text}`);
           state.events.push({ kind: "flagSet", subjectId: id, message: `${name} now hates: ${outcome.text}`, data: { flag: "bitterEnmity", hates: outcome.text } });
         }

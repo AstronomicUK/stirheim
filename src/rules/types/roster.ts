@@ -16,6 +16,33 @@ import type { StatKey } from "./common";
 export type RosterRole = "hero" | "henchmanGroup" | "hiredSword";
 
 /** One stack of an item held by a warrior, a henchman group, or the warband stash. */
+/** Bitter Enmity (Serious Injury 56): the D6 says how wide the hatred runs. */
+export type BitterEnmityScope = "individual" | "leader" | "warband" | "warbandType";
+
+/**
+ * A structured Bitter Enmity target. `text` keeps the sub-roll's printed wording whatever else is
+ * known. `source` says how the identity was fixed: `attribution` from the battle sheet's own
+ * out-of-action record, `chosen` by the player in the report, or `unresolved` — a legacy record or
+ * an unknown culprit, to be settled at the table; the app then makes no claim about who it is.
+ */
+export interface BitterEnmityTarget {
+  scope: BitterEnmityScope;
+  /** The D6 sub-roll that set the scope. */
+  roll: number;
+  text: string;
+  source: "attribution" | "chosen" | "unresolved";
+  matchId?: string;
+  /** The hated individual (scope individual, or the enemy leader for scope leader / a henchman culprit). */
+  warriorId?: string;
+  warriorName?: string;
+  /** The hated warband (every scope but individual names one once known). */
+  warbandId?: string;
+  warbandName?: string;
+  /** The hated warband type (scope warbandType). */
+  warbandTypeId?: string;
+  warbandTypeName?: string;
+}
+
 export interface RosterItem {
   itemId: string | null;
   /** Free-text treasure or house items when itemId is null. */
@@ -104,6 +131,8 @@ export interface WarriorFlags {
   captured?: boolean;
   /** Bitter Enmity: what the warrior now hates, verbatim from the sub-roll. */
   hates?: string;
+  /** Bitter Enmity as something the app can act on (#96): the scope the D6 set and, where the battle record or the player could say, who it is. */
+  bitterEnmity?: BitterEnmityTarget;
   /** Has contracted Nurgle's Rot: a Toughness test before every battle, -1 T on a failure, dead at zero. */
   nurglesRot?: boolean;
   /** Rewards of the Shadowlord 12: a Daemon holds the warrior; no weapons or armour but Chaos Armour and Daemon weapons. */

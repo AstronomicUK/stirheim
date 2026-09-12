@@ -11,6 +11,7 @@ import { SKILLS, findSkill } from '../../../rules/data/skills'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
 import type { CharacterRole, NamedRule, SkillCategory, Stats, WarbandTemplate } from '../../../rules/types'
 import { unitStartingStats } from '../../../rules/resolve/builder'
+import { describeBitterEnmity } from '../../../rules/resolve/bitterEnmity'
 import type { WarriorFlags } from '../../../rules/types/roster'
 import { toRosterItem, type ItemRow, type WarriorStatus } from '../../../domain'
 import { WARBAND_UNIQUE_TABLE_ID } from '../../../rules/resolve/advances'
@@ -242,7 +243,7 @@ export function flagTags(flags: WarriorFlags): string[] {
   if (flags.immuneToFear) tags.push('Immune to fear')
   if (flags.causesFear) tags.push('Causes fear')
   if (flags.captured) tags.push('Captured')
-  if (flags.hates) tags.push(`Hates ${flags.hates}`)
+  if (flags.bitterEnmity || flags.hates) tags.push(`Hates ${flags.bitterEnmity ? describeBitterEnmity(flags.bitterEnmity) : flags.hates}`)
   if (flags.nurglesRot) tags.push("Nurgle's Rot")
   if (flags.daemonPossessed) tags.push('Possessed by a Daemon')
   if (flags.addictedTo && flags.addictedTo.length > 0) tags.push(`Addicted (${flags.addictedTo.map((id) => findItem(id)?.name ?? id).join(', ')})`)

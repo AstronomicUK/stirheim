@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { battleLiveStateSchema, emptyBattleLiveState } from '../../../domain/battle'
 import type { RosterWarband } from '../../../rules/types/roster'
-import { canUseRoutRelic, passRoutWithRelic, recordLeadershipTest, passStupidityWithRelic, canUseRelic } from './relicRules'
+import { canUseRoutRelic, passRoutWithRelic, recordLeadershipTest, passStupidityWithRelic, canUseRelic, passTableWithRelic, correctTableLeadershipTest } from './relicRules'
 const chosen = { id: 'leader', label: 'Captain (Ld 8)', ld: 8, leader: true, standing: true, mayLead: true }
 const roster: RosterWarband = { id: 'w', name: 'Watch', warbandTemplateId: 'mercenaries_reikland', gold: 0, wyrdstone: 0, veteranPool: null, stash: [], hiredSwords: [], henchmenGroups: [], heroes: [{ id: 'leader', name: 'Captain', unitTemplateId: 'mercenaries_reikland_captain', stats: { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 8 }, xp: 20, levelUps: 0, skillTableIds: [], skillIds: [], spellIds: [], injuries: [], flags: {}, status: 'active', equipment: [{ itemId: 'holy_unholy_relic', quantity: 2 }] }] }
 it('requires first-test confirmation and records an automatic pass without consuming the relic', () => {
@@ -40,4 +40,26 @@ it('a Stupidity auto-pass consumes the same first-test benefit as Rout', () => {
 it('a Rout auto-pass prevents a later Stupidity auto-pass', () => {
  const passed = passRoutWithRelic(roster, emptyBattleLiveState(), chosen, true)
  expect(passStupidityWithRelic(roster, passed, chosen.id, 'Captain', 'w:2', true)).toBe(passed)
+})
+
+
+it.each(['Fear', 'All Alone'])('a tabletop %s auto-pass spends the shared first-test benefit', test => {
+ const initial = emptyBattleLiveState()
+ expect(passTableWithRelic(roster, initial, chosen.id, 'Captain', test, false)).toBe(initial)
+ const passed = passTableWithRelic(roster, initial, chosen.id, 'Captain', test, true)
+ expect(passed.rollAttempts[0].label).toContain(test)
+ expect(passed.rollAttempts[0].rolls[0]).toContain('no dice rolled')
+ expect(canUseRoutRelic(roster, battleLiveStateSchema.parse(JSON.parse(JSON.stringify(passed))), chosen)).toBe(false)
+ expect(passStupidityWithRelic(roster, passed, chosen.id, 'Captain', 'w:1', true)).toBe(passed)
+})
+
+
+it('an explained tabletop correction restores only that declaration, preserving other first-test history', () => {
+ const passed = passTableWithRelic(roster, emptyBattleLiveState(), chosen.id, 'Captain', 'Fear', true)
+ const id = passed.leadershipTests[0].id!
+ expect(correctTableLeadershipTest(passed, id, '')).toBe(passed)
+ const corrected = battleLiveStateSchema.parse(JSON.parse(JSON.stringify(correctTableLeadershipTest(passed, id, 'Wrong warrior selected'))))
+ expect(canUseRelic(roster, corrected, chosen.id)).toBe(true)
+ expect(corrected.rollAttempts.at(-1)?.rolls[0]).toContain('Wrong warrior selected')
+ expect(canUseRelic(roster, recordLeadershipTest(corrected, chosen.id, 'rout'), chosen.id)).toBe(false)
 })

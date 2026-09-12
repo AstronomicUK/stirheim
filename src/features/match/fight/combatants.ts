@@ -26,6 +26,8 @@ export type CombatantKind = 'hero' | 'hiredSword' | 'henchman' | 'animal'
 /** One model that can be picked as attacker or target. A henchman group is one model of the group. */
 export interface Combatant {
   unitTemplateId?: string
+  /** Exact saved Bitter Enmity target text; never guessed from a faction name. */
+  hatredReason?: string
   guidingDream?: 'movement' | 'hit' | 'strength' | 'frenzy'
   entangled?: boolean
   /** Rules identity, distinct from the companion bookkeeping kind. */
@@ -208,6 +210,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         equipment: warrior.equipment,
         unarmedProfile: unitRules(warrior.unitTemplateId).unarmedProfile,
         skillIds: warrior.skillIds,
+        hatredReason: warrior.flags.hates,
         skillTableIds: warrior.skillTableIds,
         traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [], true), ...boostTraits], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
@@ -228,6 +231,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         stats: warrior.stats,
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
+        hatredReason: warrior.flags.hates,
         // Hired swords are not members of the warband, so its racial rules do not apply to them.
         traitIds: warriorTraits(warrior, warrior.flags.merchantGuardian ? [{ name: 'Guardian', text: GUARDIAN_RULES }] : warrior.hiredSwordId === 'snake_charmer' ? (detail?.specialRules ?? []).filter(rule => warrior.flags.hireCompanion ? ['Animals','Venomous'].includes(rule.name) : !['Animals','Venomous'].includes(rule.name)) : detail?.specialRules ?? [], boostTraits, undefined),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,

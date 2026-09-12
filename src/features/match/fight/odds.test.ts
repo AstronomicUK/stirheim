@@ -980,3 +980,13 @@ describe('Pistolier carried copies', () => {
     expect(computeOdds(setup(split, captain, 'pistol', null)).attacks).toBe(2)
   })
 })
+
+
+it('surfaces the recorded Bitter Enmity target without treating every opponent as hated', () => {
+ const injured = { ...captain, traitIds: ['hatred'], hatredReason: 'Artur of the Argent Hammer' }
+ const fight = setup(injured, skaven, 'sword', null)
+ expect(computeOdds(fight).notes.join(' ')).toContain('Artur of the Argent Hammer')
+ expect(relevantToggles(injured, 'melee', fight.primary).find(toggle => toggle.field === 'vsHatedEnemy')?.hint).toContain('Artur of the Argent Hammer')
+ expect(computeOdds(fight).weapons[0].pHit).toBeCloseTo(0.5)
+ expect(computeOdds({ ...fight, context: { ...fight.context, vsHatedEnemy: true } }).weapons[0].pHit).toBeGreaterThan(0.5)
+})

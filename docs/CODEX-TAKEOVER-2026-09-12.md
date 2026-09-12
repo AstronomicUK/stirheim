@@ -164,3 +164,13 @@ Pistolier now checks actual per-warrior weapon quantities before granting the ex
 Acceptance: /tmp/stirheim-pistol-mobile-qa.mjs verifies normal-brace limit/reload persistence and correction; /tmp/stirheim-pistolier-mobile-qa.mjs verifies two distinct saved copies, no third shot, turn 2 reload and turn 3 availability. New helper tests cover normal brace, Pistolier, correction and group separation. Full suite: 2238 pass, 214 DB skipped; two failures are Claude's current casting tests referring to undefined spellOf (sent to Claude, whose files remain reserved). Lint passes with only existing audit-probe warnings.
 
 Still open: close-combat pistol/brace profiles and once-per-combat tracking, paired-blade poison assignment, remaining combat checklist. These ranged-pistol checks do not close the entire #73 umbrella. No deployment.
+
+### Further continuous work — 12 September
+
+Actual addiction report acceptance now passes: battle start takes one dose from a stack of two; filing the report with Crimson Shade side effects resolved does not take a second dose; withdrawing the report leaves the original battle-start consumption intact. Script /tmp/stirheim-addiction-report-qa.mjs, disposable fixtures deleted.
+
+Holy Relic now offers Fear, All Alone and a named tabletop Leadership test on individually tracked bearer cards. Player confirms first test; saved table/rout/stupidity history shares the benefit. Added an explained correction for tabletop declarations without erasing other Leadership history or claiming to reverse movement/outcomes. Mobile All Alone pass/reload/correction accepted (/tmp/stirheim-relic-mobile-qa.mjs). Multi-member group relic tracking remains manual.
+
+Combatants now carry the exact saved flags.hates prose into a Bitter Enmity reminder and the Hatred toggle hint; no opponent is assumed to match automatically. Full structured target storage remains #96.
+
+Claude handed over P1/P5 in fccb52c3 (b3f9e57, f1656dc, f346443). Assigned next task #96 in 14788f46. Released rules/types/roster.ts, injuries resolver tests, postBattle/model/derive.ts, model/state.ts and PostBattlePage.tsx for Claude to claim. Codex retains combatants/odds/FightTab; Claude must send the flag shape/helper interface for combat integration. Continue equipment, paired poison and close-combat pistols while Claude handles #96. No user ruling blocks this split.

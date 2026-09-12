@@ -1,3 +1,4 @@
+import { RelicLeadershipControl } from './RelicLeadershipControl'
 import { useBattleTurns } from '../../../api/battleTurns'
 import { HealingHerbsControl } from './HealingHerbsControl'
 import type { ItemRow } from '../../../domain'
@@ -66,14 +67,14 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <div key={entry.warrior.id}><MyWarriorCard condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
+          <div key={entry.warrior.id}><MyWarriorCard condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} /><RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
         ))}
       </Section>
 
       <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((group) => (
-          <MyGroupCard condition={conditions.get(group.id)} key={group.id} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />
+          <div key={group.id}><MyGroupCard condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} /><RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
         ))}
       </Section>
 

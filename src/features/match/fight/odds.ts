@@ -544,6 +544,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (setup.defenderKit.firstHitDiscard !== null) notes.push(`Lucky Charm: the first hit on ${setup.defender.name} in the battle is discarded on a ${setup.defenderKit.firstHitDiscard}+ (offered when rolling, not in the odds).`)
   if (setup.defenderKit.afterSaveThreshold !== null) notes.push(`Peg Leg: a ${setup.defenderKit.afterSaveThreshold}+ save after any failed save.`)
   if (setup.defenderKit.ownSave) notes.push(`Cloak: a ${setup.primary.type === 'melee' ? setup.defenderKit.ownSave.melee : setup.defenderKit.ownSave.missile}+ save of its own where better than the armour worn.`)
+  if (setup.attacker.hatredReason && setup.attacker.traitIds.includes('hatred')) notes.push(`Bitter Enmity: ${setup.attacker.hatredReason} Confirm this opponent matches before enabling the first-turn Hatred reroll.`)
   if (setup.defenderKit.missileWardSaveThreshold !== null && setup.primary.type === 'ranged' && !setup.primary.special.includes('fireRecoveryHit')) notes.push(`A ${setup.defenderKit.missileWardSaveThreshold}+ special save against missiles.`)
   if (setup.defenderKit.stunSave) notes.push(`Stun save ${setup.defenderKit.stunSave.threshold}+${setup.defenderKit.stunSave.unmodifiable ? ', never modified' : ''}.`)
   if (setup.defender.stats.W > 1) {
@@ -610,7 +611,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (firstTurnMatters) toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: primary.strengthBonusFirstTurnOnly ? `${primary.name} only gets its Strength bonus in the first turn.` : 'First-round weapon bonuses and Strike First apply only in this round (charging or charged).' })
     if (skills.some((s) => s.conditionField === 'fightingMultiple')) toggles.push({ field: 'fightingMultiple', label: 'Fighting two or more enemies' })
     if (skills.some((s) => s.conditionField === 'insideBuildings') || attacker.traitIds.includes('pit_fighter')) toggles.push({ field: 'insideBuildings', label: 'Inside a building or ruin' })
-    if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: 'Hatred: reroll misses in the first turn against a hated enemy.' })
+    if (attacker.traitIds.includes('hatred')) toggles.push({ field: 'vsHatedEnemy', label: 'Hated enemy, first turn', hint: `Hatred: reroll misses in the first turn against a hated enemy.${attacker.hatredReason ? ` Recorded Bitter Enmity: ${attacker.hatredReason}` : ''}` })
     if (defenderKit?.armour.pavise) toggles.push({ field: 'paviseFront', label: 'Their pavise faces you', hint: 'A pavise counts as a shield only against a charge to the front.', defaultOn: true })
   } else {
     if (primary.id === 'fish_hook_shot') toggles.push({field:'fishHookFall',label:'Cause a fall instead of damage',hint:'After a hit, test the wielder’s Strength; add 1 to the die against a large target. Success knocks the target down without a wound. Cannot use Fish-hook Shot while the wielder is in close combat.'})

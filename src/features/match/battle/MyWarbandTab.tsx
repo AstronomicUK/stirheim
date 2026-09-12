@@ -1,4 +1,5 @@
 import { RelicLeadershipControl } from './RelicLeadershipControl'
+import { BugmansAleControl } from './BugmansAleControl'
 import { useBattleTurns } from '../../../api/battleTurns'
 import { HealingHerbsControl } from './HealingHerbsControl'
 import type { ItemRow } from '../../../domain'
@@ -64,6 +65,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
 
   return (
     <>
+      <BugmansAleControl roster={roster} template={template} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (

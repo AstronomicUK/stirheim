@@ -252,6 +252,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       houseRules,
       preBattle: liveState?.preBattle ?? {},
       itemsUsed: liveState?.itemsUsed ?? {},
+      warbandConsumables: liveState?.warbandConsumables ?? [],
       healingHerbUses: liveState?.healingHerbUses ?? [],
       blessedWaterUses: liveState?.blessedWaterUses ?? [],
       poisonApplications: liveState?.poisonApplications ?? [],

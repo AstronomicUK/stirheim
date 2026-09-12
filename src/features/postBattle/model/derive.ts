@@ -110,6 +110,8 @@ export interface ReportContext {
   preBattle?: Record<string, string>
   /** Consumables marked as used on the battle sheet: warrior id -> item ids. */
   itemsUsed?: Record<string, string[]>
+  /** Warband-level consumables declared on the sheet (Bugman's Ale): the exact row each came from. */
+  warbandConsumables?: import('../../../domain/battle').BattleLiveState['warbandConsumables']
   healingHerbUses?: import('../../../domain/battle').BattleLiveState['healingHerbUses']
   blessedWaterUses?: import('../../../domain/battle').BattleLiveState['blessedWaterUses']
   poisonApplications?: import('../../../domain/battle').BattleLiveState['poisonApplications']
@@ -451,6 +453,10 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
     if (!row || row.quantity < count) problems.review.push('Healing Herbs stock changed after use. Restore the spent doses to their original inventory row or correct the battle-sheet use before filing.')
   }
+  for (const [id, declared] of declaredConsumableCounts(ctx)) {
+    const row = ctx.items.find(item => item.id === id && item.item_rules_id === declared.itemId)
+    if (!row || row.quantity < declared.count) problems.review.push('Bugman’s Ale stock changed after the barrel was declared drunk. Restore the barrel to its inventory row or withdraw the declaration on the battle sheet before filing.')
+  }
   const poisonCounts = poisonCountsFor(ctx)
   for (const [id, spent] of poisonCounts) {
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === spent.itemId)
@@ -532,6 +538,13 @@ function poisonCountsFor(ctx: ReportContext) {
   return counts
 }
 
+/** Exact rows behind the warband-level consumables declared this battle (Bugman's Ale): row id -> barrels. */
+function declaredConsumableCounts(ctx: ReportContext) {
+  const counts = new Map<string, { count: number; itemId: string }>()
+  for (const use of ctx.warbandConsumables ?? []) if (!use.correction && use.itemRowId) counts.set(use.itemRowId, { count: (counts.get(use.itemRowId)?.count ?? 0) + 1, itemId: use.itemRulesId })
+  return counts
+}
+
 /** The structured Bitter Enmity target for a hero whose injury roll set one in this report (#96). */
 export function bitterEnmityFor(heroId: string, base: BitterEnmityTarget, ctx: ReportContext, draft: ReportDraft): BitterEnmityTarget {
   const resolved = resolveBitterEnmityTarget({ ...base, matchId: ctx.matchId }, ctx.takenOutByDetail?.[heroId]?.[0], ctx.enemies ?? [], draft.heroInjuries[heroId]?.enmityTarget ?? null)
@@ -550,6 +563,9 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       if (ctx.poisonApplications?.some(use => use.warriorId === holderId && use.itemRulesId === itemId)) continue
       if (itemId === 'blessed_water' && ctx.blessedWaterUses?.some(use => use.warriorId === holderId)) continue
       if (itemId === 'garlic') continue // Expires whether used or not, handled below.
+      // A declared barrel of Bugman's Ale settles by its exact row below; the sheet's own tick for it
+      // (or a legacy per-warrior tick) must not cost a second barrel.
+      if (itemId === 'bugmans_ale' && ctx.warbandConsumables?.some(use => use.itemRulesId === 'bugmans_ale' && !use.correction)) continue
       // Exact-once: a dose start_match already used up for this hero (and recorded in the ledger for
       // this very match) is the dose he took; ticking it must not cost a second copy (#139/#140).
       if (ctx.addictionSupplies?.some((s) => s.hero_id === holderId && s.item_rules_id === itemId)) continue
@@ -559,6 +575,14 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       if (ctx.poisonApplications?.some(use => use.itemRowId === row.id)) continue
       patches.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
     }
+  }
+  // Warband-level consumables (Bugman's Ale): one barrel per uncorrected declaration, taken from the
+  // exact row the declaration recorded — two barrels under one holder must not settle on the wrong one.
+  // A row that has since gone or shrunk deducts nothing here; stepProblems blocks filing until the
+  // stock is restored or the declaration withdrawn, as for herbs and poison.
+  for (const [id, declared] of declaredConsumableCounts(ctx)) {
+    const row = rows.find(item => item.id === id && item.item_rules_id === declared.itemId)
+    if (row && row.quantity >= declared.count && !patches.some(p => p.id === row.id)) patches.push({ id, quantity: row.quantity - declared.count })
   }
   const herbCounts = new Map<string, number>()
   for (const use of ctx.healingHerbUses ?? []) if (use.singleUse && !use.correction) herbCounts.set(use.itemRowId, (herbCounts.get(use.itemRowId) ?? 0) + 1)

@@ -4,6 +4,7 @@ import { useMatchReports } from '../../../api/reports'
 import { useProposeCaptiveOutcome, type CaptiveCase } from '../../../api/captives'
 import { buildKidnappedProposal, kidnapSubject, kidnapWinner, pirateCaptainLeadership, useRecordKidnapDice, useRecordKidnapRecovery, useResetKidnapContest, CREW_KIT_ITEM_IDS, type KidnapContest } from '../../../api/pirates'
 import { findItem } from '../../../rules/data/items'
+import { skillName } from './lookups'
 import { Button, DieField, Notice, SelectField, TextField } from '../../../ui'
 
 const d6 = () => Math.floor(Math.random() * 6) + 1
@@ -38,13 +39,14 @@ export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }
     try { preview = buildKidnappedProposal({ item, owner, captor, winner, joinGroupId: joinGroupId || undefined, kit, newGroupId }) } catch (e) { previewError = e instanceof Error ? e.message : 'Review the contest.' }
   }
   const crewGroups = captor.roster.henchmenGroups.filter(g => g.unitTemplateId === 'pirates_crew' && g.size <= 4)
+  // An app roll records its originals; a later hand edit keeps them so the server logs both values.
   const roll2 = () => { const a = d6(), b = d6(); setD1(a); setD2(b); setOriginal([a, b]) }
   return <div className="flex flex-col gap-3 rounded-md border border-border/60 p-3">
     <div className="flex flex-wrap items-baseline justify-between gap-2">
       <h4 className="font-semibold">Kidnapped!</h4>
       <span className="text-xs text-ink-dim">{item.subject_kind === 'henchman' ? 'Lost henchman the Pirates may press-gang' : 'The Pirates’ alternative to ransom, exchange or sale'}</span>
     </div>
-    {subject ? <p className="text-sm text-ink-dim">{subject.victim.name}: Leadership {subject.victim.stats.Ld}{subject.victim.skillIds.length ? `, skills ${subject.victim.skillIds.join(', ')}` : ''}. Captain’s Leadership {captainLd ?? '—'}. Battle result on file: {piratesFiled ? winner === 'pirates' ? 'Pirates won (+1)' : winner === 'victim' ? `${otherName} won (+1)` : 'draw' : 'the Pirates have not filed their report yet'}.</p> : null}
+    {subject ? <p className="text-sm text-ink-dim">{subject.victim.name}: Leadership {subject.victim.stats.Ld}{subject.victim.skillIds.length ? `, skills ${subject.victim.skillIds.map(skillName).join(', ')}` : ''}. Captain’s Leadership {captainLd ?? '—'}. Battle result on file: {piratesFiled ? winner === 'pirates' ? 'Pirates won (+1)' : winner === 'victim' ? `${otherName} won (+1)` : 'draw' : 'the Pirates have not filed their report yet'}.</p> : null}
     {needsRecovery ? canPirate ? <div className="flex flex-wrap items-end gap-2">
       <DieField label="Recover the body (4+)" sides={6} value={recD} onChange={(v, source) => { setRecD(v); if (source === 'app') setRecOriginal(v) }} rollable />
       <Button variant="secondary" disabled={!recD} pending={recovery.isPending} onClick={() => recovery.mutate({ caseId: item.id, d6: recD!, original: recOriginal })}>Record recovery roll</Button>
@@ -56,8 +58,8 @@ export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }
         return <div key={s} className="rounded border border-border/60 p-2 text-sm">
           <p className="font-medium">{s === 'pirates' ? captor.warband.name : subject?.victim.name ?? otherName} — 2D6</p>
           {roll ? <p>{roll.dice[0]} + {roll.dice[1]}{roll.original && (roll.original[0] !== roll.dice[0] || roll.original[1] !== roll.dice[1]) ? ` (app rolled ${roll.original.join(' + ')})` : ''}</p> : mySide === s ? <div className="mt-1 flex flex-wrap items-end gap-2">
-            <DieField label="Die 1" sides={6} value={d1} onChange={v => { setD1(v); setOriginal(null) }} hideLabel />
-            <DieField label="Die 2" sides={6} value={d2} onChange={v => { setD2(v); setOriginal(null) }} hideLabel />
+            <DieField label="Die 1" sides={6} value={d1} onChange={v => setD1(v)} hideLabel />
+            <DieField label="Die 2" sides={6} value={d2} onChange={v => setD2(v)} hideLabel />
             <Button variant="ghost" onClick={roll2}>Roll 2D6</Button>
             <Button variant="secondary" disabled={!d1 || !d2} pending={dice.isPending} onClick={() => dice.mutate({ caseId: item.id, dice: [d1!, d2!], original, side: gm && !side ? gmSide : undefined })}>Record my dice</Button>
           </div> : <p className="text-ink-dim">Not yet rolled.</p>}

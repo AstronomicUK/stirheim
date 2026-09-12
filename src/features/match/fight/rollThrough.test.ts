@@ -696,3 +696,38 @@ describe('sequential pistol phases', () => {
   expect(state.log.some(line=>line.text.includes('Second attack'))).toBe(false)
  })
 })
+
+
+describe('Nuln double-barrel shooting', () => {
+  const double = (): AttackPlan => ({ ...plan('Double-barrelled pistol', {armourThreshold: IMPOSSIBLE}), barrels: 2 })
+  it('shares one hit roll but resolves both wounds independently', () => {
+    let state = rolls(startPhase([double()], 3, 0), 4, 1)
+    expect(state.pending?.kind).toBe('wound')
+    expect(state.done).toBe(false)
+    state = applyRoll(state, 4)
+    expect(state.done).toBe(true)
+    expect(state.woundsLost).toBe(1)
+    expect(state.outcomes).toEqual(['noWound', 'wounded'])
+  })
+  it('a missed shot loses both barrels without asking for another hit', () => {
+    const state = applyRoll(startPhase([double()], 3, 0), 1)
+    expect(state.done).toBe(true)
+    expect(state.outcomes).toEqual(['miss'])
+  })
+  it('allows the second barrel its own critical hit', () => {
+    let state = rolls(startPhase([double()], 10, 0), 4, 6, 1)
+    expect(state.pending?.kind).toBe('wound')
+    expect(state.critUsed).toBe(true)
+    state = applyRoll(state, 6)
+    expect(state.pending?.kind).toBe('critTable')
+    state = applyRoll(state, 1)
+    expect(state.done).toBe(true)
+    expect(state.woundsLost).toBe(4)
+  })
+  it('ends once the target is out of action', () => {
+    const state = rolls(startPhase([double()], 1, 0), 4, 4, 6)
+    expect(state.done).toBe(true)
+    expect(state.worst).toBe('outOfAction')
+    expect(state.outcomes).toEqual(['outOfAction'])
+  })
+})

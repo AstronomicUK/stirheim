@@ -1,3 +1,4 @@
+import { doubleBarrelState, reloadDoubleBarrels, correctChamberReload } from '../../../domain/chambers'
 import { ChamberDisplay } from './ChamberDisplay'
 import { corePistolCombatProfile } from '../../../rules/engine/pistolProfiles'
 import { beginPistolCombat, pistolCombatBlock, recordCombatPistolUse, correctCombatPistol } from './pistolCombat'
@@ -225,6 +226,18 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const [combatReason, setCombatReason] = useState('')
   const [combatCorrection, setCombatCorrection] = useState('')
   const [reloadCorrection, setReloadCorrection] = useState('')
+  const [barrels, setBarrels] = useState<1|2>(1)
+  const [doubleModel, setDoubleModel] = useState(0)
+  const [doubleError, setDoubleError] = useState<string|null>(null)
+  const [doubleCorrection, setDoubleCorrection] = useState('')
+  const isDoubleBarrel = !selfDamage && primary?.type === 'ranged' && primary.special.includes('doubleBarrelledOptionalSecondWoundRollPerHit')
+  const doubleSize = attacker?.kind === 'henchman' ? Math.max(1,attacker.groupSize??1) : 1
+  const doubleSlot = Math.min(doubleModel,doubleSize-1)
+  const doubleAll = isDoubleBarrel && attacker ? ['double_barrelled_pistol','double_barrelled_duelling_pistol','double_barrelled_handgun'].flatMap(id=>physicalWeaponChoices(items,events,roster.id,attacker.id,id)) : []
+  const doubleUneven = doubleAll.some(c=>c.snapshot.expected.quantity%doubleSize!==0)
+  const doubleModelCopies = doubleAll.filter(c=>doubleSize===1 || Math.floor(c.snapshot.copyIndex/(c.snapshot.expected.quantity/doubleSize))===doubleSlot)
+  const doubleCopies = doubleModelCopies.filter(c=>c.snapshot.weaponId===primary?.id)
+  const doubleHeld = doubleCopies.find(c=>c.key===physicalSelection[`${attacker?.id}:double`])??doubleCopies[0]
   const isCoreReloadGun = !selfDamage && Boolean(primary && ['handgun', 'hochland_long_rifle'].includes(primary.id))
   const reloadCopies = isCoreReloadGun && attacker && primary ? physicalWeaponChoices(items, events, roster.id, attacker.id, primary.id) : []
   const reloadHeld = reloadCopies.find(c => c.key === physicalSelection[`${attacker?.id}:${primary?.id}`]) ?? reloadCopies[0]
@@ -352,6 +365,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   })
   const unresolvedPoison = usedIds.some(id => id === 'black_lotus' || id === 'dark_venom')
 
+  const doubleGun = attacker && doubleHeld ? {warriorId:attacker.id,modelIndex:doubleSlot,weaponKey:physicalGunKey(doubleHeld.snapshot,doubleHeld.key),name:doubleHeld.snapshot.name}:null
+  const doubleState = doubleGun ? doubleBarrelState(sheet,doubleGun,Number(ownTurnKey.split(':').at(-1))):null
+  const doublePistol = isDoubleBarrel && attacker && primary && primary.id!=='double_barrelled_handgun' ? pistolShootingOptions(sheet,attacker,items,events,primary.id,doubleHeld?.key,Number(ownTurnKey.split(':').at(-1)),doubleSlot):null
+  const doubleBlocked = isDoubleBarrel ? doublePistol?.remaining===0 ? 'This model has used its pistol shots for this own turn.' : doubleUneven ? 'Assign equal equipment to group members before tracking their barrels.' : !doubleState ? 'Select an intact double-barrelled weapon.' : doubleState.block ?? (barrels>doubleState.loaded?'Choose a loaded barrel before firing.':null) : null
   const reloadBlocked = isCoreReloadGun && attacker ? blackpowderBlock(sheet, attacker.id, reloadKey, Number(ownTurnKey.split(':').at(-1))) : null
   const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1)),swivelLegacyKey) : null
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
@@ -361,7 +378,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ weaponChoiceKeys: hasPoison && !areaTarget ? [poisonBindings[0],poisonBindings[1]] : undefined, ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : isPistolShot ? Math.min(1, attackLimit ?? 1) : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ barrels: isDoubleBarrel ? barrels : undefined, weaponChoiceKeys: hasPoison && !areaTarget ? [poisonBindings[0],poisonBindings[1]] : undefined, ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: isDoubleBarrel ? 1 : areaTarget ? 1 : staffUse?.used ? 0 : isPistolShot ? Math.min(1, attackLimit ?? 1) : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -444,6 +461,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           </option>
         ))}
       </SelectField>
+      {isDoubleBarrel && doubleState ? <ChamberDisplay name={primary.name} copy={doubleHeld?.label} capacity={2} loaded={doubleState.loaded} ready={!doubleState.block&&!doubleUneven} status={doubleState.block??'Choose how many barrels to fire'} barrels={barrels} onBarrels={setBarrels} disabled={locked||readOnly}>
+        {doubleCopies.length>1?<SelectField label="Double-barrelled weapon copy" disabled={locked||readOnly} value={doubleHeld?.key??''} onChange={e=>setPhysicalSelection(current=>({...current,[`${attacker.id}:double`]:e.target.value}))}>{doubleCopies.map(copy=><option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField>:null}
+      </ChamberDisplay>:null}
       {primary.type === 'melee' && offHandOptions.length > 0 ? (
         <SelectField label="Other hand" disabled={locked} value={offHandValid && offHand ? String(melee.indexOf(offHand)) : '-1'} onChange={(e) => setChoice({ ...current, offHand: Number(e.target.value) })}>
           <option value="-1">Nothing</option>
@@ -532,6 +552,30 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           {sheet.blackpowderShots.filter(shot => shot.warriorId === attacker.id && !shot.correction && shot.heldWeapon && isCorePistol(shot.heldWeapon.weaponId)).map(shot => <Button key={shot.id} variant="ghost" disabled={readOnly || !pistolCorrection.trim()} onClick={() => edit?.(state => correctBlackpowderShot(state, shot.id, pistolCorrection))}>Correct {shot.weaponName}, copy {shot.heldWeapon!.copyIndex + 1}, turn {shot.ownTurn}</Button>)}
         </details>
       </div> : null}
+      {isDoubleBarrel && attacker ? <div className="flex flex-col gap-3">
+        {doubleSize>1?<SelectField label="Model firing or reloading" value={doubleSlot} disabled={!!rollSetup} onChange={e=>setDoubleModel(Number(e.target.value))}>{Array.from({length:doubleSize},(_,i)=><option key={i} value={i}>Model {i+1}</option>)}</SelectField>:null}
+        {doubleCopies.map(copy=>{
+          const gun={warriorId:attacker.id,modelIndex:doubleSlot,weaponKey:physicalGunKey(copy.snapshot,copy.key),name:copy.snapshot.name}
+          const state=doubleBarrelState(sheet,gun,Number(ownTurnKey.split(':').at(-1)))
+          const selected=copy.key===doubleHeld?.key
+          return <ChamberDisplay key={copy.key} name={copy.snapshot.name} copy={copy.label} capacity={2} loaded={state.loaded} status={state.block??'Loaded barrels ready'} ready={!state.block&&!doubleUneven} barrels={selected?barrels:undefined} onBarrels={selected?setBarrels:undefined} disabled={readOnly||!!rollSetup}>
+            {doubleCopies.length>1?<Button variant="secondary" disabled={readOnly||!!rollSetup||selected} onClick={()=>setPhysicalSelection(current=>({...current,[`${attacker.id}:double`]:copy.key}))}>{selected?'Selected weapon':'Select this weapon'}</Button>:null}
+          </ChamberDisplay>
+        })}
+        <p className="text-xs text-ink-dim">One hit roll; each fired barrel has its own wound roll. Reload at the end of Shooting only if this model did not fire any weapon this phase.</p>
+        <Button variant="secondary" disabled={readOnly||!!rollSetup||doubleUneven} onClick={()=>{
+          const guns=doubleModelCopies.map(copy=>({warriorId:attacker.id,modelIndex:doubleSlot,weaponKey:physicalGunKey(copy.snapshot,copy.key),name:copy.snapshot.name}))
+          const id=crypto.randomUUID(),at=new Date().toISOString(),ownTurn=Number(ownTurnKey.split(':').at(-1))
+          try { reloadDoubleBarrels(sheet,guns,ownTurn,id,at); edit?.(state=>reloadDoubleBarrels(state,guns,ownTurn,id,at)); setDoubleError(null) }
+          catch(error){setDoubleError(error instanceof Error?error.message:'Could not reload.')}
+        }}>End Shooting: did not fire — reload</Button>
+        {doubleBlocked?<p className="text-sm text-ink-dim">{doubleBlocked}</p>:null}
+        {doubleError?<Notice tone="warn">{doubleError}</Notice>:null}
+        <details><summary className="text-xs text-ink-dim">Correct a firing or reload record</summary><TextField label="Reason for correction" value={doubleCorrection} onChange={e=>setDoubleCorrection(e.target.value)}/>
+          {sheet.blackpowderShots.filter(shot=>shot.warriorId===attacker.id&&shot.barrels&&!shot.correction).map(shot=><Button key={shot.id} variant="ghost" disabled={readOnly||!!rollSetup||doubleCorrection.trim().length<5} onClick={()=>edit?.(state=>correctBlackpowderShot(state,shot.id,doubleCorrection))}>Correct shot: {shot.weaponName}, turn {shot.ownTurn}</Button>)}
+          {sheet.chamberReloads.filter(r=>r.warriorId===attacker.id&&!r.correction).map(r=><Button key={r.id} variant="ghost" disabled={readOnly||!!rollSetup||doubleCorrection.trim().length<5} onClick={()=>edit?.(state=>correctChamberReload(state,r.id,doubleCorrection))}>Correct reload: {r.weaponName}, turn {r.ownTurn}</Button>)}
+        </details>
+      </div>:null}
       {isCoreReloadGun ? <ChamberDisplay name={primary?.name ?? 'Firearm'} copy={reloadHeld?.label} capacity={1} loaded={reloadHeld && !reloadBlocked ? 1 : 0} ready={!reloadBlocked && !!reloadHeld} status={reloadBlocked ?? 'Loaded and ready to fire'}>
         <p>{reloadBlocked ?? (attacker?.skillIds.includes('hunter') ? 'Hunter allows this weapon to fire every own turn.' : 'After firing, this weapon needs a complete own turn to reload.')}</p>
         {reloadBlocked && edit && !readOnly ? <div className="flex flex-col gap-2"><TextField label="Reason to correct this firing restriction" value={reloadCorrection} onChange={e => setReloadCorrection(e.target.value)} /><Button variant="secondary" disabled={!reloadCorrection.trim()} onClick={() => {
@@ -795,11 +839,11 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
-            restartBlocked={Boolean(combatPistolBlocked) || waterUnavailable || Boolean(pistol?.blocked) || Boolean(reloadBlocked)}
+            restartBlocked={Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || waterUnavailable || Boolean(pistol?.blocked) || Boolean(reloadBlocked)}
             beforeStart={isBlessedWater ? id => {
               if (!edit || !waterRow) return false
               try {
@@ -823,6 +867,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if (next.critUsed && areaId) edit(s => ({ ...s, areaCriticals: { ...s.areaCriticals, [areaId]: true } }))
               const blastShotId = grapeSpread?.shotId ?? mortarShot?.id
               if (next.critUsed && blastShotId) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === blastShotId ? { ...shot, criticalUsed: true } : shot) }))
+                const startsDouble = isDoubleBarrel && doubleHeld && primary && doubleGun && next.pending?.kind === 'hit' && (!previous || previous.pending?.kind === 'firePermission')
+                if (startsDouble) edit(s=>recordBlackpowderShot(s,{id:attemptId,warriorId:attacker.id,weaponKey:doubleGun.weaponKey,weaponName:primary.name,heldWeapon:doubleHeld.snapshot,ownTurn:Number(ownTurnKey.split(':').at(-1)),modelIndex:doubleSlot,barrels:next.plans[0].input.barrels??1,reloadTurns:1,experimental:false,at:new Date().toISOString()},attacker.name))
               if (pistol?.selected && !areaTarget && primary) {
                 const startsPistol = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
                 if (startsPistol) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: physicalGunKey(pistol.selected!.snapshot, pistol.selected!.key), weaponName: primary.name, heldWeapon: pistol.selected!.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds, pistol.pistolCount) ?? 0, experimental: false, at: new Date().toISOString() }, attacker.name))
@@ -840,9 +886,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))
               if (primary?.id === 'swivel_gun_grape_shot' && hit) edit(s => startGrapeShotSpread(s, { shotId: attemptId, warriorId: attacker.id, warbandId: roster.id, shooterName: attacker.name, at: new Date().toISOString(), primary: { key: `${defender.warbandId}:${defender.id}:${Math.min(grapePrimarySlot, Math.max(0, (defender.groupSize ?? 1) - 1))}`, warriorId: defender.id, warbandId: defender.warbandId, name: defender.name }, primaryInCover: Boolean(context.cover || defenderKit?.armour.pavise) }))
             } : undefined}
-            heldWeapons={pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
+            heldWeapons={isDoubleBarrel ? [doubleHeld?.snapshot] : pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
+            forceLog={Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
@@ -1150,6 +1196,7 @@ function RollSection({ beforeStart, restartBlocked = false, heldWeapons = [], sw
     attempt.current = nextAttempt
     const plans: AttackPlan[] = odds.weapons.flatMap((w, weaponIndex) =>
       Array.from({ length: w.attacks }, () => ({
+        barrels: w.input.barrels,
         heldWeapon: heldWeapons[weaponIndex],
         swordBreakerParry: swordBreaker,
         weaponName: w.weapon.name,

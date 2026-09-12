@@ -25,6 +25,8 @@ export interface PendingRoll {
 }
 
 export interface AttackPlan {
+  /** Nuln double barrel: a shared hit roll followed by independent wound sequences. */
+  barrels?: 1 | 2
   heldWeapon?: BrokenWeapon
   swordBreakerParry?: boolean
   /** Added during resolution, so it has no pre-collected hit die. */
@@ -76,6 +78,7 @@ interface SaveStep {
 
 /** Scratch state for the attack being rolled. */
 interface Current {
+  barrelIndex?: 0 | 1
   ignitionTested?: boolean
   chainTested?: boolean
   chainOriginalOutcome?: Outcome
@@ -227,6 +230,12 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
   if (outcome === 'outOfAction') {
     next = log(next, `${OUTCOME_LABEL[outcome]}! The target is out of action; any remaining attacks are not needed.`, 'good')
     return { ...next, done: true, index: state.plans.length }
+  }
+  const doubleBarrel = state.plans[state.index].barrels === 2
+  const reachedWound = ['noWound', 'saved', 'ignored', 'wounded', 'knockedDown', 'stunned'].includes(outcome)
+  if (doubleBarrel && !state.cur.barrelIndex && reachedWound) {
+    next = log({ ...next, cur: { ...freshCurrent(), barrelIndex: 1, hitRoll: state.cur.hitRoll } }, 'Second barrel: use the same successful hit; roll to wound separately.', 'neutral')
+    return askWound(next)
   }
   const barrage = outcome === 'noWound' && state.plans[state.index].input.barrageOnFailedWound
   if (state.cur.crit?.extraAttack || barrage) {
@@ -392,7 +401,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
         return { ...log(state, `To wound: rolled ${roll}${rollTag}. No wound on the first die; roll the second and keep the highest.`), pending: { kind: 'woundReroll', who: 'attacker', label: 'To wound (second die)', detail: `Needs ${thresholdText(input.woundThreshold)}` } }
       }
       if (!wounded) return finishAttack(log(state, `To wound: rolled ${roll}${rollTag}. No wound.`, 'bad'), 'noWound')
-      const critEligible = !state.critUsed && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
+      const critEligible = (!state.critUsed || plan.barrels === 2) && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
       if (critEligible) {
         const s = log({ ...state, critUsed: true }, `To wound: rolled ${roll}${rollTag}. Wounded, and it is a critical hit!`, 'good')
         return { ...s, pending: { kind: 'critTable', who: 'attacker', label: 'Critical hit table', detail: input.critTableRollModifier ? `D6 ${input.critTableRollModifier > 0 ? '+' : ''}${input.critTableRollModifier}` : 'Roll a D6' } }
@@ -538,7 +547,7 @@ function askWound(state: RollState): RollState {
   }
   const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6
   const detail = auto ? 'Automatic wound from the 6 to hit; roll to check for a critical' : input.woundThreshold === IMPOSSIBLE ? 'Cannot wound' : `Needs ${thresholdText(input.woundThreshold)}`
-  return { ...state, pending: { kind: 'wound', who: 'attacker', label: 'To wound', detail } }
+  return { ...state, pending: { kind: 'wound', who: 'attacker', label: state.plans[state.index].barrels === 2 ? `${state.cur.barrelIndex ? 'Second' : 'First'} barrel: to wound` : 'To wound', detail } }
 }
 
 /** A wound (or a critical's wounds) has landed: queue the armour save, Step Aside and Ward save. */

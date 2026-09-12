@@ -35,3 +35,12 @@ it('keeps group members separate and rejects silently assigning uneven stacks',(
  expect(options(sheet,1,model,stock,1).selected?.snapshot.copyIndex).toBe(2)
  expect(options(sheet,1,model,{...stock,quantity:3},1).blocked).toContain('uneven')
 })
+it('counts ordinary and double-barrel pistols against the same per-model shot allowance',()=>{
+ const ordinary={...row,quantity:1}
+ const double={...row,id:'44444444-4444-4444-8444-444444444444',item_rules_id:'double_barrelled_pistol',quantity:1}
+ const stock=[ordinary,double]
+ const chosen=pistolShootingOptions(emptyBattleLiveState(),warrior,stock,[],'double_barrelled_pistol',undefined,1).selected!
+ const sheet=recordBlackpowderShot(emptyBattleLiveState(),{id:'double',warriorId:id,weaponKey:physicalGunKey(chosen.snapshot,chosen.key),weaponName:'Double-barrelled pistol',heldWeapon:chosen.snapshot,ownTurn:1,reloadTurns:1,barrels:2,modelIndex:0,experimental:false,at:new Date().toISOString()},'Captain')
+ expect(pistolShootingOptions(sheet,warrior,stock,[],'pistol',undefined,1).remaining).toBe(0)
+ expect(pistolShootingOptions(sheet,{...warrior,skillIds:['pistolier']},stock,[],'pistol',undefined,1).remaining).toBe(1)
+})

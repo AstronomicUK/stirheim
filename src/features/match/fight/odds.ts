@@ -1,3 +1,4 @@
+import { resolveTurn } from '../../../rules/engine/turnAggregate'
 import { bitterEnmityApplies } from '../../../rules/resolve/bitterEnmity'
 import { isBlackpowderWeapon } from '../../../rules/resolve/ladyBlessing'
 import { blessedWaterAttack } from '../../../rules/engine/blessedWater'
@@ -20,6 +21,7 @@ import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { loadoutOf, type Combatant, type Loadout } from './combatants'
 
 export interface FightSetup {
+  barrels?: 1 | 2
   ladyBlessing?: boolean
   attacker: Combatant
   attackerKit: Loadout
@@ -299,7 +301,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
     const attacks = Math.min(full, Math.max(0, remaining))
     remaining -= attacks
     const raw = weapon.id === 'blessed_water' ? blessedWaterAttack({ attacker, defender, context, houseRules }) : buildAttackInput({ attacker, weapon, defender, context, houseRules })
-    const input = adjustForCoatings(raw, weapon, phase, dosed.kit)
+    const input = { ...adjustForCoatings(raw, weapon, phase, dosed.kit), barrels: phase === 'ranged' && weapon.special.includes('doubleBarrelledOptionalSecondWoundRollPerHit') ? setup.barrels : undefined }
     const single = resolveSingleAttack(input)
     const { ws, strength } = effectiveOffensiveStats(attacker, weapon, context)
     const pSave = probabilityAtLeast(input.armourThreshold)
@@ -321,12 +323,16 @@ export function computeOdds(setup: FightSetup): FightOdds {
 
   const parryAttempts = phase === 'melee' && !setup.parryUsed && perWeapon.some((w) => w.input.parryEligible) ? computeMaxParries(defender) : 0
   const woundsAlreadyLost = Math.max(0, Math.min(defender.W, setup.woundsAlreadyLost ?? 0))
-  const chain = phaseChain(attacker, weapons, defender, context, [], houseRules, phase, {
+  let chain = phaseChain(attacker, weapons, defender, context, [], houseRules, phase, {
     maxAttacks: setup.attackLimit,
     woundsAlreadyTaken: woundsAlreadyLost,
     maxParries: setup.parryUsed ? 0 : undefined,
   })
 
+  if (perWeapon.some(w => w.input.barrels === 2)) {
+    const turn = resolveTurn(perWeapon.flatMap(w => Array.from({length:w.attacks}, () => resolveSingleAttack(w.input))), parryAttempts, defender.W, woundsAlreadyLost)
+    chain = { attacks:turn.attacks, anyHit:turn.anyHitProbability, anyWound:turn.anyWoundProbability, knockedDownOrWorse:1-turn.distribution.none, stunnedOrWorse:turn.distribution.stunned+turn.distribution.outOfAction, outOfAction:turn.outOfActionProbability, anyCrit:turn.criticalHitProbability, ooaGivenCrit:turn.outOfActionGivenCriticalHit }
+  }
   return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase, defender), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context, attacker: dosed.combatant, attackerKit: dosed.kit, defender: targetDosed.combatant, defenderKit: targetDosed.kit, primary, offHand }) }
 }
 

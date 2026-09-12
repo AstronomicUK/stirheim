@@ -62,6 +62,15 @@ export interface CaptiveCase {
   hero_id: string
   hero_name: string
   state: CaptiveCaseState
+  /** A captured Hero or hired sword, or one lost henchman model (Pirates Kidnapped!). */
+  subject_kind: 'hero' | 'henchman'
+  model_index: number
+  /** Which rule opened the case: 'captured' (serious injury 61) or 'pirates_kidnapped'. */
+  source: string
+  model_snapshot: unknown | null
+  recovery: unknown | null
+  contest: unknown | null
+  history: unknown[]
   created_at: string
   resolved_at: string | null
   resolution_kind: string | null
@@ -106,7 +115,7 @@ export function useAssignCaptiveCaptor() {
  */
 export function useProposeCaptiveOutcome() {
   const cache = useQueryClient()
-  return useMutation({ mutationFn: async (input: { caseId: string; choice: CaptiveChoice; owner: WarbandDetail; captor: WarbandDetail; nextOwner: RosterWarband; nextCaptor: RosterWarband; message: string }) => {
+  return useMutation({ mutationFn: async (input: { caseId: string; choice: CaptiveChoice | Record<string, unknown>; owner: WarbandDetail; captor: WarbandDetail; nextOwner: RosterWarband; nextCaptor: RosterWarband; message: string }) => {
     const { data, error } = await rpc('propose_captive_outcome', {
       p_case_id: input.caseId, p_choice: input.choice, p_message: input.message,
       p_owner_changes: diffRoster(input.owner, input.nextOwner), p_captor_changes: diffRoster(input.captor, input.nextCaptor),

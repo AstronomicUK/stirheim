@@ -18,8 +18,12 @@ create table public.captive_cases (
   match_id uuid not null references public.matches (id) on delete cascade,
   victim_warband_id uuid not null references public.warbands (id) on delete cascade,
   captor_warband_id uuid references public.warbands (id) on delete set null,
+  -- The captured warrior: a heroes row for a Hero or hired sword; a henchman_groups row plus a
+  -- 1-based model_index for one lost henchman (Pirates Kidnapped!, migration 091).
   hero_id uuid not null,
   hero_name text not null,
+  subject_kind text not null default 'hero' check (subject_kind in ('hero', 'henchman')),
+  model_index integer not null default 0,
   state text not null default 'unassigned' check (state in ('unassigned', 'open', 'resolved', 'withdrawn')),
   assigned_by uuid references auth.users (id),
   assigned_at timestamptz,
@@ -31,7 +35,7 @@ create table public.captive_cases (
   -- captor's own captive); reversing that proposal reopens this case.
   resolved_by_proposal uuid,
   history jsonb not null default '[]'::jsonb,
-  unique (report_id, report_revision, hero_id),
+  unique (report_id, report_revision, hero_id, model_index),
   check (captor_warband_id is null or captor_warband_id <> victim_warband_id)
 );
 comment on table public.captive_cases is 'One per warrior captured in a filed report: who holds him, and how it was resolved. Written by triggers and RPCs only.';
@@ -147,7 +151,8 @@ declare
   group_seen boolean := false; group_unit text; group_name text; group_dagger int := 0;
   d6 int; gold int; xp int; expect_status text; expect_group text; expect_stats jsonb; expect_kg int := 0; expect_kw int := 0; expect_og int := 0; expect_move boolean := false; skins_allowed boolean := false;
   a jsonb; a_subject uuid; a_threshold int; a_old int; a_new int; a_tags text[] := '{}';
-  thresholds int[] := array[2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 32, 36, 41, 46, 51, 57, 63, 69, 76, 83, 90];
+  -- Hero advance boxes at the normal rate, plus the doubled boxes of half-rate units.
+  thresholds int[] := array[2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 32, 36, 41, 46, 51, 57, 63, 69, 76, 83, 90, 12, 16, 22, 34, 40, 48, 56, 64, 72, 82, 92, 102, 114, 126, 138, 152, 166, 180];
   parts text[]; label text;
 begin
   if jsonb_typeof(p_choice) <> 'object' or kind not in ('ransom', 'exchange', 'sell', 'zombie', 'sacrifice', 'wretch', 'throne', 'slaveWork') then
@@ -430,10 +435,10 @@ begin
   if current_setting('stirheim.captive_apply', true) = '1' then return new; end if;
   if old.status = 'captured' and new.status <> 'captured' then
     update public.captive_proposals set state = 'stale', resolved_at = now(), reason = 'The warrior is no longer recorded as captured.'
-      where state = 'proposed' and case_id in (select id from public.captive_cases where hero_id = new.id and state in ('unassigned', 'open'));
+      where state = 'proposed' and case_id in (select id from public.captive_cases where hero_id = new.id and subject_kind = 'hero' and state in ('unassigned', 'open'));
     update public.captive_cases set state = 'resolved', resolved_at = now(), resolution_kind = 'external',
            resolution_message = 'Resolved outside the proposal flow (status changed to ' || new.status || ').'
-      where hero_id = new.id and state in ('unassigned', 'open');
+      where hero_id = new.id and subject_kind = 'hero' and state in ('unassigned', 'open');
   end if;
   return new;
 end $$;
@@ -506,7 +511,7 @@ begin
     end loop;
     if actual_count <> expected_count then raise exception 'A warband changed after this outcome was proposed. Propose it again from the current rosters.' using errcode = '40001'; end if;
   end loop;
-  if not exists (select 1 from public.heroes where id = p_case.hero_id and warband_id = p_case.victim_warband_id and status = 'captured') then
+  if p_case.subject_kind = 'hero' and not exists (select 1 from public.heroes where id = p_case.hero_id and warband_id = p_case.victim_warband_id and status = 'captured') then
     raise exception 'This warrior is no longer recorded as captured.' using errcode = 'P0001';
   end if;
   -- The consent check again, against the rosters as they stand now (unchanged, per the checks above).
@@ -579,7 +584,7 @@ begin
   elsif public.can_edit_warband(c.victim_warband_id) then v_side := c.victim_warband_id;
   elsif v_both then v_side := c.captor_warband_id;
   else raise exception 'Only a player of one of the two warbands or the campaign GM can propose a captive outcome.' using errcode = '42501'; end if;
-  if not exists (select 1 from public.heroes where id = c.hero_id and warband_id = c.victim_warband_id and status = 'captured') then
+  if c.subject_kind = 'hero' and not exists (select 1 from public.heroes where id = c.hero_id and warband_id = c.victim_warband_id and status = 'captured') then
     raise exception 'This warrior is no longer recorded as captured.' using errcode = 'P0001';
   end if;
   if not exists (select 1 from public.match_reports where id = c.report_id and revision = c.report_revision and undo is not null) then
@@ -724,14 +729,14 @@ begin
            stats = r.stats, xp = r.xp, level_ups = r.level_ups, skill_tables = r.skill_tables, skills = r.skills, spells = r.spells, injuries = r.injuries, flags = r.flags,
            equipment_locked = r.equipment_locked, is_large = r.is_large, status = r.status, notes = r.notes, sort_order = r.sort_order
       from (select (jsonb_populate_record(null::public.heroes, x)).* from jsonb_array_elements(pr.before_snapshot->'heroes') x) r where r.id = h.id;
-    insert into public.heroes select (jsonb_populate_record(null::public.heroes, x)).* from jsonb_array_elements(pr.before_snapshot->'heroes') x
+    insert into public.heroes select (jsonb_populate_record(null::public.heroes, x || jsonb_build_object('updated_at', now()))).* from jsonb_array_elements(pr.before_snapshot->'heroes') x
       where not exists (select 1 from public.heroes h where h.id = (x->>'id')::uuid);
     update public.henchman_groups g set warband_id = r.warband_id, name = r.name, unit_type_rules_id = r.unit_type_rules_id, size = r.size, stats = r.stats, xp = r.xp, level_ups = r.level_ups,
            stat_increases = r.stat_increases, is_large = r.is_large, notes = r.notes, sort_order = r.sort_order, model_names = r.model_names, campaign_state = r.campaign_state
       from (select (jsonb_populate_record(null::public.henchman_groups, x)).* from jsonb_array_elements(pr.before_snapshot->'henchman_groups') x) r where r.id = g.id;
-    insert into public.henchman_groups select (jsonb_populate_record(null::public.henchman_groups, x)).* from jsonb_array_elements(pr.before_snapshot->'henchman_groups') x
+    insert into public.henchman_groups select (jsonb_populate_record(null::public.henchman_groups, x || jsonb_build_object('updated_at', now()))).* from jsonb_array_elements(pr.before_snapshot->'henchman_groups') x
       where not exists (select 1 from public.henchman_groups g where g.id = (x->>'id')::uuid);
-    insert into public.items select (jsonb_populate_record(null::public.items, x)).* from jsonb_array_elements(pr.before_snapshot->'items') x;
+    insert into public.items select (jsonb_populate_record(null::public.items, x || jsonb_build_object('updated_at', now()))).* from jsonb_array_elements(pr.before_snapshot->'items') x;
     update public.captive_proposals set state = 'reversed', responded_by = auth.uid(), resolved_at = now(), reason = btrim(p_reason) where id = pr.id;
     update public.captive_cases set state = 'open', resolved_at = null, resolution_kind = null, resolution_message = '',
            history = history || jsonb_build_object('at', now(), 'by', auth.uid(), 'event', 'reversed', 'proposal_id', pr.id, 'reason', btrim(p_reason)) where id = c.id;

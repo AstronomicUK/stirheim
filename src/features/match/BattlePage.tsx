@@ -1,3 +1,4 @@
+import type { ItemRow } from '../../domain'
 import { FireRecovery } from './battle/FireRecovery'
 import { FirepotSmokeTests } from './battle/FirepotSmokeTests'
 import { GuidingDreamTargets } from './battle/GuidingDreamTargets'
@@ -223,6 +224,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
       sessions={shownSessions}
       events={events}
       onLogEvent={(payload) => logEvent.mutateAsync({ matchId: match.id, actorWarbandId: mine.warband_id, payload }).then(() => undefined)}
+      items={myRoster.data.items}
       roster={myRoster.data.roster}
       scenario={scenario}
       handle={handle}
@@ -241,6 +243,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
 }
 
 interface PlayerBattleProps {
+  items: ItemRow[]
   match: MatchSummary
   /** Sheets with the log already laid over them. */
   sessions: BattleSessionView[]
@@ -260,7 +263,7 @@ interface PlayerBattleProps {
   children: ReactNode
 }
 
-function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
+function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scenario, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
   const turns = useBattleTurns(match.id)
   const bribes = useBattleBribes(match.id)
   const paidExclusions = bribes.data?.filter(b => b.warband_id === roster.id).length ?? 0
@@ -362,6 +365,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
           {sideTab === 'cast' ? <CastTab events={events} sessions={sessions} matchId={match.id} roster={roster} template={template} others={others} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
           {sideTab === 'fight' && inApp ? (
             <FightTab
+              items={items}
               matchId={match.id}
               roster={roster}
               template={template}

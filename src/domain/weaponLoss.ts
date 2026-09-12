@@ -5,15 +5,16 @@ import { uuidSchema, type ItemRow } from './rows'
 /** Stable database row and its pre-loss state; catalogue IDs alone cannot identify a copy. */
 export const brokenWeaponSchema = z.object({
   itemId: uuidSchema, warbandId: uuidSchema, holderId: uuidSchema, holderType: z.enum(['hero', 'group']),
+  copyIndex: z.number().int().min(0).default(0),
   weaponId: z.string().min(1), name: z.string().min(1), quantity: z.number().int().positive(),
   expected: z.object({ item_rules_id: z.string().nullable(), custom_name: z.string().nullable(), quantity: z.number().int().positive(), notes: z.string().nullable() }),
 })
 export type BrokenWeapon = z.infer<typeof brokenWeaponSchema>
 
-export function weaponLossSnapshot(row: ItemRow, weaponId: string, name: string, quantity = 1): BrokenWeapon {
+export function weaponLossSnapshot(row: ItemRow, weaponId: string, name: string, quantity = 1, copyIndex = 0): BrokenWeapon {
   if (row.holder_type === 'stash' || !row.holder_id) throw new Error('Select a weapon carried by the warrior.')
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > row.quantity) throw new Error('Select an available carried weapon.')
-  return brokenWeaponSchema.parse({ itemId: row.id, warbandId: row.warband_id, holderId: row.holder_id, holderType: row.holder_type, weaponId, name, quantity,
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > row.quantity || !Number.isInteger(copyIndex) || copyIndex < 0 || copyIndex + quantity > row.quantity) throw new Error('Select an available carried weapon.')
+  return brokenWeaponSchema.parse({ itemId: row.id, warbandId: row.warband_id, holderId: row.holder_id, holderType: row.holder_type, weaponId, name, quantity, copyIndex,
     expected: { item_rules_id: row.item_rules_id, custom_name: row.custom_name, quantity: row.quantity, notes: row.notes } })
 }
 

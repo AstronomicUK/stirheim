@@ -1,3 +1,5 @@
+import { physicalWeaponChoices } from './weaponLoss'
+import type { ItemRow, BrokenWeapon } from '../../../domain'
 import { pendingVolatileBackfires } from '../../../domain/volatileBackfire'
 import { pendingFireHits, warriorIsBurning } from '../../../domain/burning'
 import { nextOwnTurnKey, smokeBlocksWarrior } from '../../../domain/firepotSmoke'
@@ -38,6 +40,7 @@ import { critTableName } from '../../../rules/engine/crit'
 import { useEnemyRosters } from './useEnemyRosters'
 
 export interface FightTabProps {
+  items?: ItemRow[]
   matchId: string
   roster: RosterWarband
   template: WarbandTemplate | undefined
@@ -78,7 +81,7 @@ interface TargetMemory {
   charmUsed?: boolean
 }
 
-export function FightTab({ matchId, roster, template, others, sessions, houseRules, sheet, events, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
+export function FightTab({ items = [], matchId, roster, template, others, sessions, houseRules, sheet, events, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
   const [lineSelection, setLineSelection] = useState<{ shotId: string; targetKey: string } | null>(null)
   const lineShot = sheet.lineShots.find(shot => !shot.cancelled && shot.id === lineSelection?.shotId)
@@ -150,6 +153,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const defenderOff = preferredDefenderOff && defenderOffOptions.includes(preferredDefenderOff) ? preferredDefenderOff : null
 
   // Weapon choice follows the attacker: a new attacker gets sensible defaults.
+  const [physicalSelection, setPhysicalSelection] = useState<Record<string, string>>({})
   const [choice, setChoice] = useState<WeaponChoice | null>(null)
   const weapons: Weapon[] = attackerKit ? [...(attackerKit.melee.length > 0 ? attackerKit.melee : [defaultPrimary([])]), ...attackerKit.ranged] : []
   const melee = attackerKit && attackerKit.melee.length > 0 ? attackerKit.melee : weapons.slice(0, 1)
@@ -288,9 +292,22 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
     return <Notice tone="info" title="No eligible units in your warband">Nobody fit to fight is carrying a ranged weapon.</Notice>
   }
 
+  const swordBreaker = Boolean(!areaTarget && defenderKit?.melee.some(w => w.id === 'sword_breaker'))
+  const usedCopies = new Set<string>()
+  const physicalBindings = (odds?.weapons ?? []).map((entry, index) => {
+    const choices = attacker ? physicalWeaponChoices(items, events, roster.id, attacker.id, entry.weapon.id) : []
+    const key = `${attacker?.id}:${index}`
+    const chosen = choices.find(c => c.key === physicalSelection[key]) ?? choices.find(c => !usedCopies.has(c.key))
+    const duplicate = Boolean(chosen && usedCopies.has(chosen.key))
+    if (chosen) usedCopies.add(chosen.key)
+    return { choices, chosen, key, duplicate }
+  })
+  const duplicateWeapon = swordBreaker && physicalBindings.some(binding => binding.duplicate)
+
   return (
     <>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
+      {swordBreaker ? <Notice tone="warn" title="Sword Breaker opponent"><div className="flex flex-col gap-2"><p>A successful parry allows a 4+ Trap Blade roll. Select the carried copy at risk; breaking it does not erase hits already rolled.</p>{physicalBindings.map((binding, index) => binding.choices.length > 1 ? <SelectField key={binding.key} label={`Weapon copy for ${index === 0 ? 'main hand' : 'off hand'}`} value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(choice => <option key={choice.key} value={choice.key}>{choice.label}</option>)}</SelectField> : null)}{duplicateWeapon ? <p>Select different physical copies for the two hands.</p> : null}</div></Notice> : null}
       {burningBlocked ? <Notice tone="warn" title="On fire">This warrior may only move until the flames are extinguished. Use Fire recovery above.</Notice> : null}
       {volatileHits.length > 0 ? <Notice tone="warn" title="Weapon backfire"><div className="flex flex-col gap-2">{volatileHits.map(hit => <Button key={hit.key} variant="secondary" disabled={readOnly} onClick={() => {
         setAttackerId(hit.warriorId); setSelfShotId(null); setFireHitId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setVolatileKey(hit.key); setRollSetup(null); setRolling(true)
@@ -512,7 +529,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
+          disabled={duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -552,7 +569,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
@@ -570,6 +587,8 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))
               if (primary?.id === 'swivel_gun_grape_shot' && hit) edit(s => startGrapeShotSpread(s, { shotId: attemptId, warriorId: attacker.id, warbandId: roster.id, shooterName: attacker.name, at: new Date().toISOString(), primary: { key: `${defender.warbandId}:${defender.id}:${Math.min(grapePrimarySlot, Math.max(0, (defender.groupSize ?? 1) - 1))}`, warriorId: defender.id, warbandId: defender.warbandId, name: defender.name }, primaryInCover: Boolean(context.cover || defenderKit?.armour.pavise) }))
             } : undefined}
+            heldWeapons={physicalBindings.map(binding => binding.chosen?.snapshot)}
+            swordBreaker={swordBreaker}
             forceLog={Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
@@ -620,6 +639,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 pigeonTargetKey: pigeonTarget?.key,
                 kill: defender.warbandId !== attacker.warbandId && state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
                 entangled: state.outcomes.includes('entangled'),
+                brokenWeapons: state.brokenWeapons,
                 bolasBackfires: state.bolasBackfires || undefined,
                 volatileBackfires: state.volatileBackfires || undefined,
                 targetOnFire: state.targetOnFire || undefined,
@@ -815,6 +835,8 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
 // ---------------------------------------------------------------------------------------------
 
 interface RollSectionProps {
+  heldWeapons?: (BrokenWeapon | undefined)[]
+  swordBreaker?: boolean
   onRestart?: (attemptId: string) => void
   onProgress?: (previous: RollState | null, next: RollState, attemptId: string, rolled?: { value: number; manual?: boolean }) => void
 
@@ -847,7 +869,7 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
+function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
@@ -868,8 +890,10 @@ function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender
 
   function start() {
     attempt.current = { id: crypto.randomUUID(), at: new Date().toISOString() }
-    const plans: AttackPlan[] = odds.weapons.flatMap((w) =>
+    const plans: AttackPlan[] = odds.weapons.flatMap((w, weaponIndex) =>
       Array.from({ length: w.attacks }, () => ({
+        heldWeapon: heldWeapons[weaponIndex],
+        swordBreakerParry: swordBreaker,
         weaponName: w.weapon.name,
         input: w.input,
         parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit), fixedThreshold: fixedParryThreshold(defenderKit) },
@@ -1016,14 +1040,14 @@ function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender
               </p>
               {state.bolasBackfires ? <p className="text-sm text-ink">Log this result to resolve a separate Strength 3 hit on {attacker.name}.</p> : null}
               {state.volatileBackfires ? <p className="text-sm text-ink">Log this result to resolve {state.volatileBackfires} separate Strength 6 hit{state.volatileBackfires === 1 ? '' : 's'} on {attacker.name}.</p> : null}
-              {(forceLog || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
+              {(forceLog || state.brokenWeapons?.length || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
                   {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
-              {(forceLog || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
+              {(forceLog || state.brokenWeapons?.length || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
                 <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : state.bolasBackfires ? 'Bolas backfire' : state.volatileBackfires ? 'Cathayan backfire' : state.targetOnFire ? 'fire condition' : state.smokeHit ? 'Firepot hit and smoke test' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}
             </div>
@@ -1081,6 +1105,7 @@ function kitNames(c: Combatant): string {
 /** One side of the fight: a headed box so the two read as facing each other on a phone. */
 /** The big heading for a roll step, read from across a table: the phase, not the weapon or the reroll count. */
 const ROLL_KIND_HEADING: Record<RollKind, string> = {
+  trapBlade: 'Trap Blade',
   ignition: 'Set on Fire',
   fishHookFall: 'Fish-hook Strength Test',
   chainKnockdown: 'Chain Shot knock-down',

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { weaponLossSnapshot, weaponQuantityRemaining, type BattleEventRow, type ItemRow } from '../../../domain'
-import { breakableWeaponChoices } from './weaponLoss'
+import { breakableWeaponChoices, physicalWeaponChoices } from './weaponLoss'
 const band = 'aaaaaaaa-0000-4000-8000-000000000001'
 const warrior = 'aaaaaaaa-0000-4000-8000-000000000002'
 const row: ItemRow = { id: 'aaaaaaaa-0000-4000-8000-000000000003', warband_id: band, holder_type: 'hero', holder_id: warrior, item_rules_id: 'sword', custom_name: null, quantity: 2, notes: 'Family heirloom', created_at: '2026-09-12T00:00:00Z', updated_at: '2026-09-12T00:00:00Z' }
@@ -26,4 +26,12 @@ it('uses real profile mapping for material variants and does not invent an item 
  expect(breakableWeaponChoices([material], [], band, warrior, 'gromril_sword')).toHaveLength(1)
  expect(breakableWeaponChoices([material], [], band, warrior, 'sword')).toEqual([])
  expect(breakableWeaponChoices([], [], band, warrior, 'unarmed')).toEqual([])
+})
+
+
+it('offers remaining physical copies rather than assigning a broken copy again', () => {
+ const broken = event(weaponLossSnapshot(row, 'sword', 'Sword', 1, 0))
+ expect(physicalWeaponChoices([row], [], band, warrior, 'sword').map(c => c.snapshot.copyIndex)).toEqual([0, 1])
+ expect(physicalWeaponChoices([row], [broken], band, warrior, 'sword').map(c => c.snapshot.copyIndex)).toEqual([1])
+ expect(() => weaponLossSnapshot(row, 'sword', 'Sword', 1, 2)).toThrow(/available/)
 })

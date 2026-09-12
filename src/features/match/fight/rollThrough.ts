@@ -1,3 +1,4 @@
+import type { BrokenWeapon } from '../../../domain/weaponLoss'
 import { blackpowderMisfire } from "../../../rules/resolve/blackpowderMisfire"
 // Walking real dice through one phase of attacks: to hit, parry, to wound, critical, saves,
 // injury. The engine's AttackInput already holds every threshold and flag, so this only has to
@@ -10,7 +11,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'trapBlade' | 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -24,6 +25,8 @@ export interface PendingRoll {
 }
 
 export interface AttackPlan {
+  heldWeapon?: BrokenWeapon
+  swordBreakerParry?: boolean
   /** Added during resolution, so it has no pre-collected hit die. */
   additionalAttack?: boolean
   weaponName: string
@@ -36,11 +39,12 @@ export interface AttackPlan {
   rot?: boolean
 }
 
-export type Outcome = 'misfireExplosion' | 'misfire' | 'backfire' | 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
+export type Outcome = 'weaponBroken' | 'misfireExplosion' | 'misfire' | 'backfire' | 'cannotFire' | 'entangled' | 'miss' | 'parried' | 'charmed' | 'dodged' | 'noWound' | 'saved' | 'ignored' | 'wounded' | 'knockedDown' | 'stunned' | 'outOfAction'
 
-const OUTCOME_RANK: Record<Outcome, number> = { misfire: 0, misfireExplosion: 0, backfire: 0, cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
+const OUTCOME_RANK: Record<Outcome, number> = { weaponBroken: 0, misfire: 0, misfireExplosion: 0, backfire: 0, cannotFire: 0, entangled: 1, miss: 0, parried: 0, charmed: 0, dodged: 0, noWound: 0, saved: 0, ignored: 1, wounded: 1, knockedDown: 2, stunned: 3, outOfAction: 4 }
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {
+  weaponBroken: 'Weapon broken — cannot attack with it',
   misfire: 'Misfired — the target was not hit',
   misfireExplosion: 'Weapon destroyed — resolve its Strength 4 self-hit',
   backfire: 'Backfired',
@@ -93,6 +97,7 @@ interface Current {
 }
 
 export interface RollState {
+  brokenWeapons?: BrokenWeapon[]
   bolasBackfires?: number
   volatileBackfires?: number
   targetOnFire?: boolean
@@ -173,6 +178,9 @@ function attackName(state: RollState): string {
 function beginAttack(state: RollState, permissionGranted = false): RollState {
   const plan = state.plans[state.index]
   const fresh: RollState = { ...state, cur: freshCurrent() }
+  const broken = plan.heldWeapon && state.brokenWeapons?.some(loss => loss.itemId === plan.heldWeapon!.itemId && loss.copyIndex === plan.heldWeapon!.copyIndex)
+  // Hits already rolled as a batch are retained; only a new attack uses the now-broken weapon.
+  if (broken && (!state.hitBatch || plan.additionalAttack)) return finishAttack(log(fresh, `${plan.weaponName} is broken; this new attack cannot be made with it.`, 'bad'), 'weaponBroken')
   if (state.hitBatch?.phase === 'resolve' && !plan.additionalAttack) {
     const hit = state.hitBatch.hits[state.index]
     if (hit.outcome) return finishAttack(fresh, hit.outcome)
@@ -188,7 +196,7 @@ function beginAttack(state: RollState, permissionGranted = false): RollState {
     return askWound(log(fresh, `${attackName(state)}: automatic hit — the target is knocked down.`, 'good'))
   }
   if (plan.input.automaticHits) {
-    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'mortarBlast' ? 'automatic Mortar blast hit' : plan.input.automaticHitReason === 'grapeShot' ? 'automatic Grape Shot hit — no armour save modifier' : plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blackpowderExplosion' ? 'automatic Strength 4 self-hit from the exploding weapon; no critical hits' : plan.input.automaticHitReason === 'pigeonBlast' ? 'automatic Strength 4 hit — this model is in the Pigeon Bomb blast' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
+    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'fireRecovery' ? 'automatic Strength 4 hit from failed fire Recovery' : plan.input.automaticHitReason === 'volatileBackfire' ? `${plan.weaponName}: automatic self-hit from the backfire` : plan.input.automaticHitReason === 'mortarBlast' ? 'automatic Mortar blast hit' : plan.input.automaticHitReason === 'grapeShot' ? 'automatic Grape Shot hit — no armour save modifier' : plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blackpowderExplosion' ? 'automatic Strength 4 self-hit from the exploding weapon; no critical hits' : plan.input.automaticHitReason === 'pigeonBlast' ? 'automatic Strength 4 hit — this model is in the Pigeon Bomb blast' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
     if (plan.input.automaticHitReason && plan.input.dodgeThreshold !== undefined && plan.input.dodgeThreshold !== IMPOSSIBLE) return afterHit(hit)
     return plan.input.automaticHitReason ? offerCharmOrContinue(hit) : askWound(hit)
   }
@@ -271,6 +279,11 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
   let rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
+    case 'trapBlade': {
+      const broken = roll >= 4 && plan.heldWeapon
+      const losses = broken && !state.brokenWeapons?.some(loss => loss.itemId === broken.itemId && loss.copyIndex === broken.copyIndex) ? [...(state.brokenWeapons ?? []), broken] : state.brokenWeapons
+      return finishAttack(log({ ...state, brokenWeapons: losses }, `Trap Blade: rolled ${roll}${rollTag}; needs 4+. ${broken ? `${broken.name} is broken and cannot be used for further attacks. Hits already rolled still resolve.` : 'The weapon is not broken.'}`, broken ? 'bad' : 'neutral'), 'parried')
+    }
     case 'ignition': {
       const ignited = roll >= (input.ignitionThreshold ?? 7)
       return askWound(log({ ...state, targetOnFire: state.targetOnFire || ignited, cur: { ...state.cur, ignitionTested: true } }, `Ignition: rolled ${roll}${rollTag}; needs ${input.ignitionThreshold}+. ${ignited ? 'Target set on fire. If it survives, test to extinguish on 4+ in Recovery; failure causes a Strength 4 hit and allows only movement. An ally in base contact can help on 4+.' : 'Target does not catch fire from this hit.'}`, ignited ? 'good' : 'neutral'))
@@ -342,7 +355,11 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
             : plan.parry.beatsOrMatches
               ? roll >= hitRoll
               : roll > hitRoll
-      if (success) return finishAttack(log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Parried!`, 'bad'), 'parried')
+      if (success) {
+        const parried = log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Parried!`, 'bad')
+        if (plan.swordBreakerParry && plan.heldWeapon) return { ...parried, pending: { kind: 'trapBlade', who: 'defender', label: 'Sword Breaker: Trap Blade', detail: `4+ breaks ${plan.heldWeapon.name}. The parried attack is already stopped.` } }
+        return finishAttack(parried, 'parried')
+      }
       if (pending.kind === 'parry' && plan.parry.reroll) {
         return {
           ...log(state, `Parry: rolled ${roll}${rollTag} against the ${hitRoll} to hit. Failed; the parry may be rerolled.`),

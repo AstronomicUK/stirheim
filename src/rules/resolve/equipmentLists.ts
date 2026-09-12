@@ -14,7 +14,7 @@ function equipmentType(item: Item): string {
   return item.id
 }
 
-export function equipmentListWarning(roster: RosterWarband, item: Item, holder: ItemHolder): string | null {
+export function equipmentListWarning(roster: RosterWarband, item: Item, holder: ItemHolder, options: { atCreation?: boolean } = {}): string | null {
   if (!['hero', 'henchmanGroup'].includes(holder.kind) || !['melee', 'missile', 'blackpowder', 'armour'].includes(item.category)) return null
   // Their source does not identify a base-list equivalent; keep existing category bans,
   // but do not invent a heavy-armour prerequisite for these rare armour types.
@@ -22,6 +22,9 @@ export function equipmentListWarning(roster: RosterWarband, item: Item, holder: 
   const template = findWarbandTemplate(roster.warbandTemplateId)
   const unit = template && findUnitTemplate(template, holder.unitTemplateId ?? '')
   if (!template || !unit) return null // Imported/custom units cannot be certified from an unrelated list.
+  // Pit Fighters explicitly gain Trading Post trident access outside their starting list
+  // (grade-1b-part2:1479). Category bans remain separate from list membership.
+  if (!options.atCreation && template.id === 'pit_fighters' && item.id === 'trident') return null
   const hero = holder.kind === 'hero' ? roster.heroes.find(h => h.id === holder.id) : undefined
   const skills = hero?.skillIds ?? []
   if (item.category === 'melee' && skills.includes('weapons_training')) return null

@@ -182,3 +182,26 @@ it('separates Order of the Mare shared-list access and preserves the Paragon vow
   expect(itemRestrictionWarnings(paragon, findItem('lance')!, holder(paragon.heroes[0])).join(' ')).toContain('Vow of Poverty')
   expect(equipmentBanReason('order_of_the_mare', 'gallant', { itemId: 'lance', quantity: 1 })).toBeNull()
 })
+
+
+it('allows the Pit Fighter Trading Post trident exception without changing starting lists', () => {
+  const h = hero('pit_fighters_pit_king'), r = roster('pit_fighters', h), item = findItem('trident')!
+  expect(equipmentListWarning(r, item, holder(h))).toBeNull()
+  expect(itemRestrictionWarnings(r, item, holder(h))).toEqual([])
+  expect(itemRestrictionWarnings(r, item, holder(h), { atCreation: true }).join(' ')).toContain('not on')
+  const pursuer = hero('pit_fighters_pursuer')
+  expect(equipmentListWarning(roster('pit_fighters', pursuer), item, holder(pursuer), { atCreation: true })).toBeNull()
+  const skaven = hero('skaven_black_skaven')
+  expect(equipmentListWarning(roster('skaven_of_clan_eshin', skaven), item, holder(skaven))).toContain('not on')
+})
+
+
+it('keeps both Priest of Morr profiles to daggers and scythes even with weapon skills', () => {
+  for (const [warband, unit] of [['dreamwalkers', 'dreamwalkers_priest_of_morr'], ['vampire_hunters_of_sylvania', 'priest_of_morr']]) {
+    const h = hero(unit, ['weapons_training', 'weapons_expert']), r = roster(warband, h)
+    for (const id of ['sword', 'axe', 'bow', 'pistol']) expect(itemRestrictionWarnings(r, findItem(id)!, holder(h)).join(' ')).toContain('only a dagger and a scythe')
+    for (const id of ['dagger', 'scythe']) expect(equipmentBanReason(warband, unit, { itemId: id, quantity: 1 })).toBeNull()
+    for (const id of ['light_armour', 'helmet']) expect(itemRestrictionWarnings(r, findItem(id)!, holder(h)).join(' ')).toContain('may not wear')
+    expect(equipmentBanReason(warband, unit, { itemId: 'rope_and_hook', quantity: 1 })).toBeNull()
+  }
+})

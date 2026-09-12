@@ -271,3 +271,12 @@ OrderMare next: exactunitIDs paragon/gallant/redeemed_knights are Knights; pilgr
 Footman entries now distinguish Pilgrim spear/halberd/bow from Knight lance/heavy armour; Archer spear identifies Esquiresses. Knights are the printed Paragon, Gallant and Redeemed Knight types. Paragon separately warns against lances under Vow of Poverty, including with Weapons Training. Existing exceptions remain selectable and logged. Sources grade-2a-part2.md:71–108,156. This does not claim mount pricing/access or every Order rule complete.
 
 Validation:15 focused and2,047 ordinary tests pass; build/typecheck pass; lint only3oldwarnings. Regression checks permitted/excluded types, different shared lists, Paragon vow and Gallant lance permission. No UI/DB changes or new browserQA. Logs /tmp/stirheim-mare-equipment-{tests,all-tests,build,lint}.log. Local only; noSQL/push/deploy. #67 remains partial. Next independent work: remaining item restrictions/creation-only exceptions or full SwordBreaker lifecycle. PitFighter specialTrident tradeaccess source remains a follow-up to review. Morning questions unchanged.
+
+
+## Next local batch — #67 Priest of Morr weapons and Pit Fighter trade exception
+
+Both Dreamwalker and Vampire Hunter Priests of Morr now warn for any weapon other than dagger/scythe, independently of Weapons Training/Expert. Vampire Hunter Priest now also has the printed armour/helmet bans; miscellaneous tools are unaffected. Sources grade-2a-part1.md:187 and grade-2a-part2.md:2078.
+
+Pit Fighter trident access explicitly granted outside starting lists at Trading Post is now recognised after creation; starting-list checks retain ordinary membership, while Pursuer style already permits trident at creation. RestrictionOptions.atCreation is passed through the list helper. Source grade-1b-part2.md:1479. No blanketpermissionforotherwarbands; categorybans remain separate.
+
+Validation:17focused and2,049ordinary tests pass, build/typecheck pass, lint3oldwarnings. Checks cover bothPriests, weaponskills, armour, tools, creationversustrading andPursuer/unrelatedwarband. NoUI/DBchange ornewbrowserQA. Logs /tmp/stirheim-morr-trident-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. #67 remains partial: VampireHunterPilgrimbludgeons (source grade2apart2:2124), NipponMagevow, HalflingTooBig, Outlawmandatorybow/one-missile andcreation-onlyequipment clauses remain; avoid treating all#67asclosed. Morningquestionsunchanged.

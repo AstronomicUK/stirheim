@@ -317,6 +317,9 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
       case "armour":
         if (catalogue.category === "armour" && !helmet) return `${name} is armour, which this warrior may not wear`;
         break;
+      case "morrWeapons":
+        if (["melee", "missile", "blackpowder"].includes(catalogue.category) && !["dagger", "scythe"].includes(catalogue.id.replace(/^(gromril|ithilmar)_/, ""))) return `${name}: a Priest of Morr may use only a dagger and a scythe as weapons`;
+        break;
       case "lances":
         if (catalogue.id.replace(/^(gromril|ithilmar)_/, "") === "lance") return `${name}: the Paragon's Vow of Poverty forbids using a lance`;
         break;

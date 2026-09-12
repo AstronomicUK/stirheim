@@ -14,6 +14,7 @@ import type { StatKey } from "../../types/common";
 
 export type EquipmentBan =
   | "armour" // no body armour or shields (helmets allowed unless "helmets" is also listed)
+  | "morrWeapons" // Priests of Morr may use only daggers and scythes
   | "lances" // Paragon Vow of Poverty
   | "heavyArmour"
   | "helmets"
@@ -333,7 +334,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
     injury: { deadOn: [1, 2, 3], label: "leaves", note: "Skinny: a Hobgoblin taken out of action slinks off on a 1-3." },
   },
   // 2a
-  dreamwalkers_priest_of_morr: { equipmentBans: ["armour", "helmets", "missile"], neverLeads: false },
+  dreamwalkers_priest_of_morr: { equipmentBans: ["armour", "helmets", "morrWeapons"], neverLeads: false },
   druchii_slavehounds: { ...ANIMAL, relation: { onlyWith: { unitIds: ["druchii_beastmaster"], label: "a Beastmaster" } } },
   dwarf_slayer_cult_rememberer_hero: { neverLeads: true },
   dwarf_slayer_cult_axe_hurlers: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: ["armour", "helmets"] },
@@ -355,6 +356,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   ogre_hunting_party_trappers: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
   ogre_hunting_party_sabre_baiter: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
   ogre_hunting_party_sabretusk_cubs: ANIMAL,
+  priest_of_morr: { equipmentBans: ["armour", "helmets", "morrWeapons"] },
   paragon: { equipmentBans: ["lances"] },
   pilgrims: { neverLeads: true, promotion: { never: true, note: "Peasants: Pilgrims never become heroes; roll again." } },
   companion_filly: { ...ANIMAL, relation: { onlyWith: { unitIds: ["dame_of_the_mare"], label: "the Dame of the Mare" } } },

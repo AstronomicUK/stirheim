@@ -143,7 +143,7 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
       if (after > MAX_MISSILE_WEAPONS) out.push(`${each ? `${each} ` : ""}${holder.name ?? "This warrior"} would carry ${after} missile weapons; the rulebook allows up to two different missile weapons per warrior, a brace of pistols counting as one (Weapons and Armour, Equipment).`);
     }
   }
-  const listWarning = equipmentListWarning(warband, item, holder);
+  const listWarning = equipmentListWarning(warband, item, holder, { atCreation: opts.atCreation });
   if (listWarning && !equipmentBanReason(warbandId, holder.unitTemplateId ?? "", { itemId: item.id, quantity })) out.push(listWarning);
   return out;
 }

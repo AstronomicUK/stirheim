@@ -1,3 +1,4 @@
+import { captureEvents } from './captureEvents'
 import { garlicExpiry } from './garlicExpiry'
 import {reportTradeWagon,applyTradeWagonToReport,afterTradeWagonCapture} from './tradeWagonReport'
 import { brokenWeaponSettlement } from './brokenWeapons'
@@ -251,7 +252,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((h) => out.has(h.id))
     .map((hero) => {
       const skip = draft.injurySkips[hero.id]
-      const capture = battleEvents.find(e=>!e.reverted_at&&e.payload.out_of_action&&e.payload.capture_reason==='subjugator'&&e.payload.target_id===hero.id&&e.payload.target_warband_id===roster?.id)
+      const capture = captureEvents(battleEvents,matchId,roster?.id,hero.id)[0]?.event
       if(capture && skip===undefined){
         const res=resolveHeroInjuryFlow(hero,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
         const effect=`Subjugator of Mankind: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
@@ -288,7 +289,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((s) => out.has(s.id))
     .map((sword) => {
       const skip = draft.injurySkips[sword.id]
-      const capture = battleEvents.find(e=>!e.reverted_at&&e.payload.out_of_action&&e.payload.capture_reason==='subjugator'&&e.payload.target_id===sword.id&&e.payload.target_warband_id===roster?.id)
+      const capture = captureEvents(battleEvents,matchId,roster?.id,sword.id)[0]?.event
       if(capture && skip===undefined){
         const res=resolvePersonaInjury(sword,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
         const effect=`Subjugator of Mankind: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
@@ -316,12 +317,15 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0)
     .map((group) => {
       const outOfAction = Math.min(group.size, draft.groupsOut[group.id] ?? 0)
+      const captured = captureEvents(battleEvents,matchId,roster?.id,group.id).filter(c=>c.modelIndex<outOfAction)
+      const injuryCount = outOfAction - captured.length
       const hasPlants=Array.from({length:outOfAction},(_,i)=>plant(`${group.id}:${i}`)).some(Boolean)
-      const dice = draft.groupInjuryDice[group.id]?.count ?? (!burning && !hasPlants && henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : outOfAction)
+      const dice = draft.groupInjuryDice[group.id]?.count ?? (!burning && !hasPlants && henchmanInjuryException(group)?.deadOn.length === 0 ? 0 : injuryCount)
       if (hasPlants) {
         const rolls=(draft.groupInjuries[group.id]??[]).slice(0,dice)
+        const injurySlots=Array.from({length:outOfAction},(_,i)=>i).filter(i=>!captured.some(c=>c.modelIndex===i))
         let current=group
-        for(let i=0;i<dice;i++)if(isDie(rolls[i],6))current=plant(`${group.id}:${i}`)?{...current,size:Math.max(0,current.size-(rolls[i]===1?1:0))}:resolveGroupInjuries(current,1,[rolls[i]]).group
+        for(let i=0;i<dice;i++)if(isDie(rolls[i],6))current=plant(`${group.id}:${injurySlots[i]??i}`)?{...current,size:Math.max(0,current.size-(rolls[i]===1?1:0))}:resolveGroupInjuries(current,1,[rolls[i]]).group
         const dead=group.size-current.size,complete=rolls.length===dice&&rolls.every(r=>isDie(r,6))
         return {group,outOfAction,dice,resolution:{group:current,dead,complete,line:complete?{subjectType:'group' as const,subjectId:group.id,subjectName:group.name,rolls:rolls as number[],dead}:null}}
       }
@@ -332,6 +336,12 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
         return { group, outOfAction, dice, resolution: { group: { ...group, size: Math.max(0, group.size - dead), xp: group.xp + (rolls.includes(6) ? 1 : 0) }, dead, complete, line: complete ? { subjectType: 'group' as const, subjectId: group.id, subjectName: group.name, rolls, dead } : null } }
       }
       return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
+    }).map(row => {
+      const captures = captureEvents(battleEvents,matchId,roster?.id,row.group.id).filter(c=>c.modelIndex<row.outOfAction)
+      if (!captures.length) return row
+      const resolution: GroupInjuryResolution = {...row.resolution, group:{...row.resolution.group,size:Math.max(0,row.resolution.group.size-captures.length)}}
+      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(({event,modelIndex})=>({modelIndex:modelIndex+1,eventId:event.id,captorWarbandId:event.payload.attacker_warband_id,reason:'subjugator',kit:[]}))}
+      return {...row,resolution}
     })
 
   const raidSurvivors:RaidSurvivors|undefined=scenarioId==='raids'?{
@@ -342,7 +352,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
   for(const [id,ambush] of Object.entries(raidOutcome?.ambushGroups??{})){
     const existing=groups.find(g=>g.group.id===id),original=participants.groups.find(g=>g.id===id)!
     const dead=(existing?.resolution.dead??0)+ambush.dead
-    const resolution={group:ambush.group,dead,complete:existing?.resolution.complete??true,line:{subjectType:'group' as const,subjectId:id,subjectName:original.name,rolls:[...(existing?.resolution.line?.rolls??[]),...ambush.rolls],dead}}
+    const resolution={group:ambush.group,dead,complete:existing?.resolution.complete??true,line:{captured:existing?.resolution.line?.captured,subjectType:'group' as const,subjectId:id,subjectName:original.name,rolls:[...(existing?.resolution.line?.rolls??[]),...ambush.rolls],dead}}
     if(existing)existing.resolution=resolution;else groups.push({group:original,outOfAction:0,dice:0,resolution})
   }
 
@@ -362,6 +372,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
   for (const s of hiredSwords) count(s.resolution.outcome)
   for (const g of groups) {
     summary.henchmenDead += g.resolution.dead
+    summary.captured += g.resolution.line?.captured?.length ?? 0
     if (!g.resolution.complete) summary.pending += 1
   }
   for (const a of animals) {
@@ -454,7 +465,8 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
   }
   for (const g of injuries.groups) {
     const o = draft.groupInjuryDice[g.group.id]
-    if (o && o.count !== g.outOfAction) out.push({ label: `${g.group.name}: injury dice`, suggested: String(g.outOfAction), used: String(o.count), reason: o.reason.trim() })
+    const suggested=g.outOfAction-(g.resolution.line?.captured?.length??0)
+    if (o && o.count !== suggested) out.push({ label: `${g.group.name}: injury dice`, suggested: String(suggested), used: String(o.count), reason: o.reason.trim() })
   }
   if (exploration.adjustment) out.push(exploration.adjustment)
   return out
@@ -520,7 +532,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
     problems.injuries.push(`${n} ${n === 1 ? 'warrior still needs' : 'warriors still need'} their injury dice.`)
   }
   if (Object.entries(draft.injurySkips).some(([id, reason]) => draft.heroesOut.includes(id) && reason.trim() === '')) problems.injuries.push('Say why a warrior is not rolling for injury.')
-  if (injuries.groups.some((g) => draft.groupInjuryDice[g.group.id] && draft.groupInjuryDice[g.group.id].count !== g.outOfAction && draft.groupInjuryDice[g.group.id].reason.trim() === '')) {
+  if (injuries.groups.some((g) => draft.groupInjuryDice[g.group.id] && draft.groupInjuryDice[g.group.id].count !== g.outOfAction-(g.resolution.line?.captured?.length??0) && draft.groupInjuryDice[g.group.id].reason.trim() === '')) {
     problems.injuries.push('Say why a group rolls a different number of injury dice.')
   }
   problems.exploration.push(...exploration.problems)

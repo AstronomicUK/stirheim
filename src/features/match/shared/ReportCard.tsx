@@ -246,6 +246,7 @@ function GroupInjury({ line }: { line: HenchmanInjuryLine }) {
       </span>
       <span className="flex shrink-0 items-center gap-2">
         {line.dead > 0 ? <Tag tone="warn">{line.dead} dead</Tag> : null}
+        {line.captured?.length ? <Tag tone="warn">{line.captured.length} captured</Tag> : null}
         {survived > 0 ? <Tag>{survived} recovered</Tag> : null}
       </span>
     </div>

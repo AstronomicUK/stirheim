@@ -148,6 +148,8 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
           {groups.map(({ group, outOfAction, dice, resolution }) => {
             const rolls = draft.groupInjuries[group.id] ?? []
             const diceOverride = draft.groupInjuryDice[group.id]
+            const captures=resolution.line?.captured??[]
+            const suggested=outOfAction-captures.length
             return (
               <Card key={group.id} className="flex flex-col gap-3 px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
@@ -165,21 +167,22 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                     </p>
                   </div>
                   {resolution.complete ? (
-                    <Tag tone={resolution.dead > 0 ? 'danger' : 'brass'}>{resolution.dead === 0 ? 'All recover' : `${resolution.dead} dead`}</Tag>
+                    <Tag tone={resolution.dead > 0 ? 'danger' : 'brass'}>{captures.length?`${captures.length} captured; ${resolution.dead} dead`:resolution.dead === 0 ? 'All recover' : `${resolution.dead} dead`}</Tag>
                   ) : null}
                 </div>
+                {captures.map(c=><p key={c.eventId} className="text-sm">Casualty {c.modelIndex}: captured by Subjugator of Mankind; no injury roll.</p>)}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs text-ink-dim">Dice to roll {diceOverride ? '(changed)' : `· suggested ${outOfAction}`}</span>
+                    <span className="text-xs text-ink-dim">Dice to roll {diceOverride ? '(changed)' : `· suggested ${suggested}`}</span>
                     {diceOverride ? (
                       <button type="button" onClick={() => update((d) => setGroupInjuryDice(d, group.id, null))} className="self-start text-xs text-brass underline-offset-4 hover:underline">
-                        Back to {outOfAction}
+                        Back to {suggested}
                       </button>
                     ) : null}
                   </div>
-                  <Stepper value={dice} min={0} max={20} onChange={(n) => update((d) => setGroupInjuryDice(d, group.id, n === outOfAction ? null : { count: n, reason: d.groupInjuryDice[group.id]?.reason ?? '' }))} label={`${group.name} injury dice`} />
+                  <Stepper value={dice} min={0} max={20} onChange={(n) => update((d) => setGroupInjuryDice(d, group.id, n === suggested ? null : { count: n, reason: d.groupInjuryDice[group.id]?.reason ?? '' }))} label={`${group.name} injury dice`} />
                 </div>
-                {diceOverride && diceOverride.count !== outOfAction ? (
+                {diceOverride && diceOverride.count !== suggested ? (
                   <TextField
                     label="Why a different number"
                     value={diceOverride.reason}
@@ -293,11 +296,15 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         </Section>
       ) : null}
       {derived.equipmentLosses.rows.length ? <Section title="Equipment lost with henchmen"><Card className="flex flex-col gap-3 px-4 py-3">
-        <p className="text-sm">Dead warriors’ equipment is lost. Identical kit is removed automatically. For mixed equipment or supplies used during the battle, record the copies carried by the models who died.</p>
+        <p className="text-sm">Equipment carried by dead or captured warriors leaves this group. Identical kit is removed automatically. For mixed or used equipment, record which copies left with those casualties.</p>
         {derived.equipmentLosses.rows.map(row=><div key={row.key} className="flex flex-col gap-1">
           {row.manual?<NumberField label={`${row.groupName}: ${row.name} lost`} value={row.lost} onChange={lost=>update(d=>({...d,groupEquipmentLosses:{...d.groupEquipmentLosses,[row.key]:lost}}))}/>:<p className="text-sm">{row.groupName}: {row.lost} {row.name} lost; {row.available-row.lost!} retained.</p>}
           {row.manual?<p className="text-xs text-ink-dim">{row.available} copies remain after recorded use; enter 0–{row.available} lost.</p>:null}
         </div>)}
+      </Card></Section>:null}
+      {derived.equipmentLosses.captureRows.length ? <Section title="Equipment carried by captives"><Card className="flex flex-col gap-3 px-4 py-3">
+        <p className="text-sm">This equipment stays with each captive’s record. It is included in the losses above, not removed a second time.</p>
+        {derived.equipmentLosses.captureRows.map(row=><div key={row.key}>{row.manual?<NumberField label={`${row.modelName}: ${row.name}`} value={row.quantity} onChange={quantity=>update(d=>({...d,capturedEquipment:{...d.capturedEquipment,[row.key]:quantity}}))}/>:<p className="text-sm">{row.modelName}: {row.quantity} {row.name}.</p>}</div>)}
       </Card></Section>:null}
       {derived.brokenEquipment.rows.length ? <Section title="Weapons broken in battle"><Card className="flex flex-col gap-3 px-4 py-3">
         {derived.brokenEquipment.rows.map(row => <div key={row.key} className="flex flex-col gap-2">

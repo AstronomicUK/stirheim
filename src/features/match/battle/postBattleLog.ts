@@ -16,7 +16,8 @@ export function postBattleRollLines(report: ReportView): string[] {
   for (const line of report.injuries) {
     if (line.subjectType === 'group') {
       const survived = Math.max(0, line.rolls.length - line.dead)
-      lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.dead} dead, ${survived} recovered.`)
+      if(line.captured?.length)lines.push(`${line.subjectName}: ${line.captured.length} captured by Subjugator of Mankind without an injury roll.`)
+      if(line.rolls.length || !line.captured?.length)lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.dead} dead, ${survived} recovered.`)
     } else {
       lines.push(`${line.subjectName}: rolled ${line.rolls.length > 0 ? line.rolls.join(', ') : 'nothing'} — ${line.injuryName} (${OUTCOME_TEXT[line.outcome] ?? line.outcome}).`)
       for(const event of line.rollHistory??[])lines.push(`${line.subjectName}: ${event}`)

@@ -34,3 +34,40 @@ describe('Henchman casualty equipment and replacement recruits',()=>{
   const r=deriveReport(draft(),ctx);expect(r.equipmentLosses.rows[0]).toMatchObject({manual:true,available:2,lost:null});expect(r.report).toBeNull()
  })
 })
+
+function forcedContext(size=3,quantity=6){
+ const ctx=context(size,quantity)
+ ctx.battleEvents=[{id:'11111111-1111-4111-8111-111111111111',match_id:ctx.matchId,at:'2026-09-12T12:00:00Z',reverted_at:null,payload:{out_of_action:true,target_kind:'group',target_id:'g',target_warband_id:ctx.roster.id,capture_reason:'subjugator',attacker_warband_id:'22222222-2222-4222-8222-222222222222'}}] as ReportContext['battleEvents']
+ return ctx
+}
+it('a captured henchman needs no survival roll and retains two copies of a per-model weapon',()=>{
+ const d=draft();d.groupInjuries.g=[]
+ const r=deriveReport(d,forcedContext())
+ expect(r.injuries.groups[0].dice).toBe(0)
+ expect(r.injuries.groups[0].resolution.dead).toBe(0)
+ expect(r.injuries.groups[0].resolution.group.size).toBe(2)
+ expect(r.injuries.groups[0].resolution.line).toMatchObject({rolls:[],dead:0,captured:[{modelIndex:1,kit:[{sourceItemId:'swords',itemId:'sword',quantity:2}]}]})
+ expect(r.equipmentLosses.patches).toEqual([{id:'swords',quantity:4}])
+})
+it('an uneven captured kit needs explicit allocation and cannot exceed the group loss',()=>{
+ const d=draft();d.groupInjuries.g=[];const ctx=forcedContext(3,4)
+ let r=deriveReport(d,ctx);d.groupEquipmentLosses={[r.equipmentLosses.rows[0].key]:2}
+ r=deriveReport(d,ctx);expect(r.equipmentLosses.problems.join()).toContain('captured casualty')
+ d.capturedEquipment={[r.equipmentLosses.captureRows[0].key]:3}
+ expect(deriveReport(d,ctx).equipmentLosses.problems.length).toBeGreaterThan(0)
+ d.capturedEquipment[r.equipmentLosses.captureRows[0].key]=1
+ expect(deriveReport(d,ctx).equipmentLosses.problems.join()).toContain('allocate all')
+ d.capturedEquipment[r.equipmentLosses.captureRows[0].key]=2
+ r=deriveReport(d,ctx);expect(r.equipmentLosses.problems).toEqual([])
+ expect(r.injuries.groups[0].resolution.line?.captured?.[0].kit[0].quantity).toBe(2)
+})
+it('keeps an ordinary casualty die separate from a later captured casualty',()=>{
+ const ctx=forcedContext();const capture=ctx.battleEvents![0]
+ ctx.battleEvents=[capture,{...capture,id:'33333333-3333-4333-8333-333333333333',at:'2026-09-12T11:00:00Z',payload:{...capture.payload,capture_reason:undefined}}]
+ const d=draft(2);d.groupInjuries.g=[1]
+ const r=deriveReport(d,ctx),res=r.injuries.groups[0].resolution
+ expect(r.injuries.groups[0].dice).toBe(1)
+ expect(res.line).toMatchObject({rolls:[1],dead:1,captured:[{modelIndex:2}]})
+ expect(res.group.size).toBe(1)
+ expect(r.equipmentLosses.patches).toEqual([{id:'swords',quantity:2}])
+})

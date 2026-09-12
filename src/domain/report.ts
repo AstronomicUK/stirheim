@@ -1,3 +1,4 @@
+import { uuidSchema } from './rows'
 import {tradeWagonSnapshotSchema} from './tradeWagon'
 import { brokenWeaponSchema } from './weaponLoss'
 // The post-battle report one warband files for a match (match_reports row), and the patches the
@@ -56,7 +57,15 @@ export const heroInjuryLineSchema = z.object({
 });
 export type HeroInjuryLine = z.infer<typeof heroInjuryLineSchema>;
 
+export const capturedGroupModelSchema = z.object({
+  modelIndex: z.number().int().min(1),
+  eventId: uuidSchema,
+  captorWarbandId: uuidSchema,
+  reason: z.literal('subjugator'),
+  kit: z.array(z.object({sourceItemId: uuidSchema, itemId: z.string().nullable(), customName: z.string().optional(), quantity: z.number().int().min(1), notes: z.string().optional()})),
+});
 export const henchmanInjuryLineSchema = z.object({
+  captured: z.array(capturedGroupModelSchema).optional(),
   subjectType: z.literal("group"),
   subjectId: z.string(),
   subjectName: z.string(),

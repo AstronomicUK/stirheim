@@ -34,3 +34,7 @@ it('the forced result also replaces an ordinary hired sword survival die',()=>{
  expect(injury.sword.status).toBe('captured')
  expect(injury.line).toMatchObject({subjectType:'hiredSword',rolls:[],outcome:'captured'})
 })
+
+ it('ignores a capture from another match even when the same warrior fought',()=>{
+ expect(run([{...event,match_id:enemy}]).heroes[0].resolution.pending.kind).not.toBe('done')
+ })

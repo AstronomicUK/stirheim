@@ -34,10 +34,14 @@ language sql
 stable
 set search_path = ''
 as $$
+  -- The whole comparison is coalesced: a missing claim is "not the service role", never NULL (which
+  -- a caller's `if not ...` would otherwise treat as a bypass).
   select coalesce(
-    nullif(current_setting('request.jwt.claim.role', true), ''),
-    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')
-  ) = 'service_role';
+    coalesce(
+      nullif(current_setting('request.jwt.claim.role', true), ''),
+      (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')
+    ) = 'service_role',
+    false);
 $$;
 revoke all on function public.is_service_role() from public;
 
@@ -217,8 +221,9 @@ begin
   if char_length(v_notes) < 10 or char_length(v_notes) > 12000 then
     raise exception 'the notes need 10 to 12000 characters' using errcode = '22023';
   end if;
-  -- One row per user in the ledger is locked implicitly by the count + insert inside this transaction;
-  -- a burst can slip one over the line under heavy concurrency, which is acceptable for a rate limit.
+  -- Serialise this user's submissions for the rest of the transaction so a burst cannot slip past
+  -- the count (count and insert would otherwise race).
+  perform pg_advisory_xact_lock(hashtext('feedback_submit'), hashtext(v_user::text));
   select count(*) into v_recent from public.feedback_submissions s where s.user_id = v_user and s.created_at > now() - interval '1 hour';
   if v_recent >= 10 then
     raise exception 'you have sent ten reports in the last hour; please wait a while before sending more' using errcode = 'P0001';
@@ -253,6 +258,9 @@ begin
   if v_user is null then
     raise exception 'sign in to follow an issue' using errcode = '42501';
   end if;
+  -- Follows and merges share one lock, so a follow can never land on a canonical issue that a
+  -- concurrent merge is about to fold into another.
+  perform pg_advisory_xact_lock(hashtext('feedback_merge'));
   v_canonical := public.feedback_canonical(p_issue_id);
   if p_follow then
     insert into public.feedback_subscriptions (user_id, issue_id) values (v_user, v_canonical) on conflict do nothing;
@@ -312,6 +320,11 @@ begin
   update public.feedback_issues
      set kind = p_kind, title = v_title, notes = v_notes, priority = p_priority, status = p_status, release_id = p_release_id
    where id = p_issue_id;
+  -- A fix linked to an already-published release is announced here, once (the dedupe key holds
+  -- whether the publish path or this path gets there first).
+  if p_status in ('implemented', 'confirmed') and v_published is not null then
+    perform public.notify_feedback_release_issue(p_release_id, p_issue_id);
+  end if;
 end;
 $$;
 revoke all on function public.review_feedback(bigint, text, text, text, text, text, timestamptz, uuid) from public;
@@ -320,7 +333,9 @@ grant execute on function public.review_feedback(bigint, text, text, text, text,
 -- ---------------------------------------------------------------------------------------------
 -- merge_feedback: mark an issue as a duplicate of another (resolved to that issue's canonical),
 -- moving its followers across. Nobody is told anything was fixed; the duplicate stays visible with
--- its notes and a link. Locks both rows in id order; refuses self, cycles and re-merging.
+-- its notes and a link. Serialised by an advisory lock, rows locked in id order, re-checked under
+-- the lock; refuses self, cycles and re-merging. Defined after the notify helper only for reading
+-- order — it sends nothing.
 -- ---------------------------------------------------------------------------------------------
 create or replace function public.merge_feedback(p_issue_id bigint, p_target_id bigint)
 returns void
@@ -335,16 +350,22 @@ declare
 begin
   perform public.require_feedback_maintainer();
   if p_issue_id = p_target_id then raise exception 'an issue cannot be a duplicate of itself' using errcode = 'P0001'; end if;
+  -- Merges are serialised (one advisory lock, shared with follows): two maintainers merging in
+  -- opposite directions at once run one after the other, and the second sees the first's result.
+  perform pg_advisory_xact_lock(hashtext('feedback_merge'));
   v_canonical := public.feedback_canonical(p_target_id);
   if v_canonical = p_issue_id then
     raise exception 'that would make issues #% and #% duplicates of each other', p_issue_id, p_target_id using errcode = 'P0001';
   end if;
-  -- Lock in a stable order so two maintainers merging opposite ways cannot deadlock.
+  -- Lock the rows in a stable order, then re-check under the lock.
   perform id from public.feedback_issues where id in (p_issue_id, v_canonical) order by id for update;
   select duplicate_of into v_dup from public.feedback_issues where id = p_issue_id;
   if not found then raise exception 'feedback issue % not found', p_issue_id using errcode = 'P0002'; end if;
   if v_dup is not null then
     raise exception 'issue #% is already recorded as a duplicate of #%', p_issue_id, v_dup using errcode = 'P0001';
+  end if;
+  if public.feedback_canonical(v_canonical) <> v_canonical or public.feedback_canonical(p_target_id) = p_issue_id then
+    raise exception 'the target changed while merging; reload and try again' using errcode = '40001';
   end if;
   -- Anything already pointing at the merged issue now points at the canonical one too.
   update public.feedback_issues set duplicate_of = v_canonical where duplicate_of = p_issue_id;
@@ -359,10 +380,41 @@ revoke all on function public.merge_feedback(bigint, bigint) from public;
 grant execute on function public.merge_feedback(bigint, bigint) to authenticated;
 
 -- ---------------------------------------------------------------------------------------------
--- publish_feedback_release: a maintainer (or the service role) publishes a draft. Linked issues at
--- Working on become Implemented; everyone following a linked Implemented/Confirmed issue is told
--- once per issue and release (dedupe_key). Reported/Reviewed issues are left alone. Re-running is
--- harmless: nothing is re-sent, nothing re-advanced.
+-- Telling followers: one notification per issue, release and follower (dedupe_key), only for a
+-- canonical issue (a merged duplicate's followers were moved to the canonical one) that stands at
+-- Implemented or Confirmed against a published release. Shared by publishing and by the review path.
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.notify_feedback_release_issue(p_release_id uuid, p_issue_id bigint)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.app_notifications (user_id, kind, title, body, href, dedupe_key)
+    select s.user_id, 'feedback_release',
+           left(format('#%s is in release %s', i.id, r.version), 140),
+           left(format('%s — now %s. %s', i.title, case i.status when 'confirmed' then 'confirmed' else 'implemented' end, r.title), 2000),
+           format('/feedback?issue=%s', i.id),
+           format('release:%s:issue:%s:user:%s', p_release_id, i.id, s.user_id)
+      from public.feedback_issues i
+      join public.feedback_releases r on r.id = p_release_id
+      join public.feedback_subscriptions s on s.issue_id = i.id
+     where i.id = p_issue_id and i.release_id = p_release_id and i.duplicate_of is null
+       and i.status in ('implemented', 'confirmed') and r.published_at is not null
+    on conflict (dedupe_key) do nothing;
+end;
+$$;
+revoke all on function public.notify_feedback_release_issue(uuid, bigint) from public;
+
+-- ---------------------------------------------------------------------------------------------
+-- publish_feedback_release: a maintainer (or the service role) publishes a draft. On the FIRST
+-- publication, linked issues at Working on become Implemented. Everyone following a linked
+-- Implemented/Confirmed canonical issue is told once per issue and release. Reported/Reviewed
+-- issues are left alone. Re-running after publication re-advances nothing (an issue deliberately
+-- reopened to Working on stays there) and re-sends nothing; a fix linked later through
+-- review_feedback is announced by that path instead.
 -- ---------------------------------------------------------------------------------------------
 create or replace function public.publish_feedback_release(p_release_id uuid)
 returns void
@@ -373,27 +425,23 @@ set search_path = ''
 as $$
 declare
   v_rel public.feedback_releases%rowtype;
+  v_first boolean;
+  v_issue bigint;
 begin
   if not public.is_service_role() then
     perform public.require_feedback_maintainer();
   end if;
   select * into v_rel from public.feedback_releases where id = p_release_id for update;
   if not found then raise exception 'release not found' using errcode = 'P0002'; end if;
-  if v_rel.published_at is null then
+  v_first := v_rel.published_at is null;
+  if v_first then
     update public.feedback_releases set published_at = now() where id = p_release_id;
+    update public.feedback_issues set status = 'implemented'
+     where release_id = p_release_id and status = 'working_on';
   end if;
-  update public.feedback_issues set status = 'implemented'
-   where release_id = p_release_id and status = 'working_on';
-  insert into public.app_notifications (user_id, kind, title, body, href, dedupe_key)
-    select s.user_id, 'feedback_release',
-           left(format('#%s is in release %s', i.id, v_rel.version), 140),
-           left(format('%s — now %s. %s', i.title, case i.status when 'confirmed' then 'confirmed' else 'implemented' end, v_rel.title), 2000),
-           format('/feedback/%s', i.id),
-           format('release:%s:issue:%s:user:%s', p_release_id, i.id, s.user_id)
-      from public.feedback_issues i
-      join public.feedback_subscriptions s on s.issue_id = i.id
-     where i.release_id = p_release_id and i.status in ('implemented', 'confirmed')
-    on conflict (dedupe_key) do nothing;
+  for v_issue in select i.id from public.feedback_issues i where i.release_id = p_release_id and i.status in ('implemented', 'confirmed') and i.duplicate_of is null loop
+    perform public.notify_feedback_release_issue(p_release_id, v_issue);
+  end loop;
 end;
 $$;
 revoke all on function public.publish_feedback_release(uuid) from public;

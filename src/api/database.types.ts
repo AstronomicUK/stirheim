@@ -2098,6 +2098,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      notify_feedback_release_issue: {
+        Args: { p_issue_id: number; p_release_id: string }
+        Returns: undefined
+      }
       owns_warband: { Args: { p_warband_id: string }; Returns: boolean }
       pay_map_toll: {
         Args: {

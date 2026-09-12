@@ -4,7 +4,7 @@
 // rejection. Everything created here is deleted afterwards; the seeded GM is made a maintainer for
 // the duration of the file and removed again.
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 const enabled = process.env.SUPABASE_LOCAL === '1'
 const gmId = '11111111-1111-4111-8111-111111111111'
 const playerId = '22222222-2222-4222-8222-222222222222'
@@ -27,9 +27,13 @@ describe.skipIf(!enabled)('feedback boards backend (#230)', () => {
     }
     await admin.from('feedback_maintainers').delete().eq('user_id', gmId)
   })
+  // Each test starts with a clean hour for both seeded users: the rate limit is tested on its own.
+  afterEach(async () => {
+    if (issues.length) await admin.from('feedback_submissions').delete().in('issue_id', issues)
+  })
   afterAll(async () => {
     if (issues.length) {
-      await admin.from('app_notifications').delete().in('href', issues.map((id) => `/feedback/${id}`))
+      await admin.from('app_notifications').delete().in('href', issues.map((id) => `/feedback?issue=${id}`))
       await admin.from('feedback_issues').delete().in('id', issues)
     }
     if (releases.length) await admin.from('feedback_releases').delete().in('id', releases)
@@ -145,17 +149,17 @@ describe.skipIf(!enabled)('feedback boards backend (#230)', () => {
     expect((await issue(ids[1])).status).toBe('reviewed')
     expect((await issue(ids[2])).status).toBe('implemented')
     expect((await anonymous.from('feedback_releases').select('id').eq('id', release)).data).toHaveLength(1)
-    const mine = await player.from('app_notifications').select('id,title,body,href,read_at').in('href', ids.map((id) => `/feedback/${id}`)).order('href')
-    expect(mine.data?.map((n) => n.href)).toEqual([`/feedback/${ids[0]}`, `/feedback/${ids[2]}`])
+    const mine = await player.from('app_notifications').select('id,title,body,href,read_at').in('href', ids.map((id) => `/feedback?issue=${id}`)).order('href')
+    expect(mine.data?.map((n) => n.href)).toEqual([`/feedback?issue=${ids[0]}`, `/feedback?issue=${ids[2]}`])
     expect(mine.data?.[0].title).toContain(`#${ids[0]} is in release`)
     expect(mine.data?.[0].body).toContain('now implemented')
     expect(mine.data?.every((n) => n.read_at === null)).toBe(true)
-    const gms = await gm.from('app_notifications').select('href').in('href', ids.map((id) => `/feedback/${id}`))
-    expect(gms.data?.map((n) => n.href)).toEqual([`/feedback/${ids[0]}`])
+    const gms = await gm.from('app_notifications').select('href').in('href', ids.map((id) => `/feedback?issue=${id}`))
+    expect(gms.data?.map((n) => n.href)).toEqual([`/feedback?issue=${ids[0]}`])
     // Publishing again (maintainer, then service role) sends nothing new and changes nothing.
     expect((await gm.rpc('publish_feedback_release', { p_release_id: release })).error).toBeNull()
     expect((await admin.rpc('publish_feedback_release', { p_release_id: release })).error).toBeNull()
-    const total = await admin.from('app_notifications').select('id', { count: 'exact', head: true }).in('href', ids.map((id) => `/feedback/${id}`))
+    const total = await admin.from('app_notifications').select('id', { count: 'exact', head: true }).in('href', ids.map((id) => `/feedback?issue=${id}`))
     expect(total.count).toBe(3)
     // Owners mark their own read; nobody else can touch them; nobody reads another's inbox.
     const first = mine.data![0].id
@@ -168,7 +172,26 @@ describe.skipIf(!enabled)('feedback boards backend (#230)', () => {
     const c = await issue(ids[2])
     expect((await gm.rpc('review_feedback', { p_issue_id: ids[2], p_title: c.title, p_notes: c.notes, p_priority: c.priority, p_status: 'confirmed', p_kind: c.kind, p_expected_updated_at: c.updated_at, p_release_id: release })).error).toBeNull()
     expect((await gm.rpc('publish_feedback_release', { p_release_id: release })).error).toBeNull()
-    expect((await admin.from('app_notifications').select('id', { count: 'exact', head: true }).in('href', ids.map((id) => `/feedback/${id}`))).count).toBe(3)
+    expect((await admin.from('app_notifications').select('id', { count: 'exact', head: true }).in('href', ids.map((id) => `/feedback?issue=${id}`))).count).toBe(3)
+    // An issue deliberately reopened to Working on after publication is not re-closed by a re-publish.
+    const a = await issue(ids[0])
+    expect((await gm.rpc('review_feedback', { p_issue_id: ids[0], p_title: a.title, p_notes: a.notes, p_priority: a.priority, p_status: 'working_on', p_kind: a.kind, p_expected_updated_at: a.updated_at, p_release_id: release })).error).toBeNull()
+    expect((await gm.rpc('publish_feedback_release', { p_release_id: release })).error).toBeNull()
+    expect((await issue(ids[0])).status).toBe('working_on')
+    // A fix linked later, through review against the already-published release, notifies its followers once.
+    const d = (await submit(player, `${TAG} Publish case D (late fix)`)).data as number
+    const drow = await issue(d)
+    expect((await gm.rpc('review_feedback', { p_issue_id: d, p_title: drow.title, p_notes: drow.notes, p_priority: drow.priority, p_status: 'implemented', p_kind: drow.kind, p_expected_updated_at: drow.updated_at, p_release_id: release })).error).toBeNull()
+    const dNotes = () => admin.from('app_notifications').select('id', { count: 'exact', head: true }).eq('href', `/feedback?issue=${d}`)
+    expect((await dNotes()).count).toBe(1)
+    expect((await gm.rpc('publish_feedback_release', { p_release_id: release })).error).toBeNull()
+    expect((await dNotes()).count).toBe(1)
+    // A merged duplicate linked to the release never produces its own notification.
+    const e = (await submit(player, `${TAG} Publish case E (duplicate)`)).data as number
+    expect((await gm.rpc('merge_feedback', { p_issue_id: e, p_target_id: d })).error).toBeNull()
+    await setStatus(e, 'implemented', release)
+    expect((await gm.rpc('publish_feedback_release', { p_release_id: release })).error).toBeNull()
+    expect((await admin.from('app_notifications').select('id', { count: 'exact', head: true }).eq('href', `/feedback?issue=${e}`)).count).toBe(0)
   })
 
   it('follow and unfollow, following a duplicate lands on its canonical issue, and merges move followers without notifying anyone', async () => {
@@ -198,7 +221,21 @@ describe.skipIf(!enabled)('feedback boards backend (#230)', () => {
     expect((await gm.rpc('follow_feedback', { p_issue_id: c, p_follow: false })).error).toBeNull()
     expect((await gm.from('feedback_subscriptions').select('issue_id').eq('issue_id', b)).data).toEqual([])
     // Nobody was told anything was fixed.
-    expect((await admin.from('app_notifications').select('id', { count: 'exact', head: true }).in('href', [a, b, c].map((id) => `/feedback/${id}`))).count).toBe(0)
+    expect((await admin.from('app_notifications').select('id', { count: 'exact', head: true }).in('href', [a, b, c].map((id) => `/feedback?issue=${id}`))).count).toBe(0)
     expect((await anonymous.rpc('follow_feedback', { p_issue_id: b, p_follow: true })).error?.message).toMatch(/sign in/i)
+  })
+
+  it('two maintainers merging in opposite directions at once end with one duplicate and no cycle', async () => {
+    await makeMaintainer()
+    for (let round = 0; round < 3; round++) {
+      const x = (await submit(player, `${TAG} Race X ${round}`)).data as number
+      const y = (await submit(player, `${TAG} Race Y ${round}`)).data as number
+      const [xy, yx] = await Promise.all([gm.rpc('merge_feedback', { p_issue_id: x, p_target_id: y }), gm.rpc('merge_feedback', { p_issue_id: y, p_target_id: x })])
+      expect([xy.error, yx.error].filter(Boolean)).toHaveLength(1)
+      const rx = await issue(x), ry = await issue(y)
+      expect([rx.duplicate_of, ry.duplicate_of].filter((v) => v !== null)).toHaveLength(1)
+      expect((await anonymous.rpc('feedback_canonical', { p_issue_id: x })).error).toBeNull()
+      expect((await anonymous.rpc('feedback_canonical', { p_issue_id: y })).error).toBeNull()
+    }
   })
 })

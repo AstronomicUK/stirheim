@@ -215,6 +215,7 @@ function useInvalidateAfterReport() {
       qc.invalidateQueries({ queryKey: reportKeys.all }),
       qc.invalidateQueries({ queryKey: ['campaign-artefacts'] }),
       qc.invalidateQueries({ queryKey: ['rawhide-cargo'] }),
+      qc.invalidateQueries({ queryKey: ['trade-wagon-captures'] }),
       qc.invalidateQueries({ queryKey: ['map'] }),
       qc.invalidateQueries({ queryKey: matchKeys.all }),
       qc.invalidateQueries({ queryKey: warbandKeys.all }),

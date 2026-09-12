@@ -1,3 +1,4 @@
+import {tradeWagonCaptureSchema} from '../tradeWagons'
 import {createClient,type SupabaseClient} from '@supabase/supabase-js'
 import {beforeAll,beforeEach,afterEach,describe,it,expect} from 'vitest'
 const uid='22222222-2222-4222-8222-222222222222'
@@ -170,6 +171,18 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   expect((await player.rpc('undo_kept_trade_wagon',{p_report_id:report,p_reason:'Correction'})).error).toBeNull()
   expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error).toBeNull()
   expect((await admin.from('henchman_groups').select('size').eq('id',wagon).single()).data?.size).toBe(1)
+ })
+ it('exposes validated pending and settled captures to the owner without allowing direct edits',async()=>{
+  await reserveAndWinner()
+  const read=await player.from('trade_wagon_captures').select('*').eq('report_id',report).single()
+  expect(read.error).toBeNull()
+  expect(tradeWagonCaptureSchema.parse(read.data)).toMatchObject({state:'pending',settlement:null,snapshot:{cargo:{wyrdstone:3}}})
+  await player.from('trade_wagon_captures').update({state:'settled'}).eq('report_id',report)
+  expect((await admin.from('trade_wagon_captures').select('state').eq('report_id',report).single()).data?.state).toBe('pending')
+  expect((await ransom()).error).toBeNull()
+  const settled=await player.from('trade_wagon_captures').select('*').eq('report_id',report).single()
+  expect(settled.error).toBeNull()
+  expect(tradeWagonCaptureSchema.parse(settled.data)).toMatchObject({state:'settled',settlement:{kind:'ransom',gold:25}})
  })
  it('protects both settled reports but allows withdrawal after the ransom is undone',async()=>{
   await reserveAndWinner();expect((await ransom()).error).toBeNull()

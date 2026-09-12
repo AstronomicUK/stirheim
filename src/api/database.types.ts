@@ -1492,6 +1492,68 @@ export type Database = {
           },
         ]
       }
+      trade_wagon_captures: {
+        Row: {
+          captor_id: string
+          created_at: string
+          match_id: string
+          merchant_id: string
+          report_id: string
+          settlement: Json | null
+          snapshot: Json
+          state: string
+        }
+        Insert: {
+          captor_id: string
+          created_at?: string
+          match_id: string
+          merchant_id: string
+          report_id: string
+          settlement?: Json | null
+          snapshot: Json
+          state?: string
+        }
+        Update: {
+          captor_id?: string
+          created_at?: string
+          match_id?: string
+          merchant_id?: string
+          report_id?: string
+          settlement?: Json | null
+          snapshot?: Json
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_wagon_captures_captor_id_fkey"
+            columns: ["captor_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_wagon_captures_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_wagon_captures_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_wagon_captures_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: true
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       warband_templates: {
         Row: {
           campaign_id: string | null
@@ -1711,6 +1773,17 @@ export type Database = {
         }
       }
       jsonb_text_array: { Args: { p: Json }; Returns: string[] }
+      keep_captured_trade_wagon: {
+        Args: {
+          p_captor_updated: string
+          p_merchant_updated: string
+          p_reason: string
+          p_report_id: string
+          p_vehicle: string
+          p_vehicle_allowed: boolean
+        }
+        Returns: undefined
+      }
       leave_campaign: {
         Args: { p_campaign_id: string; p_warband_id: string }
         Returns: undefined
@@ -1852,6 +1925,14 @@ export type Database = {
         Args: { p_campaign_id: string }
         Returns: string
       }
+      release_trade_wagon_capture: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
+      reserve_trade_wagon_capture: {
+        Args: { p_capture: Json; p_report_id: string }
+        Returns: undefined
+      }
       resolve_captive_rosters: {
         Args: {
           p_advances?: Json
@@ -1947,6 +2028,16 @@ export type Database = {
         Args: { p_extra: number; p_hero_id: string; p_match_id: string }
         Returns: undefined
       }
+      settle_trade_wagon_ransom: {
+        Args: {
+          p_captor_updated: string
+          p_gold: number
+          p_merchant_updated: string
+          p_reason: string
+          p_report_id: string
+        }
+        Returns: undefined
+      }
       start_match: {
         Args: {
           p_combat_mode?: Database["public"]["Enums"]["combat_mode"]
@@ -1976,6 +2067,14 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: undefined
       }
+      undo_kept_trade_wagon: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: undefined
+      }
+      undo_trade_wagon_ransom: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: undefined
+      }
       unpaid_match_hires: {
         Args: { p_match_id: string }
         Returns: {
@@ -1993,6 +2092,14 @@ export type Database = {
         Args: { p_hero_id: string; p_match_id: string }
         Returns: number
       }
+      validate_broken_weapons: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
+      validate_equipment_conversions: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
       validate_lycanthrope_equipment: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -2003,6 +2110,10 @@ export type Database = {
       }
       validate_shrine_equipment: {
         Args: { p_report_id: string }
+        Returns: undefined
+      }
+      validate_trade_wagon_capture: {
+        Args: { p_capture: Json; p_report_id: string }
         Returns: undefined
       }
       withdraw_battle_prompt: {

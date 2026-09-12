@@ -68,7 +68,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       {heroes.length > 0 ? (
         <Section title={hunters?'Heroes':burning ? 'Heroes (D6)' : 'Heroes (D66)'}>
           {heroes.map(({ hero, resolution }) => (
-            burning || plant(hero.id) ? <Card key={hero.id} className="flex flex-col gap-3 px-4 py-3">
+            resolution.line?.injuryName==='Captured — Subjugator of Mankind' ? <Card key={hero.id} className="flex flex-col gap-3 px-4 py-3"><p className="font-semibold">{hero.name}: Captured</p><p className="text-sm">{resolution.line.effect}</p><SkipRow skip={draft.injurySkips[hero.id]} onSkip={reason=>update(d=>setInjurySkip(d,hero.id,reason))}/></Card> : burning || plant(hero.id) ? <Card key={hero.id} className="flex flex-col gap-3 px-4 py-3">
               <p>{hero.name}</p>
               {draft.injurySkips[hero.id] === undefined ? <DieField label={`${hero.name} injury D6`} sides={6} value={draft.scenarioInjuryDice?.[hero.id] ?? null} onChange={v => update(d => ({ ...d, scenarioInjuryDice: { ...d.scenarioInjuryDice, [hero.id]: v } }))} rollable /> : null}
               <SkipRow skip={draft.injurySkips[hero.id]} onSkip={reason => update(d => setInjurySkip(d, hero.id, reason))} />
@@ -119,7 +119,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       {hiredSwords.length > 0 ? (
         <Section title="Hired swords and Dramatis Personae">
           {hiredSwords.map(({ sword, resolution }) => (
-            resolution.heroFlow ? <HeroInjuryCard restartReasonRequired key={sword.id} name={sword.name} type="Dramatis Persona · D66" resolution={resolution.heroFlow}
+            resolution.line?.injuryName==='Captured — Subjugator of Mankind' ? <Card key={sword.id} className="flex flex-col gap-3 px-4 py-3"><p className="font-semibold">{sword.name}: Captured</p><p className="text-sm">{resolution.line.effect}</p><SkipRow skip={draft.injurySkips[sword.id]} onSkip={reason=>update(d=>setInjurySkip(d,sword.id,reason))}/></Card> : resolution.heroFlow ? <HeroInjuryCard restartReasonRequired key={sword.id} name={sword.name} type="Dramatis Persona · D66" resolution={resolution.heroFlow}
               medicine={<MedicineChest heroId={sword.id} draft={draft} items={ctx.items} resolution={resolution.heroFlow} update={update}/>}
               skip={draft.injurySkips[sword.id]} onSkip={reason => update(d => setInjurySkip(d, sword.id, reason))}
               onD66={(d66, source) => update(d => addHeroInjuryRoll(d, sword.id, d66, source))}

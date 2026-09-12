@@ -243,7 +243,7 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
   }
 }
 
-export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null): InjuriesDerived {
+export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null, battleEvents: import('../../../domain').BattleEventRow[] = []): InjuriesDerived {
   const burning = scenarioId === 'mordheim_s_burning'
   const plant = (id:string) => scenarioId === 'the_hunters_become_the_hunted' && !!draft.plantCasualties?.[id]
   const out = heroOoaIds(draft)
@@ -251,6 +251,14 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((h) => out.has(h.id))
     .map((hero) => {
       const skip = draft.injurySkips[hero.id]
+      const capture = battleEvents.find(e=>!e.reverted_at&&e.payload.out_of_action&&e.payload.capture_reason==='subjugator'&&e.payload.target_id===hero.id&&e.payload.target_warband_id===roster?.id)
+      if(capture && skip===undefined){
+        const res=resolveHeroInjuryFlow(hero,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
+        const effect=`Subjugator of Mankind: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
+        if(res.line)res.line={...res.line,rolls:[],injuryName:'Captured — Subjugator of Mankind',effect}
+        res.steps=[]
+        return {hero,resolution:res}
+      }
       if (plant(hero.id) && skip === undefined) {
         const die=draft.scenarioInjuryDice?.[hero.id]
         const res=resolveHeroInjuryFlow(hero,{rolls:isDie(die,6)?[{d66:die===1?11:41,subRoll:null}]:[],countRoll:null},matchId)
@@ -280,6 +288,14 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
     .filter((s) => out.has(s.id))
     .map((sword) => {
       const skip = draft.injurySkips[sword.id]
+      const capture = battleEvents.find(e=>!e.reverted_at&&e.payload.out_of_action&&e.payload.capture_reason==='subjugator'&&e.payload.target_id===sword.id&&e.payload.target_warband_id===roster?.id)
+      if(capture && skip===undefined){
+        const res=resolvePersonaInjury(sword,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
+        const effect=`Subjugator of Mankind: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
+        if(res.line)res.line={...res.line,rolls:[],injuryName:'Captured — Subjugator of Mankind',effect}
+        if(res.heroFlow){res.heroFlow.steps=[];if(res.heroFlow.line)res.heroFlow.line={...res.heroFlow.line,rolls:[],injuryName:'Captured — Subjugator of Mankind',effect}}
+        return {sword,resolution:res}
+      }
       if (plant(sword.id) && skip === undefined) {
         const die=draft.swordInjuries[sword.id]??null
         const res=resolveHiredSwordInjury(sword,isDie(die,6)?die===1?1:6:null)
@@ -1012,7 +1028,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const wagonCapture=nonCampaign?{snapshot:undefined,problems:[] as string[],notes:[] as string[]}:reportTradeWagon(draft,ctx)
   const postCaptureContext=afterTradeWagonCapture(ctx,wagonCapture)
   const participants = participantsOf(ctx.roster, ctx.template)
-  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
+  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId, ctx.battleEvents)
   const lycanthrope=lycanthropeReport(draft,postCaptureContext,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
   const injuries=lycanthrope.injuries
   const casualtyDraft=woodsCasualtyDraft(draft,ctx.scenarioId)

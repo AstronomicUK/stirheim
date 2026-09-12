@@ -1,3 +1,4 @@
+import { subjugatorCaptures } from '../../../rules/resolve/forcedCapture'
 import { firingAttemptStarted } from './firingAttempt'
 import { doubleBarrelState, reloadDoubleBarrels, correctChamberReload } from '../../../domain/chambers'
 import { ChamberDisplay } from './ChamberDisplay'
@@ -918,6 +919,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             }
             onLog={(state, attemptId) =>
               onLogEvent({
+                capture_reason: subjugatorCaptures({outOfAction:state.worst==='outOfAction',attackerIsHero:attacker.kind==='hero',skills:attacker.skillIds,equipment:attacker.equipment.flatMap(item=>item.itemId&&item.quantity>0?[item.itemId]:[]),targetLarge:defender.traitIds.includes('large_target')})?'subjugator':undefined,
                 blessedWaterUseId: isBlessedWater ? attemptId : undefined,
                 attacker_warband_id: attacker.warbandId,
                 attacker_id: attacker.id,

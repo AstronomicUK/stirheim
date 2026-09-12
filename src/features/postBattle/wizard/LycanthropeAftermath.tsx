@@ -50,7 +50,7 @@ export function LycanthropeAftermath({draft,derived,ctx,update}:Pick<StepProps,'
  const groups=participants.groups.filter(g=>g.campaignState?.lycanthropes?.length||woods&&(draft.groupsOut[g.id]??0)>0)
  const casualties=woods?[...participants.heroes,...participants.hiredSwords].filter(h=>draft.heroesOut.includes(h.id)):[]
  if(!woods&&!cursed.length&&!groups.length)return null
- const base=deriveInjuries(woodsInjuryDraft(draft,ctx.scenarioId),participants,ctx.matchId,ctx.roster,ctx.map?.perks,ctx.scenarioId)
+ const base=deriveInjuries(woodsInjuryDraft(draft,ctx.scenarioId),participants,ctx.matchId,ctx.roster,ctx.map?.perks,ctx.scenarioId,ctx.battleEvents)
  const after=(id:string)=>base.heroes.find(h=>h.hero.id===id)?.resolution.hero??base.hiredSwords.find(h=>h.sword.id===id)?.resolution.sword??[...participants.heroes,...participants.hiredSwords].find(h=>h.id===id)!
  const victim=(id:string,value:WoodsVictim)=>update(d=>({...d,woods:{...d.woods,victims:{...d.woods?.victims,[id]:value}}}))
  const changeGroup=(id:string,value:WoodsGroupDraft)=>update(d=>({...d,woods:{...d.woods,groups:{...d.woods?.groups,[id]:value}}}))

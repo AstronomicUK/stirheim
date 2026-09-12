@@ -5,7 +5,7 @@ import { useMyWarbands, type WarbandSummary } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { usePageTitle } from '../onboarding/usePageTitle'
-import { Button, Notice, PageHeader, Spinner, TextField } from '../../ui'
+import { Button, Notice, PageHeader, SelectField, Spinner, TextField } from '../../ui'
 import { Card, Section, Tag, TextLink } from './bits'
 import { formatInviteCode, isCompleteInviteCode, normaliseInviteCode } from './inviteCode'
 
@@ -15,6 +15,7 @@ export function JoinCampaignPage() {
   const navigate = useNavigate()
   const user = useSession((s) => s.user)
   const [code, setCode] = useState(prefill ? formatInviteCode(prefill) : '')
+  const [pickedCampaignId, setPickedCampaignId] = useState('')
   const [warbandId, setWarbandId] = useState<string | null>(null)
   const [joinError, setJoinError] = useState<string | null>(null)
 
@@ -23,6 +24,15 @@ export function JoinCampaignPage() {
   const warbands = useMyWarbands(user?.id)
   const campaigns = useMyCampaigns(user?.id)
   const join = useJoinCampaign()
+
+  // #92: a GM enrolling a warband in their own campaign should not have to look up its code. The
+  // picker just fills the code field, so the lookup, preview and join run exactly as for a typed code.
+  const gmCampaigns = (campaigns.data ?? []).filter((c) => c.gm_id === user?.id && !c.archived)
+  function pickCampaign(id: string) {
+    setPickedCampaignId(id)
+    setCode(id ? formatInviteCode(gmCampaigns.find((c) => c.id === id)?.invite_code ?? '') : '')
+    setJoinError(null)
+  }
 
   // Which of my warbands already sit in a campaign I can see. Membership elsewhere is caught by the server.
   const enrolledIn = useMemo(() => {
@@ -52,9 +62,27 @@ export function JoinCampaignPage() {
       <PageHeader
         eyebrow="Join"
         title="Join a campaign"
-        description="Enter the eight-character code your GM shared, then choose which of your warbands takes the field."
+        description={
+          gmCampaigns.length > 0
+            ? 'Pick one of the campaigns you run, or enter the eight-character code another GM shared, then choose which of your warbands takes the field.'
+            : 'Enter the eight-character code your GM shared, then choose which of your warbands takes the field.'
+        }
         aside={<TextLink to="/campaigns">Cancel</TextLink>}
       />
+
+      {gmCampaigns.length > 0 ? (
+        <>
+          <SelectField label="One of your own campaigns" value={pickedCampaignId} onChange={(e) => pickCampaign(e.target.value)}>
+            <option value="">Not one of these — enter a code below</option>
+            {gmCampaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </SelectField>
+          <p className="text-center text-xs text-ink-dim">or</p>
+        </>
+      ) : null}
 
       <TextField
         label="Invite code"
@@ -65,6 +93,7 @@ export function JoinCampaignPage() {
         spellCheck={false}
         placeholder="abcd-efgh"
         className="tracking-widest"
+        disabled={pickedCampaignId !== ''}
         hint={complete ? undefined : 'Dashes, spaces and capitals do not matter.'}
         onChange={(e) => {
           setCode(e.target.value)

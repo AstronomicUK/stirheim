@@ -685,10 +685,12 @@ The chart below shows the D6 score required to turn a hit into a wound. Note tha
 
 *(target's Toughness across the top, weapon's Strength down the side — D6 score required to wound)*
 
+*Transcription note (2026-09-12): the site publishes this chart as an image (`/assets/images/wound-chart-….jpg`), so the table below is a hand transcription. The Strength 2 / Toughness 5 cell was corrected from "–" to "6" after reading the original image, saved in `docs/audits/2026-09-12-source-verification/wound-chart-shooting.jpg` (tracker #167).*
+
 | Strength \ Toughness | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **1** | 4 | 5 | 6 | 6 | – | – | – | – | – | – |
-| **2** | 3 | 4 | 5 | 6 | – | – | – | – | – | – |
+| **2** | 3 | 4 | 5 | 6 | 6 | – | – | – | – | – |
 | **3** | 2 | 3 | 4 | 5 | 6 | 6 | – | – | – | – |
 | **4** | 2 | 2 | 3 | 4 | 5 | 6 | 6 | – | – | – |
 | **5** | 2 | 2 | 2 | 3 | 4 | 5 | 6 | 6 | – | – |
@@ -859,10 +861,12 @@ The chart below shows the D6 score required to turn a hit into a wound. Note tha
 
 *(Identical to the Shooting wound chart, labelled "attacker's Strength" instead of "weapon's Strength" — target's Toughness across the top, attacker's Strength down the side)*
 
+*Transcription note (2026-09-12): hand-transcribed from the site's chart image; the Strength 2 / Toughness 5 cell was corrected from "–" to "6" after reading the original, saved in `docs/audits/2026-09-12-source-verification/wound-chart-cc.jpg` (tracker #167).*
+
 | Strength \ Toughness | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **1** | 4 | 5 | 6 | 6 | – | – | – | – | – | – |
-| **2** | 3 | 4 | 5 | 6 | – | – | – | – | – | – |
+| **2** | 3 | 4 | 5 | 6 | 6 | – | – | – | – | – |
 | **3** | 2 | 3 | 4 | 5 | 6 | 6 | – | – | – | – |
 | **4** | 2 | 2 | 3 | 4 | 5 | 6 | 6 | – | – | – |
 | **5** | 2 | 2 | 2 | 3 | 4 | 5 | 6 | 6 | – | – |

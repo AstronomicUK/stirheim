@@ -17,7 +17,7 @@ Read `reference/rules/02-weapons-armour-equipment.md:481` (Man-catcher) and `:22
 
 ## Existing parts to reuse
 
-`captive_cases`/`captive_proposals` provide owner notifications, two-player consent, exact equipment snapshots, atomic roster changes, stale-state checks and reversal. `trade_wagon_captures` is a useful report-dependency reference, but it is Merchant-specific and must not be repurposed as an Engine. `engine_of_chaos` already exists in the item catalogue. No general persistent Engine inventory or prison ledger currently exists.
+`captive_cases`/`captive_proposals` provide owner notifications, two-player consent, exact equipment snapshots, atomic roster changes, stale-state checks and reversal. `trade_wagon_captures` is a useful report-dependency reference, but it is Merchant-specific and must not be repurposed as an Engine. `engine_of_chaos` already exists in the item catalogue. Migration 101 now provides the physical Engine inventory; the prison ledger remains outstanding.
 
 `src/rules/resolve/engineOfChaos.ts` now defines capture eligibility, capacity and reward calculations. It is a tested rule foundation only; it is not yet connected to inventory, reports or screens.
 
@@ -25,7 +25,7 @@ Read `reference/rules/02-weapons-armour-equipment.md:481` (Man-catcher) and `:22
 
 Propose and implement the persistent identity/custody layer with integration tests before adding capture writers:
 
-1. Represent each physical Engine distinctly, including multiple copies bought in one item row. Prevent selling/removing an occupied or travelling Engine without resolving that state. Do not silently reuse an occupied Engine identity when an item quantity changes.
+1. Reuse migration 101 physical Engine identities; do not create competing inventory identities. Extend `engine_inventory_locked` to include held prisoners. Placement must lock the stock item row then engine rows in ID order.
 2. Link a named prisoner to an existing captive case and source report, or an anonymous prisoner to its exploration report. Preserve the victim owner, profile, original item rows, Large status and confiscation record.
 3. Track custody separately from a final captive outcome. Imprisonment is not release, and must not make a still-held Hero reappear in the legacy Captured form. A report cannot be withdrawn after its prisoner or equipment affects another roster without reversing those consequences.
 4. Design one atomic placement/kit-confiscation operation under existing consent conventions, with six-place capacity checked under lock. Do not leave half-transferred equipment or allow two concurrent placements to exceed capacity.
@@ -49,4 +49,12 @@ Important implementation traps to address in the proposed contract:
 - Since custody and confiscation are cross-player consequences, reuse the established agreement/GM authority policy. An engine owner cannot silently take a second player's equipment or permanently remove their Hero outside the agreed case.
 - Local database now also includes 097 capture-event reversal protection and 098 core captive dice provenance. Do not overwrite their functions with older definitions. All 273 API DB checks pass serially; run shared-DB suites serially to avoid fixture collisions.
 
-Latest database handoff: 099 preserves exact Hero kit annotations and distinguishes already-owned Enchanted Skins from Amazon bonuses; 100 retains complete readable consent with catalogue names. The next free migration number is **101**. All 35 affected capture DB checks pass. Do not revert these changes when integrating Engine custody.
+Latest database handoff: 099 preserves exact Hero kit annotations and distinguishes already-owned Enchanted Skins from Amazon bonuses; 100 retains complete readable consent with catalogue names. The next free migration number is **102**. All 35 affected capture DB checks pass. Do not revert these changes when integrating Engine custody.
+
+## Inventory handoff — 23:10 BST
+
+Codex implemented and locally applied `20260912000101_engine_inventory.sql`. Five local DB tests pass (physical quantity identities, retirement without reuse, ownership/name/stale checks, travelling-copy protection, selected empty-copy removal, stock deletion/history, private reads and ordinary items). Parent warband deletion also cleans up travelling test fixtures successfully.
+
+Contract: `engine_of_chaos_units` has `id`, `warband_id`, nullable `inventory_item_id`, `stock_index`, editable `name`, `state` (`present`, `away`, `retired`), `history`, timestamps. Each live stock copy has a unique stable UUID; stock_index is not identity. `rename_engine(id,name,expected_updated_at)` and `remove_engine_copy(id,reason,expected_updated_at)` are owner/GM operations. Authenticated clients cannot write the table directly. Generic item quantity/type/deletion changes retire empty copies, reject away copies. Custody must extend the lock predicate before being exposed.
+
+Your reset task is custody/consent (steps 2–5 above), not inventory. Send the proposed placement/proposal/reversal contract before client work. Reserve 102 for your migration and retain the 097–100 protections. Codex has prepared the actual `EnginePrisonCard` component and mobile/desktop preview, but no unfinished custody controls are exposed to live players.

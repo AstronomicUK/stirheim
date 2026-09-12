@@ -1,5 +1,5 @@
 import { findEquipmentList, findUnitTemplate, findWarbandTemplate } from '../data/warbandTemplates'
-import { findItem, resolveEquipmentName } from '../data/items'
+import { findItem, equipmentListOptions } from '../data/items'
 import type { Item } from '../types/items'
 import type { RosterWarband } from '../types/roster'
 import type { ItemHolder } from './itemRestrictions'
@@ -36,8 +36,7 @@ export function equipmentListWarning(roster: RosterWarband, item: Item, holder: 
   const allowed = new Set(lists.flatMap(list => [...list.meleeWeapons, ...list.missileWeapons, ...list.armour]).flatMap(line => {
     if (line.heroesOnly && holder.kind !== 'hero') return []
     if (line.onlyUnitTemplateIds && !line.onlyUnitTemplateIds.includes(unit.id)) return []
-    const resolved = resolveEquipmentName(line.name)
-    return resolved ? [equipmentType(resolved)] : []
+    return equipmentListOptions(line.name).map(equipmentType)
   }))
   if (allowed.has(equipmentType(item))) return null
   const names = lists.map(list => list.name).join(' or ') || 'no weapons or armour'

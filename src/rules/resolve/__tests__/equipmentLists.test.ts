@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { findItem } from '../../data/items'
+import { findItem, equipmentListOptions, equipmentBundle } from '../../data/items'
 import type { RosterHero, RosterWarband } from '../../types/roster'
 import { equipmentListWarning } from '../equipmentLists'
 import { itemRestrictionWarnings, type ItemHolder } from '../itemRestrictions'
@@ -120,4 +120,25 @@ it('keeps Bone Helmets restricted to Skink Priests within the Skink list', () =>
     expect(warning(roster('lizardmen', h), 'bone_helmet')).toContain('not on')
   }
   expect(warning(roster('lizardmen', hero('lizardmen_skink_priest')), 'bone_helmet')).toBeNull()
+})
+
+
+it('recognises Pit Fighter style components and both alternatives without changing bundle defaults', () => {
+  const king = roster('pit_fighters', hero('pit_fighters_pit_king'))
+  for (const id of ['helmet', 'dagger', 'flail', 'shield', 'light_armour', 'double_handed_weapon', 'axe', 'spiked_gauntlet', 'sword']) {
+    expect(warning(king, id), id).toBeNull()
+  }
+  expect(warning(king, 'handgun')).toContain('not on')
+  const pursuer = roster('pit_fighters', hero('pit_fighters_pursuer'))
+  for (const id of ['helmet', 'dagger', 'trident', 'javelins', 'net', 'buckler', 'sword', 'spear']) {
+    expect(findItem(id), id).toBeDefined()
+    expect(warning(pursuer, id), id).toBeNull()
+  }
+  expect(warning(pursuer, 'heavy_armour')).toContain('not on')
+  const style = 'Skink Style — Helmet; Dagger; Trident or Javelins; Net or Buckler'
+  expect(equipmentBundle(style)?.map(item => item.id)).toEqual(['helmet', 'dagger', 'trident', 'net'])
+  expect(equipmentListOptions(style).map(item => item.id)).toContain('javelins')
+  for (const name of ['Shield/Buckler', 'Shields or Bucklers (choose which)']) {
+    expect(equipmentListOptions(name).map(item => item.id)).toEqual(['shield', 'buckler'])
+  }
 })

@@ -225,6 +225,22 @@ export function resolveEquipmentName(name: string): Item | undefined {
   return BY_NORMALISED_NAME.get(singular(normaliseKey(stripQualifiers(trimmed))));
 }
 
+/** All permitted components/options for eligibility checks, without changing builder defaults. */
+export function equipmentListOptions(name: string): Item[] {
+  const alternatives: Record<string, string[]> = {
+    "Skink Style — Helmet; Dagger; Trident or Javelins; Net or Buckler": ["helmet", "dagger", "trident", "javelins", "net", "buckler"],
+    "Witch Elf Style — Helmet; Dagger; 2 x Sword or Spear & Net": ["helmet", "dagger", "sword", "spear", "net"],
+    "Shield/Buckler": ["shield", "buckler"],
+    "Shields or Bucklers (choose which)": ["shield", "buckler"],
+  };
+  const choices = alternatives[name.trim()];
+  if (choices) return choices.map(id => BY_ID.get(id)).filter((item): item is Item => item !== undefined);
+  const bundle = equipmentBundle(name);
+  if (bundle) return bundle;
+  const item = resolveEquipmentName(name);
+  return item ? [item] : [];
+}
+
 /** Every distinct equipment-list item name across all warband templates, sorted. */
 export function equipmentListNames(): string[] {
   const names = new Set<string>();

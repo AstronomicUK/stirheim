@@ -3976,3 +3976,12 @@ Validation:9focused and2,041ordinary tests pass, build/typecheck pass, lint3old 
 Structured list-entry heroesOnly now uses current roster holder status, so promoted henchmen qualify without rewriting their unit type. Applied to Skink swords, Pirate Cat O' Nine Tails and Outlaws Redux longbows. Skink Bone Helmets use exact Skink Priest unit qualifier; normal Saurus list remains independent. Sources grade-1b-part2.md:298,317,1080 and grade-2a-part2.md:345. Existing weapon skills/list unions and category bans retain their respective behavior.
 
 Validation:11focused and2,043ordinary tests pass, build/typecheck pass, lint3oldwarnings. Tests compare henchmen versus promoted Heroes for all3entries and Skink Priest versusGreatCrest/Brave evenwithweaponskills. Puredata/resolverchanges, previously verified sharedwarning/overrideUI unchanged; no new browser/DBQA. Logs /tmp/stirheim-hero-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. #67 stillpartial for other equipmentclauses. Next: other typed list qualifiers or fullweaponloss lifecycle. Morningquestionsunchanged.
+
+
+## Next local batch — #67 bundle and alternative equipment membership correction
+
+Review caught a regression risk in the new list check: single-item resolution misses Pit Fighter style bundles. equipmentListOptions now returns bundle components plus every explicit alternative in Skink/Witch Elf styles and shield/buckler choices. Eligibility uses this helper; builder bundle defaults and prices are unchanged. Source grade-1b-part2.md:1435–1447. This checks membership only, not complete-style composition or purchase pricing.
+
+Validation:20focused and2,044ordinary tests pass; build/typecheck pass; lint3oldwarnings. Regression covers PitKing complete catalogue components, Pursuer trident/javelins and net/buckler alternatives, sword/spear option, unrelated off-list gear, shieldchoices and unchangedbuilderdefaults. No DB/UI changes, no new browserQA. Logs /tmp/stirheim-equipment-bundles-{tests,all-tests,build,lint}.log. NoSQL/push/deploy.
+
+Next independent #67 leads already source-confirmed but NOT implemented: Order of Mare footman list Pilgrim-only spear/halberd/bow, Knight-only lance/heavyarmour, archer Esquiresses-only spear (grade-2a-part2.md:71–129); Moulder Beastwhip/Thingcatcher Packmaster/Apprentices only (:766); PitFighter Ogre/Slayer shared-list qualifiers. Need actual templateIDs and retained role/succession checks. Do not reintroduce bundle falsewarnings. Morningquestions unchanged.

@@ -7,6 +7,7 @@ describe('feedback board', () => {
     const board = feedbackBoard([issue(1, { priority: 'high' }), issue(2), issue(3, { duplicate_of: 1 }), issue(4, { kind: 'improvement' })], 'bug', '')
     expect(board).toHaveLength(5)
     expect(board[0].issues.map(x => x.id)).toEqual([1, 2])
+    expect(feedbackBoard([issue(3, { duplicate_of: 1 })], 'bug', '3')[0].issues.map(x => x.id)).toEqual([3])
   })
   it('searches notes, reporter and preserved tracker numbers', () => {
     const issues = [issue(229, { notes: 'Awakening after death', reported_by: 'Astra' })]

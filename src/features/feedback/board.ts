@@ -2,7 +2,7 @@ import { stages, type FeedbackIssue, type FeedbackKind } from './types'
 const priorityOrder = { high: 0, medium: 1, low: 2 }
 export function feedbackBoard(issues: FeedbackIssue[], kind: FeedbackKind, search: string) {
   const term = search.trim().toLocaleLowerCase()
-  const visible = issues.filter(issue => issue.kind === kind && issue.duplicate_of === null && (!term || `${issue.id} ${issue.title} ${issue.notes} ${issue.reported_by}`.toLocaleLowerCase().includes(term)))
+  const visible = issues.filter(issue => issue.kind === kind && (issue.duplicate_of === null || !!term) && (!term || `${issue.id} ${issue.title} ${issue.notes} ${issue.reported_by}`.toLocaleLowerCase().includes(term)))
     .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority] || b.id - a.id)
   return stages.map(stage => ({ stage, issues: visible.filter(issue => issue.status === stage) }))
 }

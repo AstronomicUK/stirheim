@@ -1,3 +1,4 @@
+import { APP_VERSION } from '../../app/version'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { signOut, updateDisplayName, updatePassword } from '../../api/auth'
@@ -11,7 +12,6 @@ import { DISPLAY_NAME_MAX, PASSWORD_MIN, displayNameFormSchema, resetPasswordSch
 type PasswordValues = { password: string; confirm: string }
 const emptyPasswordValues: PasswordValues = { password: '', confirm: '' }
 
-const APP_VERSION: string = import.meta.env.VITE_APP_VERSION ?? 'dev'
 
 export function AccountPage() {
   usePageTitle('Account')
@@ -187,7 +187,7 @@ export function AccountPage() {
         </Link>
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <span className="text-xs uppercase tracking-wider text-ink-dim">Version</span>
-          <span className="text-sm text-ink-dim">{APP_VERSION}</span>
+          <Link to="/feedback?view=releases" className="text-sm text-brass underline-offset-4 hover:underline">{APP_VERSION} · What’s new</Link>
         </div>
       </section>
 

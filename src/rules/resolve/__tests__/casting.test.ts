@@ -173,6 +173,32 @@ describe("rolling a cast", () => {
     expect(availableRerolls(later).map(r => r.id)).toEqual(["magic_gubbinz"]);
   });
 
+  it("a failed gate leaves the original dice eligible for another source", () => {
+    const p = profileOf(hero({ equipment: [{ itemId: "familiar", quantity: 1 }, { itemId: "magic_gubbinz", quantity: 1 }] }));
+    const spell = spellOf(p, "Vision of Torment");
+    const failed = applyCastRoll(startCast(p, spell), [1, 1]);
+    const gateFailed = applyCastRoll(spendReroll(failed, "magic_gubbinz"), [1]);
+    expect(gateFailed.rerolledDice).toEqual([false, false]);
+    expect(availableRerolls(gateFailed).map(r => r.id)).toEqual(["familiar"]);
+  });
+
+  it("retains per-die eligibility through state serialization and rejects a repeated die", () => {
+    const p = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_mind_focus"] }));
+    p.rerolls.push({ ...p.rerolls[0], id: 'second_single_die_source' });
+    const spell = spellOf(p, "Vision of Torment");
+    // This synthetic second source tests the generic per-die invariant, not an additional item rule.
+    const base = startCast(p, spell);
+    base.profile = p;
+    const failed = applyCastRoll(base, [1, 1]);
+    const first = applyCastRoll(spendReroll(failed, "mind_focus"), [1, 1]);
+    const restored = JSON.parse(JSON.stringify(first)) as CastState;
+    const next = spendReroll(restored, 'second_single_die_source');
+    expect(applyCastRoll(next, [1, 6])).toBe(next);
+    const second = applyCastRoll(next, [2, 1]);
+    expect(second.rerolledDice).toEqual([true, true]);
+    expect(second.outcome).toBe('failed');
+  });
+
   it("a one-die reroll prevents a later pair reroll", () => {
     const p = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_mind_focus"], equipment: [{ itemId: "familiar", quantity: 1 }] }));
     const spell = spellOf(p, "Vision of Torment");

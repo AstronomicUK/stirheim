@@ -4686,3 +4686,69 @@ Supplementary clauses remain outside the completed core batch. Do not redeploy t
 ### Final release verification complete
 
 GitHub run `34706511272` passed both jobs: test/build and all **16 end-to-end browser tests** (57.3 seconds for the browser suite). This verifies the test-only helper correction in `2bf81d9`; no application change or additional Netlify release was needed. Deployment `6aa580d7fc4c3e89441da894` remains the live verified core batch. No release follow-up remains outstanding.
+
+
+### 229. Cross-player resurrection and capture opportunities need complete notification and resolution flows
+
+**Status:** 🛠 Working on — local implementation; not deployed
+**Priority:** Next batch requested by Tom, 12 September 2026
+**Reported by:** Tom
+
+**Original report (verbatim):**
+
+> Do we have functionality built in for skills like Reawakening? If you're fighting a warband and the enemy hero has the spell Reawakening, and your model dies, it should then prompt you to say that your enemy can resurrect this hero. It should then send them a notification to be able to resurrect the hero. I think pirates have something similar with the Captured mechanic but I can't remember. I'm just going off the top of my head. Either way all of these similar rules need to have full functionality baked into the app.
+
+**Review and scope:** Merge scope with #137 (post-battle Awakening) and #95 (capture), retaining this entry as the cross-player workflow acceptance umbrella. Initial source/code inspection: Spell of Awakening exists in the catalogue, but no Awakening consumer was found in feature or migration code. Existing capture resolutions and Pirate exploration recruitment are implemented in part; do not rebuild or declare these wholly absent. Audit each related rule separately against its source: qualifying final death/capture, eligible recipient, notification to both affected owners, accept/decline, exact transformed profile/equipment/limits, durable pending action, duplicate prevention and report correction/withdrawal. Out of action alone is not a confirmed death. Preserve reasoned player overrides. Core Awakening first, supplementary variants thereafter.
+
+
+**Local milestone — 12 September:** Core ordinary-Hero Awakening now has report-backed snapshots, both-owner notifications, recipient resolution, guarded correction and withdrawal. Eight local DB tests and the actual two-owner mobile journey pass. Multiple recipients, Captured/Pirates and broader analogous rules remain outstanding; this umbrella is not complete.
+
+### 230. Public in-app bug and improvement boards, submissions, notifications and release changelog
+
+**Status:** 🛠 Working on — local implementation; not deployed
+**Priority:** Next batch requested by Tom, 12 September 2026
+**Reported by:** Tom
+
+**Original report (verbatim):**
+
+> Can we get a bug tracker/requested improvements tracker actually built into the site itself? I don't want it to be too prominent, but somewhere where people can find it, with a toggle to be able to swap between the bug tracker and the improvements.
+>
+> Have it as some kind of Kanban view for each bug, where each bug has:
+> - its priority, with a traffic light system
+> - a title, which is a quick overview of what it is
+> - more detailed notes
+> - maybe a "reported by" with a username or a model (Astra or Fable)
+>
+> You can click and open any particular one to be able to read the notes. I envisage that in Kanban view you would only see the title and the priority.
+>
+> I'd like your suggestions but for stages I'm thinking something like:
+> - reported
+> - reviewed
+> - working on
+> - implemented
+> - confirmed
+>
+> On that same page you probably have functionality to be able to report a bug or request a feature.
+>
+> We just need to think if there's a way that when we implement something that someone's reported, we can send them a notification that it's been fixed.
+>
+> Finally, kind of linked to this, I think it would be good to be able to have a public change log to show the version of the app that we're on and what's been changed as part of the new development push.
+
+**Review and scope:** New product feature. Proposed first delivery in this next batch for Tom's visibility. Design recommendation pending review: discreet Feedback & updates destination; Bugs / Improvements boards plus release history; desktop columns and mobile stage selector; cards show title and labelled priority, details open on tap. Public reading, signed-in reporting, maintainer-controlled review/priority/status, reporter attribution including imported Astra/Fable findings. Reconcile historical statuses before import, preserve tracker IDs, publish suitable user-facing notes rather than raw internal audit material. Define Implemented as available in a live release and Confirmed as verified there; local changes must not generate fixed notifications. Notify original reporters/followers once when their linked release ships; merged duplicate reports retain subscribers. Decide canonical tracker and controlled developer synchronization; avoid two divergent editable trackers. Release version/date and grouped user-facing changes link back to issues. No design or implementation is marked complete.
+
+
+**Local milestone — 12 September:** Public boards, submissions, follows, maintainer review, draft/public release notes and private inbox implemented in local commits. Seven backend tests and the actual two-user mobile/desktop workflow pass. Historical import is under renewed review after stale statuses were found; maintainer identity and final import/release checks remain.
+
+### 231. Polished per-weapon chamber and reload UI with Hunter/Pistolier double-barrel house rules
+
+**Status:** 🛠 Working on — local implementation; not deployed
+**Priority:** Next batch requested by Tom, 12 September 2026
+**Reported by:** Tom
+
+**Original report (verbatim):**
+
+> We need a really polished UI tracker for black powder weapon reloading rules, that works well with traits like pistolier and also works with double-barrelled weapons. We need to able to ask the user how many shots they're firing, and it tracks them using a counter that represents "ammo in the chamber", like an inverse version of the token system described in the Gunnery School of Nuln warband sheet. We'll need to have a house rule option for how Hunter and Pistolier work with double-barrelled weapons (don't affect them, allow 1 extra "chamber reload", allow full reload)
+
+**Review and scope:** Extend #73 reload tracking and #69 double-barrel resolution; existing core per-physical-weapon reload cadence is implemented, so this is an extension and visual overhaul. Codex owns visual mockups/animations. Show loaded/spent chambers per physical weapon, selected shot/barrel count, reload progress and next availability, shared/persisted across players and reloads. Verify ordinary versus Ostlander double-barrel hit/wound semantics and Nuln rules before equating barrel count with independent attacks. Preserve sequential attack resolution. Campaign house-rule choices requested: no effect on double-barrel reload, one extra chamber reload, full reload; confirm exact interpretation/default against sources, do not silently stack Hunter and Pistolier. Cover braced weapons, mixed loaded states, turn boundaries, player-calculated outcomes, corrections and informative logs.
+
+**Local milestone — 12 September:** Metallic loaded/spent chamber display connected to core pistols and reload weapons; separate physical copies retain their state after reload. Fifteen focused existing tests and an actual mobile brace firing/reload check pass. Double-barrel selection, wound handling and house-rule settings remain outstanding.

@@ -297,7 +297,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
                   ) : null}
                   {match.scenario_rules_id === 'the_caravan' ? <CaravanRestriction warbandId={p.warband_id} campaignId={match.campaign_id} /> : null}
                   {(match.state === 'scheduled' || match.state === 'in_progress') && (p.mine || isGm) ? <><TrapmasterSupplies warbandId={p.warband_id} matchId={match.id} scheduled={match.state === 'scheduled'} /><FanaticSupplies warbandId={p.warband_id} matchId={match.id} scheduled={match.state === 'scheduled'} /></> : null}
-                  {showTallies ? <Tallies session={sessionFor(p.warband_id)} loading={sessions.isPending || events.isPending} /> : null}
+                  {showTallies ? <Tallies session={sessionFor(p.warband_id)} loading={sessions.isPending || events.isPending} ended={match.state !== 'in_progress'} /> : null}
                   {showReports ? <ReportStatus reported={reported} report={reportFor(p.warband_id)} canFile={toFile.some((f) => f.warband_id === p.warband_id)} to={`/matches/${match.id}/report/${p.warband_id}`} /> : null}
                 </ParticipantCard>
               )
@@ -534,7 +534,7 @@ function ReportStatus({ reported, report, canFile, to }: { reported: boolean; re
 }
 
 /** The live tallies from one warband's battle sheet, or a note that none has been opened. */
-function Tallies({ session, loading }: { session: BattleSessionView | undefined; loading: boolean }) {
+function Tallies({ session, loading, ended }: { session: BattleSessionView | undefined; loading: boolean; ended: boolean }) {
   if (loading) {
     return (
       <div className="flex justify-center border-t border-border py-2">
@@ -543,7 +543,9 @@ function Tallies({ session, loading }: { session: BattleSessionView | undefined;
     )
   }
   if (!session) {
-    return <p className="border-t border-border pt-2 text-sm text-ink-dim">No battle sheet opened yet.</p>
+    // Once the battle is over, "not opened yet" is wrong — the sheet may well have been open all
+    // game without a tally saved or an attack logged (#46). Say what we actually know.
+    return <p className="border-t border-border pt-2 text-sm text-ink-dim">{ended ? 'No tallies were recorded from the battle sheet.' : 'No battle sheet opened yet.'}</p>
   }
   const totals = battleTotals(session.live_state)
   return (

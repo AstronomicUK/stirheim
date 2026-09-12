@@ -672,3 +672,13 @@ describe('automatic wounds after a hit', () => {
     expect(applyRoll(state, 5).worst).toBe('outOfAction')
   })
 })
+
+
+it('explains an unaffected Blessed Water target without asking for an impossible wound die', () => {
+  const state = rolls(startPhase([plan('Blessed Water', { woundThreshold: IMPOSSIBLE, noWoundReason: 'Blessed Water has no effect on this target.' })], 1, 0), 4)
+  expect(state.done).toBe(true)
+  expect(state.pending).toBeNull()
+  expect(state.woundsLost).toBe(0)
+  expect(state.outcomes).toEqual(['noWound'])
+  expect(state.log.at(-1)?.text).toContain('no effect')
+})

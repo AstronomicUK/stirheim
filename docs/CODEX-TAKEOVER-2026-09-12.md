@@ -98,3 +98,9 @@ FightTab now offers carried Blessed Water as a ranged choice, including when the
 `/tmp/stirheim-water-mobile-qa.mjs` passed the actual 390px flow: open Ranged Attack, select Blessed Water, Begin, roll, verify last-vial restart blocked, close, wait for autosave, reload, verify another Begin blocked, correct with reason, verify availability restored. Disposable fixtures cleaned. This exposed and fixed the early “no ranged weapons” screen rejecting water-only carriers. Ninety-five focused odds/event/ledger tests pass, TypeScript passes and lint retains only unrelated audit-probe warnings.
 
 **Still needed before closure:** real shared-log hit/miss/link and revert checks, a stack with multiple throws, real report filing/withdrawal, and ordinary-target no-effect presentation. Current nonqualifying targets have an impossible wound threshold (no damage); the roller still displays that impossible wound step. Do not claim the entire action acceptance complete yet. No deployment.
+
+### Blessed Water report filing and withdrawal verified
+
+`/tmp/stirheim-water-report-qa.mjs` passed actual mobile report filing after a real declared throw: the last physical vial was removed, the report contained the English vial-spending note, and `withdraw_battle_report` restored the original item quantity. Fixtures cleaned. This checks the withdrawal RPC, not a UI withdrawal button. The initial test advanced before the second declaration's autosave (an active-count-only poll matched the old record); it now waits for both use records and explicitly confirms the later casualty in the report.
+
+Nonqualifying targets now skip the impossible wound die and receive a clear “only wounds Undead, Daemons or Possessed” log explanation. Seventy-five dice/Blessed Water tests and compilation pass. Remaining: actual shared-event logging/link/revert, plus a multiple-throw stack browser case. No deployment.

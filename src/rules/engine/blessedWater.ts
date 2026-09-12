@@ -21,9 +21,11 @@ export function blessedWaterWeapon(attacker: Character): Weapon {
 export function blessedWaterAttack(params: Omit<BuildAttackInputParams, 'weapon'>) {
   const weapon = blessedWaterWeapon(params.attacker)
   const input = buildAttackInput({ ...params, weapon })
+  const affected = params.defender.activeTraitIds.some(trait => ['undead', 'daemon', 'possessed'].includes(trait))
   return {
     ...input,
-    automaticWound: params.defender.activeTraitIds.some(trait => ['undead', 'daemon', 'possessed'].includes(trait)),
+    automaticWound: affected,
+    noWoundReason: affected ? undefined : 'Blessed Water has no effect on this target: it only wounds Undead, Daemons or Possessed.',
     // Ordinary targets take no damage; qualifying targets skip the wound die entirely.
     woundThreshold: IMPOSSIBLE,
     armourThreshold: IMPOSSIBLE,

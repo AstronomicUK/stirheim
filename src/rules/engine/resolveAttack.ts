@@ -64,6 +64,8 @@ export interface AttackInput {
   woundThreshold: Threshold;
   /** A successful hit wounds without a wound roll or critical hit (Blessed Water). */
   automaticWound?: boolean;
+  /** Explain a target-specific immunity without asking for an impossible wound roll. */
+  noWoundReason?: string;
   /** Defender's armour save threshold against this attack (Strength erosion house rule and the weapon's own save modifier already applied; IMPOSSIBLE when no save is possible, including modified saves that would need 7+). */
   armourThreshold: Threshold;
   /** Ranged only: Dodge — a separate negation roll taken as soon as a hit is scored, before to-wound. */

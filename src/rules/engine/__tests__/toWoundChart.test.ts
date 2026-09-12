@@ -6,10 +6,10 @@
 // transcription slip — so that cell is pinned by name.
 
 import { describe, expect, it } from "vitest";
-import { IMPOSSIBLE } from "../dice";
+import { IMPOSSIBLE, type Threshold } from "../dice";
 import { toWoundThreshold } from "../toWound";
 
-function expected(strength: number, toughness: number): number {
+function expected(strength: number, toughness: number): Threshold {
   const gap = toughness - strength;
   if (gap >= 4) return IMPOSSIBLE;
   if (gap === 3 || gap === 2) return 6;

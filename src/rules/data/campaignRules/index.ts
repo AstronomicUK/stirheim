@@ -14,6 +14,8 @@ import type { StatKey } from "../../types/common";
 
 export type EquipmentBan =
   | "armour" // no body armour or shields (helmets allowed unless "helmets" is also listed)
+  | "vimToEquipment" // Vow of Poverty: walking staff (club) and dagger only
+  | "pilgrimWeapons" // Dark Shroud Pilgrims: blunt weapons and silver-tip stake
   | "morrWeapons" // Priests of Morr may use only daggers and scythes
   | "lances" // Paragon Vow of Poverty
   | "heavyArmour"
@@ -351,6 +353,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   necrarchs_skeletal_warriors: UNDEAD_HENCHMAN,
   necrarchs_zombies: UNDEAD_HENCHMAN,
   necrarchs_abomination: { ...NO_XP, large: true, injury: { deadOn: [], label: "dead", note: "Powered: the Abomination ignores injury rolls; the opponent gains a shard and one is needed to reanimate it." } },
+  nipponese_vim_to_mage: { equipmentBans: ["vimToEquipment"] },
   nipponese_shinobi_hero: { neverLeads: true },
   ogre_hunting_party_ogre_hunter: { ...OGRE, unarmedProfile: { name: "Ogre fists", saveModifier: -1 }, noExplorationDie: true, noRareSearch: true, racialProfile: "Ogre (Ogre Hunting Party)", promotion: undefined },
   ogre_hunting_party_trappers: { racialProfile: "Gnoblar (Ogre Hunting Party)" },
@@ -377,7 +380,7 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   runts: { equipmentBans: ["smallHands"], rigorsOfLeadership: true, injury: { deadOn: [1, 2, 3, 4], label: "dead", note: "Smallest of the Small: Runts die on a 1-4." } },
   companions: { neverLeads: true },
   giant_bats: { ...ANIMAL, large: true },
-  pilgrims_of_the_dark_shroud: { neverLeads: true },
+  pilgrims_of_the_dark_shroud: { neverLeads: true, equipmentBans: ["pilgrimWeapons"] },
   wolfhounds: ANIMAL,
   restless_dead_variant_grave_guards: { noRareSearch: true },
   restless_dead_variant_zombies: { ...UNDEAD_HENCHMAN, naturalWeapons: true },

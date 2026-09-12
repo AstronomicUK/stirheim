@@ -205,3 +205,19 @@ it('keeps both Priest of Morr profiles to daggers and scythes even with weapon s
     expect(equipmentBanReason(warband, unit, { itemId: 'rope_and_hook', quantity: 1 })).toBeNull()
   }
 })
+
+
+it('treats ordinary club, mace and hammer entries as the same rulebook weapon type', () => {
+  const r = roster('vampire_hunters_of_sylvania', hero('pilgrims_of_the_dark_shroud'))
+  for (const id of ['club_mace_or_hammer', 'mace', 'hammer', 'gromril_hammer', 'ithilmar_hammer']) expect(warning(r, id), id).toBeNull()
+})
+it('keeps the Vim-To equipment vow and Dark Shroud Blunt rule after weapon training', () => {
+  const mage = hero('nipponese_vim_to_mage', ['weapons_training', 'weapons_expert']), m = roster('nipponese_expedition', mage)
+  for (const id of ['sword', 'bow', 'light_armour', 'helmet', 'rope_and_hook', 'lucky_charm']) expect(itemRestrictionWarnings(m, findItem(id)!, holder(mage)).join(' '), id).toContain('vow permits only')
+  for (const id of ['dagger', 'club_mace_or_hammer']) expect(equipmentBanReason('nipponese_expedition', mage.unitTemplateId, { itemId: id, quantity: 1 })).toBeNull()
+  const untrainedMage = { ...mage, skillIds: [] }
+  for (const id of ['dagger', 'club_mace_or_hammer']) expect(itemRestrictionWarnings(roster('nipponese_expedition', untrainedMage), findItem(id)!, holder(untrainedMage))).toEqual([])
+  const pilgrim = hero('pilgrims_of_the_dark_shroud', ['weapons_training', 'weapons_expert']), p = roster('vampire_hunters_of_sylvania', pilgrim)
+  for (const id of ['dagger', 'sword', 'axe', 'bow', 'pistol']) expect(itemRestrictionWarnings(p, findItem(id)!, holder(pilgrim)).join(' '), id).toContain('Blunt limits')
+  for (const id of ['club_mace_or_hammer', 'mace', 'hammer', 'silver_tip_stake']) expect(equipmentBanReason(p.warbandTemplateId, pilgrim.unitTemplateId, { itemId: id, quantity: 1 })).toBeNull()
+})

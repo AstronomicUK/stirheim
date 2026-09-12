@@ -280,3 +280,12 @@ Both Dreamwalker and Vampire Hunter Priests of Morr now warn for any weapon othe
 Pit Fighter trident access explicitly granted outside starting lists at Trading Post is now recognised after creation; starting-list checks retain ordinary membership, while Pursuer style already permits trident at creation. RestrictionOptions.atCreation is passed through the list helper. Source grade-1b-part2.md:1479. No blanketpermissionforotherwarbands; categorybans remain separate.
 
 Validation:17focused and2,049ordinary tests pass, build/typecheck pass, lint3oldwarnings. Checks cover bothPriests, weaponskills, armour, tools, creationversustrading andPursuer/unrelatedwarband. NoUI/DBchange ornewbrowserQA. Logs /tmp/stirheim-morr-trident-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. #67 remains partial: VampireHunterPilgrimbludgeons (source grade2apart2:2124), NipponMagevow, HalflingTooBig, Outlawmandatorybow/one-missile andcreation-onlyequipment clauses remain; avoid treating all#67asclosed. Morningquestionsunchanged.
+
+
+## Next local batch — #67 Vim-To vow, Pilgrim Blunt and ordinary blunt aliases
+
+Vim-To Mage warns for equipment beyond its walking staff (club) and dagger, including armour and miscellaneous tools; its explicit permitted choices are recognised despite the template pointing at the broader Nippon Warrior list. Dark Shroud Pilgrim Blunt warns for bladed/ranged weapons, preserves ordinary maces/hammers/staff and silver-tip stake exception, and remains effective after Weapons Training/Expert. Known hammer/staff catalogue types pass this category check but still require their own list/racial permission. Sources grade-2a-part1.md:2674, grade-2a-part2.md:2124. Builder display still uses broad Nippon list; this change checks eligibility/overrides, not a dedicated builder list redesign.
+
+Ordinary club/mace/hammer aliases now compare as one rulebook weapon type for list membership, including material variants. This prevents false warnings where the printed list names only one synonym.
+
+Validation:19focused and2,051ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests cover learned skills, tools/armour, allowed Mage choices withoutskill, Pilgrim stakeexception andbluntaliases. No UI/DB change ornewbrowserQA; prior sharedwarning/overrideUIverification applies. Logs /tmp/stirheim-vows-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. Next#67: HalflingTooBig, Outlawbow/one-missile, creation-onlyHuntingArrows/Ithilmar, remainingSlayerclauses. Keep#67partial. Morningquestionsunchanged.

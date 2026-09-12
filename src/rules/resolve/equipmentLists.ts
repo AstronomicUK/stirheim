@@ -9,9 +9,9 @@ import { currentLeader, leaderTemplate } from './roster'
 function equipmentType(item: Item): string {
   if (item.category === 'melee' && /^(gromril|ithilmar)_/.test(item.id)) {
     const base = item.id.replace(/^(gromril|ithilmar)_/, '')
-    if (findItem(base)?.category === 'melee') return base
+    if (findItem(base)?.category === 'melee') return equipmentType(findItem(base)!)
   }
-  return item.id
+  return ['club_mace_or_hammer', 'mace', 'hammer'].includes(item.id) ? 'club_mace_or_hammer' : item.id
 }
 
 export function equipmentListWarning(roster: RosterWarband, item: Item, holder: ItemHolder, options: { atCreation?: boolean } = {}): string | null {
@@ -22,6 +22,8 @@ export function equipmentListWarning(roster: RosterWarband, item: Item, holder: 
   const template = findWarbandTemplate(roster.warbandTemplateId)
   const unit = template && findUnitTemplate(template, holder.unitTemplateId ?? '')
   if (!template || !unit) return null // Imported/custom units cannot be certified from an unrelated list.
+  // The Mage's own vow supplies its equipment choices despite the broad template list.
+  if (unit.id === 'nipponese_vim_to_mage' && ['dagger', 'club_mace_or_hammer'].includes(equipmentType(item))) return null
   // Pit Fighters explicitly gain Trading Post trident access outside their starting list
   // (grade-1b-part2:1479). Category bans remain separate from list membership.
   if (!options.atCreation && template.id === 'pit_fighters' && item.id === 'trident') return null

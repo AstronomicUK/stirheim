@@ -317,6 +317,12 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
       case "armour":
         if (catalogue.category === "armour" && !helmet) return `${name} is armour, which this warrior may not wear`;
         break;
+      case "vimToEquipment":
+        if (!["dagger", "club_mace_or_hammer", "mace", "hammer"].includes(catalogue.id.replace(/^(gromril|ithilmar)_/, ""))) return `${name}: the Vim-To Mage's vow permits only a walking staff (club) and a dagger, with no other equipment`;
+        break;
+      case "pilgrimWeapons":
+        if (["melee", "missile", "blackpowder"].includes(catalogue.category) && !["club_mace_or_hammer", "mace", "hammer", "horsemans_hammer", "sigmarite_warhammer", "quarter_staff", "wizards_staff", "silver_tip_stake"].includes(catalogue.id.replace(/^(gromril|ithilmar)_/, ""))) return `${name}: Blunt limits Pilgrims of the Dark Shroud to maces, hammers and staffs, with the silver-tip stake as their only bladed exception`;
+        break;
       case "morrWeapons":
         if (["melee", "missile", "blackpowder"].includes(catalogue.category) && !["dagger", "scythe"].includes(catalogue.id.replace(/^(gromril|ithilmar)_/, ""))) return `${name}: a Priest of Morr may use only a dagger and a scythe as weapons`;
         break;

@@ -1,4 +1,4 @@
-import { physicalWeaponChoices } from './weaponLoss'
+import { physicalWeaponChoices, withBrokenWeapons } from './weaponLoss'
 import type { ItemRow, BrokenWeapon } from '../../../domain'
 import { pendingVolatileBackfires } from '../../../domain/volatileBackfire'
 import { pendingFireHits, warriorIsBurning } from '../../../domain/burning'
@@ -117,12 +117,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const selfDamage = Boolean(selfShot || fireHit || volatileHit)
   const areaTarget = volatileHit ? { key: volatileHit.key, warriorId: volatileHit.warriorId, warbandId: roster.id, name: volatileHit.name } : fireHit ? { key: `fire:${fireHit.id}`, warriorId: fireHit.warriorId, warbandId: roster.id, name: 'the burning warrior' } : selfShot ? { key: `self:${selfShot.id}`, warriorId: selfShot.warriorId, warbandId: roster.id, name: 'the firer' } : mortarTarget ?? grapeTarget ?? pigeonTarget ?? lineTarget
 
-  const mine = useMemo(() => withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), [roster, template, sheet, boosts, events])
+  const mine = useMemo(() => withBrokenWeapons(withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), items, events), [roster, template, sheet, boosts, events, items])
   const targets = useMemo(
     () =>
       enemies.warbands.flatMap((w) => {
         const session = sessions.find((s) => s.warband_id === w.participant.warband_id)
-        return withBolasEntanglement(combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id]), events, w.participant.warband_id, session?.live_state.bolasRecoveredEventIds)
+        return withBrokenWeapons(withBolasEntanglement(combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id]), events, w.participant.warband_id, session?.live_state.bolasRecoveredEventIds), w.items, events)
       }),
     [enemies.warbands, sessions, boosts, events],
   )
@@ -307,6 +307,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   return (
     <>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
+      {events.some(e => !e.reverted_at && e.payload.brokenWeapons?.some(loss => loss.warbandId === roster.id)) ? <Notice tone="warn" title="Broken equipment">Broken copies are excluded from available weapons. Groups with some intact copies can still select the weapon: use those only for the members who carry them. Revert the break in the battle Log to correct it.</Notice> : null}
       {swordBreaker ? <Notice tone="warn" title="Sword Breaker opponent"><div className="flex flex-col gap-2"><p>A successful parry allows a 4+ Trap Blade roll. Select the carried copy at risk; breaking it does not erase hits already rolled.</p>{physicalBindings.map((binding, index) => binding.choices.length > 1 ? <SelectField key={binding.key} label={`Weapon copy for ${index === 0 ? 'main hand' : 'off hand'}`} value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(choice => <option key={choice.key} value={choice.key}>{choice.label}</option>)}</SelectField> : null)}{duplicateWeapon ? <p>Select different physical copies for the two hands.</p> : null}</div></Notice> : null}
       {burningBlocked ? <Notice tone="warn" title="On fire">This warrior may only move until the flames are extinguished. Use Fire recovery above.</Notice> : null}
       {volatileHits.length > 0 ? <Notice tone="warn" title="Weapon backfire"><div className="flex flex-col gap-2">{volatileHits.map(hit => <Button key={hit.key} variant="secondary" disabled={readOnly} onClick={() => {

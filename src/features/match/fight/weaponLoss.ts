@@ -19,3 +19,25 @@ export function physicalWeaponChoices(rows: readonly ItemRow[], events: readonly
       .filter(copyIndex => !losses.some(loss => loss.itemId === choice.row.id && copyIndex >= loss.copyIndex && copyIndex < loss.copyIndex + loss.quantity))
       .map(copyIndex => ({ key: `${choice.row.id}:${copyIndex}`, snapshot: weaponLossSnapshot(choice.row, weaponId, choice.snapshot.name, 1, copyIndex), label: `${choice.snapshot.name}${choice.row.quantity > 1 ? ` · copy ${copyIndex + 1}` : ''}${choice.row.notes ? ` · ${choice.row.notes}` : ''}` })))
 }
+
+/** Battle-only availability; the stored roster is settled in the post-battle report. */
+export function withBrokenWeapons<T extends { id: string; warbandId: string; groupSize?: number; equipment: import('../../../rules/types/roster').RosterItem[] }>(warriors: readonly T[], rows: readonly ItemRow[], events: readonly BattleEventRow[]): T[] {
+  return warriors.map(warrior => {
+    const losses = rows.filter(row => row.warband_id === warrior.warbandId && row.holder_id === warrior.id && row.quantity > weaponQuantityRemaining(row, events))
+    if (!losses.length) return warrior
+    const equipment = warrior.equipment.map(entry => ({ ...entry }))
+    const models = Math.max(1, warrior.groupSize ?? 1)
+    for (const row of losses) {
+      let remove = Math.ceil(row.quantity / models) - Math.ceil(weaponQuantityRemaining(row, events) / models)
+      const original = toRosterItem(row)
+      for (const entry of equipment) {
+        if (remove <= 0) break
+        if (entry.itemId !== original.itemId || entry.customName !== original.customName || (entry.notes ?? '') !== (original.notes ?? '')) continue
+        const taken = Math.min(remove, entry.quantity)
+        entry.quantity -= taken
+        remove -= taken
+      }
+    }
+    return { ...warrior, equipment: equipment.filter(entry => entry.quantity > 0) }
+  })
+}

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { weaponLossSnapshot, weaponQuantityRemaining, type BattleEventRow, type ItemRow } from '../../../domain'
-import { breakableWeaponChoices, physicalWeaponChoices } from './weaponLoss'
+import { breakableWeaponChoices, physicalWeaponChoices, withBrokenWeapons } from './weaponLoss'
 const band = 'aaaaaaaa-0000-4000-8000-000000000001'
 const warrior = 'aaaaaaaa-0000-4000-8000-000000000002'
 const row: ItemRow = { id: 'aaaaaaaa-0000-4000-8000-000000000003', warband_id: band, holder_type: 'hero', holder_id: warrior, item_rules_id: 'sword', custom_name: null, quantity: 2, notes: 'Family heirloom', created_at: '2026-09-12T00:00:00Z', updated_at: '2026-09-12T00:00:00Z' }
@@ -34,4 +34,19 @@ it('offers remaining physical copies rather than assigning a broken copy again',
  expect(physicalWeaponChoices([row], [], band, warrior, 'sword').map(c => c.snapshot.copyIndex)).toEqual([0, 1])
  expect(physicalWeaponChoices([row], [broken], band, warrior, 'sword').map(c => c.snapshot.copyIndex)).toEqual([1])
  expect(() => weaponLossSnapshot(row, 'sword', 'Sword', 1, 2)).toThrow(/available/)
+})
+
+
+it('removes only the broken copy from battle kit and restores it on reversal', () => {
+ const fighter = { id: warrior, warbandId: band, equipment: [{ itemId: 'sword', quantity: 2, notes: 'Family heirloom' }, { itemId: 'dagger', quantity: 1 }] }
+ const broken = event()
+ expect(withBrokenWeapons([fighter], [row], [broken])[0].equipment).toEqual([{ itemId: 'sword', quantity: 1, notes: 'Family heirloom' }, { itemId: 'dagger', quantity: 1 }])
+ expect(withBrokenWeapons([fighter], [row], [{ ...broken, reverted_at: 'now' }])[0]).toBe(fighter)
+ expect(fighter.equipment[0].quantity).toBe(2)
+})
+it('does not remove intact group members weapons when one copy breaks', () => {
+ const groupRow = { ...row, holder_type: 'group' as const, quantity: 3 }
+ const fighter = { id: warrior, warbandId: band, groupSize: 3, equipment: [{ itemId: 'sword', quantity: 1, notes: 'Family heirloom' }] }
+ expect(withBrokenWeapons([fighter], [groupRow], [event(weaponLossSnapshot(groupRow, 'sword', 'Sword'))])[0].equipment[0].quantity).toBe(1)
+ expect(withBrokenWeapons([fighter], [groupRow], [event(weaponLossSnapshot(groupRow, 'sword', 'Sword', 3))])[0].equipment).toEqual([])
 })

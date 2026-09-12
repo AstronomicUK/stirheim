@@ -386,3 +386,20 @@ describe('Luthor’s selected role (#61)', () => {
     }
   });
 });
+
+
+it('buys original Outlaw Hunting Arrows atomically with a new Hero, including later recruitment', () => {
+  const template = findWarbandTemplate('outlaws_of_stirwood_forest')!
+  const wb = makeWarband({ warbandTemplateId: template.id, gold: 200 })
+  const unit = 'outlaws_bandit_leader'
+  const result = recruitHero(wb, template, unit, 'Robin', 'robin', { initialHuntingArrows: true })
+  expect(result.value.gold).toBe(110)
+  expect(result.value.heroes[0].equipment.filter(e => e.itemId === 'hunting_arrows')).toEqual([{ itemId: 'hunting_arrows', quantity: 1 }])
+  expect(result.events[0].message).toContain('no rarity roll required')
+  expect(recruitHero(wb, template, unit, 'Robin', 'robin').value.gold).toBe(140)
+  expect(recruitHero(wb, template, unit, 'Robin', 'robin', { initialHuntingArrows: true, costOverride: 5 }).value.gold).toBe(165)
+  expect(codeOf(() => recruitHero({ ...wb, gold: 89 }, template, unit, 'Robin', 'robin', { initialHuntingArrows: true }))).toBe('recruitment.notEnoughGold')
+  expect(wb.heroes).toHaveLength(0)
+  expect(codeOf(() => recruitHero(wb, template, unit, 'Robin', 'robin', { initialHuntingArrows: true, bans: { items: ['hunting_arrows'], skills: [], spells: [], characters: [], hiredSwords: [] } }))).toBe('recruitment.huntingArrows')
+  expect(codeOf(() => recruitHero(makeWarband(), REIKLAND, CAPTAIN, 'Hans', 'hans', { initialHuntingArrows: true }))).toBe('recruitment.huntingArrows')
+})

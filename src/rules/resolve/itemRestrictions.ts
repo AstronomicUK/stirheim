@@ -126,7 +126,7 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
     out.push(`${item.name}: Hochland Bandit henchmen cannot buy black powder weapons (Powder's Expensive!); only their Heroes may do so.`);
   }
 
-  if (holder.kind === "henchmanGroup" && rule.heroesOnly) out.push(`${item.name}: miscellaneous equipment is for Heroes only; henchmen may not carry it.`);
+  if (holder.kind === "henchmanGroup" && rule.heroesOnly && !(warbandId === "outlaws_of_stirwood_forest" && holder.unitTemplateId === "outlaws_marksman" && item.id === "hunting_arrows")) out.push(`${item.name}: miscellaneous equipment is for Heroes only; henchmen may not carry it.`);
   if (holder.kind === "hiredSword" && rule.heroesOnly) out.push(`${item.name}: hired swords keep the kit they came with and buy nothing.`);
 
   if (rule.onlyWarbands && !warbandInAny(warbandId, rule.onlyWarbands)) out.push(`${item.name} is for ${describeWarbandRefs(rule.onlyWarbands)} only.`);

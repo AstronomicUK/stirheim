@@ -1,11 +1,12 @@
 import type { MapPerks } from '../../rules/resolve/mapAdvantages'
-import type { FirstSpellRule } from '../../rules/types/roster'
+import type { FirstSpellRule, CampaignBans } from '../../rules/types/roster'
 import { startingMagicFor, startingMagicOptions } from '../../rules/data/campaign/magic'
 import { StartingMagicCard } from '../roster/builder/StartingMagicCard'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
-import { recruitHero } from '../../rules/resolve/recruitment'
+import { recruitHero, INITIAL_OUTLAW_ARROWS_COST } from '../../rules/resolve/recruitment'
+import { isBanned } from '../../rules/resolve/houseRules'
 import { buyItem } from '../../rules/resolve/trading'
 import { recruitPurchaseOptions, recruitPurchasesTotal } from '../../rules/resolve/recruitPurchases'
 import type { Item } from '../../rules/types/items'
@@ -18,6 +19,7 @@ import { UnitList } from './UnitList'
 import { outcomeFrom, useCommit, type Outcome } from './useCommit'
 
 export interface RecruitTabProps {
+  bans?: CampaignBans
   firstSpellRule?: FirstSpellRule
   detail: WarbandDetail
   template: WarbandTemplate
@@ -28,7 +30,7 @@ export interface RecruitTabProps {
 }
 
 /** Hire a hero from the warband list: name him, pay the hire cost, arm him later at the trading post. */
-export function HeroesTab({ detail, template, canEdit, onDone, firstSpellRule = 'random' }: RecruitTabProps) {
+export function HeroesTab({ detail, template, canEdit, onDone, bans, firstSpellRule = 'random' }: RecruitTabProps) {
   const listings = useMemo(() => listUnits(detail.roster, template, 'hero'), [detail.roster, template])
   const [picked, setPicked] = useState<UnitListing | null>(null)
   return (
@@ -40,6 +42,7 @@ export function HeroesTab({ detail, template, canEdit, onDone, firstSpellRule = 
       {picked ? (
         <HeroSheet
           key={picked.unit.id}
+          bans={bans}
           detail={detail}
           template={template}
           listing={picked}
@@ -56,6 +59,7 @@ export function HeroesTab({ detail, template, canEdit, onDone, firstSpellRule = 
 }
 
 interface HeroSheetProps {
+  bans?: CampaignBans
   firstSpellRule: FirstSpellRule
   detail: WarbandDetail
   template: WarbandTemplate
@@ -64,10 +68,13 @@ interface HeroSheetProps {
   onDone: (outcome: Outcome) => void
 }
 
-function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule }: HeroSheetProps) {
+function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule, bans }: HeroSheetProps) {
   const { roster } = detail
   const unit = listing.unit
   const [magicChoiceId, setMagicChoiceId] = useState<string>()
+  const [initialArrows, setInitialArrows] = useState(false)
+  const canBuyInitialArrows = template.id === 'outlaws_of_stirwood_forest' && !isBanned(bans, 'items', 'hunting_arrows')
+  const withArrows = canBuyInitialArrows && initialArrows
   const [spellIds, setSpellIds] = useState<string[]>([])
   const magic = startingMagicFor(unit.id, template, magicChoiceId)
   const needsMagic = startingMagicOptions(unit.id, template).length > 0 && (!magic || new Set(spellIds.filter(Boolean)).size !== magic.count)
@@ -83,7 +90,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
   const [chosenGifts, setChosenGifts] = useState<string[]>([])
   const giftItems = gifts.filter((g) => chosenGifts.includes(g.id))
   const giftTotal = recruitPurchasesTotal(giftItems)
-  const cost = hireCost + giftTotal.total
+  const cost = hireCost + giftTotal.total + (withArrows ? INITIAL_OUTLAW_ARROWS_COST : 0)
   const mustHaveGift = gifts.length > 0 && unit.specialRules.some((r) => /must start the game with one or more/i.test(r.text))
 
   async function confirm() {
@@ -91,7 +98,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
     const note = overrideReady(override) ? overrideNote('Hire cost', `${listed} gc`, `${override.amount} gc`, override.reason) : null
     const result = await commit(
       () => {
-        const hired = recruitHero(roster, template, unit.id, trimmed, id, { ...(overrideReady(override) ? { costOverride: override.amount } : {}), magicChoiceId, spellIds })
+        const hired = recruitHero(roster, template, unit.id, trimmed, id, { ...(overrideReady(override) ? { costOverride: override.amount } : {}), magicChoiceId, spellIds, initialHuntingArrows: withArrows, bans })
         let warband = hired.value
         const events = [...hired.events]
         for (const line of giftTotal.lines) {
@@ -102,7 +109,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
         return { value: warband, events }
       },
       (w) => w,
-      reasonWith('recruitment', note),
+      reasonWith('recruitment', [note, withArrows ? `Hunting Arrows bought at initial recruitment for ${INITIAL_OUTLAW_ARROWS_COST} gc; no rarity roll required.` : null].filter(Boolean).join(' · ') || null),
     )
     if (result) onDone(outcomeFrom(`${trimmed} joins the warband`, result.events, { suggestTrading: true }))
   }
@@ -132,6 +139,10 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule 
           <KeyValue label="Starting xp" value={unit.startingExperience} />
         </div>
         <OverrideField what="the hire cost" suggested={listed} value={override} onChange={setOverride} />
+        {canBuyInitialArrows ? <label className="flex min-h-11 items-start gap-3 rounded-md border border-border p-3 text-sm">
+          <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={initialArrows} onChange={e => setInitialArrows(e.target.checked)} />
+          <span>Hunting Arrows · {INITIAL_OUTLAW_ARROWS_COST} gc<span className="mt-1 block text-xs text-ink-dim">Buy with this new Hero without a rarity roll. Later purchases require the normal roll. A bow is still needed to use them.</span></span>
+        </label> : null}
         <StartingMagicCard unitId={unit.id} template={template} choiceId={magicChoiceId} spells={spellIds} rule={firstSpellRule} onChoice={id => { setMagicChoiceId(id); setSpellIds([]) }} onSpells={setSpellIds}
           apprenticeSpells={unit.id === 'restless_dead_variant_necromancer' ? roster.heroes.find(h => h.unitTemplateId === 'restless_dead_variant_liche' && h.status === 'active')?.spellIds : undefined} />
         {gifts.length > 0 ? (

@@ -343,3 +343,12 @@ Added noMagic data for the5CultSlayer unit types; Arcane Lore/Sorcery/Warrior Wi
 Validation:41equipment/campaignfocused and12skillfocused tests pass;2,060ordinarytests pass; build/typecheckpass; lint3oldwarnings. TestscovercorevsCultthrownweapons, all5Culttypes, savecloaks/LuckyCharm, actualRemembererlist andskillpickerannotation. NoUI/DBchanges ornewbrowserQA. Logs /tmp/stirheim-slayer-equipment-tests.log,/tmp/stirheim-slayer-magic-tests.log,/tmp/stirheim-slayer-rules-{all-tests,build,lint}.log. NoSQL/push/deploy.
 
 Next#67 remaining: OutlawinitialHero recruitmentaftercreation arrowoption; originalOutlawMarksmen laterarrowpermission; possibly pre-sale mandatorykitwarning. Main#67 entry has historic text nowstale (listmembership saysnotbuilt); consolidate ownlocalprogress underentry withoutlosingunrelatedauditdiff, leavepartialwithspecificremainingclauses. Allchanges remain nextlocalbatch; morningquestions unchanged.
+
+
+## Next local batch — #67 later Outlaw Hero recruitment and Marksman arrows
+
+Original Outlaw Hero recruitment now offers optional30gc Hunting Arrows with no rarity roll, including afterwarbandcreation. Resolver validateseligibility/campaignban, checkscombinedfunds, adds exactlyonebundle andchargeswithinone rosterupdate. Hirecostoverride doesnotdiscountarrowcost. UIshows combinedprice andrecords clearreason/history; originalOutlawMarksmen nowhave their explicit hunting-arrow permission, whileReduxhenchmen remainexcluded. Source grade1bpart2:902–907. Redux later-recruit exemption notinvented from its startingequipmenttable.
+
+Validation:58focused and2,062ordinarytests pass; build/typecheck pass; lint3oldwarnings. Disposable390px mobileQA createdoriginalOutlaw, recruited60gcLeader plus30gcarrows, verified110gc remainingfrom200, hero/itemownership, reasonhistory,reload/nooverflow/pageerrors andcleanup. Unitchecks covernooption, insufficientfunds, hirecostoverride, bans, wrongwarband, MarksmanvsRedux. Logs /tmp/stirheim-recruit-arrows-{tests,types,all-tests,build,lint,browser}.log. NoSQL/push/deploy.
+
+Main#67 now has a currentlocal-progress summary above historicnotes. Remaining follow-up: pre-sale required-bowwarning (moving alreadycovered), then finalreview beforemarkingwholeitemclosed. Allsourcechangesheldlocal. Morningquestions unchanged.

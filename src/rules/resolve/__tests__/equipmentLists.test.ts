@@ -296,3 +296,11 @@ it('separates core Troll Slayer missile bans from Slayer Cult thrown weapons and
   const rememberer = hero('dwarf_slayer_cult_rememberer_hero'), r = roster('dwarf_slayer_cult', rememberer)
   for (const id of ['light_armour', 'helmet', 'shield', 'buckler', 'crossbow', 'pistol']) expect(itemRestrictionWarnings(r, findItem(id)!, holder(rememberer)), id).toEqual([])
 })
+
+
+it('preserves original Outlaw Marksmen hunting-arrow permission without extending it to Redux henchmen', () => {
+  const r = roster('outlaws_of_stirwood_forest', hero('outlaws_champion'))
+  const marksman: ItemHolder = { kind: 'henchmanGroup', unitTemplateId: 'outlaws_marksman', equipment: [{ itemId: 'bow', quantity: 1 }], size: 1 }
+  expect(itemRestrictionWarnings(r, findItem('hunting_arrows')!, marksman)).toEqual([])
+  expect(itemRestrictionWarnings({ ...r, warbandTemplateId: 'outlaws_of_stirwood_forest_redux' }, findItem('hunting_arrows')!, { ...marksman, unitTemplateId: 'marksmen' }).join(' ')).toContain('Heroes only')
+})

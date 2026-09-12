@@ -147,7 +147,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
           the roster page; hired swords still work.
         </Notice>
       ) : tab === 'heroes' ? (
-        <HeroesTab detail={detail} template={template} canEdit={canEdit} onDone={done} firstSpellRule={campaign.data?.settings.houseRules.firstSpellRule} />
+        <HeroesTab bans={bans} detail={detail} template={template} canEdit={canEdit} onDone={done} firstSpellRule={campaign.data?.settings.houseRules.firstSpellRule} />
       ) : (
         <HenchmenTab detail={detail} template={template} canEdit={canEdit} onDone={done} perks={perks} />
       )}

@@ -1719,6 +1719,11 @@ Left open (the five further gaps above, none touched by this fix): the Catacombs
 ### 67. Trading post never checks a warrior's own equipment list or armour bans, and rare items aren't quantity-capped
 
 **Status:** 🟡 Partially fixed
+
+**Current local batch — 12 September (not deployed):** Equipment-list membership and the named unit restrictions are now implemented with Tom's warning/recorded-override policy. Purchases and stash moves check eligibility; moving required Outlaw bows also checks the source. Weapon skills, Proven Warrior/leader access, bundle alternatives, material variants and ordinary club/mace/hammer aliases are handled. The faction clauses below now cover Bergjaeger longbows, Hochland henchmen, Horned Hunter/Morr/Slayer restrictions, Halfling/Snotling size limits, Nippon vows, Pilgrim weapons, Outlaw bow limits and initial recruitment arrows, and Wood Elf initial Ithilmar benefits. Rememberer exceptions are preserved. Original Outlaw Marksmen may use Hunting Arrows.
+
+**Remaining local follow-up:** warn before selling required bows (roster warnings already detect the result), and finish the final review before closing this broad entry. The earlier implementation-gap bullets below are retained as historical audit evidence, not the current implementation status. Latest validation:2,062 ordinary tests, build/typecheck and disposable mobile recruitment/move checks pass. No additional deployment.
+
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the income and trading rules audit, reviewed by Tom, sent directly for the tracker; includes a decided ruling from Tom
 
@@ -4073,3 +4078,12 @@ Added noMagic data for the5CultSlayer unit types; Arcane Lore/Sorcery/Warrior Wi
 Validation:41equipment/campaignfocused and12skillfocused tests pass;2,060ordinarytests pass; build/typecheckpass; lint3oldwarnings. TestscovercorevsCultthrownweapons, all5Culttypes, savecloaks/LuckyCharm, actualRemembererlist andskillpickerannotation. NoUI/DBchanges ornewbrowserQA. Logs /tmp/stirheim-slayer-equipment-tests.log,/tmp/stirheim-slayer-magic-tests.log,/tmp/stirheim-slayer-rules-{all-tests,build,lint}.log. NoSQL/push/deploy.
 
 Next#67 remaining: OutlawinitialHero recruitmentaftercreation arrowoption; originalOutlawMarksmen laterarrowpermission; possibly pre-sale mandatorykitwarning. Main#67 entry has historic text nowstale (listmembership saysnotbuilt); consolidate ownlocalprogress underentry withoutlosingunrelatedauditdiff, leavepartialwithspecificremainingclauses. Allchanges remain nextlocalbatch; morningquestions unchanged.
+
+
+## Next local batch — #67 later Outlaw Hero recruitment and Marksman arrows
+
+Original Outlaw Hero recruitment now offers optional30gc Hunting Arrows with no rarity roll, including afterwarbandcreation. Resolver validateseligibility/campaignban, checkscombinedfunds, adds exactlyonebundle andchargeswithinone rosterupdate. Hirecostoverride doesnotdiscountarrowcost. UIshows combinedprice andrecords clearreason/history; originalOutlawMarksmen nowhave their explicit hunting-arrow permission, whileReduxhenchmen remainexcluded. Source grade1bpart2:902–907. Redux later-recruit exemption notinvented from its startingequipmenttable.
+
+Validation:58focused and2,062ordinarytests pass; build/typecheck pass; lint3oldwarnings. Disposable390px mobileQA createdoriginalOutlaw, recruited60gcLeader plus30gcarrows, verified110gc remainingfrom200, hero/itemownership, reasonhistory,reload/nooverflow/pageerrors andcleanup. Unitchecks covernooption, insufficientfunds, hirecostoverride, bans, wrongwarband, MarksmanvsRedux. Logs /tmp/stirheim-recruit-arrows-{tests,types,all-tests,build,lint,browser}.log. NoSQL/push/deploy.
+
+Main#67 now has a currentlocal-progress summary above historicnotes. Remaining follow-up: pre-sale required-bowwarning (moving alreadycovered), then finalreview beforemarkingwholeitemclosed. Allsourcechangesheldlocal. Morningquestions unchanged.

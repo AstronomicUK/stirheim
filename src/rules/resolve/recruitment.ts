@@ -1,3 +1,4 @@
+import { isBanned } from "./houseRules";
 import { dreamerRecruitmentBlock } from './dreamerCertification'
 import { leaderReplacementPurchaseBlock } from './leaderReplacement';
 import { availableFreeHires } from './explorationDiscoveries'
@@ -35,6 +36,7 @@ import { collapsedWarbandReason, delayedLeaderRecruitmentBlock } from './leaderR
 import type { UnitTemplate, WarbandTemplate } from "../types";
 import type { HiredSwordDetail } from "../types/campaignContent";
 import type {
+  CampaignBans,
   Resolution,
   ResolutionEvent,
   RosterHenchmanGroup,
@@ -183,7 +185,11 @@ export function canRecruit(
 }
 
 /** Hire a new hero of the given unit type: template stats, starting experience, no equipment. */
+export const INITIAL_OUTLAW_ARROWS_COST = 30;
+
 export interface RecruitHeroOptions {
+  initialHuntingArrows?: boolean;
+  bans?: CampaignBans;
   rng?: () => number;
   magicChoiceId?: string;
   spellIds?: string[];
@@ -206,7 +212,10 @@ export function recruitHero(
   }
   const block = recruitmentBlock(warband, template, unit, 1);
   if (block) throw new RulesError("recruitment.notAllowed", block);
-  const cost = opts.costOverride ?? ((unit.cost ?? 0) + (startingMagicFor(unit.id, template, opts.magicChoiceId)?.extraCost ?? 0));
+  if (opts.initialHuntingArrows && (template.id !== "outlaws_of_stirwood_forest" || isBanned(opts.bans, "items", "hunting_arrows"))) throw new RulesError("recruitment.huntingArrows", "The initial Hunting Arrows exception is unavailable for this recruit or campaign.");
+  const hireCost = opts.costOverride ?? ((unit.cost ?? 0) + (startingMagicFor(unit.id, template, opts.magicChoiceId)?.extraCost ?? 0));
+  const arrowsCost = opts.initialHuntingArrows ? INITIAL_OUTLAW_ARROWS_COST : 0;
+  const cost = hireCost + arrowsCost;
   const replacementBlock = leaderReplacementPurchaseBlock(warband, cost, unit.id);
   if (replacementBlock) throw new RulesError("recruitment.replaceLeader", replacementBlock);
   assertGold(warband, cost, `A ${unit.name}`);
@@ -228,6 +237,7 @@ export function recruitHero(
     status: "active",
   };
 
+  if (opts.initialHuntingArrows) hero.equipment.push({ itemId: "hunting_arrows", quantity: 1 });
   const magic = startingMagicFor(unit.id, template, opts.magicChoiceId);
   if (unit.alternateHero === 'wolf_priest_of_ulric') hero.equipment.push({ itemId: 'wolfcloak', quantity: 1 });
   if (startingMagicOptions(unit.id, template).length && !magic) throw new RulesError('recruitment.magicChoice', 'Choose the recruit’s starting lore or Mark.');
@@ -248,8 +258,8 @@ export function recruitHero(
       {
         kind: "hero.recruited",
         subjectId: id,
-        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${magic?.extraCost ? `; ${magic.label}` : ''}${freeDagger ? " and the free dagger" : ""}; treasury now ${warband.gold - cost} gc`,
-        data: { unitTemplateId: unit.id, cost, startingExperience: unit.startingExperience },
+        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${magic?.extraCost ? `; ${magic.label}` : ''}${freeDagger ? " and the free dagger" : ""}${arrowsCost ? `; includes Hunting Arrows for ${arrowsCost} gc at initial recruitment, with no rarity roll required` : ""}; treasury now ${warband.gold - cost} gc`,
+        data: { unitTemplateId: unit.id, cost, ...(arrowsCost ? { hireCost, initialHuntingArrowsCost: arrowsCost } : {}), startingExperience: unit.startingExperience },
       },
       ...departures.map(d => ({kind: "hiredSword.left" as const,subjectId:d.id,message:`${d.name} leaves. ${d.reason}`})),
     ],

@@ -1,5 +1,5 @@
 # Stirheim — core rulebook priorities 1–5
-> Remaining release follow-up: inspect GitHub run 34706027355 until its browser-test job completes. The deployed assets and database are verified; investigate any CI failure, but do not repeat deployment merely because an old heartbeat asks to finish the batch.
+> Release follow-up complete: GitHub run 34706511272 passed test/build and all 16 browser tests. No actionable batch work remains; do not repeat the deployment.
 
 
 > Deployed 12 September: agreed core Priority 1–5 batch, release 48d636a, Netlify 6aa580d7fc4c3e89441da894. Migration 087 applied; all 109 served files verified. Historical local/pending statements below are superseded. Do not repeat this release.

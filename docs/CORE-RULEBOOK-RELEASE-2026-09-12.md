@@ -54,3 +54,13 @@ Tom explicitly authorised deployment with “Okay deploy it”. The entire agree
 - Local acceptance remains 2,307 ordinary tests, 216 DB tests, build/typecheck/lint. GitHub run `34706027355` has passed its test/build job; the independent end-to-end job is still running at this checkpoint.
 
 Supplementary clauses remain outside the completed core batch. Do not redeploy this release from a stale heartbeat. Verification-only documentation commits do not alter deployed application code.
+
+
+### Post-deployment CI test maintenance
+
+Run 34706027355 passed test/build but failed the match browser test: its helper tried to click a dice face while the redesigned “Enter tabletop dice instead” panel was closed. The captured browser context showed the correct first-attack screen. Test-only commit `2bf81d9` opens that panel before entering each die; application source and deployed assets are unchanged. A disposable local reproduction passed sword/dagger hit rolls, parry decline, wound, injury and shared logging with the corrected helper. New full CI run: `34706511272` (pending at this checkpoint). No additional Netlify deployment was made.
+
+
+### Final release verification complete
+
+GitHub run `34706511272` passed both jobs: test/build and all **16 end-to-end browser tests** (57.3 seconds for the browser suite). This verifies the test-only helper correction in `2bf81d9`; no application change or additional Netlify release was needed. Deployment `6aa580d7fc4c3e89441da894` remains the live verified core batch. No release follow-up remains outstanding.

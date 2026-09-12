@@ -20,6 +20,7 @@ async function next(page: Page) {
 
 /** Calculator dice: tap the face that came up; the step advances as soon as it lands. */
 async function rollDie(page: Page, label: string, value: number) {
+  await page.getByRole('dialog').getByText('Enter tabletop dice instead', { exact: true }).click()
   await page.getByRole('button', { name: `${label}: ${value}`, exact: true }).click()
 }
 

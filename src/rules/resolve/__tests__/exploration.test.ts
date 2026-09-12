@@ -115,6 +115,14 @@ describe("explorationDiceAllowed", () => {
     expect(r.reason).toContain("3 surviving heroes");
   });
 
+  it("says 'die' when only one is rolled (#202)", () => {
+    const wb = makeWarband({ heroes: [hero("a"), hero("b")] });
+    const r = explorationDiceAllowed(wb, { won: false, heroesOutOfAction: ["b"] });
+    expect(r.count).toBe(1);
+    expect(r.reason).toBe("1 surviving hero = 1 die");
+    expect(explorationDiceAllowed(wb, { won: true, heroesOutOfAction: ["b"] }).reason).toBe("1 surviving hero, +1 for winning = 2 dice");
+  });
+
   it("rolls the true total, not capped at six, but keeps at most six (#66)", () => {
     const wb = makeWarband({ heroes: ["a", "b", "c", "d", "e", "f"].map((id) => hero(id)) });
     const r = explorationDiceAllowed(wb, { won: true, heroesOutOfAction: [] });

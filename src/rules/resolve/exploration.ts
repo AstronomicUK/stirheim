@@ -68,7 +68,7 @@ export function explorationDiceAllowed(warband: RosterWarband, opts: Exploration
   if (extra > 0) parts.push(`+${extra} from ${opts.extraDiceNote?.trim() || "skills/equipment"}`);
   if (ruleDice > 0) parts.push(`+${ruleDice} (${rules?.note ?? "warband rule"})`);
   const capped = raw > EXPLORATION_MAX_DICE;
-  const reason = `${parts.join(", ")} = ${raw} dice${capped ? `; pick your best ${EXPLORATION_MAX_DICE} to keep` : ""}`;
+  const reason = `${parts.join(", ")} = ${raw} ${raw === 1 ? "die" : "dice"}${capped ? `; pick your best ${EXPLORATION_MAX_DICE} to keep` : ""}`;
   return { count: raw, keep, capped, reason };
 }
 

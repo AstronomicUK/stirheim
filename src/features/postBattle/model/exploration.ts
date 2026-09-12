@@ -212,7 +212,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const problems: string[] = []
   if (adjustment && adjustment.reason === '') problems.push('Say why the number of exploration dice was changed.')
   if (!complete) {
-    problems.push(`Enter all ${allowed.count} exploration dice.`)
+    problems.push(allowed.count === 1 ? 'Enter the exploration die.' : `Enter all ${allowed.count} exploration dice.`)
     return { ...base, allowed, suggested: scenarioSuggested, adjustment, rolls, needsKeepChoice, kept, problems }
   }
   if (needsKeepChoice && kept.length !== allowed.keep) {

@@ -62,7 +62,7 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
   {item.state==='open'?<>
    {pending.map(p=>{const ours=p.proposed_by_warband_id===detail.warband.id;return <Notice key={p.id} tone="info" title={ours?'Your proposal, awaiting the other player':`Proposed by ${ours?'you':p.proposed_by_warband_id===item.captor_warband_id?item.captor?.name:item.victim?.name}`}>
     <p>{p.message}</p>
-    {p.proposer_note?<p className="mt-1 text-xs text-ink-dim">Proposer’s note: {p.proposer_note}</p>:null}
+    {p.proposer_note&&p.proposer_note!==p.message?<details className="mt-2 text-xs text-ink-dim"><summary className="cursor-pointer">Additional proposal notes</summary><p className="mt-2 whitespace-pre-wrap break-words">{p.proposer_note}</p></details>:null}
     {canAct?<div className="mt-2 flex flex-wrap items-end gap-2">
      {ours||gm?<Button variant="ghost" pending={respond.isPending} onClick={()=>respond.mutate({proposalId:p.id,action:'withdraw',reason:'Withdrawn by the proposer.'})}>Withdraw</Button>:null}
      {!ours||gm?<>

@@ -99,12 +99,12 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   // The victim asks for a free release; the captor accepts. The model rejoins Warriors with his sword and shield.
   const [first,second]=opened
   const rejoin=[{table:'henchman_groups',op:'update',id:group,data:{size:2}},{table:'items',op:'update',id:swords,data:{quantity:2}},{table:'items',op:'update',id:shields,data:{quantity:2}}]
-  expect((await propose(victim,first.id,{kind:'release'},[rejoin[0],rejoin[1]],[])).error?.message).toMatch(/brings back exactly his own kit \(shield \[Painted red\] ×1, sword ×1\)/)
+  expect((await propose(victim,first.id,{kind:'release'},[rejoin[0],rejoin[1]],[])).error?.message).toMatch(/brings back exactly his own kit \(Shield \[Painted red\] ×1, Sword ×1\)/)
   expect((await propose(victim,first.id,{kind:'release'},[...rejoin,{table:'items',op:'update',id:swords,data:{quantity:3}}],[])).error?.message).toMatch(/same row twice/)
   expect((await propose(victim,first.id,{kind:'exchange',otherHeroId:moulder},rejoin,[])).error?.message).toMatch(/released, ransomed or sold/)
   expect((await propose(victim,first.id,{kind:'release'},rejoin,[{table:'warbands',op:'update',data:{gold:120}}])).error?.message).toMatch(/gold changes do not match/)
   const id=check(await propose(victim,first.id,{kind:'release'},rejoin,[]))
-  expect(check(await captor.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/Released: Warriors \(model 1\) \(Disposable Reiklanders\) returns to Warriors\. kit restored: shield \[Painted red\], sword/)
+  expect(check(await captor.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/Released: Warriors \(model 1\) \(Disposable Reiklanders\) returns to Warriors\. kit restored: Shield \[Painted red\], Sword/)
   check(await captor.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(await groupRow()).toEqual({size:2,xp:2});expect(await qty(swords)).toBe(2);expect(await qty(shields)).toBe(2)
   // Meanwhile the Warriors gained experience: the second model cannot rejoin them and forms his own group.
@@ -156,7 +156,7 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   const [c]=await cases()
   expect(c.model_snapshot.items).toEqual([expect.objectContaining({item_rules_id:'sword',quantity:2,notes:''}),expect.objectContaining({item_rules_id:'sword',quantity:1,notes:'Family heirloom'})])
   // Release: both rows come back at the right multiplicity; a merged plain-only claim is refused.
-  expect((await propose(victim,c.id,{kind:'release'},[{table:'henchman_groups',op:'update',id:pair,data:{size:2}},{table:'items',op:'update',id:plain,data:{quantity:5}}],[])).error?.message).toMatch(/exactly his own kit \(sword ×2, sword \[Family heirloom\] ×1\)/)
+  expect((await propose(victim,c.id,{kind:'release'},[{table:'henchman_groups',op:'update',id:pair,data:{size:2}},{table:'items',op:'update',id:plain,data:{quantity:5}}],[])).error?.message).toMatch(/exactly his own kit \(Sword ×2, Sword \[Family heirloom\] ×1\)/)
   const id=check(await propose(victim,c.id,{kind:'release'},[{table:'henchman_groups',op:'update',id:pair,data:{size:2}},{table:'items',op:'update',id:plain,data:{quantity:4}},{table:'items',op:'update',id:heirloom,data:{quantity:2}}],[]))
   check(await captor.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(await qty(plain)).toBe(4);expect(await qty(heirloom)).toBe(2)

@@ -82,4 +82,18 @@ describe.skipIf(!enabled)('Core captive equipment identity (#229)',()=>{
   expect(check(await admin.from('heroes').select('xp').eq('id',leader.id).single()).xp).toBe(21)
  })
 
+ it('keeps a long annotated equipment list readable and complete in the agreed record',async()=>{
+  const notes='Family heirloom; '.repeat(95)+'FINAL ANNOTATION'
+  const {item,caseId}=await prepare('light_armour',notes)
+  const proposal=check(await sell(caseId,item.id,[stash('light_armour',notes)]))
+  const text=check(await admin.from('captive_proposals').select('message').eq('id',proposal).single()).message
+  expect(text).toContain('Light Armour [')
+  expect(text).toContain('FINAL ANNOTATION')
+  expect(text).toContain('leaves Disposable victims permanently')
+  expect(text).not.toContain('becomes retired')
+  expect(text).not.toContain('light_armour')
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}))
+  expect(check(await admin.from('captive_cases').select('resolution_message').eq('id',caseId).single()).resolution_message).toContain('FINAL ANNOTATION')
+ })
+
 })

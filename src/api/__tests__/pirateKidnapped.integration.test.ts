@@ -95,7 +95,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   // The honest proposal, accepted by the victim.
   const id=check(await propose(pirate,c.id,choice('crew',[4,4],[2,2]),heroLeaves(),newCrew()))
   const msg=check(await victim.from('captive_proposals').select('message').eq('id',id).single()).message
-  expect(msg).toMatch(/Kidnapped!: Taken Captain \(Disposable Reiklanders\) leaves his warband \(retired\)\. Pirates 4 \+ 4 \+ Ld 8 \+ 1 for winning = 17 against Taken Captain 2 \+ 2 \+ Ld 7 = 11\. joins Disposable Pirates as a new Crew model "Taken Captain" with the printed Crew profile, armed with dagger, sword\. his 1 old equipment item\(s\) are exchanged away/)
+  expect(msg).toMatch(/Kidnapped!: Taken Captain \(Disposable Reiklanders\) leaves his warband permanently\. Pirates 4 \+ 4 \+ Ld 8 \+ 1 for winning = 17 against Taken Captain 2 \+ 2 \+ Ld 7 = 11\. joins Disposable Pirates as a new Crew model "Taken Captain" with the printed Crew profile, armed with Dagger, Sword\. his 1 old equipment item\(s\) are exchanged away/)
   expect((await pirate.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'})).error?.message).toMatch(/other warband's player/)
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(await heroRow()).toMatchObject({status:'retired'})
@@ -116,7 +116,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   check(await pirate.rpc('record_kidnap_dice',{p_case_id:c.id,p_dice:[2,2]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:c.id,p_dice:[3,2]}))
   // 2+2+8 = 12 against 3+2+7 = 12: a tie is a Swabbie.
   expect((await propose(pirate,c.id,choice('crew',[2,2],[3,2],'draw'),heroLeaves(),newCrew())).error?.message).toMatch(/dice give swabbie/)
-  expect((await propose(pirate,c.id,choice('swabbie',[2,2],[3,2],'draw'),heroLeaves(),newSwabbie([]))).error?.message).toMatch(/retains exactly the recruit's skills \[dodge\]/)
+  expect((await propose(pirate,c.id,choice('swabbie',[2,2],[3,2],'draw'),heroLeaves(),newSwabbie([]))).error?.message).toMatch(/retains exactly the recruit's skills \[Dodge\]/)
   expect((await propose(pirate,c.id,choice('swabbie',[2,2],[3,2],'draw'),heroLeaves(),newSwabbie(['dodge'],crewStats))).error?.message).toMatch(/keeps the recruit's own profile/)
   expect((await propose(pirate,c.id,choice('swabbie',[2,2],[3,2],'draw'),heroLeaves(),[newSwabbie()[0]])).error?.message).toMatch(/stash exactly as carried/)
   // Never more Swabbies than Crew: two Crew already, so a third Swabbie is refused.
@@ -124,7 +124,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   expect((await propose(pirate,c.id,choice('swabbie',[2,2],[3,2],'draw'),heroLeaves(),newSwabbie())).error?.message).toMatch(/more Swabbies than Crew \(2 Crew, 2 Swabbies already\)/)
   check(await admin.from('henchman_groups').delete().eq('warband_id',pw).eq('name','Rabble'))
   const id=check(await propose(victim,c.id,choice('swabbie',[2,2],[3,2],'draw'),heroLeaves(),newSwabbie()))
-  expect(check(await pirate.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/becomes a Swabbie of Disposable Pirates \(the contest was tied\) keeping his own profile and skills \[dodge\]; no experience, no magic\. surrenders sword to Disposable Pirates's stash/)
+  expect(check(await pirate.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/becomes a Swabbie of Disposable Pirates \(the contest was tied\) keeping his own profile and skills \[Dodge\]; no experience, no magic\. surrenders Sword to Disposable Pirates's stash/)
   check(await pirate.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(await pirateGroups()).toEqual([{unit_type_rules_id:'pirates_crew',size:2,stats:crewStats,campaign_state:{},name:'Deck hands'},{unit_type_rules_id:'pirates_swabbie',size:1,stats,campaign_state:{inheritedSkillIds:['dodge']},name:'Taken Captain'}])
   expect(check(await admin.from('items').select('holder_type,item_rules_id').eq('warband_id',pw).eq('item_rules_id','sword').eq('holder_type','stash'))).toHaveLength(1)
@@ -190,7 +190,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   check(await pirate.rpc('record_kidnap_dice',{p_case_id:second.id,p_dice:[1,2]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:second.id,p_dice:[6,6]}))
   // 1+2+8+1 = 12 against 6+6+7 = 19: Swabbie, with the group's own profile and one sword.
   const swabbie=(items:unknown[])=>[{table:'henchman_groups',op:'insert',id:G,data:{name:'Pressed warrior',unit_type_rules_id:'pirates_swabbie',size:1,stats:warriorStats,xp:0,level_ups:0,stat_increases:{},model_names:[],campaign_state:{inheritedSkillIds:[]}}},...items]
-  expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2}}]))).error?.message).toMatch(/own share of kit may be kept \(sword ×1\)/)
+  expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2}}]))).error?.message).toMatch(/own share of kit may be kept \(Sword ×1\)/)
   expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'axe',quantity:1}}]))).error?.message).toMatch(/own share/)
   const id=check(await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}])))
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
@@ -211,7 +211,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   check(await pirate.rpc('record_kidnap_dice',{p_case_id:heroCase.id,p_dice:[5,5]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:heroCase.id,p_dice:[1,1]}))
   ;[all]=[await cases()];const hc=all.find((c:any)=>c.id===heroCase.id)
   const a=await viaBuilder(hc,pirate,{kit:['dagger','sword','helmet']});const idA=check(a.r);expect(a.built.outcome).toBe('crew')
-  expect(check(await victim.from('captive_proposals').select('message').eq('id',idA).single()).message).toMatch(/new Crew model "Taken Captain" with the printed Crew profile, armed with dagger, sword, helmet/)
+  expect(check(await victim.from('captive_proposals').select('message').eq('id',idA).single()).message).toMatch(/new Crew model "Taken Captain" with the printed Crew profile, armed with Dagger, Sword, Helmet/)
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:idA,p_action:'accept'}))
   expect(await heroRow()).toMatchObject({status:'retired'})
   // Henchman model 1, contest won: joins the existing Deck hands (2 -> 3 models, one more sword).
@@ -252,7 +252,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   check(await pirate.rpc('record_kidnap_recovery',{p_case_id:pairCase.id,p_d6:6}))
   check(await pirate.rpc('record_kidnap_dice',{p_case_id:pairCase.id,p_dice:[1,1]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:pairCase.id,p_dice:[6,6]}))
   const swabbie=(items:unknown[])=>[{table:'henchman_groups',op:'insert',id:G,data:{name:'Pressed marksman',unit_type_rules_id:'pirates_swabbie',size:1,stats:warriorStats,xp:0,level_ups:0,stat_increases:{},model_names:[],campaign_state:{inheritedSkillIds:[]}}},...items]
-  expect((await propose(pirate,pairCase.id,choice('swabbie',[1,1],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(sword ×2\)/)
+  expect((await propose(pirate,pairCase.id,choice('swabbie',[1,1],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(Sword ×2\)/)
   check(await propose(pirate,pairCase.id,choice('swabbie',[1,1],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2,notes:'Cutlasses'}}])))
   // The uneven trio: recovered, but no equipment may be claimed automatically.
   check(await pirate.rpc('record_kidnap_recovery',{p_case_id:trioCases[0].id,p_d6:6}))
@@ -268,7 +268,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   check(await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[1].id,p_items:[{id:trioShields,quantity:1}],p_reason:'The last shield was his'}))
   expect((await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[1].id,p_items:[{id:trioShields,quantity:0}],p_reason:'Second thoughts'})).error?.message).toMatch(/already recorded/)
   const [t0]=(await cases()).filter((c:any)=>c.id===trioCases[0].id);expect(t0.model_snapshot).toMatchObject({kit_unresolved:false,allocation:{reason:'He carried two of the three shields'}});expect(t0.model_snapshot.items[0].quantity).toBe(2)
-  expect((await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(shield ×2\)/)
+  expect((await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(Shield ×2\)/)
   check(await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:2}}])))
  })
 

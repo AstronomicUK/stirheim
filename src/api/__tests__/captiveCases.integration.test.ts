@@ -98,7 +98,7 @@ describe.skipIf(!enabled)('Captured cross-player cases (#229 core)',()=>{
   expect(await gold()).toEqual([70,130]);expect(await heroStatus()).toBe('active')
   const [done]=await cases();expect(done).toMatchObject({state:'resolved',resolution_kind:'ransom'});expect(done.proposals[0].state).toBe('accepted')
   expect((await victim.rpc('respond_captive_proposal',{p_proposal_id:proposalId,p_action:'accept'})).error?.message).toMatch(/already been answered/)
-  expect(check(await admin.from('match_reports').select('notes').eq('match_id',match).single()).notes).toMatch(/Ransom: Taken Captain \(Disposable victims\) becomes active\. Disposable victims gold 100 → 70\. Disposable captors gold 100 → 130/)
+  expect(check(await admin.from('match_reports').select('notes').eq('match_id',match).single()).notes).toMatch(/Ransom: Taken Captain returns to Disposable victims\. Disposable victims gold 100 → 70\. Disposable captors gold 100 → 130/)
   expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:vw})).error?.message).toMatch(/depends on this report/)
   expect((await captor.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'We misread the injury roll'})).error?.message).toMatch(/campaign GM, or a player of both/)
   expect((await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'no'})).error?.message).toMatch(/Explain why/)

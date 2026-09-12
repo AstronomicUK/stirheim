@@ -74,7 +74,7 @@ describe.skipIf(!enabled)('Captive-for-captive exchange across case kinds (#229)
   expect((await propose(reik,a.id,built.choice,ownerChanges,[])).error?.message).toMatch(/must become "active"/)
   const id=check(await propose(reik,a.id,built.choice,ownerChanges,captorChanges))
   const msg=check(await moulder.from('captive_proposals').select('message').eq('id',id).single()).message
-  expect(msg).toMatch(/^Exchange of captives\. Warriors \(model 1\) \(Disposable Reiklanders\) returns to Warriors\. kit restored: sword\. In return: Packmaster Vikt \(Disposable Moulder\) becomes active\. Packmaster Vikt keeps all 1 equipment item\(s\)\.$/)
+  expect(msg).toMatch(/^Exchange of captives\. Warriors \(model 1\) \(Disposable Reiklanders\) returns to Warriors\. kit restored: Sword\. In return: Packmaster Vikt returns to Disposable Moulder\. Packmaster Vikt keeps all 1 equipment item\(s\)\.$/)
   expect((await reik.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'})).error?.message).toMatch(/other warband's player/)
   check(await moulder.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(check(await admin.from('henchman_groups').select('size').eq('id',group).single()).size).toBe(3)

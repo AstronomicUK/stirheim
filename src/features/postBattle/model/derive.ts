@@ -1,4 +1,4 @@
-import {reportTradeWagon,applyTradeWagonToReport} from './tradeWagonReport'
+import {reportTradeWagon,applyTradeWagonToReport,afterTradeWagonCapture} from './tradeWagonReport'
 import { brokenWeaponSettlement } from './brokenWeapons'
 import { delayedLeaderUnit, leaderWaitingGameUpdates } from '../../../rules/resolve/leaderReplacement'
 import {specialKillProblems, type SpecialKillXp} from './specialKillXp'
@@ -902,9 +902,11 @@ export function deriveAdvances(draft: ReportDraft, ctx: ReportContext, applied: 
 export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedReport {
   const nonCampaign = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign
   if (nonCampaign) draft = { ...draft, veteranPool: [null, null], veteranPoolExtra: null, injurySkips: {}, groupInjuryDice: {} }
+  const wagonCapture=nonCampaign?{snapshot:undefined,problems:[] as string[],notes:[] as string[]}:reportTradeWagon(draft,ctx)
+  const postCaptureContext=afterTradeWagonCapture(ctx,wagonCapture)
   const participants = participantsOf(ctx.roster, ctx.template)
   const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId)
-  const lycanthrope=lycanthropeReport(draft,ctx,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
+  const lycanthrope=lycanthropeReport(draft,postCaptureContext,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
   const injuries=lycanthrope.injuries
   const casualtyDraft=woodsCasualtyDraft(draft,ctx.scenarioId)
   const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? (g.size-absentGroupModels(g))) + absentGroupModels(g) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(casualtyDraft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
@@ -1021,8 +1023,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     if (existing) Object.assign(existing, patch)
     else applied.item_patches.push(patch)
   }
-  const recruitItems = ctx.items.filter(i=>!applied.remove_item_ids.includes(i.id)).map(i=>({...i,...applied.item_patches.find(p=>p.id===i.id)})).filter(i=>i.quantity>0)
-  const recruitContext = {...ctx, items:recruitItems, roster:rosterAfterReport(ctx.roster,applied)}
+  const recruitItems = postCaptureContext.items.filter(i=>!applied.remove_item_ids.includes(i.id)).map(i=>({...i,...applied.item_patches.find(p=>p.id===i.id)})).filter(i=>i.quantity>0)
+  const recruitContext = {...postCaptureContext, items:recruitItems, roster:rosterAfterReport(postCaptureContext.roster,applied)}
   const recruits = locationRecruits(draft, recruitContext, exploration, injuries, ctx.roster.gold + applied.warband.gold_delta + (applied.rawhide_settlement?.gold_delta??0))
   if (recruits.awardedItems.length) applied.awarded_items = [...(applied.awarded_items ?? []), ...recruits.awardedItems]
   const summoned = ritualZombies(draft, ctx, injuries, recruits)
@@ -1047,7 +1049,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const theft = pettyThief(draft, ctx, participants)
   if (theft.transfer) applied.petty_thief = theft.transfer
   const lycanthropeEquipmentProblems=applyLycanthropeReport(lycanthrope,applied,ctx)
-  const shrine=applyShrineBlessing(draft.exploration,exploration.location?.id,ctx.roster,ctx.items,applied)
+  const shrine=applyShrineBlessing(draft.exploration,exploration.location?.id,postCaptureContext.roster,postCaptureContext.items,applied)
   exploration.problems.push(...shrine.problems)
   if(exploration.record)exploration.record.notes.push(...shrine.notes)
   const departingIds=new Set([...applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id),...applied.groups.filter(g=>g.patch.size===0).map(g=>g.id)])
@@ -1055,7 +1057,6 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
-  const wagonCapture=nonCampaign?{snapshot:undefined,problems:[] as string[],notes:[] as string[]}:reportTradeWagon(draft,ctx)
   applyTradeWagonToReport(wagonCapture,applied,ctx.rawGroups??[])
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
   problems.outcome.push(...wagonCapture.problems)

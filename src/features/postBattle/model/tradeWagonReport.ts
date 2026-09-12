@@ -43,3 +43,12 @@ export function applyTradeWagonToReport(capture:ReturnType<typeof reportTradeWag
     capture.problems.push('Captured wagon cargo is also being used or lost elsewhere in this report. Reconcile those equipment choices before filing.')
   applied.trade_wagon_capture=s
 }
+
+/** Original captured stock cannot equip new recruits or receive post-battle blessings. */
+export function afterTradeWagonCapture(ctx:ReportContext,capture:ReturnType<typeof reportTradeWagon>):ReportContext {
+  const s=capture.snapshot
+  if(!s)return ctx
+  const reserved=new Set(s.cargo.items.map(i=>i.id))
+  if(s.wagon.kind==='item')reserved.add(s.wagon.expected.id)
+  return {...ctx,items:ctx.items.filter(i=>!reserved.has(i.id)),roster:{...ctx.roster,stash:[]}}
+}

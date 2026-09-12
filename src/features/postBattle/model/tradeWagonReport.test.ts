@@ -2,7 +2,7 @@ import {expect,it} from 'vitest'
 import {makeWarband} from '../../../rules/resolve/__tests__/fixtures'
 import {emptyDraft} from './state'
 import type {ReportContext} from './derive'
-import {reportWagons,reportTradeWagon,applyTradeWagonToReport} from './tradeWagonReport'
+import {reportWagons,reportTradeWagon,applyTradeWagonToReport,afterTradeWagonCapture} from './tradeWagonReport'
 import {reportAppliedSchema} from '../../../domain/report'
 import type {HenchmanGroupRow,ItemRow} from '../../../domain'
 const wagon={id:'wagon',warband_id:'merchant',name:'Trade Wagon',unit_type_rules_id:'merchant_trade_wagon',size:1,xp:0,level_ups:0} as HenchmanGroupRow
@@ -21,4 +21,13 @@ it('removes a no-op wagon patch but preserves and flags real wagon changes or ca
  applyTradeWagonToReport(capture,applied,[wagon]);expect(applied.groups).toEqual([]);expect(applied.trade_wagon_capture).toBeDefined();expect(capture.problems).toEqual([])
  const changed=reportTradeWagon(draft,ctx),other=reportAppliedSchema.parse({heroes:[],warband:{gold_delta:0,wyrdstone_delta:0,veteran_pool:null},pending_advances:[],groups:[{id:'wagon',patch:{size:0}}],item_patches:[{id:'cargo',quantity:1}]})
  applyTradeWagonToReport(changed,other,[wagon]);expect(other.groups).toHaveLength(1);expect(changed.problems).toHaveLength(2)
+})
+
+it('removes captured stock from reward choices without changing the original snapshot or carried kit',()=>{
+ const carried={...item,id:'carried',holder_type:'hero' as const,holder_id:'hero'}
+ const original={...ctx,items:[item,carried]},capture=reportTradeWagon(draft,original)
+ const available=afterTradeWagonCapture(original,capture)
+ expect(available.items).toEqual([carried]);expect(available.roster.stash).toEqual([])
+ expect(original.items).toHaveLength(2);expect(capture.snapshot?.cargo.items).toEqual([item])
+ expect(afterTradeWagonCapture(original,reportTradeWagon({...draft,routed:false},original))).toBe(original)
 })

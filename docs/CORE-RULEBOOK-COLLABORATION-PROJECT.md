@@ -1,4 +1,9 @@
 # Stirheim — core rulebook priorities 1–5
+> Remaining release follow-up: inspect GitHub run 34706027355 until its browser-test job completes. The deployed assets and database are verified; investigate any CI failure, but do not repeat deployment merely because an old heartbeat asks to finish the batch.
+
+
+> Deployed 12 September: agreed core Priority 1–5 batch, release 48d636a, Netlify 6aa580d7fc4c3e89441da894. Migration 087 applied; all 109 served files verified. Historical local/pending statements below are superseded. Do not repeat this release.
+
 
 > Current acceptance, 12 September: agreed core Priority 1–5 batch is verified locally through source 6f47572 and ready for one release; not deployed. 2,307 ordinary and 216 database tests pass. Earlier progress observations below are historical. See CORE-RULEBOOK-RELEASE-2026-09-12.md and the final acceptance in CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md.
 

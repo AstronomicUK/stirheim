@@ -1,6 +1,6 @@
-# Core rulebook Priority 1–5 — ready for one release
+# Core rulebook Priority 1–5 — deployed
 
-12 September 2026. Application source through `6f47572`, committed locally. **Not pushed or deployed.** This replaces the earlier premature release summary; the dated scope recheck retains that history.
+12 September 2026. Application source through `6f47572`, released in commit `48d636a`. **Deployed as 6aa580d7fc4c3e89441da894.** This replaces the earlier premature release summary; the dated scope recheck retains that history.
 
 ## Implemented core scope
 
@@ -40,3 +40,17 @@ The project brief reserves this new batch for the next release instruction; prio
 4. Verify served assets, database state and a suitable live smoke check, then record the deployment.
 
 Codex handles those steps once authorised. Do not reset or blindly replay the local migration history. Unrelated historical audit edits remain preserved in the working tree and are not part of this source checkpoint.
+
+
+### Production release — 12 September 2026
+
+Tom explicitly authorised deployment with “Okay deploy it”. The entire agreed core Priority 1–5 batch is now deployed at https://stirheim.com.
+
+- Release commit: `48d636a066e0bc241bc988922268193b5cdf2740` (application source checkpoint `6f47572`).
+- Netlify deployment: `6aa580d7fc4c3e89441da894`; one manual production deployment. Automatic builds were confirmed paused before pushing, avoiding a duplicate build.
+- Migration `20260912000087_addiction_supply.sql` applied before the frontend; production history confirms it and no pending migrations.
+- All **109** served build files match local release bytes (SHA-256), with no mismatches.
+- Read-only production mobile (390px) and desktop (1280px) checks pass: sign-in loads with no overflow or page errors; protected Simulator redirects to sign-in as expected. Authenticated feature checks were performed on disposable local fixtures before release; no live player records were changed by smoke testing.
+- Local acceptance remains 2,307 ordinary tests, 216 DB tests, build/typecheck/lint. GitHub run `34706027355` has passed its test/build job; the independent end-to-end job is still running at this checkpoint.
+
+Supplementary clauses remain outside the completed core batch. Do not redeploy this release from a stale heartbeat. Verification-only documentation commits do not alter deployed application code.

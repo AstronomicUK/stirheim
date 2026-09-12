@@ -251,3 +251,17 @@ The shared combat boundary and positional ordering remain player-confirmed. Grou
 Final evidence: 2,307 ordinary tests pass; Claude’s 216 local database tests pass; build/TypeScript pass; lint has only three pre-existing audit warnings. Claude’s final actual shared-turn check passes 9/9: start turns, set Fear/Frenzy, reload, finish both players’ turns, then reload in round 2 — Fear expires while ended Frenzy remains. Evidence: `docs/audits/2026-09-12-fear-lifetime/acceptance-live.txt`. This closes the last UI verification gap; no further rules decision is needed from Tom.
 
 Latest source checkpoints: 6f47572 core pistol UI/crossbow source correction, 141d13f Bugman integration, 85fb7a6 barrel use/settlement, b58097a Relic corrections, 3771f00 saved choices/psychology, a3bc2a8 Shade correction. Release procedure and exact coverage are in `docs/CORE-RULEBOOK-RELEASE-2026-09-12.md`. Production remains at the preceding release. Apply pending migration 087 before publishing this new frontend when authorised; no per-fix pushes or duplicate deployments.
+
+
+### Production release — 12 September 2026
+
+Tom explicitly authorised deployment with “Okay deploy it”. The entire agreed core Priority 1–5 batch is now deployed at https://stirheim.com.
+
+- Release commit: `48d636a066e0bc241bc988922268193b5cdf2740` (application source checkpoint `6f47572`).
+- Netlify deployment: `6aa580d7fc4c3e89441da894`; one manual production deployment. Automatic builds were confirmed paused before pushing, avoiding a duplicate build.
+- Migration `20260912000087_addiction_supply.sql` applied before the frontend; production history confirms it and no pending migrations.
+- All **109** served build files match local release bytes (SHA-256), with no mismatches.
+- Read-only production mobile (390px) and desktop (1280px) checks pass: sign-in loads with no overflow or page errors; protected Simulator redirects to sign-in as expected. Authenticated feature checks were performed on disposable local fixtures before release; no live player records were changed by smoke testing.
+- Local acceptance remains 2,307 ordinary tests, 216 DB tests, build/typecheck/lint. GitHub run `34706027355` has passed its test/build job; the independent end-to-end job is still running at this checkpoint.
+
+Supplementary clauses remain outside the completed core batch. Do not redeploy this release from a stale heartbeat. Verification-only documentation commits do not alter deployed application code.

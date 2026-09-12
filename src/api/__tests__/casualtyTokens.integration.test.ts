@@ -10,7 +10,7 @@ describe.skipIf(!enabled)('Casualty tokens: one standing event per model going d
  beforeAll(async()=>{
   admin=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const clients:SupabaseClient[]=[]
-  for(let i=0;i<3;i++){
+  for(let i=0;i<4;i++){
    const email=`casualty-${crypto.randomUUID()}@stirheim.test`,password=crypto.randomUUID()
    const {user}=check(await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{display_name:`Casualty QA ${i}`}}));users.push(user.id)
    const client=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_ANON_KEY!,{auth:{persistSession:false}});check(await client.auth.signInWithPassword({email,password}));clients.push(client)
@@ -18,7 +18,7 @@ describe.skipIf(!enabled)('Casualty tokens: one standing event per model going d
   ;[reik,moulder,outsider]=clients
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bands=check(await admin.from('warbands').insert([{owner_id:users[0],name:'Token Reiklanders',type_rules_id:'mercenaries_reikland',gold:100},{owner_id:users[1],name:'Token Moulder',type_rules_id:'skaven_of_clan_moulder',gold:100},{owner_id:users[2],name:'Token Outsiders',type_rules_id:'mercenaries_marienburg',gold:100}]).select('id'));[vw,cw,ow]=bands.map((b:any)=>b.id)
-  campaign=check(await admin.from('campaigns').insert({gm_id:users[1],name:'Token campaign',settings:{reportApproval:false}}).select('id').single()).id
+  campaign=check(await admin.from('campaigns').insert({gm_id:users[3],name:'Token campaign',settings:{reportApproval:false}}).select('id').single()).id
   check(await admin.from('campaign_members').insert([{campaign_id:campaign,warband_id:vw,user_id:users[0]},{campaign_id:campaign,warband_id:cw,user_id:users[1]}]))
   match=check(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2],state:'in_progress'}).select('id').single()).id
   check(await admin.from('match_participants').insert([vw,cw].map(warband_id=>({match_id:match,warband_id,accepted_at:new Date().toISOString()}))))

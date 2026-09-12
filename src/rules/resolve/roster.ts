@@ -23,6 +23,7 @@ import { rosterItemWarnings } from "./itemRestrictions";
 import { animalCount } from "./animals";
 import { equipmentBansFor, unitRules } from "../data/campaignRules";
 import { findItem } from "../data/items";
+import { itemEffect } from "../data/itemRules";
 import { heroCapacity } from "../data/warbandTemplates";
 
 export interface ParsedRosterLimit {
@@ -329,6 +330,11 @@ export function equipmentBanReason(warbandTemplateId: string, unitTemplateId: st
       case "lances":
         if (catalogue.id.replace(/^(gromril|ithilmar)_/, "") === "lance") return `${name}: the Paragon's Vow of Poverty forbids using a lance`;
         break;
+      case "constantSaveCloaks": {
+        const effect = itemEffect(catalogue.id);
+        if (/cloak|cape|mantle/i.test(catalogue.name) && (effect?.ownSave || effect?.saveBonus)) return `${name}: No Armour, No Toys forbids cloaks that provide a constant save bonus; Lucky Charms are allowed`;
+        break;
+      }
       case "heavyArmour":
         if (isBodyArmour(catalogue) && isHeavyArmourClass(catalogue)) return `${name} is heavy armour, which this warrior may not wear`;
         break;

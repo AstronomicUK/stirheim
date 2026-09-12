@@ -189,3 +189,16 @@ it('warns a Youngun below Proven Warrior’s printed 25 XP requirement', () => {
   expect(entry?.blocked).toContain('25 Experience');
   expect(entry?.restriction).toContain('Black Orc blood');
 });
+
+
+it('warns against Slayer Cult magic skills without applying the rule to its Rememberer', () => {
+  const template = findWarbandTemplate('dwarf_slayer_cult')!
+  for (const unit of ['dwarf_slayer_cult_giant_slayer', 'dwarf_slayer_cult_doomseeker_hero', 'dwarf_slayer_cult_axe_hurlers', 'dwarf_slayer_cult_stubbles', 'dwarf_slayer_cult_troll_slayers']) {
+    for (const skillId of ['arcane_lore', 'sorcery', 'warrior_wizard']) {
+      expect(skillRestrictionBlock(undefined, { template, hero: hero('h', unit), skillId })).toContain('may not learn magic')
+    }
+  }
+  expect(skillRestrictionBlock(undefined, { template, hero: hero('r', 'dwarf_slayer_cult_rememberer_hero'), skillId: 'arcane_lore' })).toBeNull()
+  const slayer = hero('s', 'dwarf_slayer_cult_giant_slayer', { skillTableIds: ['academic'] })
+  expect(availableSkills(slayer, template.id, { roster: warband(template.id, [slayer]) }).flatMap(t => t.skills).find(s => s.id === 'arcane_lore')?.blocked).toContain('may not learn magic')
+})

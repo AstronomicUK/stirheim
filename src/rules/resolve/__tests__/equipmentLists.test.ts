@@ -277,3 +277,22 @@ it('warns about Wood Elf Hero-only starting Ithilmar without inventing a later p
     expect(itemRestrictionWarnings(r, item, group, { alreadyHeld: true }).join(' ')).not.toContain('benefit is for Heroes only')
   }
 })
+
+
+it('separates core Troll Slayer missile bans from Slayer Cult thrown weapons and Rememberer permissions', () => {
+  for (const [warband, unit] of [['dwarf_treasure_hunters', 'dwarf_treasure_hunters_troll_slayers'], ['dwarf_rangers', 'dwarf_rangers_troll_slayer'], ['pit_fighters', 'pit_fighters_troll_slayer']]) {
+    expect(equipmentBanReason(warband, unit, { itemId: 'throwing_knives_stars', quantity: 1 })).toContain('missile weapon')
+  }
+  for (const unit of ['dwarf_slayer_cult_giant_slayer', 'dwarf_slayer_cult_doomseeker_hero', 'dwarf_slayer_cult_troll_slayers', 'dwarf_slayer_cult_axe_hurlers', 'dwarf_slayer_cult_stubbles']) {
+    const check = (id: string) => equipmentBanReason('dwarf_slayer_cult', unit, { itemId: id, quantity: 1 })
+    expect(check('throwing_knives_stars')).toBeNull()
+    expect(check('crossbow')).toContain('no missile weapons but thrown ones')
+    expect(check('light_armour')).toContain('may not wear')
+    expect(check('wolfcloak')).toContain('constant save bonus')
+    expect(check('sea_dragon_cloak')).toContain('constant save bonus')
+    expect(check('lucky_charm')).toBeNull()
+    expect(check('elven_cloak')).toBeNull()
+  }
+  const rememberer = hero('dwarf_slayer_cult_rememberer_hero'), r = roster('dwarf_slayer_cult', rememberer)
+  for (const id of ['light_armour', 'helmet', 'shield', 'buckler', 'crossbow', 'pistol']) expect(itemRestrictionWarnings(r, findItem(id)!, holder(rememberer)), id).toEqual([])
+})

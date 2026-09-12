@@ -332,3 +332,14 @@ Stillopen: initialHero recruitment after warbandcreation is a separateflow and h
 Verified existing builder prices already use20gc Ithilmar sword /60gc armour, while later Trading Post catalogue uses30gc/90gc and normalrarity (before anyapprovedarmourhouse-rule). Added missing starting-benefit warning for non-Hero recipients atcreation. It remains an overrideable warning, consistent with Tom's policy; no new permanentban on later purchases or on legallyheldgear. Source grade2apart2:2285.
 
 Validation:58focused and2,058ordinary tests pass; build/typecheck pass; lint3oldwarnings. Realtemplate tests pin initialcost versuslatercost/rarity andHero/henchman/held-item distinctions. NoUI/DBchanges ornewbrowserQA. Logs /tmp/stirheim-ithilmar-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. #67 stillpartial for Slayerclauses andOutlawinitialHero recruitment-aftercreation exception; pre-sale mandatorykitwarning optionalfollow-up. Morningquestions unchanged.
+
+
+## Next local batch — #67/#59 Slayer rules and Rememberer exception
+
+Split core Troll Slayer equipment bans (Treasure Hunters/Rangers/Pit Fighters: all missiles forbidden) from Slayer Cult rules (thrown missiles allowed). Cult Giant Slayer/Doomseeker/Troll Slayers/Axe Hurlers/Stubbles now share armour/helmet/non-thrown bans and constant-save cloak warnings. Lucky Charms and cloaks that only modify being hit are not assigned a save-cloak ban. Removed incorrect warband-wide armour ban so the explicitly non-Slayer Rememberer can use his printed armour/shield/buckler/pistol/crossbow list. Sources core1a:2193,grade1bpart1:1649,grade1bpart2:1521,grade2apart1:680,783–815 andRememberer Not a Slayer.
+
+Added noMagic data for the5CultSlayer unit types; Arcane Lore/Sorcery/Warrior Wizard picks now show the source rule warning, including through availableSkills. Rememberer exempt. Approved overrides/imported spells remain; no destructive spell removal or hard block. This does not claim every possible manual magic-entry path is restricted.
+
+Validation:41equipment/campaignfocused and12skillfocused tests pass;2,060ordinarytests pass; build/typecheckpass; lint3oldwarnings. TestscovercorevsCultthrownweapons, all5Culttypes, savecloaks/LuckyCharm, actualRemembererlist andskillpickerannotation. NoUI/DBchanges ornewbrowserQA. Logs /tmp/stirheim-slayer-equipment-tests.log,/tmp/stirheim-slayer-magic-tests.log,/tmp/stirheim-slayer-rules-{all-tests,build,lint}.log. NoSQL/push/deploy.
+
+Next#67 remaining: OutlawinitialHero recruitmentaftercreation arrowoption; originalOutlawMarksmen laterarrowpermission; possibly pre-sale mandatorykitwarning. Main#67 entry has historic text nowstale (listmembership saysnotbuilt); consolidate ownlocalprogress underentry withoutlosingunrelatedauditdiff, leavepartialwithspecificremainingclauses. Allchanges remain nextlocalbatch; morningquestions unchanged.

@@ -5,7 +5,7 @@
 // the player take it anyway, on the record. Anything it cannot read stays a plain note.
 
 import { loreForCaster, PRAYER_LORE_IDS } from "./casting";
-import { warbandRules } from "../data/campaignRules";
+import { warbandRules, unitRules } from "../data/campaignRules";
 import { SPELL_LORES } from "../data/campaign/magic";
 import { SKILLS } from "../data/skills";
 import { WARBAND_SKILL_TABLES } from "../data/campaign/warbandSkills";
@@ -109,6 +109,7 @@ function spellcaster(ctx: SkillRestrictionContext): boolean {
  * or says nothing this reader understands.
  */
 export function skillRestrictionBlock(restriction: string | undefined, ctx: SkillRestrictionContext): string | null {
+  if (ctx.skillId && ['arcane_lore', 'sorcery', 'warrior_wizard'].includes(ctx.skillId) && unitRules(ctx.hero.unitTemplateId).noMagic) return 'No Armour, No Toys: Slayer Cult warriors may not learn magic.';
   if (!restriction) return null;
   const text = restriction.trim();
   const lower = text.toLowerCase();

@@ -18,6 +18,7 @@ export type EquipmentBan =
   | "pilgrimWeapons" // Dark Shroud Pilgrims: blunt weapons and silver-tip stake
   | "morrWeapons" // Priests of Morr may use only daggers and scythes
   | "lances" // Paragon Vow of Poverty
+  | "constantSaveCloaks" // Slayer Cult No Armour, No Toys
   | "heavyArmour"
   | "helmets"
   | "missile" // no missile weapons of any kind
@@ -94,6 +95,8 @@ export interface UnitCampaignRules {
   noExplorationDie?: boolean;
   /** This hero may not search for rare items. */
   noRareSearch?: boolean;
+  /** Explicit source rule forbidding learning magic; imported/manual overrides remain possible. */
+  noMagic?: boolean;
   equipmentBans?: EquipmentBan[];
   relation?: RosterRelation;
   /** Which racial maximum row caps this unit (RACIAL_MAXIMUMS profile name). */
@@ -223,7 +226,8 @@ const TROLL: UnitCampaignRules = {
   injury: { deadOn: [], label: "dead", note: "Trolls regenerate: no injury roll is made for a Troll taken out of action." },
   upkeep: { gold: 15, note: "Always Hungry: 15 gc after every battle, or the Troll wanders off." },
 };
-const SLAYER_BANS: EquipmentBan[] = ["armour", "helmets", "missileExceptThrown"];
+const SLAYER_BANS: EquipmentBan[] = ["armour", "helmets", "missile"];
+const CULT_SLAYER_BANS: EquipmentBan[] = ["armour", "helmets", "missileExceptThrown", "constantSaveCloaks"];
 
 export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   // Core
@@ -339,10 +343,12 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   // 2a
   dreamwalkers_priest_of_morr: { equipmentBans: ["armour", "helmets", "morrWeapons"], neverLeads: false },
   druchii_slavehounds: { ...ANIMAL, relation: { onlyWith: { unitIds: ["druchii_beastmaster"], label: "a Beastmaster" } } },
+  dwarf_slayer_cult_giant_slayer: { noMagic: true, equipmentBans: CULT_SLAYER_BANS },
+  dwarf_slayer_cult_doomseeker_hero: { noMagic: true, equipmentBans: CULT_SLAYER_BANS },
   dwarf_slayer_cult_rememberer_hero: { neverLeads: true },
-  dwarf_slayer_cult_axe_hurlers: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: ["armour", "helmets"] },
-  dwarf_slayer_cult_stubbles: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: SLAYER_BANS },
-  dwarf_slayer_cult_troll_slayers: { equipmentBans: SLAYER_BANS },
+  dwarf_slayer_cult_axe_hurlers: { noMagic: true, promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: CULT_SLAYER_BANS },
+  dwarf_slayer_cult_stubbles: { noMagic: true, promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: CULT_SLAYER_BANS },
+  dwarf_slayer_cult_troll_slayers: { noMagic: true, equipmentBans: CULT_SLAYER_BANS },
   halflings_scouts: { equipmentBans: ["tooBig"], promotion: { tables: ["combat", "shooting", "speed", "academic"], note: "Halfling Scouts may not take Strength skills." } },
   halflings_elder: { equipmentBans: ["tooBig"] },
   halflings_cook: { equipmentBans: ["tooBig"] },
@@ -510,7 +516,7 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   orc_mob: { hiredSwords: { allow: ['pit_fighter','ogre_bodyguard','warlock'], note: 'Distasteful Company: Orc Mob hires only Pit Fighters, Ogre Bodyguards and Warlocks.' } },
   druchii: { exploration: { extraShards: 1, note: 'Fey Acuity: +1 shard of wyrdstone whenever the warband finds any.' }, equipmentBans: ['blackPowder'], hiredSwords: { allow: ['pit_fighter','ogre_bodyguard','warlock','imperial_assassin','tilean_marksman','highwayman','duellist','witch','emissary_of_chaos','human_scout','old_prospector','dark_elf_assassin','pathfinder','nomad_scout','thief'], note: 'Druchii may employ only the hired swords named in their warband list. The printed Shade Scout is not in the current catalogue.' } },
   sorcerous_society: { hiredSwords: { note: 'The Society hires as Human Mercenaries, but excludes anyone with the Wizard ability except the High Elf Mage.' } },
-  dwarf_slayer_cult: { hiredSwords: DWARF_NO_ELVES, equipmentBans: ["armour", "helmets"], notes: ["Slayers wear no armour and use no missile weapons but thrown axes."] },
+  dwarf_slayer_cult: { hiredSwords: DWARF_NO_ELVES, notes: ["Slayers wear no armour and use no missile weapons but thrown axes."] },
   outlaws_of_stirwood_forest_redux: { heroCapacity: 5 },
   the_restless_dead: {},
   the_restless_dead_variant: {},

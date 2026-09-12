@@ -1,3 +1,4 @@
+import { canUseRoutRelic, passRoutWithRelic, recordLeadershipTest } from './relicRules'
 import {BriberyControl} from './BriberyControl'
 // The rout check, offered (never forced: the app does not track turns) once a quarter of the
 // starting models are out of action. Roll it here against a chosen Leadership, mark it as taken
@@ -37,6 +38,7 @@ function stamp(state: BattleLiveState, line: string): BattleLiveState {
 
 export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
   const [open, setOpen] = useState(false)
+  const [confirmedFirstTest, setConfirmedFirstTest] = useState(false)
   const [outcome, setOutcome] = useState<'passed' | 'failed' | null>(null)
   const options = leadershipOptions(roster, template, sheet, leaderLd, conditions)
   const suggested = suggestedLeadership(options)
@@ -49,6 +51,7 @@ export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, templa
   const total = d1 !== null && d2 !== null ? d1 + d2 : null
 
   function reset() {
+    setConfirmedFirstTest(false)
     setD1(null)
     setD2(null)
     setOutcome(null)
@@ -62,6 +65,7 @@ export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, templa
     setD2(b)
     setOutcome(passed ? 'passed' : 'failed')
     edit((s) => {
+      s = recordLeadershipTest(s, chosen.id, 'rout')
       const line = `Rout check ${passed ? 'passed' : 'failed'}: rolled ${sum} against ${chosen.label}`
       return passed ? stamp(s, line) : setRouted(stamp(s, line), true, 'failed-test')
     })
@@ -98,6 +102,22 @@ export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, templa
           </Button>
         </div>
       </div>
+
+      {canUseRoutRelic(roster, sheet, chosen) ? <Notice tone="warn" title="Holy (Unholy) Relic">
+        <p>The leader automatically passes their first Leadership test. Confirm they have not already tested elsewhere at the table.</p>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={confirmedFirstTest} onChange={e => setConfirmedFirstTest(e.target.checked)} />This is the leader’s first Leadership test this battle.</label>
+        <Button variant="secondary" disabled={!confirmedFirstTest} onClick={() => {
+          if (!chosen) return
+          edit(s => passRoutWithRelic(roster, s, chosen, confirmedFirstTest))
+          setOutcome('passed')
+          setOpen(false)
+          setConfirmedFirstTest(false)
+        }}>Pass automatically with the relic</Button>
+        <Button variant="ghost" onClick={() => {
+          if (!chosen) return
+          edit(s => ({ ...recordLeadershipTest(s, chosen.id, 'table'), notes: [s.notes.trimEnd(), `${chosen.label}: an earlier Leadership test was confirmed at the table; the relic cannot bypass a later test.`].filter(Boolean).join('\n') }))
+        }}>An earlier test was already taken</Button>
+      </Notice> : null}
 
       <Sheet
         open={open}

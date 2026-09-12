@@ -86,6 +86,11 @@ export const battleLiveStateSchema = z.object({
   tallies: z.array(battleWarriorTallySchema).default([]),
   /** "Leader used Leadership for rout test", scenario notes, etc. */
   notes: z.string().default(""),
+  /** Leadership history for first-test item limits; relics are not consumed from inventory. */
+  leadershipTests: z.array(z.object({
+    warriorId: z.string(), kind: z.enum(["rout", "table"]),
+    relic: z.boolean().default(false), at: z.string(),
+  })).default([]),
   /** Pre-battle prompts answered on the sheet: "tarot:<heroId>" -> "passed" | "failed" | "disaster", list rules by key. */
   guidingDreamTargets: z.record(z.string(), z.object({ id: z.string(), warbandId: z.string(), name: z.string() })).default({}),
   preBattle: z.record(z.string(), z.string()).default({}),

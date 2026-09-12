@@ -9,3 +9,7 @@
 - Dice: Tom approved Option A popup setup, ivory/brass finish A and the consistent rounded 3D tumble v3. Full design/animation handoff in docs/design-drafts/dice-2026-09-12/HANDOFF.md. Attacks strictly sequential through injury/status changes. Sent approval to Claude; as of this checkpoint no later acknowledgment confirms implementation started.
 
 No push/deployment performed. Production remains the previously verified release. Do not close mixed core/supplement umbrella entries merely on this checkpoint.
+
+## Core Leadership work started — #161
+
+Holy (Unholy) Relic source: reference/rules/02-weapons-armour-equipment.md:1719–1721. First-test automatic pass only; multiples do not grant extra uses. Added typed per-battle Leadership history and Rout action with explicit confirmation of no earlier table test. Earlier recorded Rout/Stupidity tests block eligibility. Logs automatic pass without claiming rolled dice, does not consume inventory, and repeat action is idempotent. Four focused relic cases plus Rout/sheet/recovery tests: 48 pass. Older live-state JSON receives an empty history default. This is a partial checkpoint: Stupidity/Fear/other Leadership consumers and Banner still need integration, correction flows and browser verification before #161 closes. Typecheck currently blocked by concurrent Dice.tsx TS2367, reported directly to Claude. No deployment.

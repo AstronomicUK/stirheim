@@ -1,3 +1,5 @@
+import { TabletopChambers } from './TabletopChambers'
+import { combatantsOf } from '../fight/combatants'
 import type { ReactNode } from 'react'
 import { RosterChambers } from './RosterChambers'
 import { RelicLeadershipControl } from './RelicLeadershipControl'
@@ -7,7 +9,7 @@ import { HealingHerbsControl } from './HealingHerbsControl'
 import type { ItemRow } from '../../../domain'
 import { conditionsFor } from './sheet'
 import { useState } from 'react'
-import { eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
+import { warbandTurnKey, eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterWarband } from '../../../rules/types/roster'
 import { Button, Stepper } from '../../../ui'
@@ -22,6 +24,7 @@ import type { MatchParticipantView } from '../../../api/matches'
 import type { TakenOutBy } from '../../../domain'
 
 export interface MyWarbandTabProps {
+  tabletopAmmunition?: boolean
   items?: readonly ItemRow[]
   healingHerbsSingleUse?: boolean
   roster: RosterWarband
@@ -45,8 +48,13 @@ interface Asking {
   index: number
 }
 
-export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, readOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false }: MyWarbandTabProps) {
+export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, readOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false, tabletopAmmunition = false }: MyWarbandTabProps) {
   const turns = useBattleTurns(matchId ?? '')
+  const ammunition = (id:string) => {
+    if(!tabletopAmmunition)return null
+    const warrior=combatantsOf(roster,template,roster.name,sheet).find(w=>w.id===id)
+    return warrior?<TabletopChambers warrior={warrior} items={items} events={events} sheet={sheet} ownTurn={Number(warbandTurnKey(roster.id,sheet.turn,turns.data).split(':').at(-1))} readOnly={readOnly} edit={edit}/>:null
+  }
   const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries)
   const warriors = splitWarriors(roster, sheet)
   const groups = fightingGroups(roster)
@@ -71,14 +79,14 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <div key={entry.warrior.id}><MyWarriorCard chambers={<RosterChambers warbandId={roster.id} warriorId={entry.warrior.id} items={items} events={events} sheet={sheet} matchId={matchId} />} condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} /><RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
+          <div key={entry.warrior.id}><MyWarriorCard chambers={<RosterChambers warbandId={roster.id} warriorId={entry.warrior.id} items={items} events={events} sheet={sheet} matchId={matchId} />} condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />{ammunition(entry.warrior.id)}<RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
         ))}
       </Section>
 
       <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((group) => (
-          <div key={group.id}><MyGroupCard chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} /><RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
+          <div key={group.id}><MyGroupCard chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />{ammunition(group.id)}<RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
         ))}
       </Section>
 

@@ -7,6 +7,7 @@ import { useCampaignMatches, type MatchSummary } from '../../../api/matches'
 import { findDistrict } from '../../../rules/data/map/districts'
 import { findScenario } from '../../../rules/data/campaign/scenarios'
 import { Icon, Notice } from '../../../ui'
+import { battleSheetPath } from '../../match/battle/myWarband'
 
 export interface PendingBattleCardProps {
   warbandId: string
@@ -83,7 +84,8 @@ export function PendingBattleCard({ warbandId, campaignId, userId }: PendingBatt
               </ul>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  to={started ? `/matches/${match.id}/battle` : `/matches/${match.id}`}
+                  // Carry this warband into the sheet: one account can own both sides (#206).
+                  to={started ? battleSheetPath(match.id, warbandId) : `/matches/${match.id}`}
                   className="inline-flex min-h-11 items-center gap-2 rounded-md border border-brass bg-brass px-4 text-sm font-semibold text-surface-low no-underline hover:bg-brass/90"
                 >
                   <Icon name="battle" size={16} />

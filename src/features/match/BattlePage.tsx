@@ -13,7 +13,7 @@ import { TurnControls } from './battle/TurnControls'
 // in step by Realtime.
 
 import { useMemo, useState, type ReactNode } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { usePendingAdvances } from '../../api/advances'
 import { useCampaign } from '../../api/campaigns'
 import { useBattleBoosts } from './battle/useBattleBoosts'
@@ -44,6 +44,7 @@ import { PreBattle } from './battle/PreBattle'
 import { RoutCheck } from './battle/RoutCheck'
 import { TopStrip } from './battle/TopStrip'
 import { useBattleSheet } from './battle/useBattleSheet'
+import { chooseMyWarband, MY_WARBAND_PARAM } from './battle/myWarband'
 
 type Tab = BattleTab
 
@@ -53,7 +54,19 @@ export function BattlePage() {
   const match = useMatch(id, user?.id)
   const sessions = useBattleSessions(id)
   const events = useBattleEvents(id)
-  const [selectedWarband, setSelectedWarband] = useState('')
+  // Which of the reader's own warbands to play as lives in the URL (?warband=…): the warband page
+  // sets it when opening the sheet, and it survives a reload (#206). Switching updates it in place.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedWarband = searchParams.get(MY_WARBAND_PARAM)
+  const setSelectedWarband = (warbandId: string) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set(MY_WARBAND_PARAM, warbandId)
+        return next
+      },
+      { replace: true },
+    )
   useMatchRealtime(id)
 
   if (match.isPending || sessions.isPending) {
@@ -92,8 +105,7 @@ export function BattlePage() {
       </>
     )
   }
-  const owned = summary.participants.filter(p => p.mine)
-  const selected = owned.find(p => p.warband_id === selectedWarband)?.warband_id ?? owned[0]?.warband_id
+  const selected = chooseMyWarband(summary.participants, requestedWarband)?.warband_id
   return <Battle key={selected} preferredWarband={selected} onSelectWarband={setSelectedWarband} match={summary} sessions={sessions.data} events={events.data ?? []} userId={user?.id} />
 }
 

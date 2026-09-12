@@ -118,9 +118,9 @@ describe('loadout from the item rules', () => {
     const rolled = applyPreBattle(combatant([]), kit, preBattleWithRolls(kit.consumables, ['crimson_shade', 'mandrake_root'], { crimson_shade: 2 }))
     expect(rolled.combatant.stats).toMatchObject({ S: 4, T: 4, I: 5 })
     expect(preBattleRollsOwed(kit.consumables, ['crimson_shade'], { crimson_shade: 2 })).toEqual([])
-    // Not ticked: no roll owed, no effect.
-    expect(preBattleRollsOwed(kit.consumables, [])).toEqual([])
-    expect(preBattleWithRolls(kit.consumables, [])).toEqual([])
+    // Not ticked: no roll owed, no effect — even when the sheet still remembers the die (unticked dose).
+    expect(preBattleRollsOwed(kit.consumables, [], { crimson_shade: 2 })).toEqual([])
+    expect(preBattleWithRolls(kit.consumables, [], { crimson_shade: 2 })).toEqual([])
   })
 
   it('poison never coats a blackpowder weapon (02:1966), but does coat everything else', () => {

@@ -25,7 +25,6 @@ import {
   splitWarriors,
   startingModels,
   toggleHeroOut,
-  clearItemRoll,
   itemRollsBy,
   itemsUsedBy,
   setItemRoll,
@@ -325,11 +324,18 @@ describe('dice a consumable asks for when taken (Crimson Shade +D3 Initiative, #
     expect(itemRollsBy(setItemRoll(s, 'h2', 'crimson_shade', 1, true), 'h2')).toEqual({ crimson_shade: 1 })
   })
 
-  it('taking the dose back forgets the die, so a re-tick rolls afresh', () => {
+  it('taking the dose back keeps the die: untick and re-tick can never become a second throw', () => {
     let s = setItemRoll(setItemUsed(emptyBattleLiveState(), 'h1', 'crimson_shade', true), 'h1', 'crimson_shade', 3, true)
     s = setItemUsed(s, 'h1', 'crimson_shade', false)
     expect(itemsUsedBy(s, 'h1')).toEqual([])
-    expect(itemRollsBy(s, 'h1')).toEqual({})
-    expect(clearItemRoll(s, 'h1', 'crimson_shade')).toBe(s)
+    // The original result and its provenance survive the untick…
+    expect(itemRollsBy(s, 'h1')).toEqual({ crimson_shade: 3 })
+    expect(s.preBattle['itemRoll:h1:crimson_shade']).toBe('3 · entered by hand')
+    // …a fresh roll while unticked is still refused…
+    expect(setItemRoll(s, 'h1', 'crimson_shade', 1, false)).toBe(s)
+    // …and re-ticking simply brings the same die back into play.
+    s = setItemUsed(s, 'h1', 'crimson_shade', true)
+    expect(itemsUsedBy(s, 'h1')).toEqual(['crimson_shade'])
+    expect(itemRollsBy(s, 'h1')).toEqual({ crimson_shade: 3 })
   })
 })

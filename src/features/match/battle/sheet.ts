@@ -245,8 +245,9 @@ export function setItemUsed(state: BattleLiveState, warriorId: string, itemId: s
   const itemsUsed = { ...state.itemsUsed }
   if (next.length === 0) delete itemsUsed[warriorId]
   else itemsUsed[warriorId] = next
-  // Taking the dose back also forgets any die it was given, so the next tick rolls afresh.
-  return touch(used ? state : clearItemRoll(state, warriorId, itemId), { itemsUsed })
+  // Taking the dose back does NOT forget any die it was given: the roll is part of the record, and
+  // untick/re-tick must never become a second throw. The effect is simply off while unticked.
+  return touch(state, { itemsUsed })
 }
 
 export function itemsUsedBy(state: BattleLiveState, warriorId: string): string[] {
@@ -257,23 +258,16 @@ export function itemsUsedBy(state: BattleLiveState, warriorId: string): string[]
  * A die a consumable asks for when it is taken — Crimson Shade's +D3 Initiative (02:1981) — rolled
  * once and kept for the whole battle so no fight re-rolls it. It lives in the pre-battle answer
  * record like the Old Battle Wound roll does: key `itemRoll:<warrior>:<item>`, value "2 · rolled by
- * the app" / "2 · entered by hand", so the provenance reads back on the sheet.
+ * the app" / "2 · entered by hand", so the provenance reads back on the sheet. There is deliberately
+ * no way to clear it: unticking the dose switches the effect off, re-ticking brings the same die back,
+ * and a genuine correction would need its own recorded reason (not built).
  */
 const ITEM_ROLL_PREFIX = 'itemRoll:'
 
 export function setItemRoll(state: BattleLiveState, warriorId: string, itemId: string, value: number, manual: boolean): BattleLiveState {
   const key = `${ITEM_ROLL_PREFIX}${warriorId}:${itemId}`
-  if (state.preBattle[key]) return state // rolled once; taking the dose back clears it (see clearItemRoll)
+  if (state.preBattle[key]) return state // rolled once per battle; a second throw is refused
   return touch(state, { preBattle: { ...state.preBattle, [key]: `${value} · ${manual ? 'entered by hand' : 'rolled by the app'}` } })
-}
-
-/** Untick the dose and its die goes with it, so re-ticking asks again rather than reusing a stale roll. */
-export function clearItemRoll(state: BattleLiveState, warriorId: string, itemId: string): BattleLiveState {
-  const key = `${ITEM_ROLL_PREFIX}${warriorId}:${itemId}`
-  if (!state.preBattle[key]) return state
-  const preBattle = { ...state.preBattle }
-  delete preBattle[key]
-  return touch(state, { preBattle })
 }
 
 /** Item id -> the die rolled for it this battle, for one warrior. */

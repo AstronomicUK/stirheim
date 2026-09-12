@@ -213,4 +213,17 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   check(await file([cap(1,events[0]),cap(2,events[1])],{unaccounted:true}))
   expect(await cases()).toHaveLength(2)
  })
+
+ it('numbers a table-marked casualty after the app-calculated ones and opens its case from the marker',async()=>{
+  // Three ordinary events already name casualties 1-3 of the Warriors; a fourth model, marked by hand in raw slot 0, is casualty 4.
+  check(await admin.from('henchman_groups').update({size:4}).eq('id',group));check(await admin.from('items').update({quantity:4}).eq('id',swords))
+  check(await admin.from('matches').update({state:'in_progress'}).eq('id',match))
+  const token=`casualty:${match}:${vw}:${group}:manual:0`
+  const marker=check(await victim.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{casualty_token:token,metadata_only:true,manual_casualty_index:0,capture_source:'table',capture_reason:'subjugator',attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Master Moulder Skrit',target_warband_id:vw,target_id:group,target_kind:'group',target_name:'Warriors',target_size:4,wounds_lost:0,out_of_action:true,kill:false,outcome:'Captured (Subjugator of Mankind)',turn:3},p_summary:'Turn 3: Skrit captured a Warrior at the table.'}))
+  check(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match))
+  expect((await file([cap(1,events[0]),cap(3,marker)],{size:2,swordQty:2,shieldQty:1,swordsLost:2,shieldsLost:2})).error?.message).toMatch(/casualty 4 of the group, not 3/)
+  check(await file([cap(1,events[0]),cap(4,marker)],{size:2,swordQty:2,shieldQty:1,swordsLost:2,shieldsLost:2}))
+  const opened=await cases()
+  expect(opened.map((c:any)=>[c.model_index,c.model_snapshot.event_id])).toEqual([[1,events[0]],[4,marker]])
+ })
 })

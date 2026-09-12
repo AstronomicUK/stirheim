@@ -53,10 +53,19 @@ begin
       if not found then raise exception 'Captured henchmen: model % of % has no unreverted Subjugator capture event by that warband.', cap->>'modelIndex', grow.name using errcode = '22023'; end if;
       if ev.id = any(seen) then raise exception 'Captured henchmen: the same capture event is used twice.' using errcode = '22023'; end if;
       seen := seen || ev.id;
-      select rn into ordinal from (
-        select id, row_number() over (order by at, id) as rn from public.battle_events
-         where match_id = new.match_id and kind = 'attack' and reverted_at is null and coalesce((payload->>'out_of_action')::boolean, false)
-           and payload->>'target_kind' = 'group' and payload->>'target_id' = line->>'subjectId' and payload->>'target_warband_id' = new.warband_id::text) r where r.id = ev.id;
+      -- Casualty numbers: ordinary (app-calculated) out-of-action events are numbered by time; a manual
+      -- marker (metadata_only, migration 096) is numbered after all of them by its raw tally slot.
+      if coalesce((ev.payload->>'metadata_only')::boolean, false) then
+        if (ev.payload->>'manual_casualty_index') !~ '^[0-9]+$' then raise exception 'Captured henchmen: the manual casualty marker for % has no raw index.', grow.name using errcode = '22023'; end if;
+        select count(*) + (ev.payload->>'manual_casualty_index')::int + 1 into ordinal from public.battle_events
+         where match_id = new.match_id and kind = 'attack' and reverted_at is null and coalesce((payload->>'out_of_action')::boolean, false) and not coalesce((payload->>'metadata_only')::boolean, false)
+           and payload->>'target_kind' = 'group' and payload->>'target_id' = line->>'subjectId' and payload->>'target_warband_id' = new.warband_id::text;
+      else
+        select rn into ordinal from (
+          select id, row_number() over (order by at, id) as rn from public.battle_events
+           where match_id = new.match_id and kind = 'attack' and reverted_at is null and coalesce((payload->>'out_of_action')::boolean, false) and not coalesce((payload->>'metadata_only')::boolean, false)
+             and payload->>'target_kind' = 'group' and payload->>'target_id' = line->>'subjectId' and payload->>'target_warband_id' = new.warband_id::text) r where r.id = ev.id;
+      end if;
       if ordinal is distinct from (cap->>'modelIndex')::int then raise exception 'Captured henchmen: the capture event for % is casualty % of the group, not %.', grow.name, ordinal, cap->>'modelIndex' using errcode = '22023'; end if;
       if (cap->>'captorWarbandId')::uuid = new.warband_id or not exists (select 1 from public.match_participants where match_id = new.match_id and warband_id = (cap->>'captorWarbandId')::uuid) then
         raise exception 'Captured henchmen: the captor must be another warband in this battle.' using errcode = '22023';

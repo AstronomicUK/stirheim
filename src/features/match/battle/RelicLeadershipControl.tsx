@@ -3,7 +3,7 @@ import type { BattleLiveState } from '../../../domain'
 import { withRollAttempt } from '../../../domain/battle'
 import type { RosterWarband } from '../../../rules/types/roster'
 import { Button, SelectField, TextField } from '../../../ui'
-import { canUseRelic, passTableWithRelic, recordLeadershipTest, correctTableLeadershipTest } from './relicRules'
+import { canUseRelic, passTableWithRelic, recordLeadershipTest, correctLeadershipDeclaration, correctableDeclarations, describeDeclaration } from './relicRules'
 
 export function RelicLeadershipControl({ roster, warriorId, name, sheet, readOnly, edit }: {
   roster: RosterWarband; warriorId: string; name: string; sheet: BattleLiveState; readOnly: boolean;
@@ -30,9 +30,10 @@ export function RelicLeadershipControl({ roster, warriorId, name, sheet, readOnl
         edit(state => withRollAttempt(recordLeadershipTest(state, warriorId, 'table'), { id, at: new Date().toISOString(), turn: state.turn, kind: 'attack', status: 'complete', label: `${name}: earlier Leadership test confirmed`, rolls: ['Player confirmed an earlier test at the table. The relic cannot automatically pass a later Leadership test.'] }))
       }}>Already tested at the table</Button>
     </div> : <p className="mt-2">The first Leadership test has been recorded. Carrying another relic does not grant another automatic pass.</p>}
-    {sheet.leadershipTests.some(test => test.warriorId === warriorId && test.kind === 'table' && test.id && !test.correction) ? <details className="mt-2"><summary className="cursor-pointer">Correct a tabletop Leadership declaration</summary>
+    {correctableDeclarations(sheet, warriorId).length > 0 ? <details className="mt-2"><summary className="cursor-pointer">Correct a Leadership declaration</summary>
+      <p className="mt-1 text-xs text-ink-dim">Withdraws a declaration made in error — a relic pass that was not the first test, or the wrong warrior — with the reason on the record. Rolled tests and their outcomes are untouched.</p>
       <TextField label={`${name}: Leadership correction reason`} value={reason} onChange={event => setReason(event.target.value)} />
-      {sheet.leadershipTests.filter(test => test.warriorId === warriorId && test.kind === 'table' && test.id && !test.correction).map(test => <Button key={test.id} variant="ghost" disabled={readOnly || !reason.trim()} onClick={() => edit(state => correctTableLeadershipTest(state, test.id!, reason))}>Correct {test.relic ? 'relic automatic pass' : 'earlier test declaration'}</Button>)}
+      {correctableDeclarations(sheet, warriorId).map(test => <Button key={test.id} variant="ghost" disabled={readOnly || !reason.trim()} onClick={() => { edit(state => correctLeadershipDeclaration(state, test.id!, reason)); setReason('') }}>Correct {describeDeclaration(test)}</Button>)}
     </details> : null}
   </details>
 }

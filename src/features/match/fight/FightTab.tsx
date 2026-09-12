@@ -31,8 +31,8 @@ import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, 
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
 import { combatantLabel, combatantsOf, withGuidingDream, withBolasEntanglement, emptyLoadout, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
-import { combatContextFor, computeOdds, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
-import { conditionsFor, itemsUsedBy, setItemUsed } from '../battle/sheet'
+import { combatContextFor, computeOdds, preBattleWithRolls, preBattleRollsOwed, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
+import { conditionsFor, itemsUsedBy, itemRollsBy, setItemRoll, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollKind, type RollState } from './rollThrough'
 import { CritWheel } from './CritWheel'
@@ -248,9 +248,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   // Consumables the attacker has marked on the sheet (poisons, drugs, special ammunition) shape the odds and are used up by the report.
   const usedIds = attacker ? itemsUsedBy(sheet, attacker.id) : []
-  const attackerPreBattle: PreBattleEffect[] = attackerKit ? attackerKit.consumables.filter((c) => usedIds.includes(c.itemId)).map((c) => c.effect) : []
+  const attackerPreBattle: PreBattleEffect[] = attackerKit ? preBattleWithRolls(attackerKit.consumables, usedIds, attacker ? itemRollsBy(sheet, attacker.id) : {}) : []
   const defenderUsed = defender && defenderSession ? itemsUsedBy(defenderSession.live_state, defender.id) : []
-  const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
+  const defenderPreBattle: PreBattleEffect[] = defenderKit ? preBattleWithRolls(defenderKit.consumables, defenderUsed, defender && defenderSession ? itemRollsBy(defenderSession.live_state, defender.id) : {}) : []
 
   const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1)),swivelLegacyKey) : null
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
@@ -503,10 +503,14 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                       disabled={readOnly || !edit}
                       onChange={(e) => edit?.((s) => setItemUsed(s, attacker.id, c.itemId, e.target.checked))}
                     />
-                    <span>{c.effect.label}</span>
+                    <span>{c.effect.label}{on && sheet.preBattle[`itemRoll:${attacker.id}:${c.itemId}`] ? <span className="block text-ink-dim">Initiative bonus: {sheet.preBattle[`itemRoll:${attacker.id}:${c.itemId}`]}</span> : null}</span>
                   </label>
                 )
               })}
+              {preBattleRollsOwed(attackerKit.consumables, usedIds, itemRollsBy(sheet, attacker.id)).map(owed => <div key={`${attacker.id}:${owed.itemId}`} className="py-2">
+                <p className="text-sm">{owed.name}: roll the Initiative bonus for this battle.</p>
+                <DicePicker count={1} sides={owed.sides} disabled={readOnly || !edit} label={`${owed.name}: Initiative bonus`} resetKey={`${attacker.id}:${owed.itemId}`} onComplete={(values, manual) => edit?.(state => setItemRoll(state, attacker.id, owed.itemId, values[0], manual))} />
+              </div>)}
             </fieldset>
           ) : null}
         </FightBox>

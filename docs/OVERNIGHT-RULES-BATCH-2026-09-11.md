@@ -289,3 +289,12 @@ Vim-To Mage warns for equipment beyond its walking staff (club) and dagger, incl
 Ordinary club/mace/hammer aliases now compare as one rulebook weapon type for list membership, including material variants. This prevents false warnings where the printed list names only one synonym.
 
 Validation:19focused and2,051ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests cover learned skills, tools/armour, allowed Mage choices withoutskill, Pilgrim stakeexception andbluntaliases. No UI/DB change ornewbrowserQA; prior sharedwarning/overrideUIverification applies. Logs /tmp/stirheim-vows-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. Next#67: HalflingTooBig, Outlawbow/one-missile, creation-onlyHuntingArrows/Ithilmar, remainingSlayerclauses. Keep#67partial. Morningquestionsunchanged.
+
+
+## Next local batch — #67 Halfling Too Big
+
+Too Big uses the same oversized weapon family as Snotling Small Hands, with the correct named rule. Applied only to Halfling Elder/Cook/Thief/Youths/Scouts/Warriors, not Village Ogre or Piggies. Learned Weapons Expert does not bypass it; smaller weapons unaffected. Source grade-2a-part1.md:1211. Also corrected the Dreamwalker test fixture's warband ID to dreamwalkers_cult_of_morr.
+
+Validation:20focused and2,052ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests cover all6Halflingtypes, weapontraining andVillageOgre exception. No UI/DB change or new browserQA. Logs /tmp/stirheim-halfling-equipment-{tests,all-tests,build,lint}.log. Localonly, noSQL/push/deploy.
+
+Next#67 Outlaws (both original andRedux): source grade1bpart2:835 / grade2apart2:286 says one missile weapon per warrior; mandatorybow exceptCleric; no additional ballisticweapon despite learnedskill. Implement roster warning for missingbows includinggroupquantity, cap1initemRestrictionWarnings, preservehiredkit andClericoptionalbow. Stashcurrentlychecks destinationonly; removinglastbow shouldatleastshowrosterwarning, avoidclaiming pre-move sourcewarningwithoutimplementingit. BowIDs short_bow/bow/longbow/elf_bow; HuntingArrows notmissileweapon. ExactClericIDs outlaws_cleric and cleric. Creation-onlyHuntingArrows/Ithilmar andremainingSlayer clauses stillopen. Morningquestionsunchanged.

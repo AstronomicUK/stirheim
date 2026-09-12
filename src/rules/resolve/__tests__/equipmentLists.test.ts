@@ -197,7 +197,7 @@ it('allows the Pit Fighter Trading Post trident exception without changing start
 
 
 it('keeps both Priest of Morr profiles to daggers and scythes even with weapon skills', () => {
-  for (const [warband, unit] of [['dreamwalkers', 'dreamwalkers_priest_of_morr'], ['vampire_hunters_of_sylvania', 'priest_of_morr']]) {
+  for (const [warband, unit] of [['dreamwalkers_cult_of_morr', 'dreamwalkers_priest_of_morr'], ['vampire_hunters_of_sylvania', 'priest_of_morr']]) {
     const h = hero(unit, ['weapons_training', 'weapons_expert']), r = roster(warband, h)
     for (const id of ['sword', 'axe', 'bow', 'pistol']) expect(itemRestrictionWarnings(r, findItem(id)!, holder(h)).join(' ')).toContain('only a dagger and a scythe')
     for (const id of ['dagger', 'scythe']) expect(equipmentBanReason(warband, unit, { itemId: id, quantity: 1 })).toBeNull()
@@ -220,4 +220,15 @@ it('keeps the Vim-To equipment vow and Dark Shroud Blunt rule after weapon train
   const pilgrim = hero('pilgrims_of_the_dark_shroud', ['weapons_training', 'weapons_expert']), p = roster('vampire_hunters_of_sylvania', pilgrim)
   for (const id of ['dagger', 'sword', 'axe', 'bow', 'pistol']) expect(itemRestrictionWarnings(p, findItem(id)!, holder(pilgrim)).join(' '), id).toContain('Blunt limits')
   for (const id of ['club_mace_or_hammer', 'mace', 'hammer', 'silver_tip_stake']) expect(equipmentBanReason(p.warbandTemplateId, pilgrim.unitTemplateId, { itemId: id, quantity: 1 })).toBeNull()
+})
+
+
+it('applies Halfling Too Big to the actual Halflings, preserving the Village Ogre exception', () => {
+  const banned = ['longbow', 'elf_bow', 'handgun', 'hunting_rifle', 'blunderbuss']
+  for (const unit of ['halflings_elder', 'halflings_cook', 'halflings_thief_hero', 'halflings_youths', 'halflings_scouts', 'halflings_warriors']) {
+    const h = hero(unit, ['weapons_expert']), r = roster('halflings', h)
+    for (const id of banned) expect(itemRestrictionWarnings(r, findItem(id)!, holder(h)).join(' '), `${unit}/${id}`).toContain('Too Big')
+    expect(equipmentBanReason('halflings', unit, { itemId: 'short_bow', quantity: 1 })).toBeNull()
+  }
+  for (const id of banned) expect(equipmentBanReason('halflings', 'halflings_village_ogre_henchman', { itemId: id, quantity: 1 })).toBeNull()
 })

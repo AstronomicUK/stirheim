@@ -23,6 +23,7 @@ export type EquipmentBan =
   | "missile" // no missile weapons of any kind
   | "missileExceptThrown"
   | "blackPowder"
+  | "tooBig" // Halfling warriors, not their Village Ogre
   | "smallHands" // Snotling list: oversized bows and long black-powder weapons; Shoota Teams exempt
   | "poison"
   | "onlyBlackPowderMissiles" // ranged weapons must be black powder
@@ -342,7 +343,12 @@ export const UNIT_RULES: Record<string, UnitCampaignRules> = {
   dwarf_slayer_cult_axe_hurlers: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: ["armour", "helmets"] },
   dwarf_slayer_cult_stubbles: { promotionAdvanceSkill: "dwarf_slayer_cult_skills_deathwish", equipmentBans: SLAYER_BANS },
   dwarf_slayer_cult_troll_slayers: { equipmentBans: SLAYER_BANS },
-  halflings_scouts: { promotion: { tables: ["combat", "shooting", "speed", "academic"], note: "Halfling Scouts may not take Strength skills." } },
+  halflings_scouts: { equipmentBans: ["tooBig"], promotion: { tables: ["combat", "shooting", "speed", "academic"], note: "Halfling Scouts may not take Strength skills." } },
+  halflings_elder: { equipmentBans: ["tooBig"] },
+  halflings_cook: { equipmentBans: ["tooBig"] },
+  halflings_thief_hero: { equipmentBans: ["tooBig"] },
+  halflings_youths: { equipmentBans: ["tooBig"] },
+  halflings_warriors: { equipmentBans: ["tooBig"] },
   halflings_piggies: ANIMAL,
   halflings_village_ogre_henchman: OGRE,
   masters_of_horror_wolfman: { equipmentBans: ["allEquipment"], racialProfile: "Wolfman (Masters of Horror)" },

@@ -17,7 +17,7 @@ import { Card, Section, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
 import { ExperienceReminders } from './ExperienceReminders'
 import { groupRules, groupTypeName, modelLabel, warriorRules, warriorTags, warriorTypeName, type CardTag } from './names'
-import { addEnemyOut, animalsFighting, fightingGroups, groupOut, isHeroOut, perModelKit, setGroupOut, setTakenOutBy, setWoundsLost, splitWarriors, takenOutBy, toggleHeroOut, woundsLost, type SheetWarrior } from './sheet'
+import { addEnemyOut, animalsFighting, fightingGroups, groupOut, isHeroOut, perModelKit, setDisplayedGroupOut, setTakenOutBy, setWoundsLost, splitWarriors, takenOutBy, toggleHeroOut, woundsLost, type SheetWarrior } from './sheet'
 import { TakenOutBySheet } from './TakenOutBySheet'
 import { useEnemyRosters } from '../fight/useEnemyRosters'
 import type { MatchParticipantView } from '../../../api/matches'
@@ -86,7 +86,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
       <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((group) => (
-          <div key={group.id}><MyGroupCard chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />{ammunition(group.id)}<RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
+          <div key={group.id}><MyGroupCard fromLog={eventContribution(events,roster.id,group.id).outOfAction} chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />{ammunition(group.id)}<RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
         ))}
       </Section>
 
@@ -217,6 +217,7 @@ function MyWarriorCard({ chambers, condition, entry, template, sheet, edit, read
 }
 
 interface MyGroupCardProps {
+  fromLog: number
   chambers?: ReactNode
   condition?: string
   group: RosterHenchmanGroup
@@ -228,7 +229,7 @@ interface MyGroupCardProps {
   onAsk: (index: number) => void
 }
 
-function MyGroupCard({ chambers, condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
+function MyGroupCard({ fromLog, chambers, condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
   const [expanded, setExpanded] = useState(false)
   const out = groupOut(sheet, group.id)
   const by = takenOutBy(sheet, group.id)
@@ -269,14 +270,15 @@ function MyGroupCard({ chambers, condition, group, template, sheet, edit, readOn
         ) : null}
         <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-ink-dim">Out of action</span>
+            <span className="text-[10px] uppercase tracking-wider text-ink-dim">Out of action{fromLog>0?` · ${fromLog} from the log`:null}</span>
             <Stepper
               value={out}
               onChange={(next) => {
-                edit((s) => setGroupOut(s, group.id, next, group.size))
-                if (next > out) onAsk(next - 1)
+                edit((s) => setDisplayedGroupOut(s, group.id, next, group.size, fromLog))
+                if (next > out) onAsk(next - Math.min(group.size,fromLog) - 1)
               }}
               label={`${group.name} out of action`}
+              min={Math.min(group.size,fromLog)}
               max={group.size}
               disabled={readOnly}
             />

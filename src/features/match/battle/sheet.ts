@@ -222,6 +222,12 @@ export function setGroupOut(state: BattleLiveState, id: string, count: number, s
   return trimTakenOutBy(withTally(state, { ...tally, outOfAction: clamped }), id, clamped)
 }
 
+/** The displayed total includes shared-log casualties; only the remainder belongs in the manual sheet. */
+export function setDisplayedGroupOut(state: BattleLiveState, id: string, displayed: number, size: number, fromLog: number): BattleLiveState {
+  const logged = Math.max(0, Math.min(size, Math.trunc(fromLog)))
+  return setGroupOut(state, id, Math.max(0, Math.min(size, Math.trunc(displayed)) - logged), size - logged)
+}
+
 export function setTurn(state: BattleLiveState, turn: number): BattleLiveState {
   return touch(state, { turn: Math.max(0, Math.trunc(turn)) })
 }

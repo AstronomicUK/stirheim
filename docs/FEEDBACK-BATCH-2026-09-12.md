@@ -122,3 +122,9 @@ Pirate mixed equipment allocation now has a player/GM form. Injury-stage equipme
 ### Combined verification checkpoint
 
 The mobile mixed exchange passed: a captured Wardog and Hero returned together, exact companion quantity/notes were restored and both cases resolved. The latest ordinary regression suite passed **2,364 tests across 194 files**, and the production build passed (existing CSS marker/chunk-size warnings remain). The first combined database run passed **37 tests across seven files**, including Awakening, core captive resolution, Pirates, forced henchmen, companions, exchange and the three-warband cross-flow. Further captive-case/tracker checks follow separately. Reversal UI now explains that newer captive outcomes affecting either roster must be reversed first. No deployment.
+
+### Overnight continuation and manual-casualty work
+
+Tom explicitly instructed continued work until he says he is awake. Claude's usage resets at **00:30 Europe/London, 13 September**; the existing five-minute coordination heartbeat now includes a reset-time ping and concrete reassignment. Claude handed over committed backend work; 096 casualty tokens is a draft requiring the agreed manual-only metadata contract before release. Do not mistake that draft for accepted integration.
+
+The mixed manual/app group casualty stepper now subtracts shared-log contributions when saving the manual tally. It cannot decrement an app-origin casualty through a manual-only control. Twenty-nine focused tests and the actual mobile mixed casualty → reload → decrement journey passed. Captive-case and tracker database checks passed another 18 tests. Current work: metadata-only Subjugator markers for manually attributed casualties, without changing tally/XP totals or confusing different group casualties.

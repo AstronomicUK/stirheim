@@ -1,5 +1,5 @@
 import {isConsumable} from '../../../rules/data/itemRules'
-import type {ItemRow,ReportApplied} from '../../../domain'
+import {weaponQuantityRemaining,type ItemRow,type ReportApplied} from '../../../domain'
 import {findItem} from '../../../rules/data/items'
 import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 import type {RosterHero,RosterHiredSword} from '../../../rules/types/roster'
@@ -24,6 +24,10 @@ export function woodsCasualtyDraft(draft:ReportDraft,scenarioId?:string|null):Re
  if(scenarioId!=='the_thing_in_the_woods')return draft
  return {...draft,heroesOut:draft.heroesOut.filter(id=>draft.woods?.victims?.[id]?.source!=='dark'),groupsOut:Object.fromEntries(Object.entries(draft.groupsOut).map(([id,n])=>[id,Math.max(0,n-(draft.woods?.groups?.[id]?.fled??0))]))}
 }
+/** Broken copies cannot be recovered or consumed a second time by transformation. */
+export function intactTransformationItems(ctx:Pick<ReportContext,'items'|'battleEvents'>):ItemRow[]{
+ return ctx.items.map(row=>({...row,quantity:weaponQuantityRemaining(row,ctx.battleEvents??[])})).filter(row=>row.quantity>0)
+}
 export function transformationItems(items:readonly ItemRow[],holderId:string,quantities?:Record<string,number>):TransformationItem[]{return items.filter(i=>i.holder_id===holderId&&i.quantity>0).map<TransformationItem>(i=>{const def=i.item_rules_id?findItem(i.item_rules_id):undefined;return {id:i.id,name:i.custom_name||def?.name||'Custom equipment',quantity:quantities?.[i.id]??i.quantity,kind:!def?'custom':['melee','missile','blackpowder'].includes(def.category)?'weapon':def.category==='armour'?'armour':'other'}}).filter(i=>i.quantity>0)}
 const alive=(w:RosterHero|RosterHiredSword)=>!['dead','left','retired'].includes(w.status)
 /** Resolve source aftermath against freshly derived injuries; never mutate the original roster. */
@@ -35,7 +39,7 @@ export function lycanthropeReport(draft:ReportDraft,ctx:ReportContext,participan
  function equipment(holderId:string,name:string,t:TransformationDraft,leaves:boolean,normalGroupDeath=false){
   if(!t.transformed)return
   if(!t.gearReviewed){problems.push(`${name}: review the equipment worn and weapons dropped during transformation.`);return}
-  const rows=ctx.items.filter(i=>i.holder_id===holderId),isGroup=ctx.roster.henchmenGroups.some(g=>g.id===holderId)
+  const rows=intactTransformationItems(ctx).filter(i=>i.holder_id===holderId),isGroup=ctx.roster.henchmenGroups.some(g=>g.id===holderId)
   if(isGroup&&rows.some(i=>!Number.isInteger(t.quantities?.[i.id])||t.quantities![i.id]<0||t.quantities![i.id]>i.quantity)){problems.push(`${name}: record the actual copies carried from each group stack.`);return}
   const held=transformationItems(rows,holderId,isGroup?t.quantities:undefined),result=transformationEquipment(held,t.gear??[])
   problems.push(...result.problems.map(p=>`${name}: ${p}`));notes.push(...result.notes.map(n=>`${name}: ${n}`))
@@ -123,7 +127,7 @@ export function applyLycanthropeReport(result:ReturnType<typeof lycanthropeRepor
  }
  for(const [id,quantity] of recoveries){const row=ctx.items.find(i=>i.id===id);if(!row)continue;const removed=applied.remove_item_ids.includes(id)?row.quantity:row.quantity-(applied.item_patches.find(p=>p.id===id)?.quantity??row.quantity)
   const consumed=(applied.medicine_chests?.find(m=>m.item_id===id)?.quantity??0)+(row.item_rules_id&&isConsumable(row.item_rules_id)&&row.holder_id&&ctx.itemsUsed?.[row.holder_id]?.includes(row.item_rules_id)?1:0)
-  if(quantity>removed||quantity>row.quantity-consumed){problems.push('Recovered weapons must come from original copies actually removed from the departing warrior.');continue}
+  if(quantity>removed||quantity>weaponQuantityRemaining(row,ctx.battleEvents??[])-consumed){problems.push('Recovered weapons must come from original copies actually removed from the departing warrior.');continue}
   applied.awarded_items=[...(applied.awarded_items??[]),{holder_type:'stash',holder_id:null,item_rules_id:row.item_rules_id,custom_name:row.custom_name,quantity,notes:row.notes}]
  }
  for(const change of result.groups){const group=ctx.roster.henchmenGroups.find(g=>g.id===change.id)!;let patch=applied.groups.find(g=>g.id===change.id);if(!patch){patch={id:change.id,patch:{}};applied.groups.push(patch)}patch.patch.campaign_state={...(patch.patch.campaign_state??group.campaignState),lycanthropes:change.members};patch.patch.size=(patch.patch.size??group.size)-change.feralLosses;if(patch.patch.size<0)problems.push('Review the group’s feral departures and injury casualties.');if(patch.patch.size===0)applied.pending_advances=applied.pending_advances.filter(a=>a.subject_id!==group.id)}

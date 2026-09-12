@@ -33,3 +33,14 @@ describe('Shrine selected weapon',()=>{
  })
 
 })
+
+it('blesses only intact stock after a battle break and preserves the original snapshot',()=>{
+ const result=applied();result.item_patches=[{id:original.id,quantity:1}]
+ const outcome=applyShrineBlessing({...emptyExploration(),shrineChoice:'save',shrineWeaponId:original.id},'shrine',roster,[original],result)
+ expect(outcome.problems).toEqual([])
+ expect(result.item_patches[0]).toMatchObject({quantity:1,notes:`Original note\n${SHRINE_BLESSING}`})
+ expect(result.awarded_items).toBeUndefined()
+ expect(result.shrine_equipment?.expected.quantity).toBe(2)
+ const allBroken=applied();allBroken.item_patches=[{id:original.id,quantity:0}]
+ expect(applyShrineBlessing({...emptyExploration(),shrineChoice:'save',shrineWeaponId:original.id},'shrine',roster,[original],allBroken).problems).toHaveLength(1)
+})

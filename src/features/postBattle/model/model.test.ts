@@ -712,7 +712,7 @@ describe('scenario aftermath', () => {
     const draft = { ...setGroupOut(setHeroOut(setResult(emptyDraft(), 'won'), 'captain', true), 'watch', 2, 3), scenarioNonCampaign: true, scenarioRewards: { herald: { splinters: 2, sword: 'sell' as const } }, scenarioRewardOverrideReason: 'Referee’s additional prize', battleGold: 30, battleWyrdstone: 2, scenarioItems: [{ item_rules_id: 'sword', custom_name: null, quantity: 1 }] }
     const d = deriveReport(draft, ctx({ scenarioId: 'the_sword_of_the_herald', itemsUsed: { captain: ['sword'] } }))
     expect(d.problems).toEqual({ outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] })
-    expect(d.report?.applied).toEqual({ heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems, warband: { gold_delta: 130, wyrdstone_delta: 8, veteran_pool: null } })
+    expect(d.report?.applied).toEqual({ heroes: [], groups: [], pending_advances: [], remove_item_ids: [], item_patches: [], stash_items: draft.scenarioItems, weapon_loss_non_campaign: true, warband: { gold_delta: 130, wyrdstone_delta: 8, veteran_pool: null } })
     expect(d.report?.xp_log).toEqual([])
     expect(d.report?.injuries).toEqual([])
     expect(d.report?.exploration).toBeNull()

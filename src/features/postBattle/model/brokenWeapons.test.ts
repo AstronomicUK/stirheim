@@ -51,3 +51,16 @@ it('carries the confirmed combined loss through a complete report and clears it 
  expect(complete.report?.notes).toContain('2 copies lost or broken in total')
  expect(setGroupInjuryRoll(reportDraft, holder, 0, 6).brokenWeaponTotals).toEqual({})
 })
+
+it('excludes broken copies from transformation and rejects their recovery to stash',async()=>{
+ const {intactTransformationItems,applyLycanthropeReport}=await import('./lycanthropeReport')
+ expect(intactTransformationItems(ctx)[0].quantity).toBe(2)
+ expect(intactTransformationItems({...ctx,battleEvents:[{...event,reverted_at:'now'}]})[0].quantity).toBe(3)
+ const outcome={losses:[],recovered:[{itemId:item.id,quantity:3}],groups:[]} as unknown as Parameters<typeof applyLycanthropeReport>[0]
+ const state={...applied,remove_item_ids:[item.id],item_patches:[]} as ReportApplied
+ expect(applyLycanthropeReport(outcome,state,ctx)).toHaveLength(1)
+ expect(state.awarded_items).toBeUndefined()
+ expect(applyLycanthropeReport({...outcome,recovered:[{itemId:item.id,quantity:2}]},state,ctx)).toEqual([])
+ expect(state.awarded_items?.[0]).toMatchObject({quantity:2,holder_type:'stash'})
+ expect(state.lycanthrope_equipment?.[0].expected.quantity).toBe(3)
+})

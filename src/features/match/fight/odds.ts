@@ -26,6 +26,8 @@ export interface FightSetup {
   defenderKit: Loadout
   /** The weapon in the main hand (or the missile weapon being fired). */
   primary: Weapon
+  /** Physical inventory-copy keys for the selected primary and off-hand profiles. */
+  weaponChoiceKeys?: readonly [string | undefined, string | undefined];
   /** Second hand weapon, melee only. */
   offHand: Weapon | null
   context: CombatContext
@@ -232,6 +234,25 @@ export interface FightOdds {
   strikeOrder: string
 }
 
+/** Bind only the two selected profiles, preserving the warrior's original attack allowance.
+ * Do not expand a group's entire inventory into additional wielded weapons.
+ */
+function withPhysicalWeaponChoices(setup: FightSetup): FightSetup {
+  if (!setup.weaponChoiceKeys) return setup
+  const bind = (weapon: Weapon, key: string | undefined) => key ? { ...weapon, choiceId: key } : weapon
+  const primary = bind(setup.primary, setup.weaponChoiceKeys[0])
+  const offHand = setup.offHand ? bind(setup.offHand, setup.weaponChoiceKeys[1]) : null
+  const selected = [primary, ...(offHand ? [offHand] : [])]
+  return {
+    ...setup, primary, offHand,
+    attackerKit: {
+      ...setup.attackerKit,
+      melee: [...setup.attackerKit.melee, ...selected.filter(weapon => weapon.type === 'melee' && weapon.choiceId)],
+      ranged: [...setup.attackerKit.ranged, ...selected.filter(weapon => weapon.type === 'ranged' && weapon.choiceId)],
+    },
+  }
+}
+
 /** Immunity removes only the incoming coating, not either warrior's own drugs. */
 function dosedOpponents(setup: FightSetup) {
   const attackerEffects = setup.attackerPreBattle ?? []
@@ -246,6 +267,7 @@ function dosedOpponents(setup: FightSetup) {
 }
 
 export function computeOdds(setup: FightSetup): FightOdds {
+  setup = withPhysicalWeaponChoices(setup)
   const { dosed, targetDosed } = dosedOpponents(setup)
   const attacker = toCharacter(dosed.combatant, dosed.kit)
   const defender = toDefender(targetDosed.combatant, targetDosed.kit)
@@ -321,6 +343,7 @@ export interface OddsSensitivity {
 }
 
 export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
+  setup = withPhysicalWeaponChoices(setup)
   const { dosed, targetDosed } = dosedOpponents(setup)
   const attacker = toCharacter(dosed.combatant, dosed.kit)
   const baseDefender = toDefender(targetDosed.combatant, targetDosed.kit)

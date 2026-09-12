@@ -446,8 +446,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
     if (!row || row.quantity < count) problems.review.push('Healing Herbs stock changed after use. Restore the spent doses to their original inventory row or correct the battle-sheet use before filing.')
   }
-  const poisonCounts = new Map<string, { count: number; itemId: string }>()
-  for (const use of ctx.poisonApplications ?? []) if (!use.correction) poisonCounts.set(use.itemRowId, { count: (poisonCounts.get(use.itemRowId)?.count ?? 0) + 1, itemId: use.itemRulesId })
+  const poisonCounts = poisonCountsFor(ctx)
   for (const [id, spent] of poisonCounts) {
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === spent.itemId)
     if (!row || row.quantity < spent.count) problems.review.push('Poison stock changed after application. Restore the spent vials to their original inventory row or correct the application before filing.')
@@ -514,12 +513,27 @@ function heldItemIds(items: readonly ItemRow[], holderId: string): string[] {
  * Kit changed by the battle: consumables marked as used are one fewer (a stack of one goes), and a
  * Mordheim Map whose re-rolls were used in exploration is noted as spent (a Master map lasts).
  */
+function poisonCountsFor(ctx: ReportContext) {
+  const counts = new Map<string, { count: number; itemId: string }>()
+  const add = (id: string, itemId: string) => counts.set(id, { count: (counts.get(id)?.count ?? 0) + 1, itemId })
+  for (const use of ctx.poisonApplications ?? []) if (!use.correction) add(use.itemRowId, use.itemRulesId)
+  for (const [holderId, used] of Object.entries(ctx.itemsUsed ?? {})) for (const itemId of new Set(used)) {
+    if (itemId !== 'black_lotus' && itemId !== 'dark_venom') continue
+    // Explicit applications supersede this warrior's old tick, including corrected applications.
+    if (ctx.poisonApplications?.some(use => use.warriorId === holderId && use.itemRulesId === itemId)) continue
+    const row = ctx.items.find(row => row.holder_id === holderId && row.item_rules_id === itemId) ?? ctx.items.find(row => row.holder_type === 'stash' && row.item_rules_id === itemId)
+    add(row?.id ?? `missing:${holderId}:${itemId}`, itemId)
+  }
+  return counts
+}
+
 export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportApplied['item_patches'] {
   const patches: ReportApplied['item_patches'] = []
   const rows = ctx.items
   for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed ?? {})) {
     for (const itemId of new Set(itemIds)) {
       if (!isConsumable(itemId)) continue
+      if (itemId === 'black_lotus' || itemId === 'dark_venom') continue // Exact counts, including legacy uses, below.
       // Herbs have explicit use records; a legacy checkbox must not consume reusable herbs.
       if (itemId === 'healing_herbs') continue
       if (ctx.poisonApplications?.some(use => use.warriorId === holderId && use.itemRulesId === itemId)) continue
@@ -541,8 +555,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
     const row = rows.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
     if (row && row.quantity >= count) patches.push({ id, quantity: row.quantity - count })
   }
-  const poisonCounts = new Map<string, { count: number; itemId: string }>()
-  for (const use of ctx.poisonApplications ?? []) if (!use.correction) poisonCounts.set(use.itemRowId, { count: (poisonCounts.get(use.itemRowId)?.count ?? 0) + 1, itemId: use.itemRulesId })
+  const poisonCounts = poisonCountsFor(ctx)
   for (const [id, spent] of poisonCounts) {
     const row = rows.find(item => item.id === id && item.item_rules_id === spent.itemId)
     if (row && row.quantity >= spent.count) patches.push({ id, quantity: row.quantity - spent.count })

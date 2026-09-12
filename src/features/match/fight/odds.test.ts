@@ -944,3 +944,21 @@ it('recognises item-granted poison immunity without granting immunity to ordinar
   expect(result.weapons[0].strength).toBe(3)
   expect(result.weapons[0].input.autoWoundOnNaturalSixToHit).toBe(false)
 })
+
+
+it('binds selected physical copies without adding attacks or coating every sword in a group', () => {
+  const a = combatant('Swordsman', [{ itemId: 'sword', quantity: 2 }])
+  const d = combatant('Target', [])
+  const initial = setup(a, d, 'sword', 'sword')
+  // Repeated catalogue entries can share their object; select the same profile in both slots explicitly.
+  initial.offHand = initial.primary
+  const poison = { ...itemEffect('dark_venom')!.preBattle!, weaponChoiceId: 'row:1' }
+  const result = computeOdds({ ...initial, weaponChoiceKeys: ['row:0', 'row:1'], attackerPreBattle: [poison] })
+  expect(result.attacks).toBe(2)
+  expect(result.weapons.map(weapon => weapon.strength)).toEqual([3,4])
+  expect(result.weapons.map(weapon => weapon.weapon.choiceId)).toEqual(['row:0','row:1'])
+  const group = { ...a, kind: 'henchman' as const, groupSize: 5, equipment: [{ itemId: 'sword', quantity: 1 }] }
+  const single = computeOdds({ ...setup(group,d,'sword',null), weaponChoiceKeys: ['groupRow:3',undefined], attackerPreBattle: [{ ...poison, weaponChoiceId: 'groupRow:3' }] })
+  expect(single.attacks).toBe(1)
+  expect(single.weapons[0].strength).toBe(4)
+})

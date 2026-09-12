@@ -59,3 +59,12 @@ it('settles multiple poison vials by physical stock row without duplicate legacy
   expect(itemPatchesFor(context, emptyDraft())).toEqual([{ id: 'poison', quantity: 0 }])
   expect(itemPatchesFor({ ...context, poisonApplications: [{ ...use, correction: 'Wrong weapon' }] }, emptyDraft())).toEqual([])
 })
+
+
+it('counts a legacy use alongside a different warrior’s explicit use of the same stash stack', () => {
+  const use = { id: 'first', warriorId: 'kurt', warriorName: 'Kurt', itemRowId: 'poison', itemRulesId: 'black_lotus' as const, at: 'now', weapon: {} as NonNullable<ReportContext['poisonApplications']>[number]['weapon'] }
+  const stash = { ...row('poison', '', 'black_lotus', 3), holder_type: 'stash' as const, holder_id: null }
+  const context = ctx({ items: [stash], itemsUsed: { kurt: ['black_lotus'], otto: ['black_lotus'] }, poisonApplications: [use] })
+  expect(itemPatchesFor(context, emptyDraft())).toEqual([{ id: 'poison', quantity: 1 }])
+  expect(itemPatchesFor({ ...context, poisonApplications: [{ ...use, correction: 'Wrong weapon' }] }, emptyDraft())).toEqual([{ id: 'poison', quantity: 2 }])
+})

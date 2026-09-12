@@ -70,3 +70,11 @@ Next independent Priority 3 work: Blessed Water action or one-vial/one-weapon po
 The pending FightTab handgun integration now passed `/tmp/stirheim-handgun-mobile-qa.mjs`: start attacks and roll a die, autosave, reload the phone-sized battle sheet, see the reload restriction, verify Begin attacks is disabled, then record a reasoned correction and regain availability. Nineteen reload/physical-weapon tests pass, including per-copy independence, Hunter next-turn cadence and serialized state. Compilation and lint pass. The popup may still open for reviewing setup while reloading; its Begin action is blocked. No fixture remains.
 
 This checkpoints the handgun path only. Pistols/brace allocation remain outstanding in #73, as do broader shooting-phase limits outside per-gun reload. Do not claim the whole tracker item closed. Continue core equipment/remaining combat work; no deployment.
+
+### Blessed Water calculation foundation (not yet an available action)
+
+Added an explicit automatic-wound path to both the probability engine and sequential dice resolution: a hit causes one Wound with no wound die/critical, while Dodge, non-armour saves and final-Wound injury resolution remain available. The isolated Blessed Water profile uses twice current Strength for range, ignores movement/long-range penalties but retains cover, disallows Undead/Possessed throwers, and wounds only Undead/Daemon/Possessed targets. It is deliberately not in the weapon catalogue until physical vial spending is wired in.
+
+Validation: 203 focused calculation/dice tests pass; the complete ordinary suite now passes **2,206 tests**, with 214 database tests skipped. TypeScript passes. Lint passes with only three existing unused-import warnings in an unrelated audit probe. No browser claim for Blessed Water and no deployment.
+
+Next: expose the action for a carried physical vial; reserve a vial even on a miss, persist exact row/use identity, allow explained correction, deduct quantities once in report filing and restore on withdrawal. Check actual roster trait derivation for daemonic Carnival units (the profile currently consumes explicit traits; do not assume every daemon is already mapped). Do not mark Blessed Water complete on this foundation. Preserve unrelated dirty audit/tracker documents and the remaining core project checklist above.

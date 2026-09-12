@@ -643,3 +643,32 @@ it('rolls mandatory misfires on a one and uses the enhanced hit profile only for
   state = applyRoll(state, 3)
   expect(state.pending?.kind).toBe('save')
 })
+
+
+describe('automatic wounds after a hit', () => {
+  const water = () => plan('Blessed Water', { automaticWound: true, woundThreshold: IMPOSSIBLE, armourThreshold: IMPOSSIBLE })
+  it('a hit skips the wound and armour dice, causes exactly one wound and cannot critical', () => {
+    const state = rolls(startPhase([water()], 3, 0), 6)
+    expect(state.done).toBe(true)
+    expect(state.woundsLost).toBe(1)
+    expect(state.critUsed).toBe(false)
+    expect(state.log.some(entry => entry.text.includes('automatically causes one Wound'))).toBe(true)
+  })
+  it('a miss does not cause a wound', () => {
+    expect(rolls(startPhase([water()], 3, 0), 2).woundsLost).toBe(0)
+  })
+  it('retains Dodge before the automatic wound and a ward afterwards', () => {
+    let state = rolls(startPhase([{ ...water(), input: { ...water().input, dodgeThreshold: 5, wardSaveThreshold: 4 } }], 3, 0), 4)
+    expect(state.pending?.kind).toBe('dodge')
+    expect(applyRoll(state, 5).woundsLost).toBe(0)
+    state = applyRoll(state, 1)
+    expect(state.pending?.kind).toBe('ward')
+    expect(applyRoll(state, 4).woundsLost).toBe(0)
+    expect(applyRoll(state, 1).woundsLost).toBe(1)
+  })
+  it('still rolls injury when the final wound is lost', () => {
+    const state = rolls(startPhase([water()], 1, 0), 4)
+    expect(state.pending?.kind).toBe('injury')
+    expect(applyRoll(state, 5).worst).toBe('outOfAction')
+  })
+})

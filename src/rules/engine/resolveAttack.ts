@@ -62,6 +62,8 @@ export interface AttackInput {
   hitThreshold: Threshold;
   /** Minimum D6 to wound (attacker/weapon Strength vs defender Toughness), with skill modifiers already folded in. */
   woundThreshold: Threshold;
+  /** A successful hit wounds without a wound roll or critical hit (Blessed Water). */
+  automaticWound?: boolean;
   /** Defender's armour save threshold against this attack (Strength erosion house rule and the weapon's own save modifier already applied; IMPOSSIBLE when no save is possible, including modified saves that would need 7+). */
   armourThreshold: Threshold;
   /** Ranged only: Dodge — a separate negation roll taken as soon as a hit is scored, before to-wound. */
@@ -371,7 +373,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     };
   }
   const pHitBase = input.autoHitKnockedDown || input.automaticHits ? 1 : probabilityAtLeast(input.hitThreshold);
-  const singleWound = probabilityAtLeast(input.woundThreshold);
+  const singleWound = input.automaticWound ? 1 : probabilityAtLeast(input.woundThreshold);
   const pWoundIfHitBase = input.woundHighestOfTwo ? 1 - (1 - singleWound) ** 2 : singleWound;
   // Reroll a failure once (Expert Swordsman / Hatred): P(success on either roll) = 1 - P(fail)^2.
   const pHit = input.rerollToHit ? 1 - (1 - pHitBase) * (1 - pHitBase) : pHitBase;
@@ -392,7 +394,7 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     pWound = pHit * (1 - pDodge) * pWoundIfHit;
   }
 
-  const triggerFraction = input.woundHighestOfTwo
+  const triggerFraction = input.automaticWound ? 0 : input.woundHighestOfTwo
     ? Array.from({ length: 6 }, (_, i) => i + 1).reduce((p, face) => p + (input.woundThreshold !== IMPOSSIBLE && face > input.woundThreshold && input.critTriggerFaces.includes(face) ? (2 * face - 1) / 36 : 0), 0)
     : triggerEligibleFraction(input.woundThreshold, input.critTriggerFaces);
   // triggerFraction already implies wounding (a trigger face always exceeds the threshold), so it's a fraction of pHit*(1-pDodge) directly, not of pWound.

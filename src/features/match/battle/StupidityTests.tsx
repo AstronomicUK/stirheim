@@ -1,3 +1,4 @@
+import { canUseRelic, passStupidityWithRelic } from './relicRules'
 import { useState } from 'react'
 import type { BattleTurns } from '../../../api/battleTurns'
 import { recordStupidityTest, withRollAttempt, warbandTurnKey, type BattleLiveState } from '../../../domain'
@@ -27,12 +28,13 @@ export function StupidityTests({ roster, template, sheet, turns, boosts, edit }:
         </div>
       })}
       {grouped.length ? <p className="text-sm">{grouped.map(w => w.name).join(', ')}: test each model separately at the table. The app cannot yet identify individual members of these groups.</p> : null}
-      {picked && individual.some(w => w.id === picked.id) ? <TestSheet key={`${key}:${picked.id}`} warrior={picked} correction={sheet.stupidityResults.some(r => r.warriorId === picked.id && r.turnKey === key)} turn={sheet.turn} turnKey={key} edit={edit} close={() => setPicked(null)} /> : null}
+      {picked && individual.some(w => w.id === picked.id) ? <TestSheet roster={roster} sheet={sheet} key={`${key}:${picked.id}`} warrior={picked} correction={sheet.stupidityResults.some(r => r.warriorId === picked.id && r.turnKey === key)} turn={sheet.turn} turnKey={key} edit={edit} close={() => setPicked(null)} /> : null}
     </div>
   </Notice>
 }
 
-function TestSheet({ warrior, correction, turn, turnKey, edit, close }: { warrior: Combatant; correction: boolean; turn: number; turnKey: string; edit: (fn: (state: BattleLiveState) => BattleLiveState) => void; close: () => void }) {
+function TestSheet({ roster, sheet, warrior, correction, turn, turnKey, edit, close }: { roster: RosterWarband; sheet: BattleLiveState; warrior: Combatant; correction: boolean; turn: number; turnKey: string; edit: (fn: (state: BattleLiveState) => BattleLiveState) => void; close: () => void }) {
+  const [firstTest, setFirstTest] = useState(false)
   const [attemptId] = useState(() => crypto.randomUUID())
   const [correctionReason, setCorrectionReason] = useState('')
   const [originalMovement, setOriginalMovement] = useState<number | undefined>()
@@ -56,6 +58,13 @@ function TestSheet({ warrior, correction, turn, turnKey, edit, close }: { warrio
     close()
   }}>Record test</Button>}>
     <div className="flex flex-col gap-4 p-4">
+      {!original && dice.every(d => d === null) && canUseRelic(roster, sheet, warrior.id) ? <Notice title="Holy (Unholy) Relic">
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={firstTest} onChange={e => setFirstTest(e.target.checked)} />This is this warrior’s first Leadership test of the battle, including tests at the table.</label>
+        <Button variant="secondary" disabled={!firstTest} onClick={() => {
+          edit(state => passStupidityWithRelic(roster, state, warrior.id, warrior.name, turnKey, firstTest))
+          close()
+        }}>Pass automatically with the relic</Button>
+      </Notice> : null}
       <NumberField label="Leadership for this test" value={leadership} onChange={value => setLeadership(value ?? Number.NaN)} allowEmpty />
       {correction ? <TextField label="Why another test is needed" value={correctionReason} onChange={e => setCorrectionReason(e.target.value)} /> : null}
       {changedLd ? <TextField label="Why this Leadership applies" value={reason} onChange={e => setReason(e.target.value)} placeholder="Within 6 inches of the leader…" /> : null}

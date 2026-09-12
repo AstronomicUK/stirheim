@@ -13,3 +13,7 @@ No push/deployment performed. Production remains the previously verified release
 ## Core Leadership work started — #161
 
 Holy (Unholy) Relic source: reference/rules/02-weapons-armour-equipment.md:1719–1721. First-test automatic pass only; multiples do not grant extra uses. Added typed per-battle Leadership history and Rout action with explicit confirmation of no earlier table test. Earlier recorded Rout/Stupidity tests block eligibility. Logs automatic pass without claiming rolled dice, does not consume inventory, and repeat action is idempotent. Four focused relic cases plus Rout/sheet/recovery tests: 48 pass. Older live-state JSON receives an empty history default. This is a partial checkpoint: Stupidity/Fear/other Leadership consumers and Banner still need integration, correction flows and browser verification before #161 closes. Typecheck currently blocked by concurrent Dice.tsx TS2367, reported directly to Claude. No deployment.
+
+### Relic follow-up
+
+Relic now supports first Stupidity auto-pass with explicit table confirmation, no fabricated dice, a successful turn result and the same per-battle use history as Rout. Ordinary rolled Stupidity and player-recorded failures also retain Leadership history. Cross-test use and serialized reload tests pass: 19 relic/recovery/CastTab tests, TypeScript clean. #161 remains partial: Fear/All Alone/table-only paths, Banner and correction/browser coverage remain; do not declare whole item complete.

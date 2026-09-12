@@ -88,7 +88,7 @@ export const battleLiveStateSchema = z.object({
   notes: z.string().default(""),
   /** Leadership history for first-test item limits; relics are not consumed from inventory. */
   leadershipTests: z.array(z.object({
-    warriorId: z.string(), kind: z.enum(["rout", "table"]),
+    warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity"]),
     relic: z.boolean().default(false), at: z.string(),
   })).default([]),
   /** Pre-battle prompts answered on the sheet: "tarot:<heroId>" -> "passed" | "failed" | "disaster", list rules by key. */
@@ -271,7 +271,9 @@ export function failedStupidityThisTurn(state: BattleLiveState, warriorId: strin
 export function recordStupidityResult(state: BattleLiveState, warriorId: string, turnKey: string, name: string, failed: boolean, turn = state.turn): BattleLiveState {
   if (failedStupidityThisTurn(state, warriorId, turnKey) === failed) return state;
   const results = state.stupidityResults.filter(result => result.warriorId !== warriorId || result.turnKey !== turnKey);
-  return withRollAttempt({ ...state, stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
+  return withRollAttempt({ ...state,
+    leadershipTests: failed ? [...state.leadershipTests, { warriorId, kind: 'stupidity', relic: false, at: new Date().toISOString() }] : state.leadershipTests,
+    stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
     id: crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
     label: `${name}: ${failed ? 'failed Stupidity test recorded' : 'failed Stupidity effect cleared'}`,
     rolls: [failed ? 'Recorded by the player. Cannot attack or cast until the start of their next own turn; resolve the Stupidity movement roll at the table.' : 'Cleared by the player as a correction or agreed table decision. No new dice roll is implied.'],
@@ -312,7 +314,9 @@ export function recordStupidityTest(state: BattleLiveState, warriorId: string, t
     ? 'In hand-to-hand combat: cannot attack or cast until the next own turn. Opponents still roll to hit normally.'
     : `${roll.originalMovementDie !== undefined ? `App rolled movement D6: ${roll.originalMovementDie}${roll.originalMovementDie !== roll.movementDie ? `; player changed it to ${roll.movementDie}` : ''}` : `Player entered movement D6: ${roll.movementDie}`}. ${roll.movementDie! <= 3 ? 'Move straight forward at half speed; no charge, stop 1 inch from enemies and at obstacles. Falls still apply.' : 'Stand inactive; no other actions.'} No attacks or spells until the next own turn.`;
   const results = state.stupidityResults.filter(result => result.warriorId !== warriorId || result.turnKey !== turnKey);
-  return withRollAttempt({ ...state, stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
+  return withRollAttempt({ ...state,
+    leadershipTests: [...state.leadershipTests, { warriorId, kind: 'stupidity', relic: false, at: new Date().toISOString() }],
+    stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
     id: roll.attemptId ?? crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
     label: `${name}: Stupidity test ${failed ? 'failed' : 'passed'}`,
     rolls: [diceText, resultText, ...(roll.originalMovementDie !== undefined && (!failed || roll.inCombat) ? [`App movement roll ${roll.originalMovementDie} was not used for the final situation.`] : []), ...(roll.correctionReason?.trim() ? [`Recorded test replaced: ${roll.correctionReason.trim()}.`] : []), ...(roll.leadership !== roll.baseLeadership ? [`Leadership ${roll.leadership} instead of ${roll.baseLeadership}: ${roll.leadershipReason!.trim()}.`] : []), movementText],

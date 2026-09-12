@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { blackpowderMisfire } from '../../rules/resolve/blackpowderMisfire'
 import { emptyBattleLiveState, parseBattleLiveState } from '../battle'
-import { recordBlackpowderShot, recordMisfireDie, blackpowderBlock, correctBlackpowderShot, pendingBlackpowderLosses } from '../blackpowderShot'
+import { recordBlackpowderShot, recordMisfireDie, blackpowderBlock, correctBlackpowderShot, pendingBlackpowderLosses, physicalGunKey } from '../blackpowderShot'
 const shot = { id: 'shot', warriorId: 'gunner', weaponKey: 'gunner:swivel:0', weaponName: 'Swivel Gun', ownTurn: 1, reloadTurns: 1, experimental: false, at: '2026-09-11T17:15:00Z' }
 it('matches every printed misfire outcome, including no-critical self-hit and strengthened successful shot', () => {
   expect(blackpowderMisfire(1)).toMatchObject({ weaponDestroyed: true, fires: false, selfHit: { strength: 4, criticals: false } })
@@ -56,4 +56,22 @@ it('preserves the exact gun through a saved misfire and avoids recording its des
  expect(pendingBlackpowderLosses(state,[{...event,reverted_at:'now'}])).toHaveLength(1)
  expect(pendingBlackpowderLosses(correctBlackpowderShot(state,shot.id,'Corrected tabletop result'),[])).toEqual([])
  expect(pendingBlackpowderLosses({...state,blackpowderShots:[{...state.blackpowderShots[0],heldWeapon:undefined}]},[])).toEqual([])
+})
+
+it('binds reload and jams to the carried copy across model slots, retaining legacy records',()=>{
+ const held={itemId:'gun-row',copyIndex:0} as import('../weaponLoss').BrokenWeapon
+ const key=physicalGunKey(held,'swivel:0')
+ let state=recordBlackpowderShot(emptyBattleLiveState(),{...shot,weaponKey:'swivel:0',heldWeapon:held},'Gunner')
+ expect(state.blackpowderShots[0]).toMatchObject({weaponKey:key,legacyWeaponKey:'swivel:0'})
+ expect(()=>recordBlackpowderShot(state,{...shot,id:'model-two',weaponKey:'swivel:1',heldWeapon:held},'Gunner')).toThrow(/turn 3/)
+ const other={...held,copyIndex:1}
+ expect(recordBlackpowderShot(state,{...shot,id:'other',weaponKey:'swivel:1',heldWeapon:other},'Gunner').blackpowderShots).toHaveLength(2)
+ state=recordMisfireDie(state,shot.id,2)
+ expect(blackpowderBlock(state,shot.warriorId,key,99)).toContain('jammed')
+ expect(blackpowderBlock(correctBlackpowderShot(state,shot.id,'Table correction'),shot.warriorId,key,99)).toBeNull()
+ const oldSnapshot={...state,blackpowderShots:state.blackpowderShots.map(s=>({...s,weaponKey:'swivel:0'}))}
+ expect(blackpowderBlock(oldSnapshot,shot.warriorId,key,99,'swivel:1')).toContain('jammed')
+ const legacy={...state,blackpowderShots:state.blackpowderShots.map(s=>({...s,weaponKey:'swivel:0',heldWeapon:undefined}))}
+ expect(blackpowderBlock(legacy,shot.warriorId,key,99,'swivel:0')).toContain('jammed')
+ expect(blackpowderBlock(legacy,shot.warriorId,key,99,'swivel:1')).toBeNull()
 })

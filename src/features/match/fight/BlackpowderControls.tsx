@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { correctBlackpowderShot, recordMisfireDie, type BattleLiveState, type BlackpowderShot, type BattleEventRow } from '../../../domain'
+import { correctBlackpowderShot, recordMisfireDie, sameGun, type BattleLiveState, type BlackpowderShot, type BattleEventRow } from '../../../domain'
 import { Button, DieField, SelectField, TextField } from '../../../ui'
-export function BlackpowderControls({ sheet, warriorId, weaponKey, slots, slot, setSlot, blocked, readOnly, edit, events, onSelfHit }: {
-  sheet: BattleLiveState; warriorId: string; weaponKey: string; slots: number; slot: number; setSlot: (n: number) => void; blocked: string | null;
+export function BlackpowderControls({ sheet, warriorId, weaponKey, legacyWeaponKey, slots, slot, setSlot, blocked, readOnly, edit, events, onSelfHit }: {
+  sheet: BattleLiveState; warriorId: string; weaponKey: string; legacyWeaponKey?:string; slots: number; slot: number; setSlot: (n: number) => void; blocked: string | null;
   events: BattleEventRow[]; onSelfHit: (shotId: string) => void;
   readOnly: boolean; edit?: (fn: (s: BattleLiveState) => BattleLiveState) => void;
 }) {
   const [reason, setReason] = useState('')
-  const shots = sheet.blackpowderShots.filter(s => s.warriorId === warriorId && s.weaponKey === weaponKey && !s.correction)
+  const shots = sheet.blackpowderShots.filter(s => s.warriorId === warriorId && sameGun(s,weaponKey,legacyWeaponKey) && !s.correction)
   return <div className="flex flex-col gap-3 rounded border border-brass p-3 text-xs">
     <p className="font-semibold">Swivel Gun firing record</p>
     {slots > 1 ? <SelectField label="Swivel Gun firing model" value={String(slot)} onChange={e => setSlot(Number(e.target.value))}>{Array.from({ length: slots }, (_, n) => <option key={n} value={n}>Model {n + 1}</option>)}</SelectField> : null}
-    <p>One physical gun per numbered model, shared across its ammunition choices. Keep group model numbers consistent. Extra copies or table exceptions use an explained correction.</p>
+    <p>Firing history follows the selected carried gun across ammunition and model choices. Keep group model numbers consistent. Older records without a known gun copy use their original model number. Table exceptions use an explained correction.</p>
     {blocked ? <p>{blocked}</p> : <p>Ready to fire. A full own turn is required between shots.</p>}
     {shots.filter(s => s.misfireDie === 1).map(shot => {
       const done = events.some(e => !e.reverted_at && e.payload.blackpowderSelfShotId === shot.id && e.payload.target_id === warriorId && e.payload.attacker_id === warriorId)

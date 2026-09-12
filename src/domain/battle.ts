@@ -104,6 +104,7 @@ export const battleLiveStateSchema = z.object({
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
   blackpowderShots: z.array(z.object({
     id: z.string(), warriorId: z.string(), weaponKey: z.string(), weaponName: z.string(), ownTurn: z.number().int().min(0),
+    legacyWeaponKey: z.string().optional(),
     heldWeapon: brokenWeaponSchema.optional(),
     criticalUsed: z.boolean().optional(),
     reloadTurns: z.number().int().min(0), at: z.string(), misfireDie: z.number().int().min(1).max(6).optional(),
@@ -113,6 +114,7 @@ export const battleLiveStateSchema = z.object({
   mortarShots: z.array(z.object({
     id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), weaponKey: z.string(), ownTurn: z.number().int().min(0), at: z.string(),
     primary: z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() }),
+    legacyWeaponKey: z.string().optional(),
     heldWeapon: brokenWeaponSchema.optional(),
     hitThreshold: z.number(), permissionRequired: z.boolean(),
     stage: z.enum(['permission', 'hit', 'misfire', 'scatter', 'blast', 'stopped', 'complete']),

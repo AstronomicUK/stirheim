@@ -18,7 +18,7 @@ import { useBattleTurns } from '../../../api/battleTurns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import type { AttackEventPayload, BattleEventRow, BattleLiveState } from '../../../domain'
-import { unresolvedMortarTargets, startGrapeShotSpread, unresolvedGrapeShotTargets, correctBlackpowderShot, blackpowderBlock, recordBlackpowderShot, recordMisfireDie, unresolvedPigeonVictims, unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
+import { unresolvedMortarTargets, startGrapeShotSpread, unresolvedGrapeShotTargets, correctBlackpowderShot, blackpowderBlock, physicalGunKey, recordBlackpowderShot, recordMisfireDie, unresolvedPigeonVictims, unresolvedLineTargets, recordBolasThrow, correctBolasThrow, warbandTurnKey, failedStupidityThisTurn, recordStupidityResult, withRollAttempt, activateSerpentStaff, consumeSerpentStaff, serpentStaffUse, combatPhaseKey, correctSerpentStaff, type RollAttempt } from '../../../domain'
 import { useAskBattlePrompt, useBattlePrompts, useWithdrawBattlePrompt } from '../../../api/matches'
 import { parryRerollFromItems } from '../../../rules/domain/opponentScenario'
 import { findTrait } from '../../../rules/data/traits'
@@ -175,7 +175,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const isSwivel = !selfDamage && Boolean(primary?.id.startsWith('swivel_gun_'))
   const swivelSlots = attacker?.kind === 'henchman' ? Math.max(1, attacker.groupSize ?? 1) : 1
   const swivelModel = Math.min(swivelSlot, swivelSlots - 1)
-  const swivelKey = `swivel:${swivelModel}`
+  const swivelLegacyKey = `swivel:${swivelModel}`
+  const swivelCopies=isSwivel&&attacker&&primary?physicalWeaponChoices(items,events,roster.id,attacker.id,primary.id):[]
+  const swivelHeld=swivelCopies.find(c=>c.key===physicalSelection[`${attacker?.id}:0`])??swivelCopies[swivelModel]??swivelCopies[0]
+  const swivelKey = physicalGunKey(swivelHeld?.snapshot,swivelLegacyKey)
   const isMortar = !selfDamage && primary?.id === 'hand_held_mortar'
   const mortarReady = Boolean(selfDamage || (mortarShot && mortarTarget && !mortarDone && mortarShot.warriorId === attacker?.id))
   const isPigeon = !selfDamage && primary?.id === 'hersten_wenkler_pigeon_bombs'
@@ -249,7 +252,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const defenderUsed = defender && defenderSession ? itemsUsedBy(defenderSession.live_state, defender.id) : []
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? defenderKit.consumables.filter((c) => defenderUsed.includes(c.itemId)).map((c) => c.effect) : []
 
-  const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1))) : null
+  const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1)),swivelLegacyKey) : null
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
   const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) ?? (offHandValid && offHand ? ladyBlessingReason(offHand, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined) : undefined
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
@@ -356,7 +359,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   </option>
                 ))}
               </SelectField>
-              {isSwivel ? <BlackpowderControls sheet={sheet} warriorId={attacker.id} weaponKey={swivelKey} slots={swivelSlots} slot={swivelModel} setSlot={setSwivelSlot} blocked={swivelBlocked} readOnly={readOnly} edit={edit} events={events} onSelfHit={id => {
+              {isSwivel ? <BlackpowderControls sheet={sheet} warriorId={attacker.id} weaponKey={swivelKey} legacyWeaponKey={swivelLegacyKey} slots={swivelSlots} slot={swivelModel} setSlot={setSwivelSlot} blocked={swivelBlocked} readOnly={readOnly} edit={edit} events={events} onSelfHit={id => {
                 setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setFireHitId(null); setVolatileKey(null); setRollSetup(null); setRolling(true)
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
               }} /> : null}
@@ -587,7 +590,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if (!isSwivel || areaTarget) return
               if (next.critUsed) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, criticalUsed: true } : shot) }))
               const startsShot = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
-              if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
+              if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, legacyWeaponKey:swivelLegacyKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
               if (previous?.pending?.kind === 'hit' && next.pending?.kind === 'misfire') edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, misfirePending: true } : shot) }))
               if (previous?.pending?.kind === 'misfire' && rolled) edit(s => recordMisfireDie(s, attemptId, rolled.value, rolled.manual ? undefined : rolled.value))
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))

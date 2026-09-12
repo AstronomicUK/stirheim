@@ -9,8 +9,10 @@ export function BlackpowderLosses({ sheet, events, names, readOnly, onLog }: {
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState<string|null>(null)
   const pending=pendingBlackpowderLosses(sheet,events)
-  if (!pending.length) return null
+  const legacy=sheet.blackpowderShots.filter(shot=>shot.misfireDie===1&&!shot.correction&&!shot.heldWeapon)
+  if (!pending.length&&!legacy.length) return null
   return <Notice tone="warn" title="Destroyed equipment"><div className="flex flex-col gap-2">
+    {legacy.map(shot=><p key={`legacy:${shot.id}`}>{names[shot.warriorId]??shot.weaponName}: this older explosion record does not identify the carried gun. Review its equipment and remove the destroyed copy manually; the app cannot safely choose one.</p>)}
     <p>Record the destroyed gun so its removal is included in the post-battle report. The explosion’s hit is resolved separately.</p>
     {pending.map(shot=><Button key={shot.id} variant="secondary" disabled={readOnly||busy} onClick={async()=>{
       if (busy) return

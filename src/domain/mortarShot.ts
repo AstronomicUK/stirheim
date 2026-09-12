@@ -1,5 +1,5 @@
 import { withRollAttempt, type BattleLiveState } from './battle'
-import { recordBlackpowderShot, recordMisfireDie, correctBlackpowderShot, blackpowderBlock } from './blackpowderShot'
+import { recordBlackpowderShot, recordMisfireDie, correctBlackpowderShot, blackpowderBlock, physicalGunKey, sameGun } from './blackpowderShot'
 import type { LineShotTarget } from './lineShot'
 import type { BattleEventRow } from './battleEvent'
 export type MortarShot = BattleLiveState['mortarShots'][number]
@@ -7,14 +7,16 @@ export type MortarStage = MortarShot['stage']
 const label: Record<MortarStage, string> = { permission: 'firing permission', hit: 'to hit', misfire: 'misfire', scatter: 'scatter', blast: 'blast victims', stopped: 'shot stopped', complete: 'blast' }
 function active(sheet: BattleLiveState, id: string) { return sheet.mortarShots.find(s => s.id === id && !s.correction) }
 function replace(sheet: BattleLiveState, shot: MortarShot): BattleLiveState { return { ...sheet, mortarShots: sheet.mortarShots.map(s => s.id === shot.id ? shot : s) } }
-function fire(sheet: BattleLiveState, shot: MortarShot) { return recordBlackpowderShot(sheet, { id: shot.id, warriorId: shot.warriorId, weaponKey: shot.weaponKey, weaponName: 'Hand-held Mortar', heldWeapon: shot.heldWeapon, ownTurn: shot.ownTurn, reloadTurns: 1, experimental: true, at: shot.at }, shot.shooterName) }
+function fire(sheet: BattleLiveState, shot: MortarShot) { return recordBlackpowderShot(sheet, { id: shot.id, warriorId: shot.warriorId, weaponKey: shot.weaponKey, legacyWeaponKey:shot.legacyWeaponKey, weaponName: 'Hand-held Mortar', heldWeapon: shot.heldWeapon, ownTurn: shot.ownTurn, reloadTurns: 1, experimental: true, at: shot.at }, shot.shooterName) }
 export function beginMortarShot(sheet: BattleLiveState, input: Omit<MortarShot, 'stage' | 'original' | 'strength' | 'onTarget' | 'targets' | 'scatter' | 'correction'>): BattleLiveState {
   if (sheet.mortarShots.some(s => s.id === input.id)) return sheet
-  const blocked = blackpowderBlock(sheet, input.warriorId, input.weaponKey, input.ownTurn)
+  const weaponKey=physicalGunKey(input.heldWeapon,input.weaponKey)
+  const legacyWeaponKey=input.legacyWeaponKey??(weaponKey!==input.weaponKey?input.weaponKey:undefined)
+  const blocked = blackpowderBlock(sheet, input.warriorId, weaponKey, input.ownTurn,legacyWeaponKey)
   if (blocked) throw new Error(blocked)
-  if (sheet.mortarShots.some(s => s.warriorId === input.warriorId && s.weaponKey === input.weaponKey && !s.correction && (s.ownTurn === input.ownTurn || !['complete', 'stopped'].includes(s.stage)))) throw new Error('Finish or correct the earlier Mortar attempt first.')
+  if (sheet.mortarShots.some(s => s.warriorId === input.warriorId && sameGun(s,weaponKey,legacyWeaponKey) && !s.correction && (s.ownTurn === input.ownTurn || !['complete', 'stopped'].includes(s.stage)))) throw new Error('Finish or correct the earlier Mortar attempt first.')
   if (!Number.isInteger(input.ownTurn) || input.ownTurn < 0 || !Number.isFinite(input.hitThreshold)) throw new Error('Valid turn and hit threshold required.')
-  const shot: MortarShot = { ...input, primary: { ...input.primary }, strength: 4, onTarget: false, stage: input.permissionRequired ? 'permission' : 'hit' }
+  const shot: MortarShot = { ...input, weaponKey,legacyWeaponKey, primary: { ...input.primary }, strength: 4, onTarget: false, stage: input.permissionRequired ? 'permission' : 'hit' }
   let next = { ...sheet, mortarShots: [...sheet.mortarShots, shot] }
   if (!input.permissionRequired) next = fire(next, shot)
   return withRollAttempt(next, { id: `mortar-start:${shot.id}`, at: shot.at, turn: sheet.turn, kind: 'attack', status: 'incomplete', label: `${shot.shooterName}: Mortar launch`, rolls: [`Intended target: ${shot.primary.name}.`, `Awaiting ${label[shot.stage]}.`] })

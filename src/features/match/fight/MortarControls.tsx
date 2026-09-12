@@ -1,7 +1,7 @@
 import { physicalWeaponChoices } from './weaponLoss'
 import type { ItemRow } from '../../../domain'
 import { useState } from 'react'
-import { beginMortarShot, rollMortarStage, confirmMortarStage, declareMortarBlast, correctMortarShot, unresolvedMortarTargets, type MortarShot, type LineShotTarget, type BattleLiveState, type BattleEventRow } from '../../../domain'
+import { beginMortarShot, physicalGunKey, sameGun, rollMortarStage, confirmMortarStage, declareMortarBlast, correctMortarShot, unresolvedMortarTargets, type MortarShot, type LineShotTarget, type BattleLiveState, type BattleEventRow } from '../../../domain'
 import { Button, DieField, SelectField, Sheet, TextField } from '../../../ui'
 import type { Combatant } from './combatants'
 
@@ -19,12 +19,13 @@ export function MortarControls({ items, attacker, defender, models, sheet, event
   const count = attacker.kind === 'henchman' ? Math.max(1, attacker.groupSize ?? 1) : 1
   const copies=physicalWeaponChoices(items,events,attacker.warbandId,attacker.id,'hand_held_mortar')
   const held=copies.find(c=>c.key===selectedCopy)??copies[Math.min(slot,count-1)]??copies[0]
-  const weaponKey = `mortar:${Math.min(slot, count - 1)}`
-  const shots = sheet.mortarShots.filter(s => s.warriorId === attacker.id && s.weaponKey === weaponKey && !s.correction)
+  const legacyWeaponKey = `mortar:${Math.min(slot, count - 1)}`
+  const weaponKey = physicalGunKey(held?.snapshot,legacyWeaponKey)
+  const shots = sheet.mortarShots.filter(s => s.warriorId === attacker.id && sameGun(s,weaponKey,legacyWeaponKey) && !s.correction)
   const active = shots.find(s => s.id === activeId)
   const pending = shots.find(s => !['complete', 'stopped'].includes(s.stage))
   const sameTurn = shots.some(s => s.ownTurn === ownTurn)
-  const blockedShot = sheet.blackpowderShots.find(s => s.warriorId === attacker.id && s.weaponKey === weaponKey && !s.correction && (s.misfireDie === 1 || s.misfireDie === 2 || ownTurn < s.ownTurn + 2 + (s.misfireDie === 3 ? 1 : 0)))
+  const blockedShot = sheet.blackpowderShots.find(s => s.warriorId === attacker.id && sameGun(s,weaponKey,legacyWeaponKey) && !s.correction && (s.misfireDie === 1 || s.misfireDie === 2 || ownTurn < s.ownTurn + 2 + (s.misfireDie === 3 ? 1 : 0)))
   return <div className="flex flex-col gap-3 rounded border border-brass p-3 text-xs">
     <p className="font-semibold">Mortar launch and blast</p>
     <p>One shell, followed by a full own turn to reload. A miss scatters; a natural 1 must resolve a misfire first. Number group models consistently.</p>
@@ -35,7 +36,7 @@ export function MortarControls({ items, attacker, defender, models, sheet, event
     <Button variant="secondary" disabled={!edit || readOnly || !defender || (!pending && (!mayFire || !legal || sameTurn || Boolean(blockedShot) || hitThreshold === null))} onClick={() => {
       if (pending) { setActiveId(pending.id); return }
       const id = crypto.randomUUID()
-      edit?.(s => beginMortarShot(s, { id, warriorId: attacker.id, warbandId: attacker.warbandId, shooterName: attacker.name, weaponKey, ownTurn, heldWeapon:held?.snapshot, at: new Date().toISOString(), hitThreshold: hitThreshold!, permissionRequired: requiresPermission, primary: { key: `${defender!.warbandId}:${defender!.id}:${Math.min(targetSlot, Math.max(0, (defender!.groupSize ?? 1) - 1))}`, warriorId: defender!.id, warbandId: defender!.warbandId, name: defender!.name } }))
+      edit?.(s => beginMortarShot(s, { id, warriorId: attacker.id, warbandId: attacker.warbandId, shooterName: attacker.name, weaponKey, legacyWeaponKey, ownTurn, heldWeapon:held?.snapshot, at: new Date().toISOString(), hitThreshold: hitThreshold!, permissionRequired: requiresPermission, primary: { key: `${defender!.warbandId}:${defender!.id}:${Math.min(targetSlot, Math.max(0, (defender!.groupSize ?? 1) - 1))}`, warriorId: defender!.id, warbandId: defender!.warbandId, name: defender!.name } }))
       setActiveId(id)
     }}>{pending ? 'Resume Mortar launch' : 'Launch Mortar'}</Button>
     {blockedShot ? <p>{blockedShot.misfireDie === 1 ? 'Mortar destroyed. Resolve its removal from the roster.' : blockedShot.misfireDie === 2 ? 'Mortar jammed for the rest of the battle.' : `Reloading: next fire in own turn ${blockedShot.ownTurn + 2 + (blockedShot.misfireDie === 3 ? 1 : 0)}.`}</p> : sameTurn ? <p>This gun has already attempted to fire this turn.</p> : null}

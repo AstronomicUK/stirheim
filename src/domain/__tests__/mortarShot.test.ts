@@ -43,3 +43,12 @@ it('misses scatter using persisted 2D6 and a clockface direction, including harm
   expect(declareMortarBlast(s, shot.id, []).mortarShots[0].stage).toBe('complete')
   expect(confirmMortarStage(s, shot.id, 'hit', [6])).toBe(s)
 })
+
+it('does not duplicate a pending physical Mortar by changing its model slot',()=>{
+ const held={itemId:'mortar-row',copyIndex:0} as import('../weaponLoss').BrokenWeapon
+ const input={...shot,heldWeapon:held,permissionRequired:true}
+ const state=beginMortarShot(emptyBattleLiveState(),input)
+ expect(state.mortarShots[0].weaponKey).toBe('item:mortar-row:0')
+ expect(()=>beginMortarShot(state,{...input,id:'same-gun',weaponKey:'mortar:1'})).toThrow(/earlier/)
+ expect(beginMortarShot(state,{...input,id:'other-gun',weaponKey:'mortar:1',heldWeapon:{...held,copyIndex:1}}).mortarShots).toHaveLength(2)
+})

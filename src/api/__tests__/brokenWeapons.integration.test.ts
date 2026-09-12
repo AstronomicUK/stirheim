@@ -48,6 +48,32 @@ describe.skipIf(process.env.SUPABASE_LOCAL !== '1')('Recorded broken weapon sett
     await admin.from('battle_events').insert({ id: second, match_id: match, actor_id: uid, actor_warband_id: warband, kind: 'attack', summary: 'Duplicate break', payload: { brokenWeapons: [loss] } })
     expect((await file({ broken_weapons: [{ event_id: event, ...loss }, { event_id: second, ...loss }] })).error?.message).toContain('same weapon copy')
   })
+  it('does not recreate a broken copy as recovered or blessed equipment', async () => {
+    const {data:stock}=await admin.from('items').select('*').eq('id',item).single()
+    const {created_at:_created,updated_at:_updated,...expected}=stock!
+    const award={source_item_id:item,holder_type:'stash',holder_id:null,item_rules_id:'sword',custom_name:null,quantity:1,notes:'Family heirloom'}
+    expect((await file({lycanthrope_equipment:[{item_id:item,expected}],awarded_items:[award]})).error?.message).toContain('intact original copies')
+    expect((await file({shrine_equipment:{item_id:item,expected},awarded_items:[{...award,notes:'Blessed'}]})).error?.message).toContain('intact original copies')
+    expect((await admin.from('items').select('quantity').eq('id',item).single()).data?.quantity).toBe(1)
+  })
+  it('recovers only intact stock once, and withdrawal restores its original identity', async () => {
+    await admin.from('items').update({quantity:2}).eq('id',item)
+    loss={...loss,expected:{...(loss.expected as object),quantity:2}}
+    await admin.from('battle_events').update({payload:{brokenWeapons:[loss]}}).eq('id',event)
+    const {data:stock}=await admin.from('items').select('*').eq('id',item).single()
+    const {created_at:_created,updated_at:_updated,...expected}=stock!
+    const award={source_item_id:item,holder_type:'stash',holder_id:null,item_rules_id:'sword',custom_name:null,quantity:1,notes:'Family heirloom'}
+    const metadata={lycanthrope_equipment:[{item_id:item,expected}]}
+    expect((await file({...metadata,awarded_items:[award,award]})).error?.message).toContain('intact original copies')
+    expect((await file({...metadata,item_patches:[{id:item,quantity:1}],awarded_items:[award]})).error?.message).toContain('intact original copies')
+    expect((await file({...metadata,awarded_items:[award]})).error).toBeNull()
+    const recovered=await admin.from('items').select('id,quantity,holder_type,notes').eq('warband_id',warband)
+    expect(recovered.data).toHaveLength(1)
+    expect(recovered.data?.[0]).toMatchObject({quantity:1,holder_type:'stash',notes:'Family heirloom'})
+    expect(recovered.data?.[0].id).not.toBe(item)
+    expect((await withdraw()).error).toBeNull()
+    expect((await admin.from('items').select('id,quantity,holder_id').eq('warband_id',warband)).data).toEqual([{id:item,quantity:2,holder_id:hero}])
+  })
   it('permits only the actual scenario non-campaign exception', async () => {
     expect((await file({ weapon_loss_non_campaign: true, broken_weapons: [], item_patches: [] })).error?.message).toContain('does not allow')
     await admin.from('matches').update({ scenario_rules_id: 'the_sword_of_the_herald' }).eq('id', match)

@@ -28,7 +28,7 @@ export function applyShrineBlessing(draft:ExplorationDraft,locationId:string|und
  if(row.quantity===1) {if(patch)patch.notes=notes;else applied.item_patches.push({id:row.id,notes})}
  else {
   if(patch)patch.quantity=row.quantity-1;else applied.item_patches.push({id:row.id,quantity:row.quantity-1})
-  applied.awarded_items=[...(applied.awarded_items??[]),{holder_type:row.holder_type,holder_id:row.holder_id,item_rules_id:row.item_rules_id,custom_name:row.custom_name,quantity:1,notes}]
+  applied.awarded_items=[...(applied.awarded_items??[]),{source_item_id:original.id,holder_type:row.holder_type,holder_id:row.holder_id,item_rules_id:row.item_rules_id,custom_name:row.custom_name,quantity:1,notes}]
  }
  const {created_at: _created,updated_at: _updated,...expected}=original
  applied.shrine_equipment={item_id:original.id,expected}

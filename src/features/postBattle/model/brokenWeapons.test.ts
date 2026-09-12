@@ -64,3 +64,20 @@ it('excludes broken copies from transformation and rejects their recovery to sta
  expect(state.awarded_items?.[0]).toMatchObject({quantity:2,holder_type:'stash'})
  expect(state.lycanthrope_equipment?.[0].expected.quantity).toBe(3)
 })
+
+it('keeps battle breaks separate from intact group equipment recovered after a feral departure',async()=>{
+ const {makeHero,makeHenchmanGroup,makeWarband}=await import('../../../rules/resolve/__tests__/fixtures')
+ const {findWarbandTemplate}=await import('../../../rules/data/warbandTemplates')
+ const {deriveReport}=await import('./derive')
+ const {emptyDraft}=await import('./state')
+ const context:ReportContext={...ctx,roster:makeWarband({id:band,heroes:['a','b','c'].map(id=>makeHero({id,xp:20,levelUps:8})),henchmenGroups:[makeHenchmanGroup({id:holder,size:3,campaignState:{lycanthropes:[{id:'cursed',name:'Otto',contractedAfter:'earlier'}]}})]}),template:findWarbandTemplate('mercenaries_reikland'),matchId:'match',myRating:100,opponentRating:100}
+ const d=emptyDraft();d.result='lost';d.exploration.rolls=[1,2,3]
+ d.woods={groups:{[holder]:{returns:{cursed:{transformed:true,die:1,gearReviewed:true,quantities:{[item.id]:1},gear:[{itemId:item.id,fate:'weapon-recovered'}]}}}}}
+ const result=deriveReport(d,context)
+ expect(result.problems.injuries).toEqual([])
+ expect(result.report).not.toBeNull()
+ expect(result.report?.applied.item_patches).toContainEqual({id:item.id,quantity:1})
+ expect(result.report?.applied.awarded_items).toContainEqual(expect.objectContaining({source_item_id:item.id,quantity:1,holder_type:'stash'}))
+ expect(result.report?.applied.broken_weapons).toHaveLength(1)
+ expect(result.report?.applied.groups.find(g=>g.id===holder)?.patch.size).toBe(2)
+})

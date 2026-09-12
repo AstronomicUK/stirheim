@@ -1017,7 +1017,7 @@ it('resolves a later feral departure and puts the actual recovered weapon in the
  const result=derive(d,ctx({roster:band,items,scenarioId:'skirmish'}))
  expect(result.report).not.toBeNull();expect(result.report?.applied.heroes.find(h=>h.id==='wolf')?.patch.status).toBe('retired')
  expect(result.report?.applied.remove_item_ids).toEqual(expect.arrayContaining([blade,mail]))
- expect(result.report?.applied.awarded_items).toContainEqual({holder_type:'stash',holder_id:null,item_rules_id:'sword',custom_name:null,quantity:1,notes:''})
+ expect(result.report?.applied.awarded_items).toContainEqual(expect.objectContaining({source_item_id:expect.any(String),holder_type:'stash',holder_id:null,item_rules_id:'sword',custom_name:null,quantity:1,notes:''}))
  expect(result.report?.applied.pending_advances).toEqual([])
 })
 it('removes only the transformed member’s kit share on a feral group departure',()=>{

@@ -130,7 +130,7 @@ export const reportAppliedSchema = z.object({
   gathering_control: z.object({ending:z.enum(["dirk","valnor","rout"]),controllerId:z.string().uuid().optional(),reason:z.string().optional()}).optional(),
   scenario_free_hire: z.object({ choices: z.array(z.enum(["highwayman", "warlock", "pit_fighter"])) }).optional(),
   scenario_benefits: z.array(z.enum(["harpy_straggler"])).optional(),
-  awarded_items: z.array(z.object({holder_type:z.enum(["stash","hero","group"]),holder_id:z.string().uuid().nullable(),item_rules_id:z.string().nullable(),custom_name:z.string().max(80).nullable(),quantity:z.number().int().min(1),notes:z.string().optional()})).optional(),
+  awarded_items: z.array(z.object({source_item_id:z.string().uuid().optional(),holder_type:z.enum(["stash","hero","group"]),holder_id:z.string().uuid().nullable(),item_rules_id:z.string().nullable(),custom_name:z.string().max(80).nullable(),quantity:z.number().int().min(1),notes:z.string().optional()})).optional(),
   scenario_artefacts: z.array(z.object({roll:z.number().int().min(1).max(6),overrideReason:z.string().optional()})).optional(),
   petty_thief: z.object({target_id:z.string().uuid(),roll:z.number().int().min(5).max(6),squire_id:z.string().uuid(),selection_roll:z.number().int().min(1),transferred:z.number().int().min(0).max(1).optional()}).optional(),
   new_groups: z.array(z.object({id:z.string().uuid(),name:z.string().min(1),unit_type_rules_id:z.string().min(1),size:z.number().int().min(1).max(5),stats:statsSchema,xp:z.number().int().min(0),level_ups:z.number().int().min(0)})).optional(),

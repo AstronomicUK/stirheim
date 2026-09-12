@@ -6,6 +6,7 @@ import { RulesError } from "../errors";
 import {
   buyItem,
   displayedGemRareBonus,
+  streetwiseRareBonus,
   canSearch,
   canSellWyrdstone,
   isHalfPriceEligible,
@@ -321,5 +322,13 @@ describe('displayed exploration gems (#66)', () => {
     expect(displayedGemRareBonus([{itemId:'ruby', quantity:3}, {itemId:'amethyst', quantity:1}])).toBe(1);
     expect(displayedGemRareBonus([{itemId:'ruby', quantity:0}, {itemId:null, customName:'ruby', quantity:1}])).toBe(0);
     expect(displayedGemRareBonus([])).toBe(0);
+  });
+});
+
+describe("streetwiseRareBonus (#59, core Academic skill)", () => {
+  it("adds +2 for a searcher with Streetwise, nothing otherwise, and nothing without a searcher", () => {
+    expect(streetwiseRareBonus({ skillIds: ["streetwise"] })).toBe(2);
+    expect(streetwiseRareBonus({ skillIds: ["haggle"] })).toBe(0);
+    expect(streetwiseRareBonus(undefined)).toBe(0);
   });
 });

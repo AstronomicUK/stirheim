@@ -8,7 +8,7 @@ import { SHOP_ITEMS } from '../../rules/data/items'
 import { RARE_ROLL } from '../../rules/data/campaign/trading'
 import { parseDice } from '../../rules/resolve/dice'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
-import { buyItem, displayedGemRareBonus, itemPrice, rareSearch } from '../../rules/resolve/trading'
+import { buyItem, displayedGemRareBonus, itemPrice, rareSearch, streetwiseRareBonus } from '../../rules/resolve/trading'
 import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
 import { effectivePricing, warbandRareRollBonus } from '../../rules/resolve/itemPricing'
 import { braceAmountOf } from '../../rules/resolve/equipmentCost'
@@ -148,8 +148,11 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const searchTotal = diceTotal(rareSpec, searchFaces)
   const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
   const mapRareBonus = trade.perks?.rareRollBonus ?? 0
-  const wornGemBonus = displayedGemRareBonus(roster.heroes.find(h => h.id === searcherId)?.equipment ?? [])
-  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus + (roster.scenarioEffects?.rarePenalty ?? 0)
+  const searcherHero = roster.heroes.find(h => h.id === searcherId)
+  const wornGemBonus = displayedGemRareBonus(searcherHero?.equipment ?? [])
+  // Streetwise (#59): the searching hero's own +2 to the rarity roll.
+  const streetwiseBonus = streetwiseRareBonus(searcherHero)
+  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus + streetwiseBonus + (roster.scenarioEffects?.rarePenalty ?? 0)
   const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && (tracked || !!phase.rareItemSearchBlocked)
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
@@ -359,7 +362,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
         </section>
         {isRare ? (
           <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this search${wornGemBonus ? ', +1 from displayed gems' : ''}${mapRareBonus ? `, ${mapRareBonus} of it from ${trade.perks?.rareRollSource?.districtName}` : ''})` : ''}</h3>
+            <h3 className="text-xs uppercase tracking-wider text-ink-dim">Rare {item.availability.rarity}: roll 2D6{rareBonus ? ` (${rareBonus > 0 ? '+' : ''}${rareBonus} for this search${wornGemBonus ? ', +1 from displayed gems' : ''}${streetwiseBonus ? `, +2 Streetwise (${searcherHero?.name})` : ''}${mapRareBonus ? `, ${mapRareBonus} of it from ${trade.perks?.rareRollSource?.districtName}` : ''})` : ''}</h3>
             {needsSearcher ? (
               searchers.length === 0 ? (
                 <Notice tone="warn">Every hero able to search has done so this sequence{downCount > 0 ? ` (${downCount} taken out of action may not)` : ''}. No more rare-item rolls until the next battle.</Notice>

@@ -252,7 +252,7 @@ export const SKILLS: Skill[] = [
     modeled: false,
     effect: { type: "notModeled" },
     conditional: false,
-    description: "Ignores Knocked Down across turns — out of scope for v1's single-Wound, single-turn model. Deferred to v2 alongside multi-Wound sequencing.",
+    description: "Ignores rolled Knocked Down results (not a helmet save's knock-down, nor No Pain). Applied in the roll-through's injury step; no change to the hit/wound odds shown here.",
   },
   {
     id: "dodge",
@@ -281,7 +281,7 @@ export const SKILLS: Skill[] = [
     modeled: false,
     effect: { type: "notModeled" },
     conditional: false,
-    description: "No Hit/Wound/Injury effect.",
+    description: "No Hit/Wound/Injury effect. Applied at the trading post: +2 to the rarity roll when this hero does the searching.",
   },
   {
     id: "haggle",
@@ -290,7 +290,7 @@ export const SKILLS: Skill[] = [
     modeled: false,
     effect: { type: "notModeled" },
     conditional: false,
-    description: "No Hit/Wound/Injury effect.",
+    description: "No Hit/Wound/Injury effect. Applied at the trading post: 2D6 gc off one purchase per post-battle sequence, to a minimum of 1 gc.",
   },
   {
     id: "arcane_lore",
@@ -308,7 +308,7 @@ export const SKILLS: Skill[] = [
     modeled: false,
     effect: { type: "notModeled" },
     conditional: false,
-    description: "No Hit/Wound/Injury effect.",
+    description: "No Hit/Wound/Injury effect. Applied in the post-battle exploration step: re-roll one exploration die when this hero searches.",
   },
   {
     id: "warrior_wizard",
@@ -317,7 +317,7 @@ export const SKILLS: Skill[] = [
     modeled: false,
     effect: { type: "notModeled" },
     conditional: false,
-    description: "No Hit/Wound/Injury effect.",
+    description: "No Hit/Wound/Injury effect. Applied on the Cast tab: armour no longer blocks this wizard's casting.",
   },
   {
     id: "sorcery",

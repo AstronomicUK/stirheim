@@ -55,7 +55,9 @@ describe("Bitter Enmity targets (#96)", () => {
     expect(bitterEnmityApplies({ bitterEnmity: individual }, { warriorId: "magister", warbandId: "cult", isLeader: true })?.applies).toBe(true);
     expect(bitterEnmityApplies({ bitterEnmity: individual }, { warriorId: "beggar", warbandId: "cult", isLeader: false })?.applies).toBe(false);
     const leader = resolveBitterEnmityTarget(base(4), byBrethren, [cult]);
-    expect(bitterEnmityApplies({ bitterEnmity: leader }, { warriorId: "someone_new", warbandId: "cult", isLeader: true })?.applies).toBe(true);
+    // The leader at the time is hated; a successor who later leads the same warband is not.
+    expect(bitterEnmityApplies({ bitterEnmity: leader }, { warriorId: "magister", warbandId: "cult", isLeader: false })?.applies).toBe(true);
+    expect(bitterEnmityApplies({ bitterEnmity: leader }, { warriorId: "someone_new", warbandId: "cult", isLeader: true })?.applies).toBe(false);
     const warband = resolveBitterEnmityTarget(base(5), byMagister, [cult]);
     expect(bitterEnmityApplies({ bitterEnmity: warband }, { warriorId: "beggar", warbandId: "cult", isLeader: false })?.applies).toBe(true);
     expect(bitterEnmityApplies({ bitterEnmity: warband }, { warriorId: "x", warbandId: "other", isLeader: false })?.applies).toBe(false);

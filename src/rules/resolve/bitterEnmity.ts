@@ -109,7 +109,9 @@ export function bitterEnmityApplies(flags: Pick<WarriorFlags, "bitterEnmity" | "
     case "individual":
       return { applies: t.warriorId === opponent.warriorId, reason: `Bitter Enmity: hates ${describeBitterEnmity(t)}.` };
     case "leader":
-      return { applies: t.warriorId === opponent.warriorId || (opponent.isLeader && t.warbandId === opponent.warbandId), reason: `Bitter Enmity: hates ${describeBitterEnmity(t)}.` };
+      // The hatred is of the person who led the warband at the time; it does not pass to a successor.
+      // (`opponent.isLeader` is kept in the shape for display, not for matching.)
+      return { applies: t.warriorId !== undefined && t.warriorId === opponent.warriorId, reason: `Bitter Enmity: hates ${describeBitterEnmity(t)}.` };
     case "warband":
       return { applies: t.warbandId === opponent.warbandId, reason: `Bitter Enmity: hates ${describeBitterEnmity(t)}.` };
     case "warbandType":

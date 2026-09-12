@@ -11,6 +11,11 @@ import { minMax } from "./dice";
 import { RulesError } from "./errors";
 import { moveBlockReason, sellBlockReason } from "./itemRestrictions";
 
+/** Streetwise (core Academic skill, 03:457): "He may add +2 to the roll that determines his chances of finding such items." The searcher's own skill, not the warband's. */
+export function streetwiseRareBonus(searcher: { skillIds: readonly string[] } | undefined): number {
+  return searcher?.skillIds.includes("streetwise") ? 2 : 0;
+}
+
 /** Displayed treasure helps its bearer find rare goods; extra stones do not multiply the bonus. */
 export function displayedGemRareBonus(equipment: readonly RosterItem[]): number {
   const gems = new Set(['quartz_stones', 'amethyst', 'jewelsmith_necklace', 'ruby', 'scenario_smuggled_gems']);

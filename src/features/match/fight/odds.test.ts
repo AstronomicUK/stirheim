@@ -27,6 +27,16 @@ function setup(attacker: Combatant, defender: Combatant, primaryId: string, offH
 }
 
 describe('computeOdds in melee', () => {
+  it('warns a charging Vampire about a target carrying garlic, without applying it to other fighters or later rounds', () => {
+    const vampire = { ...captain, traitIds: ['vampire', 'undead'] }
+    const bearer = { ...skaven, equipment: [...skaven.equipment, { itemId: 'garlic', quantity: 1 }] }
+    const fight = setup(vampire, bearer, 'sword', null)
+    const charging = { ...fight.context, charging: true }
+    expect(computeOdds({ ...fight, context: charging }).notes.join(' ')).toContain('must pass a Leadership test to charge')
+    expect(computeOdds(fight).notes.join(' ')).not.toContain('Garlic:')
+    expect(computeOdds({ ...fight, attacker: captain, context: charging }).notes.join(' ')).not.toContain('Garlic:')
+    expect(computeOdds({ ...fight, defender: skaven, context: charging }).notes.join(' ')).not.toContain('Garlic:')
+  })
   it('uses the saved drug Initiative bonus for either side’s strike order, without doubling it', () => {
     const dose = { label: 'Took Crimson Shade', appliesTo: 'self' as const, strengthBonus: 1, initiativeBonus: 2 }
     expect(computeOdds(setup(captain, skaven, 'sword', null, { attackerPreBattle: [dose] })).strikeOrder).toContain('Captain strikes first: Initiative 5 against 3')

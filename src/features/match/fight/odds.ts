@@ -442,6 +442,9 @@ function adjustForCoatings(input: AttackInput, weapon: Weapon, phase: WeaponKind
 
 function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const notes: string[] = []
+  if (setup.primary.type === 'melee' && setup.context.charging && setup.attacker.traitIds.includes('vampire') && setup.defender.equipment.some(item => item.itemId === 'garlic' && item.quantity > 0)) {
+    notes.push(`Garlic: ${setup.attacker.name} must pass a Leadership test to charge ${setup.defender.name}. If it fails, the charge cannot happen. Confirm this test at the table before resolving attacks.`)
+  }
   const primary = weapons[0]
   if (setup.defender.traitIds.includes('black_orc') || setup.defender.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push(`${setup.defender.name} has Black Orc natural armour: 6+ alone, improving worn armour by 1. It does not apply against attacks that allow only shields or ignore armour.`)
   if (setup.attacker.traitIds.includes('black_orc') || setup.attacker.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push('Black Orcs do not ride mounts. Use this warrior on foot.')

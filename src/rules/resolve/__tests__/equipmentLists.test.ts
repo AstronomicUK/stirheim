@@ -100,3 +100,24 @@ it('keeps Small Hands restrictions after advancement and exempts Shoota Teams', 
   for (const id of banned) expect(itemRestrictionWarnings(r, findItem(id)!, holder(team)).join(' '), id).not.toContain('Small Hands')
   expect(equipmentBanReason('night_goblins', 'night_goblins_snotling_mob', { itemId: 'longbow', quantity: 1 })).toBeNull()
 })
+
+
+it('uses current Hero status for restricted list entries after promotion', () => {
+  for (const [warband, unit, itemId] of [
+    ['lizardmen', 'lizardmen_skink_brave', 'sword'],
+    ['pirates', 'pirates_crew', 'cat_o_nine_tails'],
+    ['outlaws_of_stirwood_forest_redux', 'outlaws', 'longbow'],
+  ]) {
+    const h = hero(unit), r = roster(warband, h), item = findItem(itemId)!
+    const group: ItemHolder = { kind: 'henchmanGroup', unitTemplateId: unit, equipment: [] }
+    expect(equipmentListWarning(r, item, group), `${unit}/${itemId}`).toContain('not on')
+    expect(equipmentListWarning(r, item, holder(h)), `${unit}/${itemId}`).toBeNull()
+  }
+})
+it('keeps Bone Helmets restricted to Skink Priests within the Skink list', () => {
+  for (const unit of ['lizardmen_skink_great_crest', 'lizardmen_skink_brave']) {
+    const h = hero(unit, ['weapons_training', 'weapons_expert'])
+    expect(warning(roster('lizardmen', h), 'bone_helmet')).toContain('not on')
+  }
+  expect(warning(roster('lizardmen', hero('lizardmen_skink_priest')), 'bone_helmet')).toBeNull()
+})

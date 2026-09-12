@@ -370,7 +370,7 @@ export const WARBANDS: WarbandTemplate[] = [
           { name: `Dagger`, cost: `1st free/2 gc` },
           { name: `Stone Axe (counts as a club)`, cost: `3 gc` },
           { name: `Axe`, cost: `5 gc` },
-          { name: `Sword (Heroes only)`, cost: `10 gc` },
+          { name: `Sword (Heroes only)`, cost: `10 gc`, heroesOnly: true },
           { name: `Spear`, cost: `10 gc` },
         ],
         missileWeapons: [
@@ -383,7 +383,7 @@ export const WARBANDS: WarbandTemplate[] = [
         armour: [
           { name: `Shield`, cost: `5 gc` },
           { name: `Buckler`, cost: `5 gc` },
-          { name: `Bone Helmet (Skink Priest only)`, cost: `10 gc` },
+          { name: `Bone Helmet (Skink Priest only)`, cost: `10 gc`, onlyUnitTemplateIds: ["lizardmen_skink_priest"] },
         ],
       },
     ],
@@ -1161,7 +1161,7 @@ export const WARBANDS: WarbandTemplate[] = [
           { name: `Mace`, cost: `3 gc` },
           { name: `Axe`, cost: `5 gc` },
           { name: `Boat Hook`, cost: `8 gc` },
-          { name: `Cat O' Nine Tails (Heroes only)`, cost: `8 gc` },
+          { name: `Cat O' Nine Tails (Heroes only)`, cost: `8 gc`, heroesOnly: true },
           { name: `Cutlass (Sword)`, cost: `10 gc` },
           { name: `Double-handed weapon`, cost: `15 gc` },
         ],

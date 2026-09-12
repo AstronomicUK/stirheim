@@ -228,6 +228,8 @@ export interface EquipmentListItem {
   name: string;
   /** Explicit source qualifier for this list entry; other lists and weapon skills may still grant access. */
   onlyUnitTemplateIds?: string[];
+  /** Uses current roster status, so a promoted henchman qualifies as a Hero. */
+  heroesOnly?: boolean;
   /** Kept as a string, not a number — source costs include things like "1st free/2 gc" or "3 times the cost". */
   cost: string;
 }

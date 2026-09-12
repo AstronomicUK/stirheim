@@ -34,6 +34,7 @@ export function equipmentListWarning(roster: RosterWarband, item: Item, holder: 
   }
   const lists = [...listIds].map(id => findEquipmentList(template, id)).filter(list => list !== undefined)
   const allowed = new Set(lists.flatMap(list => [...list.meleeWeapons, ...list.missileWeapons, ...list.armour]).flatMap(line => {
+    if (line.heroesOnly && holder.kind !== 'hero') return []
     if (line.onlyUnitTemplateIds && !line.onlyUnitTemplateIds.includes(unit.id)) return []
     const resolved = resolveEquipmentName(line.name)
     return resolved ? [equipmentType(resolved)] : []

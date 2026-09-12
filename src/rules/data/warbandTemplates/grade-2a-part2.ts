@@ -291,7 +291,7 @@ export const WARBANDS: WarbandTemplate[] = [
         missileWeapons: [
           { name: "Bow", cost: "10 gc" },
           { name: "Short Bow", cost: "5 gc" },
-          { name: "Long Bow (Heroes only)", cost: "15 gc" },
+          { name: "Long Bow (Heroes only)", cost: "15 gc", heroesOnly: true },
         ],
         armour: [
           { name: "Light armour", cost: "20 gc" },

@@ -539,6 +539,7 @@ Chaos rituals are used by Magisters of the Cult of the Possessed, Daemons, Beast
       {
         id: "vision_of_torment",
         target: "enemy",
+        targetNote: "Must be cast on the closest enemy model (distance confirmed at the table); if the Mage is in combat, choose among the models in base contact.",
         name: "Vision of Torment",
         roll: { min: 1, max: 1 },
         difficulty: 10,
@@ -575,6 +576,7 @@ This attack has a range of 8" and causes D3 S5 hits. It hits the first model in 
       {
         id: "lure_of_chaos",
         target: "enemy",
+        targetNote: "Must be cast on the closest enemy model (distance confirmed at the table).",
         name: "Lure of Chaos",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -1499,6 +1501,7 @@ You may choose a single model within 6". The target suffers a wound (no save all
       {
         id: "re_animation",
         target: "friendly",
+        targetNote: "The target is a Zombie taken out of action in the last hand-to-hand or shooting phase.",
         name: "Re-Animation",
         roll: { min: 2, max: 2 },
         difficulty: 5,
@@ -1805,6 +1808,7 @@ The Priest is immune to all spells. Roll at the beginning of each turn in the re
       {
         id: "healing_hand",
         target: "friendly",
+        targetNote: "Any one model within 2\" of the Priest, including the Priest himself.",
         name: "Healing Hand",
         roll: { min: 5, max: 5 },
         difficulty: 5,

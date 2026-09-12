@@ -36,6 +36,8 @@ import { FightBox } from './cards'
 import {isHeroOut} from './sheet'
 import type { BattleSessionView, MatchParticipantView } from '../../../api/matches'
 import { useEnemyRosters } from '../fight/useEnemyRosters'
+import type { Combatant } from '../fight/combatants'
+import { findItem } from '../../../rules/data/items'
 
 export interface CastTabProps {
   matchId: string
@@ -71,16 +73,16 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   const [state, setState] = useState<CastState | null>(null)
   const [castingPulse, setCastingPulse] = useState(0)
   const [spent, setSpent] = useState<Record<string, number>>({})
-  // Most spells target the enemy off-app; some need a friendly named instead (a heal, a blessing).
+  // The spell about to be cast decides who can be targeted (#32/#76): its `target` kind picks the
+  // friendly list, the enemy list, both under headings, the caster himself, or no model at all.
+  const [selectedSpellId, setSelectedSpellId] = useState<string | null>(null)
   const [targetId, setTargetId] = useState<string | null>(null)
-  const targets = useMemo(
-    () => [
-      ...roster.heroes.filter((h) => h.status === 'active').map((h) => ({ id: h.id, name: h.name })),
-      ...roster.hiredSwords.filter((s) => s.status === 'active').map((s) => ({ id: s.id, name: s.name })),
-      ...roster.henchmenGroups.filter((g) => g.size > 0).map((g) => ({ id: g.id, name: g.name })),
-    ],
-    [roster],
+  const friendlyTargets = useMemo(() => combatantsOf(roster, template, roster.name, sheet), [roster, template, sheet])
+  const enemyTargets = useMemo(
+    () => enemies.warbands.flatMap((w) => combatantsOf(w.roster, w.template, w.participant.warband_name, sessions.find((s) => s.warband_id === w.participant.warband_id)?.live_state)),
+    [enemies.warbands, sessions],
   )
+  const allTargets = useMemo(() => [...friendlyTargets, ...enemyTargets], [friendlyTargets, enemyTargets])
   // The attempt is written to the sheet exactly once, whatever order the renders come in.
   const recorded = useRef<string | null>(null)
   const stateRef = useRef<CastState | null>(null)
@@ -102,9 +104,26 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   const spentIds = rerollsSpent(sheet, caster.heroId, sheet.turn)
   const usedUp = [...new Set([...spentIds.game.filter((id) => caster.rerolls.find((r) => r.id === id)?.limit === 'perGame'), ...spentIds.turn])]
 
-  const casterTraits = caster ? combatantsOf(roster, template, roster.name, sheet).find(w => w.id === caster.heroId)?.traitIds ?? [] : []
+  const casterTraits = friendlyTargets.find((w) => w.id === caster.heroId)?.traitIds ?? []
   const burningBlocked = Boolean(caster && warriorIsBurning(sheet, events, roster.id, caster.heroId))
   const stupidityBlocked = Boolean(caster && casterTraits.includes('stupidity') && !casterTraits.includes('deathwish') && failedStupidityThisTurn(sheet, caster.heroId, warbandTurnKey(roster.id, sheet.turn, turns.data)))
+
+  const chosen = caster.spells.find((s) => s.spell.id === selectedSpellId) ?? caster.spells[0] ?? null
+  const chosenProfile = chosen ? profileForSpell(caster, chosen.spell.id) : null
+  const kind = chosen?.spell.target
+  const needsTarget = kind === 'friendly' || kind === 'enemy' || kind === 'either'
+  const casterCombatant = friendlyTargets.find((c) => c.id === caster.heroId) ?? null
+  const pickedTarget = allTargets.find((t) => t.id === targetId) ?? null
+  const pickedSide = pickedTarget ? (pickedTarget.warbandId === roster.id ? 'friendly' : 'enemy') : null
+  // A target chosen for one spell may not suit the next: only count it when the kind allows that side.
+  const target = pickedTarget && (kind === undefined || kind === 'either' || kind === pickedSide) ? pickedTarget : null
+  const targetTone: 'brass' | 'accent' = kind === 'enemy' || (kind === 'either' && pickedSide === 'enemy' && target) ? 'accent' : 'brass'
+  const note = chosen?.spell.targetNote
+  const canCast =
+    !!chosen && !!chosenProfile && !burningBlocked && !stupidityBlocked && chosenProfile.blocks.length === 0 &&
+    !(needsSharedTurns && chosenProfile.lore.id !== 'prayers_of_sigmar') &&
+    !enemies.isPending && !turns.isPending && !dispels.isPending && !enemies.error && !turns.isError && !dispels.isError &&
+    (!needsTarget || target !== null)
 
   function begin(spell: Spell) {
     if (burningBlocked || stupidityBlocked) return
@@ -153,7 +172,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
         total: finished.dice ? finished.dice[0] + finished.dice[1] + finished.bonus : null,
         difficulty: finished.difficulty,
         used: finished.used.filter((id) => !usedUp.includes(id)),
-        targetName: targetId ? (targets.find((t) => t.id === targetId)?.name ?? null) : null,
+        targetName: targetId ? (allTargets.find((t) => t.id === targetId)?.name ?? null) : null,
       }),
     )
   }
@@ -162,7 +181,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
     if (readOnly || !edit || next.log.length === 0) return
     const identity = { ...attempt.current }
     edit(s => withRollAttempt(s, { ...identity, kind: 'spell',
-      label: `${next.profile.name}: ${next.spell.name}${targetId ? ` → ${targets.find(t => t.id === targetId)?.name ?? 'target'}` : ''}`,
+      label: `${next.profile.name}: ${next.spell.name}${targetId ? ` → ${allTargets.find(t => t.id === targetId)?.name ?? 'target'}` : ''}`,
       status: next.done ? 'complete' : 'incomplete', rolls: next.log.map(line => line.text) }))
   }
 
@@ -206,8 +225,9 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
     <>
       {enemies.error || turns.isError || dispels.isError ? <Notice tone="warn" title="Battle details unavailable">Refresh the battle before casting so opposing dispels can be checked.</Notice> : null}
       {needsSharedTurns ? <Notice tone="warn" title="Set the turn order first">An opposing Staff of Light needs the shared turn tracker to track its once-per-turn dispel. Set the turn order above before casting.</Notice> : null}
-      {/* Spellcaster and target face each other, the same layout Melee/Ranged Attack use. */}
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:gap-8">
+      {/* Spellcaster and target face each other, the same layout Melee/Ranged Attack use; the Cast
+          button floats between them where the attack screens put their dice (#85). */}
+      <div className="relative grid grid-cols-2 items-stretch gap-3 lg:gap-8">
         <FightBox icon="cast" title="Spellcaster" tone="brass" castingPulse={castingPulse}>
           {casters.length > 1 ? (
             <div role="radiogroup" aria-label="Which caster" className="flex flex-wrap gap-1.5">
@@ -223,6 +243,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
                     stateRef.current = null
                     setState(null)
                     setSpent({})
+                    setSelectedSpellId(null)
                     setTargetId(null)
                   }}
                   className={`min-h-11 rounded-full border px-4 text-sm transition-colors ${c.heroId === caster.heroId ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'}`}
@@ -234,9 +255,9 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
           ) : (
             <p className="text-sm font-semibold text-ink">{caster.name}</p>
           )}
+          {casterCombatant ? <ProfileLine c={casterCombatant} /> : null}
           {burningBlocked ? <Notice tone="warn" title="On fire">This warrior may only move and cannot cast until the flames are extinguished. Resolve Fire recovery above.</Notice> : null}
           {stupidityBlocked ? <Notice tone="warn" title="Failed Stupidity test">This warrior cannot cast until the start of their next own turn. The recorded result can be corrected in the attack panel.</Notice> : null}
-          <p className="text-xs text-ink-dim">Known spells and prayers</p>
           {already.length > 0 ? (
             <Notice tone="warn" title="Already cast this turn">
               {already.map((c) => `${c.spellName}${c.targetName ? ` on ${c.targetName}` : ''} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
@@ -244,28 +265,38 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
             </Notice>
           ) : null}
 
-          <div className="flex flex-col gap-2">
+          <p className="text-xs text-ink-dim">Spell or prayer to cast</p>
+          <div role="radiogroup" aria-label="Spell or prayer to cast" className="flex flex-col gap-1.5">
             {caster.spells.map(({ spell, difficulty }) => {
-              const selected = profileForSpell(caster, spell.id)
+              const profile = profileForSpell(caster, spell.id)
+              const active = spell.id === chosen?.spell.id
               return (
-              <Card key={spell.id} className="flex flex-col gap-2 px-3 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <HoverCard title={spell.name} label={<span className="text-sm font-semibold text-ink">{spell.name}</span>}>
-                      <p>{difficulty === null ? 'Cast automatically' : `Difficulty: ${difficulty}${difficulty !== spell.difficulty ? ` (Base difficulty ${spell.difficulty})` : ''}`}</p>
-                      {spell.text}
-                    </HoverCard>
-                    <p className="text-xs text-ink-dim">{selected.lore.name} · {difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}</p>
-                  </div>
-                  <Button variant="secondary" disabled={burningBlocked || stupidityBlocked || selected.blocks.length > 0 || (needsSharedTurns && selected.lore.id!=='prayers_of_sigmar') || enemies.isPending || turns.isPending || dispels.isPending || !!enemies.error || turns.isError || dispels.isError} onClick={() => begin(spell)}>
-                    {selected.kind === 'prayer' ? 'Recite' : 'Cast'}
-                  </Button>
+                <div key={spell.id} className={`flex items-start justify-between gap-2 rounded-md border px-2.5 py-2 ${active ? 'border-brass bg-surface-high' : 'border-border'}`}>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => {
+                      setSelectedSpellId(spell.id)
+                      setTargetId(null)
+                    }}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span className={`block text-sm font-semibold ${active ? 'text-ink' : 'text-ink-dim'}`}>{spell.name}</span>
+                    <span className="block text-xs text-ink-dim">
+                      {profile.lore.name} · {difficulty === null ? 'Cast automatically' : `Difficulty ${difficulty}+`}
+                    </span>
+                  </button>
+                  <HoverCard title={spell.name} label={<span className="text-xs text-ink-dim">Rules</span>}>
+                    <p>{difficulty === null ? 'Cast automatically' : `Difficulty: ${difficulty}${difficulty !== spell.difficulty ? ` (Base difficulty ${spell.difficulty})` : ''}`}</p>
+                    {spell.text}
+                  </HoverCard>
                 </div>
-                {selected.blocks.length > 0 ? <p className="text-xs text-danger">{selected.blocks.join(' ')}</p> : null}
-                {selected.modifiers.length > 0 ? <ModifierBar caster={selected} spent={spent} setSpent={setSpent} /> : null}
-              </Card>
-            )})}
+              )
+            })}
           </div>
+          {chosenProfile && chosenProfile.blocks.length > 0 ? <p className="text-xs text-danger">{chosenProfile.blocks.join(' ')}</p> : null}
+          {chosenProfile && chosenProfile.modifiers.length > 0 ? <ModifierBar caster={chosenProfile} spent={spent} setSpent={setSpent} /> : null}
 
           {caster.reminders.length > 0 ? (
             <ul className="flex flex-col gap-1 text-xs leading-relaxed text-ink-dim">
@@ -279,18 +310,79 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
           ) : null}
         </FightBox>
 
-        <FightBox icon="shield" title="Target" tone="accent">
-          {targets.length > 0 ? (
-            <SelectField label="Target (if this spell needs one)" hideLabel value={targetId ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
-              <option value="">Off the sheet — no target on this warband</option>
-              {targets.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </SelectField>
+        {/* Floats in the gap between the two, like the attack screens' dice button. */}
+        <button
+          type="button"
+          disabled={!canCast}
+          onClick={() => chosen && begin(chosen.spell)}
+          aria-label={chosen ? `${chosenProfile?.kind === 'prayer' ? 'Recite' : 'Cast'} ${chosen.spell.name}` : 'Cast'}
+          className="absolute left-1/2 top-1/2 z-10 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-brass bg-brass text-surface-low shadow-[0_2px_6px_rgba(36,31,26,0.28)] transition-colors hover:bg-brass/85 disabled:opacity-40"
+        >
+          <Icon name="cast" size={24} />
+          <span className="sr-only">{chosenProfile?.kind === 'prayer' ? 'Recite' : 'Cast'}</span>
+        </button>
+
+        <FightBox icon={targetTone === 'accent' ? 'enemy' : 'shield'} title="Target" tone={targetTone}>
+          {!chosen ? null : kind === 'none' ? (
+            <p className="text-xs leading-relaxed text-ink-dim">No model to choose: this {chosenProfile?.kind === 'prayer' ? 'prayer' : 'spell'} works on an area, a line, or the game itself. Play its effect at the table.</p>
+          ) : kind === 'self' ? (
+            <>
+              <p className="text-xs text-ink-dim">Cast on {caster.name} himself — no other model to choose.</p>
+              {casterCombatant ? <ProfileLine c={casterCombatant} defending /> : null}
+            </>
+          ) : kind === undefined ? (
+            // Supplement lores carry no target kind yet: the older friendly-only picker, still optional.
+            friendlyTargets.length > 0 ? (
+              <SelectField label="Target (if this spell needs one)" hideLabel value={target?.id ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
+                <option value="">Off the sheet — no target on this warband</option>
+                {friendlyTargets.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </SelectField>
+            ) : (
+              <p className="text-xs text-ink-dim">No target needed on this warband — most spells are aimed at the enemy off-app.</p>
+            )
           ) : (
-            <p className="text-xs text-ink-dim">No target needed on this warband — most spells are aimed at the enemy off-app.</p>
+            <>
+              <SelectField label="Target" hideLabel value={target?.id ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
+                <option value="">Choose a target…</option>
+                {kind !== 'friendly'
+                  ? enemies.warbands.map((w) => (
+                      <optgroup key={w.participant.warband_id} label={`Enemy — ${w.participant.warband_name}`}>
+                        {enemyTargets
+                          .filter((t) => t.warbandId === w.participant.warband_id)
+                          .map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                              {t.out ? ' (out of action)' : ''}
+                            </option>
+                          ))}
+                      </optgroup>
+                    ))
+                  : null}
+                {kind !== 'enemy' ? (
+                  <optgroup label={`Friendly — ${roster.name}`}>
+                    {friendlyTargets.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                        {t.out ? ' (out of action)' : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+              </SelectField>
+              {kind !== 'friendly' && enemies.warbands.length === 0 ? <p className="text-xs text-ink-dim">{enemies.isPending ? 'Loading the enemy warband…' : 'No enemy warband on this sheet yet.'}</p> : null}
+              {note ? <p className="text-xs leading-relaxed text-ink-dim">{note}</p> : null}
+              {target ? (
+                <ProfileLine c={target} defending />
+              ) : (
+                <p className="text-xs text-ink-dim">
+                  {kind === 'enemy' ? 'Pick the enemy model this is aimed at.' : kind === 'friendly' ? 'Pick the friendly model this is cast on.' : 'Pick a model, friend or foe.'}
+                </p>
+              )}
+            </>
           )}
         </FightBox>
       </div>
@@ -502,5 +594,29 @@ function OneDieReroll({ state, advance }: { state: CastState; advance: (step: (s
         <DicePicker count={1} label={`New face for die ${which}`} resetKey={which} onComplete={(values, manual) => advance((s) => applyCastRoll(s, [which, values[0]], manual))} />
       ) : null}
     </div>
+  )
+}
+
+/** Name, profile and kit in one compact card, like the attack screens' combatant line. */
+function ProfileLine({ c, defending = false }: { c: Combatant; defending?: boolean }) {
+  const s = c.stats
+  const kit = c.equipment
+    .map((e) => (e.itemId ? (findItem(e.itemId)?.name ?? e.itemId) : (e.customName ?? '')))
+    .filter(Boolean)
+    .join(', ')
+  return (
+    <Card className="flex min-w-0 flex-col gap-1 px-2 py-2">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className="min-w-0 text-xs text-ink">
+          {c.name}
+          {c.out ? ' · out of action' : ''}
+        </span>
+        <span className="text-xs tabular-nums text-ink">{defending ? `WS ${s.WS} · T ${s.T} · W ${s.W}` : `WS ${s.WS} · BS ${s.BS} · S ${s.S} · A ${s.A}`}</span>
+      </div>
+      <p className="text-xs leading-snug text-ink-dim">
+        {c.typeName}
+        {kit ? ` · ${kit}` : ''}
+      </p>
+    </Card>
   )
 }

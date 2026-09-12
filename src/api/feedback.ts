@@ -3,6 +3,14 @@ import { supabase } from './supabase'
 import type { FeedbackIssue, FeedbackKind, FeedbackNotification, FeedbackRelease } from '../features/feedback/types'
 
 export const feedbackKeys = { all: ['feedback'] as const }
+/** Navigation needs only a private count, not the user's entire notification history. */
+export function useUnreadUpdates(userId?: string) {
+  return useQuery({ queryKey: [...feedbackKeys.all, 'unread', userId], enabled: !!userId, refetchInterval: 60_000, queryFn: async () => {
+    const {count,error}=await supabase.from('app_notifications').select('id',{count:'exact',head:true}).eq('user_id',userId!).is('read_at',null)
+    if(error)throw new Error(error.message)
+    return count??0
+  } })
+}
 // Explicit pagination avoids silently hiding reports at the server's default row limit.
 export async function fetchFeedback(): Promise<FeedbackIssue[]> {
   const issues: FeedbackIssue[] = []

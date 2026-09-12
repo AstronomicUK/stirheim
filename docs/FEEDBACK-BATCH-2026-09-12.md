@@ -144,3 +144,9 @@ Migration 097 protects applied capture reports from combat-log reversal, includi
 ### Core captive dice provenance — local
 
 Hero sale, Throne and slave-work now use the approved tumbling dice and preserve app originals through later edits. The client preview and migration 098 server-authored consent/final history distinguish app rolls, player corrections and tabletop input. Integer/range validation covers both original and final dice, including the escaping slave’s D3 XP. Twelve core-captive database checks and six resolver checks pass. The mobile Hero-sale browser journey passed app roll → edit → same-owner/GM agreed outcome → exact gold/kit transfer and permanent departure → refreshed record retaining both dice values, with no overflow or page errors. No production changes.
+
+### Unread updates and broader regression — local
+
+All **273 database tests across 49 files** passed serially after migrations 097–098. A discreet unread indicator now appears on Account in the mobile bar and desktop rail. Account opens the private inbox directly when updates are waiting. The navigation fetches only a private unread count, rather than the full message history. Actual mobile/desktop browser checks passed private counts, direct inbox navigation, mark-read refresh and badge removal. A first browser attempt clicked before the inbox refetch finished; waiting for the updated row count resolved the test race. Captive-case load failures are now visible with a retry, and a pending case request no longer briefly exposes the legacy fallback form.
+
+The first ordinary-test run passed 2,373 tests but one dynamic-import-heavy test timed out during concurrent browser verification; that file passed all six tests alone. A rerun with bounded worker concurrency follows. No production changes.

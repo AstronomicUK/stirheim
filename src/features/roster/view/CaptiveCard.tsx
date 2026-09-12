@@ -24,6 +24,8 @@ export function CaptiveCard({detail,campaignId,userId}:{detail:WarbandDetail;cam
  const active=(cases.data??[]).filter(c=>c.state!=='withdrawn')
  const held=[...detail.roster.heroes,...detail.roster.hiredSwords].filter(h=>h.status==='captured')
  const legacy=held.filter(h=>!active.some(c=>c.hero_id===h.id&&c.victim_warband_id===detail.warband.id&&c.state!=='resolved'))
+ if(cases.isError)return <Notice tone="error" title="Captured warriors couldn’t load">{cases.error.message} <button type="button" onClick={()=>void cases.refetch()}>Try again</button></Notice>
+ if(cases.isPending)return null
  if(!active.length&&!legacy.length)return null
  return <Section title="Captured warriors">
   {active.map(c=><CaseCard key={c.id} item={c} detail={detail} campaign={campaign.data} canAct={gm||mine} gm={gm} userId={userId}/>)}

@@ -4,7 +4,7 @@ import { NAV_TABS } from './navTabs'
 import { useSession } from './session'
 
 /** Desktop navigation: a fixed-width rail with the wordmark, the four tabs and who is signed in. */
-export function SideRail() {
+export function SideRail({unread=0}:{unread?:number}) {
   const user = useSession((s) => s.user)
   const profile = useSession((s) => s.profile)
   return (
@@ -28,6 +28,7 @@ export function SideRail() {
               >
                 <Icon name={t.icon} size={20} />
                 {t.label}
+                {t.to==='/account'&&unread>0?<span className="ml-auto rounded-full bg-brass px-1.5 py-0.5 text-[10px] text-white"><span aria-hidden>{unread>99?'99+':unread}</span><span className="sr-only">{unread} unread updates</span></span>:null}
               </NavLink>
             </li>
           ))}

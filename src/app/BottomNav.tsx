@@ -3,7 +3,7 @@ import { Icon } from '../ui/icons'
 import { NAV_TABS } from './navTabs'
 
 /** Phone tab bar: icon over label, 64 px tall. Hidden from `lg`, where the SideRail takes over, and in print. */
-export function BottomNav() {
+export function BottomNav({unread=0}:{unread?:number}) {
   return (
     <nav
       data-print-hide
@@ -22,7 +22,10 @@ export function BottomNav() {
             >
               {({ isActive }) => (
                 <>
-                  <Icon name={t.icon} size={24} className={isActive ? 'fill-brass/15' : ''} />
+                  <span className="relative">
+                    <Icon name={t.icon} size={24} className={isActive ? 'fill-brass/15' : ''} />
+                    {t.to==='/account'&&unread>0?<><span aria-hidden className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface-low bg-brass"/><span className="sr-only">{unread} unread updates. </span></>:null}
+                  </span>
                   {t.label}
                 </>
               )}

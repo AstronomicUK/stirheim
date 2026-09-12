@@ -5,6 +5,7 @@ import { BackButton } from './BackButton'
 import { BottomNav } from './BottomNav'
 import { SideRail } from './SideRail'
 import { useSession } from './session'
+import { useUnreadUpdates } from '../api/feedback'
 
 /**
  * Root layout. On a phone: compact header, one column, a tab bar when signed in. From `lg`: the
@@ -15,9 +16,12 @@ export function AppShell() {
   const publicBoard = useLocation().pathname === '/feedback'
   const status = useSession((s) => s.status)
   const signedIn = status === 'signed_in'
+  const userId = useSession(s=>s.user?.id)
+  const updates = useUnreadUpdates(signedIn?userId:undefined)
+  const unread = updates.data??0
   return (
     <div className={`min-h-dvh w-full ${signedIn ? 'lg:grid lg:grid-cols-[232px_minmax(0,1fr)]' : ''}`}>
-      {signedIn ? <SideRail /> : null}
+      {signedIn ? <SideRail unread={unread} /> : null}
       <div className="flex min-h-dvh min-w-0 flex-col">
         {signedIn ? (
           <header className="flex items-center justify-between gap-3 px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))] lg:hidden">
@@ -43,7 +47,7 @@ export function AppShell() {
             <Outlet />
           </Suspense>
         </main>
-        {signedIn ? <BottomNav /> : null}
+        {signedIn ? <BottomNav unread={unread} /> : null}
       </div>
     </div>
   )

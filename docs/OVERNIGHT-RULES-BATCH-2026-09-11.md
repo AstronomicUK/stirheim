@@ -325,3 +325,10 @@ Builder now offers Hunting Arrows at30gc to Heroes of both Outlaw lists, in a ne
 Validation:57focused and2,056ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests verify realtemplateHerooptions,30gcdraftcost, saveditemstack, nohenchmanoffer, unchangedrareavailability andmiscsectiongrouping. NoDBchange orbrowserQA claimedforthisbuilderextension. Logs /tmp/stirheim-initial-arrows-{tests,all-tests,types,build,lint}.log. NoSQL/push/deploy.
 
 Stillopen: initialHero recruitment after warbandcreation is a separateflow and has not gained this exemption; originalOutlawMarksmen's laterarrowpermission merits source-specific check (table permits Heroes/Marksmen, raritywaiver Heroesonly). WoodElfIthilmar source grade2apart2:2285 means cheaperinitialprices/noinitialrarity, NOT a permanentbanonlaterpurchases; existingbuildermaterialoptions use listmultipliers, TradingPost usescatalogueprice/rarity. Need verifyHero-onlyinitialdiscount andavoidextendingdiscountaftercreation. #67 remains partial. Morningquestionsunchanged.
+
+
+## Next local batch — #67 Wood Elf initial Ithilmar benefit
+
+Verified existing builder prices already use20gc Ithilmar sword /60gc armour, while later Trading Post catalogue uses30gc/90gc and normalrarity (before anyapprovedarmourhouse-rule). Added missing starting-benefit warning for non-Hero recipients atcreation. It remains an overrideable warning, consistent with Tom's policy; no new permanentban on later purchases or on legallyheldgear. Source grade2apart2:2285.
+
+Validation:58focused and2,058ordinary tests pass; build/typecheck pass; lint3oldwarnings. Realtemplate tests pin initialcost versuslatercost/rarity andHero/henchman/held-item distinctions. NoUI/DBchanges ornewbrowserQA. Logs /tmp/stirheim-ithilmar-{tests,all-tests,build,lint}.log. NoSQL/push/deploy. #67 stillpartial for Slayerclauses andOutlawinitialHero recruitment-aftercreation exception; pre-sale mandatorykitwarning optionalfollow-up. Morningquestions unchanged.

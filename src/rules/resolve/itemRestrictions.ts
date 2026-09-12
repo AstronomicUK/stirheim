@@ -146,6 +146,9 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
     const held = kit.filter((e) => e.itemId === item.id).reduce((n, e) => n + e.quantity, 0);
     if (held + addedPerModel > 1) out.push(`${item.name}: one per model.`);
   }
+  if (opts.atCreation && warbandId === "wood_elves_of_athel_loren" && item.id.startsWith("ithilmar_") && holder.kind !== "hero") {
+    out.push(`${item.name}: the Wood Elf starting-list Ithilmar benefit is for Heroes only; henchmen do not receive these starting prices and rarity exemption.`);
+  }
   if (rule.creationOnly && !opts.atCreation && !opts.alreadyHeld) out.push(`${item.name} may only be bought when the warband is created.`);
 
   if (rule.requiresAnyOf && holder.kind !== "stash") {

@@ -264,3 +264,16 @@ it('warns before moving away required bows without mutating inventory or warning
   expect(equipmentRemovalWarnings(r, { ...holder(h), equipment: [] }, 'dagger', 1)).toEqual([])
   expect(equipmentRemovalWarnings(r, { kind: 'stash', equipment: h.equipment }, 'bow', 2)).toEqual([])
 })
+
+
+it('warns about Wood Elf Hero-only starting Ithilmar without inventing a later purchase ban', () => {
+  const h = hero('hunt_master'), r = roster('wood_elves_of_athel_loren', h)
+  const group: ItemHolder = { kind: 'henchmanGroup', unitTemplateId: 'glade_guard', equipment: [] }
+  for (const id of ['ithilmar_sword', 'ithilmar_armour']) {
+    const item = findItem(id)!
+    expect(itemRestrictionWarnings(r, item, group, { atCreation: true }).join(' ')).toContain('starting-list Ithilmar benefit is for Heroes only')
+    expect(itemRestrictionWarnings(r, item, holder(h), { atCreation: true }).join(' ')).not.toContain('benefit is for Heroes only')
+    expect(itemRestrictionWarnings(r, item, group).join(' ')).not.toContain('benefit is for Heroes only')
+    expect(itemRestrictionWarnings(r, item, group, { alreadyHeld: true }).join(' ')).not.toContain('benefit is for Heroes only')
+  }
+})

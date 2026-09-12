@@ -1,3 +1,5 @@
+import { findItem } from "../../data/items";
+import { itemPrice, rareSearch } from "../trading";
 import { xpProgress } from '../../../features/roster/view/lookups'
 import { recruitHero } from '../recruitment'
 import { describe, expect, it } from "vitest";
@@ -572,5 +574,20 @@ it('offers initial Outlaw Hero hunting arrows at the printed price without chang
     expect(draftCosts(equipped, template).total - draftCosts(draft, template).total).toBe(30)
     expect(equipped.heroes[0].equipment.some(e => e.itemId === 'hunting_arrows')).toBe(true)
     for (const group of template.henchmanTemplates) expect(equipmentOptionsFor(template, group.id).some(o => o.item?.id === 'hunting_arrows')).toBe(false)
+  }
+})
+
+
+it('keeps Wood Elf starting Ithilmar prices separate from Trading Post prices and rarity', () => {
+  const template = findWarbandTemplate('wood_elves_of_athel_loren')!
+  const options = equipmentOptionsFor(template, 'hunt_master')
+  expect(options.find(o => o.item?.id === 'ithilmar_sword')?.cost.amount).toBe(20)
+  expect(options.find(o => o.item?.id === 'ithilmar_armour')?.cost.amount).toBe(60)
+  const rules = { ...defaultCampaignHouseRules(), halfPriceArmour: false }
+  for (const [id, price] of [['ithilmar_sword', 30], ['ithilmar_armour', 90]] as const) {
+    const item = findItem(id)!
+    expect(itemPrice(item, rules).total).toBe(price)
+    expect(item.availability.kind).toBe('rare')
+    expect(rareSearch(item, 1).available).toBe(false)
   }
 })

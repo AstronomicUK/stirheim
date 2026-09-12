@@ -62,8 +62,8 @@ export interface CaptiveCase {
   hero_id: string
   hero_name: string
   state: CaptiveCaseState
-  /** A captured Hero or hired sword, or one lost henchman model (Pirates Kidnapped!). */
-  subject_kind: 'hero' | 'henchman'
+  /** A captured Hero or hired sword, one lost or captured henchman model, or a captured equipment companion. */
+  subject_kind: 'hero' | 'henchman' | 'companion'
   model_index: number
   /** Which rule opened the case: 'captured' (serious injury 61) or 'pirates_kidnapped'. */
   source: string

@@ -117,3 +117,25 @@ it('a supplement spell with no target kind keeps the old optional friendly list'
   expect(box.options.join(' ')).toContain('Off the sheet')
   expect(box.castDisabled).toBe(false)
 })
+
+it('an area spell that lands on enemies lets the player tick which enemy models are within it; other no-target spells do not', () => {
+  const spell = fixture.spell as typeof fixture.spell & { affects?: string }
+  const before = { difficulty: spell.difficulty, affects: spell.affects }
+  try {
+    spell.difficulty = 9
+    spell.affects = 'enemies'
+    const area = targetBox('none')
+    const boxes = nodes(CastTab({ matchId: 'test', roster: friendlyRoster, template: undefined, others: [{ warband_id: 'e', warband_name: 'Foes' } as any], sheet: emptyBattleLiveState(), readOnly: false, edit: vi.fn() }))
+    const checkboxes = boxes.filter(n => n.type === 'input' && n.props.type === 'checkbox')
+    expect(area.text).toContain('No model to choose')
+    expect(checkboxes).toHaveLength(1)
+    expect(boxes.some(n => n.props['aria-label'] === 'Enemy models affected')).toBe(true)
+    expect(area.castDisabled).toBe(false) // ticking is optional
+    spell.affects = undefined
+    const plain = nodes(CastTab({ matchId: 'test', roster: friendlyRoster, template: undefined, others: [{ warband_id: 'e', warband_name: 'Foes' } as any], sheet: emptyBattleLiveState(), readOnly: false, edit: vi.fn() }))
+    expect(plain.filter(n => n.type === 'input' && n.props.type === 'checkbox')).toHaveLength(0)
+  } finally {
+    spell.difficulty = before.difficulty
+    spell.affects = before.affects
+  }
+})

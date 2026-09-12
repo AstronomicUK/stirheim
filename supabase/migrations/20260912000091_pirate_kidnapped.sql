@@ -16,6 +16,10 @@ alter table public.captive_cases
   add column recovery jsonb,
   -- Both sides' 2D6 for the Leadership contest, each recorded once by its own player.
   add column contest jsonb;
+-- One group model can be lost for good (a Pirate opportunity) while another is forcibly captured in
+-- the same report at the same ordinal; the source keeps their cases apart.
+alter table public.captive_cases drop constraint captive_cases_report_id_report_revision_hero_id_model_index_key;
+alter table public.captive_cases add constraint captive_cases_report_model_source_key unique (report_id, report_revision, hero_id, model_index, source);
 
 -- Units a Pirate warband may recruit: human by the racial-profile resolver (profile Human, not a
 -- fallback match), animals excluded. Generated from the rules data; hired swords and Dramatis
@@ -345,7 +349,9 @@ begin
         select coalesce(jsonb_agg(((u->'row') - 'quantity' - 'updated_at' - 'created_at') || jsonb_build_object('quantity', share.per_model, 'lost', share.lost)), '[]'::jsonb) into items
           from jsonb_array_elements(coalesce(vr.undo->'items', '[]'::jsonb)) u
           cross join lateral (select case when jsonb_typeof(line->'equipmentLost') = 'array'
-                                            then coalesce((select (e->>'quantity')::int from jsonb_array_elements(line->'equipmentLost') e where e->>'sourceItemId' = u->>'id' limit 1), 0)
+                                            -- casualty losses net of what forced-captured models of the same group took with them
+                                            then greatest(0, coalesce((select (e->>'quantity')::int from jsonb_array_elements(line->'equipmentLost') e where e->>'sourceItemId' = u->>'id' limit 1), 0)
+                                                             - coalesce((select sum((kk->>'quantity')::int) from jsonb_array_elements(coalesce(line->'captured', '[]'::jsonb)) cp, jsonb_array_elements(coalesce(cp->'kit', '[]'::jsonb)) kk where kk->>'sourceItemId' = u->>'id'), 0))
                                             else (u->'before'->>'quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(vr.applied->'item_patches', '[]'::jsonb)) pt where pt->>'id' = u->>'id' limit 1), (u->'before'->>'quantity')::int) end as lost,
                                      jsonb_typeof(line->'equipmentLost') = 'array' as accounted) l
           cross join lateral (select l.lost, case when l.accounted and l.lost > 0 and l.lost % greatest((line->>'dead')::int, 1) = 0 then l.lost / greatest((line->>'dead')::int, 1) else null end as per_model) share

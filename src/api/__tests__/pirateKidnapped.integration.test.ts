@@ -53,7 +53,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
             ...(opts.henchmenLost?[{subjectType:'group',subjectId:warriors,subjectName:'Warriors',rolls:[1,4,2],dead:2,...(opts.unaccounted?{}:{equipmentLost:[{sourceItemId:warriorSwords,quantity:2}]})}]:[])],
   applied:{heroes:opts.heroCaptured===false?[]:[{id:hero,patch:{status:'captured',flags:{captured:true}}}],groups:opts.henchmenLost?[{id:warriors,patch:{size:1}}]:[],item_patches:opts.henchmenLost?[{id:warriorSwords,quantity:1}]:[]}}})
  const filePirates=(result:'won'|'lost'|'draw'='won')=>pirate.rpc('submit_battle_report',{p_match_id:match,p_warband_id:pw,p_report:{result,applied:{}}})
- const cases=async(client=victim)=>check(await client.from('captive_cases').select('*,proposals:captive_proposals(id,state,message,reason)').eq('match_id',match).order('model_index'))
+ const cases=async(client=victim)=>check(await client.from('captive_cases').select('*,proposals:captive_proposals(id,state,message,reason)').eq('match_id',match).order('model_index').order('source'))
  async function expected(){
   const w=check(await admin.from('warbands').select('id,updated_at').in('id',[vw,pw]))
   const h=check(await admin.from('heroes').select('id,updated_at').in('warband_id',[vw,pw]))
@@ -279,5 +279,19 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   expect(c.model_snapshot.items).toEqual([expect.objectContaining({item_rules_id:'sword',quantity:null,lost:2})])
   check(await victim.rpc('allocate_kidnap_kit',{p_case_id:c.id,p_items:[{id:warriorSwords,quantity:1}],p_reason:'One sword each, nothing was spent'}))
   expect((await cases())[0].model_snapshot.items[0].quantity).toBe(1)
+ })
+
+ it('a dead model never claims the kit a forced-captured comrade took with him',async()=>{
+  // Three Warriors with three swords: one dies (survival 1), one is captured by the Pirate captain's Subjugator event.
+  const captain=check(await admin.from('heroes').select('id').eq('warband_id',pw).eq('unit_type_rules_id','pirates_captain').single()).id
+  const ev=check(await admin.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:pw,at:'2026-09-12T18:00:00Z',kind:'attack',summary:'capture',payload:{attacker_warband_id:pw,attacker_id:captain,attacker_kind:'hero',attacker_name:'Captain Redbeard',target_warband_id:vw,target_id:warriors,target_kind:'group',target_name:'Warriors',target_size:3,wounds_lost:1,out_of_action:true,kill:false,outcome:'Out of action',turn:2,capture_reason:'subjugator'}}).select('id').single()).id
+  check(await victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],
+   injuries:[{subjectType:'group',subjectId:warriors,subjectName:'Warriors',rolls:[1],dead:1,equipmentLost:[{sourceItemId:warriorSwords,quantity:2}],captured:[{modelIndex:1,eventId:ev,captorWarbandId:pw,reason:'subjugator',kit:[{sourceItemId:warriorSwords,itemId:'sword',quantity:1}]}]}],
+   applied:{heroes:[],groups:[{id:warriors,patch:{size:1}}],item_patches:[{id:warriorSwords,quantity:1}]}}}))
+  check(await filePirates('won'))
+  const all=await cases();expect(all.map((c:any)=>[c.source,c.model_index])).toEqual([['forced_capture',1],['pirates_kidnapped',1]])
+  const pirateCase=all.find((c:any)=>c.source==='pirates_kidnapped')
+  expect(pirateCase.model_snapshot.items).toEqual([expect.objectContaining({item_rules_id:'sword',quantity:1,lost:1})]);expect(pirateCase.model_snapshot.kit_unresolved).toBe(false)
+  await admin.from('battle_events').delete().eq('id',ev)
  })
 })

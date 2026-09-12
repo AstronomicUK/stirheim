@@ -249,7 +249,11 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   const [fileError, setFileError] = useState<string | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
 
-  if (!draft || !derived) {
+  if (supplies.isError) {
+    return <Notice tone="error" title="Could not check battle supplies">{supplies.error.message} Reload the report before continuing so doses already used are not deducted again.</Notice>
+  }
+
+  if (!draft || !derived || supplies.isPending) {
     return (
       <div className="flex flex-1 items-center justify-center py-20">
         <Spinner label="Preparing the report" />

@@ -27,6 +27,12 @@ function setup(attacker: Combatant, defender: Combatant, primaryId: string, offH
 }
 
 describe('computeOdds in melee', () => {
+  it('uses the saved drug Initiative bonus for either side’s strike order, without doubling it', () => {
+    const dose = { label: 'Took Crimson Shade', appliesTo: 'self' as const, strengthBonus: 1, initiativeBonus: 2 }
+    expect(computeOdds(setup(captain, skaven, 'sword', null, { attackerPreBattle: [dose] })).strikeOrder).toContain('Captain strikes first: Initiative 5 against 3')
+    expect(computeOdds(setup(captain, skaven, 'sword', null, { defenderPreBattle: [dose] })).strikeOrder).toContain('Skritch strikes first: Initiative 5 against 3')
+    expect(computeOdds(setup(captain, skaven, 'sword', null, { attackerPreBattle: [dose], defenderPreBattle: [dose] })).strikeOrder).toContain('Equal Initiative (5 each)')
+  })
   it('sword and dagger: two attacks, 4+ to hit WS4, 4+ to wound T3, no save against the sword, 6+ against the dagger', () => {
     const odds = computeOdds(setup(captain, skaven, 'sword', 'dagger'))
     expect(odds.phase).toBe('melee')

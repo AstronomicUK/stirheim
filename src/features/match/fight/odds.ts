@@ -277,7 +277,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
     maxParries: setup.parryUsed ? 0 : undefined,
   })
 
-  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context }) }
+  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context, attacker: dosed.combatant, attackerKit: dosed.kit, defender: targetDosed.combatant, defenderKit: targetDosed.kit, primary, offHand }) }
 }
 
 // ---------------------------------------------------------------------------------------------

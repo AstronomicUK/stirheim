@@ -26,3 +26,13 @@ All three owner rulings are recorded in `CORE-RULINGS-2026-09-12.md`. Do not ask
 - Codex's handgun work remains uncommitted in FightTab and reloadRules tests. Preserve all unrelated tracker/audit edits and stage only deliberate files.
 
 No new push or deployment has occurred.
+
+## Addiction integration verification after takeover
+
+Codex's disposable 390px browser fixture exercised the real Start battle action, the supplied-dose confirmation, deletion of the last physical dose, creation of the per-match ledger, taking that dose and rolling its D3, reload, and switching to the opponent's battle sheet. Fixtures were deleted in cleanup.
+
+The check exposed two integration defects: enemy rosters lacked the battle-supply overlay, and strike-order text used undosed Initiative even when the attack calculation used the drug effects. Both are fixed. The opponent now sees the supplied hero strike first with the saved I4–6 value. Own roster and report screens also wait for the supply query and show a load error rather than treating missing supply data as an empty ledger.
+
+Validation: 78 odds/supply/report-model tests pass, including both-sided Initiative and no double application. Script: `/tmp/stirheim-addiction-mobile-qa.mjs`. Screenshot: `/tmp/stirheim-addiction-mobile.png`. The complete report filing/withdrawal browser sequence remains separate from this checked battle flow; earlier report-model and database coverage must not be described as a browser check.
+
+Next: implement Healing Herbs reusable default plus single-use campaign setting and exact-use records; preserve every printed timing/target restriction and correction provenance. Also finish handgun UI verification before committing its separate current changes. #193 policy verification is complete in `a06bb3b`.

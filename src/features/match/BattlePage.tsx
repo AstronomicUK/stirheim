@@ -207,18 +207,18 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
     )
   }
 
-  if (myRoster.isPending) {
+  if (myRoster.isPending || supplies.isPending) {
     return (
       <div className="flex flex-1 items-center justify-center py-20">
         <Spinner label="Loading your warband" />
       </div>
     )
   }
-  if (myRoster.isError) {
+  if (myRoster.isError || supplies.isError) {
     return (
       <>
         <Notice tone="error" title="Could not load your warband">
-          {myRoster.error.message}
+          {myRoster.error?.message ?? supplies.error?.message}
         </Notice>
         <Link to={`/matches/${match.id}`} className="text-brass underline-offset-4 hover:underline">
           Back to the match

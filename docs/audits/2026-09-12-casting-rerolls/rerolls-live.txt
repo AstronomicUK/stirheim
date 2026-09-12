@@ -1,0 +1,29 @@
+Casting re-rolls exercised live (#186 / Priority 1 completion) — 12 September 2026, Claude
+Local dev server http://localhost:5175, Pixel 7 emulation, seeded GM account, SQL fixtures created and
+deleted by the script (node_modules/.cache/p1-rerolls.mjs). Dice entered by hand ("Enter tabletop dice
+instead") so every casting roll is a forced 1+1 failure against Call of Vanhel (6+).
+
+Fixtures: Undead warband with two Necromancers — "Necro Familiar" (carries a Familiar) and "Necro Focus"
+(Familiar + Mind Focus skill) — and a Vampire as friendly target; a Possessed warband as the opponent;
+one in-progress match. Nothing else touched. Cleanup verified: matches left 0, warbands left 0.
+
+PASS  failed roll offers the Familiar re-roll and a decline — Familiar, No re-roll
+PASS  after the Familiar re-roll no second re-roll is offered — status: 2 against 6+ Call of Vanhel fails. ENTERED BY HAND || Failed.
+PASS  the casting log names the Familiar re-roll — Rolled 1 + 1 (entered by hand) = 2 against 6+. / Re-rolled 1 + 1 (entered by hand) = 2 against 6+. / Call of Vanhel fails.
+PASS  the saved cast records the spent Familiar — result failed, used ["familiar"]
+PASS  same turn, Familiar already spent: no re-roll offered — offered: none
+PASS  next turn, Familiar offered again (per-turn reset) — Familiar, No re-roll
+PASS  declining ends the cast as failed
+PASS  a caster with both sources is offered Familiar and Mind Focus — Familiar, Mind Focus, No re-roll
+PASS  Mind Focus asks which die to throw again — "Re-roll the first (1)" / "Re-roll the second (1)"
+PASS  after a one-die re-roll the pair re-roll (Familiar) is not offered — offered: none
+PASS  log names Mind Focus — Mind Focus re-rolls the first die to 1 (entered by hand): 1 + 1 = 2.
+PASS* persisted after reload — 4 casts; turn 2; used ["familiar"] [] [] ["mind_focus"]
+      (* the script expected 5 casts; four were made — the expectation was wrong, the data is right)
+PASS* after reload, turn 2, Necro Focus is offered his Familiar — he never spent it, so this is the
+      brief's "retain unused sources for subsequent eligible casts" observed live (the script wrongly
+      expected nothing to be offered)
+
+Not exercised live: Magic Gubbinz (gated re-roll; unit test "has to pass its own D6"), Rosary (prayer
+per-turn), Rat Familiar (per-game). Same state machine (availableRerolls / applyCastRoll), different
+source objects; unit tests in src/rules/resolve/__tests__/casting.test.ts cover them.

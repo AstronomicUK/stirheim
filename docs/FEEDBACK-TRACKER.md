@@ -4638,3 +4638,6 @@ The preceding full-batch readiness claim is withdrawn after an acceptance rechec
 - **#186/#28/#29/#96 and final acceptance:** complete the documented live reroll, existing spell-less editor and hatred-note checks; distinguish unit evidence from actual browser verification and record desktop coverage.
 
 No new user ruling blocks these tasks. No push or deployment occurred. Supplement lores/items/wards and table movement remain legitimately outside the core sweep; core omissions above are not supplementary exclusions.
+
+
+**Follow-up — #140/#186, 12 September:** reasoned Crimson Shade Initiative correction implemented and mobile-verified; original roll, old/new values and reason retained, earlier attacks and stock unchanged. Pair/one-die casting rerolls now browser-verified by Claude, including no second reroll, per-turn reset and unspent-source retention. Detailed evidence: CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md. Other reopened core clauses remain outstanding; no deployment.

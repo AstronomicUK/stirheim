@@ -1,3 +1,4 @@
+import { ItemRollCorrection } from '../battle/ItemRollCorrection'
 import { TailFightingControl } from '../battle/TailFightingControl'
 import { isCorePistol, pistolShootingOptions } from './pistolShooting'
 import { PoisonControls } from '../battle/PoisonControls'
@@ -583,6 +584,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   </label>
                 )
               })}
+              {usedIds.includes('crimson_shade') && sheet.preBattle[`itemRoll:${attacker.id}:crimson_shade`] && edit ? <ItemRollCorrection key={attacker.id} warriorId={attacker.id} warriorName={attacker.name} sheet={sheet} readOnly={readOnly} edit={edit} /> : null}
               {preBattleRollsOwed(attackerKit.consumables, usedIds, itemRollsBy(sheet, attacker.id)).map(owed => <div key={`${attacker.id}:${owed.itemId}`} className="py-2">
                 <p className="text-sm">{owed.name}: roll the Initiative bonus for this battle.</p>
                 <DicePicker count={1} sides={owed.sides} disabled={readOnly || !edit} label={`${owed.name}: Initiative bonus`} resetKey={`${attacker.id}:${owed.itemId}`} onComplete={(values, manual) => edit?.(state => setItemRoll(state, attacker.id, owed.itemId, values[0], manual))} />

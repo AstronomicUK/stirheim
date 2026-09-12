@@ -6,7 +6,7 @@ import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 
 import type { TakenOutBy, BattleEventRow, BattleLiveState, BattleWarriorTally } from '../../../domain'
 import type { BattlePrompt } from '../../../api/matches'
-import { battleTotals, routThreshold, tallyFor, withTally } from '../../../domain'
+import { battleTotals, routThreshold, tallyFor, withTally, withRollAttempt } from '../../../domain'
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterItem, RosterWarband } from '../../../rules/types/roster'
 import { animalFighters, isAnimalId, parseAnimalId, ANIMAL_KINDS, type AnimalFighter } from '../../../rules/resolve/animals'
 
@@ -260,7 +260,7 @@ export function itemsUsedBy(state: BattleLiveState, warriorId: string): string[]
  * record like the Old Battle Wound roll does: key `itemRoll:<warrior>:<item>`, value "2 · rolled by
  * the app" / "2 · entered by hand", so the provenance reads back on the sheet. There is deliberately
  * no way to clear it: unticking the dose switches the effect off, re-ticking brings the same die back,
- * and a genuine correction would need its own recorded reason (not built).
+ * and a genuine correction uses correctItemRoll with a recorded reason and original provenance.
  */
 const ITEM_ROLL_PREFIX = 'itemRoll:'
 
@@ -268,6 +268,21 @@ export function setItemRoll(state: BattleLiveState, warriorId: string, itemId: s
   const key = `${ITEM_ROLL_PREFIX}${warriorId}:${itemId}`
   if (state.preBattle[key]) return state // rolled once per battle; a second throw is refused
   return touch(state, { preBattle: { ...state.preBattle, [key]: `${value} · ${manual ? 'entered by hand' : 'rolled by the app'}` } })
+}
+
+/** A correction changes future calculations, never rerolls or rewrites earlier attacks. */
+export function correctItemRoll(state: BattleLiveState, warriorId: string, value: number, reason: string, warriorName: string, expected: string): BattleLiveState {
+  const key = `${ITEM_ROLL_PREFIX}${warriorId}:crimson_shade`
+  const previous = state.preBattle[key]
+  if (!previous || previous !== expected || !reason.trim() || !Number.isInteger(value) || value < 1 || value > 3 || Number.parseInt(previous, 10) === value) return state
+  const originalKey = `itemRollOriginal:${warriorId}:crimson_shade`
+  const original = state.preBattle[originalKey] ?? previous
+  const next = touch(state, { preBattle: { ...state.preBattle, [originalKey]: original, [key]: `${value} · corrected by the player (original: ${original})` } })
+  return withRollAttempt(next, {
+    id: crypto.randomUUID(), at: new Date().toISOString(), turn: state.turn, kind: 'attack', status: 'complete',
+    label: `${warriorName}: Crimson Shade Initiative corrected`,
+    rolls: [`Initiative bonus changed from ${Number.parseInt(previous, 10)} to ${value}: ${reason.trim()}. Original result: ${original}. Earlier attacks are unchanged; correct affected results separately in the combat log.`],
+  })
 }
 
 /** Item id -> the die rolled for it this battle, for one warrior. */

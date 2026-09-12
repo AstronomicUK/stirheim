@@ -242,6 +242,7 @@ function MyGroupCard({ chambers, condition, group, template, sheet, edit, readOn
       />
       {chambers}
       <WarriorBody
+        skillIds={group.unitTemplateId === 'pirates_swabbie' ? group.campaignState?.inheritedSkillIds : undefined}
         equipment={kit.items}
         kitLabel={kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'}
         rules={groupRules(group, template)}

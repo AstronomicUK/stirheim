@@ -173,6 +173,8 @@ export interface RosterHero {
 }
 
 export interface HenchmanCampaignState {
+  /** Captured Pirate Swabbies retain their former skills, but may never cast spells. */
+  inheritedSkillIds?: string[];
   /** Individually named cursed members; the rest of the group is unaffected. */
   lycanthropes?: {id:string;name:string;contractedAfter:string}[];
   raidAbsences?: {count:number;games:number}[];

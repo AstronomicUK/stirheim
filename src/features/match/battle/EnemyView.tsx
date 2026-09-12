@@ -210,7 +210,7 @@ function EnemyGroupCard({ chambers, group, template, out, condition }: { chamber
         onToggle={() => setExpanded((v) => !v)}
       />
       {chambers}
-      <WarriorBody equipment={kit.items} kitLabel={kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'} rules={groupRules(group, template)} expanded={expanded} />
+      <WarriorBody skillIds={group.unitTemplateId === 'pirates_swabbie' ? group.campaignState?.inheritedSkillIds : undefined} equipment={kit.items} kitLabel={kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'} rules={groupRules(group, template)} expanded={expanded} />
     </Card>
   )
 }

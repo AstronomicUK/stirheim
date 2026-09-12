@@ -553,3 +553,16 @@ it('recognises both printed Daemon identity spellings without treating every cul
   }
   expect(kindTraits('mercenaries_reikland', 'custom', [{ name: 'Daemonic Aura', text: 'A magical protection.' }, { name: 'Daemon Soul', text: 'Magic protection.' }])).not.toContain('daemon')
 })
+it('retained Swabbie skills survive the campaign-state parser and affect combat',async()=>{
+ const {henchmanCampaignStateSchema}=await import('../../../domain/json')
+ const campaignState=henchmanCampaignStateSchema.parse(JSON.parse(JSON.stringify({inheritedSkillIds:['dodge','dodge']})))
+ const roster=warband({warbandTemplateId:'pirates',henchmenGroups:[group('captured',{unitTemplateId:'pirates_swabbie',size:1,equipment:[item('dagger')],campaignState})]})
+ const defender=combatantsOf(roster,findWarbandTemplate('pirates'),'Pirates',undefined)[0]
+ expect(defender.skillIds).toEqual(['dodge'])
+ const attacker=combatantsOf(warband({heroes:[hero('archer',{equipment:[item('bow')]})]}),findWarbandTemplate('mercenaries_reikland'),'Reikland',undefined)[0]
+ const kit=loadoutFor(attacker),defenderKit=loadoutFor(defender)
+ const odds=computeOdds({attacker,attackerKit:kit,defender,defenderKit,primary:kit.ranged[0],offHand:null,context:combatContextFor(defaultCampaignHouseRules()),houseRules:defaultCampaignHouseRules()})
+ expect(odds.weapons[0].input.dodgeThreshold).toBe(5)
+ const ordinary=combatantsOf(warband({henchmenGroups:[group('ordinary',{campaignState})]}),findWarbandTemplate('mercenaries_reikland'),'Reikland',undefined)[0]
+ expect(ordinary.skillIds).toEqual([])
+})

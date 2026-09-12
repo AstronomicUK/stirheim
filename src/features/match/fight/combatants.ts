@@ -272,7 +272,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       stats: group.stats,
       equipment: kit.items,
       unarmedProfile: unitRules(group.unitTemplateId).unarmedProfile,
-      skillIds: [],
+      skillIds: group.unitTemplateId === 'pirates_swabbie' ? unique(group.campaignState?.inheritedSkillIds ?? []) : [],
       traitIds: unique(traits),
       out: sheet ? groupOut(sheet, group.id) >= group.size : false,
       woundsLost: sheet && group.size === 1 ? woundsLost(sheet, group.id) : 0,

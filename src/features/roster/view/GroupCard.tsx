@@ -1,3 +1,4 @@
+import { skillName, skillText } from './lookups'
 import {CurseReminder} from './CurseReminder'
 import { useState } from 'react'
 import type { HenchmanGroupRow } from '../../../domain'
@@ -73,6 +74,7 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
         {group.campaign_state?.raidAbsences?.map((a,i)=><p key={i} className="text-sm font-medium">Raids surrender: {a.count} {a.count===1?'model misses':'models miss'} the next {a.games} {a.games===1?'battle':'battles'}.</p>)}
         <CurseReminder names={group.campaign_state?.lycanthropes?.map(m=>m.name)??[]}/>
         {group.campaign_state?.permanentStupidity ? <p className="text-sm font-medium">Permanent Stupidity — Mad Cap Mushrooms</p> : null}
+        {group.unit_type_rules_id === 'pirates_swabbie' && group.campaign_state?.inheritedSkillIds?.length ? <div className="flex flex-col gap-1"><p className="text-[10px] uppercase tracking-wider text-ink-dim">Retained skills</p><RuleList rules={group.campaign_state.inheritedSkillIds.map(id=>({name:skillName(id),text:skillText(id)??'No rule text on file.'}))}/><p className="text-xs text-ink-dim">Swabbies cannot use magic or gain experience.</p></div>:null}
         {group.notes ? <p className="whitespace-pre-line text-sm text-ink-dim">{group.notes}</p> : null}
         {expanded ? (
           <div className="flex flex-col gap-2 border-t border-border pt-3">

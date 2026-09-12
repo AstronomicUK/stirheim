@@ -1,3 +1,4 @@
+import { ForcedCaptivePanel } from './ForcedCaptivePanel'
 import { useState } from 'react'
 import { useCampaign, type CampaignDetail } from '../../../api/campaigns'
 import { useWarband, type WarbandDetail } from '../../../api/warbands'
@@ -42,12 +43,13 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
  const lastRejected=item.proposals.find(p=>p.state==='rejected')
  const pirates=captor?.roster.warbandTemplateId==='pirates'
  const henchman=item.subject_kind==='henchman'
+ const forced=henchman&&item.source==='forced_capture'
  const side:'pirates'|'victim'|null=captor&&captor.warband.owner_id===userId?'pirates':owner&&owner.warband.owner_id===userId?'victim':null
  const error=assign.error??propose.error??respond.error??reverse.error
  return <Card className="flex flex-col gap-3 p-4">
   <div className="flex flex-wrap items-baseline justify-between gap-2">
    <h3 className="font-semibold">{item.hero_name}</h3>
-   <span className="text-sm text-ink-dim">{item.state==='unassigned'?'Captor not yet named':item.state==='resolved'?'Outcome recorded':henchman?victimSide?`Lost henchman; ${otherName} may press-gang him`:`Lost enemy henchman from ${otherName}`:victimSide?`Held by ${otherName}`:`Held by your warband, from ${otherName}`}</span>
+   <span className="text-sm text-ink-dim">{item.state==='unassigned'?'Captor not yet named':item.state==='resolved'?'Outcome recorded':forced?victimSide?`Held by ${otherName}`:`Held by your warband, from ${otherName}`:henchman?victimSide?`Lost henchman; ${otherName} may press-gang him`:`Lost enemy henchman from ${otherName}`:victimSide?`Held by ${otherName}`:`Held by your warband, from ${otherName}`}</span>
   </div>
   {item.state==='unassigned'?(victimSide&&canAct?<>
    <SelectField label="Warband holding the captive" value={captorId} onChange={e=>setCaptorId(e.target.value)}><option value="">Choose the captor agreed at the table</option>{campaign?.members.filter(m=>m.warband_id!==detail.warband.id).map(m=><option key={m.warband_id} value={m.warband_id}>{m.warband.name}</option>)}</SelectField>
@@ -67,7 +69,8 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
     </div>:null}
    </Notice>})}
    {lastRejected&&!pending.length?<p className="text-sm text-ink-dim">Last proposal rejected: {lastRejected.reason}</p>:null}
-   {captor&&pirates&&!pending.length?<PirateKidnappedCard item={item} owner={owner} captor={captor} side={side} gm={gm} otherName={otherName}/>:null}
+   {captor&&pirates&&!forced&&!pending.length?<PirateKidnappedCard item={item} owner={owner} captor={captor} side={side} gm={gm} otherName={otherName}/>:null}
+   {canAct&&owner&&captor&&forced&&!pending.length?<ForcedCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
    {canAct&&owner&&captor&&!henchman&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
      submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}
      onSubmit={(preview,choice)=>propose.mutate({caseId:item.id,choice,owner,captor,nextOwner:preview.owner,nextCaptor:preview.captor,message:preview.message})}/>:null}

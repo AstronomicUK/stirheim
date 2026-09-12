@@ -71,3 +71,14 @@ it('keeps an ordinary casualty die separate from a later captured casualty',()=>
  expect(res.group.size).toBe(1)
  expect(r.equipmentLosses.patches).toEqual([{id:'swords',quantity:2}])
 })
+it('separates a captured model’s kit from supplies already used in the battle',()=>{
+ const ctx=forcedContext(3,3);ctx.items=[{...ctx.items[0],item_rules_id:'black_lotus'}];ctx.itemsUsed={g:['black_lotus']}
+ const d=draft();d.groupInjuries.g=[]
+ let r=deriveReport(d,ctx);expect(r.equipmentLosses.rows[0].available).toBe(2)
+ d.groupEquipmentLosses={[r.equipmentLosses.rows[0].key]:1}
+ r=deriveReport(d,ctx);d.capturedEquipment={[r.equipmentLosses.captureRows[0].key]:1}
+ r=deriveReport(d,ctx)
+ expect(r.equipmentLosses.problems).toEqual([])
+ expect(r.equipmentLosses.patches).toEqual([{id:'swords',quantity:1}])
+ expect(r.injuries.groups[0].resolution.line?.captured?.[0].kit).toMatchObject([{itemId:'black_lotus',quantity:1}])
+})

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { WarbandDetail } from '../../../api/warbands'
 import { useMatchReports } from '../../../api/reports'
 import { useProposeCaptiveOutcome, type CaptiveCase } from '../../../api/captives'
@@ -13,7 +13,10 @@ import { Button, DicePicker, DieField, Notice, SelectField, TextField } from '..
  * player's own Leadership dice, then the Pirate player's proposal of the outcome the dice dictate.
  * `side` is the viewer's relationship to the case; the GM may act for either side.
  */
-export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }: { item: CaptiveCase; owner?: WarbandDetail; captor: WarbandDetail; side: 'pirates' | 'victim' | null; gm: boolean; otherName: string }) {
+type PirateKidnappedProps = { item: CaptiveCase; owner?: WarbandDetail; captor: WarbandDetail; side: 'pirates' | 'victim' | null; gm: boolean; otherName: string }
+const contestRevision=(item:CaptiveCase)=>item.history.filter(h=>h!==null&&typeof h==='object'&&'event' in h&&h.event==='contest_reset').length
+export function PirateKidnappedCard(props:PirateKidnappedProps){return <PirateKidnappedForm key={`${props.item.id}:${props.side}:${contestRevision(props.item)}`} {...props}/>}
+function PirateKidnappedForm({ item, owner, captor, side, gm, otherName }: PirateKidnappedProps) {
   const reports = useMatchReports(item.match_id)
   const recovery = useRecordKidnapRecovery(), dice = useRecordKidnapDice(), reset = useResetKidnapContest(), propose = useProposeCaptiveOutcome()
   const [recD, setRecD] = useState<number | null>(null), [recOriginal, setRecOriginal] = useState<number | null>(null)
@@ -24,8 +27,6 @@ export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }
   const rec = item.recovery as { d6?: number; original?: number | null } | null
   const contest = (item.contest ?? {}) as KidnapContest
   const mySide = side ?? (gm ? gmSide : null)
-  const contestRevision=item.history.filter(h=>h!==null&&typeof h==='object'&&'event' in h&&h.event==='contest_reset').length
-  useEffect(()=>{setD1(null);setD2(null);setOriginal(null)},[item.id,mySide,contestRevision])
   const canPirate = side === 'pirates' || gm
   const filed = reports.data ?? []
   const piratesFiled = filed.some(r => r.warband_id === captor.warband.id)
@@ -58,7 +59,7 @@ export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }
         return <div key={s} className="rounded border border-border/60 p-2 text-sm">
           <p className="font-medium">{s === 'pirates' ? captor.warband.name : subject?.victim.name ?? otherName} — 2D6</p>
           {roll ? <p>{roll.dice[0]} + {roll.dice[1]}{roll.original && (roll.original[0] !== roll.dice[0] || roll.original[1] !== roll.dice[1]) ? ` (app rolled ${roll.original.join(' + ')})` : ''}</p> : mySide === s ? <div className="mt-2 flex flex-col gap-3">
-            <DicePicker count={2} label="Kidnapped! Leadership dice" resetKey={`${item.id}:${s}:${contestRevision}`} onComplete={(values,manual)=>{setD1(values[0]);setD2(values[1]);if(!manual)setOriginal([values[0],values[1]])}}/>
+            <DicePicker count={2} label="Kidnapped! Leadership dice" resetKey={`${item.id}:${s}:${contestRevision(item)}`} onComplete={(values,manual)=>{setD1(values[0]);setD2(values[1]);if(!manual)setOriginal([values[0],values[1]])}}/>
             <div className="flex flex-wrap items-end gap-2">
             <DieField label="Die 1" sides={6} value={d1} onChange={v => setD1(v)} hideLabel />
             <DieField label="Die 2" sides={6} value={d2} onChange={v => setD2(v)} hideLabel />
@@ -69,7 +70,7 @@ export function PirateKidnappedCard({ item, owner, captor, side, gm, otherName }
         </div>
       })}
     </div> : null}
-    {gm && !side && !bothRolled && !needsRecovery ? <SelectField label="Recording dice for" value={gmSide} onChange={e => setGmSide(e.target.value as 'pirates' | 'victim')}><option value="pirates">{captor.warband.name}</option><option value="victim">{otherName}</option></SelectField> : null}
+    {gm && !side && !bothRolled && !needsRecovery ? <SelectField label="Recording dice for" value={gmSide} onChange={e => {setGmSide(e.target.value as 'pirates' | 'victim');setD1(null);setD2(null);setOriginal(null)}}><option value="pirates">{captor.warband.name}</option><option value="victim">{otherName}</option></SelectField> : null}
     {bothRolled && canPirate ? <>
       {preview?.outcome === 'crew' ? <>
         <SelectField label="Crew group" value={joinGroupId} onChange={e => setJoinGroupId(e.target.value)}><option value="">Form a new Crew group</option>{crewGroups.map(g => <option key={g.id} value={g.id}>Join {g.name} ({g.size} models)</option>)}</SelectField>

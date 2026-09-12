@@ -19,7 +19,8 @@ import { useCampaign } from '../../api/campaigns'
 import { useBattleBoosts } from './battle/useBattleBoosts'
 import { NO_BOOSTS, type BattleBoosts } from './fight/combatants'
 import { defaultCampaignHouseRules, type CampaignHouseRules } from '../../rules/types/roster'
-import { useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
+import { useAddictionSupplies, useBattleEvents, useBattlePrompts, useBattleSessions, useEndMatch, useLogBattleEvent, useMatch, useMatchRealtime, useMatchRoster, type BattleSessionView, type MatchSummary } from '../../api/matches'
+import { withBattleSupplies } from './battle/battleSupply'
 import { activeBolasEntanglements, applyBattleEvents, battleTotals, type AttackEventPayload, type BattleEventRow } from '../../domain'
 import { useSession } from '../../app/session'
 import { findScenario } from '../../rules/data/campaign/scenarios'
@@ -126,6 +127,8 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
   const editable = inProgress && mine !== undefined
 
   const myRoster = useMatchRoster(match.id, mine?.warband_id)
+  // Doses the habit used up at battle start (#139/#140): laid over the battle roster so the sheet still offers them.
+  const supplies = useAddictionSupplies(match.id)
   const remote = mine ? sessions.find((s) => s.warband_id === mine.warband_id) : undefined
   const handle = useBattleSheet(match.id, mine?.warband_id ?? null, remote, editable)
   const shownSessions = useMemo(() => overlaySessions(sessions, events, match.participants), [sessions, events, match.participants])
@@ -237,7 +240,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
       events={events}
       onLogEvent={(payload) => logEvent.mutateAsync({ matchId: match.id, actorWarbandId: mine.warband_id, payload }).then(() => undefined)}
       items={myRoster.data.items}
-      roster={myRoster.data.roster}
+      roster={withBattleSupplies(myRoster.data.roster, supplies.data ?? [])}
       scenario={scenario}
       handle={handle}
       readOnly={!editable}

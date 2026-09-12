@@ -9,7 +9,7 @@ import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCampaign } from '../../api/campaigns'
-import { useBattleEvents, useBattleSessions, useMatch, useMatchRoster, fetchMatchRoster, matchKeys, type MatchParticipantView, type MatchSummary } from '../../api/matches'
+import { useAddictionSupplies, useBattleEvents, useBattleSessions, useMatch, useMatchRoster, fetchMatchRoster, matchKeys, type MatchParticipantView, type MatchSummary } from '../../api/matches'
 import { applyBattleEvents, emptyBattleLiveState } from '../../domain'
 import { advanceKeys } from '../../api/advances'
 import { useMatchReports, useSubmitBattleReport } from '../../api/reports'
@@ -203,6 +203,8 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   const specialKillXpLoading = enemyRosters.some(r => r.isPending) || killEvents.isPending || killSheets.isPending
   const specialKillXpError = enemyRosters.some(r => r.isError) || killEvents.isError || killSheets.isError ? 'Could not check special enemy experience. Reload the report to try again.' : undefined
   const matchReports = useMatchReports(match.id)
+  // Doses start_match already used up for addicted heroes: the report must not use a second one (#139/#140).
+  const supplies = useAddictionSupplies(match.id)
   const artefacts = useCampaignArtefacts(match.campaign_id)
   const rawhideCargo=useRawhideCargo(match.scenario_rules_id==='rawhide'?match.id:undefined,match.state)
   const opponentReports = useMemo(
@@ -231,11 +233,12 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       houseRules,
       preBattle: liveState?.preBattle ?? {},
       itemsUsed: liveState?.itemsUsed ?? {},
+      addictionSupplies: supplies.data,
       rotVictims,
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
       takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
     }),
-    [killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
+    [killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

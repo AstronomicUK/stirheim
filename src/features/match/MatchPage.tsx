@@ -20,6 +20,8 @@ import {
   useRespondToChallenge,
   useStartMatch,
   unpaidMatchHires,
+  addictionSupply,
+  type AddictionSupplyLine,
   type UnpaidMatchHire,
   type BattleSessionView,
   type MatchSummary,
@@ -99,7 +101,11 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   const [returning, setReturning] = useState<ReportView | null>(null)
   const [returnNote, setReturnNote] = useState('')
 
-  const [unpaid, setUnpaid] = useState<UnpaidMatchHire[] | null>(null)
+  // What starting the battle will do to the rosters, shown for acknowledgement first: unpaid hired
+  // characters who leave (#219) and addicted heroes' doses — used up, or missing so he leaves (#139/#140).
+  const [gate, setGate] = useState<{ unpaid: UnpaidMatchHire[]; supply: AddictionSupplyLine[] } | null>(null)
+  const unsupplied = gate?.supply.filter((l) => l.source === null) ?? []
+  const supplied = gate?.supply.filter((l) => l.source !== null) ?? []
   const [checkingUpkeep, setCheckingUpkeep] = useState(false)
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
   const [modeChoice, setModeChoice] = useState<CombatMode | null>(null)
@@ -137,10 +143,10 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
   async function prepareStart() {
     setCheckingUpkeep(true)
     await run(async () => {
-      const hires = await unpaidMatchHires(match.id)
-      if (hires.length) setUnpaid(hires)
-      else await start.mutateAsync({ matchId: match.id, combatMode })
-    }, 'Could not check upkeep before the battle.')
+      const [hires, supply] = await Promise.all([unpaidMatchHires(match.id), addictionSupply(match.id)])
+      if (hires.length || supply.length) setGate({ unpaid: hires, supply })
+      else await start.mutateAsync({ matchId: match.id, combatMode, unpaidIds: [], unsuppliedIds: [] })
+    }, 'Could not check upkeep and supplies before the battle.')
     setCheckingUpkeep(false)
   }
 
@@ -362,14 +368,42 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
         </div>
       ) : null}
 
-      <Sheet open={unpaid !== null} onClose={() => setUnpaid(null)} title="Upkeep is unpaid" footer={<Button block variant="danger" pending={start.isPending} onClick={() => void run(async () => {
-        await start.mutateAsync({ matchId: match.id, combatMode, unpaidIds: unpaid?.map(h => h.id) ?? [] })
-        setUnpaid(null)
-      }, 'Could not start the battle. Review upkeep and try again.')}>Dismiss listed characters and start battle</Button>}>
-        <p className="text-sm">Starting now removes these unpaid hired characters and any required companions from their active warbands. Their histories are kept. Return to the warband to pay upkeep if you want them to take part.</p>
-        <ul className="my-3 space-y-2">{unpaid?.map(h => <li key={h.id}>{h.name} — {h.warband_name}</li>)}</ul>
+      <Sheet
+        open={gate !== null}
+        onClose={() => setGate(null)}
+        title={gate && (gate.unpaid.length || unsupplied.length) ? 'Before the battle starts' : 'Doses used up before the battle'}
+        footer={
+          <Button block variant={gate && (gate.unpaid.length || unsupplied.length) ? 'danger' : 'primary'} pending={start.isPending} onClick={() => void run(async () => {
+            await start.mutateAsync({ matchId: match.id, combatMode, unpaidIds: gate?.unpaid.map(h => h.id) ?? [], unsuppliedIds: unsupplied.map(l => l.hero_id) })
+            setGate(null)
+          }, 'Could not start the battle. Review upkeep and supplies and try again.')}>
+            {gate && (gate.unpaid.length || unsupplied.length) ? 'Dismiss listed characters and start battle' : 'Start battle'}
+          </Button>
+        }
+      >
+        {gate && gate.unpaid.length > 0 ? (
+          <>
+            <p className="text-sm font-semibold text-ink">Upkeep is unpaid</p>
+            <p className="text-sm">Starting now removes these unpaid hired characters and any required companions from their active warbands. Their histories are kept. Return to the warband to pay upkeep if you want them to take part.</p>
+            <ul className="my-3 space-y-2">{gate.unpaid.map(h => <li key={h.id}>{h.name} — {h.warband_name}</li>)}</ul>
+          </>
+        ) : null}
+        {unsupplied.length > 0 ? (
+          <>
+            <p className="text-sm font-semibold text-ink">No Crimson Shade for an addicted hero</p>
+            <p className="text-sm">An addict needs a new batch before every battle. These heroes have none in their kit or their warband's stash, so they leave the warband when the battle starts. Buy a batch at the trading post first if you want them to stay.</p>
+            <ul className="my-3 space-y-2">{unsupplied.map(l => <li key={l.hero_id}>{l.hero_name} — {l.warband_name}</li>)}</ul>
+          </>
+        ) : null}
+        {supplied.length > 0 ? (
+          <>
+            <p className="text-sm font-semibold text-ink">Doses the habit uses up</p>
+            <p className="text-sm">One batch each is used up now and recorded against this battle. The hero may still take it on the battle sheet for its effect. A dose is not refunded if the battle is later cancelled; the GM can correct the roster by hand.</p>
+            <ul className="my-3 space-y-2">{supplied.map(l => <li key={l.hero_id}>{l.hero_name} — {l.warband_name} · from {l.source === 'kit' ? 'his own kit' : 'the stash'}{l.quantity_before !== null ? ` (${l.quantity_before} there before)` : ''}</li>)}</ul>
+          </>
+        ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
-        <Button variant="secondary" onClick={() => setUnpaid(null)}>Go back without starting</Button>
+        <Button variant="secondary" onClick={() => setGate(null)}>Go back without starting</Button>
       </Sheet>
 
       <Sheet

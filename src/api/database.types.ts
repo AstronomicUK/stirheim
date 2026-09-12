@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      addiction_supplies: {
+        Row: {
+          created_at: string
+          hero_id: string
+          id: string
+          item_row_id: string | null
+          item_rules_id: string
+          match_id: string
+          quantity_before: number
+          source: string
+          warband_id: string
+        }
+        Insert: {
+          created_at?: string
+          hero_id: string
+          id?: string
+          item_row_id?: string | null
+          item_rules_id: string
+          match_id: string
+          quantity_before: number
+          source: string
+          warband_id: string
+        }
+        Update: {
+          created_at?: string
+          hero_id?: string
+          id?: string
+          item_row_id?: string | null
+          item_rules_id?: string
+          match_id?: string
+          quantity_before?: number
+          source?: string
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addiction_supplies_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "addiction_supplies_item_row_id_fkey"
+            columns: ["item_row_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "addiction_supplies_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "addiction_supplies_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1647,6 +1712,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      addiction_supply: {
+        Args: { p_match_id: string }
+        Returns: {
+          hero_id: string
+          hero_name: string
+          item_row_id: string
+          item_rules_id: string
+          quantity_before: number
+          source: string
+          warband_id: string
+          warband_name: string
+        }[]
+      }
       agree_match_district: {
         Args: {
           p_district_id: string
@@ -2068,6 +2146,7 @@ export type Database = {
           p_combat_mode?: Database["public"]["Enums"]["combat_mode"]
           p_match_id: string
           p_unpaid_ids?: string[]
+          p_unsupplied_ids?: string[]
         }
         Returns: Database["public"]["Enums"]["match_state"]
       }

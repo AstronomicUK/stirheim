@@ -27,6 +27,7 @@ export const matchKeys = {
   roster: (matchId: string | undefined, warbandId: string | undefined) => ['matches', 'roster', matchId, warbandId] as const,
   districtProposals: (matchId: string | undefined) => ['matches', 'district-proposals', matchId] as const,
   prompts: (matchId: string | undefined) => ['matches', 'prompts', matchId] as const,
+  supplies: (matchId: string | undefined) => ['matches', 'addiction-supplies', matchId] as const,
 }
 
 export interface MatchParticipantView {
@@ -249,8 +250,34 @@ export async function unpaidMatchHires(matchId: string): Promise<UnpaidMatchHire
   if (error) throw error
   return data ?? []
 }
-export async function startMatch({ matchId, combatMode, unpaidIds }: { matchId: string; combatMode?: CombatMode; unpaidIds?: string[] }): Promise<MatchState> {
-  const { data, error } = await supabase.rpc('start_match', { p_match_id: matchId, ...(combatMode ? { p_combat_mode: combatMode } : {}), ...(unpaidIds ? { p_unpaid_ids: unpaidIds } : {}) })
+/**
+ * Crimson Shade addiction (#139/#140): one line per addicted hero in the match — where his dose for
+ * this battle comes from (`kit`, `stash`), or `null` when there is none left for him and he will
+ * leave if the battle starts. Read-only preview of exactly what `start_match` will do.
+ */
+export interface AddictionSupplyLine { hero_id: string; hero_name: string; warband_id: string; warband_name: string; item_rules_id: string; source: 'kit' | 'stash' | null; item_row_id: string | null; quantity_before: number | null }
+export async function addictionSupply(matchId: string): Promise<AddictionSupplyLine[]> {
+  const { data, error } = await supabase.rpc('addiction_supply', { p_match_id: matchId })
+  if (error) throw error
+  return (data ?? []) as AddictionSupplyLine[]
+}
+/** The doses start_match used up for this battle: what the battle sheet still offers and the report must not use again. */
+export interface AddictionSupplyRow { match_id: string; hero_id: string; warband_id: string; item_rules_id: string; source: 'kit' | 'stash'; quantity_before: number }
+export async function fetchAddictionSupplies(matchId: string): Promise<AddictionSupplyRow[]> {
+  const { data, error } = await supabase.from('addiction_supplies').select('match_id, hero_id, warband_id, item_rules_id, source, quantity_before').eq('match_id', matchId)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as AddictionSupplyRow[]
+}
+export function useAddictionSupplies(matchId: string | undefined) {
+  return useQuery({ queryKey: matchKeys.supplies(matchId), queryFn: () => fetchAddictionSupplies(matchId!), enabled: Boolean(matchId) })
+}
+export async function startMatch({ matchId, combatMode, unpaidIds, unsuppliedIds }: { matchId: string; combatMode?: CombatMode; unpaidIds?: string[]; unsuppliedIds?: string[] }): Promise<MatchState> {
+  const { data, error } = await supabase.rpc('start_match', {
+    p_match_id: matchId,
+    ...(combatMode ? { p_combat_mode: combatMode } : {}),
+    ...(unpaidIds ? { p_unpaid_ids: unpaidIds } : {}),
+    ...(unsuppliedIds ? { p_unsupplied_ids: unsuppliedIds } : {}),
+  })
   if (error) throw error
   return data
 }

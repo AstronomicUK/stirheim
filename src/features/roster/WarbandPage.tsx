@@ -22,6 +22,7 @@ import { useSession } from '../../app/session'
 import { findWarbandTemplate } from '../../rules/data/warbandTemplates'
 import { warbandRating } from '../../rules/resolve/rating'
 import { validateRoster, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
+import { unsuppliedAddicts } from '../../rules/resolve/addiction'
 import { ActionTile, Button, Notice, SelectField, Sheet, Spinner, TextField, TwoColumn } from '../../ui'
 import { BUTTON_BASE, BUTTON_VARIANTS } from '../../ui/buttonStyles'
 import { unitTypeName, warbandTypeName } from './shared/names'
@@ -204,6 +205,11 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
 
       <ImportQuestions detail={detail} canEdit={canEdit} />
 
+      {unsuppliedAddicts(detail.roster).length > 0 ? (
+        <Notice tone="warn" title="Addicted heroes without a batch">
+          <p>An addict needs a new batch of Crimson Shade before every battle, or he leaves. Nothing in kit or stash for: {unsuppliedAddicts(detail.roster).map((l) => l.heroName).join(', ')}.</p>
+        </Notice>
+      ) : null}
       {problems.length > 0 ? (
         <Notice tone="warn" title="Roster problems">
           <ul className="flex list-disc flex-col gap-1 pl-4">

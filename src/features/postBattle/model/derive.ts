@@ -108,6 +108,8 @@ export interface ReportContext {
   preBattle?: Record<string, string>
   /** Consumables marked as used on the battle sheet: warrior id -> item ids. */
   itemsUsed?: Record<string, string[]>
+  /** Doses the habit already used up at battle start (addiction_supplies for this match): the report must not use a second one. */
+  addictionSupplies?: readonly { hero_id: string; item_rules_id: string }[]
   /** Warriors of this warband a Nurgle's Rot carrier wounded on a 6 (from the shared combat log): they contract the Rot. */
   rotVictims?: string[]
   /** Map campaigns: the battle's district and the advantages this warband held going into it. */
@@ -495,6 +497,9 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
   for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed ?? {})) {
     for (const itemId of new Set(itemIds)) {
       if (!isConsumable(itemId)) continue
+      // Exact-once: a dose start_match already used up for this hero (and recorded in the ledger for
+      // this very match) is the dose he took; ticking it must not cost a second copy (#139/#140).
+      if (ctx.addictionSupplies?.some((s) => s.hero_id === holderId && s.item_rules_id === itemId)) continue
       const row = rows.find((r) => r.holder_id === holderId && r.item_rules_id === itemId) ?? rows.find((r) => r.holder_type === 'stash' && r.item_rules_id === itemId)
       if (!row || patches.some((p) => p.id === row.id)) continue
       patches.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })

@@ -64,3 +64,9 @@ Garlic next: the charge reminder is wired to an actual charging Vampire facing a
 Carried garlic expires automatically via the report, without a used checkbox. Stash, absent Heroes (including Old Battle Wound flares) and absent group members retain their cloves. Even group allocations are proportional; uneven stacks in partly absent groups require a quantity in Review, validated against current stock/size. Report notes explain expiry. Actual disposable mobile report filing and withdrawal passed in `/tmp/stirheim-garlic-report-qa.mjs`; stock was consumed and restored correctly. Eight expiry/group-equipment tests, compilation and lint passed. This completes the Garlic core clause for the batch, with the charge Leadership test explicitly table-managed. No deployment.
 
 Next independent Priority 3 work: Blessed Water action or one-vial/one-weapon poison selection. Pending handgun work is still uncommitted and needs actual UI verification; do not lose it. Earlier pending statements above are historical checkpoints superseded by these later sections.
+
+### Core handgun reload checkpoint verified
+
+The pending FightTab handgun integration now passed `/tmp/stirheim-handgun-mobile-qa.mjs`: start attacks and roll a die, autosave, reload the phone-sized battle sheet, see the reload restriction, verify Begin attacks is disabled, then record a reasoned correction and regain availability. Nineteen reload/physical-weapon tests pass, including per-copy independence, Hunter next-turn cadence and serialized state. Compilation and lint pass. The popup may still open for reviewing setup while reloading; its Begin action is blocked. No fixture remains.
+
+This checkpoints the handgun path only. Pistols/brace allocation remain outstanding in #73, as do broader shooting-phase limits outside per-gun reload. Do not claim the whole tracker item closed. Continue core equipment/remaining combat work; no deployment.

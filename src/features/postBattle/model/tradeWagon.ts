@@ -51,6 +51,7 @@ export function tradeWagonCaptureSnapshot(input:{matchId:string;facts:TradeWagon
   if (!group&&!item) throw new Error('Select the Merchant Caravan’s actual single Trade Wagon; reconcile an ambiguous wagon stack before capture.')
   const cargo=tradeWagonCargo(input.items.filter(i=>i.id!==item?.id),input.facts.merchantId,input.wyrdstone)
   return structuredClone({
+    failed_rout:true as const,driver_present:false as const,
     match_id:input.matchId,merchant_id:input.facts.merchantId,captor_id:capture.captorId,
     merchant_all_ooa:input.facts.everyMerchantModelOut!,rare_search_blocked:capture.rareSearchBlocked,
     wagon:group?{kind:'group' as const,expected:group}:{kind:'item' as const,expected:item!},cargo,

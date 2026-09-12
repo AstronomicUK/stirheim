@@ -4,7 +4,8 @@
 -- group injury line names each captured model (1-based ordinal of the unreverted out-of-action events
 -- against that group, ordered by time then id), the capture event, the captor and the exact share of
 -- the group's kit that left with him. The server verifies every entry against the saved battle
--- events and the report's own item losses before opening a durable case (subject_kind henchman,
+-- events and the report's own item losses (claims never exceed what the report removed from a row;
+-- the owner may separately have used or discarded more) before opening a durable case (subject_kind henchman,
 -- source forced_capture) with a per-model snapshot; an entry that cannot be verified rejects the
 -- report rather than silently removing a model. Outcomes: release (returns free), ransom (returns for
 -- gold) and sale (captor gains 5 × D6 and the kit). Return goes back into the original group when its
@@ -91,19 +92,6 @@ begin
       insert into public.app_notifications (user_id, kind, title, body, href, dedupe_key)
         values (v_captor_owner, 'captive', left('Your warband holds a captured ' || grow.name || ' henchman', 140), 'Propose his release, a ransom or a sale from your warband page. The other player must accept it.', '/warbands/' || (cap->>'captorWarbandId'), 'captive:' || v_case || ':captor') on conflict do nothing;
     end loop;
-    -- When no model died, every item the report removed from the group must be accounted for by the
-    -- captured models: nothing may vanish uncredited (item use spent in battle is patched separately
-    -- by the wizard and must not be netted against a capture).
-    if coalesce((line->>'dead')::int, 0) = 0 then
-      for before_row in select u->'row' || jsonb_build_object('before_quantity', (u->'before'->>'quantity')::int) from jsonb_array_elements(coalesce(new.undo->'items', '[]'::jsonb)) u
-                         where u->'row'->>'holder_type' = 'group' and u->'row'->>'holder_id' = line->>'subjectId' loop
-        sid := (before_row->>'id')::uuid;
-        lost := (before_row->>'before_quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(new.applied->'item_patches', '[]'::jsonb)) pt where (pt->>'id')::uuid = sid limit 1), (before_row->>'before_quantity')::int);
-        if lost > 0 and coalesce((used->>sid::text)::int, 0) <> lost then
-          raise exception 'Captured henchmen: the report removed % of % from % but the captured models account for %; with no model dead the allocation must match exactly.', lost, coalesce(before_row->>'item_rules_id', before_row->>'custom_name'), grow.name, coalesce((used->>sid::text)::int, 0) using errcode = '22023';
-        end if;
-      end loop;
-    end if;
   end loop;
   return new;
 end $$;
@@ -224,8 +212,9 @@ begin
     when 'sell' then
       d6 := (p_choice->>'d6')::int;
       if d6 is null or d6 not between 1 and 6 then raise exception 'Enter a D6 result from 1 to 6.' using errcode = '22023'; end if;
+      if p_choice ? 'originalD6' and jsonb_typeof(p_choice->'originalD6') = 'number' and (p_choice->>'originalD6')::int not between 1 and 6 then raise exception 'The app''s original D6 must be 1 to 6.' using errcode = '22023'; end if;
       if k.type_rules_id = 'pit_fighters' then raise exception 'Pit Fighters cannot sell captives.' using errcode = '22023'; end if;
-      expect_kg := 5 * d6; label := 'Sold to slavers for ' || 5 * d6 || ' gc (D6 ' || d6 || ')';
+      expect_kg := 5 * d6; label := 'Sold to slavers for ' || 5 * d6 || ' gc (D6 ' || d6 || case when jsonb_typeof(p_choice->'originalD6') = 'number' and (p_choice->>'originalD6')::int <> d6 then '; app rolled ' || (p_choice->>'originalD6') || ', changed by the player' when jsonb_typeof(p_choice->'originalD6') = 'number' then ', rolled by the app' else ', tabletop die' end || ')';
   end case;
   if og <> expect_og or kg <> expect_kg or ow <> 0 or kw <> 0 then raise exception 'The gold changes do not match the outcome.' using errcode = '22023'; end if;
   if kind = 'sell' then

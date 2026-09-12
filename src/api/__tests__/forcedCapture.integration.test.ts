@@ -1,5 +1,10 @@
 import { beforeAll, afterAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { buildForcedCaptiveProposal, canReturnToGroup } from '../forcedCaptives'
+import type { CaptiveCase } from '../captives'
+import { diffRoster } from '../../domain/rosterDiff'
+import { toRosterWarband } from '../../domain'
+import { eventAdvances } from '../../rules/resolve/eventAdvances'
 const enabled=process.env.SUPABASE_LOCAL==='1'
 const stats={M:5,WS:3,BS:3,S:3,T:3,W:1,I:4,A:1,Ld:5}
 const NG='33333333-3333-4333-8333-aaaaaaaaaaaa'
@@ -66,7 +71,6 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect((await file([cap(1,events[0]),cap(1,events[1])])).error?.message).toMatch(/casualty 2 of the group, not 1/)
   expect((await file([cap(1,events[0]),cap(2,events[0])])).error?.message).toMatch(/casualty 1 of the group, not 2|used twice/)
   expect((await file([cap(3,events[2])],{size:2})).error?.message).toMatch(/no unreverted Subjugator capture event/)
-  expect((await file([cap(1,events[0],{kit:[kit()[0]]}),cap(2,events[1],{kit:[kit()[0]]})])).error?.message).toMatch(/removed 2 of shield .* account for 0; with no model dead/)
   expect((await file([cap(1,events[0]),cap(2,events[1])],{size:2})).error?.message).toMatch(/should be patched to 1 models/)
   expect((await file([cap(1,events[0],{kit:kit(2)}),cap(2,events[1],{kit:kit(2)})])).error?.message).toMatch(/removed only 2 of sword/)
   expect((await file([cap(1,events[0],{kit:[{sourceItemId:swords,itemId:'axe',quantity:1}]}),cap(2,events[1])])).error?.message).toMatch(/names axe but the source row is sword/)
@@ -74,7 +78,13 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',events[1]))
   expect((await file([cap(1,events[0]),cap(2,events[1])])).error?.message).toMatch(/no unreverted Subjugator capture event/)
   expect(await cases()).toHaveLength(0)
-  expect((await groupRow()).size).toBe(3)
+  // Kit the owner used or discarded in the same report is not a capture claim: swords 3 → 0 with one sword captured is legitimate.
+  check(await admin.from('battle_events').update({reverted_at:null}).eq('id',events[1]))
+  check(await file([cap(1,events[0],{kit:[{sourceItemId:swords,itemId:'sword',quantity:1},kit()[1]]}),cap(2,events[1],{kit:[kit()[1]]})],{swordQty:0}))
+  const opened=await cases();expect(opened).toHaveLength(2)
+  expect(opened[0].model_snapshot.items.map((i:any)=>[i.item_rules_id,i.quantity])).toEqual([['sword',1],['shield',1]]);expect(opened[1].model_snapshot.items.map((i:any)=>i.item_rules_id)).toEqual(['shield'])
+  expect(check(await admin.from('items').select('id').eq('id',swords))).toHaveLength(0)
+  expect((await groupRow()).size).toBe(1)
  })
  it('opens one durable case per captured model with the exact kit share, then releases one into the unchanged group and ransoms the other into a new group after the group advanced',async()=>{
   check(await file([cap(1,events[0]),cap(2,events[1])]));check(await fileCaptor())
@@ -117,7 +127,9 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   const [first,second]=await cases()
   expect((await propose(captor,first.id,{kind:'sell',d6:3},[],[{table:'warbands',op:'update',data:{gold:115}}])).error?.message).toMatch(/gain exactly the captured model's kit/)
   expect((await propose(captor,first.id,{kind:'sell',d6:3},[{table:'henchman_groups',op:'update',id:group,data:{size:2}}],[{table:'warbands',op:'update',data:{gold:115}}])).error?.message).toMatch(/does not return/)
-  const id=check(await propose(captor,first.id,{kind:'sell',d6:3},[],[{table:'warbands',op:'update',data:{gold:115}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1,notes:'Painted red'}}]))
+  expect((await propose(captor,first.id,{kind:'sell',d6:3,originalD6:9},[],[{table:'warbands',op:'update',data:{gold:115}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1,notes:'Painted red'}}])).error?.message).toMatch(/original D6 must be 1 to 6/)
+  const id=check(await propose(captor,first.id,{kind:'sell',d6:3,originalD6:5},[],[{table:'warbands',op:'update',data:{gold:115}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1,notes:'Painted red'}}]))
+  expect(check(await victim.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/Sold to slavers for 15 gc \(D6 3; app rolled 5, changed by the player\)/)
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(check(await admin.from('warbands').select('gold').eq('id',cw).single()).gold).toBe(115)
   expect(check(await admin.from('items').select('item_rules_id').eq('warband_id',cw).eq('holder_type','stash')).map((i:any)=>i.item_rules_id).sort()).toEqual(['shield','sword'])
@@ -151,5 +163,33 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   const id2=check(await propose(captor,c.id,{kind:'sell',d6:2},[],[{table:'warbands',op:'update',data:{gold:110}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1,notes:'Family heirloom'}}]))
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id2,p_action:'accept'}))
   expect(check(await admin.from('items').select('quantity,notes').eq('warband_id',cw).eq('holder_type','stash').order('quantity'))).toEqual([{quantity:1,notes:'Family heirloom'},{quantity:2,notes:''}])
+ })
+
+ it("accepts the app's own forced-captive builder output: rejoin with annotated kit, new group after the group advanced, and a sale",async()=>{
+  const detail=async(id:string)=>{const w=check(await admin.from('warbands').select('*').eq('id',id).single()),hs=check(await admin.from('heroes').select('*').eq('warband_id',id)),gs=check(await admin.from('henchman_groups').select('*').eq('warband_id',id).order('created_at')),is=check(await admin.from('items').select('*').eq('warband_id',id).order('created_at'));return {warband:w,heroes:hs,groups:gs,items:is,roster:toRosterWarband(w,hs,gs,is)}}
+  const viaBuilder=async(c:CaptiveCase,client:SupabaseClient,choice:{kind:'release'}|{kind:'ransom';gold:number}|{kind:'sell';d6:number;originalD6?:number})=>{
+   const [owner,captorD]=[await detail(vw),await detail(cw)]
+   const built=buildForcedCaptiveProposal({item:c,owner,captor:captorD,choice,newGroupId:crypto.randomUUID()})
+   const r=await client.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:built.choice,p_message:built.message,p_owner_changes:diffRoster(owner,built.nextOwner),p_captor_changes:diffRoster(captorD,built.nextCaptor),p_advances:[...eventAdvances(owner.roster,built.nextOwner),...eventAdvances(captorD.roster,built.nextCaptor)],p_expected:await expected()})
+   return {built,r,owner}
+  }
+  check(await file([cap(1,events[0]),cap(2,events[1])]));check(await fileCaptor())
+  const [first,second]=await cases()
+  const a=await viaBuilder(first,victim,{kind:'release'});expect(a.built.rejoins).toBe(true);expect(canReturnToGroup(a.owner,first)).toBe(true);const idA=check(a.r)
+  check(await captor.rpc('respond_captive_proposal',{p_proposal_id:idA,p_action:'accept'}))
+  expect(await groupRow()).toEqual({size:2,xp:2});expect(await qty(swords)).toBe(2);expect(await qty(shields)).toBe(2)
+  check(await admin.from('henchman_groups').update({xp:5}).eq('id',group))
+  const b=await viaBuilder(second,captor,{kind:'ransom',gold:15});expect(b.built.rejoins).toBe(false);const idB=check(b.r)
+  expect(check(await victim.from('captive_proposals').select('message').eq('id',idB).single()).message).toMatch(/Ransomed for 15 gc: Warriors \(model 2\) .* returns as a new group carrying his own profile/)
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:idB,p_action:'accept'}))
+  const groups=check(await admin.from('henchman_groups').select('name,size,xp').eq('warband_id',vw).order('created_at'))
+  expect(groups).toEqual([{name:'Warriors',size:2,xp:5},{name:'Warriors (returned)',size:1,xp:2}])
+  expect(check(await admin.from('warbands').select('gold').eq('id',vw).single()).gold).toBe(85)
+  // Reverse the ransom and sell the second model instead: the builder sends both rows to the captor's stash with notes intact.
+  check(await gm.rpc('reverse_captive_resolution',{p_case_id:second.id,p_reason:'They preferred the coin'}))
+  const s=await viaBuilder((await cases())[1],captor,{kind:'sell',d6:4,originalD6:4});const idS=check(s.r);expect(s.built.message).toMatch(/app rolled 4/)
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:idS,p_action:'accept'}))
+  expect(check(await admin.from('warbands').select('gold').eq('id',cw).single()).gold).toBe(120)
+  expect(check(await admin.from('items').select('item_rules_id,quantity,notes').eq('warband_id',cw).eq('holder_type','stash').order('item_rules_id'))).toEqual([{item_rules_id:'shield',quantity:1,notes:'Painted red'},{item_rules_id:'sword',quantity:1,notes:''}])
  })
 })

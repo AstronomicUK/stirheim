@@ -1,5 +1,5 @@
 import { findItem } from '../../rules/data/items'
-import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
+import { itemRestrictionWarnings, equipmentRemovalWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
 import { useMemo, useState } from 'react'
 import { moveItem, type InventoryLocation } from '../../rules/resolve/trading'
 import type { RosterItem } from '../../rules/types/roster'
@@ -143,6 +143,16 @@ function MoveSheet({ selection, locations, trade, onClose }: MoveSheetProps) {
   }
   const catalogueItem = findItem(selection.item.itemId ?? '')
   const warnings = destination.kind !== 'stash' && catalogueItem ? itemRestrictionWarnings(roster, catalogueItem, holder, { alreadyHeld: true, bans: trade.houseRules.bans }) : []
+  const sourceLocation = selection.from
+  let sourceHolder: ItemHolder | undefined
+  if (sourceLocation.kind === 'hero') {
+    const source = roster.heroes.find(h => h.id === sourceLocation.id)
+    if (source) sourceHolder = { kind: 'hero', id: source.id, name: source.name, unitTemplateId: source.unitTemplateId, equipment: source.equipment }
+  } else if (sourceLocation.kind === 'henchmanGroup') {
+    const source = roster.henchmenGroups.find(g => g.id === sourceLocation.id)
+    if (source) sourceHolder = { kind: 'henchmanGroup', id: source.id, name: source.name, unitTemplateId: source.unitTemplateId, size: source.size, equipment: source.equipment }
+  }
+  if (sourceHolder) warnings.push(...equipmentRemovalWarnings(roster, sourceHolder, selection.item.itemId, quantity))
   const ready = canTrade && toKey !== '' && quantity >= 1 && (!warnings.length || Boolean(overrideReason.trim()))
 
   async function confirm() {
@@ -201,7 +211,7 @@ function MoveSheet({ selection, locations, trade, onClose }: MoveSheetProps) {
         ) : null}
         {warnings.length ? <Notice tone="warn" title="Equipment restrictions">
           {warnings.map(warning => <p key={warning}>{warning}</p>)}
-          <TextField label="Reason for equipping anyway" value={overrideReason} onChange={e => setOverrideReason(e.target.value)} placeholder="The table agreed …" hint="Saved with this equipment move." />
+          <TextField label="Reason for moving anyway" value={overrideReason} onChange={e => setOverrideReason(e.target.value)} placeholder="The table agreed …" hint="Saved with this equipment move." />
         </Notice> : null}
         {toKey.startsWith('henchmanGroup:') ? (
           <p className="text-xs text-ink-dim">Henchmen in a group are equipped alike; move one per model to keep the roster tidy.</p>

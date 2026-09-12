@@ -60,6 +60,19 @@ export function requiredEquipmentWarnings(warband: RosterWarband, holder: ItemHo
   return bows >= models ? [] : [`${holder.name ?? "This warrior"} must carry ${models > 1 ? "a bow for each model" : "a bow"} under the Outlaws equipment rule; crossbows do not qualify. Only the Cleric may choose to go without a bow.`];
 }
 
+/** Warn before removing required kit, without flagging unrelated pre-existing shortages. */
+export function equipmentRemovalWarnings(warband: RosterWarband, holder: ItemHolder, itemId: string | null, quantity: number): string[] {
+  if (!itemId || !BOW_IDS.has(itemId) || quantity <= 0) return [];
+  let remaining = quantity;
+  const equipment = holder.equipment.map(entry => {
+    if (entry.itemId !== itemId || remaining <= 0) return entry;
+    const removed = Math.min(entry.quantity, remaining);
+    remaining -= removed;
+    return { ...entry, quantity: entry.quantity - removed };
+  }).filter(entry => entry.quantity > 0);
+  return requiredEquipmentWarnings(warband, { ...holder, equipment });
+}
+
 export const MAX_HAND_WEAPONS = 2;
 export const MAX_MISSILE_WEAPONS = 2;
 

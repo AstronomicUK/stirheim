@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { findItem, equipmentListOptions, equipmentBundle } from '../../data/items'
 import type { RosterHero, RosterWarband } from '../../types/roster'
 import { equipmentListWarning } from '../equipmentLists'
-import { itemRestrictionWarnings, requiredEquipmentWarnings, rosterItemWarnings, type ItemHolder } from '../itemRestrictions'
+import { itemRestrictionWarnings, requiredEquipmentWarnings, equipmentRemovalWarnings, rosterItemWarnings, type ItemHolder } from '../itemRestrictions'
 import { equipmentBanReason } from '../roster'
 const hero = (unitTemplateId: string, skillIds: string[] = []): RosterHero => ({ id: 'hero', name: 'Warrior', unitTemplateId, skillIds, skillTableIds: [], spellIds: [], stats: { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }, xp: 0, levelUps: 0, flags: {}, equipment: [], injuries: [], status: 'active' })
 const roster = (warbandTemplateId: string, h: RosterHero): RosterWarband => ({ id: 'w', name: 'Warband', warbandTemplateId, heroes: [h], henchmenGroups: [], hiredSwords: [], stash: [], gold: 100, wyrdstone: 0, veteranPool: null })
@@ -250,4 +250,17 @@ it('checks both Outlaw bow requirements, Cleric exemption and one-missile limit'
     expect(requiredEquipmentWarnings(r, { kind: 'hiredSword', equipment: [] })).toEqual([])
     expect(itemRestrictionWarnings(r, findItem('bow')!, { ...group, equipment: [{ itemId: 'bow', quantity: 3 }] }, { alreadyHeld: true }).join(' ')).not.toContain('may carry only one')
   }
+})
+
+
+it('warns before moving away required bows without mutating inventory or warning about unrelated moves', () => {
+  const h = { ...hero('outlaws_champion'), equipment: [{ itemId: 'bow', quantity: 2 }] }, r = roster('outlaws_of_stirwood_forest', h)
+  expect(equipmentRemovalWarnings(r, holder(h), 'bow', 1)).toEqual([])
+  expect(equipmentRemovalWarnings(r, holder(h), 'bow', 2).join(' ')).toContain('must carry a bow')
+  expect(h.equipment[0].quantity).toBe(2)
+  const group: ItemHolder = { kind: 'henchmanGroup', size: 2, unitTemplateId: 'outlaws_marksman', equipment: h.equipment }
+  expect(equipmentRemovalWarnings(r, group, 'bow', 1).join(' ')).toContain('for each model')
+  expect(equipmentRemovalWarnings(r, { ...holder(h), unitTemplateId: 'outlaws_cleric' }, 'bow', 2)).toEqual([])
+  expect(equipmentRemovalWarnings(r, { ...holder(h), equipment: [] }, 'dagger', 1)).toEqual([])
+  expect(equipmentRemovalWarnings(r, { kind: 'stash', equipment: h.equipment }, 'bow', 2)).toEqual([])
 })

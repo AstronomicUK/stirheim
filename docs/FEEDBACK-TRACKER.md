@@ -4037,3 +4037,12 @@ Original and Redux Outlaws now warn against non-bow missile equipment for ordina
 Validation:21focused and2,053ordinary tests pass; build/typecheck pass; lint3oldwarnings. Covers both lists, missing/adequate bows, group quantities, extra weapons, weapon skills, Cleric and hired-kit exceptions. No UI/DB changes or newbrowserQA. Logs /tmp/stirheim-outlaw-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy.
 
 Remaining: stash moves currently check destination restrictions; removing the last mandatory bow shows a roster warning afterward, but no pre-move source warning is claimed. requiredEquipmentWarnings(warband,holder) is exported for that follow-up. Creation-only Hunting Arrows/Ithilmar and remaining Slayer clauses still open under#67. Morningquestions unchanged.
+
+
+## Next local batch — #67 required-kit source warning before stash moves
+
+Stash moves now check whether the source warrior/group loses its mandatory bow, in addition to destination restrictions. Source warning uses shared requiredEquipmentWarnings and requests a recorded reason before moving. Unrelated moves do not flag pre-existing shortages; moving a spare bow is allowed if every model keeps one. Clerics and stash sources remain exempt. Label now says Reason for moving anyway.
+
+Validation:22focused and2,054ordinary tests pass; build/typecheck pass; lint3oldwarnings. Disposable390px mobile QA moved an Outlaw's lastbow to stash, verified disabledbutton untilreason, savedwarning/reason inhistory, then movedbow back withnoreasonneeded. Verified quantities, unchanged100gc, nooverflow/pageerrors andcleanedfixtures. InitialQA-script typo andlocalJWTfutureclockerror were corrected/retried; finalpass /tmp/stirheim-required-kit-move-browser.log. Otherlogs /tmp/stirheim-required-kit-move-{tests,all-tests,build,lint}.log. NoSQL/push/deploy.
+
+Remaining#67 creation-only Hunting Arrows/Ithilmar and Slayer clauses. Item sales can still remove mandatorykit with roster warning afterward; pre-sale sourcewarning is a potential follow-up, not claimed complete. Allchangeslocal; production unchanged. Morningquestions unchanged.

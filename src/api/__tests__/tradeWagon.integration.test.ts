@@ -2,9 +2,9 @@ import {createClient,type SupabaseClient} from '@supabase/supabase-js'
 import {beforeAll,beforeEach,afterEach,describe,it,expect} from 'vitest'
 const uid='22222222-2222-4222-8222-222222222222'
 describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot validation',()=>{
- let admin:SupabaseClient,campaign:string,merchant:string,captor:string,match:string,report:string,wagon:string,cargo:string
+ let admin:SupabaseClient,player:SupabaseClient,campaign:string,merchant:string,captor:string,match:string,report:string,wagon:string,cargo:string
  let snapshot:Record<string,any>
- beforeAll(()=>{admin=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!)})
+ beforeAll(async()=>{admin=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!);player=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_ANON_KEY!,{auth:{persistSession:false}});const auth=await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'});if(auth.error)throw auth.error})
  beforeEach(async()=>{
   ;[campaign,merchant,captor,match,report,wagon,cargo]=Array.from({length:7},()=>crypto.randomUUID())
   for(const result of [
@@ -18,7 +18,7 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   const rows=await admin.from('items').select('*').eq('warband_id',merchant);if(rows.error)throw rows.error
   snapshot={match_id:match,merchant_id:merchant,captor_id:captor,failed_rout:true,driver_present:false,merchant_all_ooa:false,rare_search_blocked:true,wagon:{kind:'item',expected:rows.data.find(i=>i.id===wagon)},cargo:{items:[rows.data.find(i=>i.id===cargo)],wyrdstone:3}}
  })
- afterEach(async()=>{const released=await admin.rpc('release_trade_wagon_capture',{p_report_id:report});if(released.error)throw released.error;await admin.from('campaigns').delete().eq('id',campaign);await admin.from('warbands').delete().in('id',[merchant,captor])})
+ afterEach(async()=>{const state=await admin.from('trade_wagon_captures').select('state,settlement').eq('report_id',report).maybeSingle();if(state.data?.state==='settled'&&state.data.settlement?.kind==='ransom'){const undone=await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Disposable QA cleanup'});if(undone.error)throw undone.error}const released=await admin.rpc('release_trade_wagon_capture',{p_report_id:report});if(released.error)throw released.error;await admin.from('campaigns').delete().eq('id',campaign);await admin.from('warbands').delete().in('id',[merchant,captor])})
  const validate=(value:Record<string,any>=snapshot)=>admin.rpc('validate_trade_wagon_capture',{p_report_id:report,p_capture:value})
  it('accepts original cargo without transferring anything or taking gold',async()=>{
   expect((await validate()).error).toBeNull()
@@ -84,6 +84,59 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   expect((await admin.from('henchman_groups').select('size').eq('id',wagon).single()).data?.size).toBe(0)
   expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error).toBeNull()
   expect((await admin.from('henchman_groups').select('size').eq('id',wagon).single()).data?.size).toBe(1)
+ })
+ const reserveAndWinner=async()=>{
+  const reserved=await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:snapshot});expect(reserved.error).toBeNull()
+  const won=await admin.from('match_reports').insert({match_id:match,warband_id:captor,submitted_by:uid,won:true,result:'won',applied:{},undo:{}});expect(won.error).toBeNull()
+ }
+ const ransom=async(gold=25,overrides:Record<string,unknown>={})=>{
+  const rows=await admin.from('warbands').select('id,updated_at').in('id',[merchant,captor]);if(rows.error)throw rows.error
+  return player.rpc('settle_trade_wagon_ransom',{p_report_id:report,p_gold:gold,p_reason:'Agreed return of wagon and all cargo',p_merchant_updated:rows.data.find(w=>w.id===merchant)!.updated_at,p_captor_updated:rows.data.find(w=>w.id===captor)!.updated_at,...overrides})
+ }
+ it('settles a ransom once and undoes it back into pending reservation before release',async()=>{
+  await reserveAndWinner()
+  expect((await ransom()).error).toBeNull()
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:55,wyrdstone:3})
+  expect((await admin.from('warbands').select('gold').eq('id',captor).single()).data?.gold).toBe(25)
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toHaveLength(2)
+  expect((await ransom()).error?.message).toContain('no longer awaiting')
+  expect((await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Agreed correction'})).error).toBeNull()
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toEqual([])
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:80,wyrdstone:0})
+  expect((await admin.from('warbands').select('gold').eq('id',captor).single()).data?.gold).toBe(0)
+ })
+ it('rejects an unaffordable or stale ransom before returning any reserved cargo',async()=>{
+  await reserveAndWinner()
+  expect((await ransom(81)).error?.message).toContain('cannot afford')
+  expect((await ransom(25,{p_merchant_updated:'2000-01-01T00:00:00Z'})).error?.message).toContain('warband changed')
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toEqual([])
+ })
+ it('refuses ransom undo after later spending or equipment edits',async()=>{
+  await reserveAndWinner();expect((await ransom()).error).toBeNull()
+  await admin.from('warbands').update({gold:24}).eq('id',captor)
+  expect((await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Correction'})).error?.message).toContain('treasury changed')
+  await admin.from('warbands').update({gold:25}).eq('id',captor)
+  await admin.from('items').update({notes:'Later edit'}).eq('id',cargo)
+  expect((await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Correction'})).error?.message).toContain('equipment changed')
+  await admin.from('items').update({notes:'Family blades'}).eq('id',cargo)
+ })
+ it('requires a filed winning captor and permission to edit both warbands',async()=>{
+  expect((await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:snapshot})).error).toBeNull()
+  expect((await ransom()).error?.message).toContain('winning battle report')
+  const won=await admin.from('match_reports').insert({match_id:match,warband_id:captor,submitted_by:uid,won:true,result:'won',applied:{},undo:{}});expect(won.error).toBeNull()
+  const outsider=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_ANON_KEY!,{auth:{persistSession:false}})
+  const login=await outsider.auth.signInWithPassword({email:'gm@stirheim.test',password:'stirheim-dev'});expect(login.error).toBeNull()
+  expect((await outsider.rpc('settle_trade_wagon_ransom',{p_report_id:report,p_gold:25,p_reason:'Unauthorised QA attempt',p_merchant_updated:new Date().toISOString(),p_captor_updated:new Date().toISOString()})).error?.message).toContain('owner of both warbands')
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toEqual([])
+ })
+ it('ransoms and re-reserves the same group-form wagon without making a duplicate unit',async()=>{
+  await admin.from('items').delete().eq('id',wagon)
+  const group=await admin.from('henchman_groups').insert({id:wagon,warband_id:merchant,name:'Trade Wagon',unit_type_rules_id:'merchant_trade_wagon',size:1,stats:{M:0,WS:0,BS:0,S:0,T:8,W:4,I:0,A:0,Ld:0}}).select('*').single();expect(group.error).toBeNull()
+  snapshot={...snapshot,wagon:{kind:'group',expected:group.data}}
+  await reserveAndWinner();expect((await ransom()).error).toBeNull()
+  expect((await admin.from('henchman_groups').select('id,size').eq('warband_id',merchant)).data).toEqual([{id:wagon,size:1}])
+  expect((await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Correction'})).error).toBeNull()
+  expect((await admin.from('henchman_groups').select('id,size').eq('warband_id',merchant)).data).toEqual([{id:wagon,size:0}])
  })
  it('rejects a recorded losing captor and a changed wagon',async()=>{
   await admin.from('items').update({notes:'Later modification'}).eq('id',wagon)

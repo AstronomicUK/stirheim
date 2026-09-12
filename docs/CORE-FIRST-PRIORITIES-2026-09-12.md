@@ -1,12 +1,14 @@
 # Proposed core-first projects — 12 September 2026
 
+**Implementation handoff:** use [Core rulebook collaboration project](CORE-RULEBOOK-COLLABORATION-PROJECT.md) for the shared Codex/Claude scope, current release baseline and working arrangements.
+
 Tom's instruction: finish the current Trade Wagon capture work, then agree the priority order before starting another project. Core Mordheim rulebook defects take precedence over supplement completeness. This is a proposal, not authorisation to start a new project.
 
 ## Release and scope boundary
 
-The agreed #114/#122/#163/#112 release is already live. Subsequent equipment, combat, skills and Trade Wagon changes are local and must be batched. Do not repeat the earlier deployment. The main tracker status lines are often older than their dated follow-ups; they are not reliable remaining-work counts on their own.
+The agreed #114/#122/#163/#112 release is already live. The subsequent equipment, combat, skills and Trade Wagon batch is now deployed as source `f74c873` / Netlify `6aa4fdf7018fd66a64a404c2`, with production migrations through 86 and hosted checks passed. Do not repeat the earlier deployment. The main tracker status lines are often older than their dated follow-ups; they are not reliable remaining-work counts on their own.
 
-Trade Wagon keep/ransom, report filing and withdrawal, cargo protection, mobile controls and the rare-search restriction have local verification. Contents-only theft is now implemented and tested under Tom's ruling: return the empty wagon and its two draft horses to the Merchant Caravan. The Trade Wagon abandonment project is complete locally, awaiting a batched release. #146 (wagon destruction/storage absence) is a separate supplement project and is not part of closing abandonment under #68.
+Trade Wagon keep/ransom, report filing and withdrawal, cargo protection, mobile controls and the rare-search restriction have local verification. Contents-only theft is now implemented and tested under Tom's ruling: return the empty wagon and its two draft horses to the Merchant Caravan. The Trade Wagon abandonment project is complete and deployed. #146 (wagon destruction/storage absence) is a separate supplement project and is not part of closing abandonment under #68.
 
 ## Recommended order
 
@@ -29,7 +31,7 @@ A reproducible severe core data-loss or wrong-warband bug jumps ahead of this or
 - #180's Sigmar prayer protection filtering already has an implementation follow-up and appears in current casting code. Re-test as part of core magic; do not rebuild it as missing.
 - #70 already includes failed Fear combat math and persisted Stupidity tests for individually tracked fighters. Its remaining scope is narrower than the main tracker heading.
 - #59 already has local Strongman, Lightning Reflexes, Jump Up, equipment-training and eligibility work. Prioritise remaining core gaps, not repeated fixes.
-- #67 is fixed locally awaiting deployment. It belongs in release verification, not a new project.
+- #67 is fixed and deployed. It belongs in release verification, not a new project.
 
 ## Defer below core/shared work
 

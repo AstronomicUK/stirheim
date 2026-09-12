@@ -33,9 +33,9 @@ describe('computeOdds in melee', () => {
     const fight = setup(vampire, bearer, 'sword', null)
     const charging = { ...fight.context, charging: true }
     expect(computeOdds({ ...fight, context: charging }).notes.join(' ')).toContain('must pass a Leadership test to charge')
-    expect(computeOdds(fight).notes.join(' ')).not.toContain('Garlic:')
-    expect(computeOdds({ ...fight, attacker: captain, context: charging }).notes.join(' ')).not.toContain('Garlic:')
-    expect(computeOdds({ ...fight, defender: skaven, context: charging }).notes.join(' ')).not.toContain('Garlic:')
+    expect(computeOdds(fight).notes.join(' ')).not.toContain('Captain must pass a Leadership test')
+    expect(computeOdds({ ...fight, attacker: captain, context: charging }).notes.join(' ')).not.toContain('Captain must pass a Leadership test')
+    expect(computeOdds({ ...fight, defender: skaven, context: charging }).notes.join(' ')).not.toContain('Captain must pass a Leadership test')
   })
   it('uses the saved drug Initiative bonus for either side’s strike order, without doubling it', () => {
     const dose = { label: 'Took Crimson Shade', appliesTo: 'self' as const, strengthBonus: 1, initiativeBonus: 2 }

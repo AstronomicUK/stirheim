@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { campaignHouseRulesSchema, campaignSettingsSchema, defaultCampaignSettings } from "../settings";
 
 describe("campaign settings", () => {
+  it("keeps Healing Herbs reusable for old campaigns and preserves an explicit single-use choice", () => {
+    expect(campaignSettingsSchema.parse({ houseRules: { halfPriceArmour: false } }).houseRules.healingHerbsSingleUse).toBe(false);
+    const saved = campaignSettingsSchema.parse({ houseRules: { healingHerbsSingleUse: true } });
+    expect(campaignSettingsSchema.parse(JSON.parse(JSON.stringify(saved))).houseRules.healingHerbsSingleUse).toBe(true);
+  });
   it("an empty object parses to the defaults", () => {
     expect(campaignSettingsSchema.parse({})).toEqual(defaultCampaignSettings());
     expect(defaultCampaignSettings()).toEqual({
@@ -16,7 +21,7 @@ describe("campaign settings", () => {
       rabbitsFootBattleOnly: true,
       rewardsOfTheShadowlord: false,
       firstSpellRule: "random",
-        dismissHeroForTalent: false,
+        healingHerbsSingleUse: false, dismissHeroForTalent: false,
         opposedParryWS: false,
         bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
@@ -70,7 +75,7 @@ describe("campaign settings", () => {
       rabbitsFootBattleOnly: true,
       rewardsOfTheShadowlord: false,
       firstSpellRule: "random",
-        dismissHeroForTalent: false,
+        healingHerbsSingleUse: false, dismissHeroForTalent: false,
         opposedParryWS: false,
         bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
@@ -92,7 +97,7 @@ describe("campaign settings", () => {
     rabbitsFootBattleOnly: true,
     rewardsOfTheShadowlord: false,
     firstSpellRule: "random",
-      dismissHeroForTalent: false,
+      healingHerbsSingleUse: false, dismissHeroForTalent: false,
         opposedParryWS: false,
       bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
     });

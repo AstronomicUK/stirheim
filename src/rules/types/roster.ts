@@ -238,6 +238,8 @@ export function emptyCampaignBans(): CampaignBans {
 export type FirstSpellRule = "random" | "chooseFreely" | "rollTwicePickOne";
 
 export interface CampaignHouseRules {
+  /** Optional: each actual Healing Herbs use consumes one dose. RAW herbs are reusable. */
+  healingHerbsSingleUse: boolean;
   /** Optional: dismiss an existing Hero to accept Lad’s Got Talent at the Hero cap. */
   dismissHeroForTalent: boolean;
   /** Strength erodes armour saves (core chart). Off by house rule. */
@@ -264,6 +266,7 @@ export interface CampaignHouseRules {
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
   return {
+    healingHerbsSingleUse: false,
     dismissHeroForTalent: false,
     strengthArmourPiercing: false,
     optionalCriticalTables: true,

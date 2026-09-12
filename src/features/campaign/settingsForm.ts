@@ -111,6 +111,11 @@ export interface HouseRuleSwitch {
 /** One switch per house rule, with the one-line explanation the form shows under it. */
 export const HOUSE_RULE_SWITCHES: HouseRuleSwitch[] = [
   {
+    key: 'healingHerbsSingleUse',
+    label: 'Single-use Healing Herbs',
+    description: 'Each confirmed use consumes one dose. Off follows the printed rule: herbs remain reusable. A Hero still needs to use them at the start of recovery, outside hand-to-hand combat.',
+  },
+  {
     key: 'dismissHeroForTalent',
     label: 'Make room for Lad’s Got Talent',
     description: 'At the Hero limit, allow a player to dismiss an existing Hero and promote the henchman instead of rerolling. Both changes are confirmed together; dismissed equipment goes to the stash.',

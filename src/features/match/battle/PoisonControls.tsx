@@ -19,7 +19,7 @@ export function PoisonControls({ warrior, kit, items, events, sheet, readOnly, e
   const vials = items.filter(item => item.warband_id === warrior.warbandId && (item.holder_id === warrior.id || item.holder_type === 'stash') && (item.item_rules_id === 'black_lotus' || item.item_rules_id === 'dark_venom'))
   const applications = sheet.poisonApplications.filter(use => use.warriorId === warrior.id && !use.correction)
   const legacy = (sheet.itemsUsed[warrior.id] ?? []).filter(id => id === 'black_lotus' || id === 'dark_venom')
-  const weapons = [...new Map([...kit.melee, ...kit.ranged].filter(weapon => !isBlackpowderWeapon(weapon)).map(weapon => [weapon.id, weapon])).values()]
+  const weapons = [...new Map([...kit.melee, ...kit.ranged, ...(kit.tailWeapon ? [kit.tailWeapon] : [])].filter(weapon => !isBlackpowderWeapon(weapon)).map(weapon => [weapon.id, weapon])).values()]
   const choices = weapons.flatMap(weapon => physicalWeaponChoices(items, events, warrior.warbandId, warrior.id, weapon.id).flatMap(choice => (weapon.paired ? [0, 1] as const : [undefined]).map(bladeIndex => ({ ...choice, key: `${choice.key}${bladeIndex === undefined ? '' : `:blade:${bladeIndex}`}`, physicalKey: choice.key, bladeIndex, label: `${choice.label}${bladeIndex === undefined ? '' : bladeIndex === 0 ? ' · main blade (main-hand attacks)' : ' · off-hand blade (one extra attack)'}`, weaponId: weapon.id }))))
   const vial = vials.find(item => item.id === vialId) ?? vials.find(item => poisonVialsRemaining(sheet, item) > 0) ?? vials[0]
   const weapon = choices.find(choice => choice.key === weaponKey) ?? choices[0]

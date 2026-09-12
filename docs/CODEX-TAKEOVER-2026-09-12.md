@@ -186,3 +186,21 @@ One vial now selects the main or off-hand blade of a paired weapon. The pair is 
 Sign of Sigmar now removes the first melee attack from Undead/Possessed opponents in the first combat round, minimum one overall. The same per-weapon allocation drives the probability chain, sensitivity and roller, retaining the correct off-hand profile. Mobile accepted: three attacks become two when first-round confirmation is selected (/tmp/stirheim-sign-sigmar-mobile-qa.mjs). Focused combat/odds tests pass.
 
 Claude's #96 structured target now travels through Combatant with warband type and leader identity. Combat notes name the recorded target and state whether the selected opponent matches. The first-round Hatred reroll remains player-confirmed; unmatched or legacy injuries never automatically grant it. Asked Claude to review whether leader-scope hatred should follow a successor or remain on the originally recorded leader. Fixed a Swivel selector index reference caught in combined typechecking after the paired-poison edit.
+
+### Tail Fighting and final core reload coverage
+
+Tail Fighting now chooses shield, a specific physical sword/knife, or nothing. The weapon is reserved for the tail and adds one attack (not doubled by Frenzy), retains its own poison coating, and cannot reuse a hand-held physical copy. The shield remains available with occupied hands but gives its normal +1 once, correcting the previous double-counting. A broken tail weapon stops supplying an attack rather than silently choosing another copy. The choice and change log persist; opponents read the saved choice. Paired weapons that forbid other weapons cannot also use a tail-held blade.
+
+Mobile accepted in /tmp/stirheim-tail-mobile-qa.mjs: third attack with a distinct sword, persistence after reload, two attacks when choosing the shield instead. Focused tests cover Frenzy, poison only on tail, three swords, shield with occupied hands and physical break/reversal.
+
+Hochland Long Rifle is core (02:1132); connected it to the same physical saved reload path as the Handgun, including Hunter and explained corrections. Mobile /tmp/stirheim-rifle-mobile-qa.mjs passes. Starting the roller again is blocked after either gun fires unless corrected. Close-combat pistol profiles are separately tracked under #2/#69 and remain a core follow-up; this batch’s #73 clause is reload enforcement, not claiming those other entries complete.
+
+Final validation in progress: latest broad suite 2265 passed / 216 DB skipped; build and lint pass (existing audit/CSS/chunk warnings). Claude assigned full local DB suite and pending-migration audit in 7b4b35f7. Do not deploy until new-batch approval per the project brief.
+
+### Final validation results received
+
+Claude found and fixed a genuine migration087 regression: start_match had omitted the existing trap/Fanatic supply calls. Commit1f14ec8 restores both; local DB suite now216/216 passes. Only migration087 is pending production; apply database before the new frontend (four-argument start_match). This is a release-order requirement, not a request for Tom to perform a manual technical step. Deployment owner can apply it once the new release is approved.
+
+The independent report’s old FightTab-index blocker is resolved and full build/typecheck passes. The addiction UI/report/withdrawal acceptance was completed earlier in this document. #53 confirmation meets the brief; no new user ruling is needed. #156 core scope is selected-weapon and conditional strike-order advice, already source-tested and browser-verified in the 11 September checkpoint; automatically interleaving both players’ entire combat phases is not promised by this brief. Keep wider tracker scope partial.
+
+A handgun click test timed out once while build/DB work ran concurrently; its isolated rerun passed, including preventing Start again from bypassing reload. No product error was observed. Final normal suite/build to run against the committed source after this checkpoint.

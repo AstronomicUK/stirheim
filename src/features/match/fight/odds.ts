@@ -73,6 +73,7 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
   const traits = [...c.traitIds]
   let melee = kit.melee
   let ranged = kit.ranged
+  let tailWeapon = kit.tailWeapon
   // "Crimson Shade has no effect on Undead such as Vampires and Zombies, or the Possessed" (02:1981,
   // likewise Mandrake Root 02:2017 and Mad Cap Mushrooms 02:2009): the dose is still used up, but
   // an Undead or Possessed warrior gets nothing from it.
@@ -118,10 +119,11 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
     }
     melee = melee.map(coat)
     ranged = ranged.map(coat)
+    if (tailWeapon) tailWeapon = coat(tailWeapon)
   }
   const stunned = active.some((e) => e.appliesTo === 'self' && e.stunnedBecomesKnockedDown)
   if (stunned && !traits.includes('no_pain')) traits.push('no_pain')
-  return { combatant: { ...c, stats, traitIds: traits }, kit: { ...kit, melee, ranged } }
+  return { combatant: { ...c, stats, traitIds: traits }, kit: { ...kit, melee, ranged, tailWeapon } }
 }
 
 /** Injury bonus a coating writes onto the weapon (Hunting Arrows, the Forest Goblin poison). */
@@ -162,15 +164,13 @@ export const TAIL_FIGHTING_SKILL = 'skaven_of_clan_eshin_skills_tail_fighting'
 
 /** Tail Fighting used defensively: the Skaven has the skill and a shield (or kite shield) for the tail to hold. */
 export function tailShield(c: Combatant, kit: Loadout): boolean {
-  return c.skillIds.includes(TAIL_FIGHTING_SKILL) && Boolean(kit.armour.shield || kit.armour.kiteShield)
+  return c.skillIds.includes(TAIL_FIGHTING_SKILL) && Boolean(kit.tailShield)
 }
 
 export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
   const traits = [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))]
-  // "The Skaven may wield a shield … with its tail. The model gains … a +1 bonus to its armour save."
-  // The extra-attack alternative (a knife or sword in the tail) is chosen at the table for now.
-  const tailBonus = tailShield(c, kit) ? 1 : 0
-  const saveBonus = { melee: kit.saveBonus.melee + tailBonus, missile: kit.saveBonus.missile + tailBonus, savesFromNothing: kit.saveBonus.savesFromNothing }
+  // A shield gives its normal +1 once; Tail Fighting frees the hands, not a second shield bonus.
+  const saveBonus = kit.saveBonus
   if (kit.melee.some(w=>w.special.includes('veskitTwoParries'))) traits.push('veskit_two_parries')
   const metallicBody = traits.includes('veskit_metallic_body')
   const ballAndChain = kit.melee.reduce((n, w) => n + (w.defenderToBeHitModifier ?? 0), 0)
@@ -201,7 +201,7 @@ export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
 
 /** Both hands on the primary weapon: no off-hand weapon, shield or buckler. */
 export function isTwoHandedUse(kit: Loadout, offHand: Weapon | null): boolean {
-  return offHand === null && !kit.armour.shield && !kit.armour.buckler && !kit.armour.kiteShield
+  return offHand === null && (kit.tailShield || (!kit.armour.shield && !kit.armour.kiteShield)) && !kit.armour.buckler
 }
 
 /** The campaign's switches in the engine's terms. */
@@ -290,7 +290,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => w.choiceId !== undefined ? k.choiceId === w.choiceId : k.id === w.id) ?? w
   const primary = pick(setup.primary)
   const offHand = setup.offHand ? pick(setup.offHand) : null
-  const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
+  const weapons = phase === 'melee' ? [primary, ...(offHand ? [offHand] : []), ...(dosed.kit.tailWeapon && !primary.special.includes('cumbersomeNoOtherWeapons') ? [dosed.kit.tailWeapon] : [])] : [primary]
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
   const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
@@ -364,7 +364,7 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
   const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => w.choiceId !== undefined ? k.choiceId === w.choiceId : k.id === w.id) ?? w
   const primary = pick(setup.primary)
   const offHand = setup.offHand ? pick(setup.offHand) : null
-  const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]
+  const weapons = phase === 'melee' ? [primary, ...(offHand ? [offHand] : []), ...(dosed.kit.tailWeapon && !primary.special.includes('cumbersomeNoOtherWeapons') ? [dosed.kit.tailWeapon] : [])] : [primary]
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
   const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
@@ -498,7 +498,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const primary = weapons[0]
   if (setup.defender.traitIds.includes('black_orc') || setup.defender.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push(`${setup.defender.name} has Black Orc natural armour: 6+ alone, improving worn armour by 1. It does not apply against attacks that allow only shields or ignore armour.`)
   if (setup.attacker.traitIds.includes('black_orc') || setup.attacker.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push('Black Orcs do not ride mounts. Use this warrior on foot.')
-  if (tailShield(setup.defender, setup.defenderKit)) notes.push(`${setup.defender.name} has Tail Fighting: the shield in the tail adds +1 to the armour save. Choosing the extra attack with a tail-held knife or sword instead is a table call.`)
+  if (tailShield(setup.defender, setup.defenderKit)) notes.push(`${setup.defender.name} has Tail Fighting: the shield in the tail adds +1 to the armour save. It remains usable with both hands occupied; the same shield is counted only once.`)
   if (primary?.input.ignoreRolledKnockedDown) notes.push(`${setup.defender.name} has Jump Up: ignores rolled knocked-down injuries, but not knock-downs caused by a helmet save or No Pain. Wounds are still lost.`)
   if (setup.attacker.entangled) notes.push(`${setup.attacker.name} is entangled: cannot move or charge; melee Weapon Skill is reduced by 2. Shooting is unaffected. Resolve a 4+ escape roll in Recovery.`)
   if (setup.defender.entangled) notes.push(`${setup.defender.name} is entangled: melee Weapon Skill is reduced by 2 until freed in Recovery.`)

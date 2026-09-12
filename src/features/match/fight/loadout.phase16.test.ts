@@ -138,17 +138,17 @@ describe('loadout from the item rules', () => {
     expect(pistol.special).not.toContain('preBattleEffect')
   })
 
-  it("Clan Eshin Tail Fighting: a shield in the tail adds +1 to the armour save, nothing without the shield or the skill (core-and-grade-1a.md:691)", () => {
+  it("Clan Eshin Tail Fighting: a shield gives its normal +1 once, never an additional bonus for the same copy (core-and-grade-1a.md:691)", () => {
     const skaven = { ...combatant([]), skillIds: ['skaven_of_clan_eshin_skills_tail_fighting'] }
     const withShield = loadoutOf([item('sword'), item('shield'), item('light_armour')])
     const d = toDefender(skaven, withShield)
-    expect(d.saveBonus).toEqual({ melee: 1, missile: 1, savesFromNothing: false })
+    expect(d.saveBonus).toBeUndefined()
     expect(d.armour.shield).toBe(true)
     // No shield: nothing for the tail to hold; no skill: an ordinary shield.
     expect(toDefender(skaven, loadoutOf([item('sword'), item('light_armour')])).saveBonus).toBeUndefined()
     expect(toDefender(combatant([]), withShield).saveBonus).toBeUndefined()
     // Stacks with an item's own save bonus rather than replacing it.
-    expect(toDefender(skaven, loadoutOf([item('shield'), item('wolfcloak')])).saveBonus).toEqual({ melee: 1, missile: 2, savesFromNothing: true })
+    expect(toDefender(skaven, loadoutOf([item('shield'), item('wolfcloak')])).saveBonus).toEqual({ melee: 0, missile: 1, savesFromNothing: true })
   })
 
   it('two-handed use means no off-hand weapon, shield or buckler', () => {

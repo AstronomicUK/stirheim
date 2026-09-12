@@ -27,6 +27,7 @@ export type CombatantKind = 'hero' | 'hiredSword' | 'henchman' | 'animal'
 export interface Combatant {
   unitTemplateId?: string
   /** Exact saved Bitter Enmity target text; never guessed from a faction name. */
+  tailChoice?: BattleLiveState['tailChoices'][string]
   hatredReason?: string
   bitterEnmity?: import('../../../rules/types/roster').BitterEnmityTarget
   warbandTypeId?: string
@@ -216,6 +217,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         skillIds: warrior.skillIds,
         hatredReason: warrior.flags.hates,
         bitterEnmity: warrior.flags.bitterEnmity,
+        tailChoice: sheet?.tailChoices[warrior.id],
         isLeader: warrior.id === leaderId,
         skillTableIds: warrior.skillTableIds,
         traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [], true), ...boostTraits], entry.warrior.isLarge),
@@ -240,6 +242,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         skillIds: warrior.skillIds,
         hatredReason: warrior.flags.hates,
         bitterEnmity: warrior.flags.bitterEnmity,
+        tailChoice: sheet?.tailChoices[warrior.id],
         isLeader: warrior.id === leaderId,
         // Hired swords are not members of the warband, so its racial rules do not apply to them.
         traitIds: warriorTraits(warrior, warrior.flags.merchantGuardian ? [{ name: 'Guardian', text: GUARDIAN_RULES }] : warrior.hiredSwordId === 'snake_charmer' ? (detail?.specialRules ?? []).filter(rule => warrior.flags.hireCompanion ? ['Animals','Venomous'].includes(rule.name) : !['Animals','Venomous'].includes(rule.name)) : detail?.specialRules ?? [], boostTraits, undefined),
@@ -318,6 +321,18 @@ const NATURAL_WEAPONS: Weapon = {
 export function loadoutFor(c: Combatant): Loadout {
   if (c.weaponIds) return loadoutOfWeapons(c.weaponIds)
   const kit = loadoutOf(c.equipment)
+  if (c.skillIds.includes('skaven_of_clan_eshin_skills_tail_fighting')) {
+    const mode = c.tailChoice?.mode ?? (kit.armour.shield || kit.armour.kiteShield ? 'shield' : 'none')
+    kit.tailShield = mode === 'shield' && Boolean(kit.armour.shield || kit.armour.kiteShield)
+    if (mode === 'weapon' && c.tailChoice?.weaponKey) {
+      const index = kit.melee.findIndex(weapon => weapon.id === c.tailChoice?.weaponId && !weapon.paired && (weapon.id === 'dagger' || weapon.isSword))
+      if (index >= 0) {
+        kit.tailWeapon = { ...kit.melee[index], choiceId: c.tailChoice.weaponKey }
+        const carried = c.equipment.reduce((n, entry) => n + (loadoutOf([entry]).melee.some(weapon => weapon.id === c.tailChoice?.weaponId) ? entry.quantity : 0), 0)
+        if (carried <= kit.melee.filter(weapon => weapon.id === c.tailChoice?.weaponId).length) kit.melee.splice(index, 1)
+      }
+    }
+  }
   if (kit.melee.length === 0 || c.unarmedProfile?.selectable) {
     if (c.unarmedProfile) kit.melee.push({ ...NATURAL_WEAPONS, ...c.unarmedProfile })
     else if (c.traitIds.includes('natural_weapons')) kit.melee.push(NATURAL_WEAPONS)
@@ -351,6 +366,9 @@ export function loadoutOfWeapons(ids: readonly string[]): Loadout {
 // ---------------------------------------------------------------------------------------------
 
 export interface Loadout {
+  /** Equipment held by the tail, separate from the two hands. */
+  tailShield?: boolean
+  tailWeapon?: Weapon
   /** Every melee weapon carried, one entry per weapon (a pair sold as one item is one entry). */
   melee: Weapon[]
   ranged: Weapon[]
@@ -603,9 +621,9 @@ export function canBeOffHand(weapon: Weapon): boolean {
 
 /** Only weapons held this round supply parries and strike-order modifiers. */
 export function kitWithSelectedWeapons(kit: Loadout, primary: Weapon, offHand: Weapon | null, incomingPhase: 'melee' | 'ranged' = 'melee'): Loadout {
-  const melee = primary.type === 'melee' ? [primary, ...(offHand ? [offHand] : [])] : []
+  const melee = [...(primary.type === 'melee' ? [primary, ...(offHand ? [offHand] : [])] : []), ...(kit.tailWeapon && !primary.special.includes('cumbersomeNoOtherWeapons') ? [kit.tailWeapon] : [])]
   const handsFull = Boolean(offHand) || isTwoHanded(primary)
-  return { ...kit, melee, armour: handsFull && incomingPhase === 'melee' ? { ...kit.armour, shield: false, buckler: false, kiteShield: false } : kit.armour }
+  return { ...kit, melee, armour: handsFull && incomingPhase === 'melee' ? { ...kit.armour, shield: Boolean(kit.tailShield && kit.armour.shield), buckler: false, kiteShield: Boolean(kit.tailShield && kit.armour.kiteShield) } : kit.armour }
 }
 
 /** A spear ("unwieldy") only shares hands with a shield or buckler; the same list keeps two-handers alone. */

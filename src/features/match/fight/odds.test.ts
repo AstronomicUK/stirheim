@@ -1040,3 +1040,34 @@ it('matches structured Bitter Enmity to the actual opposing warband and preserve
  expect(match.weapons[0].pHit).toBeCloseTo(0.5)
  expect(computeOdds(setup(injured, skaven, 'sword', null)).notes.join(' ')).toContain('does not match')
 })
+
+
+describe('Tail Fighting choice', () => {
+ const skill = 'skaven_of_clan_eshin_skills_tail_fighting'
+ it('reserves one blade for a single extra attack, without doubling it for Frenzy', () => {
+   const warrior: Combatant = { ...skaven, skillIds: [skill], traitIds: ['frenzy'], stats: { ...base, A: 2 }, equipment: [{ itemId: 'sword', quantity: 2 }, { itemId: 'dagger', quantity: 1 }], tailChoice: { mode: 'weapon', weaponId: 'sword', weaponKey: 'tail:0' } }
+   const kit = loadoutFor(warrior)
+   expect(kit.melee.filter(w => w.id === 'sword')).toHaveLength(1)
+   expect(kit.tailWeapon?.choiceId).toBe('tail:0')
+   const fight = { ...setup(warrior, captain, 'sword', 'dagger'), attackerKit: kit, primary: kit.melee.find(w => w.id === 'sword')!, offHand: kit.melee.find(w => w.id === 'dagger')! }
+   const odds = computeOdds(fight)
+   expect(odds.weapons.map(w => w.attacks)).toEqual([4, 1, 1])
+   expect(odds.chain.attacks).toBe(6)
+   const coating = { ...itemEffect('dark_venom')!.preBattle!, weaponChoiceId: 'tail:0' }
+   expect(computeOdds({ ...fight, attackerPreBattle: [coating] }).weapons.map(w => w.strength)).toEqual([3, 3, 4])
+ })
+ it('a shield in the tail remains available with both hands occupied but is never counted twice', () => {
+   const warrior: Combatant = { ...skaven, skillIds: [skill], equipment: [{ itemId: 'sword', quantity: 1 }, { itemId: 'dagger', quantity: 1 }, { itemId: 'shield', quantity: 1 }], tailChoice: { mode: 'shield' } }
+   const kit = loadoutFor(warrior)
+   const selected = kitWithSelectedWeapons(kit, kit.melee[0], kit.melee[1])
+   expect(selected.armour.shield).toBe(true)
+   expect(toDefender(warrior, selected).saveBonus).toBeUndefined()
+   const unused = loadoutFor({ ...warrior, tailChoice: { mode: 'none' } })
+   expect(kitWithSelectedWeapons(unused, unused.melee[0], unused.melee[1]).armour.shield).toBe(false)
+ })
+ it('three carried swords can occupy two hands and the tail without losing one to the normal two-hand cap', () => {
+   const warrior: Combatant = { ...skaven, skillIds: [skill], equipment: [{ itemId: 'sword', quantity: 3 }], tailChoice: { mode: 'weapon', weaponId: 'sword', weaponKey: 'third:2' } }
+   expect(loadoutFor(warrior).melee).toHaveLength(2)
+   expect(loadoutFor(warrior).tailWeapon).toBeDefined()
+ })
+})

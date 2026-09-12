@@ -1,3 +1,4 @@
+import { TailFightingControl } from '../battle/TailFightingControl'
 import { isCorePistol, pistolShootingOptions } from './pistolShooting'
 import { PoisonControls } from '../battle/PoisonControls'
 import { recordedPoisonEffects } from '../battle/poisonUses'
@@ -186,14 +187,14 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const waterUnavailable = Boolean(isBlessedWater && (!waterRow || blessedWaterRemaining(sheet, waterRow) < 1))
   const [waterCorrection, setWaterCorrection] = useState('')
   const [waterError, setWaterError] = useState<string | null>(null)
-  // First generic core cadence path: handguns. Pistols need brace/per-copy attack allocation separately.
+  // Core full-turn reload guns; pistols use their per-model shooting allowance below.
   const [pistolModel, setPistolModel] = useState(0)
   const [pistolCorrection, setPistolCorrection] = useState('')
-  const [handgunCorrection, setHandgunCorrection] = useState('')
-  const isCoreHandgun = !selfDamage && primary?.id === 'handgun'
-  const handgunCopies = isCoreHandgun && attacker ? physicalWeaponChoices(items, events, roster.id, attacker.id, 'handgun') : []
-  const handgunHeld = handgunCopies.find(c => c.key === physicalSelection[`${attacker?.id}:handgun`]) ?? handgunCopies[0]
-  const handgunKey = physicalGunKey(handgunHeld?.snapshot, `${attacker?.id}:handgun`)
+  const [reloadCorrection, setReloadCorrection] = useState('')
+  const isCoreReloadGun = !selfDamage && Boolean(primary && ['handgun', 'hochland_long_rifle'].includes(primary.id))
+  const reloadCopies = isCoreReloadGun && attacker && primary ? physicalWeaponChoices(items, events, roster.id, attacker.id, primary.id) : []
+  const reloadHeld = reloadCopies.find(c => c.key === physicalSelection[`${attacker?.id}:${primary?.id}`]) ?? reloadCopies[0]
+  const reloadKey = physicalGunKey(reloadHeld?.snapshot, `${attacker?.id}:${primary?.id}`)
   const isSwivel = !selfDamage && Boolean(primary?.id.startsWith('swivel_gun_'))
   const swivelSlots = attacker?.kind === 'henchman' ? Math.max(1, attacker.groupSize ?? 1) : 1
   const swivelModel = Math.min(swivelSlot, swivelSlots - 1)
@@ -278,7 +279,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const defenderPreBattle: PreBattleEffect[] = defenderKit ? preBattleWithRolls(defenderKit.consumables, defenderUsed.filter(id => id !== 'black_lotus' && id !== 'dark_venom'), defender && defenderSession ? itemRollsBy(defenderSession.live_state, defender.id) : {}) : []
 
   const hasPoison = Boolean(attacker && sheet.poisonApplications.some(use => use.warriorId === attacker.id && !use.correction))
-  const poisonSeen = new Set<string>()
+  const tailKey = attackerKit?.tailWeapon?.choiceId
+  const tailConflict = Boolean(tailKey && primary?.special.includes('cumbersomeNoOtherWeapons'))
+  const poisonSeen = new Set<string>(tailKey ? [tailKey] : [])
   const poisonBindings = (primary ? [primary, ...(offHand && offHandValid ? [offHand] : [])] : []).map((weapon,index) => {
     const choices = attacker ? physicalWeaponChoices(items,events,roster.id,attacker.id,weapon.id) : []
     const chosen = choices.find(choice => choice.key === physicalSelection[`${attacker?.id}:${index}`]) ?? choices.find(choice => !poisonSeen.has(choice.key))
@@ -287,7 +290,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   })
   const unresolvedPoison = usedIds.some(id => id === 'black_lotus' || id === 'dark_venom')
 
-  const handgunBlocked = isCoreHandgun && attacker ? blackpowderBlock(sheet, attacker.id, handgunKey, Number(ownTurnKey.split(':').at(-1))) : null
+  const reloadBlocked = isCoreReloadGun && attacker ? blackpowderBlock(sheet, attacker.id, reloadKey, Number(ownTurnKey.split(':').at(-1))) : null
   const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1)),swivelLegacyKey) : null
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
   const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) ?? (offHandValid && offHand ? ladyBlessingReason(offHand, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined) : undefined
@@ -338,12 +341,13 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const physicalBindings = (odds?.weapons ?? []).map((entry, index) => {
     const choices = attacker ? physicalWeaponChoices(items, events, roster.id, attacker.id, entry.weapon.id) : []
     const key = `${attacker?.id}:${primary?.paired ? 0 : index}`
-    const chosen = choices.find(c => c.key === physicalSelection[key]) ?? (isSwivel ? choices[swivelModel] : undefined) ?? choices.find(c => !usedCopies.has(c.key))
+    const tailEntry = Boolean(tailKey && entry.weapon.choiceId === tailKey)
+    const chosen = tailEntry ? choices.find(c => c.key === tailKey) : choices.find(c => c.key === physicalSelection[key]) ?? (isSwivel ? choices[swivelModel] : undefined) ?? choices.find(c => !usedCopies.has(c.key) && c.key !== tailKey)
     const duplicate = Boolean(chosen && usedCopies.has(chosen.key))
     if (chosen) usedCopies.add(chosen.key)
-    return { choices, chosen, key, duplicate }
+    return { choices, chosen, key, duplicate, tailEntry }
   })
-  const duplicateWeapon = (swordBreaker || hasPoison) && !primary?.paired && physicalBindings.some(binding => binding.duplicate)
+  const duplicateWeapon = (swordBreaker || hasPoison || Boolean(tailKey)) && !primary?.paired && physicalBindings.some(binding => binding.duplicate)
 
   // #24 Option A (Tom's pick): the roll popup carries its own Setup section — weapon, other hand,
   // attack count and only the situation toggles that apply — open before the first roll and folded
@@ -433,7 +437,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
       <BlackpowderLosses sheet={sheet} events={events} readOnly={readOnly} onLog={onLogEvent} names={Object.fromEntries(mine.map(w=>[w.id,w.name]))}/>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
       {events.some(e => !e.reverted_at && e.payload.brokenWeapons?.some(loss => loss.warbandId === roster.id)) ? <Notice tone="warn" title="Broken equipment">Broken copies are excluded from available weapons. Groups with some intact copies can still select the weapon: use those only for the members who carry them. Revert the break in the battle Log to correct it.</Notice> : null}
-      {swordBreaker || hasPoison ? <Notice tone="warn" title={swordBreaker ? "Sword Breaker opponent" : "Selected weapon copies"}><div className="flex flex-col gap-2"><p>{swordBreaker ? "A successful parry allows a 4+ Trap Blade roll. Select the carried copy at risk; breaking it does not erase hits already rolled." : "Select the physical copy used in each hand. Only the recorded copy receives its poison bonus."}</p>{physicalBindings.map((binding, index) => binding.choices.length > 1 && (!primary?.paired || index === 0) ? <SelectField key={binding.key} label={`Weapon copy for ${index === 0 ? 'main hand' : 'off hand'}`} value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(choice => <option key={choice.key} value={choice.key}>{choice.label}</option>)}</SelectField> : null)}{duplicateWeapon ? <p>Select different physical copies for the two hands.</p> : null}</div></Notice> : null}
+      {swordBreaker || hasPoison || tailKey ? <Notice tone="warn" title={swordBreaker ? "Sword Breaker opponent" : "Selected weapon copies"}><div className="flex flex-col gap-2"><p>{swordBreaker ? "A successful parry allows a 4+ Trap Blade roll. Select the carried copy at risk; breaking it does not erase hits already rolled." : hasPoison ? "Select the physical copy used in each hand. Only the recorded copy receives its poison bonus." : "The tail weapon is reserved. Select different physical copies for the hands."}</p>{physicalBindings.map((binding, index) => binding.choices.length > 1 && !binding.tailEntry && (!primary?.paired || index === 0) ? <SelectField key={binding.key} label={`Weapon copy for ${index === 0 ? 'main hand' : 'off hand'}`} value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(choice => <option key={choice.key} value={choice.key}>{choice.label}</option>)}</SelectField> : null)}{duplicateWeapon ? <p>Select different physical copies for the hands{tailKey ? ' and tail' : ''}.</p> : null}</div></Notice> : null}
+      {tailConflict ? <Notice tone="warn">This weapon forbids using another weapon. Choose a shield or nothing for the tail before attacking.</Notice> : null}
       {pistol && attacker ? <Notice title="Pistol shooting">
         <p>{pistol.blocked ?? `${pistol.remaining} pistol shot${pistol.remaining === 1 ? '' : 's'} available this own turn. Resolve one shot, then choose the next loaded pistol if Pistolier permits another.`}</p>
         {(attacker.groupSize ?? 1) > 1 ? <SelectField label="Firing group member" value={pistolSlot} onChange={event => setPistolModel(Number(event.target.value))}>{Array.from({ length: attacker.groupSize! }, (_, index) => <option key={index} value={index}>Model {index + 1}</option>)}</SelectField> : null}
@@ -444,14 +449,14 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           {sheet.blackpowderShots.filter(shot => shot.warriorId === attacker.id && !shot.correction && shot.heldWeapon && isCorePistol(shot.heldWeapon.weaponId)).map(shot => <Button key={shot.id} variant="ghost" disabled={readOnly || !pistolCorrection.trim()} onClick={() => edit?.(state => correctBlackpowderShot(state, shot.id, pistolCorrection))}>Correct {shot.weaponName}, copy {shot.heldWeapon!.copyIndex + 1}, turn {shot.ownTurn}</Button>)}
         </details>
       </Notice> : null}
-      {isCoreHandgun ? <Notice title="Handgun reload">
-        <p>{handgunBlocked ?? (attacker?.skillIds.includes('hunter') ? 'Hunter allows this handgun to fire every own turn.' : 'After firing, this handgun needs a complete own turn to reload.')}</p>
-        {handgunBlocked && edit && !readOnly ? <div className="flex flex-col gap-2"><TextField label="Reason to correct this firing restriction" value={handgunCorrection} onChange={e => setHandgunCorrection(e.target.value)} /><Button variant="secondary" disabled={!handgunCorrection.trim()} onClick={() => {
-          const shot = sheet.blackpowderShots.filter(s => s.warriorId === attacker?.id && s.weaponKey === handgunKey && !s.correction).at(-1)
-          if (shot) edit(state => correctBlackpowderShot(state, shot.id, handgunCorrection))
-          setHandgunCorrection('')
+      {isCoreReloadGun ? <Notice title={`${primary?.name} reload`}>
+        <p>{reloadBlocked ?? (attacker?.skillIds.includes('hunter') ? 'Hunter allows this weapon to fire every own turn.' : 'After firing, this weapon needs a complete own turn to reload.')}</p>
+        {reloadBlocked && edit && !readOnly ? <div className="flex flex-col gap-2"><TextField label="Reason to correct this firing restriction" value={reloadCorrection} onChange={e => setReloadCorrection(e.target.value)} /><Button variant="secondary" disabled={!reloadCorrection.trim()} onClick={() => {
+          const shot = sheet.blackpowderShots.filter(s => s.warriorId === attacker?.id && s.weaponKey === reloadKey && !s.correction).at(-1)
+          if (shot) edit(state => correctBlackpowderShot(state, shot.id, reloadCorrection))
+          setReloadCorrection('')
         }}>Record correction</Button></div> : null}
-        {handgunCopies.length > 1 ? <SelectField label="Handgun copy" value={handgunHeld?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [`${attacker?.id}:handgun`]: e.target.value }))}>{handgunCopies.map(copy => <option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField> : null}
+        {reloadCopies.length > 1 ? <SelectField label={`${primary?.name} copy`} value={reloadHeld?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [`${attacker?.id}:${primary?.id}`]: e.target.value }))}>{reloadCopies.map(copy => <option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField> : null}
       </Notice> : null}
       {isSwivel ? <Notice tone="info" title="Gun at risk"><p>A BOOM result destroys the carried copy selected here. Save the attack result to include its removal in the post-battle report.</p>{physicalBindings.map(binding => binding.choices.length > 1 ? <SelectField key={binding.key} label="Carried gun copy" value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(copy => <option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField> : null)}</Notice> : null}
       {!isSwivel && !isMortar && pendingExplosions.length > 0 ? <Notice tone="warn" title="Unresolved explosion"><div className="flex flex-col gap-2">{pendingExplosions.map(shot => <Button key={shot.id} variant="secondary" disabled={readOnly} onClick={() => { setAttackerId(shot.warriorId); setSelfShotId(shot.id); setFireHitId(null); setVolatileKey(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setRollSetup(null); setRolling(true) }}>Resolve explosion self-hit: {mine.find(w => w.id === shot.warriorId)?.name ?? shot.weaponName}</Button>)}</div></Notice> : null}
@@ -558,6 +563,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             </>
           ) : null}
 
+          {attacker && edit ? <TailFightingControl warrior={attacker} items={items} events={events} sheet={sheet} readOnly={readOnly} edit={edit} /> : null}
           {attacker && attackerKit && edit ? <PoisonControls key={attacker.id} warrior={attacker} kit={attackerKit} items={items} events={events} sheet={sheet} readOnly={readOnly} edit={edit} /> : null}
           {attacker && attackerKit && attackerKit.consumables.some(c => c.itemId !== 'black_lotus' && c.itemId !== 'dark_venom') ? (
             <fieldset className="flex min-w-0 flex-col gap-0.5">
@@ -705,11 +711,11 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(handgunBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (pistol?.blocked || unresolvedPoison || waterUnavailable || handgunBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
-            restartBlocked={waterUnavailable || Boolean(pistol?.blocked)}
+            restartBlocked={waterUnavailable || Boolean(pistol?.blocked) || Boolean(reloadBlocked)}
             beforeStart={isBlessedWater ? id => {
               if (!edit || !waterRow) return false
               try {
@@ -727,9 +733,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 const startsPistol = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
                 if (startsPistol) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: physicalGunKey(pistol.selected!.snapshot, pistol.selected!.key), weaponName: primary.name, heldWeapon: pistol.selected!.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds, pistol.pistolCount) ?? 0, experimental: false, at: new Date().toISOString() }, attacker.name))
               }
-              if (isCoreHandgun && !areaTarget && primary) {
-                const startsHandgun = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
-                if (startsHandgun) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: handgunKey, weaponName: primary.name, heldWeapon: handgunHeld?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds) ?? 1, experimental: false, at: new Date().toISOString() }, attacker.name))
+              if (isCoreReloadGun && !areaTarget && primary) {
+                const startsReloadShot = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
+                if (startsReloadShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: reloadKey, weaponName: primary.name, heldWeapon: reloadHeld?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds) ?? 1, experimental: false, at: new Date().toISOString() }, attacker.name))
               }
               if (!isSwivel || areaTarget) return
               if (next.critUsed) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, criticalUsed: true } : shot) }))

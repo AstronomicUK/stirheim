@@ -57,3 +57,12 @@ it('subtracts the actual lost copy when an uneven group uses raw equipment count
  const fighter = { id: warrior, warbandId: band, groupSize: 3, equipment: [{ itemId: 'sword', quantity: 2, notes: 'Family heirloom' }] }
  expect(withBrokenWeapons([fighter], [groupRow], [event(weaponLossSnapshot(groupRow, 'sword', 'Sword'))])[0].equipment[0].quantity).toBe(1)
 })
+
+it('a broken tail weapon stops supplying the tail attack without silently choosing another copy', () => {
+ const fighter = { id: warrior, warbandId: band, tailChoice: { mode: 'weapon' as const, weaponId: 'sword', weaponKey: `${row.id}:0` }, equipment: [{ itemId: 'sword', quantity: 2, notes: 'Family heirloom' }] }
+ const broken = event(weaponLossSnapshot(row, 'sword', 'Sword', 1, 0))
+ expect(withBrokenWeapons([fighter], [row], [broken])[0].tailChoice).toEqual({ mode: 'none' })
+ expect(withBrokenWeapons([fighter], [row], [{ ...broken, reverted_at: 'now' }])[0].tailChoice).toEqual(fighter.tailChoice)
+ const otherCopy = event(weaponLossSnapshot(row, 'sword', 'Sword', 1, 1))
+ expect(withBrokenWeapons([fighter], [row], [otherCopy])[0].tailChoice).toEqual(fighter.tailChoice)
+})

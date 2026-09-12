@@ -1,6 +1,6 @@
 import { weaponLossSnapshot, weaponQuantityRemaining, type BattleEventRow, type ItemRow } from '../../../domain'
 import { toRosterItem } from '../../../domain/roster'
-import { loadoutOf } from './combatants'
+import { loadoutOf, type Combatant } from './combatants'
 
 /** Resolve profiles through the same loadout mapping used by the actual battle sheet. */
 export function breakableWeaponChoices(rows: readonly ItemRow[], events: readonly BattleEventRow[], warbandId: string, warriorId: string, weaponId: string) {
@@ -21,7 +21,7 @@ export function physicalWeaponChoices(rows: readonly ItemRow[], events: readonly
 }
 
 /** Battle-only availability; the stored roster is settled in the post-battle report. */
-export function withBrokenWeapons<T extends { id: string; warbandId: string; groupSize?: number; equipment: import('../../../rules/types/roster').RosterItem[] }>(warriors: readonly T[], rows: readonly ItemRow[], events: readonly BattleEventRow[]): T[] {
+export function withBrokenWeapons<T extends { id: string; warbandId: string; groupSize?: number; tailChoice?: Combatant['tailChoice']; equipment: import('../../../rules/types/roster').RosterItem[] }>(warriors: readonly T[], rows: readonly ItemRow[], events: readonly BattleEventRow[]): T[] {
   return warriors.map(warrior => {
     const losses = rows.filter(row => row.warband_id === warrior.warbandId && row.holder_id === warrior.id && row.quantity > weaponQuantityRemaining(row, events))
     if (!losses.length) return warrior
@@ -40,6 +40,7 @@ export function withBrokenWeapons<T extends { id: string; warbandId: string; gro
         remove -= taken
       }
     }
-    return { ...warrior, equipment: equipment.filter(entry => entry.quantity > 0) }
+    const tailLost = warrior.tailChoice?.weaponKey && events.some(event => !event.reverted_at && event.payload.brokenWeapons?.some(loss => Array.from({ length: loss.quantity }, (_, i) => `${loss.itemId}:${loss.copyIndex + i}`).includes(warrior.tailChoice!.weaponKey!)))
+    return { ...warrior, ...(tailLost ? { tailChoice: { mode: 'none' as const } } : {}), equipment: equipment.filter(entry => entry.quantity > 0) }
   })
 }

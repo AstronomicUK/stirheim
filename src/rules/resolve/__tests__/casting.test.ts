@@ -1,4 +1,4 @@
-import {dispelsFor,selectDispelSource} from '../casting'
+import {dispelsFor,selectDispelSource,effectiveDifficulty} from '../casting'
 import { describe, expect, it } from "vitest";
 import type { RosterHero } from "../../types/roster";
 import { applyCastRoll, armourBlockingCasting, availableRerolls, casterProfile, declineCastStep, describeCast, startCast, spendReroll, profileForSpell, type CastState } from "../casting";
@@ -29,6 +29,15 @@ function hero(over: Partial<RosterHero> = {}): RosterHero {
 const profileOf = (h: RosterHero) => casterProfile({ hero: h, warbandName: "Cult of the Possessed", unitName: "Magister" })!;
 
 describe("who can cast", () => {
+  it('keeps casting bonuses separate from the reduced Difficulty used by dispels', () => {
+    const p = profileOf(hero({ skillIds: ['sorcery'], flags: { spellDifficultyReductions: { vision_of_torment: 1 } } }));
+    const spell = p.spells[0].spell;
+    const display = effectiveDifficulty(p, spell);
+    expect(display.base).toBe(spell.difficulty);
+    expect(display.effective).toBe(spell.difficulty! - 1);
+    expect(display.bonus).toBe(1);
+    expect(startCast(p, spell).difficulty).toBe(display.effective);
+  });
   it('uses each known spell’s lore despite the chosen home lore', () => {
     const h = hero({ spellIds: ['vision_of_torment', 'hearts_of_steel'], skillIds: ['sorcery'], equipment: [{ itemId: 'light_armour', quantity: 1 }, { itemId: 'holy_tome', quantity: 1 }] });
     for (const loreId of ['chaos_rituals', 'prayers_of_sigmar']) {
@@ -149,6 +158,29 @@ describe("rolling a cast", () => {
     expect(second.done).toBe(true);
     // Declining instead ends it there.
     expect(declineCastStep(missed).outcome).toBe("failed");
+  });
+
+  it("does not reroll the same casting dice using a second source", () => {
+    const p = profileOf(hero({ equipment: [{ itemId: "familiar", quantity: 1 }, { itemId: "magic_gubbinz", quantity: 1 }] }));
+    const spell = spellOf(p, "Vision of Torment");
+    const failed = applyCastRoll(startCast(p, spell), [1, 1]);
+    const second = applyCastRoll(spendReroll(failed, "familiar"), [1, 1]);
+    expect(second.outcome).toBe("failed");
+    expect(availableRerolls(second)).toEqual([]);
+    expect(second.used).not.toContain("magic_gubbinz");
+    expect(spendReroll(second, "magic_gubbinz")).toBe(second);
+    const later = applyCastRoll(startCast(p, spell, { alreadyUsed: second.used }), [1, 1]);
+    expect(availableRerolls(later).map(r => r.id)).toEqual(["magic_gubbinz"]);
+  });
+
+  it("a one-die reroll prevents a later pair reroll", () => {
+    const p = profileOf(hero({ skillIds: ["sorcerous_society_additional_academic_skills_mind_focus"], equipment: [{ itemId: "familiar", quantity: 1 }] }));
+    const spell = spellOf(p, "Vision of Torment");
+    const failed = applyCastRoll(startCast(p, spell), [1, 1]);
+    const second = applyCastRoll(spendReroll(failed, "mind_focus"), [1, 1]);
+    expect(second.rerolledDice).toEqual([true, false]);
+    expect(second.outcome).toBe("failed");
+    expect(second.used).not.toContain("familiar");
   });
 
   it("Magic Gubbinz has to pass its own D6 before the re-roll is granted", () => {

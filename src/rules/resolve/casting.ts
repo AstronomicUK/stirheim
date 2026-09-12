@@ -356,6 +356,8 @@ export interface CastState {
   dice: [number, number] | null;
   /** Whether `dice` came from the app's own Roll button or was tapped/typed in by hand; undefined when unknown. */
   diceManual?: boolean;
+  /** Per-die reroll history for this casting attempt, retained through saved state. */
+  rerolledDice?: [boolean, boolean];
   /** Re-roll ids spent in this cast or earlier this battle. */
   used: string[];
   pending: CastStep | null;
@@ -384,7 +386,8 @@ export interface StartCastOptions {
   enemyDispel?: DispelSource[];
 }
 
-export function startCast(profile: CasterProfile, spell: Spell, options: StartCastOptions = {}): CastState {
+/** Actual Difficulty and separate casting-roll bonuses; bonuses never lower a dispel target. */
+export function effectiveDifficulty(profile: CasterProfile, spell: Spell, options: StartCastOptions = {}) {
   profile = profileForSpell(profile, spell.id);
   const difficulty = profile.spells.find(s => s.spell.id === spell.id)?.difficulty ?? spell.difficulty;
   const chosen = options.modifiers ?? [];
@@ -393,6 +396,12 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     .map((m) => ({ id: m.id, name: m.name, amount: chosen.find((c) => c.id === m.id)?.amount ?? m.amount }))
     .filter((m) => m.amount !== 0);
   const bonus = applied.reduce((n, m) => n + m.amount, 0);
+  return { base: spell.difficulty, effective: difficulty, modifiers: applied, bonus };
+}
+
+export function startCast(profile: CasterProfile, spell: Spell, options: StartCastOptions = {}): CastState {
+  profile = profileForSpell(profile, spell.id);
+  const { effective: difficulty, modifiers: applied, bonus } = effectiveDifficulty(profile, spell, options);
 
   const state: CastState = {
     profile,
@@ -401,6 +410,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     applied,
     bonus,
     dice: null,
+    rerolledDice: [false, false],
     used: [...(options.alreadyUsed ?? [])],
     pending: null,
     log: [],
@@ -427,7 +437,9 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
 
 /** Re-rolls still available: not spent, and matching the failure at hand. */
 export function availableRerolls(state: CastState): CastReroll[] {
-  return state.profile.rerolls.filter((r) => !state.used.includes(r.id));
+  const rerolled = state.rerolledDice ?? [false, false];
+  return state.profile.rerolls.filter((r) => !state.used.includes(r.id)
+    && (r.scope === "pair" ? !rerolled.some(Boolean) : !rerolled.every(Boolean)));
 }
 
 /** Feed the dice for the pending step. `manual` is whether the app rolled these or they were tapped/typed in by hand; omit when unknown. */
@@ -444,6 +456,7 @@ export function applyCastRoll(state: CastState, values: number[], manual?: boole
       return state;
     case "cast":
     case "reroll": {
+      if (step.kind === "reroll") next.rerolledDice = [true, true];
       next.dice = [values[0], values[1]];
       next.diceManual = manual;
       const sum = values[0] + values[1];
@@ -458,6 +471,9 @@ export function applyCastRoll(state: CastState, values: number[], manual?: boole
     case "rerollOneDie": {
       // values: [whichDie (1 or 2), newFace]
       const [which, face] = values;
+      if ((which !== 1 && which !== 2) || state.rerolledDice?.[which - 1]) return state;
+      next.rerolledDice = [...(state.rerolledDice ?? [false, false])];
+      next.rerolledDice[which - 1] = true;
       const before = next.dice ?? [0, 0];
       next.dice = which === 1 ? [face, before[1]] : [before[0], face];
       next.diceManual = manual;
@@ -532,8 +548,9 @@ export function declineCastStep(state: CastState): CastState {
 
 /** Spend a named re-roll: pushes its gate roll first when it has one. */
 export function spendReroll(state: CastState, rerollId: string): CastState {
-  const reroll = state.profile.rerolls.find((r) => r.id === rerollId);
-  if (!reroll || state.used.includes(rerollId)) return state;
+  if (state.pending?.kind !== "chooseReroll") return state;
+  const reroll = availableRerolls(state).find((r) => r.id === rerollId);
+  if (!reroll) return state;
   const next: CastState = { ...state, log: [...state.log], used: [...state.used] };
   if (reroll.gate) {
     next.pending = CAST_STEP({ kind: "gate", dice: 1, label: `${reroll.name}: D6`, detail: `${reroll.gate.threshold}+ grants the re-roll.`, rerollId });

@@ -3,6 +3,9 @@
 
 import type { RollBand, SourceRef } from "./common";
 
+/** Which model selector a spell needs; ranges and special restrictions remain in its rules text. */
+export type SpellTarget = "friendly" | "enemy" | "either" | "self" | "none";
+
 export interface Spell {
   id: string;
   name: string;
@@ -14,6 +17,10 @@ export interface Spell {
   roll: RollBand;
   /** 2D6 target to cast. Null where the source says "Auto" (spells cast automatically, e.g. Spell of Awakening). */
   difficulty: number | null;
+  /** Explicit target category where verified; absent for spells not yet classified. */
+  target?: SpellTarget;
+  /** Short source-based targeting instruction, including restrictions confirmed at the table. */
+  targetNote?: string;
   /** Spell text, verbatim, paragraphs separated by blank lines. Inline markdown tables are preserved. */
   text: string;
 }

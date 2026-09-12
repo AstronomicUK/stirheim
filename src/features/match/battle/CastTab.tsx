@@ -585,7 +585,7 @@ function OneDieReroll({ state, advance }: { state: CastState; advance: (step: (s
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
         {([1, 2] as const).map((n) => (
-          <Button key={n} variant={which === n ? 'primary' : 'secondary'} onClick={() => setWhich(n)}>
+          <Button key={n} disabled={state.rerolledDice?.[n - 1] === true} variant={which === n ? 'primary' : 'secondary'} onClick={() => setWhich(n)}>
             Re-roll the {n === 1 ? 'first' : 'second'} ({dice[n - 1]})
           </Button>
         ))}

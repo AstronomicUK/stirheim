@@ -4625,3 +4625,16 @@ Key final commits: 68d44d7 physical poison selector; 30a33f1 pistol copies/reloa
 Mobile application actions, reloads and relevant report filing/withdrawal were exercised on disposable local fixtures. The addiction report does not charge a second dose or refund a legitimate battle-start dose on withdrawal. Migration087 preserves trap/Fanatic supply preparation after the full database suite found and caught that regression.
 
 No push or deployment. The new release requires database087 before the frontend, followed by one combined deployment. Existing player overrides remain; no decision is required for #53 because the brief explicitly accepts confirmation or undo. Separate close-combat pistol profiles (#2/#69), supplementary content, table positioning and automatic orchestration of both opponents’ full combat phases are not marked complete here.
+
+
+### Priority 1–5 readiness correction — 12 September 2026
+
+The preceding full-batch readiness claim is withdrawn after an acceptance recheck. See [CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md](CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md). Existing passing-test evidence remains valid for implemented code; it does not close the gaps below.
+
+- **#70/#156:** weapon/situation choices are transient; mobile defender Dagger selection resets to Sword after reload. Frenzy-ended and failed-Fear conditions also need correct saved lifetime.
+- **#73/#69:** core melee pistol/brace profiles and once-per-combat use remain on the core checklist. The old reference to #2 is erroneous (that tracker item is casting provenance); shooting reload completion does not implement melee use.
+- **#140:** Crimson Shade Initiative roll lacks a recorded, reasoned correction.
+- **#161:** tabletop relic corrections exist, but erroneous Rout/Stupidity relic declarations cannot restore the relevant first-test ledger through that control.
+- **#186/#28/#29/#96 and final acceptance:** complete the documented live reroll, existing spell-less editor and hatred-note checks; distinguish unit evidence from actual browser verification and record desktop coverage.
+
+No new user ruling blocks these tasks. No push or deployment occurred. Supplement lores/items/wards and table movement remain legitimately outside the core sweep; core omissions above are not supplementary exclusions.

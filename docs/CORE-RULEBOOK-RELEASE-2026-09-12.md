@@ -1,5 +1,7 @@
 # Core rulebook Priority 1–5: release-ready batch
 
+**Readiness correction:** the full batch is not yet ready. See [the acceptance recheck](CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md) for confirmed remaining core work and verification gaps. Earlier readiness statements below are historical and superseded.
+
 12 September 2026. Application source verified through `91089bb`. All changes are local; this batch has not been pushed or deployed.
 
 ## Completed scope

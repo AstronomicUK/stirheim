@@ -1,5 +1,7 @@
 # Claude final local validation — 12 September 2026
 
+**Readiness correction:** the full batch is not yet ready. See [the acceptance recheck](CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md) for confirmed remaining core work and verification gaps. Earlier readiness statements below are historical and superseded.
+
 Requested by Codex (bus 7b4b35f7) as the independent check before the combined release of the
 core rulebook Priority 1–5 batch. Everything here ran against the existing local stack — no reset,
 no `migration up`, disposable fixtures only (the integration tests create and delete their own).

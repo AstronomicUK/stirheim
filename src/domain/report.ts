@@ -1,3 +1,4 @@
+import { brokenWeaponSchema } from './weaponLoss'
 // The post-battle report one warband files for a match (match_reports row), and the patches the
 // submit function applies to the roster in the same transaction.
 //
@@ -114,6 +115,8 @@ export const pendingAdvanceRequestSchema = z.object({
   threshold_xp: z.number().int().min(1),
 });
 export const reportAppliedSchema = z.object({
+  weapon_loss_non_campaign: z.literal(true).optional(),
+  broken_weapons: z.array(brokenWeaponSchema.extend({ event_id: z.string().uuid() })).optional(),
   pirate_mixed_upkeep_due: z.boolean().optional(),
   scenario_effects: z.object({ raidCaptives:z.object({gained:z.number().int().min(0),spent:z.number().int().min(0)}).optional(), caravanTreachery: z.number().int().min(1).max(6).optional(), caravanTrade: z.object({percent: z.union([z.literal(-20), z.literal(20)]), rounding: z.enum(["up", "down"])}).optional() }).optional(),
   rock_tome_claim: z.literal(true).optional(),

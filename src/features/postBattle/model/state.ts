@@ -132,6 +132,7 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  brokenWeaponTotals?: Record<string, number | null>
   woods?: import('./lycanthropeReport').WoodsDraft
   plantCasualties?: Record<string, boolean>
   groupEquipmentLosses?: Record<string, number | null>
@@ -335,7 +336,7 @@ export function setGroupOut(draft: ReportDraft, id: string, count: number, size:
   const groupInjuries = { ...draft.groupInjuries }
   if (rolls.length === 0) delete groupInjuries[id]
   else groupInjuries[id] = rolls
-  return { ...draft, groupsOut, groupInjuries, groupEquipmentLosses: {} }
+  return { ...draft, groupsOut, groupInjuries, groupEquipmentLosses: {}, brokenWeaponTotals: {} }
 }
 
 export function setEnemiesOut(draft: ReportDraft, id: string, count: number): ReportDraft {
@@ -418,7 +419,7 @@ export function setGroupInjuryDice(draft: ReportDraft, groupId: string, override
   const groupInjuryDice = { ...draft.groupInjuryDice }
   if (override === null) delete groupInjuryDice[groupId]
   else groupInjuryDice[groupId] = { count: Math.max(0, Math.min(20, Math.trunc(override.count))), reason: override.reason }
-  return { ...draft, groupInjuryDice, groupEquipmentLosses: {} }
+  return { ...draft, groupInjuryDice, groupEquipmentLosses: {}, brokenWeaponTotals: {} }
 }
 
 export function setSwordInjury(draft: ReportDraft, swordId: string, d6: number | null): ReportDraft {
@@ -431,7 +432,7 @@ export function setGroupInjuryRoll(draft: ReportDraft, groupId: string, index: n
   const rolls = [...(draft.groupInjuries[groupId] ?? [])]
   while (rolls.length < count) rolls.push(null)
   rolls[index] = d6
-  return { ...draft, groupInjuries: { ...draft.groupInjuries, [groupId]: rolls }, groupEquipmentLosses: {} }
+  return { ...draft, groupInjuries: { ...draft.groupInjuries, [groupId]: rolls }, groupEquipmentLosses: {}, brokenWeaponTotals: {} }
 }
 
 export function addXpExtra(draft: ReportDraft, subjectId: string, extra: XpExtra): ReportDraft {
@@ -570,7 +571,7 @@ export function isDie(value: number | null | undefined, sides: number): value is
 
 /** Switching a casualty's source clears only that model's previous roll. */
 export function setPlantCasualty(draft:ReportDraft,id:string,checked:boolean):ReportDraft {
-  const next={...draft,plantCasualties:{...draft.plantCasualties,[id]:checked},groupEquipmentLosses:{}}
+  const next={...draft,plantCasualties:{...draft.plantCasualties,[id]:checked},groupEquipmentLosses:{},brokenWeaponTotals:{}}
   const group=id.match(/^(.*):(\d+)$/)
   if(group){const rolls=[...(draft.groupInjuries[group[1]]??[])];rolls[Number(group[2])]=null;return {...next,groupInjuries:{...draft.groupInjuries,[group[1]]:rolls}}}
   return {...next,scenarioInjuryDice:{...draft.scenarioInjuryDice,[id]:null},heroInjuries:{...draft.heroInjuries,[id]:{rolls:[],countRoll:null}},swordInjuries:{...draft.swordInjuries,[id]:null}}

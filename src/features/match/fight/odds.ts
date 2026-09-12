@@ -450,6 +450,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
     if (w.weapon.toWoundHighestOf2D6VsKnockedDown) notes.push(setup.context.targetKnockedDown ? `${w.weapon.name}: 2D6 to wound against the knocked-down target, keep the highest.` : `${w.weapon.name}: against a knocked-down target roll 2D6 to wound and keep the highest.`)
     if (w.weapon.special.includes('preBattleEffect')) notes.push(`${w.weapon.name} carries a pre-battle coating; its bonus is in these numbers.`)
   }
+  if (setup.primary.type === 'melee' && setup.defenderKit.melee.some(w => w.id === 'sword_breaker')) notes.push('Sword Breaker: after a successful parry, 4+ breaks the identified attacking weapon. The roller records that loss; these probabilities do not include its effect on later attacks.')
   if (setup.defenderKit.firstHitDiscard !== null) notes.push(`Lucky Charm: the first hit on ${setup.defender.name} in the battle is discarded on a ${setup.defenderKit.firstHitDiscard}+ (offered when rolling, not in the odds).`)
   if (setup.defenderKit.afterSaveThreshold !== null) notes.push(`Peg Leg: a ${setup.defenderKit.afterSaveThreshold}+ save after any failed save.`)
   if (setup.defenderKit.ownSave) notes.push(`Cloak: a ${setup.primary.type === 'melee' ? setup.defenderKit.ownSave.melee : setup.defenderKit.ownSave.missile}+ save of its own where better than the armour worn.`)

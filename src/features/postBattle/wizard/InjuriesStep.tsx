@@ -273,6 +273,12 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
           {row.manual?<p className="text-xs text-ink-dim">{row.available} copies remain after recorded use; enter 0–{row.available} lost.</p>:null}
         </div>)}
       </Card></Section>:null}
+      {derived.brokenEquipment.rows.length ? <Section title="Weapons broken in battle"><Card className="flex flex-col gap-3 px-4 py-3">
+        {derived.brokenEquipment.rows.map(row => <div key={row.key} className="flex flex-col gap-2">
+          <p className="text-sm">{row.name}: {row.broken} broken in battle{row.otherLost ? `; other injury or equipment results already lose ${row.otherLost}` : ''}.</p>
+          {row.min !== row.max ? <><NumberField label={`${row.name}: total lost or broken`} value={row.total} onChange={total => update(d => ({ ...d, brokenWeaponTotals: { ...d.brokenWeaponTotals, [row.key]: total } }))} /><p className="text-xs text-ink-dim">Enter {row.min}–{row.max}. Count a broken weapon that was also lost with a casualty only once.</p></> : <p className="text-sm">{row.total} removed when this report is filed.</p>}
+        </div>)}
+      </Card></Section> : null}
     </StepBody>
   )
 }

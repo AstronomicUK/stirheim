@@ -211,6 +211,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   )
   const ctx = useMemo<ReportContext>(
     () => ({
+      battleEvents: killEvents.data,
       specialKillXp, specialKillXpLoading, specialKillXpError,
       roster: rosterData.roster,
       rawhideCargo: rawhideCargo.data,
@@ -232,7 +233,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,
       takenOutBy: Object.fromEntries(Object.entries(liveState?.takenOutBy ?? {}).map(([id, list]) => [id, list.map((b) => b.name)])),
     }),
-    [specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
+    [killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

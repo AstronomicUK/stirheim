@@ -142,3 +142,23 @@ it('recognises Pit Fighter style components and both alternatives without changi
     expect(equipmentListOptions(name).map(item => item.id)).toEqual(['shield', 'buckler'])
   }
 })
+
+
+it('limits Moulder handler weapons to Packmasters and Apprentices unless weapon training grants access', () => {
+  for (const item of ['beastwhip', 'thingcatcher']) {
+    for (const unit of ['packmaster', 'apprentices']) expect(warning(roster('skaven_of_clan_moulder', hero(unit)), item)).toBeNull()
+    expect(warning(roster('skaven_of_clan_moulder', hero('stormvermin')), item)).toContain('not on')
+    expect(warning(roster('skaven_of_clan_moulder', hero('stormvermin', ['weapons_training'])), item)).toBeNull()
+  }
+})
+it('distinguishes Ogre and Trollslayer entries on their shared Pit Fighter list', () => {
+  const ogre = roster('pit_fighters', hero('pit_fighters_ogre'))
+  const slayer = roster('pit_fighters', hero('pit_fighters_troll_slayer'))
+  expect(warning(ogre, 'dwarf_axe')).toContain('not on')
+  expect(warning(slayer, 'dwarf_axe')).toBeNull()
+  for (const item of ['light_armour', 'helmet']) {
+    expect(warning(ogre, item)).toBeNull()
+    expect(warning(slayer, item)).toContain('not on')
+    expect(itemRestrictionWarnings(slayer, findItem(item)!, holder(slayer.heroes[0])).join(' ')).toContain('may not wear')
+  }
+})

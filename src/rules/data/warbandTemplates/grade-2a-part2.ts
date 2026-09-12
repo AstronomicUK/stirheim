@@ -672,8 +672,8 @@ export const WARBANDS: WarbandTemplate[] = [
           { name: "Halberd", cost: "10 wt" },
           { name: "Flail", cost: "15 wt" },
           { name: "Spear", cost: "10 wt" },
-          { name: "Beastwhip (Packmaster or Apprentices only)", cost: "25 wt" },
-          { name: "Thingcatcher (Packmaster or Apprentices only)", cost: "20 wt" },
+          { name: "Beastwhip (Packmaster or Apprentices only)", cost: "25 wt", onlyUnitTemplateIds: ["packmaster", "apprentices"] },
+          { name: "Thingcatcher (Packmaster or Apprentices only)", cost: "20 wt", onlyUnitTemplateIds: ["packmaster", "apprentices"] },
         ],
         missileWeapons: [
           { name: "Sling", cost: "2 wt" },

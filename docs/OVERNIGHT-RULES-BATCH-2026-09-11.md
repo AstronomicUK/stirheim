@@ -255,3 +255,12 @@ Review caught a regression risk in the new list check: single-item resolution mi
 Validation:20focused and2,044ordinary tests pass; build/typecheck pass; lint3oldwarnings. Regression covers PitKing complete catalogue components, Pursuer trident/javelins and net/buckler alternatives, sword/spear option, unrelated off-list gear, shieldchoices and unchangedbuilderdefaults. No DB/UI changes, no new browserQA. Logs /tmp/stirheim-equipment-bundles-{tests,all-tests,build,lint}.log. NoSQL/push/deploy.
 
 Next independent #67 leads already source-confirmed but NOT implemented: Order of Mare footman list Pilgrim-only spear/halberd/bow, Knight-only lance/heavyarmour, archer Esquiresses-only spear (grade-2a-part2.md:71–129); Moulder Beastwhip/Thingcatcher Packmaster/Apprentices only (:766); PitFighter Ogre/Slayer shared-list qualifiers. Need actual templateIDs and retained role/succession checks. Do not reintroduce bundle falsewarnings. Morningquestions unchanged.
+
+
+## Next local batch — #67 Moulder and Ogre/Slayer list qualifiers
+
+Moulder Beastwhip/Thingcatcher entries now identify Packmaster/Apprentices; Stormvermin need ordinary weapon-training access or an agreed exception. Pit Fighter shared Ogre/Slayer list now identifies Trollslayer Dwarf Axe and Ogre light armour/helmet entries, alongside existing Slayer category bans. Sources grade-2a-part2.md:746–766 and grade-1b-part2.md:1457–1475. Did not infer new restrictions on all later-purchased Gromril variants from the starting-list Gromril line.
+
+Validation:14focused and2,046ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests distinguish eachallowed/excludedunit, WeaponsTraining andindependentSlayerarmourban. Puredata additions using existing verifiedwarningUI; no new browser/DBQA. Logs /tmp/stirheim-specialist-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy; nextbatchlocal.
+
+OrderMare next: exactunitIDs paragon/gallant/redeemed_knights are Knights; pilgrims footman; esquiresses archer. BUT Paragon has VowofPoverty forbiddingLance evenwithaccess; source/data explicitlysaysso. Need thatspecificwarning alongside listqualifiers, preservingweaponoverrides. Also noticed PitFighter source grade1bpart2:1479 says access to specialTrident fromTradingPost outsidestartinglist; currentnewgenericlistcheckcouldflagordinaryPitKingTrident. Checkpreciselybeforeadding blanketpermission. Keep#67partial. Morningquestionsunchanged.

@@ -17,6 +17,7 @@ export interface KidnappedChoice {
   winner: 'pirates' | 'victim' | 'draw'
   captainLeadership: number
   recoveredBody?: number
+  recoveredBodyOriginal?: number
   pirateRoll?: KidnappedDice
   victimRoll?: KidnappedDice
   /** A new group uses the printed Crew profile; an existing group supplies its actual profile. */
@@ -44,7 +45,9 @@ export function resolvePirateKidnapped(victim:KidnappedVictim,choice:KidnappedCh
     if(choice.winner!=='pirates')fail('Pirates may only take lost henchmen when they won the battle.')
     if(choice.recoveredBody===undefined)fail('Roll D6 to see whether the Pirates recover this henchman.')
     d6(choice.recoveredBody)
-    log.push(`${victim.name}: recovery D6 ${choice.recoveredBody}; ${choice.recoveredBody>=4?'recovered':'not recovered'}.`)
+    if(choice.recoveredBodyOriginal!==undefined)d6(choice.recoveredBodyOriginal)
+    const recoveryText=choice.recoveredBodyOriginal===undefined?`tabletop D6 ${choice.recoveredBody}`:`app rolled ${choice.recoveredBodyOriginal}${choice.recoveredBodyOriginal!==choice.recoveredBody?`; player changed this to ${choice.recoveredBody}`:''}`
+    log.push(`${victim.name}: recovery ${recoveryText}; ${choice.recoveredBody>=4?'recovered':'not recovered'}.`)
     if(choice.recoveredBody<4)return {outcome:'notRecovered' as const,log}
   }
   const pirateLd=leadership(choice.captainLeadership),victimLd=leadership(victim.stats.Ld)

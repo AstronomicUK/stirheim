@@ -18,6 +18,7 @@ export function doubleBarrelState(sheet:BattleLiveState,gun:ChamberGun,ownTurn:n
   :shots.some(s=>s.misfireDie===3&&ownTurn<=s.ownTurn+1)?'The misfire prevents firing this turn.'
   :firedThisTurn?'This weapon has already fired this own turn.'
   :reloadedThisTurn?'Reloaded this Shooting phase; ready to fire next own turn.'
+  :shots.some(s=>(s.barrels??1)===1&&ownTurn<s.ownTurn+1+s.reloadTurns)?'Prepare shot: after firing one barrel, this weapon must spend the next own turn reloading.'
   :loaded===0?'Both barrels are empty. Reload at the end of a Shooting phase.':null
  return {loaded:loaded as 0|1|2,block,firedThisTurn,reloadedThisTurn,inconsistent}
 }

@@ -30,3 +30,11 @@ it('rejects full Crew groups and preserves original app dice in the explanation'
  const r=resolvePirateKidnapped(victim,{...choice,pirateRoll:{dice:[6,6],original:[1,2]}})
  expect(r.log.join(' ')).toContain('app rolled 1 + 2; player changed this to 6 + 6')
 })
+
+it('preserves an edited body recovery roll even when the failed search ends the attempt',()=>{
+ const h={...victim,kind:'henchman' as const,finalResult:'dead' as const,injuryRoll:2}
+ const result=resolvePirateKidnapped(h,{...choice,winner:'pirates',recoveredBody:3,recoveredBodyOriginal:5})
+ expect(result.outcome).toBe('notRecovered')
+ expect(result.log.join(' ')).toContain('app rolled 5; player changed this to 3; not recovered')
+ expect(()=>resolvePirateKidnapped(h,{...choice,winner:'pirates',recoveredBody:3,recoveredBodyOriginal:7})).toThrow(/D6/)
+})

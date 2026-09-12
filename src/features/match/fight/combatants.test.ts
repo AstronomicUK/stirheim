@@ -566,3 +566,14 @@ it('retained Swabbie skills survive the campaign-state parser and affect combat'
  const ordinary=combatantsOf(warband({henchmenGroups:[group('ordinary',{campaignState})]}),findWarbandTemplate('mercenaries_reikland'),'Reikland',undefined)[0]
  expect(ordinary.skillIds).toEqual([])
 })
+it('an Awakening Zombie uses its retained weapon and armour instead of losing them to its normal creature profile',async()=>{
+ const {unitGainsExperience}=await import('../../../rules/data/campaignRules')
+ const raised=group('raised',{unitTemplateId:'undead_zombies',size:1,stats:{...stats,WS:5,W:2},equipment:[item('sword'),item('light_armour')]})
+ const model=combatantsOf(warband({warbandTemplateId:'the_undead',henchmenGroups:[raised]}),findWarbandTemplate('the_undead'),'Undead',undefined)[0]
+ const kit=loadoutFor(model)
+ expect(model.stats.WS).toBe(5)
+ expect(kit.melee.map(w=>w.id)).toContain('sword')
+ expect(kit.armour.type).toBe('light')
+ expect(model.skillIds).toEqual([])
+ expect(unitGainsExperience('undead_zombies')).toBe(false)
+})

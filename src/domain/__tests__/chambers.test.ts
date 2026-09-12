@@ -8,7 +8,8 @@ const fire=(key:string,turn:number,barrels:1|2)=>({id:`${key}:${turn}`,warriorId
 it('keeps the other loaded barrel and requires declared reloads for spent ones',()=>{
  const s={...emptyBattleLiveState(),blackpowderShots:[fire('gun1',1,1)]}
  expect(doubleBarrelState(s,gun,1)).toMatchObject({loaded:1,firedThisTurn:true})
- expect(doubleBarrelState(s,gun,2)).toMatchObject({loaded:1,block:null})
+ expect(doubleBarrelState(s,gun,2)).toMatchObject({loaded:1,block:expect.stringContaining('Prepare shot')})
+ expect(doubleBarrelState(s,gun,3)).toMatchObject({loaded:1,block:null})
  expect(doubleBarrelState(s,second,2).loaded).toBe(2)
 })
 it('reloads one chamber in each pistol, once, and never permits firing in that phase',()=>{
@@ -45,20 +46,27 @@ it('rejects malformed reload events before changing the ledger',()=>{
  expect(()=>reloadDoubleBarrels(s,[{...gun,modelIndex:-1}],2,'reload','2026-09-12T12:02:00Z')).toThrow(/valid model/)
 })
 
-it('records declared barrels and rejects excess shots without applying legacy whole-gun cadence',()=>{
+it('records declared barrels, respects single-barrel Prepare shot and rejects excess shots',()=>{
  const first=recordBlackpowderShot(emptyBattleLiveState(),fire('gun1',1,1),'Hero')
  expect(()=>recordBlackpowderShot(first,fire('gun1',2,2),'Hero')).toThrow(/not enough loaded/)
- const second=recordBlackpowderShot(first,fire('gun1',2,1),'Hero')
+ expect(()=>recordBlackpowderShot(first,fire('gun1',2,1),'Hero')).toThrow(/Prepare shot/)
+ const second=recordBlackpowderShot(first,fire('gun1',3,1),'Hero')
  expect(doubleBarrelState(second,gun,3).loaded).toBe(0)
- expect(recordBlackpowderShot(second,fire('gun1',2,1),'Hero')).toBe(second)
- expect(()=>recordBlackpowderShot(second,fire('gun1',3,1),'Hero')).toThrow(/not enough loaded/)
- const reloaded=reloadDoubleBarrels(second,[gun],3,'reload','2026-09-12T12:03:30Z')
- expect(()=>recordBlackpowderShot(reloaded,fire('gun1',3,1),'Hero')).toThrow(/Reloaded this Shooting phase/)
- const fired=recordBlackpowderShot(reloaded,fire('gun1',4,1),'Hero')
- expect(doubleBarrelState(fired,gun,5).loaded).toBe(0)
+ expect(recordBlackpowderShot(second,fire('gun1',3,1),'Hero')).toBe(second)
+ expect(()=>recordBlackpowderShot(second,fire('gun1',4,1),'Hero')).toThrow(/not enough loaded/)
+ const reloaded=reloadDoubleBarrels(second,[gun],4,'reload','2026-09-12T12:04:30Z')
+ expect(()=>recordBlackpowderShot(reloaded,fire('gun1',4,1),'Hero')).toThrow(/Reloaded this Shooting phase/)
+ const fired=recordBlackpowderShot(reloaded,fire('gun1',5,1),'Hero')
+ expect(doubleBarrelState(fired,gun,6).loaded).toBe(0)
 })
 
 it('requires a pending misfire to be resolved before reloading',()=>{
  const s={...emptyBattleLiveState(),blackpowderShots:[{...fire('gun1',1,2),misfirePending:true}]}
  expect(()=>reloadDoubleBarrels(s,[gun],2,'reload','2026-09-12T12:02:30Z')).toThrow(/pending misfire/)
+})
+
+it('an ordinary pistol shot prevents only its model from reloading a different double gun',()=>{
+ const s={...emptyBattleLiveState(),blackpowderShots:[{...fire('ordinary-pistol',2,1),barrels:undefined,modelIndex:1},fire('gun1',1,2),{...fire('gun1',1,2),id:'member1-shot',modelIndex:1}]}
+ expect(()=>reloadDoubleBarrels(s,[{...gun,modelIndex:1}],2,'reload1','2026-09-12T12:02:30Z')).toThrow(/has fired/)
+ expect(doubleBarrelState(reloadDoubleBarrels(s,[gun],2,'reload0','2026-09-12T12:02:30Z'),gun,2).loaded).toBe(1)
 })

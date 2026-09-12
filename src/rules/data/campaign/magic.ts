@@ -538,6 +538,7 @@ Chaos rituals are used by Magisters of the Cult of the Possessed, Daemons, Beast
     spells: [
       {
         id: "vision_of_torment",
+        target: "enemy",
         name: "Vision of Torment",
         roll: { min: 1, max: 1 },
         difficulty: 10,
@@ -547,6 +548,7 @@ This spell has a range of 6" and must be cast on the closest enemy model. If the
       },
       {
         id: "eye_of_god",
+        target: "either",
         name: "Eye of God",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -562,6 +564,7 @@ You may use the Eye of God successfully only once per battle. Choose any single 
       },
       {
         id: "dark_blood",
+        target: "none",
         name: "Dark Blood",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -571,6 +574,7 @@ This attack has a range of 8" and causes D3 S5 hits. It hits the first model in 
       },
       {
         id: "lure_of_chaos",
+        target: "enemy",
         name: "Lure of Chaos",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -580,6 +584,7 @@ The spell has a range of 12" and must be cast on the closest enemy model. Roll a
       },
       {
         id: "wings_of_darkness",
+        target: "self",
         name: "Wings of Darkness",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -589,6 +594,7 @@ The Chaos Mage may immediately move anywhere within 12", including into base con
       },
       {
         id: "word_of_pain",
+        target: "none",
         name: "Word of Pain",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -997,6 +1003,7 @@ Lesser Magic (or hedge magic) is used by human warlocks. It may not be as awesom
     spells: [
       {
         id: "fires_of_uzhul",
+        target: "none",
         name: "Fires of U'Zhul",
         roll: { min: 1, max: 1 },
         difficulty: 7,
@@ -1006,6 +1013,7 @@ The fireball has a range of 18" and causes one Strength 4 hit. It strikes the fi
       },
       {
         id: "flight_of_zimmeran",
+        target: "self",
         name: "Flight of Zimmeran",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -1015,6 +1023,7 @@ The wizard may immediately move anywhere within 12", including into base contact
       },
       {
         id: "dread_of_aramar",
+        target: "either",
         name: "Dread of Aramar",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1024,6 +1033,7 @@ A single model within 12" of the wizard must pass a Leadership test or flee 2D6"
       },
       {
         id: "silver_arrows_of_arha",
+        target: "enemy",
         name: "Silver Arrows of Arha",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -1033,6 +1043,7 @@ Unlike other spells, this cannot be cast whilst in hand-to-hand combat. The spel
       },
       {
         id: "luck_of_shemtek",
+        target: "self",
         name: "Luck of Shemtek",
         roll: { min: 5, max: 5 },
         difficulty: 6,
@@ -1042,6 +1053,7 @@ The wizard may re-roll all his failed dice rolls, though the second results stan
       },
       {
         id: "sword_of_rezhebel",
+        target: "self",
         name: "Sword of Rezhebel",
         roll: { min: 6, max: 6 },
         difficulty: 8,
@@ -1259,6 +1271,7 @@ Magic of the Horned Rat is used by the Skaven of Clan Eshin Sorcerer, and the Sk
     spells: [
       {
         id: "warpfire",
+        target: "none",
         name: "Warpfire",
         roll: { min: 1, max: 1 },
         difficulty: 8,
@@ -1268,6 +1281,7 @@ The spell has a range of 8", hitting the first model in its path. The spell caus
       },
       {
         id: "children_of_the_horned_rat",
+        target: "none",
         name: "Children of the Horned Rat",
         roll: { min: 2, max: 2 },
         difficulty: null,
@@ -1277,6 +1291,7 @@ This spell must be used before the game, and may only be used once. When cast, t
       },
       {
         id: "gnawdoom",
+        target: "either",
         name: "Gnawdoom",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1286,6 +1301,7 @@ The Gnawdoom causes 2D6 Strength 1 hits on a single model within 8" of the caste
       },
       {
         id: "black_fury",
+        target: "enemy",
         name: "Black Fury",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -1295,6 +1311,7 @@ The Sorcerer may immediately charge any enemy model within 12" (ignoring any ter
       },
       {
         id: "eye_of_the_warp",
+        target: "none",
         name: "Eye of the Warp",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1304,6 +1321,7 @@ All standing models in base contact with the Sorcerer must take an immediate Lea
       },
       {
         id: "sorcerers_curse",
+        target: "either",
         name: "Sorcerer's Curse",
         roll: { min: 6, max: 6 },
         difficulty: 6,
@@ -1470,6 +1488,7 @@ Necromancy is used by The Undead Necromancer.`,
     spells: [
       {
         id: "lifestealer",
+        target: "either",
         name: "Lifestealer",
         roll: { min: 1, max: 1 },
         difficulty: 10,
@@ -1479,6 +1498,7 @@ You may choose a single model within 6". The target suffers a wound (no save all
       },
       {
         id: "re_animation",
+        target: "friendly",
         name: "Re-Animation",
         roll: { min: 2, max: 2 },
         difficulty: 5,
@@ -1488,6 +1508,7 @@ One Zombie that went out of action during the last hand-to-hand combat or Shooti
       },
       {
         id: "death_vision",
+        target: "self",
         name: "Death Vision",
         roll: { min: 3, max: 3 },
         difficulty: 6,
@@ -1497,6 +1518,7 @@ The Necromancer causes fear in his enemies for the duration of the battle.`,
       },
       {
         id: "spell_of_doom",
+        target: "enemy",
         name: "Spell of Doom",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -1506,6 +1528,7 @@ Choose one enemy model within 12". The model must immediately roll equal to or l
       },
       {
         id: "call_of_vanhel",
+        target: "friendly",
         name: "Call of Vanhel",
         roll: { min: 5, max: 5 },
         difficulty: 6,
@@ -1515,6 +1538,7 @@ A single Zombie or Dire Wolf within 6" of the Necromancer may immediately move a
       },
       {
         id: "spell_of_awakening",
+        target: "none",
         name: "Spell of Awakening",
         roll: { min: 6, max: 6 },
         difficulty: null,
@@ -1740,6 +1764,7 @@ The Prayers of Sigmar can be used by Witch Hunter Warrior Priests and Sigmarite 
     spells: [
       {
         id: "the_hammer_of_sigmar",
+        target: "self",
         name: "The Hammer of Sigmar",
         roll: { min: 1, max: 1 },
         difficulty: 7,
@@ -1749,6 +1774,7 @@ The wielder gains +2 Strength in hand-to-hand combat and all hits he inflicts ca
       },
       {
         id: "hearts_of_steel",
+        target: "none",
         name: "Hearts of Steel",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -1758,6 +1784,7 @@ Any allied warriors within 8" of the warrior become immune to fear and all alone
       },
       {
         id: "soulfire",
+        target: "none",
         name: "Soulfire",
         roll: { min: 3, max: 3 },
         difficulty: 9,
@@ -1767,6 +1794,7 @@ All enemy models within 4" of the servant of Sigmar suffer a Strength 3 hit. No 
       },
       {
         id: "shield_of_faith",
+        target: "self",
         name: "Shield of Faith",
         roll: { min: 4, max: 4 },
         difficulty: 6,
@@ -1776,6 +1804,7 @@ The Priest is immune to all spells. Roll at the beginning of each turn in the re
       },
       {
         id: "healing_hand",
+        target: "friendly",
         name: "Healing Hand",
         roll: { min: 5, max: 5 },
         difficulty: 5,
@@ -1785,6 +1814,7 @@ Any one model within 2" of the Priest (including himself) may be healed. The war
       },
       {
         id: "armour_of_righteousness",
+        target: "self",
         name: "Armour of Righteousness",
         roll: { min: 6, max: 6 },
         difficulty: 9,

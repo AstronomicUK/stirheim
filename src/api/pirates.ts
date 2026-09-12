@@ -73,12 +73,14 @@ export function kidnapSubject(item: CaptiveCase, owner: WarbandDetail | undefine
     const hero: RosterHero = 'unitTemplateId' in raw ? raw : { ...raw, unitTemplateId: `hired_sword:${raw.hiredSwordId}`, skillTableIds: [], status: raw.status === 'left' ? 'retired' : raw.status }
     return { victim: { name: hero.name, kind: 'unitTemplateId' in raw ? 'hero' : 'hiredSword', human: true, finalResult: 'captured', injuryRoll: 61, outOfAction: true, stats: hero.stats, skillIds: hero.skillIds }, hero, kitShare: hero.equipment }
   }
-  const snap = item.model_snapshot as { group?: { stats?: Stats; campaign_state?: { inheritedSkillIds?: string[] } }; items?: { item_rules_id: string | null; custom_name: string | null; quantity: number }[]; survival_roll?: number } | null
+  const snap = item.model_snapshot as { group?: { stats?: Stats; campaign_state?: { inheritedSkillIds?: string[] } }; items?: { item_rules_id: string | null; custom_name: string | null; quantity: number | null; notes?: string | null }[]; survival_roll?: number; kit_unresolved?: boolean } | null
   if (!snap?.group?.stats) return null
   return {
     victim: { name: item.hero_name, kind: 'henchman', human: true, finalResult: 'dead', injuryRoll: snap.survival_roll ?? 1, outOfAction: true, stats: snap.group.stats, skillIds: snap.group.campaign_state?.inheritedSkillIds ?? [] },
     hero: null,
-    kitShare: (snap.items ?? []).map(i => ({ itemId: i.item_rules_id, ...(i.item_rules_id ? {} : { customName: i.custom_name ?? undefined }), quantity: 1 })),
+    // The model's own share of the group's kit as the report actually removed it; an uneven
+    // allocation is left for the players to settle by hand, so nothing is claimed automatically.
+    kitShare: snap.kit_unresolved ? [] : (snap.items ?? []).filter(i => typeof i.quantity === 'number' && i.quantity > 0).map(i => ({ itemId: i.item_rules_id, ...(i.item_rules_id ? {} : { customName: i.custom_name ?? undefined }), quantity: i.quantity as number, ...(i.notes ? { notes: i.notes } : {}) })),
   }
 }
 

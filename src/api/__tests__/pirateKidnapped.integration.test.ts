@@ -190,8 +190,8 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   check(await pirate.rpc('record_kidnap_dice',{p_case_id:second.id,p_dice:[1,2]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:second.id,p_dice:[6,6]}))
   // 1+2+8+1 = 12 against 6+6+7 = 19: Swabbie, with the group's own profile and one sword.
   const swabbie=(items:unknown[])=>[{table:'henchman_groups',op:'insert',id:G,data:{name:'Pressed warrior',unit_type_rules_id:'pirates_swabbie',size:1,stats:warriorStats,xp:0,level_ups:0,stat_increases:{},model_names:[],campaign_state:{inheritedSkillIds:[]}}},...items]
-  expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2}}]))).error?.message).toMatch(/one share of what the fallen henchman carried \(sword\)/)
-  expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'axe',quantity:1}}]))).error?.message).toMatch(/one share/)
+  expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2}}]))).error?.message).toMatch(/own share of kit may be kept \(sword ×1\)/)
+  expect((await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'axe',quantity:1}}]))).error?.message).toMatch(/own share/)
   const id=check(await propose(pirate,second.id,choice('swabbie',[1,2],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}])))
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(await pirateGroups()).toEqual([{unit_type_rules_id:'pirates_crew',size:2,stats:crewStats,campaign_state:{},name:'Deck hands'},{unit_type_rules_id:'pirates_swabbie',size:1,stats:warriorStats,campaign_state:{inheritedSkillIds:[]},name:'Pressed warrior'}])
@@ -231,5 +231,34 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   expect(groups.map((g:any)=>[g.unit_type_rules_id,g.size])).toEqual([['pirates_crew',3],['pirates_crew',1],['pirates_swabbie',1]])
   expect(groups[2]).toMatchObject({stats:warriorStats,campaign_state:{inheritedSkillIds:[]}})
   expect(check(await admin.from('items').select('item_rules_id,quantity').eq('warband_id',pw).eq('holder_type','stash'))).toEqual([{item_rules_id:'sword',quantity:1}])
+ })
+
+ it('snapshots each lost model with his real share of the group kit (two swords each), and flags uneven allocations',async()=>{
+  // Two Marksmen with two swords each; one dies (roll 1), the report removes two swords.
+  const pair=check(await admin.from('henchman_groups').insert({warband_id:vw,name:'Pair',unit_type_rules_id:'mercenaries_reikland_marksmen',size:2,stats:warriorStats,xp:0}).select('id').single()).id
+  const pairSwords=check(await admin.from('items').insert({warband_id:vw,holder_type:'group',holder_id:pair,item_rules_id:'sword',quantity:4,notes:'Cutlasses'}).select('id').single()).id
+  // Three Swordsmen with three shields; two die but the player recorded three shields lost: uneven.
+  const trio=check(await admin.from('henchman_groups').insert({warband_id:vw,name:'Trio',unit_type_rules_id:'mercenaries_reikland_swordsmen',size:3,stats:warriorStats,xp:0}).select('id').single()).id
+  const trioShields=check(await admin.from('items').insert({warband_id:vw,holder_type:'group',holder_id:trio,item_rules_id:'shield',quantity:3}).select('id').single()).id
+  check(await victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],
+   injuries:[{subjectType:'group',subjectId:pair,subjectName:'Pair',rolls:[1,5],dead:1},{subjectType:'group',subjectId:trio,subjectName:'Trio',rolls:[2,1,4],dead:2}],
+   applied:{heroes:[],groups:[{id:pair,patch:{size:1}},{id:trio,patch:{size:1}}],item_patches:[{id:pairSwords,quantity:2},{id:trioShields,quantity:0}]}}}))
+  check(await filePirates('won'))
+  const opened=await cases()
+  const pairCase=opened.find((c:any)=>c.hero_id===pair),trioCases=opened.filter((c:any)=>c.hero_id===trio)
+  expect(pairCase.model_snapshot.items).toEqual([expect.objectContaining({item_rules_id:'sword',quantity:2,lost:2,notes:'Cutlasses'})])
+  expect(pairCase.model_snapshot.kit_unresolved).toBe(false)
+  expect(trioCases).toHaveLength(2);expect(trioCases[0].model_snapshot.kit_unresolved).toBe(true)
+  check(await pirate.rpc('record_kidnap_recovery',{p_case_id:pairCase.id,p_d6:6}))
+  check(await pirate.rpc('record_kidnap_dice',{p_case_id:pairCase.id,p_dice:[1,1]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:pairCase.id,p_dice:[6,6]}))
+  const swabbie=(items:unknown[])=>[{table:'henchman_groups',op:'insert',id:G,data:{name:'Pressed marksman',unit_type_rules_id:'pirates_swabbie',size:1,stats:warriorStats,xp:0,level_ups:0,stat_increases:{},model_names:[],campaign_state:{inheritedSkillIds:[]}}},...items]
+  expect((await propose(pirate,pairCase.id,choice('swabbie',[1,1],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(sword ×2\)/)
+  check(await propose(pirate,pairCase.id,choice('swabbie',[1,1],[6,6]),[],swabbie([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:2,notes:'Cutlasses'}}])))
+  // The uneven trio: recovered, but no equipment may be claimed automatically.
+  check(await pirate.rpc('record_kidnap_recovery',{p_case_id:trioCases[0].id,p_d6:6}))
+  check(await pirate.rpc('record_kidnap_dice',{p_case_id:trioCases[0].id,p_dice:[1,1]}));check(await victim.rpc('record_kidnap_dice',{p_case_id:trioCases[0].id,p_dice:[6,6]}))
+  const G2='22222222-2222-4222-8222-cccccccccccc'
+  const swabbie2=(items:unknown[])=>[{...(swabbie([])[0] as Record<string,unknown>),id:G2},...items]
+  expect((await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1}}]))).error?.message).toMatch(/not recorded evenly/)
  })
 })

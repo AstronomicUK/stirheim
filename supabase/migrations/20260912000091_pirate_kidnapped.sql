@@ -336,14 +336,22 @@ begin
         if not exists (select 1 from public.kidnap_eligible_units e where e.unit_type_rules_id = gunit and e.warband_type_rules_id = vr.type_rules_id) then continue; end if;
         select e->'before' into g from jsonb_array_elements(coalesce(vr.undo->'groups', '[]'::jsonb)) e where e->>'id' = line->>'subjectId' limit 1;
         if g is null then select jsonb_build_object('stats', stats, 'size', size, 'xp', xp, 'level_ups', level_ups, 'campaign_state', campaign_state) into g from public.henchman_groups where id = (line->>'subjectId')::uuid; end if;
-        select coalesce(jsonb_agg((u->'row') || jsonb_build_object('quantity', 1)), '[]'::jsonb) into items from jsonb_array_elements(coalesce(vr.undo->'items', '[]'::jsonb)) u where u->'row'->>'holder_id' = line->>'subjectId';
+        -- Each lost model's share of the group's kit: the quantity the report actually removed from
+        -- each pre-report row (before-row minus the applied patch), divided evenly across the dead.
+        -- Metadata is kept; an allocation that does not divide evenly is flagged, not guessed.
+        select coalesce(jsonb_agg(((u->'row') - 'quantity' - 'updated_at' - 'created_at') || jsonb_build_object('quantity', share.per_model, 'lost', share.lost)), '[]'::jsonb) into items
+          from jsonb_array_elements(coalesce(vr.undo->'items', '[]'::jsonb)) u
+          cross join lateral (select (u->'before'->>'quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(vr.applied->'item_patches', '[]'::jsonb)) pt where pt->>'id' = u->>'id' limit 1), (u->'before'->>'quantity')::int) as lost) l
+          cross join lateral (select l.lost, case when l.lost > 0 and l.lost % greatest((line->>'dead')::int, 1) = 0 then l.lost / greatest((line->>'dead')::int, 1) else null end as per_model) share
+          where u->'row'->>'holder_id' = line->>'subjectId' and l.lost > 0;
         i := 0;
         for roll in select x from jsonb_array_elements_text(coalesce(line->'rolls', '[]'::jsonb)) x loop
           i := i + 1;
           if roll not in ('1', '2') then continue; end if;
           insert into public.captive_cases (report_id, report_revision, match_id, victim_warband_id, captor_warband_id, hero_id, hero_name, state, assigned_at, subject_kind, model_index, source, model_snapshot)
             values (vr.id, vr.revision, p_match_id, vr.warband_id, pr.warband_id, (line->>'subjectId')::uuid, gname || ' (model ' || i || ')', 'open', now(), 'henchman', i, 'pirates_kidnapped',
-                    jsonb_build_object('group', g || jsonb_build_object('id', line->>'subjectId', 'name', gname, 'unit_type_rules_id', gunit), 'items', items, 'survival_roll', roll::int))
+                    jsonb_build_object('group', g || jsonb_build_object('id', line->>'subjectId', 'name', gname, 'unit_type_rules_id', gunit), 'items', items, 'survival_roll', roll::int,
+                                       'kit_unresolved', exists (select 1 from jsonb_array_elements(items) x where x->'quantity' = 'null'::jsonb)))
             on conflict do nothing returning id into v_case;
           if v_case is null then continue; end if;
           insert into public.app_notifications (user_id, kind, title, body, href, dedupe_key)
@@ -483,7 +491,7 @@ declare
   crew_stats jsonb := '{"M":4,"WS":3,"BS":3,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":7}'::jsonb;
   crew_kit text[] := array['dagger', 'hammer', 'mace', 'axe', 'boat_hook', 'sword', 'double_handed_weapon', 'belaying_pins', 'crossbow', 'pistol', 'duelling_pistol', 'buckler', 'toughened_leathers', 'helmet', 'light_armour'];
   group_id uuid; group_seen boolean := false; group_updated boolean := false; group_items_updated int := 0; kit_keys text[] := '{}'; group_dagger int := 0; group_name text; group_skills text[];
-  crew_models int; swabbie_models int; parts text[]; contest_line text;
+  crew_models int; swabbie_models int; parts text[]; contest_line text; snap_kit jsonb := '{}'::jsonb;
 begin
   select * into v from public.warbands where id = p_case.victim_warband_id;
   select * into k from public.warbands where id = p_case.captor_warband_id;
@@ -514,7 +522,8 @@ begin
     if coalesce((p_case.recovery->>'d6')::int, 0) < 4 then raise exception 'Roll to recover the body first (4+).' using errcode = 'P0001'; end if;
     victim_name := p_case.hero_name; victim_stats := p_case.model_snapshot->'group'->'stats'; victim_ld := (victim_stats->>'Ld')::int;
     select coalesce(array_agg(x), '{}') into victim_skills from jsonb_array_elements_text(coalesce(p_case.model_snapshot->'group'->'campaign_state'->'inheritedSkillIds', '[]'::jsonb)) x;
-    select coalesce(array_agg(coalesce(i->>'item_rules_id', 'custom:' || coalesce(i->>'custom_name', ''))), '{}') into snap_keys from jsonb_array_elements(coalesce(p_case.model_snapshot->'items', '[]'::jsonb)) i;
+    select coalesce(array_agg(coalesce(i->>'item_rules_id', 'custom:' || coalesce(i->>'custom_name', ''))), '{}') into snap_keys from jsonb_array_elements(coalesce(p_case.model_snapshot->'items', '[]'::jsonb)) i where jsonb_typeof(i->'quantity') = 'number';
+    snap_kit := (select coalesce(jsonb_object_agg(coalesce(i->>'item_rules_id', 'custom:' || coalesce(i->>'custom_name', '')), i->'quantity'), '{}'::jsonb) from jsonb_array_elements(coalesce(p_case.model_snapshot->'items', '[]'::jsonb)) i where jsonb_typeof(i->'quantity') = 'number');
   end if;
   if victim_ld is null then raise exception 'The captive has no Leadership on file.' using errcode = '22023'; end if;
 
@@ -623,7 +632,10 @@ begin
       if nullif(d->>'holder_id', '') is not null or not (keys <@ array['holder_type', 'holder_id', 'item_rules_id', 'custom_name', 'quantity', 'notes']) then raise exception 'Surrendered equipment goes to the Pirates'' stash.' using errcode = '22023'; end if;
       key := coalesce(d->>'item_rules_id', 'custom:' || coalesce(d->>'custom_name', '')); qty := coalesce((d->>'quantity')::int, 1);
       if qty < 1 then raise exception 'Item quantities must be positive.' using errcode = '22023'; end if;
-      if p_case.subject_kind = 'henchman' and (not (key = any(snap_keys)) or qty <> 1 or gained ? key) then raise exception 'Only one share of what the fallen henchman carried (%) may be kept.', array_to_string(snap_keys, ', ') using errcode = '22023'; end if;
+      if p_case.subject_kind = 'henchman' then
+        if coalesce((p_case.model_snapshot->>'kit_unresolved')::boolean, false) then raise exception 'The fallen henchman''s share of mixed equipment was not recorded evenly in the report; the Pirates gain no equipment from him automatically. Adjust the stash by hand with a note.' using errcode = '22023'; end if;
+        if not (key = any(snap_keys)) or gained ? key or qty <> (snap_kit->>key)::int then raise exception 'Only the fallen henchman''s own share of kit may be kept (%).', (select string_agg(e.key || ' ×' || e.value, ', ' order by e.key) from jsonb_each_text(snap_kit) e) using errcode = '22023'; end if;
+      end if;
       gained := jsonb_set(gained, array[key], to_jsonb(coalesce((gained->>key)::int, 0) + qty)); gained_total := gained_total + qty;
     elsif t = 'items' and op = 'update' and outcome = 'swabbie' and p_case.subject_kind = 'hero' then
       select * into item_row from public.items where id = v_id and warband_id = k.id and holder_type = 'stash';

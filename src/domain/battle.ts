@@ -96,6 +96,12 @@ export const battleLiveStateSchema = z.object({
   preBattle: z.record(z.string(), z.string()).default({}),
   /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
   itemsUsed: z.record(z.string(), z.array(z.string())).default({}),
+  /** One physical vial per declared Blessed Water throw, including misses. */
+  blessedWaterUses: z.array(z.object({
+    id: z.string(), warriorId: z.string(), warriorName: z.string(), itemRowId: z.string(),
+    at: z.string(), turn: z.number().int(), attackEventId: z.string().optional(),
+    correction: z.string().optional(),
+  })).default([]),
   /** Actual Healing Herbs uses. Event identities prevent old healing from erasing later wounds. */
   healingHerbUses: z.array(z.object({
     id: z.string(), warriorId: z.string(), itemRowId: z.string(), at: z.string(),

@@ -34,3 +34,20 @@ describe('report item patches and the addiction ledger (#139/#140)', () => {
     expect(itemPatchesFor(supplied, emptyDraft()).map((p) => [p.id, p.quantity])).toEqual([['o', 0]])
   })
 })
+
+
+describe('Blessed Water report consumption', () => {
+  const use = { id: 'one', warriorId: 'kurt', warriorName: 'Kurt', itemRowId: 'water', at: 'now', turn: 2 }
+  it('deducts the exact number of throws from a stack once, regardless of an old checkbox', () => {
+    const context = ctx({ items: [row('water', 'kurt', 'blessed_water', 3)], itemsUsed: { kurt: ['blessed_water'] }, blessedWaterUses: [use, { ...use, id: 'two' }, { ...use, id: 'corrected', correction: 'Wrong model' }] })
+    expect(itemPatchesFor(context, emptyDraft())).toEqual([{ id: 'water', quantity: 1 }])
+    expect(itemPatchesFor({ ...context, blessedWaterUses: [{ ...use, correction: 'Wrong model' }] }, emptyDraft())).toEqual([])
+  })
+  it('tracks separate physical rows and a last copy without spending unrelated stock', () => {
+    const context = ctx({ items: [row('water', 'kurt', 'blessed_water', 1), row('other', 'kurt', 'blessed_water', 2)], blessedWaterUses: [use] })
+    expect(itemPatchesFor(context, emptyDraft())).toEqual([{ id: 'water', quantity: 0 }])
+  })
+  it('keeps a legacy tick working when no explicit throws exist', () => {
+    expect(itemPatchesFor(ctx({ items: [row('water', 'kurt', 'blessed_water', 1)], itemsUsed: { kurt: ['blessed_water'] } }), emptyDraft())).toEqual([{ id: 'water', quantity: 0 }])
+  })
+})

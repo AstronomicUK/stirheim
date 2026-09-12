@@ -38,6 +38,7 @@ import { GrimoireCard } from './view/GrimoireCard'
 import { HiredRosterRepairCard } from './view/HiredRosterRepairCard'
 import { HiredUpkeepCard } from './view/HiredUpkeepCard'
 import { TradeWagonCard } from './view/TradeWagonCard'
+import { AwakeningCard } from '../aftermath/AwakeningCard'
 import { CaptiveCard } from './view/CaptiveCard'
 import { PitFightCard } from './view/PitFightCard'
 import { PendingBattleCard } from './view/PendingBattleCard'
@@ -200,6 +201,8 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       </Card>
 
       {canEdit ? <PendingBattleCard warbandId={warband.id} campaignId={campaign.data?.campaignId} userId={user?.id} /> : null}
+
+      <AwakeningCard warbandId={warband.id} mayEdit={canEdit} campaignId={campaign.data?.campaignId} />
 
       <ImportFixups detail={detail} canEdit={canEdit} />
 

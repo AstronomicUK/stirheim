@@ -152,6 +152,132 @@ export type Database = {
         }
         Relationships: []
       }
+      awakening_catalogue: {
+        Row: {
+          item_rules_id: string
+        }
+        Insert: {
+          item_rules_id: string
+        }
+        Update: {
+          item_rules_id?: string
+        }
+        Relationships: []
+      }
+      awakening_offers: {
+        Row: {
+          created_at: string
+          from_warband_id: string
+          hero_id: string
+          hero_name: string
+          id: string
+          match_id: string
+          raised_group_id: string | null
+          raised_snapshot: Json | null
+          reason: string
+          recipient_report_id: string | null
+          report_id: string
+          report_revision: number
+          resolved_at: string | null
+          resolved_by: string | null
+          snapshot: Json
+          state: string
+          to_warband_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_warband_id: string
+          hero_id: string
+          hero_name: string
+          id?: string
+          match_id: string
+          raised_group_id?: string | null
+          raised_snapshot?: Json | null
+          reason?: string
+          recipient_report_id?: string | null
+          report_id: string
+          report_revision: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot: Json
+          state?: string
+          to_warband_id: string
+        }
+        Update: {
+          created_at?: string
+          from_warband_id?: string
+          hero_id?: string
+          hero_name?: string
+          id?: string
+          match_id?: string
+          raised_group_id?: string | null
+          raised_snapshot?: Json | null
+          reason?: string
+          recipient_report_id?: string | null
+          report_id?: string
+          report_revision?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot?: Json
+          state?: string
+          to_warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "awakening_offers_from_warband_id_fkey"
+            columns: ["from_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "awakening_offers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "awakening_offers_recipient_report_id_fkey"
+            columns: ["recipient_report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "awakening_offers_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "awakening_offers_to_warband_id_fkey"
+            columns: ["to_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      awakening_templates: {
+        Row: {
+          base_limit: number
+          warband_rules_id: string
+          zombie_rules_id: string
+        }
+        Insert: {
+          base_limit: number
+          warband_rules_id: string
+          zombie_rules_id: string
+        }
+        Update: {
+          base_limit?: number
+          warband_rules_id?: string
+          zombie_rules_id?: string
+        }
+        Relationships: []
+      }
       battle_bribes: {
         Row: {
           actor_id: string
@@ -2246,6 +2372,10 @@ export type Database = {
       reserve_trade_wagon_capture: {
         Args: { p_capture: Json; p_report_id: string }
         Returns: undefined
+      }
+      resolve_awakening: {
+        Args: { p_action: string; p_offer_id: string; p_reason?: string }
+        Returns: string
       }
       resolve_captive_rosters: {
         Args: {

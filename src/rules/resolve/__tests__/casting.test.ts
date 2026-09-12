@@ -384,3 +384,76 @@ it('Protection of Sigmar is only offered for the affected Sister', () => {
  expect(startCast(caster, spell, { enemyDispel: sources, targetId: 'someone_else' }).enemyDispel).toEqual([]);
  expect(startCast(caster, spell, { enemyDispel: sources }).enemyDispel).toEqual([]);
 });
+
+describe('personal protections and area spells (Daemon Soul, Protection of Sigmar; #28/#29 acceptance)', () => {
+  const spellOf = (p: ReturnType<typeof profileOf>, name: string) => p.lore.spells.find((s) => s.name === name)!;
+  const soulfire = { id: 'soulfire', name: 'Soulfire', difficulty: 9, text: '', target: 'none', affects: 'enemies' } as unknown as Parameters<typeof startCast>[1];
+  const mutant = hero({ id: 'mutant', name: 'Grix', equipment: [{ itemId: 'daemon_soul', quantity: 1 }] });
+  const sister = hero({ id: 'sister', name: 'Ilse', skillIds: ['sisters_of_sigmar_skills_protection_of_sigmar'] });
+
+  it('Daemon Soul is a personal protection against spells and prayers, offered only for the affected mutant', () => {
+    const [soul] = dispelsFor(mutant);
+    expect(soul).toEqual(expect.objectContaining({ id: 'daemon_soul', ownerId: 'mutant', targetOnly: true, personal: true, affectsPrayers: true, against: { threshold: 4 } }));
+    const p = profileOf(hero());
+    const spell = spellOf(p, 'Vision of Torment');
+    // Not the target: no roll. The target: a roll.
+    expect(applyCastRoll(startCast(p, spell, { enemyDispel: [soul], targetId: 'someone_else' }), [6, 6]).done).toBe(true);
+    expect(applyCastRoll(startCast(p, spell, { enemyDispel: [soul], targetId: 'mutant' }), [6, 6]).pending).toEqual(expect.objectContaining({ kind: 'dispel', dice: 1 }));
+  });
+
+  it('a Daemon Soul save spares the mutant alone: the spell is still cast, and other protections still roll', () => {
+    const p = profileOf(hero());
+    const [soul] = dispelsFor(mutant);
+    const [protection] = dispelsFor(sister);
+    // Both are within the area: the caster's player marks them as affected.
+    let s = applyCastRoll(startCast(p, soulfire as never, { enemyDispel: [soul, protection], affectedIds: ['mutant', 'sister'] }), [6, 6]);
+    expect(s.enemyDispel.map((d) => d.id)).toEqual(['daemon_soul', 'protection_of_sigmar']);
+    s = applyCastRoll(s, [5]); // the Daemon within saves Grix
+    expect(s.outcome).toBe('cast');
+    expect(s.protectedNames).toEqual(['Grix']);
+    expect(s.log.at(-1)?.text).toMatch(/Saved — Soulfire does not affect Grix; other models are still affected/);
+    // Ilse's Protection of Sigmar still gets its roll…
+    expect(s.pending).toEqual(expect.objectContaining({ kind: 'dispel', dispelSource: expect.objectContaining({ id: 'protection_of_sigmar' }) }));
+    // …and a pass nullifies the whole spell.
+    const nullified = applyCastRoll(s, [4]);
+    expect(nullified.outcome).toBe('dispelled');
+    expect(nullified.done).toBe(true);
+    // Whereas a failed Protection roll leaves the cast standing, with Grix recorded as unaffected.
+    const stands = applyCastRoll(s, [2]);
+    expect(stands.outcome).toBe('cast');
+    expect(stands.done).toBe(true);
+    expect(describeCast(stands)).toBe('Vhorsk casts Soulfire (Grix unaffected).');
+  });
+
+  it('a failed Daemon Soul roll leaves the mutant affected and the cast standing', () => {
+    const p = profileOf(hero());
+    const [soul] = dispelsFor(mutant);
+    const s = applyCastRoll(applyCastRoll(startCast(p, soulfire as never, { enemyDispel: [soul], affectedIds: ['mutant'] }), [6, 6]), [3]);
+    expect(s.outcome).toBe('cast');
+    expect(s.protectedNames).toBeUndefined();
+    expect(s.log.at(-1)?.text).toMatch(/Not saved — Grix is affected/);
+    expect(describeCast(s)).toBe('Vhorsk casts Soulfire.');
+  });
+
+  it('Protection of Sigmar is offered for a Sister marked as affected by an area spell, and not otherwise', () => {
+    const p = profileOf(hero());
+    const [protection] = dispelsFor(sister);
+    expect(applyCastRoll(startCast(p, soulfire as never, { enemyDispel: [protection], affectedIds: [] }), [6, 6]).done).toBe(true);
+    expect(applyCastRoll(startCast(p, soulfire as never, { enemyDispel: [protection], affectedIds: ['sister'] }), [6, 6]).pending?.kind).toBe('dispel');
+  });
+
+  it('a failed ordinary dispel no longer silences a second protection on the table', () => {
+    const p = profileOf(hero());
+    const spell = spellOf(p, 'Vision of Torment');
+    const runestones = { id: 'elven_runestones', name: 'Elven Runestones', detail: 'x', against: 'difficulty' as const, ownerId: 'elf', ownerName: 'Elf' };
+    const [soul] = dispelsFor(mutant);
+    let s = applyCastRoll(startCast(p, spell, { enemyDispel: [runestones, soul], targetId: 'mutant' }), [6, 6]);
+    s = applyCastRoll(s, [1, 1]); // runestones fail
+    expect(s.outcome).toBe('cast');
+    expect(s.pending).toEqual(expect.objectContaining({ kind: 'dispel', dispelSource: expect.objectContaining({ id: 'daemon_soul' }) }));
+    // Declining ends it, as before.
+    const declined = declineCastStep(s);
+    expect(declined.done).toBe(true);
+    expect(declined.outcome).toBe('cast');
+  });
+});

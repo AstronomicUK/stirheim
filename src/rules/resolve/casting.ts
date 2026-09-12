@@ -57,8 +57,10 @@ export interface CastReroll {
 }
 
 export interface DispelSource {
-  /** Only eligible when this bearer is the selected affected model. */
+  /** Only eligible when this bearer is the selected target or among the models marked as affected. */
   targetOnly?: boolean;
+  /** A personal protection (Daemon Soul): a pass spares this bearer alone — the spell still lands on everyone else. */
+  personal?: boolean;
   ownerId?: string;
   ownerName?: string;
   limit?: "perTurn";
@@ -228,6 +230,12 @@ function casterKit(hero: RosterHero, kind: CasterKind): CasterKitFinding {
     out.dispel.push({ id: "protection_of_sigmar", name: "Protection of Sigmar", targetOnly: true,
       detail: "If the spell affects this Sister, nullify it on 4+. A nullified spell affects no other models either.", against: { threshold: 4 } });
   }
+  // Daemon Soul (Cult of the Possessed mutation, core-and-grade-1a.md:201): "a 4+ save against the
+  // effects of spells or prayers" — personal to the mutant, so it never nullifies the spell for others.
+  if (has.has("daemon_soul")) {
+    out.dispel.push({ id: "daemon_soul", name: "Daemon Soul", targetOnly: true, personal: true, affectsPrayers: true,
+      detail: "The Daemon within this mutant turns aside a spell or prayer that would affect him on 4+. Other models are still affected.", against: { threshold: 4 } });
+  }
 
   // ---- things the sheet cannot check ----
   if (has.has("rosary")) out.reminders.push("The Rosary only helps if he did nothing but move at walking pace, and never in combat.");
@@ -376,6 +384,8 @@ export interface CastState {
   /** Dispel sources actually available to whoever is opposing this cast; empty means nobody can. */
   enemyDispel: DispelSource[];
   dispelRolled?: { source: DispelSource; roll: number; manual: boolean };
+  /** Models a personal protection (Daemon Soul) spared: the spell was cast, but not on them. */
+  protectedNames?: string[];
 }
 
 const CAST_STEP = (over: Partial<CastStep> & Pick<CastStep, "kind" | "label" | "detail">): CastStep => ({ dice: 2, optional: false, ...over });
@@ -387,6 +397,8 @@ function modifierText(state: CastState): string {
 export interface StartCastOptions {
   /** Selected affected model; personal protections must not become warband-wide. */
   targetId?: string;
+  /** For an area spell with no single target: the enemy models the player marks as within its effect, so their own protections get a roll. */
+  affectedIds?: string[];
   /** Modifier ids the player switched on, with the value for the ones that are rolled (Dark Ritual's D3). */
   modifiers?: { id: string; amount?: number }[];
   /** Re-roll ids already used up earlier in the battle or this turn. */
@@ -426,7 +438,10 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     outcome: null,
     secondSpellOffered: false,
     done: false,
-    enemyDispel: (options.enemyDispel ?? []).filter(source => (!source.targetOnly || (options.targetId !== undefined && source.ownerId === options.targetId)) && (profile.lore.id !== 'prayers_of_sigmar' || source.affectsPrayers === true)),
+    enemyDispel: (options.enemyDispel ?? []).filter(source => {
+      const affected = source.ownerId !== undefined && (source.ownerId === options.targetId || (options.affectedIds ?? []).includes(source.ownerId));
+      return (!source.targetOnly || affected) && (profile.lore.id !== 'prayers_of_sigmar' || source.affectsPrayers === true);
+    }),
   };
 
   if (spell.difficulty === null) {
@@ -506,9 +521,27 @@ export function applyCastRoll(state: CastState, values: number[], manual?: boole
       const target = step.dispelAgainst === "difficulty" ? (next.difficulty ?? 0) : (step.dispelAgainst?.threshold ?? 0);
       const dispelled = sum >= target;
       if(step.dispelSource) next.dispelRolled={source:step.dispelSource,roll:sum,manual:manual??false};
+      if (step.dispelSource?.personal) {
+        // A personal protection spares its bearer only; the cast stands for everyone else, and any
+        // other protection on the table still gets its own roll.
+        const bearer = step.dispelSource.ownerName ?? "the bearer";
+        next.log.push({
+          text: `${step.dispelSource.name} (${bearer}): rolled ${values.join(" + ")}${rollTag} against ${target}+. ${dispelled ? `Saved — ${next.spell.name} does not affect ${bearer}; other models are still affected.` : `Not saved — ${bearer} is affected.`}`,
+          tone: dispelled ? "bad" : "good",
+        });
+        if (dispelled) next.protectedNames = [...(next.protectedNames ?? []), bearer];
+        next.enemyDispel = next.enemyDispel.filter((source) => source !== step.dispelSource);
+        return offerDispel(next);
+      }
       next.log.push({ text: `Dispel attempt${step.dispelSource ? ` (${step.dispelSource.ownerName ?? "Warrior"}: ${step.dispelSource.name})` : ""}: rolled ${values.join(" + ")}${rollTag}${values.length > 1 ? ` = ${sum}` : ""} against ${target}+. ${dispelled ? "The spell fails to work." : "The spell works normally."}`, tone: dispelled ? "bad" : "good" });
-      if (dispelled) next.outcome = "dispelled";
-      return afterCast(next);
+      if (dispelled) {
+        next.outcome = "dispelled";
+        return afterCast(next);
+      }
+      // That source is spent; any other protection on the table (a second Sister, a mutant's Daemon
+      // Soul) still gets its own roll before the cast stands.
+      next.enemyDispel = next.enemyDispel.filter((source) => source !== step.dispelSource);
+      return offerDispel(next);
     }
     case "toughness": {
       const passed = values[0] < 6 && values[0] <= toughnessOf(state);
@@ -663,7 +696,7 @@ export function describeCast(state: CastState): string {
     case "automatic":
       return `${who} casts ${state.spell.name} (automatic).`;
     case "cast":
-      return `${who} casts ${state.spell.name}.`;
+      return state.protectedNames?.length ? `${who} casts ${state.spell.name} (${state.protectedNames.join(", ")} unaffected).` : `${who} casts ${state.spell.name}.`;
     case "dispelled":
       return `${who}'s ${state.spell.name} is dispelled.`;
     case "failed":

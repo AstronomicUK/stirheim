@@ -566,6 +566,7 @@ You may use the Eye of God successfully only once per battle. Choose any single 
       {
         id: "dark_blood",
         target: "none",
+        affects: "enemies",
         name: "Dark Blood",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -597,6 +598,7 @@ The Chaos Mage may immediately move anywhere within 12", including into base con
       {
         id: "word_of_pain",
         target: "none",
+        affects: "enemies",
         name: "Word of Pain",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -1006,6 +1008,7 @@ Lesser Magic (or hedge magic) is used by human warlocks. It may not be as awesom
       {
         id: "fires_of_uzhul",
         target: "none",
+        affects: "enemies",
         name: "Fires of U'Zhul",
         roll: { min: 1, max: 1 },
         difficulty: 7,
@@ -1274,6 +1277,7 @@ Magic of the Horned Rat is used by the Skaven of Clan Eshin Sorcerer, and the Sk
       {
         id: "warpfire",
         target: "none",
+        affects: "enemies",
         name: "Warpfire",
         roll: { min: 1, max: 1 },
         difficulty: 8,
@@ -1314,6 +1318,7 @@ The Sorcerer may immediately charge any enemy model within 12" (ignoring any ter
       {
         id: "eye_of_the_warp",
         target: "none",
+        affects: "enemies",
         name: "Eye of the Warp",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1788,6 +1793,7 @@ Any allied warriors within 8" of the warrior become immune to fear and all alone
       {
         id: "soulfire",
         target: "none",
+        affects: "enemies",
         name: "Soulfire",
         roll: { min: 3, max: 3 },
         difficulty: 9,

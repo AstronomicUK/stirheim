@@ -77,6 +77,9 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   // friendly list, the enemy list, both under headings, the caster himself, or no model at all.
   const [selectedSpellId, setSelectedSpellId] = useState<string | null>(null)
   const [targetId, setTargetId] = useState<string | null>(null)
+  // For an area spell (no single target): the enemy models the player marks as within its effect, so
+  // their own protections (a Sister's Protection of Sigmar, a mutant's Daemon Soul) get their roll.
+  const [affectedIds, setAffectedIds] = useState<string[]>([])
   const friendlyTargets = useMemo(() => combatantsOf(roster, template, roster.name, sheet), [roster, template, sheet])
   const enemyTargets = useMemo(
     () => enemies.warbands.flatMap((w) => combatantsOf(w.roster, w.template, w.participant.warband_name, sessions.find((s) => s.warband_id === w.participant.warband_id)?.live_state)),
@@ -134,6 +137,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
       alreadyUsed: usedUp,
       enemyDispel,
       targetId: target?.id,
+      affectedIds: spell.affects === 'enemies' ? affectedIds : undefined,
     })
     setCastingPulse(0)
     recorded.current = null
@@ -154,7 +158,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
     }
     stateRef.current = null
     setState(null)
-    setTargetId(null)
+    setTargetId(null); setAffectedIds([])
   }
 
   function record(finished: CastState) {
@@ -173,7 +177,11 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
         total: finished.dice ? finished.dice[0] + finished.dice[1] + finished.bonus : null,
         difficulty: finished.difficulty,
         used: finished.used.filter((id) => !usedUp.includes(id)),
-        targetName: targetId ? (allTargets.find((t) => t.id === targetId)?.name ?? null) : null,
+        targetName: targetId
+          ? (allTargets.find((t) => t.id === targetId)?.name ?? null)
+          : finished.spell.affects === 'enemies' && affectedIds.length > 0
+            ? affectedIds.map((id) => allTargets.find((t) => t.id === id)?.name).filter(Boolean).join(', ')
+            : null,
       }),
     )
   }
@@ -245,7 +253,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
                     setState(null)
                     setSpent({})
                     setSelectedSpellId(null)
-                    setTargetId(null)
+                    setTargetId(null); setAffectedIds([])
                   }}
                   className={`min-h-11 rounded-full border px-4 text-sm transition-colors ${c.heroId === caster.heroId ? 'border-brass bg-surface-high text-ink' : 'border-border text-ink-dim hover:text-ink'}`}
                 >
@@ -279,7 +287,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
                     aria-checked={active}
                     onClick={() => {
                       setSelectedSpellId(spell.id)
-                      setTargetId(null)
+                      setTargetId(null); setAffectedIds([])
                     }}
                     className="min-w-0 flex-1 text-left"
                   >
@@ -325,7 +333,27 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
 
         <FightBox icon={targetTone === 'accent' ? 'enemy' : 'shield'} title="Target" tone={targetTone}>
           {!chosen ? null : kind === 'none' ? (
-            <p className="text-xs leading-relaxed text-ink-dim">No model to choose: this {chosenProfile?.kind === 'prayer' ? 'prayer' : 'spell'} works on an area, a line, or the game itself. Play its effect at the table.</p>
+            <>
+              <p className="text-xs leading-relaxed text-ink-dim">No model to choose: this {chosenProfile?.kind === 'prayer' ? 'prayer' : 'spell'} works on an area, a line, or the game itself. Play its effect at the table.</p>
+              {chosen.spell.affects === 'enemies' && chosen.spell.difficulty !== null && enemyTargets.length > 0 ? (
+                <fieldset className="flex min-w-0 flex-col gap-0.5" aria-label="Enemy models affected">
+                  <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Enemy models within its effect</legend>
+                  <p className="text-xs text-ink-dim">Tick the enemies it lands on, so a Daemon Soul or Protection of Sigmar among them gets its roll. Optional.</p>
+                  {enemyTargets.filter((c) => !c.out).map((c) => (
+                    <label key={`${c.warbandId}:${c.id}`} className="flex min-h-9 items-center gap-2 py-0.5 text-xs text-ink">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 shrink-0 accent-brass"
+                        checked={affectedIds.includes(c.id)}
+                        disabled={readOnly || state !== null}
+                        onChange={(e) => setAffectedIds((ids) => (e.target.checked ? [...new Set([...ids, c.id])] : ids.filter((id) => id !== c.id)))}
+                      />
+                      <span>{c.name}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              ) : null}
+            </>
           ) : kind === 'self' ? (
             <>
               <p className="text-xs text-ink-dim">Cast on {caster.name} himself — no other model to choose.</p>

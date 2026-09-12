@@ -21,6 +21,9 @@ export interface Spell {
   target?: SpellTarget;
   /** Short source-based targeting instruction, including restrictions confirmed at the table. */
   targetNote?: string;
+  /** For a spell with no single target: it lands on enemy models (an area, a line, a breath), so the
+   * player can mark which enemies are within it and their own protections get a roll. */
+  affects?: "enemies";
   /** Spell text, verbatim, paragraphs separated by blank lines. Inline markdown tables are preserved. */
   text: string;
 }

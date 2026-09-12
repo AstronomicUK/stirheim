@@ -78,6 +78,7 @@ export const battleLiveStateSchema = z.object({
   turn: z.number().int().min(0).default(1),
   /** Whether this warband has voluntarily routed / failed a rout test. */
   routed: z.boolean().default(false),
+  routCause: z.enum(["failed-test", "voluntary", "table"]).optional(),
   /** Wyrdstone shards picked up during the battle (scenario objectives). */
   wyrdstoneFound: z.number().int().min(0).default(0),
   /** Other loot or objectives, free text lines. */

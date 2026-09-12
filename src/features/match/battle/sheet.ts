@@ -226,8 +226,8 @@ export function setTurn(state: BattleLiveState, turn: number): BattleLiveState {
   return touch(state, { turn: Math.max(0, Math.trunc(turn)) })
 }
 
-export function setRouted(state: BattleLiveState, routed: boolean): BattleLiveState {
-  return touch(state, { routed })
+export function setRouted(state: BattleLiveState, routed: boolean, cause?: BattleLiveState['routCause']): BattleLiveState {
+  return touch(state, { routed, routCause: routed ? cause : undefined })
 }
 
 export function setWyrdstoneFound(state: BattleLiveState, count: number): BattleLiveState {

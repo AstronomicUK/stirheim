@@ -63,7 +63,7 @@ export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, templa
     setOutcome(passed ? 'passed' : 'failed')
     edit((s) => {
       const line = `Rout check ${passed ? 'passed' : 'failed'}: rolled ${sum} against ${chosen.label}`
-      return passed ? stamp(s, line) : setRouted(stamp(s, line), true)
+      return passed ? stamp(s, line) : setRouted(stamp(s, line), true, 'failed-test')
     })
   }
 
@@ -93,7 +93,7 @@ export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, templa
           <Button variant="secondary" onClick={() => edit((s) => stamp(s, 'Rout check passed at the table'))}>
             Passed at the table
           </Button>
-          <Button variant="danger" onClick={() => edit((s) => setRouted(stamp(s, 'Warband routed'), true))}>
+          <Button variant="danger" onClick={() => edit((s) => setRouted(stamp(s, 'Warband routed at the table'), true, 'table'))}>
             We rout
           </Button>
         </div>

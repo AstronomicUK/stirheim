@@ -155,6 +155,7 @@ export interface ReportDraft {
   step: number
   result: ReportResult | null
   routed: boolean
+  routCause?: 'failed-test'|'voluntary'|'table'
   /** Apply the underdog bonus (defaults on when an opponent's rating was higher). */
   underdog: boolean
   /** Heroes and hired swords taken out of action. */
@@ -261,6 +262,7 @@ export function seedFromBattleSheet(roster: RosterWarband, live: BattleLiveState
     }
   }
   draft.routed = live.routed
+  draft.routCause = live.routCause
   draft.battleWyrdstone = live.wyrdstoneFound
   const lootLines = live.loot.map((l) => `Loot: ${l}`)
   draft.notes = [...lootLines, live.notes.trim()].filter((s) => s !== '').join('\n')
@@ -307,7 +309,7 @@ export function setResult(draft: ReportDraft, result: ReportResult): ReportDraft
 }
 
 export function setRouted(draft: ReportDraft, routed: boolean): ReportDraft {
-  return { ...draft, routed }
+  return { ...draft, routed, routCause: routed === draft.routed ? draft.routCause : undefined }
 }
 
 export function setUnderdog(draft: ReportDraft, underdog: boolean): ReportDraft {

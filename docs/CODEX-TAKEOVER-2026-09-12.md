@@ -180,3 +180,9 @@ Claude handed over P1/P5 in fccb52c3 (b3f9e57, f1656dc, f346443). Assigned next 
 One vial now selects the main or off-hand blade of a paired weapon. The pair is split only inside the calculation into normal main-hand attacks and one off-hand attack: no extra paired bonus, no poison on the other blade. Frenzy A3 stays seven total attacks (six main, one off-hand). Physical pair identity remains intact for equipment tracking. Each blade can have its own vial; correction restores only that vial.
 
 93 focused poison/odds tests pass. /tmp/stirheim-paired-poison-qa.mjs passed actual mobile selection/reload/correction, post-battle filing (one active vial consumed), and withdrawal (original stack restored). The previous paired-blade exclusion in this checkpoint is superseded. Combined suite before this addition passed 2245 tests with 214 DB tests skipped; TypeScript passed before Claude began the current #96 edits.
+
+### Sign of Sigmar and #96 combat integration
+
+Sign of Sigmar now removes the first melee attack from Undead/Possessed opponents in the first combat round, minimum one overall. The same per-weapon allocation drives the probability chain, sensitivity and roller, retaining the correct off-hand profile. Mobile accepted: three attacks become two when first-round confirmation is selected (/tmp/stirheim-sign-sigmar-mobile-qa.mjs). Focused combat/odds tests pass.
+
+Claude's #96 structured target now travels through Combatant with warband type and leader identity. Combat notes name the recorded target and state whether the selected opponent matches. The first-round Hatred reroll remains player-confirmed; unmatched or legacy injuries never automatically grant it. Asked Claude to review whether leader-scope hatred should follow a successor or remain on the originally recorded leader. Fixed a Swivel selector index reference caught in combined typechecking after the paired-poison edit.

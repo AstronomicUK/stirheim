@@ -1005,3 +1005,38 @@ it('coats one fighting claw without doubling the pair bonus or affecting the oth
  }
  expect(computeOdds(fight).attacks).toBe(7)
 })
+
+
+describe('Sign of Sigmar', () => {
+ const sister = { ...captain, skillIds: ['sisters_of_sigmar_skills_sign_of_sigmar'] }
+ it.each(['undead', 'possessed'])('removes the first %s melee attack while retaining the off-hand attack', trait => {
+   const enemy = { ...skaven, traitIds: [trait], stats: { ...base, A: 2 } }
+   const fight = setup(enemy, sister, 'sword', 'dagger')
+   const first = { ...fight, context: { ...fight.context, firstTurnOfCombat: true } }
+   const odds = computeOdds(first)
+   expect(odds.weapons.map(w => w.attacks)).toEqual([1, 1])
+   expect(odds.attacks).toBe(2)
+   expect(odds.chain.attacks).toBe(2)
+   expect(odds.fullAttacks).toBe(2)
+   expect(computeOdds(fight).attacks).toBe(3)
+   expect(relevantToggles(enemy, 'melee', fight.primary, fight.defenderKit, fight.offHand, sister).some(toggle => toggle.field === 'firstTurnOfCombat')).toBe(true)
+ })
+ it('preserves the one-attack minimum and does not affect humans or shooting', () => {
+   const enemy = { ...skaven, traitIds: ['undead'], equipment: [{ itemId: 'sword', quantity: 1 }, { itemId: 'bow', quantity: 1 }] }
+   for (const [warrior, weapon] of [[enemy, 'sword'], [skaven, 'sword'], [enemy, 'bow']] as const) {
+     const fight = setup(warrior, sister, weapon, null)
+     expect(computeOdds({ ...fight, context: { ...fight.context, charging: true } }).attacks).toBe(1)
+   }
+ })
+})
+
+
+it('matches structured Bitter Enmity to the actual opposing warband and preserves manual first-round confirmation', () => {
+ const injured: Combatant = { ...captain, traitIds: ['hatred'], hatredReason: 'The entire warband responsible', bitterEnmity: { scope: 'warband', roll: 5, text: 'The entire warband responsible', source: 'chosen', warbandId: 'enemy-band', warbandName: 'The Black Hands' } }
+ const enemy = { ...skaven, warbandId: 'enemy-band' }
+ const match = computeOdds(setup(injured, enemy, 'sword', null))
+ expect(match.notes.join(' ')).toContain('The Black Hands')
+ expect(match.notes.join(' ')).toContain('This opponent matches')
+ expect(match.weapons[0].pHit).toBeCloseTo(0.5)
+ expect(computeOdds(setup(injured, skaven, 'sword', null)).notes.join(' ')).toContain('does not match')
+})

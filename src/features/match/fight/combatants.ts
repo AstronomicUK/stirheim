@@ -28,6 +28,9 @@ export interface Combatant {
   unitTemplateId?: string
   /** Exact saved Bitter Enmity target text; never guessed from a faction name. */
   hatredReason?: string
+  bitterEnmity?: import('../../../rules/types/roster').BitterEnmityTarget
+  warbandTypeId?: string
+  isLeader?: boolean
   guidingDream?: 'movement' | 'hit' | 'strength' | 'frenzy'
   entangled?: boolean
   /** Rules identity, distinct from the companion bookkeeping kind. */
@@ -205,12 +208,15 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         name: warrior.name,
         typeName: unitTypeName(template?.id ?? roster.warbandTemplateId, warrior.unitTemplateId),
         warbandId: roster.id,
+        warbandTypeId: roster.warbandTemplateId,
         warbandName,
         stats: boosts.leaderLd && warrior.id === leaderId ? { ...warrior.stats, Ld: warrior.stats.Ld + boosts.leaderLd } : warrior.stats,
         equipment: warrior.equipment,
         unarmedProfile: unitRules(warrior.unitTemplateId).unarmedProfile,
         skillIds: warrior.skillIds,
         hatredReason: warrior.flags.hates,
+        bitterEnmity: warrior.flags.bitterEnmity,
+        isLeader: warrior.id === leaderId,
         skillTableIds: warrior.skillTableIds,
         traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [], true), ...boostTraits], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
@@ -227,11 +233,14 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         typeName: warrior.flags.merchantGuardian ? 'Merchant’s bodyguard' : warrior.hiredSwordId === 'snake_charmer' && warrior.flags.hireCompanion ? 'Snake' : hiredSwordName(warrior.hiredSwordId),
         ...(warrior.hiredSwordId === 'snake_charmer' && warrior.flags.hireCompanion ? { weaponIds: ['snake_bite'] } : {}),
         warbandId: roster.id,
+        warbandTypeId: roster.warbandTemplateId,
         warbandName,
         stats: warrior.stats,
         equipment: warrior.equipment,
         skillIds: warrior.skillIds,
         hatredReason: warrior.flags.hates,
+        bitterEnmity: warrior.flags.bitterEnmity,
+        isLeader: warrior.id === leaderId,
         // Hired swords are not members of the warband, so its racial rules do not apply to them.
         traitIds: warriorTraits(warrior, warrior.flags.merchantGuardian ? [{ name: 'Guardian', text: GUARDIAN_RULES }] : warrior.hiredSwordId === 'snake_charmer' ? (detail?.specialRules ?? []).filter(rule => warrior.flags.hireCompanion ? ['Animals','Venomous'].includes(rule.name) : !['Animals','Venomous'].includes(rule.name)) : detail?.specialRules ?? [], boostTraits, undefined),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
@@ -255,6 +264,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       name: group.name,
       typeName: unitTypeName(template?.id ?? roster.warbandTemplateId, group.unitTemplateId),
       warbandId: roster.id,
+        warbandTypeId: roster.warbandTemplateId,
       warbandName,
       stats: group.stats,
       equipment: kit.items,
@@ -274,6 +284,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       name: animal.name,
       typeName: `${animal.kind.name} (${animal.holderName}'s)`,
       warbandId: roster.id,
+        warbandTypeId: roster.warbandTemplateId,
       warbandName,
       stats: animal.kind.stats,
       equipment: [],

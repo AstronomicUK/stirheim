@@ -37,7 +37,7 @@ export function resolveCharacterTurn(
   options: TurnOptions = {}
 ): TurnResult {
   const inPhase = weaponsForPhase(weapons, phase ?? weapons[0]?.type ?? "melee");
-  let attacks = weaponAttackCounts(attacker, inPhase, context, customSkills).flatMap(({ weapon, count }) => {
+  let attacks = weaponAttackCounts(attacker, inPhase, context, customSkills, defender).flatMap(({ weapon, count }) => {
     const input = buildAttackInput({ attacker, weapon, defender, context, customSkills, houseRules });
     const resolved = resolveSingleAttack(input);
     return Array.from({ length: count }, () => resolved);

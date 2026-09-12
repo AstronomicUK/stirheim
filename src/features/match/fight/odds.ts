@@ -1,3 +1,4 @@
+import { bitterEnmityApplies } from '../../../rules/resolve/bitterEnmity'
 import { isBlackpowderWeapon } from '../../../rules/resolve/ladyBlessing'
 import { blessedWaterAttack } from '../../../rules/engine/blessedWater'
 import { isChaosWarhound } from '../../../rules/resolve/barbedWhip'
@@ -6,7 +7,7 @@ import { ignoresFear, causesFearAgainst } from '../../../rules/engine/psychology
 // probabilities for one phase of attacks, plus the flat thresholds a player rolls against.
 
 import { missilePenaltyRules } from '../../../rules/engine/missileRules'
-import { buildAttackInput, weaponAttackCounts, computeMaxParries, effectiveOffensiveStats, totalAttackCount, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
+import { buildAttackInput, signOfSigmarApplies, weaponAttackCounts, computeMaxParries, effectiveOffensiveStats, totalAttackCount, weaponsForPhase } from '../../../rules/engine/buildAttackInput'
 import { phaseChain, type PhaseChain } from '../../../rules/engine/chain'
 import { IMPOSSIBLE, probabilityAtLeast, type Threshold } from '../../../rules/engine/dice'
 import { resolveSingleAttack, type AttackInput, type Severity4Distribution } from '../../../rules/engine/resolveAttack'
@@ -294,7 +295,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
-  const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context).map(({ weapon, count: full }) => {
+  const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context, [], defender).map(({ weapon, count: full }) => {
     const attacks = Math.min(full, Math.max(0, remaining))
     remaining -= attacks
     const raw = weapon.id === 'blessed_water' ? blessedWaterAttack({ attacker, defender, context, houseRules }) : buildAttackInput({ attacker, weapon, defender, context, houseRules })
@@ -326,7 +327,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
     maxParries: setup.parryUsed ? 0 : undefined,
   })
 
-  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context, attacker: dosed.combatant, attackerKit: dosed.kit, defender: targetDosed.combatant, defenderKit: targetDosed.kit, primary, offHand }) }
+  return { phase, attacks: perWeapon.reduce((n, w) => n + w.attacks, 0), fullAttacks: totalAttackCount(attacker, weapons, context, [], phase, defender), weapons: perWeapon, chain, parryAttempts, woundsAlreadyLost, notes: oddsNotes({ ...setup, context }, perWeapon), strikeOrder: strikeOrder({ ...setup, context, attacker: dosed.combatant, attackerKit: dosed.kit, defender: targetDosed.combatant, defenderKit: targetDosed.kit, primary, offHand }) }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -367,7 +368,7 @@ export function computeOddsSensitivity(setup: FightSetup): OddsSensitivity {
   const houseRules = { strengthArmourPiercing: setup.houseRules.strengthArmourPiercing, opposedParryWS: setup.houseRules.opposedParryWS }
   const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
-  const perWeapon = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context)
+  const perWeapon = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context, [], baseDefender)
   const n = perWeapon.reduce((s, x) => s + x.count, 0)
   const nLabel = `${n} attack${n === 1 ? '' : 's'}`
 
@@ -548,7 +549,12 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (setup.defenderKit.firstHitDiscard !== null) notes.push(`Lucky Charm: the first hit on ${setup.defender.name} in the battle is discarded on a ${setup.defenderKit.firstHitDiscard}+ (offered when rolling, not in the odds).`)
   if (setup.defenderKit.afterSaveThreshold !== null) notes.push(`Peg Leg: a ${setup.defenderKit.afterSaveThreshold}+ save after any failed save.`)
   if (setup.defenderKit.ownSave) notes.push(`Cloak: a ${setup.primary.type === 'melee' ? setup.defenderKit.ownSave.melee : setup.defenderKit.ownSave.missile}+ save of its own where better than the armour worn.`)
-  if (setup.attacker.hatredReason && setup.attacker.traitIds.includes('hatred')) notes.push(`Bitter Enmity: ${setup.attacker.hatredReason} Confirm this opponent matches before enabling the first-turn Hatred reroll.`)
+  if (setup.primary.type === 'melee' && signOfSigmarApplies(toCharacter(setup.attacker, setup.attackerKit), toDefender(setup.defender, setup.defenderKit), setup.context)) notes.push(`${setup.defender.name}: Sign of Sigmar removes the opponent’s first attack this round, leaving at least one attack.`)
+  if (setup.attacker.traitIds.includes('hatred')) {
+    const enmity = bitterEnmityApplies({ hates: setup.attacker.hatredReason, bitterEnmity: setup.attacker.bitterEnmity }, { warriorId: setup.defender.id, warbandId: setup.defender.warbandId, warbandTypeId: setup.defender.warbandTypeId, isLeader: Boolean(setup.defender.isLeader) })
+    if (enmity) notes.push(`${enmity.reason} ${enmity.applies ? 'This opponent matches; enable Hatred in the first combat round.' : 'This opponent does not match this injury’s target.'}`)
+    else if (setup.attacker.hatredReason) notes.push(`Bitter Enmity: ${setup.attacker.hatredReason} Confirm this opponent matches before enabling the first-turn Hatred reroll.`)
+  }
   if (setup.defenderKit.missileWardSaveThreshold !== null && setup.primary.type === 'ranged' && !setup.primary.special.includes('fireRecoveryHit')) notes.push(`A ${setup.defenderKit.missileWardSaveThreshold}+ special save against missiles.`)
   if (setup.defenderKit.stunSave) notes.push(`Stun save ${setup.defenderKit.stunSave.threshold}+${setup.defenderKit.stunSave.unmodifiable ? ', never modified' : ''}.`)
   if (setup.defender.stats.W > 1) {
@@ -611,7 +617,7 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (!attacker.entangled) toggles.push({ field: 'charging', label: 'Charging' })
     if(attacker.traitIds.includes('frenzy')) toggles.push({field:'frenzyEnded',label:'Frenzy has ended',hint:'Select if this warrior was knocked down or stunned earlier in this battle. Their Attacks are no longer doubled.'})
     if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })
-    const firstTurnMatters = (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks || [primary, ...(offHand ? [offHand] : []), ...(defenderKit?.melee ?? [])].some(w => w.initiativeFirstTurnBonus || w.special.includes('strikesFirstFirstTurn'))
+    const firstTurnMatters = (defender?.skillIds.includes('sisters_of_sigmar_skills_sign_of_sigmar') && attacker.traitIds.some(trait => trait === 'undead' || trait === 'possessed')) || (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks || [primary, ...(offHand ? [offHand] : []), ...(defenderKit?.melee ?? [])].some(w => w.initiativeFirstTurnBonus || w.special.includes('strikesFirstFirstTurn'))
     if (firstTurnMatters) toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: primary.strengthBonusFirstTurnOnly ? `${primary.name} only gets its Strength bonus in the first turn.` : 'First-round weapon bonuses and Strike First apply only in this round (charging or charged).' })
     if (skills.some((s) => s.conditionField === 'fightingMultiple')) toggles.push({ field: 'fightingMultiple', label: 'Fighting two or more enemies' })
     if (skills.some((s) => s.conditionField === 'insideBuildings') || attacker.traitIds.includes('pit_fighter')) toggles.push({ field: 'insideBuildings', label: 'Inside a building or ruin' })

@@ -141,15 +141,15 @@ export function weaponsForPhase(weapons: Weapon[], phase: WeaponKind): Weapon[] 
 }
 
 /** Total attacks this phase across every weapon of that phase, in resolution order — the same count `resolveCharacterTurn` actually rolls. */
-export function totalAttackCount(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = [], phase?: WeaponKind): number {
+export function totalAttackCount(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = [], phase?: WeaponKind, defender?: DefenderProfile): number {
   const inPhase = weaponsForPhase(weapons, phase ?? weapons[0]?.type ?? "melee");
-  return weaponAttackCounts(character, inPhase, context, customSkills).reduce((sum, entry) => sum + entry.count, 0);
+  return weaponAttackCounts(character, inPhase, context, customSkills, defender).reduce((sum, entry) => sum + entry.count, 0);
 }
 
 /** Allocate attacks to the actual weapon. A pair of whips gets Whipcrack only once. */
-export function weaponAttackCounts(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = []): { weapon: Weapon; count: number }[] {
+export function weaponAttackCounts(character: Character, weapons: Weapon[], context: CombatContext, customSkills: Skill[] = [], defender?: DefenderProfile): { weapon: Weapon; count: number }[] {
   const firstWhip = weapons.findIndex(w => Boolean(w.chargeBonusAttacks));
-  return weapons.flatMap((weapon, index) => {
+  const entries = weapons.flatMap((weapon, index) => {
     const entry = { weapon, count: computeAttackCount(character, weapon, index === 0, context, customSkills, index === firstWhip) };
     const monk = weapon.special.find(tag => tag.startsWith("monkUnarmedCritical:"));
     if (!monk || index !== 0) return [entry];
@@ -157,6 +157,16 @@ export function weaponAttackCounts(character: Character, weapons: Weapon[], cont
     const hand: Weapon = { id: "monk_bare_hand", name: "Bare-hand attack", type: "melee", strength: "user", critCategory: "unarmed", critTriggerThreshold: Number(monk.split(":")[1]), concussion: false, special: ["naturalAttackOnly"], rangedProfile: null };
     return [entry, { weapon: hand, count: 1 }];
   });
+  if (signOfSigmarApplies(character, defender, context) && entries.filter(entry => entry.weapon.type === 'melee').reduce((n, entry) => n + entry.count, 0) > 1) {
+    const first = entries.find(entry => entry.weapon.type === 'melee' && entry.count > 0)!;
+    first.count -= 1;
+  }
+  return entries;
+}
+
+/** Core Sisters skill: lose the first melee attack in the first round, minimum one overall. */
+export function signOfSigmarApplies(character: Character, defender: DefenderProfile | undefined, context: CombatContext): boolean {
+  return Boolean(defender?.activeSkillIds?.includes('sisters_of_sigmar_skills_sign_of_sigmar') && (context.charging || context.firstTurnOfCombat) && character.traits.some(trait => trait === 'undead' || trait === 'possessed'));
 }
 
 function effectiveStat(base: Stats, skills: Skill[], context: CombatContext, weaponType: WeaponKind, stat: keyof Stats, participant: "self" | "opponent"): number {

@@ -149,6 +149,9 @@ export function kindTraits(warbandTemplateId: string, unitTemplateId: string, un
   if (unitTemplateId === 'restless_dead_variant_grave_guards') out.push('wight_blades_5plus')
   // This named weapon also specifies whole enemy warbands, not merely creature physiology.
   if (warbandInAny(warbandTemplateId, ['undead','possessed','beastmen'])) out.push('maximilian_holy_target')
+  // Printed Demonic/Daemonic identity (Carnival Plague Bearers/Nurglings, source 1a:1950/1970).
+  // A Daemonic Aura or Daemon Soul rule alone does not make a living model a Daemon.
+  if (unitRulesText.some(rule => /^d(?:ae|e)monic$/i.test(rule.name.trim()))) out.push('daemon')
   // Explicit living rules take precedence over broad name-based inference.
   const undeadUnits = warbandRules(warbandTemplateId).undeadUnitIds
   if ((undeadUnits && !undeadUnits.includes(unitTemplateId)) || unitRulesText.some(r => /^living$/i.test(r.name))) return out

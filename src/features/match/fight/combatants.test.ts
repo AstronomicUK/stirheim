@@ -539,3 +539,17 @@ it('reads native Black Orc armour from actual unit rules without treating a Bloo
   expect(models.find(c => c.id === 'orc')?.traitIds).toContain('black_orc')
   expect(models.find(c => c.id === 'young')?.traitIds).not.toContain('black_orc')
 })
+
+
+it('recognises both printed Daemon identity spellings without treating every cultist or magical aura as a Daemon', () => {
+  const carnival = findWarbandTemplate('carnival_of_chaos')!
+  for (const id of ['carnival_of_chaos_plague_bearers', 'carnival_of_chaos_nurglings']) {
+    const unit = [...carnival.heroTemplates, ...carnival.henchmanTemplates].find(unit => unit.id === id)!
+    expect(kindTraits(carnival.id, id, unit.specialRules), id).toContain('daemon')
+  }
+  for (const id of ['carnival_of_chaos_brethren', 'carnival_of_chaos_brutes']) {
+    const unit = [...carnival.heroTemplates, ...carnival.henchmanTemplates].find(unit => unit.id === id)!
+    expect(kindTraits(carnival.id, id, unit.specialRules), id).not.toContain('daemon')
+  }
+  expect(kindTraits('mercenaries_reikland', 'custom', [{ name: 'Daemonic Aura', text: 'A magical protection.' }, { name: 'Daemon Soul', text: 'Magic protection.' }])).not.toContain('daemon')
+})

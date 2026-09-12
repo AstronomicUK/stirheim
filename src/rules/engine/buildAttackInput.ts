@@ -393,6 +393,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const pigeonBlast = context.pigeonBlastHit && weapon.id === "hersten_wenkler_pigeon_bombs";
   return {
     misfireEnhanced,
+    ignitionThreshold: weapon.id === 'tufenk' ? context.dryTarget ? 2 : 4 : ['brazier_iron', 'cathayan_candles'].includes(weapon.id) ? 5 : undefined,
     smokeOnHit: weapon.id === 'firepots_miragliano' || undefined,
     fishHookFallThreshold: weapon.id === 'fish_hook_shot' && context.fishHookFall ? Math.max(0,Math.min(5,effectiveStat(attacker.stats,attackerSkills,context,weapon.type,'S','self')-(context.largeTarget?1:0))) : undefined,
     chainShotKnockdown: weapon.special.includes("allWrappedUpKnocksDownUnwoundedTargetOn4Plus"),

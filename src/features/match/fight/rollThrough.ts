@@ -10,7 +10,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -72,6 +72,7 @@ interface SaveStep {
 
 /** Scratch state for the attack being rolled. */
 interface Current {
+  ignitionTested?: boolean
   chainTested?: boolean
   chainOriginalOutcome?: Outcome
   firstWoundRoll?: number
@@ -92,6 +93,7 @@ interface Current {
 }
 
 export interface RollState {
+  targetOnFire?: boolean
   smokeHit?: boolean
   hitBatch?: { phase: 'collect' | 'parry' | 'resolve'; hits: { roll: number | null; outcome?: Outcome }[]; parryIndices: number[] }
   plans: AttackPlan[]
@@ -267,6 +269,10 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */
   let rollTag = manual === undefined ? '' : manual ? ' (entered by hand)' : ' (rolled by the app)'
   switch (pending.kind) {
+    case 'ignition': {
+      const ignited = roll >= (input.ignitionThreshold ?? 7)
+      return askWound(log({ ...state, targetOnFire: state.targetOnFire || ignited, cur: { ...state.cur, ignitionTested: true } }, `Ignition: rolled ${roll}${rollTag}; needs ${input.ignitionThreshold}+. ${ignited ? 'Target set on fire. If it survives, test to extinguish on 4+ in Recovery; failure causes a Strength 4 hit and allows only movement. An ally in base contact can help on 4+.' : 'Target does not catch fire from this hit.'}`, ignited ? 'good' : 'neutral'))
+    }
     case 'fishHookFall': {
       const passed = roll < 6 && roll <= (input.fishHookFallThreshold ?? 0)
       const knocked = passed && !input.ignoreKnockedDownAndStunned
@@ -499,6 +505,7 @@ function afterHit(state: RollState): RollState {
 
 function askWound(state: RollState): RollState {
   const input = state.plans[state.index].input
+  if (input.ignitionThreshold !== undefined && !state.cur.ignitionTested) return { ...state, pending: { kind: 'ignition', who: 'attacker', label: 'Set target on fire', detail: `Roll ${input.ignitionThreshold}+; the normal wound roll follows whether or not the target catches fire.` } }
   if (input.smokeOnHit) state = log({...state,smokeHit:true}, 'Firepot smoke: at the start of the target’s next own turn, roll under Initiative. Failure prevents charging and shooting until its following own turn. Resolve group members separately.')
   if (input.fishHookFallThreshold !== undefined) return {...state,pending:{kind:'fishHookFall',who:'attacker',label:'Fish-hook Strength test',detail:`Roll ${input.fishHookFallThreshold} or less; 6 always fails. The +1 test modifier against a large target is already included. This replaces all damage.`}}
   if (input.entangleInsteadOfWound) return finishAttack(log(state, 'Bolas entangle the target without a wound: it cannot move and has −2 Weapon Skill in hand-to-hand combat, but may shoot normally. At the table, roll a D6 in Recovery; 4+ frees it. Log this result to record entanglement for an individually identified target; track members of groups separately.', 'good'), 'entangled')

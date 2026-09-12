@@ -808,3 +808,14 @@ it('explains the Tilean pike reach and size limits without applying them to the 
   const merchant = combatant('Merchant', [{ itemId: 'pike_merchant_caravans', quantity: 1 }])
   expect(computeOdds(setup(merchant, skaven, 'pike_merchant_caravans', null)).notes.join(' ')).not.toContain('Pike (Tileans):')
 })
+
+
+it('sets source-specific ignition thresholds without granting unrelated weapons fire', () => {
+ for (const [id, threshold] of [['brazier_iron', 5], ['cathayan_candles', 5], ['tufenk', 4]] as const) {
+  const attacker = combatant('Fire wielder', [{ itemId: id, quantity: 1 }])
+  const fight = setup(attacker, skaven, id, null)
+  expect(computeOdds(fight).weapons[0].input.ignitionThreshold).toBe(threshold)
+  if (id === 'tufenk') expect(computeOdds({ ...fight, context: { ...fight.context, dryTarget: true } }).weapons[0].input.ignitionThreshold).toBe(2)
+ }
+ expect(computeOdds(setup(captain, skaven, 'sword', null)).weapons[0].input.ignitionThreshold).toBeUndefined()
+})

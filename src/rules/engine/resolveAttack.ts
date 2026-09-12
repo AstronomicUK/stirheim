@@ -37,6 +37,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Ignition after a surviving hit; ongoing fire is separate from ordinary wound odds. */
+  ignitionThreshold?: number;
   smokeOnHit?: boolean;
   /** Fish-hook Shot: maximum successful raw D6 on the attacker’s Strength test. */
   fishHookFallThreshold?: number;

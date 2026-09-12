@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
 import { warbandKeys, type WarbandDetail } from './warbands'
+import { feedbackKeys } from './feedback'
+import { reportKeys } from './reports'
 import { diffRoster } from '../domain/rosterDiff'
 import { eventAdvances } from '../rules/resolve/eventAdvances'
 import type { RosterWarband } from '../rules/types/roster'
@@ -42,7 +44,10 @@ export interface CaptiveProposal {
   proposed_by_warband_id: string
   proposed_by: string
   choice: CaptiveChoice
+  /** The server's own account of the roster changes it validated; this is what the other player accepts. */
   message: string
+  /** The proposer's words (the resolver's preview), for colour only. */
+  proposer_note: string
   state: CaptiveProposalState
   reason: string
   created_at: string
@@ -66,7 +71,7 @@ export interface CaptiveCase {
   proposals: CaptiveProposal[]
 }
 
-const PROPOSAL_COLUMNS = 'id,case_id,proposed_by_warband_id,proposed_by,choice,message,state,reason,created_at,resolved_at'
+const PROPOSAL_COLUMNS = 'id,case_id,proposed_by_warband_id,proposed_by,choice,message,proposer_note,state,reason,created_at,resolved_at'
 
 /** Every captive case this warband is a party to (as victim or captor), newest first, with its proposals. */
 export function useCaptiveCases(warbandId: string | undefined) {
@@ -83,7 +88,7 @@ export function useCaptiveCases(warbandId: string | undefined) {
 }
 
 function invalidateAll(cache: ReturnType<typeof useQueryClient>) {
-  return Promise.all([cache.invalidateQueries({ queryKey: warbandKeys.all }), cache.invalidateQueries({ queryKey: ['advances'] }), cache.invalidateQueries({ queryKey: ['captives'] }), cache.invalidateQueries({ queryKey: ['notifications'] })])
+  return Promise.all([cache.invalidateQueries({ queryKey: warbandKeys.all }), cache.invalidateQueries({ queryKey: ['advances'] }), cache.invalidateQueries({ queryKey: ['captives'] }), cache.invalidateQueries({ queryKey: feedbackKeys.all }), cache.invalidateQueries({ queryKey: reportKeys.all })])
 }
 
 /** The victim's player (or GM) names the enemy warband holding the captive when the report did not settle it. */

@@ -48,10 +48,10 @@ describe.skipIf(!enabled)('Captured cross-player cases (#229 core)',()=>{
   return {warbands:w,heroes:h,henchman_groups:g,items:i}
  }
  /** A 30 gc ransom, exactly as the resolver would diff it. */
- async function ransom(client:SupabaseClient,caseId:string){
+ async function ransom(client:SupabaseClient,caseId:string,over:Record<string,unknown>={}){
   return client.rpc('propose_captive_outcome',{p_case_id:caseId,p_choice:{kind:'ransom',gold:30},p_message:'Taken Captain ransomed for 30 gc; returned with all equipment.',
    p_owner_changes:[{table:'warbands',op:'update',data:{gold:70}},{table:'heroes',op:'update',id:hero,data:{status:'active',flags:{}}}],
-   p_captor_changes:[{table:'warbands',op:'update',data:{gold:130}}],p_advances:[],p_expected:await expected()})
+   p_captor_changes:[{table:'warbands',op:'update',data:{gold:130}}],p_advances:[],p_expected:await expected(),...over})
  }
  const gold=async()=>check(await admin.from('warbands').select('id,gold').in('id',[vw,cw])).sort((a:any)=>a.id===vw?-1:1).map((w:any)=>w.gold)
  const heroStatus=async()=>check(await admin.from('heroes').select('status').eq('id',hero).single()).status
@@ -94,8 +94,8 @@ describe.skipIf(!enabled)('Captured cross-player cases (#229 core)',()=>{
   expect(await gold()).toEqual([70,130]);expect(await heroStatus()).toBe('active')
   const [done]=await cases();expect(done).toMatchObject({state:'resolved',resolution_kind:'ransom'});expect(done.proposals[0].state).toBe('accepted')
   expect((await victim.rpc('respond_captive_proposal',{p_proposal_id:proposalId,p_action:'accept'})).error?.message).toMatch(/already been answered/)
-  expect(check(await admin.from('match_reports').select('notes').eq('match_id',match).single()).notes).toMatch(/ransomed for 30 gc/)
-  expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:vw})).error?.message).toMatch(/Reverse that outcome/)
+  expect(check(await admin.from('match_reports').select('notes').eq('match_id',match).single()).notes).toMatch(/Ransom: Taken Captain \(Disposable victims\) becomes active\. Disposable victims gold 100 → 70\. Disposable captors gold 100 → 130/)
+  expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:vw})).error?.message).toMatch(/depends on this report/)
   expect((await captor.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'We misread the injury roll'})).error?.message).toMatch(/campaign GM, or a player of both/)
   expect((await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'no'})).error?.message).toMatch(/Explain why/)
   check(await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'We misread the injury roll'}))
@@ -110,7 +110,7 @@ describe.skipIf(!enabled)('Captured cross-player cases (#229 core)',()=>{
   check(await admin.from('warbands').update({gold:120}).eq('id',cw))
   expect((await victim.rpc('respond_captive_proposal',{p_proposal_id:proposalId,p_action:'accept'})).error?.code).toBe('40001')
   expect(await heroStatus()).toBe('captured')
-  const again=check(await ransom(victim,c.id))
+  const again=check(await ransom(victim,c.id,{p_captor_changes:[{table:'warbands',op:'update',data:{gold:150}}]}))
   expect((await cases())[0].proposals.find((p:any)=>p.id===proposalId).state).toBe('proposed')
   check(await captor.rpc('respond_captive_proposal',{p_proposal_id:again,p_action:'accept'}))
   const [done]=await cases();expect(done.state).toBe('resolved');expect(done.proposals.find((p:any)=>p.id===proposalId).state).toBe('stale')
@@ -142,5 +142,64 @@ describe.skipIf(!enabled)('Captured cross-player cases (#229 core)',()=>{
   expect((await captor.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:{kind:'ransom',gold:30},p_message:'x',p_owner_changes:[],p_captor_changes:[],p_advances:[],p_expected:await expected()})).error?.message).toMatch(/not open/)
   expect((await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'Undo the manual fix'})).error?.message).toMatch(/outside the proposal flow/)
   expect(third_in_match).toBe(false)
+ })
+
+ it('writes its own consent text and refuses payloads the outcome cannot produce',async()=>{
+  check(await fileVictim());const [c]=await cases()
+  const base={p_owner_changes:[{table:'warbands',op:'update',data:{gold:70}},{table:'heroes',op:'update',id:hero,data:{status:'active',flags:{}}}],p_captor_changes:[{table:'warbands',op:'update',data:{gold:130}}]}
+  // The message says 25 gc but the change says 30: the stored text describes the real change.
+  const id=check(await ransom(captor,c.id,{p_message:'Ransom of 25 gc, honest.'}))
+  const p=(await cases())[0].proposals.find((x:any)=>x.id===id)
+  expect(check(await victim.from('captive_proposals').select('message,proposer_note').eq('id',id).single())).toMatchObject({proposer_note:'Ransom of 25 gc, honest.'})
+  expect(check(await victim.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/gold 100 → 70.*gold 100 → 130/)
+  expect(p.state).toBe('proposed')
+  // Choice says 25 but the gold moves 30.
+  expect((await captor.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:{kind:'ransom',gold:25},p_message:'x',p_advances:[],p_expected:await expected(),...base})).error?.message).toMatch(/gold and wyrdstone changes do not match/)
+  // Unrelated Hero deletion on the victim side.
+  const other=check(await admin.from('heroes').insert({warband_id:vw,name:'Bystander',unit_type_rules_id:'mercenaries_reikland_champion',stats,xp:0,status:'active'}).select('id').single()).id
+  expect((await ransom(captor,c.id,{p_owner_changes:[...base.p_owner_changes,{table:'heroes',op:'delete',id:other}]})).error?.message).toMatch(/cannot touch/)
+  // Unrelated group mutation on the captor side.
+  const grp=check(await admin.from('henchman_groups').insert({warband_id:cw,name:'Marksmen',unit_type_rules_id:'mercenaries_marienburg_marksmen',size:2,stats,xp:0}).select('id').single()).id
+  expect((await ransom(captor,c.id,{p_captor_changes:[...base.p_captor_changes,{table:'henchman_groups',op:'update',id:grp,data:{size:5}}]})).error?.message).toMatch(/cannot touch/)
+  // Archiving or renaming the other roster.
+  expect((await ransom(captor,c.id,{p_owner_changes:[{table:'warbands',op:'update',data:{gold:70,archived:true}},base.p_owner_changes[1]]})).error?.message).toMatch(/only change the warband's gold and wyrdstone/)
+  // Freeing the captive without paying, or a hero field the outcome never touches.
+  expect((await ransom(captor,c.id,{p_captor_changes:[]})).error?.message).toMatch(/do not match/)
+  expect((await ransom(captor,c.id,{p_owner_changes:[base.p_owner_changes[0],{table:'heroes',op:'update',id:hero,data:{status:'active',skills:['mighty_blow']}}]})).error?.message).toMatch(/only change the captive/)
+  expect(check(await admin.from('heroes').select('id').eq('id',other))).toHaveLength(1)
+  expect((await cases())[0].proposals.filter((x:any)=>x.state==='proposed')).toHaveLength(1)
+ })
+ it('pins the captor\'s own applied report too, and an exchanged partner\'s case and report, until reversed',async()=>{
+  check(await fileVictim())
+  // The captor also lost a Hero to the victims in the same battle, so each side holds a captive.
+  const partner=check(await admin.from('heroes').insert({warband_id:cw,name:'Marienburg Mate',unit_type_rules_id:'mercenaries_marienburg_champion',stats,xp:5,status:'active'}).select('id').single()).id
+  check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',ooa:[],injuries:[{subjectType:'hero',subjectId:partner,subjectName:'Marienburg Mate',rolls:[61],outcome:'captured',injuryCode:'captured',injuryName:'Captured',effect:''}],applied:{heroes:[{id:partner,patch:{status:'captured',flags:{captured:true}}}]}}}))
+  const all=await cases();expect(all).toHaveLength(2)
+  const mine=all.find((x:any)=>x.hero_id===hero),theirs=all.find((x:any)=>x.hero_id===partner)
+  expect(theirs).toMatchObject({state:'open',victim_warband_id:cw,captor_warband_id:vw})
+  const id=check(await captor.rpc('propose_captive_outcome',{p_case_id:mine.id,p_choice:{kind:'exchange',otherHeroId:partner},p_message:'Swap',p_advances:[],p_expected:await expected(),
+   p_owner_changes:[{table:'heroes',op:'update',id:hero,data:{status:'active',flags:{}}}],p_captor_changes:[{table:'heroes',op:'update',id:partner,data:{status:'active',flags:{}}}]}))
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
+  expect(await heroStatus()).toBe('active');expect(check(await admin.from('heroes').select('status').eq('id',partner).single()).status).toBe('active')
+  const after=await cases();expect(after.find((x:any)=>x.id===theirs.id)).toMatchObject({state:'resolved',resolution_kind:'exchange'})
+  expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw})).error?.message).toMatch(/depends on this report/)
+  expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:vw})).error?.message).toMatch(/depends on this report/)
+  check(await gm.rpc('reverse_captive_resolution',{p_case_id:mine.id,p_reason:'The exchange never happened'}))
+  expect(await heroStatus()).toBe('captured');expect(check(await admin.from('heroes').select('status').eq('id',partner).single()).status).toBe('captured')
+  expect((await cases()).every((x:any)=>x.state==='open')).toBe(true)
+  check(await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw}))
+  expect(check(await admin.from('heroes').select('status').eq('id',partner).single()).status).toBe('active')
+ })
+ it('blocks withdrawing the captor\'s earlier report after a ransom moved gold, until the ransom is reversed',async()=>{
+  check(await fileVictim())
+  check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',ooa:[],injuries:[],applied:{warband:{gold_delta:10}}}}))
+  expect(await gold()).toEqual([100,110])
+  const [c]=await cases();const id=check(await ransom(captor,c.id,{p_captor_changes:[{table:'warbands',op:'update',data:{gold:140}}]}))
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
+  expect(await gold()).toEqual([70,140])
+  expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw})).error?.message).toMatch(/depends on this report/)
+  check(await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'Recorded too early'}))
+  check(await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw}))
+  expect((await cases())[0].state).toBe('open')
  })
 })

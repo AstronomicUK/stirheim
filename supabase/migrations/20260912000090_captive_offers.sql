@@ -27,6 +27,9 @@ create table public.captive_cases (
   resolved_at timestamptz,
   resolution_kind text,
   resolution_message text not null default '',
+  -- Set when another case's accepted proposal resolved this one too (an exchange returns the
+  -- captor's own captive); reversing that proposal reopens this case.
+  resolved_by_proposal uuid,
   history jsonb not null default '[]'::jsonb,
   unique (report_id, report_revision, hero_id),
   check (captor_warband_id is null or captor_warband_id <> victim_warband_id)
@@ -47,7 +50,13 @@ create table public.captive_proposals (
   proposed_by_warband_id uuid not null references public.warbands (id) on delete cascade,
   proposed_by uuid not null references auth.users (id),
   choice jsonb not null,
+  -- The consent text: written by the server from the validated changes, never by the client.
   message text not null check (char_length(message) between 1 and 1000),
+  -- The proposer's own words, shown alongside but never relied on.
+  proposer_note text not null default '',
+  -- Applied reports whose undo would disturb either roster while this proposal stands accepted:
+  -- both warbands' reports for the match, plus an exchanged partner's source report.
+  linked_report_ids uuid[] not null default '{}',
   owner_changes jsonb not null,
   captor_changes jsonb not null,
   advances jsonb not null default '[]'::jsonb,
@@ -69,7 +78,7 @@ create policy captive_proposals_select on public.captive_proposals for select to
     public.can_edit_warband(c.victim_warband_id) or (c.captor_warband_id is not null and public.can_edit_warband(c.captor_warband_id))
     or public.is_campaign_gm(public.match_campaign(c.match_id))))
 );
-grant select (id, case_id, proposed_by_warband_id, proposed_by, choice, message, owner_changes, captor_changes, advances, expected, state, responded_by, reason, advance_ids, created_at, resolved_at) on public.captive_proposals to authenticated;
+grant select (id, case_id, proposed_by_warband_id, proposed_by, choice, message, proposer_note, linked_report_ids, owner_changes, captor_changes, advances, expected, state, responded_by, reason, advance_ids, created_at, resolved_at) on public.captive_proposals to authenticated;
 
 -- ---------------------------------------------------------------------------------------------
 -- Shared helpers (private).
@@ -98,6 +107,157 @@ create function public.user_can_edit_warband(p_user_id uuid, p_warband_id uuid) 
                   where m.warband_id = p_warband_id and m.left_at is null and c.gm_id = p_user_id);
 $$;
 revoke all on function public.user_can_edit_warband(uuid, uuid) from public;
+
+-- ---------------------------------------------------------------------------------------------
+-- validate_captive_proposal: the consent check. The client sends the resolver's roster changes; the
+-- server only accepts changes a given outcome can produce (whitelisted tables, ops, rows and fields;
+-- exact gold and wyrdstone deltas; only the captive, an exchanged partner or the sacrificing leader;
+-- one new group of the right type; the captive's own equipment passing to the captor's stash) and
+-- returns its own plain-English summary of what will actually happen, which becomes the text the
+-- other player accepts.
+-- ---------------------------------------------------------------------------------------------
+create function public.validate_captive_proposal(p_case public.captive_cases, p_choice jsonb, p_owner_changes jsonb, p_captor_changes jsonb)
+returns text language plpgsql security definer set search_path = '' as $$
+declare
+  v public.warbands%rowtype; k public.warbands%rowtype; h public.heroes%rowtype; other public.heroes%rowtype; leader public.heroes%rowtype;
+  kind text := p_choice->>'kind'; c jsonb; keys text[]; t text; op text; v_id uuid; d jsonb; key text; cur public.items%rowtype;
+  og int := 0; ow int := 0; kg int := 0; kw int := 0; hero_status text; hero_xp_delta int := 0; other_status text; leader_xp_delta int := 0;
+  moved int := 0; hero_items int; hero_item_keys text[]; gained int := 0; group_unit text; group_name text; group_seen boolean := false;
+  d6 int; gold int; xp int; expect_status text; expect_group text; expect_kg int := 0; expect_kw int := 0; expect_og int := 0; expect_move boolean := false;
+  parts text[]; label text;
+begin
+  if jsonb_typeof(p_choice) <> 'object' or kind not in ('ransom', 'exchange', 'sell', 'zombie', 'sacrifice', 'wretch', 'throne', 'slaveWork') then
+    raise exception 'Choose a supported captive outcome.' using errcode = '22023';
+  end if;
+  select * into v from public.warbands where id = p_case.victim_warband_id;
+  select * into k from public.warbands where id = p_case.captor_warband_id;
+  if v.id is null or k.id is null then raise exception 'Name the captor before proposing an outcome.' using errcode = 'P0001'; end if;
+  select * into h from public.heroes where id = p_case.hero_id and warband_id = v.id and status = 'captured';
+  if not found then raise exception 'This warrior is no longer recorded as captured.' using errcode = 'P0001'; end if;
+  select count(*), coalesce(array_agg(coalesce(item_rules_id, 'custom:' || coalesce(custom_name, ''))), '{}') into hero_items, hero_item_keys
+    from public.items where warband_id = v.id and holder_type = 'hero' and holder_id = h.id;
+
+  for c in select x from jsonb_array_elements(p_owner_changes) x loop
+    t := c->>'table'; op := c->>'op'; v_id := (c->>'id')::uuid; d := coalesce(c->'data', '{}'::jsonb);
+    select coalesce(array_agg(x), '{}') into keys from jsonb_object_keys(d) x;
+    if t = 'warbands' and op = 'update' and (v_id is null or v_id = v.id) then
+      if not (keys <@ array['gold', 'wyrdstone']) then raise exception 'A captive outcome may only change the warband''s gold and wyrdstone.' using errcode = '22023'; end if;
+      if d ? 'gold' then og := (d->>'gold')::int - v.gold; end if;
+      if d ? 'wyrdstone' then ow := (d->>'wyrdstone')::int - v.wyrdstone; end if;
+    elsif t = 'heroes' and op = 'update' and v_id = h.id then
+      if not (keys <@ array['status', 'flags', 'injuries', 'xp']) then raise exception 'A captive outcome may only change the captive''s status, flags, injuries and experience.' using errcode = '22023'; end if;
+      hero_status := d->>'status';
+      if d ? 'xp' then hero_xp_delta := (d->>'xp')::int - h.xp; end if;
+    elsif t = 'items' and op = 'delete' and exists (select 1 from public.items i where i.id = v_id and i.warband_id = v.id and i.holder_type = 'hero' and i.holder_id = h.id) then
+      moved := moved + 1;
+    else
+      raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023';
+    end if;
+  end loop;
+
+  for c in select x from jsonb_array_elements(p_captor_changes) x loop
+    t := c->>'table'; op := c->>'op'; v_id := (c->>'id')::uuid; d := coalesce(c->'data', '{}'::jsonb);
+    select coalesce(array_agg(x), '{}') into keys from jsonb_object_keys(d) x;
+    if t = 'warbands' and op = 'update' and (v_id is null or v_id = k.id) then
+      if not (keys <@ array['gold', 'wyrdstone']) then raise exception 'A captive outcome may only change the warband''s gold and wyrdstone.' using errcode = '22023'; end if;
+      if d ? 'gold' then kg := (d->>'gold')::int - k.gold; end if;
+      if d ? 'wyrdstone' then kw := (d->>'wyrdstone')::int - k.wyrdstone; end if;
+    elsif t = 'heroes' and op = 'update' and kind = 'exchange' and v_id::text = p_choice->>'otherHeroId' then
+      select * into other from public.heroes where id = v_id and warband_id = k.id and status = 'captured';
+      if not found then raise exception 'The captive offered in exchange is not held by the captor.' using errcode = 'P0001'; end if;
+      if not (keys <@ array['status', 'flags', 'injuries']) then raise exception 'An exchange may only free the other captive.' using errcode = '22023'; end if;
+      other_status := d->>'status';
+    elsif t = 'heroes' and op = 'update' and kind in ('sacrifice', 'throne') and v_id::text = p_choice->>'leaderId' then
+      select * into leader from public.heroes where id = v_id and warband_id = k.id and status = 'active';
+      if not found then raise exception 'The sacrificing warrior is not an active member of the captor warband.' using errcode = 'P0001'; end if;
+      if not (keys <@ array['xp']) then raise exception 'A sacrifice may only award experience.' using errcode = '22023'; end if;
+      leader_xp_delta := (d->>'xp')::int - leader.xp;
+    elsif t = 'henchman_groups' and op = 'insert' then
+      if group_seen then raise exception 'A captive outcome creates at most one group.' using errcode = '22023'; end if;
+      if (c->>'id') is distinct from (p_choice->>'groupId') then raise exception 'The new group must be the one named in the outcome.' using errcode = '22023'; end if;
+      if coalesce((d->>'size')::int, 1) <> 1 or coalesce((d->>'xp')::int, 0) <> 0 or coalesce((d->>'level_ups')::int, 0) <> 0 then raise exception 'The captive becomes a single new model with no experience.' using errcode = '22023'; end if;
+      group_seen := true; group_unit := d->>'unit_type_rules_id'; group_name := d->>'name';
+    elsif t = 'items' and op = 'insert' then
+      if coalesce(d->>'holder_type', 'stash') <> 'stash' then raise exception 'A captive''s equipment passes to the captor''s stash.' using errcode = '22023'; end if;
+      key := coalesce(d->>'item_rules_id', 'custom:' || coalesce(d->>'custom_name', ''));
+      if key <> 'enchanted_skins' and not (key = any(hero_item_keys)) then raise exception 'The captor may only gain equipment the captive carried.' using errcode = '22023'; end if;
+      gained := gained + coalesce((d->>'quantity')::int, 1);
+    elsif t = 'items' and op = 'update' then
+      select * into cur from public.items where id = v_id and warband_id = k.id and holder_type = 'stash';
+      if not found or not (keys <@ array['quantity', 'notes']) or coalesce((d->>'quantity')::int, cur.quantity) < cur.quantity then
+        raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023';
+      end if;
+      gained := gained + coalesce((d->>'quantity')::int, cur.quantity) - cur.quantity;
+    else
+      raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023';
+    end if;
+  end loop;
+
+  case kind
+    when 'ransom' then
+      gold := (p_choice->>'gold')::int;
+      if gold is null or gold < 0 or gold > v.gold then raise exception 'Enter an affordable, non-negative ransom.' using errcode = '22023'; end if;
+      expect_og := -gold; expect_kg := gold; expect_status := 'active'; label := 'Ransom';
+    when 'exchange' then
+      if other.id is null or other_status is distinct from 'active' then raise exception 'An exchange must return the captor''s captive as well.' using errcode = '22023'; end if;
+      expect_status := 'active'; label := 'Exchange of captives';
+    when 'sell' then
+      d6 := (p_choice->>'d6')::int;
+      if d6 is null or d6 not between 1 and 6 then raise exception 'Enter a D6 result from 1 to 6.' using errcode = '22023'; end if;
+      if k.type_rules_id = 'pit_fighters' then raise exception 'Pit Fighters cannot sell captives.' using errcode = '22023'; end if;
+      expect_kg := 5 * d6; expect_status := 'retired'; expect_move := true; label := 'Sold to slavers';
+    when 'zombie' then
+      if k.type_rules_id <> 'the_undead' then raise exception 'Only an Undead warband raises a captive as a Zombie.' using errcode = '22023'; end if;
+      expect_group := 'undead_zombies'; expect_status := 'dead'; expect_move := true; label := 'Killed and raised as a Zombie';
+    when 'sacrifice' then
+      if k.type_rules_id not in ('cult_of_the_possessed', 'amazons_lustria', 'amazons_mordheim', 'the_sons_of_hashut') then raise exception 'This warband cannot sacrifice captives.' using errcode = '22023'; end if;
+      if leader.id is null or leader_xp_delta <> 1 then raise exception 'A sacrifice awards exactly +1 experience to the leader.' using errcode = '22023'; end if;
+      expect_status := 'dead'; expect_move := true; label := 'Sacrificed';
+    when 'wretch' then
+      if k.type_rules_id <> 'court_of_the_profane_pleasures' then raise exception 'Only the Court turns captives into Wretches.' using errcode = '22023'; end if;
+      expect_group := 'court_of_pleasures_wretches'; expect_status := 'dead'; expect_move := true; label := 'Cruel Fate: turned into a Wretch';
+    when 'throne' then
+      if k.type_rules_id <> 'the_cursed_cavalcade' then raise exception 'Only the Cursed Cavalcade has the Throne of Worms.' using errcode = '22023'; end if;
+      d6 := (p_choice->>'d6')::int;
+      if d6 is null or d6 not between 1 and 6 then raise exception 'Enter a D6 result from 1 to 6.' using errcode = '22023'; end if;
+      if d6 between 3 and 5 then expect_group := 'cursed_cavalcade_captured_thrall';
+      elsif d6 = 6 and (leader.id is null or leader_xp_delta <> 1) then raise exception 'On a 6 one surviving hero gains exactly +1 experience.' using errcode = '22023'; end if;
+      expect_status := 'dead'; expect_move := true; label := 'Throne of Worms (D6 ' || d6 || ')';
+    when 'slaveWork' then
+      if k.type_rules_id <> 'the_sons_of_hashut' then raise exception 'Only the Sons of Hashut put slaves to work.' using errcode = '22023'; end if;
+      d6 := (p_choice->>'d6')::int;
+      if d6 is null or d6 not between 1 and 6 then raise exception 'Enter a D6 result from 1 to 6.' using errcode = '22023'; end if;
+      expect_kw := 1; label := 'Slave work (D6 ' || d6 || ')';
+      if d6 = 1 then
+        xp := (p_choice->>'xp')::int;
+        if xp is null or xp not between 1 and 3 or hero_xp_delta <> xp then raise exception 'The escaping slave gains exactly the D3 experience rolled.' using errcode = '22023'; end if;
+        expect_status := 'active';
+      else
+        expect_status := 'dead'; expect_move := true;
+      end if;
+  end case;
+  if not (kind = 'slaveWork' and d6 = 1) and hero_xp_delta <> 0 then raise exception 'This outcome does not change the captive''s experience.' using errcode = '22023'; end if;
+  if kind not in ('sacrifice', 'throne') and leader_xp_delta <> 0 then raise exception 'This outcome awards no experience.' using errcode = '22023'; end if;
+  if og <> expect_og or kg <> expect_kg or ow <> 0 or kw <> expect_kw then raise exception 'The gold and wyrdstone changes do not match the outcome.' using errcode = '22023'; end if;
+  if hero_status is distinct from expect_status then raise exception 'The captive''s status must become "%" for this outcome.', expect_status using errcode = '22023'; end if;
+  if expect_group is not null and (not group_seen or group_unit is distinct from expect_group) then raise exception 'This outcome must create one new % model.', expect_group using errcode = '22023'; end if;
+  if expect_group is null and group_seen then raise exception 'This outcome does not create a new group.' using errcode = '22023'; end if;
+  if expect_move and moved <> hero_items then raise exception 'All of the captive''s equipment must pass to the captor.' using errcode = '22023'; end if;
+  if not expect_move and (moved <> 0 or gained <> 0) then raise exception 'The captive keeps his equipment in this outcome.' using errcode = '22023'; end if;
+
+  parts := array[label || ': ' || h.name || ' (' || v.name || ') becomes ' || expect_status];
+  if og <> 0 then parts := parts || format('%s gold %s → %s', v.name, v.gold, v.gold + og); end if;
+  if kg <> 0 then parts := parts || format('%s gold %s → %s', k.name, k.gold, k.gold + kg); end if;
+  if kw <> 0 then parts := parts || format('%s wyrdstone %s → %s', k.name, k.wyrdstone, k.wyrdstone + kw); end if;
+  if hero_xp_delta <> 0 then parts := parts || format('%s experience %s → %s', h.name, h.xp, h.xp + hero_xp_delta); end if;
+  if moved > 0 then parts := parts || format('%s equipment item(s) pass to %s', moved, k.name); elsif hero_items > 0 then parts := parts || format('%s keeps %s equipment item(s)', h.name, hero_items); end if;
+  if gained > moved then parts := parts || format('%s also gains %s stash item(s)', k.name, gained - moved); end if;
+  if group_seen then parts := parts || format('%s gains a new %s model "%s"', k.name, group_unit, coalesce(group_name, h.name)); end if;
+  if other.id is not null then parts := parts || format('%s (%s) returns from captivity with all equipment', other.name, k.name); end if;
+  if leader_xp_delta = 1 then parts := parts || format('%s gains +1 experience', leader.name); end if;
+  return left(array_to_string(parts, '. ') || '.', 1000);
+end $$;
+revoke all on function public.validate_captive_proposal(public.captive_cases, jsonb, jsonb, jsonb) from public;
 
 -- ---------------------------------------------------------------------------------------------
 -- Case creation: when a report is applied, every warrior it left captured opens a case. Eligibility
@@ -152,8 +312,9 @@ create trigger create_captive_cases after update of undo on public.match_reports
 create function public.guard_captive_report() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if tg_op = 'DELETE' or (old.undo is not null and new.undo is null) then
-    if exists (select 1 from public.captive_cases where report_id = old.id and state = 'resolved' and resolution_kind is distinct from 'external') then
-      raise exception 'A captive from this report has already been ransomed, exchanged, sold or otherwise resolved between the two warbands. Reverse that outcome from the warband page first (or ask the campaign GM to release it), then withdraw or correct the report.';
+    if exists (select 1 from public.captive_cases where report_id = old.id and state = 'resolved' and resolution_kind is distinct from 'external')
+       or exists (select 1 from public.captive_proposals where state = 'accepted' and old.id = any(linked_report_ids)) then
+      raise exception 'A captive outcome recorded between two warbands depends on this report (it was filed before the ransom, exchange, sale or sacrifice was agreed). Reverse that outcome from the warband page first (or ask the campaign GM to release it), then withdraw or correct the report.';
     end if;
     update public.captive_proposals set state = 'stale', resolved_at = now(), reason = 'The source report was withdrawn or corrected.'
       where state = 'proposed' and case_id in (select id from public.captive_cases where report_id = old.id);
@@ -168,16 +329,16 @@ create trigger guard_captive_report before update of undo or delete on public.ma
 
 -- A warrior freed or removed by any other path (the direct resolve_captive_rosters flow, a GM edit)
 -- closes his open case so nobody proposes an outcome for a warrior who is no longer held. When the
--- proposal flow itself is applying, it sets stirheim.captive_case so its own case is left for the RPC.
+-- proposal flow itself is applying or reversing, it sets stirheim.captive_apply and handles its cases itself.
 create function public.close_captive_case_on_status() returns trigger language plpgsql security definer set search_path = '' as $$
-declare v_skip uuid := nullif(current_setting('stirheim.captive_case', true), '')::uuid;
 begin
+  if current_setting('stirheim.captive_apply', true) = '1' then return new; end if;
   if old.status = 'captured' and new.status <> 'captured' then
     update public.captive_proposals set state = 'stale', resolved_at = now(), reason = 'The warrior is no longer recorded as captured.'
-      where state = 'proposed' and case_id in (select id from public.captive_cases where hero_id = new.id and state in ('unassigned', 'open') and id is distinct from v_skip);
+      where state = 'proposed' and case_id in (select id from public.captive_cases where hero_id = new.id and state in ('unassigned', 'open'));
     update public.captive_cases set state = 'resolved', resolved_at = now(), resolution_kind = 'external',
-           resolution_message = coalesce(nullif(current_setting('stirheim.captive_message', true), ''), 'Resolved outside the proposal flow (status changed to ' || new.status || ').')
-      where hero_id = new.id and state in ('unassigned', 'open') and id is distinct from v_skip;
+           resolution_message = 'Resolved outside the proposal flow (status changed to ' || new.status || ').'
+      where hero_id = new.id and state in ('unassigned', 'open');
   end if;
   return new;
 end $$;
@@ -227,14 +388,9 @@ grant execute on function public.assign_captive_captor(uuid, uuid, text) to auth
 -- ---------------------------------------------------------------------------------------------
 create function public.apply_captive_proposal(p_case public.captive_cases, p_proposal public.captive_proposals)
 returns void language plpgsql security definer set search_path = '' as $$
-declare w record; t text; c jsonb; a jsonb; expected_count int; actual_count int; v_reason text; v_before jsonb; v_ids uuid[] := '{}'; v_id uuid;
+declare w record; t text; a jsonb; expected_count int; actual_count int; v_reason text; v_before jsonb; v_ids uuid[] := '{}'; v_id uuid; v_links uuid[]; v_partner_report uuid;
 begin
   if p_case.captor_warband_id is null then raise exception 'Name the captor before recording an outcome.' using errcode = 'P0001'; end if;
-  for c in select x from jsonb_array_elements(p_proposal.owner_changes || p_proposal.captor_changes) x loop
-    if c->>'table' not in ('warbands', 'heroes', 'henchman_groups', 'items') or c->>'op' not in ('insert', 'update', 'delete') then
-      raise exception 'The proposal contains a change this flow does not accept (% %).', c->>'op', c->>'table' using errcode = '22023';
-    end if;
-  end loop;
   if jsonb_typeof(p_proposal.expected -> 'warbands') is distinct from 'array' or jsonb_array_length(p_proposal.expected -> 'warbands') <> 2 then
     raise exception 'The proposal is missing its warband snapshot.' using errcode = '22023';
   end if;
@@ -258,12 +414,29 @@ begin
   if not exists (select 1 from public.heroes where id = p_case.hero_id and warband_id = p_case.victim_warband_id and status = 'captured') then
     raise exception 'This warrior is no longer recorded as captured.' using errcode = 'P0001';
   end if;
+  -- The consent check again, against the rosters as they stand now (unchanged, per the checks above).
+  perform public.validate_captive_proposal(p_case, p_proposal.choice, p_proposal.owner_changes, p_proposal.captor_changes);
   v_before := public.captive_roster_snapshot(p_case.victim_warband_id, p_case.captor_warband_id);
   v_reason := 'Captive outcome: ' || p_proposal.message;
-  perform set_config('stirheim.captive_case', p_case.id::text, true);
-  perform set_config('stirheim.captive_message', p_proposal.message, true);
+  perform set_config('stirheim.captive_apply', '1', true);
   perform public.update_roster(p_case.victim_warband_id, v_reason, p_proposal.owner_changes);
   perform public.update_roster(p_case.captor_warband_id, v_reason, p_proposal.captor_changes);
+  -- Every applied report of either warband for this battle is now load-bearing: undoing one would
+  -- restore gold or experience the outcome has since moved.
+  select coalesce(array_agg(id), '{}') into v_links from public.match_reports
+    where match_id = p_case.match_id and warband_id in (p_case.victim_warband_id, p_case.captor_warband_id) and undo is not null;
+  if p_proposal.choice->>'kind' = 'exchange' then
+    -- The captor's returned captive has his own case (possibly from another battle): it is resolved
+    -- by this proposal, and its report is protected too.
+    update public.captive_cases set state = 'resolved', resolved_at = now(), resolution_kind = 'exchange', resolved_by_proposal = p_proposal.id,
+           resolution_message = 'Returned in exchange: ' || p_proposal.message,
+           history = history || jsonb_build_object('at', now(), 'by', auth.uid(), 'event', 'resolved_by_exchange', 'proposal_id', p_proposal.id)
+      where hero_id = (p_proposal.choice->>'otherHeroId')::uuid and victim_warband_id = p_case.captor_warband_id and state in ('unassigned', 'open')
+      returning report_id into v_partner_report;
+    if v_partner_report is not null and not (v_partner_report = any(v_links)) then v_links := v_links || v_partner_report; end if;
+    update public.captive_proposals set state = 'stale', resolved_at = now(), reason = 'The captive was returned in an exchange.'
+      where state = 'proposed' and case_id in (select id from public.captive_cases where resolved_by_proposal = p_proposal.id);
+  end if;
   for a in select * from jsonb_array_elements(coalesce(p_proposal.advances, '[]'::jsonb)) loop
     if (a->>'warband_id')::uuid not in (p_case.victim_warband_id, p_case.captor_warband_id) then raise exception 'Advance belongs to another warband.' using errcode = '22023'; end if;
     v_id := null;
@@ -274,7 +447,7 @@ begin
     returning id into v_id;
     if v_id is not null then v_ids := v_ids || v_id; end if;
   end loop;
-  update public.captive_proposals set before_snapshot = v_before, after_snapshot = public.captive_roster_snapshot(p_case.victim_warband_id, p_case.captor_warband_id), advance_ids = v_ids where id = p_proposal.id;
+  update public.captive_proposals set before_snapshot = v_before, after_snapshot = public.captive_roster_snapshot(p_case.victim_warband_id, p_case.captor_warband_id), advance_ids = v_ids, linked_report_ids = v_links where id = p_proposal.id;
 end $$;
 revoke all on function public.apply_captive_proposal(public.captive_cases, public.captive_proposals) from public;
 
@@ -295,7 +468,7 @@ revoke all on function public.notify_captive_resolved(public.captive_cases, text
 -- ---------------------------------------------------------------------------------------------
 create function public.propose_captive_outcome(p_case_id uuid, p_choice jsonb, p_message text, p_owner_changes jsonb, p_captor_changes jsonb, p_advances jsonb, p_expected jsonb)
 returns uuid language plpgsql security definer set search_path = '' as $$
-declare c public.captive_cases%rowtype; pr public.captive_proposals%rowtype; v_side uuid; v_both boolean; v_other uuid; v_other_owner uuid; v_name text;
+declare c public.captive_cases%rowtype; pr public.captive_proposals%rowtype; v_side uuid; v_both boolean; v_other uuid; v_other_owner uuid; v_name text; v_summary text;
 begin
   if auth.uid() is null then raise exception 'Sign in first.' using errcode = '42501'; end if;
   select * into c from public.captive_cases where id = p_case_id;
@@ -306,7 +479,6 @@ begin
   if c.state <> 'open' or c.captor_warband_id is null then raise exception 'This captive case is not open for proposals.' using errcode = 'P0001'; end if;
   if jsonb_typeof(p_owner_changes) <> 'array' or jsonb_typeof(p_captor_changes) <> 'array' then raise exception 'changes must be arrays' using errcode = '22023'; end if;
   if jsonb_typeof(p_choice) <> 'object' or coalesce(p_choice->>'kind', '') = '' then raise exception 'Choose an outcome.' using errcode = '22023'; end if;
-  if char_length(btrim(coalesce(p_message, ''))) < 1 then raise exception 'Describe the outcome.' using errcode = '22023'; end if;
   v_both := public.is_campaign_gm(public.match_campaign(c.match_id)) or (public.can_edit_warband(c.victim_warband_id) and public.can_edit_warband(c.captor_warband_id));
   if public.can_edit_warband(c.captor_warband_id) then v_side := c.captor_warband_id;
   elsif public.can_edit_warband(c.victim_warband_id) then v_side := c.victim_warband_id;
@@ -318,11 +490,13 @@ begin
   if not exists (select 1 from public.match_reports where id = c.report_id and revision = c.report_revision and undo is not null) then
     raise exception 'The report that recorded this capture has changed. Review the latest report first.' using errcode = 'P0001';
   end if;
+  -- The consent text is the server's own account of the validated changes, not the client's words.
+  v_summary := public.validate_captive_proposal(c, p_choice, p_owner_changes, p_captor_changes);
   -- The proposer's earlier open offer is replaced by this one.
   update public.captive_proposals set state = 'withdrawn', resolved_at = now(), reason = 'Replaced by a newer proposal.'
     where case_id = c.id and state = 'proposed' and proposed_by_warband_id = v_side;
-  insert into public.captive_proposals (case_id, proposed_by_warband_id, proposed_by, choice, message, owner_changes, captor_changes, advances, expected)
-    values (c.id, v_side, auth.uid(), p_choice, btrim(p_message), p_owner_changes, p_captor_changes, coalesce(p_advances, '[]'::jsonb), p_expected)
+  insert into public.captive_proposals (case_id, proposed_by_warband_id, proposed_by, choice, message, proposer_note, owner_changes, captor_changes, advances, expected)
+    values (c.id, v_side, auth.uid(), p_choice, v_summary, left(btrim(coalesce(p_message, '')), 1000), p_owner_changes, p_captor_changes, coalesce(p_advances, '[]'::jsonb), p_expected)
     returning * into pr;
   if v_both then
     perform public.apply_captive_proposal(c, pr);
@@ -442,7 +616,7 @@ begin
     end if;
     v_msg := 'Captive outcome reversed: ' || btrim(p_reason);
     perform set_config('stirheim.audit_reason', v_msg, true);
-    perform set_config('stirheim.captive_case', c.id::text, true);
+    perform set_config('stirheim.captive_apply', '1', true);
     delete from public.pending_advances where id = any(pr.advance_ids);
     delete from public.items where warband_id in (c.victim_warband_id, c.captor_warband_id);
     delete from public.heroes where warband_id in (c.victim_warband_id, c.captor_warband_id)
@@ -466,6 +640,9 @@ begin
     update public.captive_proposals set state = 'reversed', responded_by = auth.uid(), resolved_at = now(), reason = btrim(p_reason) where id = pr.id;
     update public.captive_cases set state = 'open', resolved_at = null, resolution_kind = null, resolution_message = '',
            history = history || jsonb_build_object('at', now(), 'by', auth.uid(), 'event', 'reversed', 'proposal_id', pr.id, 'reason', btrim(p_reason)) where id = c.id;
+    -- An exchanged partner is captured again too.
+    update public.captive_cases set state = 'open', resolved_at = null, resolution_kind = null, resolution_message = '', resolved_by_proposal = null,
+           history = history || jsonb_build_object('at', now(), 'by', auth.uid(), 'event', 'reversed_by_exchange', 'proposal_id', pr.id) where resolved_by_proposal = pr.id;
   end if;
   update public.match_reports set notes = concat_ws(E'\n', nullif(notes, ''), c.hero_name || ': ' || v_msg) where id = c.report_id;
   insert into public.app_notifications (user_id, kind, title, body, href, dedupe_key)

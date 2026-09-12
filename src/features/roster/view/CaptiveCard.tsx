@@ -6,7 +6,7 @@ import { useCampaign, type CampaignDetail } from '../../../api/campaigns'
 import { useWarband, type WarbandDetail } from '../../../api/warbands'
 import { useResolveCaptive, useCaptiveCases, useAssignCaptiveCaptor, useProposeCaptiveOutcome, useRespondCaptiveProposal, useReverseCaptiveResolution, type CaptiveCase } from '../../../api/captives'
 import { resolveCaptive, captiveOutcomes, type CaptiveChoice } from '../../../rules/resolve/captives'
-import { Button, SelectField, DieField, Notice, TextField } from '../../../ui'
+import { Button, SelectField, DieField, DicePicker, Notice, TextField } from '../../../ui'
 import { Section, Card } from './bits'
 import { PirateKidnappedCard } from './PirateKidnappedCard'
 
@@ -98,25 +98,34 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
 /** The resolver-backed outcome picker shared by the case flow and the legacy direct form. */
 function OutcomeForm({owner,captor,heroId,submitLabel,pending,onSubmit,disabledReason}:{owner:WarbandDetail;captor:WarbandDetail;heroId:string;submitLabel:string;pending:boolean;onSubmit:(preview:Preview,choice:CaptiveChoice)=>void;disabledReason?:string}) {
  const [chosenKind,setKind]=useState<CaptiveChoice['kind']>('ransom'),[gold,setGold]=useState('0'),[die,setDie]=useState<number|null>(null),[otherId,setOtherId]=useState(''),[leaderId,setLeaderId]=useState(''),[escapeXp,setEscapeXp]=useState<number|null>(null)
+ const [originalDie,setOriginalDie]=useState<number|null>(null),[originalXp,setOriginalXp]=useState<number|null>(null)
  const [groupId]=useState(()=>crypto.randomUUID())
  const outcomes=captiveOutcomes(captor.roster.warbandTemplateId)
  const kind=outcomes.some(o=>o.kind===chosenKind)?chosenKind:outcomes[0].kind
  let preview:Preview|null=null,error='',choice:CaptiveChoice|null=null
  try {
-  switch(kind){case 'ransom':choice={kind,gold:gold===''?NaN:Number(gold)};break;case 'exchange':choice={kind,otherHeroId:otherId};break;case 'sell':choice={kind,d6:die??0};break;case 'zombie':choice={kind,groupId};break;case 'sacrifice':choice={kind,leaderId};break;case 'wretch':choice={kind,groupId};break;case 'throne':choice={kind,groupId,d6:die??0,leaderId};break;case 'slaveWork':choice={kind,d6:die??0,xp:escapeXp??0};break}
+  switch(kind){case 'ransom':choice={kind,gold:gold===''?NaN:Number(gold)};break;case 'exchange':choice={kind,otherHeroId:otherId};break;case 'sell':choice={kind,d6:die??0,originalD6:originalDie};break;case 'zombie':choice={kind,groupId};break;case 'sacrifice':choice={kind,leaderId};break;case 'wretch':choice={kind,groupId};break;case 'throne':choice={kind,groupId,d6:die??0,leaderId,originalD6:originalDie};break;case 'slaveWork':choice={kind,d6:die??0,xp:escapeXp??0,originalD6:originalDie,originalXp};break}
   preview=resolveCaptive(owner.roster,captor.roster,heroId,choice)
  }catch(e){error=e instanceof Error?e.message:'Review the outcome.'}
  return <div className="flex flex-col gap-3">
-  <SelectField label="Outcome" value={kind} onChange={e=>setKind(e.target.value as CaptiveChoice['kind'])}>{outcomes.map(o=><option key={o.kind} value={o.kind}>{o.label}</option>)}</SelectField>
+  <SelectField label="Outcome" value={kind} onChange={e=>{setKind(e.target.value as CaptiveChoice['kind']);setDie(null);setOriginalDie(null);setEscapeXp(null);setOriginalXp(null)}}>{outcomes.map(o=><option key={o.kind} value={o.kind}>{o.label}</option>)}</SelectField>
   {kind==='ransom'?<label className="text-sm">Agreed ransom (gc)<input className="ml-2 w-24 rounded border border-border p-2" type="number" min="0" value={gold} onChange={e=>setGold(e.target.value)}/></label>:null}
-  {['sell','throne','slaveWork'].includes(kind)?<DieField label={kind==='sell'?'Slaver payment D6':kind==='throne'?'Throne of Worms D6':'Slave work D6'} sides={6} value={die} onChange={setDie} rollable/>:null}
+  {['sell','throne','slaveWork'].includes(kind)?<CaptiveRoll key={kind} label={kind==='sell'?'Slaver payment D6':kind==='throne'?'Throne of Worms D6':'Slave work D6'} sides={6} value={die} original={originalDie} onChange={setDie} onOriginal={setOriginalDie}/>:null}
   {kind==='exchange'?<SelectField label="Captive returned in exchange" value={otherId} onChange={e=>setOtherId(e.target.value)}><option value="">Choose the other captive</option>{[...captor.roster.heroes,...captor.roster.hiredSwords].filter(h=>h.status==='captured').map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>:null}
   {(kind==='sacrifice'||(kind==='throne'&&die===6))?<SelectField label={kind==='throne'?'Randomly selected hero':'Warband leader'} value={leaderId} onChange={e=>setLeaderId(e.target.value)}><option value="">Choose the leader</option>{captor.roster.heroes.filter(h=>h.status==='active').map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>:null}
-  {kind==='slaveWork'&&die===1?<DieField label="Escape experience D3" sides={3} value={escapeXp} onChange={setEscapeXp} rollable/>:null}
+  {kind==='slaveWork'&&die===1?<CaptiveRoll label="Escape experience D3" sides={3} value={escapeXp} original={originalXp} onChange={setEscapeXp} onOriginal={setOriginalXp}/>:null}
   {error?<p className="text-sm text-ink-dim">{error}</p>:null}
   {preview?<Notice tone="info" title="Outcome to record">{preview.message}</Notice>:null}
   {disabledReason?<p className="text-sm text-ink-dim">{disabledReason}</p>:null}
   <Button disabled={!preview||!choice||Boolean(disabledReason)} pending={pending} onClick={()=>{if(preview&&choice)onSubmit(preview,choice)}}>{submitLabel}</Button>
+ </div>
+}
+
+function CaptiveRoll({label,sides,value,original,onChange,onOriginal}:{label:string;sides:number;value:number|null;original:number|null;onChange:(n:number|null)=>void;onOriginal:(n:number)=>void}){
+ return <div className="flex flex-col gap-2">
+  <DicePicker label={label} sides={sides} onComplete={(values,manual)=>{onChange(values[0]);if(!manual)onOriginal(values[0])}}/>
+  <DieField label={`${label} result`} sides={sides} value={value} onChange={onChange}/>
+  {original!==null?<p className="text-xs text-ink-dim">App rolled {original}{value!==original?`; changed to ${value??'—'}`:''}. This stays in the record.</p>:null}
  </div>
 }
 

@@ -1,0 +1,43 @@
+import {chromium,expect} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/node_modules/@playwright/test/index.mjs';
+import {createClient} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/node_modules/@supabase/supabase-js/dist/index.mjs';
+import {execFileSync} from 'node:child_process';
+const raw=execFileSync('npx',['supabase','status','-o','env'],{cwd:'/Users/tombrookes/Documents/Claude Scripts/stirheim',env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
+const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
+const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),player=createClient(env.API_URL,env.ANON_KEY);
+const auth=await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'});if(auth.error)throw auth.error;
+const uid=auth.data.user.id,ids=[];let campaign,b;
+const must=r=>{if(r.error)throw Error(r.error.message);return r.data};
+let match;
+try {
+ for(const name of ['Scenario Rewards QA','Scenario Opponent QA']) ids.push(must(await player.rpc('create_warband',{payload:{name,type_rules_id:'mercenaries_reikland',gold:100,heroes:[],henchman_groups:[],stash:[]}})));
+ campaign=must(await admin.from('campaigns').insert({name:'Disposable Scenario Rewards QA',gm_id:uid}).select('id').single()).id;
+ must(await admin.from('campaign_members').insert(ids.map(warband_id=>({campaign_id:campaign,warband_id,user_id:uid}))));
+ match=must(await admin.from('matches').insert({campaign_id:campaign,created_by:uid,state:'in_progress',scenario_rules_id:'hidden_treasure'}).select('id').single()).id;
+ must(await admin.from('match_participants').insert(ids.map(warband_id=>({match_id:match,warband_id,accepted_at:new Date().toISOString()}))));
+ b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];p.on('pageerror',e=>{errors.push(e.message); console.error(e.message)});
+ await p.goto('http://127.0.0.1:5193/sign-in');await p.getByLabel('Email',{exact:true}).fill('player@stirheim.test');await p.getByLabel('Password',{exact:true}).fill('stirheim-dev');await p.getByRole('button',{name:'Sign in',exact:true}).click();await p.waitForURL('http://127.0.0.1:5193/');
+
+ const hero=must(await admin.from('heroes').insert({warband_id:ids[1],name:'QA Captured Captain',unit_type_rules_id:'mercenaries_reikland_mercenary_captain',stats:{M:4,WS:4,BS:4,S:3,T:3,W:1,I:4,A:1,Ld:8},xp:20,status:'active'}).select('id').single());
+ must(await admin.from('items').insert({warband_id:ids[1],holder_type:'hero',holder_id:hero.id,item_rules_id:'sword',quantity:1}));
+ must(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match));
+ must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[1],p_report:{result:'lost',injuries:[{subjectType:'hero',subjectId:hero.id,subjectName:'QA Captured Captain',rolls:[61],outcome:'captured',injuryCode:'captured',injuryName:'Captured',effect:''}],applied:{heroes:[{id:hero.id,patch:{status:'captured',flags:{captured:true}}}]}}}));
+ must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[0],p_report:{result:'won',applied:{}}}));
+ await p.goto(`http://127.0.0.1:5193/warbands/${ids[0]}`);
+ await p.getByRole('combobox',{name:'Outcome',exact:true}).selectOption('sell');
+ await p.getByRole('button',{name:'Roll D6',exact:true}).click();
+ const input=p.getByLabel('Slaver payment D6 result',{exact:true});
+ await expect.poll(async()=>await input.inputValue()).toMatch(/^[1-6]$/);
+ const original=Number(await input.inputValue()),changed=original===1?6:1;
+ await input.fill(String(changed));
+ await expect(p.getByText(`App rolled ${original}; changed to ${changed}. This stays in the record.`,{exact:true})).toBeVisible();
+ await p.getByRole('button',{name:'Record agreed outcome',exact:true}).click();
+ await expect.poll(async()=>must(await admin.from('captive_cases').select('state').eq('match_id',match).single()).state).toBe('resolved');
+ const result=must(await admin.from('captive_cases').select('resolution_message').eq('match_id',match).single());
+ expect(result.resolution_message).toContain(`D6: app rolled ${original}; player changed this to ${changed}.`);
+ expect(must(await admin.from('warbands').select('gold').eq('id',ids[0]).single()).gold).toBe(100+changed*5);
+ expect(must(await admin.from('heroes').select('status').eq('id',hero.id).single()).status).toBe('retired');
+ await p.reload();await expect(p.getByText(result.resolution_message,{exact:true})).toBeVisible();
+ expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ expect(errors).toEqual([]);
+ console.log('PASS: mobile Hero sale preserves original app dice and edits through resolution and refresh; exact gold and permanent departure applied.');
+} finally {await b?.close();if(match){const cases=must(await admin.from('captive_cases').select('id').eq('match_id',match));for(const c of cases)await admin.from('app_notifications').delete().like('dedupe_key',`captive:${c.id}:%`);await admin.from('captive_cases').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match);}if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}

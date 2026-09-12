@@ -21,3 +21,12 @@ it('resolves Hashut work and Throne outcomes without allowing ransom',()=>{
  const throne=resolveCaptive(owner,court,'a',{kind:'throne',d6:6,leaderId:'leader',groupId:'thrall'})
  expect(throne.captor.heroes[0].xp).toBe(21);expect(throne.owner.heroes[0].status).toBe('dead')
 })
+it('keeps original app dice and later player edits in the outcome record',()=>{
+ const sale=resolveCaptive(roster('a'),roster('b'),'a',{kind:'sell',d6:4,originalD6:2})
+ expect(sale.message).toContain('D6: app rolled 2; player changed this to 4.')
+ expect(resolveCaptive(roster('a'),roster('b'),'a',{kind:'sell',d6:4}).message).toContain('D6: tabletop result 4.')
+ expect(()=>resolveCaptive(roster('a'),roster('b'),'a',{kind:'sell',d6:4,originalD6:7})).toThrow('original D6')
+ const escape=resolveCaptive(roster('a'),{...roster('h'),warbandTemplateId:'the_sons_of_hashut'},'a',{kind:'slaveWork',d6:1,xp:3,originalD6:5,originalXp:1})
+ expect(escape.message).toContain('D6: app rolled 5; player changed this to 1.')
+ expect(escape.message).toContain('Escape XP D3: app rolled 1; player changed this to 3.')
+})

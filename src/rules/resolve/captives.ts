@@ -3,7 +3,12 @@ import { findWarbandTemplate } from '../data/warbandTemplates'
 import { leaderTemplate } from './roster'
 import { recruitHenchmen } from './recruitment'
 import { RulesError } from './errors'
-export type CaptiveChoice = { kind: 'ransom'; gold: number } | { kind: 'exchange'; otherHeroId: string } | { kind: 'sell'; d6: number } | { kind: 'zombie'; groupId: string } | { kind: 'sacrifice'; leaderId: string } | { kind: 'wretch'; groupId: string } | { kind: 'throne'; d6: number; groupId: string; leaderId: string } | { kind: 'slaveWork'; d6: number; xp: number }
+export type CaptiveChoice = { kind: 'ransom'; gold: number } | { kind: 'exchange'; otherHeroId: string } | { kind: 'sell'; d6: number; originalD6?: number | null } | { kind: 'zombie'; groupId: string } | { kind: 'sacrifice'; leaderId: string } | { kind: 'wretch'; groupId: string } | { kind: 'throne'; d6: number; originalD6?: number | null; groupId: string; leaderId: string } | { kind: 'slaveWork'; d6: number; xp: number; originalD6?: number | null; originalXp?: number | null }
+
+function captiveRollText(label:string,value:number,original:number|null|undefined,sides:number){
+ if(original!=null&&(!Number.isInteger(original)||original<1||original>sides))throw new RulesError('capture.originalDie',`The original ${label} must be from 1 to ${sides}.`)
+ return original==null?`${label}: tabletop result ${value}.`:`${label}: app rolled ${original}${original!==value?`; player changed this to ${value}`:''}.`
+}
 function captive(roster: RosterWarband, id: string): RosterHero {
  const raw=roster.heroes.find(h=>h.id===id) ?? roster.hiredSwords.find(h=>h.id===id)
  const hero: RosterHero | undefined = raw ? ('unitTemplateId' in raw ? raw : { ...raw, unitTemplateId: `hired_sword:${raw.hiredSwordId}`, skillTableIds: [], status: raw.status === 'left' ? 'retired' : raw.status }) : undefined
@@ -70,6 +75,10 @@ export function resolveCaptive(owner: RosterWarband, captor: RosterWarband, hero
   }
   nextCaptor={...nextCaptor,stash:[...nextCaptor.stash,...hero.equipment]}
   nextHero={...returned(hero,message),equipment:[],status:choice.kind==='sell'?'retired':'dead'}
+ }
+ if('d6' in choice){
+  message+=` ${captiveRollText('D6',choice.d6,choice.originalD6,6)}`
+  if(choice.kind==='slaveWork'&&choice.d6===1)message+=` ${captiveRollText('Escape XP D3',choice.xp,choice.originalXp,3)}`
  }
  nextOwner=replaceCaptive(nextOwner,nextHero)
  return {owner:nextOwner,captor:nextCaptor,message}

@@ -260,5 +260,15 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   const G2='22222222-2222-4222-8222-cccccccccccc'
   const swabbie2=(items:unknown[])=>[{...(swabbie([])[0] as Record<string,unknown>),id:G2},...items]
   expect((await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1}}]))).error?.message).toMatch(/not recorded evenly/)
+  // The victim's player records what each fallen model carried, bounded by the three shields the report removed.
+  expect((await pirate.rpc('allocate_kidnap_kit',{p_case_id:trioCases[0].id,p_items:[{id:trioShields,quantity:2}],p_reason:'He carried two'})).error?.message).toMatch(/fallen henchman's player or the campaign GM/)
+  expect((await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[0].id,p_items:[{id:trioShields,quantity:4}],p_reason:'He carried them all'})).error?.message).toMatch(/removed only 3 of shield/)
+  check(await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[0].id,p_items:[{id:trioShields,quantity:2}],p_reason:'He carried two of the three shields'}))
+  expect((await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[1].id,p_items:[{id:trioShields,quantity:2}],p_reason:'He also had two'})).error?.message).toMatch(/other lost models already account for 2/)
+  check(await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[1].id,p_items:[{id:trioShields,quantity:1}],p_reason:'The last shield was his'}))
+  expect((await victim.rpc('allocate_kidnap_kit',{p_case_id:trioCases[1].id,p_items:[{id:trioShields,quantity:0}],p_reason:'Second thoughts'})).error?.message).toMatch(/already recorded/)
+  const [t0]=(await cases()).filter((c:any)=>c.id===trioCases[0].id);expect(t0.model_snapshot).toMatchObject({kit_unresolved:false,allocation:{reason:'He carried two of the three shields'}});expect(t0.model_snapshot.items[0].quantity).toBe(2)
+  expect((await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(shield ×2\)/)
+  check(await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:2}}])))
  })
 })

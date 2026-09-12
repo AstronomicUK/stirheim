@@ -40,6 +40,15 @@ export function useRecordKidnapDice() {
   }, onSuccess: () => invalidate(cache) })
 }
 
+/** The victim's player (or GM) records what a fallen henchman actually carried when the report split the group's kit unevenly. */
+export function useAllocateKidnapKit() {
+  const cache = useQueryClient()
+  return useMutation({ mutationFn: async (input: { caseId: string; items: { id: string; quantity: number }[]; reason: string }) => {
+    const { error } = await rpc('allocate_kidnap_kit', { p_case_id: input.caseId, p_items: input.items, p_reason: input.reason })
+    if (error) throw new Error(error.message)
+  }, onSuccess: () => invalidate(cache) })
+}
+
 /** GM-only reasoned override: both sides roll again. */
 export function useResetKidnapContest() {
   const cache = useQueryClient()

@@ -687,3 +687,47 @@ begin
   return public.validate_core_captive_proposal(p_case, p_choice, p_owner_changes, p_captor_changes, coalesce(p_advances, '[]'::jsonb));
 end $$;
 revoke all on function public.validate_captive_proposal(public.captive_cases, jsonb, jsonb, jsonb, jsonb) from public;
+
+-- ---------------------------------------------------------------------------------------------
+-- allocate_kidnap_kit: when the report removed a lost group's kit unevenly, the victim's player (or
+-- the GM) records what this fallen model actually carried, with a reason. Claims across the group's
+-- lost models never exceed what the report removed from each row. Until recorded, the Pirates gain
+-- no kit from him (see validate_kidnapped_proposal).
+-- ---------------------------------------------------------------------------------------------
+create function public.allocate_kidnap_kit(p_case_id uuid, p_items jsonb, p_reason text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare c public.captive_cases%rowtype; v_gm boolean; a jsonb; item jsonb; items jsonb := '[]'::jsonb; q int; claimed int; lost int; row_id text; allocated jsonb;
+begin
+  if auth.uid() is null then raise exception 'Sign in first.' using errcode = '42501'; end if;
+  if char_length(btrim(coalesce(p_reason, ''))) < 5 then raise exception 'Explain how the fallen henchman''s kit was worked out.' using errcode = 'P0001'; end if;
+  if jsonb_typeof(p_items) <> 'array' then raise exception 'items must be an array of {id, quantity}.' using errcode = '22023'; end if;
+  select * into c from public.captive_cases where id = p_case_id;
+  if not found then raise exception 'Captive case not found.' using errcode = 'P0002'; end if;
+  perform public.lock_captive_context(c.match_id, c.victim_warband_id, c.captor_warband_id);
+  select * into c from public.captive_cases where id = p_case_id for update;
+  v_gm := public.is_campaign_gm(public.match_campaign(c.match_id));
+  if not (v_gm or public.can_edit_warband(c.victim_warband_id)) then raise exception 'Only the fallen henchman''s player or the campaign GM records what he carried.' using errcode = '42501'; end if;
+  if c.source <> 'pirates_kidnapped' or c.subject_kind <> 'henchman' then raise exception 'Only a lost henchman''s Kidnapped! case takes a kit allocation.' using errcode = 'P0001'; end if;
+  if c.state <> 'open' then raise exception 'This opportunity is closed.' using errcode = 'P0001'; end if;
+  if not coalesce((c.model_snapshot->>'kit_unresolved')::boolean, false) and not v_gm then raise exception 'His kit share is already recorded; ask the campaign GM to change it.' using errcode = 'P0001'; end if;
+  for item in select x from jsonb_array_elements(coalesce(c.model_snapshot->'items', '[]'::jsonb)) x loop
+    row_id := item->>'id'; lost := coalesce((item->>'lost')::int, 0);
+    select coalesce((y->>'quantity')::int, 0) into q from jsonb_array_elements(p_items) y where y->>'id' = row_id limit 1;
+    q := coalesce(q, 0);
+    if q < 0 then raise exception 'Quantities must be zero or more.' using errcode = '22023'; end if;
+    -- What the group's other lost models already account for from this row.
+    select coalesce(sum((i->>'quantity')::int), 0) into claimed from public.captive_cases s, jsonb_array_elements(coalesce(s.model_snapshot->'items', '[]'::jsonb)) i
+      where s.report_id = c.report_id and s.report_revision = c.report_revision and s.hero_id = c.hero_id and s.id <> c.id and s.state <> 'withdrawn' and i->>'id' = row_id and jsonb_typeof(i->'quantity') = 'number';
+    if claimed + q > lost then raise exception 'The report removed only % of % from the group; the other lost models already account for %.', lost, coalesce(item->>'item_rules_id', item->>'custom_name'), claimed using errcode = '22023'; end if;
+    items := items || (item || jsonb_build_object('quantity', q));
+  end loop;
+  for a in select x from jsonb_array_elements(p_items) x loop
+    if not exists (select 1 from jsonb_array_elements(coalesce(c.model_snapshot->'items', '[]'::jsonb)) i where i->>'id' = a->>'id') then raise exception 'Item % was not carried by the group before this report.', a->>'id' using errcode = '22023'; end if;
+  end loop;
+  allocated := jsonb_build_object('by', auth.uid(), 'at', now(), 'reason', btrim(p_reason));
+  update public.captive_cases set model_snapshot = c.model_snapshot || jsonb_build_object('items', items, 'kit_unresolved', false, 'allocation', allocated),
+         history = history || jsonb_build_object('at', now(), 'by', auth.uid(), 'event', 'kit_allocated', 'reason', btrim(p_reason), 'items', p_items) where id = c.id;
+  update public.captive_proposals set state = 'stale', resolved_at = now(), reason = 'The fallen henchman''s kit share was recorded: ' || btrim(p_reason) where case_id = c.id and state = 'proposed';
+end $$;
+revoke all on function public.allocate_kidnap_kit(uuid, jsonb, text) from public;
+grant execute on function public.allocate_kidnap_kit(uuid, jsonb, text) to authenticated;

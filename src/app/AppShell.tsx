@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Outlet } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import { Spinner, Wordmark } from '../ui'
 import { BackButton } from './BackButton'
 import { BottomNav } from './BottomNav'
@@ -12,6 +12,7 @@ import { useSession } from './session'
  * TwoColumn inside it. Signed-out screens stay a single centred column at every width.
  */
 export function AppShell() {
+  const publicBoard = useLocation().pathname === '/feedback'
   const status = useSession((s) => s.status)
   const signedIn = status === 'signed_in'
   return (
@@ -29,7 +30,7 @@ export function AppShell() {
         <main
           data-app-main
           className={`mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 pt-4 md:max-w-2xl ${
-            signedIn ? 'pb-6 lg:max-w-6xl lg:px-10 lg:pb-12 lg:pt-8' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]'
+            signedIn ? 'pb-6 lg:max-w-6xl lg:px-10 lg:pb-12 lg:pt-8' : `${publicBoard ? 'lg:max-w-7xl lg:px-10 lg:pt-8 ' : ''}pb-[max(1.5rem,env(safe-area-inset-bottom))]`
           }`}
         >
           <Suspense

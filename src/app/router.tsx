@@ -11,6 +11,7 @@ function lazyPage<K extends string>(load: () => Promise<Record<K, ComponentType>
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppShell } from './AppShell'
 
+const FeedbackPage = lazyPage(() => import('../features/feedback/FeedbackPage'), 'FeedbackPage')
 const AccountPage = lazyPage(() => import('../features/account/AccountPage'), 'AccountPage')
 const AdvancesPage = lazyPage(() => import('../features/advances/AdvancesPage'), 'AdvancesPage')
 const ForgotPasswordPage = lazyPage(() => import('../features/account/ForgotPasswordPage'), 'ForgotPasswordPage')
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppShell />,
     children: [
+      { path: 'feedback', element: <FeedbackPage /> },
       {
         index: true,
         element: (

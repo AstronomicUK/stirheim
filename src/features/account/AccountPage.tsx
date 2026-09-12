@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { signOut, updateDisplayName, updatePassword } from '../../api/auth'
+import { useFeedbackNotifications } from '../../api/feedback'
 import { queryClient } from '../../app/queryClient'
 import { useSession } from '../../app/session'
 import { Button, Notice, PageHeader, TextField } from '../../ui'
@@ -16,6 +17,8 @@ export function AccountPage() {
   usePageTitle('Account')
   const navigate = useNavigate()
   const user = useSession((s) => s.user)
+  const updates = useFeedbackNotifications(user?.id)
+  const unreadUpdates = updates.data?.filter(update => !update.read_at).length ?? 0
   const profile = useSession((s) => s.profile)
   const setProfile = useSession((s) => s.setProfile)
   const [editing, setEditing] = useState(false)
@@ -172,6 +175,7 @@ export function AccountPage() {
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
       <section aria-label="Help and about" className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-low">
+        <Link to="/feedback" className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 no-underline hover:bg-surface-high"><span><span className="block text-ink">Feedback &amp; updates{unreadUpdates > 0 && <span className="ml-2 rounded-full bg-brass px-2 py-0.5 text-xs text-white">{unreadUpdates} new</span>}</span><span className="text-sm text-ink-dim">Bug reports, improvements and what’s new in Stirheim.</span></span><span aria-hidden>›</span></Link>
         <Link to="/help" className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 no-underline hover:bg-surface-high">
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-ink">Help</span>

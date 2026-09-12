@@ -659,7 +659,7 @@ the same vein.
 
 ### 24. Roll-it-out popup is full-screen with nothing filling the space; text should be bigger and more exciting; the weapon/toggle boxes should move into the popup itself (a previously-made point that wasn't acted on)
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed locally — approved dice and roll-through layout; ready for the combined release
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -738,7 +738,7 @@ Two existing patterns could serve the "tap to read more" request: `src/ui/HoverC
 
 ### 28. Creating a warband with a spellcaster never prompts a spell roll or pick — also needs a house rule for how the first spell is chosen
 
-**Status:** 🟡 Partially fixed — reopened 2026-09-08, spellcaster detection still silently misses supported units; see #57
+**Status:** 🟡 Core caster setup fixed locally; supplementary caster coverage remains
 **Priority:** 🔴 High
 **Reported:** 2026-09-07
 
@@ -771,7 +771,7 @@ Verified live on local dev: a fresh Cult of the Possessed warband showed a "Firs
 
 ### 29. Editing a spellcaster's spells lets you pick any spell in the game, not just ones from that unit's own lore/tree
 
-**Status:** ✅ Fixed
+**Status:** 🟡 Core lore/prayer setup fixed locally; wider supplementary scope remains
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -796,7 +796,7 @@ clean.
 
 ### 30. Melee Attack and Ranged Attack quick actions share one highlight state and don't cleanly default to their own weapon type
 
-**Status:** 🟡 Partially fixed — reopened 2026-09-08, highlight is fixed; ranged default still fails for a melee-only first model, as #77 records
+**Status:** ✅ Verified locally — melee/ranged quick actions choose their proper context
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -846,7 +846,7 @@ of this entry, so they are logged separately as **#85** rather than reopening th
 
 ### 32. Spell targeting should offer only friendly, only enemy, or both lists (grouped under headings) depending on what the spell allows
 
-**Status:** 🔲 Open
+**Status:** 🟡 Core spell targets fixed locally; supplementary lore coverage remains
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-07
 
@@ -1149,7 +1149,7 @@ and `.sessions/handoffs/shots-round3/verify-20260908/40-1440x700.png` for the sh
 
 ### 41. No gold-remaining figure inside the builder's Add-equipment sheet
 
-**Status:** 🟡 Partially fixed
+**Status:** ✅ Fixed locally — builder running gold and affordability
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1277,7 +1277,7 @@ specific triple would mean mutating a real warband's exploration state to test a
 
 ### 46. The match page says "No battle sheet opened yet" after a battle has actually been fought
 
-**Status:** ✅ Fixed
+**Status:** ✅ Fixed locally — ended-battle sheet wording
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1431,7 +1431,7 @@ confirmed while checking #50 above.
 
 ### 53. Removing a warrior or an item in the builder has no confirmation and no undo
 
-**Status:** 🟡 Partially fixed
+**Status:** ✅ Fixed locally — removal confirmation names the warrior and equipment; meets the agreed confirmation-or-undo requirement
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the QA sweep, not reported from play
 
@@ -1572,7 +1572,7 @@ Related: the **Marauders of Chaos Seer needs his Mark** to pick a lore at all �
 
 ### 59. Skills rules audit: 18 skills have no effect anywhere, and warband-restriction text is often ignored or wrong
 
-**Status:** 🟡 Partially fixed
+**Status:** 🟡 Core skill reconciliation complete locally, including Streetwise, Sign of Sigmar and Tail Fighting; supplementary lists remain
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the skills rules audit, reviewed by Tom, handed to the QA session before being redirected here
 
@@ -1783,7 +1783,7 @@ Also confirmed correct: voluntary rout is offered exactly when the rulebook allo
 
 ### 70. Psychology traits are assigned in exactly one warband out of 73, and Fear's combat effect isn't modelled at all
 
-**Status:** 🟡 Partially fixed — causes_fear, immune_to_psychology and stupidity now reach 86 real unit templates as reminder badges; immune_to_fear, Animosity and Fear's actual combat math remain open
+**Status:** 🟡 Core psychology verified locally; positional/table-managed and supplementary scope remain explicit
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the psychology and traits rules audit; pre-authorised overnight, not yet personally reviewed by Tom
 
@@ -1841,7 +1841,7 @@ Deployment, terrain, starting/ending the game, victory conditions and per-scenar
 
 ### 73. Scrape markers show the reload rule for every blackpowder weapon is tagged and never enforced, plus a missing warband-max-size hook
 
-**Status:** 🔲 Open
+**Status:** 🟡 Core firearm reload actions fixed locally, including handgun, Hochland rifle and pistol copies; supplementary weapons and separate #2/#69 melee-pistol scope remain
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the scrape-uncertainty-markers audit; pre-authorised overnight, not yet personally reviewed by Tom
 
@@ -1924,7 +1924,7 @@ genuinely reverts it in production, not just in the local test.
 
 ### 76. Cast a Spell's Target box: odd default, and always shown in red regardless of whether the spell is friendly
 
-**Status:** 🔲 Open
+**Status:** 🟡 Core target selection fixed locally; supplementary lore coverage remains
 **Priority:** 🟠 Medium
 **Reported:** 2026-09-08
 
@@ -2531,7 +2531,7 @@ Recite → Roll → resolve flow, not just reading the code.
 
 ### 85. Cast a Spell now matches the attack layout, but the two boxes still carry very different content — and the Target select clips its own text
 
-**Status:** 🟡 Partially fixed — item 1 (clipped text) done; items 2-4 (layout parity) still open
+**Status:** ✅ Fixed locally — agreed caster/target layout and mobile wrapping
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the UI sweep while verifying #31, not reported from play
 
@@ -2725,7 +2725,7 @@ gives Buy a gold-amount subtitle while Sell (and every other tab except Wyrdston
 
 ### 92. Let a GM pick one of their own campaigns instead of typing its invite code, when joining/moving a warband
 
-**Status:** ✅ Fixed
+**Status:** ✅ Fixed locally — GM-owned campaign selection
 **Priority:** 🟡 Low
 **Reported:** 2026-09-08
 
@@ -2828,7 +2828,7 @@ together with that pattern in mind, though this has five outcomes instead of two
 
 ### 96. Bitter Enmity's hatred target is stored as prose, so nothing can warn a player before a fight
 
-**Status:** 🔲 Open
+**Status:** ✅ Fixed locally — structured Bitter Enmity targets, readable combat matching and withdrawal verification
 **Priority:** 🟡 Low
 **Reported:** n/a — found by the injuries rules audit; not yet personally reviewed by Tom
 
@@ -4333,3 +4333,295 @@ Trade Wagon abandonment project nowcomplete locally: explicitreportfacts;origina
 ## Production release — 12 September 2026, authorised by Tom
 Deployed source f74c8731e0d644e61c8e977211b8a6646cdaad96 (62commits since d17cb00). One push and one manual no-build Netlify release, automaticbuildsconfirmedpaused. Netlifydeploy6aa4fdf7018fd66a64a404c2 at https://stirheim.com. All109servedfilesSHA256matchverifieddist; zeromismatches. Productionmigrations77–86 appliedsuccessfully; linked dryrun upToDate=true. BuildusesproductionSupabasehostandnolocalhostconfiguration. Localvalidation2111ordinarytests +208DBtests, mobileactualFile/withdrawandkeep/ransom/lootchecks; build/typecheck/lintpasswiththreepre-existingunaudited-probeunusedimportwarnings.
 This publishes ALL committedlocalfixessincethepreviousrelease: equipmenteligibility#67,skills/weaponconsequences/fire/backfires/physicalweaponloss andTradeWagonabandonment, withTom'semptywagonreturnruling. Earlierlocal-onlycheckpointstatementsdescribethehistoricalstateandarenolongerthecurrentdeploymentstatus. It doesnotclosequestion-dependent/unfinishedclauseswithinumbrella trackeritems. Unrelateddirtyauditdocumentspreservedandnotpublished. HostedCI34680603854 stillrunningatthischeckpoint; servedverificationalreadycomplete. Artifacts/tmp/stirheim-sept12-release-{deploy.json,migrations.log,migrations-confirm.log,build.log,lint.log,ci-status.json} and/tmp/stirheim-sept12-served-verification.json. Do notredeploythisbatch.
+
+
+## Project audit entries carried into this release
+
+### 139. Consumable bookkeeping misses use controls and special supply lifetimes
+
+**Status:** 🟡 Core poison/drug uses and consequences fixed locally; supplementary consumables remain
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WEAPONS-ARMOUR-RULES-GAPS.md)):
+
+> 3. **Consumables.** Nothing is used up or lasts one battle: poisons, Bugman's Ale, Elven Wine, Vodka,
+
+**Remaining work:** Keep the implemented used-item decrement, but provide use controls for consumables without preBattle effects (e.g. Blessed Water, Garlic, smoke/flash/fire devices), and track Nets/Bolas recovery, Trapmaster supply and Pigeon/Swivel ammunition rules. Consumption currently depends on itemsUsed, while the fight checklist only includes items with a preBattle effect. A quantity decrement does not implement once-per-battle or multi-use lifetimes.
+
+**Implementation evidence:** loadoutOf/applyEffect in combatants.ts only pushes effect.preBattle into consumables; derive.ts itemPatchesFor decrements each used ID once. Ammunition overlap remains #69.
+
+**Core slice landed locally 2026-09-12 (Claude):** Black Lotus and Dark Venom no longer coat blackpowder weapons ("Poison may not be used with blackpowder weapons", 02:1966) — new `appliesTo: "nonBlackpowder"` scope, tested with a sword, bow and pistol. Inventory of the rest in [CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md](CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md): Blessed Water, Healing Herbs and Garlic never reach the "Taken this battle" list (no `preBattle` block) so are never consumed and have no action; one vial poisons one weapon (02:1967) is still pending a weapon choice on the tick; Healing Herbs' use limit awaits Tom (RAW unlimited; designer note says once).
+
+**Source clauses:** E-A3; E-B:Missile weapons; E-B:Miscellaneous equipment. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 140. Temporary item effects lack their full duration and warband scope
+
+**Status:** 🟡 Core poison/drug uses and addiction supply fixed locally; supplementary consumables remain
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WEAPONS-ARMOUR-RULES-GAPS.md)):
+
+> 4. **Pre-battle item effects on the calculator.** No way to say a warrior drank or coated anything, so
+
+**Remaining work:** Finish Crimson Shade’s temporary D3 Initiative/+1 Movement, Hardtack’s one-turn duration, Vodka’s whole-warband bonus and Toughness/Initiative tests, and Bugman’s Ale/Elven Wine affecting the warband rather than only a bearer’s loadout. Track addiction supply consequences after the existing addiction flag. Do not re-log the implemented Strength/Toughness bonuses or permanent side-effect rolls as absent.
+
+**Implementation evidence:** data/itemRules/effects.ts uses self preBattle effects, no duration counter or whole-warband application; Crimson Shade I/M remain a note; itemPatchesFor consumes once per report. The permanent side-effect report paths already exist.
+
+**Core slice landed locally 2026-09-12 (Claude):** the inventory in [CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md](CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md) found that **Crimson Shade's +1 Strength was never applied** (declared in data; `applyPreBattle` read only Toughness and traits for a self effect) and that **"no effect on Undead or Possessed"** was declared for all three core drugs and read by nothing. Both fixed in `odds.ts` with tests (a Vampire on Mandrake Root now keeps T3 and does not gain No Pain; a human on Crimson Shade fights at S4). **Addiction supply landed locally (same day):** one Crimson Shade dose per addicted hero is used up at battle start (own kit first, then the stash, roster order), recorded in a per-match ledger (`addiction_supplies`), with an addict who has no dose leaving after the player acknowledges exactly who; the battle sheet still offers the used-up dose to that hero and the report never consumes a second one. Match page gates the start; roster page warns. Integration-tested on the local stack; UI not yet walked through live. Details in [CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md](CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md), Slice D. Healing Herbs: Tom ruled RAW reusable by default with an opt-in single-use house rule — not started.
+
+**Final local validation — 2026-09-12 (Claude), regression caught and fixed before release:** the full local database suite found 7 failures in the Trapmaster and Fanatic supply transactions. Cause: the pending migration `087_addiction_supply.sql` rebuilt `start_match` from the 039 body and dropped the two `prepare_trap_supplies` / `prepare_fanatic_supplies` calls that 049 and 050 had added — so a Trapmaster would have lost his free trap and Fanatic doses would not have been split at battle start. Fixed in the same (not yet deployed) migration, re-applied to the local database as `create or replace`, and the whole suite re-run green. Production is unaffected: 087 is not applied there (verified read-only with `supabase migration list --linked`: 001–086 remote, 087 local only). Report: [CLAUDE-FINAL-VALIDATION-2026-09-12.md](CLAUDE-FINAL-VALIDATION-2026-09-12.md).
+
+**Then (same day, commits `398c292`, `af7e2d2` + Codex's FightTab wiring):** the **+D3 Initiative** is rolled once when the dose is ticked, stored in the sheet's pre-battle record with provenance ("1 · rolled by the app"), applied to strike order, and survives untick/re-tick and reload without any path to a second throw — verified live on a disposable fixture. Still open here: +1 Movement (table), the addiction supply check, and the supplement items named above.
+
+**Source clauses:** E-A4; E-A5; E-A6. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 156. Strike-order advice still has rule-condition and selected-weapon gaps
+
+**Status:** 🟡 Core selected-weapon and conditional strike-order advice verified; wider specialist/opposing-sequence scope remains
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WEAPONS-ARMOUR-RULES-GAPS.md)):
+
+> 11. **Initiative and strike order.** Not modelled, only noted: Strike First (spear, pikes, boat hook,
+
+**Remaining work:** The audit’s claim of no strike-order support is obsolete, but current advice treats all carried defender melee weapons as used, lumps first-turn and when-charged tags together, and does not fully resolve both sides’ Strike First/charge ties. Reconcile selected weapons, actual condition and Initiative before presenting a winner; Strongman remains #59.
+
+**Implementation evidence:** features/match/fight/odds.ts strikeOrder uses defenderKit.melee, a shared first() test for two different tags and hardcoded “strikes first despite the charge” text.
+
+**Source clauses:** E-A11; E-B strike-order clauses. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 160. Several item tests, saves and ongoing battle effects remain notes only
+
+**Status:** 🟡 Core Blessed Water, Healing Herbs and Garlic actions verified locally; supplementary equipment remains
+**Priority:** 🟡 Low
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WEAPONS-ARMOUR-RULES-GAPS.md)):
+
+> 4. **Pre-battle item effects on the calculator.** No way to say a warrior drank or coated anything, so
+
+**Remaining work:** Surface usable resolution for Spider Spittle paralysis, Manticore Spoor ongoing wounds, Blessed Water’s eligible-target automatic wound, Healing Herbs restoration, and Enchanted Skins’ 5+ anti-magic protection. Item reminders already exist for several of these, but their dice effects do not. The broader spell damage/target pipeline is #58. Preserve positional tools (nets, smoke, spotting, climbing, weather) as table actions unless automation is explicitly chosen. Also missing: Fog-Enhancing Warpstone Shards’ conditional -1 missile hit, Parrot’s first-round Leadership/-1 hit test, Vial of Pestilens’ Toughness/OOA reversal, Scorpion Ring’s temporary summoned model and Fire Bomb’s D3 S4 hits/backfire. Include Fire Arrow ignition and the Torch’s club attack/-1 hit/no regeneration. Blessed Stag Hide and Luck-Gnoblar rerolls may be table-managed reminders; do not imply those rerolls have been automated.
+
+**Implementation evidence:** effects.ts encodes these as notes or consumable markers, with only Enchanted Skins’ general 6+ ward structured; no corresponding interactive effect resolver.
+
+**Core slice landed locally 2026-09-12 (Claude):** **Tail Fighting** (Clan Eshin core skill) — a shield held in the tail now adds +1 to the Skaven's armour save in the odds and the roll-through, with a note that the extra-attack alternative is a table call. Tested; see [CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md](CORE-EQUIPMENT-CHECKPOINT-2026-09-12.md) (TF1). Blessed Water throw, Healing Herbs restoration and Garlic remain as listed there.
+
+**Source clauses:** E-A4; E-A6; E-B:Miscellaneous equipment. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 161. Item Leadership benefits are stored but not used by Leadership checks
+
+**Status:** 🟡 Core Holy Relic first-test controls verified locally; supplementary banners and multi-model table handling remain
+**Priority:** 🟠 Medium
+**Reported:** n/a — reconciled historic audit on 2026-09-09 at Tom’s request
+
+**Original audit excerpt** (first line; full context in [the preserved audit](WEAPONS-ARMOUR-RULES-GAPS.md)):
+
+> 6. **Items that grant traits or saves the calculator knows about but never receives from kit.**
+
+**Remaining work:** Connect Holy Relic’s first-test pass, Banner/Clan Pestilens Banner/Jolly Roger All Alone benefits, Standard of Nagarythe and Sashimono rerolls, Cathayan Silk Clothes’ first Rout reroll and War Horns’ temporary bonus to the relevant checks. Keep proximity/once-per-game conditions explicit. War Horn is reusable; do not remove the horn as a consumable when sounded. Skill reminders are already #68; these are separate item consumers. Include Liturgicus Infecticus as the Clan Pestilens equivalent of a War Horn.
+
+**Implementation evidence:** effects.ts has leadership metadata, but no leadership.allAloneReroll/autoPassFirstTest consumer under match or resolvers. War horns are marked consumable:use despite being reusable equipment.
+
+**Source clauses:** E-A6; E-B:Miscellaneous equipment. Identifier W refers to `WARBAND-RULES-GAPS.md`; E to `WEAPONS-ARMOUR-RULES-GAPS.md`.
+
+**Verification:** Deployed-client implementation inspection; executable reproduction only where stated above. All 84 downloaded client JS files matched the fresh build. No authenticated browser reproduction or server-data assertion is implied. See the [reconciliation](RULES-RECONCILIATION-2026-09-09.md) and its evidence manifest.
+
+### 167. Resolve the source/code disagreement for Strength 2 versus Toughness 5
+
+**Status:** ✅ Resolved — original chart verified; engine correct, scrape corrected
+
+**Resolved 2026-09-12 (Claude):** mordheimer.net publishes both wound charts as images, so the scraped tables were hand transcriptions. Both original images (saved in `docs/audits/2026-09-12-source-verification/`) read **6** at Strength 2 / Toughness 5, dash from Toughness 6 — the same diagonal every other row follows. The engine matched the artwork on all 100 cells; the scrape was wrong in that one cell, twice. Corrected the two markdown cells with a transcription note and added `toWoundChart.test.ts` pinning the cell, the S1–S3 rows and the whole-chart diagonal. No engine change. Full write-up: [CORE-SOURCE-VERIFICATION-2026-09-12.md](CORE-SOURCE-VERIFICATION-2026-09-12.md).
+**Priority:** 🟡 Low
+**Reported:** Fresh rules sweep, 2026-09-09, at Tom’s request
+**Classification:** A question for the owner
+
+**Observed:** A cell-by-cell executable comparison finds the scraped shooting and melee wound charts both say “cannot wound” at S2/T5, while the engine returns 6+. All other cells in these two wound tables and the melee hit table match. The previous combat audit's blanket “cell for cell” claim is therefore inaccurate against the current scrape.
+
+**Required resolution:** Verify the intended rule against the original chart image or an agreed authoritative rulebook, then correct the transcription or engine as appropriate. Do not automatically change the engine: the isolated break in the scraped table's pattern may be a transcription error. Record the source and decision.
+
+**Source:** `reference/rules/01-introduction-and-rules.md:691` and `:865`. **Implementation:** `src/rules/engine/toWound.ts:20` (S2 row). [Full 300-cell comparison](audits/2026-09-09-sweep/core-charts-probe.json): two discrepant cells, representing the same rule repeated in two charts. This is a source-verification issue, not a confirmed combat bug.
+
+### 186. Casting allows a failed reroll to be rerolled again
+
+**Status:** ✅ Fixed locally — rerolled dice cannot be rerolled again; eligibility survives serialization
+**Priority:** 🟠 Medium
+**Reported:** Fresh rules sweep, 2026-09-09, at Tom’s request
+**Classification:** Bug
+
+**Observed:** A caster carrying a Familiar and Magic Gubbinz fails a cast, uses the Familiar and fails again. The flow then offers Magic Gubbinz to reroll the same dice again. Tracking which source was spent does not track whether those dice have already been rerolled.
+
+**Expected:** Accept the rerolled result. Preserve legitimate unused rerolls for later casts; track individual dice where a one-die reroll interacts with a pair reroll.
+
+**Source:** `reference/rules/01-introduction-and-rules.md:75` (accept the second score); `reference/rules/warbands/grade-2a-part2.md:1543` explicitly reiterates that a reroll cannot be rerolled. **Implementation:** `src/rules/resolve/casting.ts:394`, `:410` and `:525`. [Executed failure and second offer](audits/2026-09-09-sweep/magic-probe.json), `failedReroll`. Local verification; temporary test passed and was removed.
+
+### 193. Injury stat floors and overlapping recovery periods need an explicit ruling
+
+**Status:** ✅ Fixed locally — approved stat floors retained and overlapping recovery runs concurrently
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-09 — fresh rules audit
+
+**Finding:** `resolve/injuries.ts` documents stat floors and concurrent recovery periods, but the injury source does not expressly define the floors or whether separate durations add. Record the intended rule and test that policy; this is a source/ruling question, not a proven defect.
+
+**Source check 2026-09-12 (Claude):** rulebook, the official 2005 Rules Review errata and the source site's FAQ all silent on both points. The Ultimate FAQ compilation carries one *community-recommended* (not official) answer: characteristics can reach 0 but not below, with effects (M0 cannot move, S0 cannot wound, T0 auto-wounded, W0 dead, A0 no attacks, Ld ≤1 always fails) — the engine floors at 1 instead. Nothing anywhere on recovery periods adding. Two rulings put to Tom via Codex (floors: keep 1 / adopt 0-with-effects; recoveries: concurrent / additive). Evidence in [CORE-SOURCE-VERIFICATION-2026-09-12.md](CORE-SOURCE-VERIFICATION-2026-09-12.md).
+
+**Source:** [Dated area report](2026-09-09-INJURIES-RULES-GAPS.md), Interpretations to confirm.
+
+### 195. Verify advancement thresholds against the original roster-sheet image
+
+**Status:** ✅ Verified — advancement thresholds match the original roster sheet
+
+**Verified 2026-09-12 (Claude):** read Games Workshop's 1999 roster sheet (Broheim's `Official Roster Sheet.pdf`, downloaded with Tom's permission, rendered at 4800px). Heroes: 90 boxes, thick borders at 2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 32, 36, 41, 46, 51, 57, 63, 69, 76, 83, 90 — counted by eye and by a border-weight scan. Henchmen: 14 boxes, thick at 2, 5, 9, 14. Both identical to `HERO_XP_THRESHOLDS` / `HENCHMAN_XP_THRESHOLDS`. Crops saved in `docs/audits/2026-09-12-source-verification/`; full write-up in [CORE-SOURCE-VERIFICATION-2026-09-12.md](CORE-SOURCE-VERIFICATION-2026-09-12.md).
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-09 — fresh rules audit
+
+**Finding:** The text scrape refers to thick-bordered roster boxes without reproducing the threshold chart. Independently compare the 21 Hero and four Henchman thresholds against the original sheet. This does not change #60: Hired Swords use Henchman XP progression with Hero advancement results.
+
+**Source:** [Dated area report](2026-09-09-EXPERIENCE-RULES-GAPS.md), Interpretations to confirm.
+
+### 200. Verify special-save stacking and injury-remap precedence against specific wording
+
+**Status:** 🟡 Core saves and core skill protections verified locally; supplementary Ward interpretation remains separate
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-09 — fresh rules audit
+
+**Finding:** The compilation’s generic Ward explanation is imported from Warhammer 6th edition (core source line 765); individual permissions may differ. Injury-remap precedence is documented as an assumption in injury.ts. Validate each exception before asserting universal order; do not override an explicit unit clause. Existing #172 and #175 retain their concrete sequencing defects.
+
+**Source check 2026-09-12 (Claude):** core has no Ward saves (the compiler's own note). The core save-like mechanics each carry their own sequencing words — Dodge on the hit "before rolling to wound, and before any effects from other skills or equipment (such as lucky charms)" (official 2005 errata wording), Lucky Charm on the first hit, armour save, Step Aside "taken after all other armour saves", Helmet after the injury roll, Armour of Righteousness replacing the armour save — and the engine follows that order clause for clause (`rollThrough.ts`, `resolveAttack.ts`). Concussion is the only core injury remap and every True Grit / Hard to Kill user (Dwarfs — Grade 1a and hired swords) has Hard Head, which cancels it, so remap precedence never arises in core. Tom then asked about warband-specific saves in the core lists: **Daemon Soul** (Possessed mutation, 4+ vs spells/prayers) and **Protection of Sigmar** (Sisters skill, spell nullified on 4+) exist in core and are text-only in the app while the supplement analogue Blessed by Morr *is* wired into the dispel list (`casting.ts:222`); **Tail Fighting**'s +1 armour save with a shield is text-only too. These are casting-flow and armour gaps, not wound-order ones. **Update, same day:** Daemon Soul is now a personal 4+ protection in the casting flow (spares the mutant alone, spells and prayers, commit `b3f9e57`); Protection of Sigmar nullifies the whole spell for an affected Sister (Codex `775d53c`), and both are offered for area spells via the new affected-enemies checklist. Tail Fighting's +1 shield save landed in `02bd3c2`. The wound-sequence half is closable on this evidence; the only open point there is the non-blocking default for *supplement* wards (armour first, then one special save per wound — current behaviour) for Tom to confirm at leisure. Evidence in [CORE-SOURCE-VERIFICATION-2026-09-12.md](CORE-SOURCE-VERIFICATION-2026-09-12.md).
+
+**Source:** [Dated area report](2026-09-09-COMBAT-ENGINE-RULES-GAPS.md), Interpretations to confirm.
+
+### 202. Exploration singular-die helper text still says “1 dice”
+
+**Status:** ✅ Fixed locally — singular exploration-die wording
+**Priority:** 🟡 Low
+**Reported:** Found during live completed-item verification, 2026-09-09.
+
+**Live reproduction:** One surviving Hero, no winner’s die: Exploration shows “Suggested: 1 die (1 surviving hero = 1 dice)” and “Enter all 1 exploration dice.” The one-warrior and one-item wording in #47 now works; these are separate exploration strings.
+
+**Fixed 2026-09-12 (Claude):** both strings. `explorationDiceAllowed` (`src/rules/resolve/exploration.ts`) now ends its reason “= 1 die” / “= 2 dice”, and the wizard's incomplete-roll problem (`src/features/postBattle/model/exploration.ts`) reads “Enter the exploration die.” for one, “Enter all N exploration dice.” otherwise. Covered by unit tests in `exploration.test.ts` (rules) and the existing model test; the Suggested line in `ExplorationStep.tsx` already said “die” and is unchanged.
+
+**Required work:** Use “1 die” and an appropriate singular completion instruction. Verified in an unsaved QA report, subsequently discarded.
+
+### 203. Multiple warrior status badges overflow the phone viewport
+
+**Status:** ✅ Fixed locally — mobile status badges wrap
+**Priority:** 🟠 Medium
+**Reported:** Found during live verification of #88, 2026-09-09.
+
+**Live reproduction:** At 390×844, QA Siegmund the Hammer has a long “Out of action · by Beggar (QA verification 2026-09-09 A)” badge plus Stupidity, Immune to fear and Causes fear. The badges move below the name correctly (#88 passes), but their container does not shrink to the card width. It keeps all four in one row: last badge ends at x586.34, document scroll width586, viewport390. Screenshot shows clipped badges and horizontal scrolling.
+
+**Fixed 2026-09-12 (Claude):** the badge container in `battle/cards.tsx` (`WarriorHead`) was `shrink-0`, so as a flex item it refused to shrink and pushed the row past the card; it is now `min-w-0` (still `flex-wrap justify-end`), so it fits the card width and the badges wrap onto further rows. Verified on the local dev server at 390×844 with a disposable fixture sheet: a Captain marked out of action “by Magister (Claude P5 verification 2026-09-12 A)” got a 316px-wide badge container inside the 369px card head (right edge 353 < 369) and the document scroll width stayed 390. The original QA warband is gone, so the four-badge row was recreated in the DOM by cloning the real badge (Stupidity, Immune to fear, Causes fear): the badges wrapped onto two rows with right edges 353 / 171 / 272 / 353, all inside the card, scroll width still 390. Roster-page `WarriorCard` uses the same `shrink-0` pattern but its parent does not wrap; left as is since no overflow has been reported there.
+
+**Implementation lead:** `WarriorHead` in `src/features/match/battle/cards.tsx`: outer header now wraps, but inner tag container remains `flex shrink-0 flex-wrap justify-end gap-1` without a width constraint.
+
+**Required work:** Constrain the tags to the available card width and wrap the individual badges, preserving the fixed separation from the warrior name. Verify the long attribution plus several condition badges on a phone.
+
+
+## Batch — 2026-09-09 (Tom’s mobile, simulator and campaign feedback)
+
+Compared with all existing tracker entries. Merged the repeated relevant-toggle report into #19 and reopened #7 (map) and #25 (dice icon) with Tom’s new evidence. New entries #204–#212 below preserve his wording. Reports are not marked reproduced or implemented unless expressly stated.
+
+### 206. Opening Test Dwarves battle sheet selects the Carnival of Chaos warband as My warband
+
+**Status:** ✅ Fixed locally — battle opened from a warband preserves that selected warband
+**Priority:** 🔴 High
+**Reported:** 2026-09-09 — Tom
+**Classification:** Bug
+
+> I went to the test dwarves warband and opened the battle sheet, but it opened the battle sheet as the CoC test warband ("My warband" was set to the carnival units)
+
+**Scope / acceptance:** Preserve the warband the user opened the battle from when selecting My warband, including when the same account owns multiple participants. Reproduce the Test Dwarves → battle-sheet path and confirm the correct roster and actions. This is distinct from #78’s desktop roster-reveal styling and #21’s two-report submission issue. Exact match not supplied; do not invent an ID or claim a fresh reproduction.
+
+**Root cause (2026-09-12, Claude Code, from the code):** `BattlePage.tsx` kept the chosen warband in
+`useState('')` and nothing ever seeded it from where the player came from — both entry points
+(`PendingBattleCard.tsx` "Open the battle sheet" on the warband page, and `MatchPage.tsx` "Open battle
+sheet") linked to a bare `/matches/<id>/battle`. With one account owning both participants the page
+therefore always fell back to `owned[0]`: whichever owned participant the API happened to list first,
+independent of the warband whose page you were on. That is exactly Tom's Test Dwarves → Carnival
+symptom. Not a data or report problem; nothing was mis-saved.
+
+**Fix (local commit, batched release):** the originating warband now travels in the URL. New pure
+helper `src/features/match/battle/myWarband.ts`: `battleSheetPath(matchId, warbandId)` builds
+`/matches/<id>/battle?warband=<id>`, and `chooseMyWarband(participants, requested)` picks the
+requested participant only if the reader actually owns it, else the first owned one, else nothing
+(spectator). `PendingBattleCard.tsx` uses `battleSheetPath` with the warband it is rendered on;
+`BattlePage.tsx` reads `?warband=` via `useSearchParams`, and the existing "Playing as" switcher now
+writes the same param (`replace`), so switching and reloading both keep the choice. The match page's
+own link is unchanged — from there no single warband is "yours", and the previous first-owned default
+is the right fallback. Read-only/spectator behaviour unchanged.
+
+**Verification (2026-09-12):** unit tests in `myWarband.test.ts` cover honouring the request, first-owned
+fallback, refusing a warband you don't own even if the URL names it, stale ids and the spectator case;
+`npx tsc -b`, `oxlint` on the changed files, and the match-feature suite (397 tests) clean. Live
+click-through on local dev (5175) with a headless Playwright script using the repo's own seeded e2e
+GM account (`e2e/fixtures.ts`), against a disposable in-progress match where that account owned both
+Test Cult (listed first) and Reikland Watch — created by SQL and deleted afterwards along with the
+battle-session rows opening the sheet created; no live player records touched. Four cases, all passed,
+zero page errors: open from Reikland Watch's page → sheet URL carries `?warband=<reikland>` and
+"Playing as" = Reikland Watch, still after reload; open from Test Cult's page → Test Cult, still after
+reload (the case that used to fail — without the fix the first-listed Test Cult would have won both
+times); bare `/battle` URL → falls back to an owned warband; switching in "Playing as" rewrites the
+param and survives reload. Local commit only, batched release. Codex informed via the bus; files
+released after the commit.
+
+### 209. Spell tooltips should show effective difficulty and the base difficulty when reduced
+
+**Status:** ✅ Fixed locally — effective and base casting difficulties shown
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-09 — Tom
+**Classification:** Improvement
+
+> Tooltips for spells should also show their difficulty (and in the case of any reductions in difficulty, the base difficulty should be shown in the tooltip. Something like:
+> "Difficulty: 7 (Base difficulty 8)
+
+**Scope / acceptance:** Include difficulty in spell tooltips. When a reduction applies, show the adjusted value alongside the base value, following Tom’s example: Difficulty: 7 (Base difficulty 8). Use the relevant caster’s actual modifier context. Distinct from #58’s missing difficulty-reduction mechanics: this entry concerns displaying the values correctly.
+
+**Fixed (2026-09-12, Claude Code with Codex):** two halves. The Cast tab's spell hover card was already
+showing `Difficulty: 7 (Base difficulty 8)` from the caster's recorded reductions since commit
+`8261a2e` — this entry was stale on that half, nothing changed there. The roster card's spell tooltips
+(`WarriorCard.tsx`, both the collapsed hover card and the expanded rules list) showed only rules text;
+they now open with the same line, computed by Codex's new `effectiveDifficulty(profile, spell)` in
+`casting.ts` (the same helper `startCast` consumes, so the two screens cannot drift), via a small
+`describeDifficulty()` text helper (`roster/view/spellDifficulty.ts`). Rule kept deliberately: a
+casting-roll bonus (Sorcery, Holy Tome) is its own clause — `Difficulty: 8 · +1 to the casting roll
+(Sorcery)` — never folded into a lower Difficulty, because the Difficulty is what an enemy dispel rolls
+against; only learned reductions lower it. Hired-sword casters are covered through the same converter
+the battle sheet uses. Verified: four text-helper tests including Tom's own `7 (Base difficulty 8)`
+example; roster suite green; live on local dev, The Argent Hammer's Warrior Priest hover card reads
+"The Hammer of Sigmar (Prayers of Sigmar) Difficulty: 7 …". No hero on local dev carries a recorded
+reduction, so the "(Base difficulty …)" branch is covered by tests rather than a live click.
+
+### 210. Simplify hired-sword eligibility tags and make their placement consistent
+
+**Status:** ✅ Fixed locally — player-facing hired-sword eligibility labels
+**Priority:** 🟠 Medium
+**Reported:** 2026-09-09 — Tom
+**Classification:** Improvement
+
+> What does the "named in the rules" tag mean on the hired swords list? Seems redundant. For some hired swords, the tag is on the left (Elf Mage is one example). I think the tags need rethinking as there shouldn't be so many tags (Named in the rules, Rules Exclude this Warband, Check Restriction, No tag). It's almost like these tags are more like internal tags to development to verify the lists.
+
+**Scope / acceptance:** `EligibilityTag` in `src/features/recruitment/HiredSwordsTab.tsx` maps allowed → Named in the rules, restricted → Rules exclude this warband, check → Check restriction, blocked → Unavailable, and otherwise no tag. These describe eligibility categories, not named characters. Simplify the player-facing labels, remove redundant status clutter and give remaining labels consistent placement; include Elf Mage in the visual check. Keep meaningful restriction explanations and Tom’s approved reason-recorded overrides (#100). This is distinct from #42’s completed search/filter feature and #97’s resolver validation.
+
+**Fixed 2026-09-12 (Claude):** `EligibilityTag` now shows nothing for a hired sword the rules plainly allow (the old "Named in the rules" — an entry that is simply available needs no badge, the same as one with no restriction), **"Not for this warband"** for an exclusion, **"Check the rules"** where the text is unclear, and **"Unavailable"** when blocked; the blocked reason line and the hire sheet's full restriction notice are unchanged, as are the Show filter and #100's overrides. Placement: the tag sits in an `ml-auto` wrapper so it stays on the right even when a long upkeep line wraps it onto its own row — Elf Mage's tag was on the left because it wrapped. Verified on the local dev server at 390px for Reikland Watch: none of the three old labels present; 8 "Not for this warband", 13 "Check the rules", 3 "Unavailable"; all 23 tagged rows measured with the tag at the row's right edge; Elf Mage (allowed) now carries no tag; no horizontal scroll.
+
+
+### Core rulebook Priority 1–5 batch — final local reconciliation, 12 September 2026
+
+The agreed core clauses are implemented and verified locally. This is not a claim that mixed core/supplement umbrella entries are fully closed. Source/evidence and accepted limits are in `CORE-RULEBOOK-RELEASE-2026-09-12.md`, `CODEX-TAKEOVER-2026-09-12.md` and `CLAUDE-FINAL-VALIDATION-2026-09-12.md`.
+
+Key final commits: 68d44d7 physical poison selector; 30a33f1 pistol copies/reload; 98f733e tabletop relic tests and corrections; 36ee839 individual paired-blade coatings; a3de343 Sign of Sigmar and structured hatred matching; 91089bb Tail Fighting choice and Hochland rifle reload. Claude supplied core casting acceptance, #53 confirmation, structured #96, Streetwise and the migration087 supply regression fix (1f14ec8).
+
+Mobile application actions, reloads and relevant report filing/withdrawal were exercised on disposable local fixtures. The addiction report does not charge a second dose or refund a legitimate battle-start dose on withdrawal. Migration087 preserves trap/Fanatic supply preparation after the full database suite found and caught that regression.
+
+No push or deployment. The new release requires database087 before the frontend, followed by one combined deployment. Existing player overrides remain; no decision is required for #53 because the brief explicitly accepts confirmation or undo. Separate close-combat pistol profiles (#2/#69), supplementary content, table positioning and automatic orchestration of both opponents’ full combat phases are not marked complete here.

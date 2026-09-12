@@ -143,8 +143,20 @@ export function toCharacter(c: Combatant, kit: Loadout): Character {
   }
 }
 
+/** Clan Eshin's Tail Fighting (core-and-grade-1a.md:691): a shield held in the tail adds +1 to the armour save. */
+export const TAIL_FIGHTING_SKILL = 'skaven_of_clan_eshin_skills_tail_fighting'
+
+/** Tail Fighting used defensively: the Skaven has the skill and a shield (or kite shield) for the tail to hold. */
+export function tailShield(c: Combatant, kit: Loadout): boolean {
+  return c.skillIds.includes(TAIL_FIGHTING_SKILL) && Boolean(kit.armour.shield || kit.armour.kiteShield)
+}
+
 export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
   const traits = [...c.traitIds, ...kit.traitIds.filter((t) => !c.traitIds.includes(t))]
+  // "The Skaven may wield a shield … with its tail. The model gains … a +1 bonus to its armour save."
+  // The extra-attack alternative (a knife or sword in the tail) is chosen at the table for now.
+  const tailBonus = tailShield(c, kit) ? 1 : 0
+  const saveBonus = { melee: kit.saveBonus.melee + tailBonus, missile: kit.saveBonus.missile + tailBonus, savesFromNothing: kit.saveBonus.savesFromNothing }
   if (kit.melee.some(w=>w.special.includes('veskitTwoParries'))) traits.push('veskit_two_parries')
   const metallicBody = traits.includes('veskit_metallic_body')
   const ballAndChain = kit.melee.reduce((n, w) => n + (w.defenderToBeHitModifier ?? 0), 0)
@@ -164,7 +176,7 @@ export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
     wardSaveThreshold: kit.wardSaveThreshold,
     missileWardSaveThreshold: kit.missileWardSaveThreshold,
     toBeHit: { melee: kit.toBeHit.melee + ballAndChain, missile: kit.toBeHit.missile },
-    saveBonus: kit.saveBonus.melee || kit.saveBonus.missile ? kit.saveBonus : undefined,
+    saveBonus: saveBonus.melee || saveBonus.missile ? saveBonus : undefined,
     ownSave: metallicBody ? {melee:Math.min(3,kit.ownSave?.melee??3),missile:Math.min(3,kit.ownSave?.missile??3)} : kit.ownSave ?? undefined,
     afterSaveThreshold: kit.afterSaveThreshold ?? undefined,
     stunSave: kit.stunSave ?? undefined,
@@ -433,6 +445,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   const primary = weapons[0]
   if (setup.defender.traitIds.includes('black_orc') || setup.defender.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push(`${setup.defender.name} has Black Orc natural armour: 6+ alone, improving worn armour by 1. It does not apply against attacks that allow only shields or ignore armour.`)
   if (setup.attacker.traitIds.includes('black_orc') || setup.attacker.skillIds.includes('black_orcs_skills_proven_warrior')) notes.push('Black Orcs do not ride mounts. Use this warrior on foot.')
+  if (tailShield(setup.defender, setup.defenderKit)) notes.push(`${setup.defender.name} has Tail Fighting: the shield in the tail adds +1 to the armour save. Choosing the extra attack with a tail-held knife or sword instead is a table call.`)
   if (primary?.input.ignoreRolledKnockedDown) notes.push(`${setup.defender.name} has Jump Up: ignores rolled knocked-down injuries, but not knock-downs caused by a helmet save or No Pain. Wounds are still lost.`)
   if (setup.attacker.entangled) notes.push(`${setup.attacker.name} is entangled: cannot move or charge; melee Weapon Skill is reduced by 2. Shooting is unaffected. Resolve a 4+ escape roll in Recovery.`)
   if (setup.defender.entangled) notes.push(`${setup.defender.name} is entangled: melee Weapon Skill is reduced by 2 until freed in Recovery.`)

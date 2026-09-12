@@ -1,8 +1,11 @@
 import { mazzalupoCommands } from '../../../rules/resolve/mazzalupoCommands'
 import { inheritedLeadershipRules } from './lookups'
 import {CurseReminder} from './CurseReminder'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { hiredSwordGainsExperience } from '../../../rules/resolve/hiredSwordRules'
+import { casterProfile, effectiveDifficulty } from '../../../rules/resolve/casting'
+import { toRosterHero, toRosterHiredSword } from '../../../domain/roster'
+import { describeDifficulty } from './spellDifficulty'
 import { injuryRecordKind } from '../../../rules/resolve/injuryHistory'
 import type { HeroRow } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
@@ -37,6 +40,18 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
   const ownRules = warriorSpecialRules(template, hero.unit_type_rules_id, hero.hired_sword_rules_id, hero.flags.luthorRole, true)
   const rules = [...ownRules, ...inheritedLeadershipRules(template,hero.flags.leaderRoleId).filter(r=>!ownRules.some(own=>own.name===r.name))]
   const drift = statDrift(hero.stats, startingProfile(template, hero.unit_type_rules_id, hero.hired_sword_rules_id))
+  // #209: a spell's tooltip shows the Difficulty this caster actually needs, with the printed base
+  // when a learned reduction has lowered it, and any roll bonus as its own line — the same numbers
+  // the Cast tab uses, from the same resolver.
+  const caster = useMemo(() => {
+    if (hero.spells.length === 0) return null
+    const rosterHero = hero.is_hired_sword ? (toRosterHiredSword(hero, equipment) as unknown as ReturnType<typeof toRosterHero>) : toRosterHero(hero, equipment)
+    return casterProfile({ hero: rosterHero, warbandName: template?.name, unitName: typeName })
+  }, [hero, equipment, template, typeName])
+  const difficultyLine = (spellId: string): string | null => {
+    const known = caster?.spells.find((s) => s.spell.id === spellId)
+    return caster && known ? describeDifficulty(effectiveDifficulty(caster, known.spell)) : null
+  }
 
   return (
     <Card className={inactive ? 'opacity-70' : ''}>
@@ -99,7 +114,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
               <RuleList
                 rules={hero.spells.map((id) => {
                   const spell = findSpellOption(id)
-                  return { name: spell ? `${spell.name} (${spell.lore})` : id, text: spell?.text ?? 'No rule text on file.' }
+                  return { name: spell ? `${spell.name} (${spell.lore})` : id, text: [difficultyLine(id), spell?.text ?? 'No rule text on file.'].filter(Boolean).join('\n\n') }
                 })}
               />
             ) : (
@@ -109,6 +124,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
                   return (
                     <span key={id}>
                       <HoverCard label={spellName(id)} title={spell ? `${spell.name} (${spell.lore})` : spellName(id)}>
+                        {difficultyLine(id) ? <p className="mb-2 font-semibold">{difficultyLine(id)}</p> : null}
                         <span className="whitespace-pre-line">{spell?.text ?? 'No rule text on file.'}</span>
                       </HoverCard>
                       {i < hero.spells.length - 1 ? ',' : ''}

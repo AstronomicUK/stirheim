@@ -36,6 +36,7 @@ import { ImportQuestions } from './view/ImportQuestions'
 import { GrimoireCard } from './view/GrimoireCard'
 import { HiredRosterRepairCard } from './view/HiredRosterRepairCard'
 import { HiredUpkeepCard } from './view/HiredUpkeepCard'
+import { TradeWagonCard } from './view/TradeWagonCard'
 import { CaptiveCard } from './view/CaptiveCard'
 import { PitFightCard } from './view/PitFightCard'
 import { PendingBattleCard } from './view/PendingBattleCard'
@@ -235,6 +236,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       </Card> : null}
 
       <CaptiveCard detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
+      <TradeWagonCard warbandId={detail.warband.id} userId={user?.id} />
       <PitFightCard detail={detail} canEdit={canEdit} onError={setActionError} />
       {rating.notes.length > 0 ? (
         <Notice tone="info" title="Rating notes">

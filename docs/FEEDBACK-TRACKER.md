@@ -4644,3 +4644,6 @@ No new user ruling blocks these tasks. No push or deployment occurred. Supplemen
 
 
 **Follow-up — #70/#156/#30, 12 September:** weapon/profile/copy choices now persist; mobile defender Dagger selection survives reload. Individual Fear/situation choices expire by combat phase; ended Frenzy persists across turns and requires a reason to clear. Group-model psychology remains explicitly table-managed. Corrected melee-to-ranged default reset as part of this slice; final shared-turn/desktop integration still to check. See CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md for precise evidence. Core melee pistols and Relic correction remain outstanding; no deployment.
+
+
+**Core scope correction — #139/#140, 12 September:** Bugman’s Ale was wrongly excluded as supplementary in CORE-EQUIPMENT-CHECKPOINT. It is core (original PDF p36; local reference 02:1510), with whole-warband fear immunity excluding Elves and one barrel lasting one battle. Restore its use/scope/consumption work to this batch; Claude assigned. #73/#69 pistol profiles/use ledger now have focused tests, but the battle UI remains pending. Relic corrections now live-verified for hero and one-model-group bearers. No deployment.

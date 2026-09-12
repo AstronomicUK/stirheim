@@ -76,6 +76,10 @@ export interface Weapon {
   toHitBonus?: number;
   /** Hard cap on attacks made with this weapon per turn (Fist: 1 — 02:321). */
   maxAttacks?: number;
+  /** A fixed weapon action, not increased by the model's Attacks, Frenzy or extra-shot skills. */
+  fixedAttacks?: number;
+  /** Inventory profile used by a battle-only alternative (e.g. a pistol fired in melee). */
+  physicalWeaponId?: string;
   /** Sold and wielded as a pair: one catalogue entry already gives the "two weapons" +1 Attack (Fighting Claws, Weeping Blades, Brass Knuckles, Poison Daggers). */
   paired?: boolean;
   /** Extra attacks gained only in a turn the wielder charges (Whipcrack +1). */

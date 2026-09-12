@@ -89,6 +89,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
   // A blunderbuss shot places one hit on each model in its line, not extra
   // shots from the firer's Attacks or shooting skills (02:997-1020).
   if (weapon.special.includes("autoHitLine16inLongBy1inWide") || weapon.id === "bolas") return 1;
+  if (weapon.fixedAttacks !== undefined) return Math.max(0, weapon.fixedAttacks);
   const skills = resolveSkills(character.skills, customSkills);
 
   const skillBonus = () => {

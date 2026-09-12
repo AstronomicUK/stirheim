@@ -100,6 +100,8 @@ export const battleLiveStateSchema = z.object({
   /** One core poison vial bound to one physical weapon for this battle. */
   /** Selected profiles and physical copies; IDs survive inventory ordering changes. */
   fightWeaponChoices: z.record(z.string(), z.object({ primary: z.string(), offHand: z.string().nullable() })).default({}),
+  pistolCombats: z.record(z.string(), z.object({ id: z.string(), firstPhaseKey: z.string(), at: z.string() })).default({}),
+  pistolCombatUses: z.array(z.object({ id: z.string(), combatId: z.string(), modelKey: z.string(), warriorId: z.string(), weaponKey: z.string(), sourceWeaponId: z.string(), mode: z.enum(['single', 'brace', 'crossbow']), phaseKey: z.string(), correction: z.string().optional() })).default([]),
   fightSituations: z.record(z.string(), z.object({ phaseKey: z.string(), values: z.record(z.string(), z.boolean()) })).default({}),
   frenzyEnded: z.record(z.string(), z.boolean()).default({}),
   fightPhysicalChoices: z.record(z.string(), z.string()).default({}),

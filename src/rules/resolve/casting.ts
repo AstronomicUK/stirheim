@@ -57,6 +57,8 @@ export interface CastReroll {
 }
 
 export interface DispelSource {
+  /** Only eligible when this bearer is the selected affected model. */
+  targetOnly?: boolean;
   ownerId?: string;
   ownerName?: string;
   limit?: "perTurn";
@@ -222,6 +224,11 @@ function casterKit(hero: RosterHero, kind: CasterKind): CasterKitFinding {
     out.dispel.push({ id: "blessed_by_morr", name: "Blessed by Morr", detail: "Nullify a spell aimed at this model on a D6 of 4+ when fighting the Undead.", against: { threshold: 4 } });
   }
 
+  if (skill("sisters_of_sigmar_skills_protection_of_sigmar")) {
+    out.dispel.push({ id: "protection_of_sigmar", name: "Protection of Sigmar", targetOnly: true,
+      detail: "If the spell affects this Sister, nullify it on 4+. A nullified spell affects no other models either.", against: { threshold: 4 } });
+  }
+
   // ---- things the sheet cannot check ----
   if (has.has("rosary")) out.reminders.push("The Rosary only helps if he did nothing but move at walking pace, and never in combat.");
   if (has.has("scroll_of_the_rat_familiar")) out.reminders.push('The Rat Familiar must be within 6" for its re-roll.');
@@ -378,6 +385,8 @@ function modifierText(state: CastState): string {
 }
 
 export interface StartCastOptions {
+  /** Selected affected model; personal protections must not become warband-wide. */
+  targetId?: string;
   /** Modifier ids the player switched on, with the value for the ones that are rolled (Dark Ritual's D3). */
   modifiers?: { id: string; amount?: number }[];
   /** Re-roll ids already used up earlier in the battle or this turn. */
@@ -417,7 +426,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     outcome: null,
     secondSpellOffered: false,
     done: false,
-    enemyDispel: (options.enemyDispel ?? []).filter(source=>profile.lore.id!=='prayers_of_sigmar' || source.affectsPrayers===true),
+    enemyDispel: (options.enemyDispel ?? []).filter(source => (!source.targetOnly || (options.targetId !== undefined && source.ownerId === options.targetId)) && (profile.lore.id !== 'prayers_of_sigmar' || source.affectsPrayers === true)),
   };
 
   if (spell.difficulty === null) {

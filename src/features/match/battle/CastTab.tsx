@@ -133,6 +133,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
       modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
       alreadyUsed: usedUp,
       enemyDispel,
+      targetId: target?.id,
     })
     setCastingPulse(0)
     recorded.current = null

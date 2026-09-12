@@ -369,3 +369,18 @@ it('does not offer spell-only staff or runestone protection against a selected S
  expect(applyCastRoll(startCast(p,prayer,{enemyDispel:sources}),[6,6]).pending).toBeNull()
  expect(applyCastRoll(startCast(p,rune,{enemyDispel:sources}),[6,6]).pending?.kind).toBe('dispel')
 })
+
+it('Protection of Sigmar is only offered for the affected Sister', () => {
+ const sister = hero({ id: 'sister', skillIds: ['sisters_of_sigmar_skills_protection_of_sigmar'] });
+ const sources = dispelsFor(sister);
+ expect(sources).toContainEqual(expect.objectContaining({ id: 'protection_of_sigmar', ownerId: 'sister', targetOnly: true }));
+ const caster = profileOf(hero());
+ const spell = caster.spells[0].spell;
+ expect(startCast(caster, spell, { enemyDispel: sources, targetId: 'sister' }).enemyDispel).toHaveLength(1);
+ const cast = applyCastRoll(startCast(caster, spell, { enemyDispel: sources, targetId: 'sister' }), [6, 6]);
+ expect(cast.pending?.kind).toBe('dispel');
+ expect(applyCastRoll(cast, [4]).outcome).toBe('dispelled');
+ expect(applyCastRoll(cast, [3]).outcome).toBe('cast');
+ expect(startCast(caster, spell, { enemyDispel: sources, targetId: 'someone_else' }).enemyDispel).toEqual([]);
+ expect(startCast(caster, spell, { enemyDispel: sources }).enemyDispel).toEqual([]);
+});

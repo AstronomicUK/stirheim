@@ -5,7 +5,7 @@ const stats={M:4,WS:5,BS:4,S:4,T:3,W:2,I:4,A:2,Ld:8}
 const check=(r:{data:unknown;error:{message:string}|null}):any=>{if(r.error)throw Error(r.error.message);return r.data}
 describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
  let admin:SupabaseClient,victim:SupabaseClient,necromancer:SupabaseClient,gm:SupabaseClient
- const users:string[]=[];let from:string,to:string,campaign:string,match:string,hero:string,caster:string,kit:string[]=[]
+ const users:string[]=[];let from:string,to:string,campaign:string,match:string,hero:string,caster:string,kit:string[]=[],extraBands:string[]=[]
  beforeAll(async()=>{
   admin=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const clients=[]
@@ -17,6 +17,7 @@ describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
   ;[victim,necromancer,gm]=clients
  })
  beforeEach(async()=>{
+  extraBands=[]
   const bands=check(await admin.from('warbands').insert([{owner_id:users[0],name:'Disposable victim',type_rules_id:'mercenaries_reikland',gold:0},{owner_id:users[1],name:'Disposable necromancers',type_rules_id:'the_undead',gold:0}]).select('id'));[from,to]=bands.map((b:any)=>b.id)
   campaign=check(await admin.from('campaigns').insert({gm_id:users[2],name:'Disposable Awakening',settings:{reportApproval:false}}).select('id').single()).id
   check(await admin.from('campaign_members').insert([{campaign_id:campaign,warband_id:from,user_id:users[0]},{campaign_id:campaign,warband_id:to,user_id:users[1]}]))
@@ -29,7 +30,7 @@ describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
  afterEach(async()=>{
   if(match){await admin.from('awakening_offers').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match)}
   if(campaign)await admin.from('campaigns').delete().eq('id',campaign)
-  if(from&&to)await admin.from('warbands').delete().in('id',[from,to])
+  if(from&&to)await admin.from('warbands').delete().in('id',[from,to,...extraBands])
   await admin.from('app_notifications').delete().in('user_id',users)
  })
  afterAll(async()=>{for(const id of users)await admin.auth.admin.deleteUser(id)})
@@ -90,4 +91,24 @@ describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
   check(await fileVictim());const [offer]=await offers();check(await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:from}))
   expect((await necromancer.rpc('resolve_awakening',{p_offer_id:offer.id,p_action:'accept'})).error).not.toBeNull()
  })
+ it('requires an agreed recipient for multiple warbands and only the source player or GM can record it',async()=>{
+  const extra=check(await admin.from('warbands').insert({owner_id:users[1],name:'Other necromancers',type_rules_id:'the_undead',gold:0}).select('id').single()).id;extraBands.push(extra)
+  check(await admin.from('campaign_members').insert({campaign_id:campaign,warband_id:extra,user_id:users[1]}))
+  check(await admin.from('match_participants').insert({match_id:match,warband_id:extra,accepted_at:new Date().toISOString()}))
+  check(await admin.from('heroes').insert({warband_id:extra,name:'Other caster',unit_type_rules_id:'undead_necromancer',stats,xp:8,status:'active',spells:['spell_of_awakening']}))
+  check(await fileVictim());check(await fileCaster())
+  check(await necromancer.rpc('submit_battle_report',{p_match_id:match,p_warband_id:extra,p_report:{result:'lost',applied:{}}}))
+  const available=await offers(),first=available.find((o:any)=>o.to_warband_id===to),second=available.find((o:any)=>o.to_warband_id===extra)
+  expect(available).toHaveLength(2);expect(available.every((o:any)=>o.allocation_required)).toBe(true)
+  expect((await necromancer.rpc('resolve_awakening',{p_offer_id:first.id,p_action:'accept'})).error?.message).toMatch(/agreed Awakening recipient/)
+  expect((await necromancer.rpc('agree_awakening_recipient',{p_offer_id:first.id})).error?.message).toMatch(/fallen Hero’s player/)
+  check(await victim.rpc('agree_awakening_recipient',{p_offer_id:first.id}))
+  expect((await necromancer.rpc('resolve_awakening',{p_offer_id:second.id,p_action:'accept'})).error?.message).toMatch(/agreed Awakening recipient/)
+  check(await gm.rpc('agree_awakening_recipient',{p_offer_id:second.id,p_reason:'Players corrected their agreed recipient'}))
+  const zombie=check(await necromancer.rpc('resolve_awakening',{p_offer_id:second.id,p_action:'accept'}))
+  expect(check(await admin.from('henchman_groups').select('warband_id').eq('id',zombie).single()).warband_id).toBe(extra)
+  expect((await victim.rpc('agree_awakening_recipient',{p_offer_id:first.id})).error?.message).toMatch(/Reverse the accepted/)
+  expect(check(await victim.from('app_notifications').select('body')).some((n:any)=>n.body.includes('players agreed'))).toBe(true)
+ })
+
 })

@@ -100,3 +100,15 @@ Captured group casualties now have a separate report field with the source attac
 ### Forced-captive warband actions — local
 
 The warband screen now offers a dedicated release/ransom/sale form for captured henchmen, using the shared consent workflow. It distinguishes these captives from Pirate body-recovery opportunities. Sale uses the approved tumbling dice and explicitly preserves original-versus-edited values. Real mobile browser checks passed release (exactly one model plus two axes returned) and sale (model stays absent, exact gold and two axes transferred, edited app dice retained). TypeScript and focused UI lint passed. Returning to a group that is already five models now forms a separate group; backend/client regression covers it. The backend's over-strict item-loss equality was corrected because used supplies and casualty losses share the final item patches; the client still requires full allocation of actual captive equipment. Pirate mixed-kit allocation, henchman exchange, animals and remaining special capture rules are not yet finished. Nothing deployed.
+
+### Tom’s overnight decisions
+
+- Double-barrel Hunter/Pistolier house-rule semantics are deferred for discussion with Tom; do not choose the extra-reload allocation on his behalf. Continue other work.
+- Multiple eligible Awakening warbands: record the recipient agreed by the players. Do not use first-accept-wins.
+- Tracker maintainer: Tom authorizes his own existing Stirheim account. Resolve the actual signed-in account identity before assigning access; do not substitute a QA account or guess a username.
+
+Tracker identity verified read-only in Tom’s existing live Chrome session: **AstronomicUK**. Use this existing account for the authorized tracker maintainer setup when the release is applied; no QA account substitution.
+
+### Agreed Awakening recipient — verified locally
+
+Tom’s ruling is implemented in migration 094 and the source warband’s Awakening cards. When several warbands are eligible, the fallen Hero’s player or GM records the agreed recipient; recipients cannot assign the Hero to themselves. All affected owners are notified and the source report records the agreement. Unchosen acceptance remains blocked, and an accepted Awakening must be reversed before reassignment. Nine database tests passed, including permissions and reassignment, and a three-owner mobile journey passed source selection → unchosen caster blocked → chosen caster raises the Hero. The tracker maintainer setup script is prepared for verified username AstronomicUK and has only been dry-run. No production changes.

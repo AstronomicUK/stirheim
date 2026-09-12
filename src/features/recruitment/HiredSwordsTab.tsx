@@ -176,7 +176,10 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
                     <span>
                       Upkeep {upkeepText(entry)} · {gradeLabel(entry.grade)}
                     </span>
-                    <EligibilityTag eligibility={eligibility} />
+                    {/* ml-auto keeps the tag on the right even when a long upkeep line wraps it onto its own row (#210). */}
+                    <span className="ml-auto">
+                      <EligibilityTag eligibility={eligibility} />
+                    </span>
                   </span>
                   {eligibility.kind === 'blocked' && eligibility.reason ? <span className="text-xs text-warn">{eligibility.reason}</span> : null}
                 </button>
@@ -196,14 +199,14 @@ export function HiredSwordsTab({ detail, template, canEdit, onDone, bans, perks 
   )
 }
 
+/** Only the entries that need a second look carry a tag (#210): a hired sword the rules plainly allow
+ * is simply available, the same as one with no restriction at all, so it says nothing. */
 function EligibilityTag({ eligibility }: { eligibility: Eligibility }) {
   switch (eligibility.kind) {
-    case 'allowed':
-      return <Tag tone="brass">Named in the rules</Tag>
     case 'restricted':
-      return <Tag tone="warn">Rules exclude this warband</Tag>
+      return <Tag tone="warn">Not for this warband</Tag>
     case 'check':
-      return <Tag>Check restriction</Tag>
+      return <Tag>Check the rules</Tag>
     case 'blocked':
       return <Tag tone="danger">Unavailable</Tag>
     default:

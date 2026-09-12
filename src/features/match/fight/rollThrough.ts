@@ -32,6 +32,7 @@ export interface AttackPlan {
   /** Added during resolution, so it has no pre-collected hit die. */
   additionalAttack?: boolean
   weaponName: string
+  weaponId?: string
   input: AttackInput
   /** Parry mechanics not carried by AttackInput. A fixed threshold (Starblade 4+) replaces the beat-the-hit-roll test. */
   parry: { beatsOrMatches: boolean; reroll: boolean; fixedThreshold?: number }
@@ -100,6 +101,8 @@ interface Current {
 }
 
 export interface RollState {
+  /** Actual weapon that caused the terminal OOA, before the attack index advances. */
+  outOfActionWeaponId?: string
   brokenWeapons?: BrokenWeapon[]
   bolasBackfires?: number
   volatileBackfires?: number
@@ -229,7 +232,7 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
   let next: RollState = { ...state, outcomes, worst, pending: null }
   if (outcome === 'outOfAction') {
     next = log(next, `${OUTCOME_LABEL[outcome]}! The target is out of action; any remaining attacks are not needed.`, 'good')
-    return { ...next, done: true, index: state.plans.length }
+    return { ...next, done: true, index: state.plans.length, outOfActionWeaponId: state.plans[state.index].weaponId ?? state.plans[state.index].heldWeapon?.weaponId }
   }
   const doubleBarrel = state.plans[state.index].barrels === 2
   const separateHits = state.plans[state.index].input.separateBarrelHits

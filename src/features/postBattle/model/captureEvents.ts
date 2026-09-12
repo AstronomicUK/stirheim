@@ -10,6 +10,6 @@ export function captureEvents(events: readonly BattleEventRow[], matchId: string
   const logged=matching.filter(event=>!event.payload.metadata_only)
   const manual=matching.filter(event=>event.payload.metadata_only&&Number.isInteger(event.payload.manual_casualty_index))
   return [...logged.map((event,modelIndex)=>({event,modelIndex})),...manual.map(event=>({event,modelIndex:logged.length+event.payload.manual_casualty_index!}))]
-    .filter(({event}) => event.payload.capture_reason === 'subjugator')
+    .filter(({event}) => event.payload.capture_reason === 'subjugator' || event.payload.capture_reason === 'man_catcher')
     .sort((a,b)=>a.modelIndex-b.modelIndex)
 }

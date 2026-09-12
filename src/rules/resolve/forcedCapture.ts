@@ -5,3 +5,7 @@ export function subjugatorCaptures(input:{outOfAction:boolean;attackerIsHero:boo
   && input.skills.includes('skaven_of_clan_moulder_special_skills_subjugator_of_mankind')
   && input.equipment.includes('thingcatcher')
 }
+
+export const captureRuleName=(reason:'subjugator'|'man_catcher'|undefined)=>reason==='man_catcher'?'Man-catcher':'Subjugator of Mankind'
+
+export const isManCatcherItem=(itemId:string|null)=>itemId!==null&&['man_catcher','gromril_man_catcher','ithilmar_man_catcher'].includes(itemId)

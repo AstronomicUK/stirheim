@@ -92,3 +92,12 @@ it('records captive losses separately when an exploration recruit replaces the m
  expect(r.report?.applied.groups.find(g=>g.id==='g')?.patch.size).toBe(3)
  expect(r.report?.applied.item_patches).toContainEqual({id:'swords',quantity:6})
 })
+
+it('preserves a Man-catcher henchman capture reason and its exact share of equipment',()=>{
+ const ctx=forcedContext();ctx.battleEvents![0].payload.capture_reason='man_catcher'
+ const d=draft();d.groupInjuries.g=[]
+ const r=deriveReport(d,ctx)
+ expect(r.injuries.groups[0].resolution.line?.captured?.[0]).toMatchObject({modelIndex:1,reason:'man_catcher',kit:[{sourceItemId:'swords',itemId:'sword',quantity:2}]})
+ expect(r.injuries.groups[0].dice).toBe(0)
+ expect(r.injuries.groups[0].resolution.dead).toBe(0)
+})

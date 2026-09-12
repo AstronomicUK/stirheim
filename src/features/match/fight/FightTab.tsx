@@ -1,4 +1,6 @@
-import { subjugatorCaptures } from '../../../rules/resolve/forcedCapture'
+import {canManCatcherCapture} from '../../../rules/resolve/engineOfChaos'
+import {useEngines} from '../../../api/engines'
+import { subjugatorCaptures, isManCatcherItem } from '../../../rules/resolve/forcedCapture'
 import { firingAttemptStarted } from './firingAttempt'
 import { doubleBarrelState, reloadDoubleBarrels, correctChamberReload } from '../../../domain/chambers'
 import { ChamberDisplay } from './ChamberDisplay'
@@ -99,6 +101,7 @@ interface TargetMemory {
 
 export function FightTab({ items = [], matchId, roster, template, others, sessions, houseRules, sheet, events, readOnly, onLogEvent, edit, boosts, startWith = 'melee' }: FightTabProps) {
   const enemies = useEnemyRosters(matchId, others)
+  const engines = useEngines(roster.warbandTemplateId==='black_dwarfs'?roster.id:undefined)
   const [lineSelection, setLineSelection] = useState<{ shotId: string; targetKey: string } | null>(null)
   const lineShot = sheet.lineShots.find(shot => !shot.cancelled && shot.id === lineSelection?.shotId)
   const lineTarget = lineShot?.targets.find(target => target.key === lineSelection?.targetKey)
@@ -917,9 +920,14 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   }
                 : undefined
             }
-            onLog={(state, attemptId) =>
-              onLogEvent({
-                capture_reason: subjugatorCaptures({outOfAction:state.worst==='outOfAction',attackerIsHero:attacker.kind==='hero',skills:attacker.skillIds,equipment:attacker.equipment.flatMap(item=>item.itemId&&item.quantity>0?[item.itemId]:[]),targetLarge:defender.traitIds.includes('large_target')})?'subjugator':undefined,
+            onLog={async(state, attemptId) => {
+              const needsEngineCheck=state.worst==='outOfAction'&&isManCatcherItem(state.outOfActionWeaponId??null)&&roster.warbandTemplateId==='black_dwarfs'
+              const availableEngines=needsEngineCheck?await engines.refetch():null
+              if(availableEngines?.error)throw new Error(`Could not check Engine availability: ${availableEngines.error.message}`)
+              const manCatcher=canManCatcherCapture({outOfAction:state.worst==='outOfAction',usedManCatcher:isManCatcherItem(state.outOfActionWeaponId??null),engineAvailable:Boolean(availableEngines?.data?.some(engine=>engine.state==='present')),targetLarge:defender.traitIds.includes('large_target'),targetAnimal:Boolean(defender.isAnimal||defender.kind==='animal')})
+              return onLogEvent({
+                out_of_action_weapon_id: state.outOfActionWeaponId,
+                capture_reason: subjugatorCaptures({outOfAction:state.worst==='outOfAction',attackerIsHero:attacker.kind==='hero',skills:attacker.skillIds,equipment:attacker.equipment.flatMap(item=>item.itemId&&item.quantity>0?[item.itemId]:[]),targetLarge:defender.traitIds.includes('large_target')})?'subjugator':manCatcher?'man_catcher':undefined,
                 blessedWaterUseId: isBlessedWater ? attemptId : undefined,
                 attacker_warband_id: attacker.warbandId,
                 attacker_id: attacker.id,
@@ -957,7 +965,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 nurgles_rot: state.rotPassed,
                 rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
               })
-            }
+            }}
             onFinished={state => { if (!areaTarget || defender.kind !== 'henchman') rememberFight(state) }}
           />}
           </Sheet>
@@ -1208,6 +1216,7 @@ function RollSection({ beforeStart, restartBlocked = false, heldWeapons = [], sw
         heldWeapon: heldWeapons[weaponIndex],
         swordBreakerParry: swordBreaker,
         weaponName: w.weapon.name,
+        weaponId: heldWeapons[weaponIndex]?.weaponId ?? w.weapon.id,
         input: w.input,
         parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit), fixedThreshold: fixedParryThreshold(defenderKit) },
         luckyCharm: defenderKit.firstHitDiscard ?? undefined,

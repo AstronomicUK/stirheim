@@ -70,16 +70,16 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
  it('rejects a report whose captured models cannot be verified against the battle log and its own losses',async()=>{
   expect((await file([cap(1,events[0]),cap(1,events[1])])).error?.message).toMatch(/casualty 2 of the group, not 1/)
   expect((await file([cap(1,events[0]),cap(2,events[0])])).error?.message).toMatch(/casualty 1 of the group, not 2|used twice/)
-  expect((await file([cap(3,events[2])],{size:2})).error?.message).toMatch(/no unreverted Subjugator capture event/)
+  expect((await file([cap(3,events[2])],{size:2})).error?.message).toMatch(/no unreverted capture event/)
   expect((await file([cap(9,events[0])],{size:2})).error?.message).toMatch(/casualty 9 does not exist; Warriors had 3 models/)
   expect((await file([cap(0,events[0])],{size:2})).error?.message).toMatch(/casualty 0 does not exist/)
   expect((await file([cap(1,events[0]),cap(2,events[1])],{rolls:[1,1],dead:2,size:0})).error?.message).toMatch(/had 3 models before the battle but the report loses 2 dead and 2 captured/)
   expect((await file([cap(1,events[0],{kit:kit(2)}),cap(2,events[1],{kit:kit(2)})])).error?.message).toMatch(/casualties took only 2 of sword/)
   expect((await file([cap(1,events[0]),cap(2,events[1])],{swordsLost:4})).error?.message).toMatch(/records 4 of sword lost from Warriors but the group only carried 3/)
   expect((await file([cap(1,events[0],{kit:[{sourceItemId:swords,itemId:'axe',quantity:1}]}),cap(2,events[1])])).error?.message).toMatch(/names axe but the source row is sword/)
-  expect((await file([cap(1,events[0],{captorWarbandId:vw}),cap(2,events[1])])).error?.message).toMatch(/no unreverted Subjugator capture event/)
+  expect((await file([cap(1,events[0],{captorWarbandId:vw}),cap(2,events[1])])).error?.message).toMatch(/no unreverted capture event/)
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',events[1]))
-  expect((await file([cap(1,events[0]),cap(2,events[1])])).error?.message).toMatch(/no unreverted Subjugator capture event/)
+  expect((await file([cap(1,events[0]),cap(2,events[1])])).error?.message).toMatch(/no unreverted capture event/)
   expect(await cases()).toHaveLength(0)
   // Kit the owner used or discarded in the same report is not a capture claim: swords 3 → 0 with one sword taken by the casualties is legitimate.
   check(await admin.from('battle_events').update({reverted_at:null}).eq('id',events[1]))
@@ -230,4 +230,50 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   const opened=await cases()
   expect(opened.map((c:any)=>[c.model_index,c.model_snapshot.event_id])).toEqual([[1,events[0]],[4,marker]])
  })
+ it('opens a Man-catcher case with exact kit and rejects missing Engines, weapons, Large models and animals',async()=>{
+  check(await admin.from('battle_events').delete().eq('match_id',match))
+  check(await admin.from('warbands').update({type_rules_id:'black_dwarfs'}).eq('id',cw))
+  check(await admin.from('matches').update({state:'in_progress'}).eq('id',match))
+  const payload={attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Gaoler',target_warband_id:vw,target_id:group,target_kind:'group',target_name:'Warriors',target_size:3,wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:2,capture_reason:'man_catcher',out_of_action_weapon_id:'gromril_man_catcher'}
+  const record=()=>captor.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:cw,kind:'attack',payload,summary:'Man-catcher capture'}).select('id').single()
+  expect((await record()).error?.message).toContain('no available Engine')
+  check(await admin.from('items').insert({warband_id:cw,holder_type:'stash',item_rules_id:'engine_of_chaos',quantity:1}))
+  expect(check(await victim.from('engine_of_chaos_units').select('id').eq('warband_id',cw))).toHaveLength(1)
+  expect((await record()).error?.message).toContain('did not carry the Man-catcher')
+  check(await admin.from('items').insert({warband_id:cw,holder_type:'hero',holder_id:moulder,item_rules_id:'gromril_man_catcher',quantity:1}))
+  for(const unit of ['beastmen_minotaur','beastmen_warhounds_of_chaos']){
+   check(await admin.from('henchman_groups').update({unit_type_rules_id:unit,is_large:false}).eq('id',group))
+   expect((await record()).error?.message).toContain('Large models or animals')
+  }
+  check(await admin.from('henchman_groups').update({unit_type_rules_id:'mercenaries_reikland_warriors',is_large:true}).eq('id',group))
+  expect((await record()).error?.message).toContain('Large models or animals')
+  check(await admin.from('henchman_groups').update({is_large:false}).eq('id',group))
+  payload.out_of_action_weapon_id='dagger'
+  expect((await record()).error?.message).toContain('actual Man-catcher')
+  payload.out_of_action_weapon_id='gromril_man_catcher'
+  const eventId=check(await record()).id
+  check(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match))
+  check(await file([cap(1,eventId,{reason:'man_catcher'})],{size:2,swordQty:2,shieldQty:2,swordsLost:1,shieldsLost:1,rolls:[]}))
+  const [opened]=await cases()
+  expect(opened.model_snapshot).toMatchObject({reason:'man_catcher',event_id:eventId,items:[{item_rules_id:'sword',quantity:1},{item_rules_id:'shield',quantity:1,notes:'Painted red'}]})
+  expect(check(await victim.from('app_notifications').select('body')).some((n:{body:string})=>n.body.includes('Man-catcher'))).toBe(true)
+  expect((await gm.rpc('revert_battle_event',{p_event_id:eventId,p_note:'Correct the capture'})).error?.message).toContain('Withdraw the affected post-battle report')
+ })
+
+ it('records a table-calculated Man-catcher marker without another kill or casualty',async()=>{
+  check(await admin.from('battle_events').delete().eq('match_id',match))
+  check(await admin.from('warbands').update({type_rules_id:'black_dwarfs'}).eq('id',cw))
+  check(await admin.from('matches').update({state:'in_progress'}).eq('id',match))
+  check(await admin.from('items').insert([{warband_id:cw,holder_type:'stash',item_rules_id:'engine_of_chaos',quantity:1},{warband_id:cw,holder_type:'hero',holder_id:moulder,item_rules_id:'man_catcher',quantity:1}]))
+  const token=`casualty:${match}:${vw}:${group}:manual:0`
+  const payload={attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Gaoler',target_warband_id:vw,target_id:group,target_kind:'group',target_name:'Warriors',target_size:3,wounds_lost:0,out_of_action:true,kill:false,outcome:'Captured at the table',turn:2,capture_reason:'man_catcher',capture_source:'table',metadata_only:true,manual_casualty_index:0,casualty_token:token}
+  const args={p_match_id:match,p_actor_warband_id:vw,p_payload:payload,p_summary:'Man-catcher capture at the table'}
+  const eventId=check(await victim.rpc('mark_casualty_event',args))
+  expect(check(await victim.rpc('mark_casualty_event',args))).toBe(eventId)
+  expect(check(await admin.from('battle_events').select('payload').eq('id',eventId).single()).payload).toMatchObject({metadata_only:true,kill:false,wounds_lost:0})
+  check(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match))
+  check(await file([cap(1,eventId,{reason:'man_catcher'})],{size:2,swordQty:2,shieldQty:2,swordsLost:1,shieldsLost:1,rolls:[]}))
+  expect((await cases())[0].model_snapshot.reason).toBe('man_catcher')
+ })
+
 })

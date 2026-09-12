@@ -50,3 +50,22 @@ it('a captured companion bypasses its injury die and appears in the capture summ
  const reverted=deriveInjuries(d,participantsOf(band,undefined),id,band,null,null,[{...saved,reverted_at:event.at}])
  expect(reverted.animals[0]).toMatchObject({roll:1,dead:true})
 })
+
+it('a Man-catcher capture keeps its own rule name and does not fabricate an injury die',()=>{
+ const saved={...event,payload:{...event.payload,capture_reason:'man_catcher' as const,attacker_name:'Gaoler'}}
+ const result=run([saved]).heroes[0].resolution
+ expect(result.hero.status).toBe('captured')
+ expect(result.line).toMatchObject({rolls:[],injuryName:'Captured — Man-catcher',outcome:'captured'})
+ expect(result.line?.effect).toContain('Gaoler')
+ expect(attackSummary(saved.payload)).toContain('with Man-catcher')
+ expect(attackSummary(saved.payload)).not.toContain('Subjugator')
+})
+
+it('ordinary Man-catchers never bypass a companion’s animal injury rule',()=>{
+ const handler=makeHero({equipment:[{itemId:'wardogs',quantity:1}]}),band=makeWarband({id,heroes:[handler]})
+ const animalId=`animal:${handler.id}:wardogs:1`
+ const saved={...event,payload:{...event.payload,target_id:animalId,capture_reason:'man_catcher' as const}}
+ const result=deriveInjuries({...emptyDraft(),animalsOut:[animalId],animalInjuries:{[animalId]:1}},participantsOf(band,undefined),id,band,null,null,[saved])
+ expect(result.animals[0]).toMatchObject({roll:1,dead:true})
+ expect(result.animals[0].capture).toBeUndefined()
+})

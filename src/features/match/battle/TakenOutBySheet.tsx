@@ -1,3 +1,5 @@
+import {useState} from 'react'
+import {isManCatcherItem} from '../../../rules/resolve/forcedCapture'
 // "Who took X out of action?" Asked whenever a warrior is marked out on the sheet, whichever way the
 // table is scoring: the enemy models fit to fight, or a fall, a spell, terrain. The answer feeds the
 // report's key events. The calculator's own logged kills answer it without asking.
@@ -8,6 +10,7 @@ import type { EnemyWarband } from '../fight/useEnemyRosters'
 import { splitWarriors, fightingGroups } from './sheet'
 
 export interface TakenOutBySheetProps {
+  allowManCatcher?: boolean
   pending?: boolean
   error?: string
   open: boolean
@@ -20,11 +23,23 @@ export interface TakenOutBySheetProps {
   onClose: () => void
 }
 
-export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, turn, onPick, onClose, pending=false, error }: TakenOutBySheetProps) {
+export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, turn, onPick, onClose, pending=false, error, allowManCatcher=false }: TakenOutBySheetProps) {
+  const [weaponChoice,setWeaponChoice]=useState<TakenOutBy|null>(null)
+  const pick=(by:TakenOutBy,warband:EnemyWarband,equipment:readonly {itemId:string|null;quantity:number}[])=>{
+    if(allowManCatcher&&warband.roster.warbandTemplateId==='black_dwarfs'&&equipment.some(item=>item.quantity>0&&isManCatcherItem(item.itemId)))setWeaponChoice(by)
+    else onPick(by)
+  }
   return (
     <Sheet open={open} onClose={onClose} title={`Who took ${subjectName} out?`} description="Choose the enemy model responsible, including the caster if a spell caused it. Goes on the report as a key event.">
       <div className="flex flex-col gap-4 py-2">
         {error?<Notice tone="error" title="Could not record the casualty">{error}</Notice>:null}
+        {weaponChoice?<div className="flex flex-col gap-3">
+          <p className="font-semibold">What caused the out-of-action result?</p>
+          <p className="text-sm text-ink-dim">{weaponChoice.name} carries a Man-catcher. If it dealt the blow and an Engine of Chaos is available, the victim is captured instead of rolling for injury.</p>
+          <Button disabled={pending} onClick={()=>onPick({...weaponChoice,captureWeapon:'man_catcher'})}>The Man-catcher</Button>
+          <Button variant="secondary" disabled={pending} onClick={()=>onPick(weaponChoice)}>Another weapon or a spell</Button>
+          <Button variant="ghost" disabled={pending} onClick={()=>setWeaponChoice(null)}>Choose a different model</Button>
+        </div>:<>
         {enemiesPending ? <p className="text-sm text-ink-dim">Loading the other warbands…</p> : null}
         {enemies.map((w) => {
           const fighting = splitWarriors(w.roster).fighting
@@ -38,7 +53,7 @@ export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, tu
                     <button
                       type="button" disabled={pending}
                       className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-surface-high"
-                      onClick={() => onPick({ warbandId: w.participant.warband_id, modelId: warrior.id, name: `${warrior.name} (${w.participant.warband_name})`, turn })}
+                      onClick={() => pick({ warbandId: w.participant.warband_id, modelId: warrior.id, name: `${warrior.name} (${w.participant.warband_name})`, turn },w,warrior.equipment)}
                     >
                       <span className="text-sm text-ink">{warrior.name}</span>
                     </button>
@@ -49,7 +64,7 @@ export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, tu
                     <button
                       type="button" disabled={pending}
                       className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-surface-high"
-                      onClick={() => onPick({ warbandId: w.participant.warband_id, modelId: g.id, name: `one of the ${g.name} (${w.participant.warband_name})`, turn })}
+                      onClick={() => pick({ warbandId: w.participant.warband_id, modelId: g.id, name: `one of the ${g.name} (${w.participant.warband_name})`, turn },w,g.equipment)}
                     >
                       <span className="text-sm text-ink">{g.name}</span>
                       <span className="text-xs text-ink-dim">
@@ -70,6 +85,7 @@ export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, tu
             Not sure, skip
           </Button>
         </div>
+        </>}
       </div>
     </Sheet>
   )

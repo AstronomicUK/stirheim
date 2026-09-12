@@ -1,6 +1,8 @@
+import {fetchEngines} from '../../../api/engines'
+import {canManCatcherCapture} from '../../../rules/resolve/engineOfChaos'
 import {useManualCasualty,manualCasualtyToken} from '../../../api/manualCasualties'
 import {attackEventPayloadSchema} from '../../../domain/battleEvent'
-import {subjugatorCaptures} from '../../../rules/resolve/forcedCapture'
+import {subjugatorCaptures,isManCatcherItem} from '../../../rules/resolve/forcedCapture'
 import { TabletopChambers } from './TabletopChambers'
 import { combatantsOf } from '../fight/combatants'
 import type { ReactNode } from 'react'
@@ -90,11 +92,14 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
       if(matchId){
         const token=manualCasualtyToken(matchId,roster.id,id,index)
         const enemy=enemies.warbands.find(w=>w.roster.id===by.warbandId)
-        const attacker=enemy?.roster.heroes.find(h=>h.id===by.modelId)
+        const heroAttacker=enemy?.roster.heroes.find(h=>h.id===by.modelId)
+        const attacker=heroAttacker??enemy?.roster.hiredSwords.find(h=>h.id===by.modelId)??enemy?.roster.henchmenGroups.find(g=>g.id===by.modelId)
         const target=combatantsOf(roster,template,roster.name,sheet).find(w=>w.id===id)
-        const captured=attacker&&target&&subjugatorCaptures({outOfAction:true,attackerIsHero:true,skills:attacker.skillIds,equipment:attacker.equipment.filter(e=>e.quantity>0).flatMap(e=>e.itemId?[e.itemId]:[]),targetLarge:target.traitIds.includes('large_target')})
-        if(captured){
-          const payload=attackEventPayloadSchema.parse({attacker_warband_id:enemy!.roster.id,attacker_id:attacker.id,attacker_kind:'hero',attacker_name:attacker.name,target_warband_id:roster.id,target_id:id,target_kind:target.kind==='henchman'?'group':'hero',target_name:target.name,target_size:target.groupSize??1,target_unit_template_id:target.unitTemplateId,out_of_action:true,kill:false,wounds_lost:0,outcome:'Captured at the table',turn:sheet.turn,capture_reason:'subjugator',capture_source:'table',metadata_only:true,manual_casualty_index:index,casualty_token:token})
+        const subjugator=attacker&&target&&subjugatorCaptures({outOfAction:true,attackerIsHero:Boolean(heroAttacker),skills:heroAttacker?.skillIds??[],equipment:attacker.equipment.filter(e=>e.quantity>0).flatMap(e=>e.itemId?[e.itemId]:[]),targetLarge:target.traitIds.includes('large_target')})
+        const engineRows=by.captureWeapon==='man_catcher'&&enemy?.roster.warbandTemplateId==='black_dwarfs'?await fetchEngines(enemy.roster.id):[]
+        const manCatcher=attacker&&target&&canManCatcherCapture({outOfAction:true,usedManCatcher:by.captureWeapon==='man_catcher'&&attacker.equipment.some(e=>e.quantity>0&&isManCatcherItem(e.itemId)),engineAvailable:engineRows.some(e=>e.state==='present'),targetLarge:target.traitIds.includes('large_target'),targetAnimal:Boolean(target.isAnimal||target.kind==='animal')})
+        if(attacker&&target&&(subjugator||manCatcher)){
+          const payload=attackEventPayloadSchema.parse({attacker_warband_id:enemy!.roster.id,attacker_id:attacker.id,attacker_kind:enemy!.roster.henchmenGroups.some(g=>g.id===attacker.id)?'group':'hero',attacker_name:attacker.name,target_warband_id:roster.id,target_id:id,target_kind:target.kind==='henchman'?'group':'hero',target_name:target.name,target_size:target.groupSize??1,target_unit_template_id:target.unitTemplateId,out_of_action:true,kill:false,wounds_lost:0,outcome:'Captured at the table',out_of_action_weapon_id:manCatcher?'man_catcher':undefined,turn:sheet.turn,capture_reason:subjugator?'subjugator':'man_catcher',capture_source:'table',metadata_only:true,manual_casualty_index:index,casualty_token:token})
           await casualty.mutateAsync({matchId,warbandId:roster.id,token,payload})
         }else if(events.some(e=>!e.reverted_at&&e.payload.casualty_token===token))await casualty.mutateAsync({matchId,warbandId:roster.id,token,reason:'Changed who caused this manual casualty.'})
       }
@@ -126,7 +131,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
         ))}
       </Section>
 
-      <TakenOutBySheet open={asking !== null} subjectName={asking?.name ?? ''} enemies={enemies.warbands} enemiesPending={Boolean(matchId) && enemies.isPending} turn={sheet.turn} pending={busy||casualty.isPending} error={casualtyError} onPick={answer} onClose={() => {if(!busy&&!casualty.isPending)setAsking(null)}} />
+      <TakenOutBySheet key={`${asking?.id}:${asking?.index}`} allowManCatcher={Boolean(asking&&combatantsOf(roster,template,roster.name,sheet).some(w=>w.id===asking.id&&!w.isAnimal&&w.kind!=='animal'&&!w.traitIds.includes('large_target')))} open={asking !== null} subjectName={asking?.name ?? ''} enemies={enemies.warbands} enemiesPending={Boolean(matchId) && enemies.isPending} turn={sheet.turn} pending={busy||casualty.isPending} error={casualtyError} onPick={answer} onClose={() => {if(!busy&&!casualty.isPending)setAsking(null)}} />
 
       {animals.length > 0 ? (
         <Section title="Animals" aside={`${animals.length} on the table`}>

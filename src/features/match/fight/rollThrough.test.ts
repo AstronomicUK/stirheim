@@ -754,3 +754,21 @@ describe('Ostlander double-barrel hits',()=>{
   expect(state.woundsLost).toBe(3)
  })
 })
+
+
+describe('weapon responsible for a capture-triggering casualty',()=>{
+ it('records the actual final weapon rather than the first planned weapon',()=>{
+  const first={...plan('Man-catcher',{armourThreshold:IMPOSSIBLE,critTriggerFaces:[]}),weaponId:'man_catcher'}
+  const second={...plan('Dagger',{armourThreshold:IMPOSSIBLE,critTriggerFaces:[]}),weaponId:'dagger'}
+  const state=rolls(startPhase([first,second],1,0),1,4,4,6)
+  expect(state.worst).toBe('outOfAction')
+  expect(state.outOfActionWeaponId).toBe('dagger')
+ })
+ it('retains the first weapon when it takes the target out before the next planned attack',()=>{
+  const first={...plan('Man-catcher',{armourThreshold:IMPOSSIBLE,critTriggerFaces:[]}),weaponId:'gromril_man_catcher'}
+  const second={...plan('Dagger'),weaponId:'dagger'}
+  const state=rolls(startPhase([first,second],1,0),4,4,6)
+  expect(state.outOfActionWeaponId).toBe('gromril_man_catcher')
+  expect(state.outcomes).toHaveLength(1)
+ })
+})

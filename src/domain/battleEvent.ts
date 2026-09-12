@@ -1,3 +1,4 @@
+import {captureRuleName} from '../rules/resolve/forcedCapture'
 import { brokenWeaponSchema } from './weaponLoss'
 // The shared combat log (battle_events). An attack event records what one calculator walk-through
 // did to a target; every phone lays the match's unreverted events over its own sheet, so the
@@ -9,7 +10,8 @@ import { withRollAttempt, type TakenOutBy, type BattleLiveState, type BattleWarr
 import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
-  capture_reason: z.enum(['subjugator']).optional(),
+  out_of_action_weapon_id: z.string().optional(),
+  capture_reason: z.enum(['subjugator','man_catcher']).optional(),
   metadata_only: z.boolean().optional(),
   manual_casualty_index: z.number().int().min(0).optional(),
   casualty_token: z.string().optional(),
@@ -80,7 +82,7 @@ export type BattleEventRow = z.infer<typeof battleEventRowSchema>;
 /** One line for the log and the enemy view: "Turn 2: Captain took Skritch out of action." */
 export function attackSummary(p: AttackEventPayload): string {
   if (p.blackpowderLossShotId) return `Turn ${p.turn}: ${p.attacker_name}’s ${p.brokenWeapons?.map(w => w.name).join(", ") || "weapon"} was destroyed by a blackpowder misfire. Its removal is recorded for the post-battle report.`;
-  const what = p.out_of_action && p.capture_reason === 'subjugator' ? `captured ${p.target_name} with Subjugator of Mankind (out of action; no Serious Injury roll)` : p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.targetOnFire ? `set ${p.target_name} on fire` : p.smokeDueTurnKey ? `hit ${p.target_name} with Firepot smoke` : p.entangled ? `entangled ${p.target_name} with Bolas` : p.volatileBackfires || p.bolasBackfires ? `did not wound ${p.target_name}` : `${p.outcome.toLowerCase()} ${p.target_name}`;
+  const what = p.out_of_action && p.capture_reason ? `captured ${p.target_name} with ${captureRuleName(p.capture_reason)} (out of action; no Serious Injury roll)` : p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.targetOnFire ? `set ${p.target_name} on fire` : p.smokeDueTurnKey ? `hit ${p.target_name} with Firepot smoke` : p.entangled ? `entangled ${p.target_name} with Bolas` : p.volatileBackfires || p.bolasBackfires ? `did not wound ${p.target_name}` : `${p.outcome.toLowerCase()} ${p.target_name}`;
   return `Turn ${p.turn}: ${p.attacker_name} ${what}.${p.brokenWeapons?.length ? ` Broken weapon${p.brokenWeapons.length === 1 ? "" : "s"}: ${p.brokenWeapons.map(w => w.name).join(", ")}.` : ""}${p.bolasBackfires ? ` Bolas backfired ${p.bolasBackfires} time${p.bolasBackfires === 1 ? "" : "s"}; resolve the Strength 3 hit${p.bolasBackfires === 1 ? "" : "s"} on ${p.attacker_name}.` : ""}${p.volatileBackfires ? ` Cathayan Candles backfired ${p.volatileBackfires} time${p.volatileBackfires === 1 ? "" : "s"}; resolve the Strength 6 hit${p.volatileBackfires === 1 ? "" : "s"} on ${p.attacker_name}.` : ""}${p.nurgles_rot ? ` ${p.target_name} contracts Nurgle's Rot.` : ""}`;
 }
 

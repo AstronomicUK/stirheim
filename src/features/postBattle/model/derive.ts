@@ -1,3 +1,4 @@
+import {captureRuleName} from '../../../rules/resolve/forcedCapture'
 import { captureEvents } from './captureEvents'
 import { garlicExpiry } from './garlicExpiry'
 import {reportTradeWagon,applyTradeWagonToReport,afterTradeWagonCapture} from './tradeWagonReport'
@@ -255,8 +256,8 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       const capture = captureEvents(battleEvents,matchId,roster?.id,hero.id)[0]?.event
       if(capture && skip===undefined){
         const res=resolveHeroInjuryFlow(hero,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
-        const effect=`Subjugator of Mankind: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
-        if(res.line)res.line={...res.line,rolls:[],injuryName:'Captured — Subjugator of Mankind',effect}
+        const effect=`${captureRuleName(capture.payload.capture_reason)}: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
+        if(res.line)res.line={...res.line,rolls:[],injuryName:`Captured — ${captureRuleName(capture.payload.capture_reason)}`,effect}
         res.steps=[]
         return {hero,resolution:res}
       }
@@ -292,9 +293,9 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       const capture = captureEvents(battleEvents,matchId,roster?.id,sword.id)[0]?.event
       if(capture && skip===undefined){
         const res=resolvePersonaInjury(sword,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
-        const effect=`Subjugator of Mankind: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
-        if(res.line)res.line={...res.line,rolls:[],injuryName:'Captured — Subjugator of Mankind',effect}
-        if(res.heroFlow){res.heroFlow.steps=[];if(res.heroFlow.line)res.heroFlow.line={...res.heroFlow.line,rolls:[],injuryName:'Captured — Subjugator of Mankind',effect}}
+        const effect=`${captureRuleName(capture.payload.capture_reason)}: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
+        if(res.line)res.line={...res.line,rolls:[],injuryName:`Captured — ${captureRuleName(capture.payload.capture_reason)}`,effect}
+        if(res.heroFlow){res.heroFlow.steps=[];if(res.heroFlow.line)res.heroFlow.line={...res.heroFlow.line,rolls:[],injuryName:`Captured — ${captureRuleName(capture.payload.capture_reason)}`,effect}}
         return {sword,resolution:res}
       }
       if (plant(sword.id) && skip === undefined) {
@@ -340,7 +341,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       const captures = captureEvents(battleEvents,matchId,roster?.id,row.group.id).filter(c=>c.modelIndex<row.outOfAction)
       if (!captures.length) return row
       const resolution: GroupInjuryResolution = {...row.resolution, group:{...row.resolution.group,size:Math.max(0,row.resolution.group.size-captures.length)}}
-      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(({event,modelIndex})=>({modelIndex:modelIndex+1,eventId:event.id,captorWarbandId:event.payload.attacker_warband_id,reason:'subjugator',kit:[]}))}
+      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(({event,modelIndex})=>({modelIndex:modelIndex+1,eventId:event.id,captorWarbandId:event.payload.attacker_warband_id,reason:event.payload.capture_reason as 'subjugator'|'man_catcher',kit:[]}))}
       return {...row,resolution}
     })
 
@@ -360,7 +361,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
   const animals = animalFighters(roster ?? { heroes: participants.heroes } as RosterWarband)
     .filter((a) => animalIds.has(a.id))
     .map((animal) => {
-      const capture = captureEvents(battleEvents,matchId,roster?.id,animal.id)[0]
+      const capture = captureEvents(battleEvents,matchId,roster?.id,animal.id).find(c=>c.event.payload.capture_reason==='subjugator')
       if(capture) return {animal,roll:null,dead:false,capture}
       const roll = draft.animalInjuries[animal.id] ?? null
       return { animal, roll, dead: isDie(roll, 6) ? burning ? roll < 6 : HENCHMAN_INJURY.deadOn.includes(roll as number) : null }

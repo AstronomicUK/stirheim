@@ -709,7 +709,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             } : undefined}
             heldWeapons={physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={Boolean(areaTarget)}
+            forceLog={isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}

@@ -1,10 +1,11 @@
+import { blessedWaterWeapon } from '../../../rules/engine/blessedWater'
 import { describe, expect, it } from 'vitest'
 import { findWeapon } from '../../../rules/data/weapons'
 import { IMPOSSIBLE } from '../../../rules/engine/dice'
 import type { RosterItem } from '../../../rules/types/roster'
 import { defaultCampaignHouseRules } from '../../../rules/types/roster'
 import { traitsFromRules, kindTraits, kitWithSelectedWeapons, loadoutOf, loadoutFor, type Combatant } from './combatants'
-import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toDefender, type FightSetup } from './odds'
+import { applyPreBattle, combatContextFor, computeOdds, computeOddsSensitivity, percent, relevantToggles, STATS_1_TO_10, thresholdText, toCharacter, toDefender, type FightSetup } from './odds'
 
 const base = { M: 4, WS: 4, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
 
@@ -868,4 +869,17 @@ it('Cathayan backfire is an automatic S6 hit with no second ignition or backfire
  expect(odds.weapons[0].input.volatileBackfire).toBeUndefined(); expect(odds.weapons[0].input.ignitionThreshold).toBeUndefined()
  const candles = combatant('Candles', [{ itemId: 'cathayan_candles', quantity: 1 }])
  expect(computeOdds(setup(candles, thrower, 'cathayan_candles', null)).weapons[0].input.volatileBackfire).toBe(true)
+})
+
+
+it('routes a Blessed Water throw through the shared odds as exactly one automatic wound on a hit', () => {
+  const a = combatant('Priest', [{ itemId: 'blessed_water', quantity: 2 }], { stats: { ...base, A: 4 } })
+  const d = combatant('Daemon', [{ itemId: 'heavy_armour', quantity: 1 }], { stats: { ...base, T: 10 }, traitIds: ['daemon'] })
+  const kit = loadoutFor(a)
+  const primary = blessedWaterWeapon(toCharacter(a, kit))
+  const result = computeOdds(setup(a, d, '', null, { attackerKit: kit, primary }))
+  expect(result.attacks).toBe(1)
+  expect(result.weapons[0].pWound).toBeCloseTo(result.weapons[0].pHit)
+  expect(result.weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
+  expect(result.weapons[0].input.critTriggerFaces).toEqual([])
 })

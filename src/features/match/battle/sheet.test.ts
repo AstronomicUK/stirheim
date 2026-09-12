@@ -25,6 +25,11 @@ import {
   splitWarriors,
   startingModels,
   toggleHeroOut,
+  clearItemRoll,
+  itemRollsBy,
+  itemsUsedBy,
+  setItemRoll,
+  setItemUsed,
 } from './sheet'
 
 const stats = { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }
@@ -305,3 +310,26 @@ it('paid Bribery reduces only the Rout count, never actual casualties or injury 
   expect(groupOut(s, 'watch')).toBe(2);
   expect(sheetTotals(s, roster, 9).routCasualties).toBe(0);
 });
+
+describe('dice a consumable asks for when taken (Crimson Shade +D3 Initiative, #140)', () => {
+  it('is rolled once, read back by item, and keeps its provenance', () => {
+    let s = setItemUsed(emptyBattleLiveState(), 'h1', 'crimson_shade', true)
+    expect(itemRollsBy(s, 'h1')).toEqual({})
+    s = setItemRoll(s, 'h1', 'crimson_shade', 2, false)
+    expect(itemRollsBy(s, 'h1')).toEqual({ crimson_shade: 2 })
+    expect(s.preBattle['itemRoll:h1:crimson_shade']).toBe('2 · rolled by the app')
+    // A second roll for the same dose is refused: the D3 is decided once per battle.
+    expect(setItemRoll(s, 'h1', 'crimson_shade', 3, true)).toBe(s)
+    // Other warriors and other items are untouched.
+    expect(itemRollsBy(s, 'h2')).toEqual({})
+    expect(itemRollsBy(setItemRoll(s, 'h2', 'crimson_shade', 1, true), 'h2')).toEqual({ crimson_shade: 1 })
+  })
+
+  it('taking the dose back forgets the die, so a re-tick rolls afresh', () => {
+    let s = setItemRoll(setItemUsed(emptyBattleLiveState(), 'h1', 'crimson_shade', true), 'h1', 'crimson_shade', 3, true)
+    s = setItemUsed(s, 'h1', 'crimson_shade', false)
+    expect(itemsUsedBy(s, 'h1')).toEqual([])
+    expect(itemRollsBy(s, 'h1')).toEqual({})
+    expect(clearItemRoll(s, 'h1', 'crimson_shade')).toBe(s)
+  })
+})

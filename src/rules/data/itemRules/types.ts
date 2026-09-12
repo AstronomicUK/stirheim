@@ -102,6 +102,11 @@ export interface PreBattleEffect {
   injuryRollBonus?: number;
   toHitBonus?: number;
   toughnessBonus?: number;
+  /** "+D3 Initiative" (Crimson Shade, 02:1981): how many sides the die has. Rolled once when the dose is
+   * taken and kept on the battle sheet; `initiativeBonus` carries the rolled value into the odds. */
+  initiativeBonusDice?: number;
+  /** The rolled Initiative bonus for this battle, attached at runtime from the sheet — never written in data. */
+  initiativeBonus?: number;
   stunnedBecomesKnockedDown?: boolean;
   traits?: string[];
   /** Informational: Initiative, Movement and other changes the calculator does not use. */

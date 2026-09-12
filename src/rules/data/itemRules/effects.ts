@@ -83,7 +83,7 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   },
   crimson_shade: {
     consumable: "battle",
-    preBattle: { label: "Took Crimson Shade", appliesTo: "self", strengthBonus: 1, noEffectOn: UNDEAD_AND_POSSESSED, note: "+D3 Initiative and +1 Movement as well. After the battle roll 2D6: 2-3 addicted, 12 permanent +1 Initiative." },
+    preBattle: { label: "Took Crimson Shade", appliesTo: "self", strengthBonus: 1, initiativeBonusDice: 3, noEffectOn: UNDEAD_AND_POSSESSED, note: "+1 Movement as well (table). After the battle roll 2D6: 2-3 addicted, 12 permanent +1 Initiative." },
     postBattle: [{ key: "side_effects", label: "Crimson Shade side effects", trigger: "used", dice: "2D6", text: "After the battle, roll 2D6.", outcomes: [{ min: 2, max: 3, text: "The model becomes addicted: buy him a new batch of Crimson Shade before every battle from now on, or he leaves the warband.", effect: { flag: "addicted" } }, { min: 4, max: 11, text: "No lasting effect." }, { min: 12, max: 12, text: "The model's Initiative is increased permanently by +1.", effect: { statDelta: { I: 1 } } }] }],
   },
   mad_cap_mushrooms: {

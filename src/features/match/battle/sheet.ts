@@ -245,11 +245,47 @@ export function setItemUsed(state: BattleLiveState, warriorId: string, itemId: s
   const itemsUsed = { ...state.itemsUsed }
   if (next.length === 0) delete itemsUsed[warriorId]
   else itemsUsed[warriorId] = next
-  return touch(state, { itemsUsed })
+  // Taking the dose back also forgets any die it was given, so the next tick rolls afresh.
+  return touch(used ? state : clearItemRoll(state, warriorId, itemId), { itemsUsed })
 }
 
 export function itemsUsedBy(state: BattleLiveState, warriorId: string): string[] {
   return state.itemsUsed[warriorId] ?? []
+}
+
+/**
+ * A die a consumable asks for when it is taken — Crimson Shade's +D3 Initiative (02:1981) — rolled
+ * once and kept for the whole battle so no fight re-rolls it. It lives in the pre-battle answer
+ * record like the Old Battle Wound roll does: key `itemRoll:<warrior>:<item>`, value "2 · rolled by
+ * the app" / "2 · entered by hand", so the provenance reads back on the sheet.
+ */
+const ITEM_ROLL_PREFIX = 'itemRoll:'
+
+export function setItemRoll(state: BattleLiveState, warriorId: string, itemId: string, value: number, manual: boolean): BattleLiveState {
+  const key = `${ITEM_ROLL_PREFIX}${warriorId}:${itemId}`
+  if (state.preBattle[key]) return state // rolled once; taking the dose back clears it (see clearItemRoll)
+  return touch(state, { preBattle: { ...state.preBattle, [key]: `${value} · ${manual ? 'entered by hand' : 'rolled by the app'}` } })
+}
+
+/** Untick the dose and its die goes with it, so re-ticking asks again rather than reusing a stale roll. */
+export function clearItemRoll(state: BattleLiveState, warriorId: string, itemId: string): BattleLiveState {
+  const key = `${ITEM_ROLL_PREFIX}${warriorId}:${itemId}`
+  if (!state.preBattle[key]) return state
+  const preBattle = { ...state.preBattle }
+  delete preBattle[key]
+  return touch(state, { preBattle })
+}
+
+/** Item id -> the die rolled for it this battle, for one warrior. */
+export function itemRollsBy(state: BattleLiveState, warriorId: string): Record<string, number> {
+  const out: Record<string, number> = {}
+  const prefix = `${ITEM_ROLL_PREFIX}${warriorId}:`
+  for (const [key, value] of Object.entries(state.preBattle)) {
+    if (!key.startsWith(prefix)) continue
+    const n = Number.parseInt(value, 10)
+    if (Number.isFinite(n)) out[key.slice(prefix.length)] = n
+  }
+  return out
 }
 
 /** Blank loot lines are ignored. */

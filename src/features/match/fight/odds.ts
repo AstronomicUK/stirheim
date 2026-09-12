@@ -42,6 +42,25 @@ export interface FightSetup {
   defenderPreBattle?: PreBattleEffect[]
 }
 
+/**
+ * The ticked consumables' effects, with any die the sheet remembers for them attached — Crimson Shade's
+ * +D3 Initiative is rolled once when the dose is taken (02:1981) and must not be re-rolled per fight.
+ * `rolls` maps item id -> rolled value for this warrior. An effect that wants a die and has none yet
+ * comes through without the bonus; the fight tab asks for the roll.
+ */
+export function preBattleWithRolls(consumables: readonly Loadout['consumables'][number][], usedIds: readonly string[], rolls: Readonly<Record<string, number>> = {}): PreBattleEffect[] {
+  return consumables
+    .filter((c) => usedIds.includes(c.itemId))
+    .map((c) => (c.effect.initiativeBonusDice && rolls[c.itemId] !== undefined ? { ...c.effect, initiativeBonus: rolls[c.itemId] } : c.effect))
+}
+
+/** Ticked consumables still owed a die before their effect is complete (Crimson Shade without its D3). */
+export function preBattleRollsOwed(consumables: readonly Loadout['consumables'][number][], usedIds: readonly string[], rolls: Readonly<Record<string, number>> = {}): { itemId: string; name: string; sides: number }[] {
+  return consumables
+    .filter((c) => usedIds.includes(c.itemId) && c.effect.initiativeBonusDice && rolls[c.itemId] === undefined)
+    .map((c) => ({ itemId: c.itemId, name: c.name, sides: c.effect.initiativeBonusDice! }))
+}
+
 /** The warrior after his pre-battle drugs and coatings: Toughness, traits and the weapons' own bonuses. */
 export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly PreBattleEffect[]): { combatant: Combatant; kit: Loadout } {
   if (effects.length === 0) return { combatant: c, kit }
@@ -58,6 +77,8 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
       if (e.toughnessBonus) stats = { ...stats, T: stats.T + e.toughnessBonus }
       // Crimson Shade's +1 Strength (02:1981) is the warrior's own, so it reaches every weapon he uses.
       if (e.strengthBonus) stats = { ...stats, S: stats.S + e.strengthBonus }
+      // Its +D3 Initiative was rolled when the dose was ticked and rides in on the effect (see preBattleWithRolls).
+      if (e.initiativeBonus) stats = { ...stats, I: stats.I + e.initiativeBonus }
       for (const t of e.traits ?? []) if (!traits.includes(t)) traits.push(t)
       continue
     }

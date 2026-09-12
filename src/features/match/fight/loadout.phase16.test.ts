@@ -4,7 +4,7 @@ import {SHRINE_BLESSING,weaponChoiceKey} from '../../../rules/resolve/shrineBles
 import { describe, expect, it } from 'vitest'
 import type { RosterItem } from '../../../rules/types/roster'
 import { loadoutOf, upgradeBaseFromNote } from './combatants'
-import { applyPreBattle, isTwoHandedUse, toDefender } from './odds'
+import { applyPreBattle, isTwoHandedUse, preBattleRollsOwed, preBattleWithRolls, toDefender } from './odds'
 import type { Combatant } from './combatants'
 
 const item = (itemId: string, extra: Partial<RosterItem> = {}): RosterItem => ({ itemId, quantity: 1, ...extra })
@@ -105,6 +105,22 @@ describe('loadout from the item rules', () => {
     expect(human.combatant.stats.T).toBe(4)
     expect(human.combatant.stats.S).toBe(4)
     expect(human.combatant.traitIds).toEqual(expect.arrayContaining(['frenzy', 'no_pain']))
+  })
+
+  it("Crimson Shade's +D3 Initiative is rolled once when taken and rides in from the sheet, never re-rolled per fight", () => {
+    const kit = loadoutOf([item('sword'), item('crimson_shade'), item('mandrake_root')])
+    // Ticked but the die not yet rolled: the Strength applies, the Initiative waits, and the fight tab is told what is owed.
+    const owed = preBattleRollsOwed(kit.consumables, ['crimson_shade', 'mandrake_root'])
+    expect(owed).toEqual([{ itemId: 'crimson_shade', name: 'Crimson Shade', sides: 3 }])
+    const pending = applyPreBattle(combatant([]), kit, preBattleWithRolls(kit.consumables, ['crimson_shade', 'mandrake_root']))
+    expect(pending.combatant.stats).toMatchObject({ S: 4, T: 4, I: 3 })
+    // Rolled a 2 on the sheet: +2 Initiative, and nothing else changes.
+    const rolled = applyPreBattle(combatant([]), kit, preBattleWithRolls(kit.consumables, ['crimson_shade', 'mandrake_root'], { crimson_shade: 2 }))
+    expect(rolled.combatant.stats).toMatchObject({ S: 4, T: 4, I: 5 })
+    expect(preBattleRollsOwed(kit.consumables, ['crimson_shade'], { crimson_shade: 2 })).toEqual([])
+    // Not ticked: no roll owed, no effect.
+    expect(preBattleRollsOwed(kit.consumables, [])).toEqual([])
+    expect(preBattleWithRolls(kit.consumables, [])).toEqual([])
   })
 
   it('poison never coats a blackpowder weapon (02:1966), but does coat everything else', () => {

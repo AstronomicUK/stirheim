@@ -1,5 +1,9 @@
 import { beforeAll, afterAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { resolveCaptive } from '../../rules/resolve/captives'
+import { diffRoster } from '../../domain/rosterDiff'
+import { toRosterWarband } from '../../domain'
+import { eventAdvances } from '../../rules/resolve/eventAdvances'
 const enabled=process.env.SUPABASE_LOCAL==='1'
 const stats={M:4,WS:4,BS:4,S:3,T:3,W:1,I:4,A:1,Ld:8}
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -201,5 +205,65 @@ describe.skipIf(!enabled)('Captured cross-player cases (#229 core)',()=>{
   check(await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'Recorded too early'}))
   check(await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw}))
   expect((await cases())[0].state).toBe('open')
+ })
+
+ it('rejects duplicate row operations, unrelated stash gains, erased injuries, wrong group profiles and bogus advances',async()=>{
+  check(await fileVictim());const [c]=await cases()
+  const sword=check(await admin.from('items').insert({warband_id:vw,holder_type:'hero',holder_id:hero,item_rules_id:'sword',quantity:1}).select('id').single()).id
+  check(await admin.from('heroes').update({injuries:[{injuryCode:'old_battle_wound',injuryName:'Old Battle Wound',effect:'Roll before each battle.'},{injuryCode:'captured',injuryName:'Captured',effect:''}],flags:{captured:true,oldBattleWound:true}}).eq('id',hero))
+  const owner=[{table:'warbands',op:'update',data:{gold:70}},{table:'heroes',op:'update',id:hero,data:{status:'active',flags:{oldBattleWound:true}}}]
+  const captorSide=[{table:'warbands',op:'update',data:{gold:130}}]
+  // Same row twice.
+  expect((await ransom(captor,c.id,{p_owner_changes:[...owner,{table:'heroes',op:'update',id:hero,data:{status:'active'}}]})).error?.message).toMatch(/same row twice/)
+  // Erasing a permanent injury or a flag the outcome does not touch.
+  expect((await ransom(captor,c.id,{p_owner_changes:[owner[0],{table:'heroes',op:'update',id:hero,data:{status:'active',flags:{}}}]})).error?.message).toMatch(/flags and injuries/)
+  expect((await ransom(captor,c.id,{p_owner_changes:[owner[0],{table:'heroes',op:'update',id:hero,data:{status:'active',flags:{oldBattleWound:true},injuries:[]}}]})).error?.message).toMatch(/flags and injuries/)
+  // Ransom must not move equipment; a sale must move exactly what was carried and nothing more.
+  expect((await ransom(captor,c.id,{p_owner_changes:[...owner,{table:'items',op:'delete',id:sword}]})).error?.message).toMatch(/keeps his equipment/)
+  expect((await ransom(captor,c.id,{p_owner_changes:owner,p_captor_changes:[...captorSide,{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}]})).error?.message).toMatch(/keeps his equipment/)
+  const sale=async(extra:unknown[]=[],ownerExtra:unknown[]=[])=>captor.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:{kind:'sell',d6:2},p_message:'x',p_advances:[],p_expected:await expected(),
+   p_owner_changes:[{table:'heroes',op:'update',id:hero,data:{status:'retired',flags:{oldBattleWound:true}}},{table:'items',op:'delete',id:sword},...ownerExtra],
+   p_captor_changes:[{table:'warbands',op:'update',data:{gold:110}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}},...extra]})
+  expect((await sale([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}])).error?.message).toMatch(/exactly the equipment/)
+  expect((await sale([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'heavy_armour',quantity:1}}])).error?.message).toMatch(/exactly the equipment/)
+  expect((await sale([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'enchanted_skins',quantity:1}}])).error?.message).toMatch(/Enchanted Skins/)
+  // A conversion must carry the printed profile and may not smuggle stats or state.
+  const zombieCase=async(stats:Record<string,number>,extra:Record<string,unknown>={},client:SupabaseClient=captor)=>{
+   check(await admin.from('warbands').update({type_rules_id:'the_undead'}).eq('id',cw))
+   const r=await client.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:{kind:'zombie',groupId:'11111111-1111-4111-8111-aaaaaaaaaaaa'},p_message:'x',p_advances:[],p_expected:await expected(),
+    p_owner_changes:[{table:'heroes',op:'update',id:hero,data:{status:'dead',flags:{oldBattleWound:true}}},{table:'items',op:'delete',id:sword}],
+    p_captor_changes:[{table:'henchman_groups',op:'insert',id:'11111111-1111-4111-8111-aaaaaaaaaaaa',data:{name:'Taken Captain (Zombie)',unit_type_rules_id:'undead_zombies',size:1,stats,xp:0,level_ups:0,stat_increases:{},model_names:[],...extra}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}}]})
+   check(await admin.from('warbands').update({type_rules_id:'mercenaries_marienburg'}).eq('id',cw));return r
+  }
+  const zombie={M:4,WS:2,BS:0,S:3,T:3,W:1,I:1,A:1,Ld:5}
+  expect((await zombieCase({...zombie,WS:6})).error?.message).toMatch(/printed profile/)
+  expect((await zombieCase(zombie,{campaign_state:{inheritedSkillIds:['dodge']}})).error?.message).toMatch(/single new model/)
+  expect((await zombieCase(zombie,{xp:9})).error?.message).toMatch(/single new model/)
+  // Advances only for experience the outcome actually awards.
+  expect((await ransom(captor,c.id,{p_owner_changes:owner,p_captor_changes:captorSide,p_advances:[{warband_id:vw,subject_type:'hero',subject_id:hero,threshold_xp:14}]})).error?.message).toMatch(/experience this outcome does not change/)
+  expect((await cases())[0].proposals).toHaveLength(0)
+  // The honest zombie payload is accepted and applied by the GM in one step.
+  check(await zombieCase(zombie,{},gm))
+  expect(await heroStatus()).toBe('dead')
+  expect(check(await admin.from('henchman_groups').select('unit_type_rules_id,size').eq('warband_id',cw))).toEqual([{unit_type_rules_id:'undead_zombies',size:1}])
+  expect(check(await admin.from('items').select('holder_type,item_rules_id').eq('warband_id',cw))).toEqual([{holder_type:'stash',item_rules_id:'sword'}])
+ })
+ it("accepts the app's own resolver output for a sale and an escape with an earned advance",async()=>{
+  check(await fileVictim());const [c]=await cases()
+  check(await admin.from('items').insert([{warband_id:vw,holder_type:'hero',holder_id:hero,item_rules_id:'sword',quantity:1},{warband_id:vw,holder_type:'hero',holder_id:hero,item_rules_id:'light_armour',quantity:1}]))
+  check(await admin.from('warbands').update({type_rules_id:'the_sons_of_hashut'}).eq('id',cw))
+  const detail=async(id:string)=>{const w=check(await admin.from('warbands').select('*').eq('id',id).single()),hs=check(await admin.from('heroes').select('*').eq('warband_id',id)),gs=check(await admin.from('henchman_groups').select('*').eq('warband_id',id)),is=check(await admin.from('items').select('*').eq('warband_id',id));return {warband:w,heroes:hs,groups:gs,items:is,roster:toRosterWarband(w,hs,gs,is)}}
+  const [owner,captorD]=[await detail(vw),await detail(cw)]
+  // Slave work: escape on a 1 with D3 experience 2 takes the Captain from 12 to 14, crossing the 14 box.
+  const preview=resolveCaptive(owner.roster,captorD.roster,hero,{kind:'slaveWork',d6:1,xp:2})
+  const payload={p_case_id:c.id,p_choice:{kind:'slaveWork',d6:1,xp:2},p_message:preview.message,p_owner_changes:diffRoster(owner,preview.owner),p_captor_changes:diffRoster(captorD,preview.captor),
+   p_advances:[...eventAdvances(owner.roster,preview.owner),...eventAdvances(captorD.roster,preview.captor)],p_expected:await expected()}
+  expect(payload.p_advances).toEqual([{warband_id:vw,subject_type:'hero',subject_id:hero,threshold_xp:14}])
+  const id=check(await captor.rpc('propose_captive_outcome',payload))
+  expect(check(await victim.from('captive_proposals').select('message').eq('id',id).single()).message).toMatch(/Slave work \(D6 1\).*experience 12 → 14.*keeps all 2 equipment.*1 advance roll/)
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
+  expect(check(await admin.from('heroes').select('status,xp').eq('id',hero).single())).toEqual({status:'active',xp:14})
+  expect(check(await admin.from('pending_advances').select('threshold_xp').eq('subject_id',hero))).toEqual([{threshold_xp:14}])
+  expect(check(await admin.from('warbands').select('wyrdstone').eq('id',cw).single()).wyrdstone).toBe(1)
  })
 })

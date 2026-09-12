@@ -116,48 +116,91 @@ revoke all on function public.user_can_edit_warband(uuid, uuid) from public;
 -- returns its own plain-English summary of what will actually happen, which becomes the text the
 -- other player accepts.
 -- ---------------------------------------------------------------------------------------------
-create function public.validate_captive_proposal(p_case public.captive_cases, p_choice jsonb, p_owner_changes jsonb, p_captor_changes jsonb)
+create function public.captive_return_fields_ok(p_hero public.heroes, p_data jsonb) returns boolean language plpgsql immutable set search_path = '' as $$
+declare inj jsonb := coalesce(p_data->'injuries', p_hero.injuries); i int; n int; last_captured int := 0;
+begin
+  -- Flags: exactly the current flags with the captured marker cleared.
+  if coalesce(p_data->'flags', p_hero.flags) is distinct from (p_hero.flags - 'captured') then return false; end if;
+  -- Injuries: unchanged, except the effect text of the Captured entry that this outcome closes.
+  if jsonb_typeof(inj) <> 'array' or jsonb_typeof(p_hero.injuries) <> 'array' then return inj = p_hero.injuries; end if;
+  n := jsonb_array_length(p_hero.injuries);
+  if jsonb_array_length(inj) <> n then return false; end if;
+  for i in 0..n-1 loop
+    if p_hero.injuries->i->>'injuryCode' = 'captured' then last_captured := i + 1; end if;
+  end loop;
+  for i in 0..n-1 loop
+    if inj->i = p_hero.injuries->i then continue; end if;
+    if i + 1 = last_captured and (inj->i) - 'effect' = (p_hero.injuries->i) - 'effect' then continue; end if;
+    return false;
+  end loop;
+  return true;
+end $$;
+revoke all on function public.captive_return_fields_ok(public.heroes, jsonb) from public;
+
+create function public.validate_captive_proposal(p_case public.captive_cases, p_choice jsonb, p_owner_changes jsonb, p_captor_changes jsonb, p_advances jsonb default '[]'::jsonb)
 returns text language plpgsql security definer set search_path = '' as $$
 declare
-  v public.warbands%rowtype; k public.warbands%rowtype; h public.heroes%rowtype; other public.heroes%rowtype; leader public.heroes%rowtype;
-  kind text := p_choice->>'kind'; c jsonb; keys text[]; t text; op text; v_id uuid; d jsonb; key text; cur public.items%rowtype;
+  v public.warbands%rowtype; k public.warbands%rowtype; h public.heroes%rowtype; other public.heroes%rowtype; leader public.heroes%rowtype; item_row public.items%rowtype;
+  kind text := p_choice->>'kind'; c jsonb; keys text[]; t text; op text; v_id uuid; d jsonb; key text; qty int; tag text; seen text[] := '{}';
   og int := 0; ow int := 0; kg int := 0; kw int := 0; hero_status text; hero_xp_delta int := 0; other_status text; leader_xp_delta int := 0;
-  moved int := 0; hero_items int; hero_item_keys text[]; gained int := 0; group_unit text; group_name text; group_seen boolean := false;
-  d6 int; gold int; xp int; expect_status text; expect_group text; expect_kg int := 0; expect_kw int := 0; expect_og int := 0; expect_move boolean := false;
+  hero_items int; moved int := 0; surrendered jsonb := '{}'::jsonb; gained jsonb := '{}'::jsonb; gained_total int := 0; skins int := 0;
+  group_seen boolean := false; group_unit text; group_name text; group_dagger int := 0;
+  d6 int; gold int; xp int; expect_status text; expect_group text; expect_stats jsonb; expect_kg int := 0; expect_kw int := 0; expect_og int := 0; expect_move boolean := false; skins_allowed boolean := false;
+  a jsonb; a_subject uuid; a_threshold int; a_old int; a_new int; a_tags text[] := '{}';
+  thresholds int[] := array[2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 32, 36, 41, 46, 51, 57, 63, 69, 76, 83, 90];
   parts text[]; label text;
 begin
   if jsonb_typeof(p_choice) <> 'object' or kind not in ('ransom', 'exchange', 'sell', 'zombie', 'sacrifice', 'wretch', 'throne', 'slaveWork') then
     raise exception 'Choose a supported captive outcome.' using errcode = '22023';
+  end if;
+  if jsonb_typeof(p_owner_changes) <> 'array' or jsonb_typeof(p_captor_changes) <> 'array' or jsonb_typeof(coalesce(p_advances, '[]'::jsonb)) <> 'array' then
+    raise exception 'changes must be arrays' using errcode = '22023';
   end if;
   select * into v from public.warbands where id = p_case.victim_warband_id;
   select * into k from public.warbands where id = p_case.captor_warband_id;
   if v.id is null or k.id is null then raise exception 'Name the captor before proposing an outcome.' using errcode = 'P0001'; end if;
   select * into h from public.heroes where id = p_case.hero_id and warband_id = v.id and status = 'captured';
   if not found then raise exception 'This warrior is no longer recorded as captured.' using errcode = 'P0001'; end if;
-  select count(*), coalesce(array_agg(coalesce(item_rules_id, 'custom:' || coalesce(custom_name, ''))), '{}') into hero_items, hero_item_keys
-    from public.items where warband_id = v.id and holder_type = 'hero' and holder_id = h.id;
+  select count(*) into hero_items from public.items where warband_id = v.id and holder_type = 'hero' and holder_id = h.id;
 
+  -- Owner (victim) side ------------------------------------------------------------------------
   for c in select x from jsonb_array_elements(p_owner_changes) x loop
     t := c->>'table'; op := c->>'op'; v_id := (c->>'id')::uuid; d := coalesce(c->'data', '{}'::jsonb);
     select coalesce(array_agg(x), '{}') into keys from jsonb_object_keys(d) x;
+    tag := t || ':' || op || ':' || coalesce(v_id::text, v.id::text);
+    if op <> 'insert' then
+      if tag = any(seen) then raise exception 'The proposal changes the same row twice (% %).', op, t using errcode = '22023'; end if;
+      seen := seen || tag;
+    end if;
     if t = 'warbands' and op = 'update' and (v_id is null or v_id = v.id) then
       if not (keys <@ array['gold', 'wyrdstone']) then raise exception 'A captive outcome may only change the warband''s gold and wyrdstone.' using errcode = '22023'; end if;
       if d ? 'gold' then og := (d->>'gold')::int - v.gold; end if;
       if d ? 'wyrdstone' then ow := (d->>'wyrdstone')::int - v.wyrdstone; end if;
     elsif t = 'heroes' and op = 'update' and v_id = h.id then
       if not (keys <@ array['status', 'flags', 'injuries', 'xp']) then raise exception 'A captive outcome may only change the captive''s status, flags, injuries and experience.' using errcode = '22023'; end if;
+      if not public.captive_return_fields_ok(h, d) then raise exception 'The captive''s flags and injuries may only lose the Captured marker and close its entry; nothing else may change.' using errcode = '22023'; end if;
       hero_status := d->>'status';
       if d ? 'xp' then hero_xp_delta := (d->>'xp')::int - h.xp; end if;
-    elsif t = 'items' and op = 'delete' and exists (select 1 from public.items i where i.id = v_id and i.warband_id = v.id and i.holder_type = 'hero' and i.holder_id = h.id) then
+    elsif t = 'items' and op = 'delete' then
+      select * into item_row from public.items i where i.id = v_id and i.warband_id = v.id and i.holder_type = 'hero' and i.holder_id = h.id;
+      if not found then raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023'; end if;
+      key := coalesce(item_row.item_rules_id, 'custom:' || coalesce(item_row.custom_name, ''));
+      surrendered := jsonb_set(surrendered, array[key], to_jsonb(coalesce((surrendered->>key)::int, 0) + item_row.quantity));
       moved := moved + 1;
     else
       raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023';
     end if;
   end loop;
 
+  -- Captor side --------------------------------------------------------------------------------
   for c in select x from jsonb_array_elements(p_captor_changes) x loop
     t := c->>'table'; op := c->>'op'; v_id := (c->>'id')::uuid; d := coalesce(c->'data', '{}'::jsonb);
     select coalesce(array_agg(x), '{}') into keys from jsonb_object_keys(d) x;
+    tag := t || ':' || op || ':' || coalesce(v_id::text, coalesce(c->>'id', k.id::text));
+    if op <> 'insert' or t = 'henchman_groups' then
+      if tag = any(seen) then raise exception 'The proposal changes the same row twice (% %).', op, t using errcode = '22023'; end if;
+      seen := seen || tag;
+    end if;
     if t = 'warbands' and op = 'update' and (v_id is null or v_id = k.id) then
       if not (keys <@ array['gold', 'wyrdstone']) then raise exception 'A captive outcome may only change the warband''s gold and wyrdstone.' using errcode = '22023'; end if;
       if d ? 'gold' then kg := (d->>'gold')::int - k.gold; end if;
@@ -166,6 +209,7 @@ begin
       select * into other from public.heroes where id = v_id and warband_id = k.id and status = 'captured';
       if not found then raise exception 'The captive offered in exchange is not held by the captor.' using errcode = 'P0001'; end if;
       if not (keys <@ array['status', 'flags', 'injuries']) then raise exception 'An exchange may only free the other captive.' using errcode = '22023'; end if;
+      if not public.captive_return_fields_ok(other, d) then raise exception 'The exchanged captive''s flags and injuries may only lose the Captured marker and close its entry.' using errcode = '22023'; end if;
       other_status := d->>'status';
     elsif t = 'heroes' and op = 'update' and kind in ('sacrifice', 'throne') and v_id::text = p_choice->>'leaderId' then
       select * into leader from public.heroes where id = v_id and warband_id = k.id and status = 'active';
@@ -174,25 +218,46 @@ begin
       leader_xp_delta := (d->>'xp')::int - leader.xp;
     elsif t = 'henchman_groups' and op = 'insert' then
       if group_seen then raise exception 'A captive outcome creates at most one group.' using errcode = '22023'; end if;
-      if (c->>'id') is distinct from (p_choice->>'groupId') then raise exception 'The new group must be the one named in the outcome.' using errcode = '22023'; end if;
-      if coalesce((d->>'size')::int, 1) <> 1 or coalesce((d->>'xp')::int, 0) <> 0 or coalesce((d->>'level_ups')::int, 0) <> 0 then raise exception 'The captive becomes a single new model with no experience.' using errcode = '22023'; end if;
+      if (c->>'id') is null or (c->>'id') is distinct from (p_choice->>'groupId') then raise exception 'The new group must be the one named in the outcome.' using errcode = '22023'; end if;
+      if exists (select 1 from public.henchman_groups where id = (c->>'id')::uuid) then raise exception 'That group already exists.' using errcode = '22023'; end if;
+      if not (keys <@ array['name', 'unit_type_rules_id', 'size', 'stats', 'xp', 'level_ups', 'stat_increases', 'is_large', 'notes', 'sort_order', 'model_names', 'campaign_state']) then
+        raise exception 'The new group carries a field this outcome cannot set.' using errcode = '22023';
+      end if;
+      if coalesce((d->>'size')::int, 1) <> 1 or coalesce((d->>'xp')::int, 0) <> 0 or coalesce((d->>'level_ups')::int, 0) <> 0
+         or coalesce(d->'stat_increases', '{}'::jsonb) <> '{}'::jsonb or coalesce((d->>'is_large')::boolean, false)
+         or coalesce(d->'campaign_state', '{}'::jsonb) <> '{}'::jsonb or coalesce(jsonb_array_length(d->'model_names'), 0) > 1
+         or char_length(coalesce(d->>'name', '')) > 80 or char_length(coalesce(d->>'notes', '')) > 0 then
+        raise exception 'The captive becomes a single new model with the printed profile, no experience, no increases and no notes.' using errcode = '22023';
+      end if;
       group_seen := true; group_unit := d->>'unit_type_rules_id'; group_name := d->>'name';
+      if d->'stats' is null then raise exception 'The new group must carry the printed profile.' using errcode = '22023'; end if;
+    elsif t = 'items' and op = 'insert' and coalesce(d->>'holder_type', 'stash') = 'group' then
+      -- The list's free dagger for a newly formed group, nothing else.
+      if group_dagger > 0 or d->>'holder_id' is distinct from p_choice->>'groupId' or d->>'item_rules_id' <> 'dagger' or coalesce((d->>'quantity')::int, 1) <> 1 then
+        raise exception 'A new group may only be issued its list''s free dagger.' using errcode = '22023';
+      end if;
+      group_dagger := group_dagger + 1;
     elsif t = 'items' and op = 'insert' then
-      if coalesce(d->>'holder_type', 'stash') <> 'stash' then raise exception 'A captive''s equipment passes to the captor''s stash.' using errcode = '22023'; end if;
+      if coalesce(d->>'holder_type', 'stash') <> 'stash' or nullif(d->>'holder_id', '') is not null then raise exception 'A captive''s equipment passes to the captor''s stash.' using errcode = '22023'; end if;
+      if not (keys <@ array['holder_type', 'holder_id', 'item_rules_id', 'custom_name', 'quantity', 'notes']) then raise exception 'The proposal sets an item field this outcome cannot.' using errcode = '22023'; end if;
       key := coalesce(d->>'item_rules_id', 'custom:' || coalesce(d->>'custom_name', ''));
-      if key <> 'enchanted_skins' and not (key = any(hero_item_keys)) then raise exception 'The captor may only gain equipment the captive carried.' using errcode = '22023'; end if;
-      gained := gained + coalesce((d->>'quantity')::int, 1);
+      qty := coalesce((d->>'quantity')::int, 1);
+      if qty < 1 then raise exception 'Item quantities must be positive.' using errcode = '22023'; end if;
+      if key = 'enchanted_skins' then skins := skins + qty; else gained := jsonb_set(gained, array[key], to_jsonb(coalesce((gained->>key)::int, 0) + qty)); gained_total := gained_total + qty; end if;
     elsif t = 'items' and op = 'update' then
-      select * into cur from public.items where id = v_id and warband_id = k.id and holder_type = 'stash';
-      if not found or not (keys <@ array['quantity', 'notes']) or coalesce((d->>'quantity')::int, cur.quantity) < cur.quantity then
+      select * into item_row from public.items where id = v_id and warband_id = k.id and holder_type = 'stash';
+      if not found or not (keys <@ array['quantity']) or coalesce((d->>'quantity')::int, item_row.quantity) <= item_row.quantity then
         raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023';
       end if;
-      gained := gained + coalesce((d->>'quantity')::int, cur.quantity) - cur.quantity;
+      key := coalesce(item_row.item_rules_id, 'custom:' || coalesce(item_row.custom_name, ''));
+      qty := (d->>'quantity')::int - item_row.quantity;
+      if key = 'enchanted_skins' then skins := skins + qty; else gained := jsonb_set(gained, array[key], to_jsonb(coalesce((gained->>key)::int, 0) + qty)); gained_total := gained_total + qty; end if;
     else
       raise exception 'The proposal changes something a captive outcome cannot touch (% % on %).', op, t, coalesce(v_id::text, 'a new row') using errcode = '22023';
     end if;
   end loop;
 
+  -- What this outcome must look like -------------------------------------------------------------
   case kind
     when 'ransom' then
       gold := (p_choice->>'gold')::int;
@@ -208,19 +273,20 @@ begin
       expect_kg := 5 * d6; expect_status := 'retired'; expect_move := true; label := 'Sold to slavers';
     when 'zombie' then
       if k.type_rules_id <> 'the_undead' then raise exception 'Only an Undead warband raises a captive as a Zombie.' using errcode = '22023'; end if;
-      expect_group := 'undead_zombies'; expect_status := 'dead'; expect_move := true; label := 'Killed and raised as a Zombie';
+      expect_group := 'undead_zombies'; expect_stats := '{"M":4,"WS":2,"BS":0,"S":3,"T":3,"W":1,"I":1,"A":1,"Ld":5}'::jsonb; expect_status := 'dead'; expect_move := true; label := 'Killed and raised as a Zombie';
     when 'sacrifice' then
       if k.type_rules_id not in ('cult_of_the_possessed', 'amazons_lustria', 'amazons_mordheim', 'the_sons_of_hashut') then raise exception 'This warband cannot sacrifice captives.' using errcode = '22023'; end if;
       if leader.id is null or leader_xp_delta <> 1 then raise exception 'A sacrifice awards exactly +1 experience to the leader.' using errcode = '22023'; end if;
+      skins_allowed := k.type_rules_id = 'amazons_lustria' and v.type_rules_id = 'lizardmen';
       expect_status := 'dead'; expect_move := true; label := 'Sacrificed';
     when 'wretch' then
       if k.type_rules_id <> 'court_of_the_profane_pleasures' then raise exception 'Only the Court turns captives into Wretches.' using errcode = '22023'; end if;
-      expect_group := 'court_of_pleasures_wretches'; expect_status := 'dead'; expect_move := true; label := 'Cruel Fate: turned into a Wretch';
+      expect_group := 'court_of_pleasures_wretches'; expect_stats := '{"M":4,"WS":2,"BS":2,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":5}'::jsonb; expect_status := 'dead'; expect_move := true; label := 'Cruel Fate: turned into a Wretch';
     when 'throne' then
       if k.type_rules_id <> 'the_cursed_cavalcade' then raise exception 'Only the Cursed Cavalcade has the Throne of Worms.' using errcode = '22023'; end if;
       d6 := (p_choice->>'d6')::int;
       if d6 is null or d6 not between 1 and 6 then raise exception 'Enter a D6 result from 1 to 6.' using errcode = '22023'; end if;
-      if d6 between 3 and 5 then expect_group := 'cursed_cavalcade_captured_thrall';
+      if d6 between 3 and 5 then expect_group := 'cursed_cavalcade_captured_thrall'; expect_stats := '{"M":4,"WS":3,"BS":3,"S":3,"T":3,"W":1,"I":3,"A":1,"Ld":5}'::jsonb;
       elsif d6 = 6 and (leader.id is null or leader_xp_delta <> 1) then raise exception 'On a 6 one surviving hero gains exactly +1 experience.' using errcode = '22023'; end if;
       expect_status := 'dead'; expect_move := true; label := 'Throne of Worms (D6 ' || d6 || ')';
     when 'slaveWork' then
@@ -238,26 +304,55 @@ begin
   end case;
   if not (kind = 'slaveWork' and d6 = 1) and hero_xp_delta <> 0 then raise exception 'This outcome does not change the captive''s experience.' using errcode = '22023'; end if;
   if kind not in ('sacrifice', 'throne') and leader_xp_delta <> 0 then raise exception 'This outcome awards no experience.' using errcode = '22023'; end if;
+  if kind = 'throne' and d6 <> 6 and leader_xp_delta <> 0 then raise exception 'This outcome awards no experience.' using errcode = '22023'; end if;
   if og <> expect_og or kg <> expect_kg or ow <> 0 or kw <> expect_kw then raise exception 'The gold and wyrdstone changes do not match the outcome.' using errcode = '22023'; end if;
   if hero_status is distinct from expect_status then raise exception 'The captive''s status must become "%" for this outcome.', expect_status using errcode = '22023'; end if;
-  if expect_group is not null and (not group_seen or group_unit is distinct from expect_group) then raise exception 'This outcome must create one new % model.', expect_group using errcode = '22023'; end if;
-  if expect_group is null and group_seen then raise exception 'This outcome does not create a new group.' using errcode = '22023'; end if;
-  if expect_move and moved <> hero_items then raise exception 'All of the captive''s equipment must pass to the captor.' using errcode = '22023'; end if;
-  if not expect_move and (moved <> 0 or gained <> 0) then raise exception 'The captive keeps his equipment in this outcome.' using errcode = '22023'; end if;
+  if expect_group is not null then
+    if not group_seen or group_unit is distinct from expect_group then raise exception 'This outcome must create one new % model.', expect_group using errcode = '22023'; end if;
+    if not exists (select 1 from jsonb_array_elements(p_captor_changes) d2 where d2->>'table' = 'henchman_groups' and d2->'data'->'stats' = expect_stats) then
+      raise exception 'The new % must carry the printed profile %.', expect_group, expect_stats::text using errcode = '22023';
+    end if;
+    if group_dagger > 0 and expect_group <> 'cursed_cavalcade_captured_thrall' then raise exception 'This unit is not issued a free dagger.' using errcode = '22023'; end if;
+  else
+    if group_seen or group_dagger > 0 then raise exception 'This outcome does not create a new group.' using errcode = '22023'; end if;
+  end if;
+  if skins > 0 and (not skins_allowed or skins <> 1) then raise exception 'Enchanted Skins are only gained once, by Lustrian Amazons sacrificing a Lizardman.' using errcode = '22023'; end if;
+  if expect_move then
+    if moved <> hero_items then raise exception 'All of the captive''s equipment must pass to the captor.' using errcode = '22023'; end if;
+    if gained <> surrendered then raise exception 'The captor must gain exactly the equipment the captive surrendered (same items, same quantities).' using errcode = '22023'; end if;
+  elsif moved <> 0 or gained_total <> 0 then
+    raise exception 'The captive keeps his equipment in this outcome.' using errcode = '22023';
+  end if;
 
+  -- Advances: only for experience this outcome actually awards, at real threshold boxes.
+  for a in select x from jsonb_array_elements(coalesce(p_advances, '[]'::jsonb)) x loop
+    a_subject := (a->>'subject_id')::uuid; a_threshold := (a->>'threshold_xp')::int;
+    if a_subject = h.id and hero_xp_delta > 0 then a_old := h.xp; a_new := h.xp + hero_xp_delta;
+    elsif leader.id is not null and a_subject = leader.id and leader_xp_delta > 0 then a_old := leader.xp; a_new := leader.xp + leader_xp_delta;
+    else raise exception 'An advance is claimed for a warrior whose experience this outcome does not change.' using errcode = '22023'; end if;
+    if (a->>'warband_id')::uuid is distinct from (case when a_subject = h.id then v.id else k.id end) or coalesce(a->>'subject_type', 'hero') <> 'hero' then raise exception 'An advance names the wrong warband.' using errcode = '22023'; end if;
+    if a_threshold is null or not (a_threshold = any(thresholds)) or a_threshold <= a_old or a_threshold > a_new then raise exception 'An advance is claimed at a threshold this outcome does not cross.' using errcode = '22023'; end if;
+    tag := a_subject::text || ':' || a_threshold;
+    if tag = any(a_tags) then raise exception 'An advance is claimed twice.' using errcode = '22023'; end if;
+    a_tags := a_tags || tag;
+  end loop;
+
+  -- The consent text --------------------------------------------------------------------------------
   parts := array[label || ': ' || h.name || ' (' || v.name || ') becomes ' || expect_status];
   if og <> 0 then parts := parts || format('%s gold %s → %s', v.name, v.gold, v.gold + og); end if;
   if kg <> 0 then parts := parts || format('%s gold %s → %s', k.name, k.gold, k.gold + kg); end if;
   if kw <> 0 then parts := parts || format('%s wyrdstone %s → %s', k.name, k.wyrdstone, k.wyrdstone + kw); end if;
   if hero_xp_delta <> 0 then parts := parts || format('%s experience %s → %s', h.name, h.xp, h.xp + hero_xp_delta); end if;
-  if moved > 0 then parts := parts || format('%s equipment item(s) pass to %s', moved, k.name); elsif hero_items > 0 then parts := parts || format('%s keeps %s equipment item(s)', h.name, hero_items); end if;
-  if gained > moved then parts := parts || format('%s also gains %s stash item(s)', k.name, gained - moved); end if;
+  if moved > 0 then parts := parts || format('%s surrenders %s to %s', h.name, (select string_agg(e.key || case when (e.value)::int > 1 then ' ×' || e.value else '' end, ', ' order by e.key) from jsonb_each_text(surrendered) e), k.name);
+  elsif hero_items > 0 then parts := parts || format('%s keeps all %s equipment item(s)', h.name, hero_items); end if;
+  if skins > 0 then parts := parts || format('%s gains Enchanted Skins', k.name); end if;
   if group_seen then parts := parts || format('%s gains a new %s model "%s"', k.name, group_unit, coalesce(group_name, h.name)); end if;
   if other.id is not null then parts := parts || format('%s (%s) returns from captivity with all equipment', other.name, k.name); end if;
   if leader_xp_delta = 1 then parts := parts || format('%s gains +1 experience', leader.name); end if;
+  if jsonb_array_length(coalesce(p_advances, '[]'::jsonb)) > 0 then parts := parts || format('%s advance roll(s) become due', jsonb_array_length(p_advances)); end if;
   return left(array_to_string(parts, '. ') || '.', 1000);
 end $$;
-revoke all on function public.validate_captive_proposal(public.captive_cases, jsonb, jsonb, jsonb) from public;
+revoke all on function public.validate_captive_proposal(public.captive_cases, jsonb, jsonb, jsonb, jsonb) from public;
 
 -- ---------------------------------------------------------------------------------------------
 -- Case creation: when a report is applied, every warrior it left captured opens a case. Eligibility
@@ -415,7 +510,7 @@ begin
     raise exception 'This warrior is no longer recorded as captured.' using errcode = 'P0001';
   end if;
   -- The consent check again, against the rosters as they stand now (unchanged, per the checks above).
-  perform public.validate_captive_proposal(p_case, p_proposal.choice, p_proposal.owner_changes, p_proposal.captor_changes);
+  perform public.validate_captive_proposal(p_case, p_proposal.choice, p_proposal.owner_changes, p_proposal.captor_changes, p_proposal.advances);
   v_before := public.captive_roster_snapshot(p_case.victim_warband_id, p_case.captor_warband_id);
   v_reason := 'Captive outcome: ' || p_proposal.message;
   perform set_config('stirheim.captive_apply', '1', true);
@@ -491,7 +586,7 @@ begin
     raise exception 'The report that recorded this capture has changed. Review the latest report first.' using errcode = 'P0001';
   end if;
   -- The consent text is the server's own account of the validated changes, not the client's words.
-  v_summary := public.validate_captive_proposal(c, p_choice, p_owner_changes, p_captor_changes);
+  v_summary := public.validate_captive_proposal(c, p_choice, p_owner_changes, p_captor_changes, coalesce(p_advances, '[]'::jsonb));
   -- The proposer's earlier open offer is replaced by this one.
   update public.captive_proposals set state = 'withdrawn', resolved_at = now(), reason = 'Replaced by a newer proposal.'
     where case_id = c.id and state = 'proposed' and proposed_by_warband_id = v_side;

@@ -90,7 +90,7 @@ export interface EquipmentOption {
   cost: EquipmentCost;
   /** The catalogue item, when the name resolves to one. */
   item: Item | undefined;
-  section: "melee" | "missile" | "armour";
+  section: "melee" | "missile" | "armour" | "misc";
 }
 
 /** The rulebook default when a template does not state its starting treasury. */
@@ -240,11 +240,15 @@ export function equipmentOptionsFor(template: WarbandTemplate, unitTemplateId: s
       item: resolveEquipmentName(entry.name),
       section: kind,
     }));
+  // Published initial Hero equipment exception; later Trading Post rarity stays unchanged.
+  const extras = unit.role === "hero" && ["outlaws_of_stirwood_forest", "outlaws_of_stirwood_forest_redux"].includes(template.id)
+    ? section([{ name: "Hunting Arrows", cost: "30 gc" }], "misc") : [];
   const melee = section(list.meleeWeapons, "melee");
   return [
     ...melee.flatMap((option) => (option.item?.superseded ? materialVariantOptions(option, melee) : [option])),
     ...section(list.missileWeapons, "missile"),
     ...section(list.armour, "armour"),
+    ...extras,
   ].filter((o) => !banned(o));
 }
 

@@ -263,3 +263,9 @@ describe('discountedCostText (#36)', () => {
     expect(discountedCostText(dagger.cost.text, dagger.item, halfPrice)).toBe(dagger.cost.text)
   })
 })
+
+
+it('renders creation-only miscellaneous options in their own equipment section', () => {
+  const arrows: EquipmentOption = { name: 'Hunting Arrows', cost: { kind: 'fixed', amount: 30, currency: 'gc', text: '30 gc' }, item: undefined, section: 'misc' }
+  expect(groupEquipmentOptions([arrows])).toEqual([{ section: 'misc', title: 'Miscellaneous equipment', options: [arrows] }])
+})

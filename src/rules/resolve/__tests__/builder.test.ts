@@ -556,3 +556,21 @@ it('half-rate starting experience uses the same boxes in creation, recruitment a
     expect(xpProgress(nextXp, created.levelUps, 'hero', 'half').advancesOwed).toBe(1);
   }
 });
+
+
+it('offers initial Outlaw Hero hunting arrows at the printed price without changing later rarity', () => {
+  for (const id of ['outlaws_of_stirwood_forest', 'outlaws_of_stirwood_forest_redux']) {
+    const template = findWarbandTemplate(id)!
+    const draft = newWarbandDraft(template, 'Arrows QA')
+    const leader = draft.heroes[0]
+    const arrows = equipmentOptionsFor(template, leader.unitTemplateId).find(o => o.item?.id === 'hunting_arrows')!
+    expect(arrows).toBeDefined()
+    expect(arrows.section).toBe('misc')
+    expect(arrows.cost.amount).toBe(30)
+    expect(arrows.item?.availability.kind).toBe('rare')
+    const equipped = addDraftEquipment(draft, { kind: 'hero', id: leader.id }, arrows, 1)
+    expect(draftCosts(equipped, template).total - draftCosts(draft, template).total).toBe(30)
+    expect(equipped.heroes[0].equipment.some(e => e.itemId === 'hunting_arrows')).toBe(true)
+    for (const group of template.henchmanTemplates) expect(equipmentOptionsFor(template, group.id).some(o => o.item?.id === 'hunting_arrows')).toBe(false)
+  }
+})

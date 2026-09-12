@@ -316,3 +316,12 @@ Stash moves now check whether the source warrior/group loses its mandatory bow, 
 Validation:22focused and2,054ordinary tests pass; build/typecheck pass; lint3oldwarnings. Disposable390px mobile QA moved an Outlaw's lastbow to stash, verified disabledbutton untilreason, savedwarning/reason inhistory, then movedbow back withnoreasonneeded. Verified quantities, unchanged100gc, nooverflow/pageerrors andcleanedfixtures. InitialQA-script typo andlocalJWTfutureclockerror were corrected/retried; finalpass /tmp/stirheim-required-kit-move-browser.log. Otherlogs /tmp/stirheim-required-kit-move-{tests,all-tests,build,lint}.log. NoSQL/push/deploy.
 
 Remaining#67 creation-only Hunting Arrows/Ithilmar and Slayer clauses. Item sales can still remove mandatorykit with roster warning afterward; pre-sale sourcewarning is a potential follow-up, not claimed complete. Allchangeslocal; production unchanged. Morningquestions unchanged.
+
+
+## Next local batch — #67 initial Outlaw Hero Hunting Arrows
+
+Builder now offers Hunting Arrows at30gc to Heroes of both Outlaw lists, in a new Miscellaneous equipment section. Published source: original grade1bpart2:902–907 specifically waives rarity at initialHero recruitment; Redux grade2apart2:353–360 lists Heroes-only miscellaneous startingequipment. LaterTradingPost catalogue rarity remainsunchanged. New options pass existing campaignbanfilter. Henchmen are not granted this initialHero exception.
+
+Validation:57focused and2,056ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests verify realtemplateHerooptions,30gcdraftcost, saveditemstack, nohenchmanoffer, unchangedrareavailability andmiscsectiongrouping. NoDBchange orbrowserQA claimedforthisbuilderextension. Logs /tmp/stirheim-initial-arrows-{tests,all-tests,types,build,lint}.log. NoSQL/push/deploy.
+
+Stillopen: initialHero recruitment after warbandcreation is a separateflow and has not gained this exemption; originalOutlawMarksmen's laterarrowpermission merits source-specific check (table permits Heroes/Marksmen, raritywaiver Heroesonly). WoodElfIthilmar source grade2apart2:2285 means cheaperinitialprices/noinitialrarity, NOT a permanentbanonlaterpurchases; existingbuildermaterialoptions use listmultipliers, TradingPost usescatalogueprice/rarity. Need verifyHero-onlyinitialdiscount andavoidextendingdiscountaftercreation. #67 remains partial. Morningquestionsunchanged.

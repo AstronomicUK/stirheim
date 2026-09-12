@@ -212,6 +212,7 @@ export const SECTION_TITLES: Record<EquipmentSection, string> = {
   melee: 'Hand-to-hand weapons',
   missile: 'Missile weapons',
   armour: 'Armour',
+  misc: 'Miscellaneous equipment',
 }
 
 export interface EquipmentSectionGroup {
@@ -222,7 +223,7 @@ export interface EquipmentSectionGroup {
 
 /** Options in list order, split by section; empty sections are left out. */
 export function groupEquipmentOptions(options: EquipmentOption[]): EquipmentSectionGroup[] {
-  const order: EquipmentSection[] = ['melee', 'missile', 'armour']
+  const order: EquipmentSection[] = ['melee', 'missile', 'armour', 'misc']
   return order
     .map((section) => ({ section, title: SECTION_TITLES[section], options: options.filter((o) => o.section === section) }))
     .filter((group) => group.options.length > 0)

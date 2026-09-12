@@ -797,3 +797,14 @@ it('Black Orcs and Proven Warriors have stacking natural armour; Blood alone doe
   expect(computeOdds(setup(chef, proven, 'ladle', null)).weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
   expect(computeOdds(setup(chef, { ...proven, equipment: [{ itemId: 'shield', quantity: 1 }] }, 'ladle', null)).weapons[0].input.armourThreshold).toBe(6)
 })
+
+
+it('explains the Tilean pike reach and size limits without applying them to the Merchant pike', () => {
+  const pikeman = combatant('Pikeman', [{ itemId: 'pike_tileans', quantity: 1 }])
+  const notes = computeOdds(setup(pikeman, skaven, 'pike_tileans', null)).notes.join(' ')
+  expect(notes).toContain('only man-sized or larger warriors')
+  expect(notes).toContain('up to 3 inches away without joining the melee')
+  expect(notes).toContain('does not measure reach')
+  const merchant = combatant('Merchant', [{ itemId: 'pike_merchant_caravans', quantity: 1 }])
+  expect(computeOdds(setup(merchant, skaven, 'pike_merchant_caravans', null)).notes.join(' ')).not.toContain('Pike (Tileans):')
+})

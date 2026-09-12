@@ -4091,3 +4091,9 @@ Main#67 now has a currentlocal-progress summary above historicnotes. Remaining f
 
 ## Local follow-up — #67 required equipment sales
 Selling a warrior’s last required Outlaw bow now warns before confirmation and requires a saved player exception reason. The existing rule also covers a group falling below one bow per model; Clerics and spare bows remain exempt. Approved overrides remain available. Mobile QA on a disposable local warband verified the disabled confirmation, saved explanation, removed item and correct 5gc payment, with no page errors or overflow. All 25 equipment-list tests and the production build pass. No migration, push or deployment. Broad #67 remains pending final review.
+
+
+## Local #152 follow-up — Tilean pike table constraints
+Combat odds now explicitly explain Tilean Pike’s man-sized-or-larger restriction (including named exclusions) and 3-inch reach without entering melee, and state that distance is checked at the table. Its existing one-attack/two-handed maths remain. Merchant Caravans Pike does not inherit those source-specific clauses. Source reference/rules/02-weapons-armour-equipment.md:550–561. All69 odds tests and typecheck pass; no UI-layout, DB or deployment changes. #152 remains partial: Disease Dagger extra wound and other named effects remain outstanding.
+
+Disease Dagger investigation: natural6 hit triggers a target Toughness test; failed test causes an additional wound, not an ordinary replacement wound, and Undead/Possessed are immune. Existing roll-through aggregates saves/injuries around a single wound packet, so preserve separate dagger/infection consequences when implementing; do not silently combine infection with dagger critical wounds or imply current odds include it. Source02:262. Continue this independent implementation or full Sword Breaker loss lifecycle next.

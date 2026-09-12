@@ -1,3 +1,4 @@
+import { garlicExpiry } from './garlicExpiry'
 import {reportTradeWagon,applyTradeWagonToReport,afterTradeWagonCapture} from './tradeWagonReport'
 import { brokenWeaponSettlement } from './brokenWeapons'
 import { delayedLeaderUnit, leaderWaitingGameUpdates } from '../../../rules/resolve/leaderReplacement'
@@ -436,6 +437,7 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
 
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
+  for (const row of garlicExpiry(ctx, draft)) if (!row.valid) problems.review.push(`${row.name}: record how many cloves of garlic were carried by the members who fought (0–${row.quantity}).`)
   const herbCounts = new Map<string, number>()
   for (const use of ctx.healingHerbUses ?? []) if (use.singleUse && !use.correction) herbCounts.set(use.itemRowId, (herbCounts.get(use.itemRowId) ?? 0) + 1)
   for (const [id, count] of herbCounts) {
@@ -506,6 +508,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       if (!isConsumable(itemId)) continue
       // Herbs have explicit use records; a legacy checkbox must not consume reusable herbs.
       if (itemId === 'healing_herbs') continue
+      if (itemId === 'garlic') continue // Expires whether used or not, handled below.
       // Exact-once: a dose start_match already used up for this hero (and recorded in the ledger for
       // this very match) is the dose he took; ticking it must not cost a second copy (#139/#140).
       if (ctx.addictionSupplies?.some((s) => s.hero_id === holderId && s.item_rules_id === itemId)) continue
@@ -521,6 +524,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
     if (row && row.quantity >= count) patches.push({ id, quantity: row.quantity - count })
   }
   const mapsUsed = new Set(draft.exploration.aids.filter((u) => u.aidKey.startsWith('map:')).map((u) => u.aidKey.slice('map:'.length)))
+  for (const row of garlicExpiry(ctx, draft)) if (row.valid && row.count! > 0) patches.push({ id: row.id, quantity: row.quantity - row.count! })
   for (const holder of mapsUsed) {
     const row = rows.find((r) => r.item_rules_id === 'mordheim_map' && (holder === 'stash' ? r.holder_type === 'stash' : r.holder_id === holder))
     if (!row || patches.some((p) => p.id === row.id)) continue
@@ -1115,7 +1119,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [...wagonCapture.notes,...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

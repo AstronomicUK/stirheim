@@ -1,6 +1,7 @@
 import type { BattleReport } from '../../../domain'
 import { findItem } from '../../../rules/data/items'
-import { Notice, TextArea } from '../../../ui'
+import { Notice, TextArea, TextField } from '../../../ui'
+import { garlicExpiry } from '../model/garlicExpiry'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { STEP_IDS, STEP_TITLES } from '../model'
 import { Intro, Row, type StepProps } from './bits'
@@ -11,13 +12,16 @@ function itemLabel(item: { item_rules_id: string | null; custom_name: string | n
   return item.quantity > 1 ? `${name} ×${item.quantity}` : name
 }
 
-export function ReviewStep({ derived, ctx, mine, amend }: StepProps) {
+export function ReviewStep({ derived, ctx, mine, amend, draft, update }: StepProps) {
   const report = derived.report
+  const garlicRows = garlicExpiry(ctx, draft)
+  const garlic = garlicRows.length ? <Card className="flex flex-col gap-2 p-4"><p className="font-semibold">Garlic carried this battle</p><p className="text-sm">Carried garlic expires even when no Vampire charged. Cloves left with absent warriors or in the stash are kept.</p>{garlicRows.map(row => row.uncertain ? <TextField key={row.id} label={`${row.name}: cloves carried by the members who fought`} type="number" min={0} max={row.quantity} value={row.count ?? ''} onChange={e => update(d => ({ ...d, garlicCarried: { ...d.garlicCarried, [row.key]: e.target.value === '' ? null : Number(e.target.value) } }))} /> : <p key={row.id} className="text-sm">{row.name}: {row.count} {row.count === 1 ? 'clove expires' : 'cloves expire'}.</p>)}</Card> : null
   const advanceLines = derived.advances.items.map((i) => i.summary)
   if (!report) {
     const missing = STEP_IDS.filter((id) => derived.problems[id].length > 0)
     return (
       <StepBody title="Review">
+        {garlic}
         <Notice tone="warn" title="Not ready to file">
           <ul className="list-disc pl-4">
             {missing.map((id) => (
@@ -32,6 +36,7 @@ export function ReviewStep({ derived, ctx, mine, amend }: StepProps) {
   }
   return (
     <>
+      {garlic}
       <ReportSummary report={report} warbandName={mine.warband_name} removedItems={derived.report ? removedItemLabels(report, ctx) : []} advanceLines={advanceLines} explorationSkippedReason={derived.exploration.skippedReason} />
       {report.applied.heroes.some(h => h.patch.flags?.upkeepOwedAfter || (h.patch.status === 'left' && ctx.roster.hiredSwords.some(s => s.id === h.id))) ? <Notice tone="info" title="Hired-character contracts">
         <ul>{report.applied.heroes.filter(h => h.patch.flags?.upkeepOwedAfter || (h.patch.status === 'left' && ctx.roster.hiredSwords.some(s => s.id === h.id))).map(h => <li key={h.id}>{ctx.roster.hiredSwords.find(s => s.id === h.id)?.name}: {h.patch.status === 'left' ? h.patch.flags?.mustMissNextBattle ? 'leaves after this battle; fight one battle without them before rehiring.' : 'leaves after this battle.' : 'upkeep is due after this battle; a payment reminder will appear on the warband screen.'}</li>)}</ul>

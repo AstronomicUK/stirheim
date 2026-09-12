@@ -137,6 +137,8 @@ export interface ReportDraft {
   woods?: import('./lycanthropeReport').WoodsDraft
   plantCasualties?: Record<string, boolean>
   groupEquipmentLosses?: Record<string, number | null>
+  /** Uneven garlic allocation when only some group members fought; keyed to current stock/size. */
+  garlicCarried?: Record<string, number | null>
   retainedScoutId?: string
   pettyThiefRoll?: number | null
   pettyThiefSelection?: number | null

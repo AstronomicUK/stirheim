@@ -125,7 +125,7 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect(check(await admin.from('warbands').select('gold').eq('id',vw).single()).gold).toBe(100)
   expect((await cases()).map((c:any)=>c.state)).toEqual(['resolved','open'])
  })
- it('lets the captor sell the model for 5 × D6 and keep exactly his kit, and refuses to resolve a case whose event was later reverted',async()=>{
+ it('lets the captor sell the model for 5 × D6 and keep exactly his kit, and protects both resolved and pending capture events from reversal',async()=>{
   check(await file([cap(1,events[0]),cap(2,events[1])]));check(await fileCaptor())
   const [first,second]=await cases()
   expect((await propose(captor,first.id,{kind:'sell',d6:3},[],[{table:'warbands',op:'update',data:{gold:115}}])).error?.message).toMatch(/gain exactly the captured model's kit/)
@@ -136,8 +136,10 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:id,p_action:'accept'}))
   expect(check(await admin.from('warbands').select('gold').eq('id',cw).single()).gold).toBe(115)
   expect(check(await admin.from('items').select('item_rules_id').eq('warband_id',cw).eq('holder_type','stash')).map((i:any)=>i.item_rules_id).sort()).toEqual(['shield','sword'])
-  check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',events[1]))
-  expect((await propose(captor,second.id,{kind:'sell',d6:1},[],[{table:'warbands',op:'update',data:{gold:120}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'sword',quantity:1}},{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1,notes:'Painted red'}}])).error?.message).toMatch(/reverted in the battle log/)
+  for (const eventId of [events[0],events[1]]) {
+   expect((await gm.rpc('revert_battle_event',{p_event_id:eventId,p_note:'Correct capture'})).error?.message).toMatch(/Withdraw the affected post-battle report/)
+  }
+  expect(check(await admin.from('captive_cases').select('state').eq('id',second.id).single()).state).toBe('open')
  })
 
  it('keeps kit multiplicity and annotations: two swords per model and a distinct heirloom row survive release, refuse mismatched notes, and block return into a re-armed group',async()=>{

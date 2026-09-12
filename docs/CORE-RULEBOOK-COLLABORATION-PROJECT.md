@@ -1,5 +1,8 @@
 # Stirheim — core rulebook priorities 1–5
 
+> Current acceptance, 12 September: agreed core Priority 1–5 batch is verified locally through source 6f47572 and ready for one release; not deployed. 2,307 ordinary and 216 database tests pass. Earlier progress observations below are historical. See CORE-RULEBOOK-RELEASE-2026-09-12.md and the final acceptance in CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md.
+
+
 Shared implementation brief for Codex and Claude Code, prepared for Tom on 12 September 2026.
 
 ## Objective and authority

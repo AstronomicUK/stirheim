@@ -1,0 +1,30 @@
+Bugman's Ale (core rulebook 02:1510) — 12 September 2026 evening (Claude, with Codex's fight/domain side)
+Local dev server, Pixel 7 emulation, seeded GM account. Disposable SQL fixtures: a Reikland warband with a
+barrel of Bugman's Ale in the STASH (holder_type stash, holder_id null — the case the old per-warrior tick
+could never reach), a Possessed opponent, an in-progress match. Deleted afterwards (counts verified).
+Script: node_modules/.cache/p3-bugmans-ale.mjs.
+
+PASS  before drinking, the fight tab does not call the captain immune to fear
+PASS  My Warband shows "Bugman’s Ale · barrel in the stash"
+PASS  the drink button waits for the before-battle confirmation
+PASS  after drinking, the status says "drunk this battle — immune to fear"
+PASS  saved: one warbandConsumables entry (exact itemRowId, holderKey stash), itemsUsed.stash = ["bugmans_ale"],
+      log line "<warband>: drank a barrel of Bugman’s Ale"
+PASS  after drinking, the fight tab shows the captain with the "Immune to Fear" tag (Codex's combatantsOf change,
+      driven by the declaration, no per-warrior tick)
+PASS  after a page reload the ale is still recorded as drunk
+PASS  withdrawal needs a reason
+PASS  after withdrawing, the barrel is offered again ("barrel in the stash")
+PASS  saved: correction reason on the entry, itemsUsed.stash cleared, both log lines kept
+PASS  after withdrawing, the captain is no longer immune to fear
+11/11 — screenshot p3-bugmans-ale.png
+
+Unit coverage: bugmansAle.test.ts 7/7 (barrels in stash or carried by an active member only; one barrel per
+battle; carried barrel keyed by holder; before-battle confirmation, elven-warband and no-barrel refusals;
+reasoned correction; guard against unmarking a barrel another record uses; reload). bugmansAleImmunity.test.ts
+6/6 (stash declaration → whole roster incl. human hired sword and henchman groups; mixed warband: humans
+immune, Elf Ranger not; carried-but-undrunk grants nothing; corrected declaration grants nothing; an elven
+warband gets nothing; no duplicate trait). bugmansAleReport.test.ts 8/8 (exact row settled, two rows under one
+holder settle only the declared row, sheet + legacy ticks never cost a second barrel, corrected declaration
+deducts nothing, a declared row that has gone deducts no other barrel, carried barrel from its own row, legacy
+tick-only sheets still settle, changed stock blocks filing until restored or withdrawn).

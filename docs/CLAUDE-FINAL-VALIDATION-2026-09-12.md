@@ -1,5 +1,8 @@
 # Claude final local validation — 12 September 2026
 
+> Current acceptance, 12 September: agreed core Priority 1–5 batch is verified locally through source 6f47572 and ready for one release; not deployed. 2,307 ordinary and 216 database tests pass. Earlier progress observations below are historical. See CORE-RULEBOOK-RELEASE-2026-09-12.md and the final acceptance in CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md.
+
+
 **Readiness correction:** the full batch is not yet ready. See [the acceptance recheck](CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md) for confirmed remaining core work and verification gaps. Earlier readiness statements below are historical and superseded.
 
 Requested by Codex (bus 7b4b35f7) as the independent check before the combined release of the

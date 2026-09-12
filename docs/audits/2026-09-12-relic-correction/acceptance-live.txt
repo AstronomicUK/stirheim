@@ -1,0 +1,47 @@
+Holy Relic declaration correction (#161) — 12 September 2026 evening (Claude)
+Local dev server, Pixel 7 emulation, seeded GM account. Disposable SQL fixtures: a Reikland warband whose
+Captain carries a Holy (Unholy) Relic, an opponent, an in-progress match, and a battle_sessions row seeded
+as if the player had already declared a relic Rout auto-pass in error (leadershipTests entry + the
+generated "Rout check passed automatically: …" note). Everything deleted afterwards (counts verified).
+Script: node_modules/.cache/p2-relic-correction.mjs.
+
+PASS  bearer card shows the relic benefit as spent after the seeded declaration — "Holy (Unholy) Relic · benefit spent"
+PASS  a correction section is offered for the relic declaration — "Correct a Leadership declaration"
+PASS  the button names the declaration being corrected — "Correct relic automatic pass (Rout check)"
+PASS  the correction is disabled until a reason is typed
+PASS  typing a reason enables it
+PASS  after correcting, the relic offers the first Leadership test again — "Holy (Unholy) Relic · first Leadership test"
+PASS  the correction section is gone once corrected
+PASS  saved state: correction reason on the entry; the note now reads "Rout relic declaration withdrawn: …"
+      (no "Rout check passed" left, so canUseRoutRelic's historic-note guard no longer applies); the
+      original "Scenario: Skirmish" note line is untouched; a "Relic automatic pass corrected" log line exists
+PASS  after a page reload the relic is still offered for the first Leadership test
+PASS  a genuine relic pass afterwards (tabletop Fear) spends the benefit again
+PASS  saved state keeps the corrected entry and adds the new one — 2 tests; corrected=true; second relic=true
+11/11
+
+Unit coverage (relicRules.test.ts, 15/15): relic Rout correction (note withdrawn, guard lifted, other note
+lines preserved, second correction a no-op, blank reason refused); hand-edited note keeps the guard and
+says so; relic Stupidity correction removes only the result it wrote (other warriors' results kept) and
+keeps a genuine test recorded since; rolled Rout/Stupidity entries are not declarations; the Stupidity
+declaration remembers its turn across a reload (new optional leadershipTests.turnKey, Codex's battle.ts).
+
+Correction to an earlier draft of this note: RelicLeadershipControl is rendered for henchman groups too
+(MyWarbandTab line 77, Codex 98f733e), and the control itself admits only single-member groups as bearers.
+The group path is verified below (script node_modules/.cache/p2-relic-group.mjs).
+
+## Single-member group bearer: Rat Ogre with a Holy Relic, Stupidity auto-pass, then correction
+Fixture: Skaven warband with an Eshin Sorcerer and a one-model Rat Ogre henchman group carrying the relic
+(items.holder_type = group); no battle_turns row, so the start-of-turn Stupidity panel shows.
+PASS  the single-model Rat Ogre group card carries the relic control, benefit available — "Holy (Unholy) Relic · first Leadership test"
+PASS  start-of-turn Stupidity test is offered for the Rat Ogre — "Rat Ogre — test due"
+PASS  after "Pass automatically with the relic" the Rat Ogre is recorded as passed this turn
+PASS  the group card now says the relic benefit is spent
+PASS  saved: one Stupidity result and a relic declaration that remembers its turn key — turnKey=legacy:1; kind=stupidity
+PASS  the correction names the Stupidity relic pass — "Correct relic automatic pass (Stupidity)"
+PASS  after correcting (reason typed), the relic is offered for the first Leadership test again
+PASS  the Stupidity test is due again for the Rat Ogre
+PASS  saved: the linked result is gone (0 results), the reason is on the entry, both log lines kept
+      ("Rat Ogre: Stupidity passed with Holy (Unholy) Relic" and "Relic automatic pass corrected")
+PASS  after a page reload the relic is still offered and the test still due
+10/10 — screenshot p2-relic-group.png

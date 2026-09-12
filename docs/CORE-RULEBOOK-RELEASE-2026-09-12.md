@@ -1,41 +1,42 @@
-# Core rulebook Priority 1–5: release-ready batch
+# Core rulebook Priority 1–5 — ready for one release
 
-**Readiness correction:** the full batch is not yet ready. See [the acceptance recheck](CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md) for confirmed remaining core work and verification gaps. Earlier readiness statements below are historical and superseded.
+12 September 2026. Application source through `6f47572`, committed locally. **Not pushed or deployed.** This replaces the earlier premature release summary; the dated scope recheck retains that history.
 
-12 September 2026. Application source verified through `91089bb`. All changes are local; this batch has not been pushed or deployed.
+## Implemented core scope
 
-## Completed scope
-
-| Priority | Completed core scope |
+| Priority | Verified local changes |
 |---|---|
-| 1 — Magic and prayers | Core caster/lore setup, all 30 core spell target definitions, area target selection, casting reroll limits, personal protection, difficulty tooltips and mobile layout. |
-| 2 — Combat and psychology | Core skill reconciliation, Streetwise, structured Bitter Enmity, Holy Relic first-test handling, physical handgun/rifle/pistol reload tracking, Sign of Sigmar and selected-weapon/strike-order advice. |
-| 3 — Equipment and consumables | Per-vial and per-blade poison, Healing Herbs with the approved single-use house rule, Blessed Water, garlic expiry, addiction supply, and physical Tail Fighting equipment selection. Saved state, stock changes and report withdrawal are covered. |
-| 4 — Source decisions | Core chart/source corrections and save-order verification; approved current characteristic limits and concurrent recovery retained. |
-| 5 — Usability | Approved dice design and rolling interface, valid ranged defaults, recruitment affordability, clear empty battle logs, contextual hero-removal confirmation, campaign joining, singular die labels, wrapping tags, correct warband selection and hired-sword eligibility labels. |
+| 1 — Magic and prayers | Native empty-spell roster setup/editing for all five core caster types; all 30 core spell target definitions; area targets; one-die and pair rerolls with use limits; Daemon Soul protection; difficulty and responsive layout. |
+| 2 — Combat and psychology | Core skills, Streetwise, Bitter Enmity, Holy Relic first-test use and explained Rout/Stupidity correction; physical firearm reload; single/brace melee pistols and separate crossbow-pistol opening shot; saved weapon/Fear/Frenzy choices; Sign of Sigmar and conditional strike-order advice. |
+| 3 — Equipment and consumables | Exact poison vial/blade binding; Healing Herbs and the approved single-use house rule; Blessed Water; garlic expiry; addiction supply; Tail Fighting; explained Crimson Shade correction; declared Bugman’s Ale for the warband except Elves with exact barrel settlement. |
+| 4 — Source decisions | Core chart/source and save-order checks; approved characteristic limits and concurrent recovery retained. |
+| 5 — Usability | Approved dice/rolling visuals, correct ranged defaults, recruitment affordability, empty logs, contextual removal confirmation, campaign joining, singular die labels, readable tags, warband context and hired-sword eligibility. |
 
-## Final verification
+## Verification
 
-- Ordinary suite: **2,265 tests passed**. The 216 database tests are excluded/skipped in that ordinary run and verified separately.
-- Local database integration suite: **216 tests passed across 38 files** after restoring the Trapmaster and Fanatic supply hooks in migration 087.
-- Production build and TypeScript passed. Lint passed with three existing audit-script unused-import warnings. Existing CSS marker and bundle-size warnings remain.
-- Disposable mobile fixtures exercised poison copies and paired blades, report consumption and withdrawal, pistol/Pistolier and handgun/rifle reloads, relic declaration/correction, Sign of Sigmar and Tail Fighting.
-- Addiction supply was exercised through battle start, combat state, an actual submitted report and withdrawal: the battle-start dose is charged once and is not refunded by withdrawing a report.
-- Core-lore browser coverage includes spell selection, outcomes, turn changes and reload. Reroll eligibility is covered by unit and serialization tests; this is not a claim that every reroll source was exercised in the browser.
+- Final ordinary suite: **2,307 passed**, 186 files. The **216 database tests** are skipped in this command and tested separately.
+- Claude’s current database run: **216 passed**, 38 files, after migration 087’s Trapmaster/Fanatic regression repair. No database changes followed this run.
+- Production build and TypeScript pass. Lint has only the three existing unused-import warnings in the old reconciliation probe. Existing CSS marker and large-bundle warnings remain.
+- One initial full-run test exceeded its five-second timeout while running concurrently. A complete rerun with two workers passed; no timeout was hidden by marking a test skipped. The crossbow source-reference format test then caught an invalid explanatory suffix; moved that explanation into a comment and reran the full suite successfully.
+- Actual mobile checks cover physical pistol shooting/reload and new single/brace/crossbow combat, including split brace, misses, corrections and reload; poison/stock/report withdrawal; relic Rout and single-model Stupidity corrections; saved weapon/Fear/Frenzy; Crimson Shade; and Bugman’s Ale declaration/reload/correction.
+- Actual casting checks cover pair/one-die rerolls, blocking second rerolls, unused sources, turn reset, saved outcomes and Daemon Soul save. Gated/per-game supplement reroll variants remain unit-only, not claimed browser-tested.
+- Desktop native editor, P5 flows, Bitter Enmity note and melee-to-ranged attacker reset pass Claude’s checks.
 
-See `CODEX-TAKEOVER-2026-09-12.md`, `CLAUDE-FINAL-VALIDATION-2026-09-12.md`, and the source/equipment/magic checkpoints for detailed evidence. Temporary QA scripts are local supporting evidence, not production dependencies.
+**Final shared-turn acceptance: passed 9/9.** Start turns and advance both players through the actual controls; same-turn reload retains both declarations, while round 2 and its reload clear failed Fear and retain ended Frenzy. Evidence: `docs/audits/2026-09-12-fear-lifetime/acceptance-live.txt`. No remaining core acceptance gap is known.
 
-## Explicit remaining boundaries
+Evidence: `CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md`, `CODEX-TAKEOVER-2026-09-12.md`, Claude’s validation/checkpoint documents, and the dated audit folders for core pistol combat, Bugman’s Ale, casting rerolls, Relic correction and P5 desktop.
 
-Umbrella tracker entries remain partial where they include supplementary lores, skills, items or wards. Table-managed movement, distances and multi-model positional cases remain table decisions. Full automatic interleaving of both players’ combat is not part of the selected-weapon/strike-order advice acceptance. Separate melee pistol profile work (#2/#69) is not closed by the shooting reload changes. Hero-removal confirmation satisfies #53: the brief allows confirmation or undo, so no further ruling is needed.
+## Scope boundaries
 
-## One release, after the next release instruction
+Umbrella tracker entries stay partial where they include supplementary lores, skills, items, regional banners, model-count exceptions or wards. Movement, distances and multi-model positional cases remain table-managed. The player confirms a separate combat and the crossbow opener’s ordering; changing target or turn does not automatically reset pistol use. Full interleaving of both players’ attacks is outside selected-weapon/strike-order advice acceptance. Equal-Initiative roll-offs remain table decisions. Hero-removal confirmation meets #53’s confirmation-or-undo requirement.
 
-The project brief states that the previous deployment authorisation applied to the earlier live batch. This batch is prepared for the user’s next release instruction; no further implementation answer is required.
+## One release after authorisation
 
-1. Recheck production migration state and Netlify automatic-build setting. The verified live baseline is source `f74c8731e0d644e61c8e977211b8a6646cdaad96`, deploy `6aa4fdf7018fd66a64a404c2`, with migrations through 086.
-2. Apply **087 only** before publishing the frontend. The new client requires the four-argument `start_match`; the fourth argument defaults for older clients. The migration preserves trap and Fanatic supply preparation.
-3. Publish one frontend release, avoiding a duplicate automatic/manual build.
-4. Verify served production assets, migration state and a suitable live smoke check, then record deployment evidence.
+The project brief reserves this new batch for the next release instruction; prior authorisation applied to the earlier live batch. No user rules answer remains outstanding.
 
-The release owner can execute these technical steps once authorised; the user does not need to run the migration themselves. Do not reset or blindly replay the local migration history.
+1. Recheck production migration state and Netlify automatic-build setting. Last verified live source: `f74c8731e0d644e61c8e977211b8a6646cdaad96`; deploy `6aa4fdf7018fd66a64a404c2`; migrations through 086.
+2. Apply **087 only** before the frontend. The new client uses four-argument `start_match`; its fourth argument defaults for older clients. Trapmaster and Fanatic preparation are retained.
+3. Publish one frontend release without duplicate automatic/manual builds.
+4. Verify served assets, database state and a suitable live smoke check, then record the deployment.
+
+Codex handles those steps once authorised. Do not reset or blindly replay the local migration history. Unrelated historical audit edits remain preserved in the working tree and are not part of this source checkpoint.

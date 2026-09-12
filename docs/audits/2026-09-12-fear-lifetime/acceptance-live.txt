@@ -1,0 +1,22 @@
+#70 Fear / Frenzy lifetime through the real shared-turn UI — 12 September 2026 evening (Claude)
+Local dev server, Pixel 7 emulation, seeded GM account. Disposable SQL fixtures: Reikland warband with a
+frenzied Captain (flags.frenzy) vs a Possessed warband whose Magister causes fear (flags.causesFear); an
+in-progress match with no turn tracker row, so the turns are started from the UI. Deleted afterwards.
+Script: node_modules/.cache/p2-fear-lifetime.mjs. Codex's own persistence script had advanced the saved
+turn directly; this run drives Turn Controls (Start → Recover Units → Finish my turn, both sides).
+
+PASS  shared turns started from the UI: "Round 1 · Your turn"
+PASS  the roll popup's Situation offers "Failed Fear when charged" and "Frenzy has ended", both unticked
+PASS  both ticked in round 1
+PASS  saved: Fear keyed to <captain>:<enemy warband>:<Magister> @ phase "1:<A>" = true; frenzyEnded[<captain>] = true
+PASS  after a page reload in the same turn both toggles are still ticked
+      (a "Reason to correct Fear or Frenzy" field now appears — unticking a psychology choice needs a reason)
+PASS  Finish my turn → "Round 1 · <B>’s turn"; as B: Recover Units → Finish my turn
+PASS  back as A: "Round 2 · Your turn"
+PASS  in the captain's round-2 turn the failed-Fear tick has cleared, Frenzy-ended stays ticked
+PASS  after a page reload in round 2: Fear still clear, Frenzy-ended still on
+9/9 — screenshot p2-fear-lifetime.png
+
+So: a failed Fear test is scoped to the combat phase it was declared in (it expires when the shared turn
+moves on), Frenzy ending is a battle-long fact per warrior, and both survive reopening the sheet. Matches
+Codex's 3771f00 design and the #70 brief clause ("define saved state, expiry and corrections explicitly").

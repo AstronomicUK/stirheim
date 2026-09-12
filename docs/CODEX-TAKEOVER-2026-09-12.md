@@ -242,3 +242,12 @@ Actual disposable 390px browser checks passed: two distinct brace copies (includ
 Bugman’s Ale is completed by Claude 85fb7a6 plus shared integration 141d13f: a declared barrel grants battle-long fear immunity to the warband except Elves, including a stash barrel; carrying an undrunk barrel does nothing. Exact inventory-row consumption, withdrawal, stale stock validation and duplicate legacy-tick suppression pass 21 focused tests. Claude’s mobile declaration/reload/correction acceptance passed 11 checks. This closes the erroneously excluded core clause, not every supplementary consumable in #139.
 
 The shared combat boundary and positional ordering remain player-confirmed. Group use is per selected model with physical copies; uneven kit is explicitly blocked rather than assigned arbitrarily. All work remains local; no push or deployment.
+
+
+### Final Priority 1–5 acceptance — 12 September 2026, source 6f47572
+
+**The agreed core batch is ready for a single release, locally committed and not deployed.** This supersedes earlier incomplete/readiness statements above. All named core acceptance gaps in the scope recheck are closed; umbrella supplement clauses remain partial.
+
+Final evidence: 2,307 ordinary tests pass; Claude’s 216 local database tests pass; build/TypeScript pass; lint has only three pre-existing audit warnings. Claude’s final actual shared-turn check passes 9/9: start turns, set Fear/Frenzy, reload, finish both players’ turns, then reload in round 2 — Fear expires while ended Frenzy remains. Evidence: `docs/audits/2026-09-12-fear-lifetime/acceptance-live.txt`. This closes the last UI verification gap; no further rules decision is needed from Tom.
+
+Latest source checkpoints: 6f47572 core pistol UI/crossbow source correction, 141d13f Bugman integration, 85fb7a6 barrel use/settlement, b58097a Relic corrections, 3771f00 saved choices/psychology, a3bc2a8 Shade correction. Release procedure and exact coverage are in `docs/CORE-RULEBOOK-RELEASE-2026-09-12.md`. Production remains at the preceding release. Apply pending migration 087 before publishing this new frontend when authorised; no per-fix pushes or duplicate deployments.

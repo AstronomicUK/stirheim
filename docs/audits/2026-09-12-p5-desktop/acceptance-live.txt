@@ -1,0 +1,34 @@
+Browser acceptance — 12 September 2026 evening (Claude), local dev server, seeded GM account, SQL fixtures
+created and deleted by each script (node_modules/.cache/p1-editor-native.mjs, p2-enmity-p5-desktop.mjs,
+p5-30-diag.mjs). Viewport 1280×800 unless stated. Nothing pushed or deployed; no live player record touched.
+
+## #28/#29 — roster editor recognises a spell-less native caster (5 core casters, one warband each)
+PASS  skaven_eshin_sorcerer: Spells field scoped to Magic of the Horned Rat only — 6 options (Black Fury, Children of the Horned Rat, Eye of the Warp, …)
+PASS  Eshin: picking a spell makes the page dirty — "Save 1 change"
+PASS  Eshin: the chosen spell is saved on the hero row — {black_fury}
+PASS  Eshin: the roster page then lists Black Fury
+PASS  undead_necromancer: scoped to Necromancy only — 2 options (Death Vision, Re-Animation)
+PASS  cult_of_the_possessed_magister: scoped to Chaos Rituals only — 6 options
+PASS  sisters_of_sigmar_matriarch: scoped to Prayers of Sigmar only — 6 options
+PASS  warrior_priest: scoped to Prayers of Sigmar only — 6 options
+8/8
+
+## #96 — Bitter Enmity in the fight tab
+PASS  odds note: "Bitter Enmity: hates Claude enmity B (disposable) (the whole warband). This opponent matches; enable Hatred in the first combat round."
+PASS  against an unrelated warband: "… This opponent does not match this injury’s target."
+PASS  the "Hated enemy, first turn" toggle is offered — inside the roll popup's Situation setup (the #24 layout), and
+      "Hatred in the first combat round" is shown on the main screen; the first script looked only on the main screen.
+
+## Priority 5 desktop spot checks
+PASS  #206: "My warband" is the warband named in the URL
+PASS  #24: roll-through popup is content-sized — 512×627 at 1280×800; setup (Weapon, Other hand, Charging, Hated enemy) inside the popup
+PASS  #30: fresh open of Ranged Attack → Your warrior = Marksman Ada, Weapon = Bow (first hero carries only sword + dagger); Melee → Dagger; Ranged again → Bow
+OBS   #30: when Melee Attack was opened first and the sword-only captain is pinned, switching to Ranged Attack keeps
+      him and shows "Weapon = Sword". By design (defaults pin once chosen) but a melee-only attacker under Ranged
+      Attack reads oddly; low severity, FightTab (Codex). Not the reported bug, which passes.
+PASS  #203: no horizontal overflow on the battle page
+PASS  #92: GM sees the "One of your own campaigns" picker; no horizontal overflow
+PASS  #210: recruit page hired-sword tags carry no audit jargon
+PASS  #46: an ended match never says "no battle sheet was opened"
+PASS  #41: builder shows the running gold left; no horizontal overflow
+Screenshots: p5-desktop-24.png, p5-desktop-battle.png, p5-desktop-recruit.png, p5-30-desktop.png

@@ -427,7 +427,7 @@ export const EXPERIENCE_REMINDERS: readonly { who: string; text: string }[] = [
 export function conditionsFor(events: BattleEventRow[], warbandId: string, turn: number, recoveries?: readonly { warbandId: string; at: string }[]): Map<string, string> {
   const out = new Map<string, string>()
   const timeline = [
-    ...events.filter(e => e.reverted_at === null && e.payload.target_warband_id === warbandId && (recoveries !== undefined || e.payload.turn === turn)).map(event => ({ at: event.at, event })),
+    ...events.filter(e => e.reverted_at === null && !e.payload.metadata_only && e.payload.target_warband_id === warbandId && (recoveries !== undefined || e.payload.turn === turn)).map(event => ({ at: event.at, event })),
     ...(recoveries ?? []).filter(r => r.warbandId === warbandId).map(r => ({ at: r.at, event: null })),
   ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
   const removed = new Set<string>()

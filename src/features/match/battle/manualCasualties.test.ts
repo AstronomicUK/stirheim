@@ -18,3 +18,22 @@ it('cannot remove a shared-log casualty through a manual tally or exceed the gro
  expect(groupOut(setDisplayedGroupOut(raw,'group',0,4,1),'group')).toBe(0)
  expect(groupOut(setDisplayedGroupOut(raw,'group',10,4,1),'group')).toBe(3)
 })
+
+it('capture metadata does not add another casualty, kill, wound or condition',async()=>{
+ const {eventContribution}=await import('../../../domain/battleEvent')
+ const {conditionsFor}=await import('./sheet')
+ const raw=setGroupOut(emptyBattleLiveState(),'group',1,4)
+ const marker={...event,payload:{...event.payload,metadata_only:true,manual_casualty_index:0,capture_reason:'subjugator' as const}}
+ expect(applyBattleEvents(raw,[marker],id)).toBe(raw)
+ expect(eventContribution([marker],id,'group')).toEqual({kills:0,woundsLost:0,outOfAction:0})
+ const stun={...event,payload:{...event.payload,out_of_action:false,outcome:'Stunned'}}
+ expect(conditionsFor([stun,marker],id,0).get('group')).toBe('Stunned')
+})
+
+it('numbers manual capture slots after ordinary logged casualties, including uncaptured manual slots',async()=>{
+ const {captureEvents}=await import('../../postBattle/model/captureEvents')
+ const marker=(n:number)=>({...event,id:`marker-${n}`,payload:{...event.payload,metadata_only:true,manual_casualty_index:n,capture_reason:'subjugator' as const}})
+ const result=captureEvents([marker(2),event,marker(1)],id,id,'group')
+ expect(result.map(r=>[r.event.id,r.modelIndex])).toEqual([['marker-1',2],['marker-2',3]])
+ expect(captureEvents([{...marker(1),reverted_at:event.at},event],id,id,'group')).toEqual([])
+})

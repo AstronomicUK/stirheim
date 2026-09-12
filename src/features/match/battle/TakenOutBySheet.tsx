@@ -3,11 +3,13 @@
 // report's key events. The calculator's own logged kills answer it without asking.
 
 import type { TakenOutBy } from '../../../domain'
-import { Button, Sheet } from '../../../ui'
+import { Button, Sheet, Notice } from '../../../ui'
 import type { EnemyWarband } from '../fight/useEnemyRosters'
 import { splitWarriors, fightingGroups } from './sheet'
 
 export interface TakenOutBySheetProps {
+  pending?: boolean
+  error?: string
   open: boolean
   /** The warrior (or group) just marked out, for the title. */
   subjectName: string
@@ -18,10 +20,11 @@ export interface TakenOutBySheetProps {
   onClose: () => void
 }
 
-export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, turn, onPick, onClose }: TakenOutBySheetProps) {
+export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, turn, onPick, onClose, pending=false, error }: TakenOutBySheetProps) {
   return (
-    <Sheet open={open} onClose={onClose} title={`Who took ${subjectName} out?`} description="Goes on the report as a key event. Skip if nobody knows.">
+    <Sheet open={open} onClose={onClose} title={`Who took ${subjectName} out?`} description="Choose the enemy model responsible, including the caster if a spell caused it. Goes on the report as a key event.">
       <div className="flex flex-col gap-4 py-2">
+        {error?<Notice tone="error" title="Could not record the casualty">{error}</Notice>:null}
         {enemiesPending ? <p className="text-sm text-ink-dim">Loading the other warbands…</p> : null}
         {enemies.map((w) => {
           const fighting = splitWarriors(w.roster).fighting
@@ -33,7 +36,7 @@ export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, tu
                 {fighting.map(({ warrior }) => (
                   <li key={warrior.id}>
                     <button
-                      type="button"
+                      type="button" disabled={pending}
                       className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-surface-high"
                       onClick={() => onPick({ warbandId: w.participant.warband_id, modelId: warrior.id, name: `${warrior.name} (${w.participant.warband_name})`, turn })}
                     >
@@ -44,7 +47,7 @@ export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, tu
                 {groups.map((g) => (
                   <li key={g.id}>
                     <button
-                      type="button"
+                      type="button" disabled={pending}
                       className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-surface-high"
                       onClick={() => onPick({ warbandId: w.participant.warband_id, modelId: g.id, name: `one of the ${g.name} (${w.participant.warband_name})`, turn })}
                     >
@@ -60,10 +63,10 @@ export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, tu
           )
         })}
         <div className="flex flex-col gap-2">
-          <Button variant="secondary" block onClick={() => onPick({ warbandId: null, modelId: null, name: 'a fall, terrain or a spell', turn })}>
+          <Button disabled={pending} variant="secondary" block onClick={() => onPick({ warbandId: null, modelId: null, name: 'a fall, terrain or a spell', turn })}>
             A fall, terrain or a spell
           </Button>
-          <Button variant="ghost" block onClick={onClose}>
+          <Button disabled={pending} variant="ghost" block onClick={onClose}>
             Not sure, skip
           </Button>
         </div>

@@ -10,6 +10,10 @@ import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
   capture_reason: z.enum(['subjugator']).optional(),
+  metadata_only: z.boolean().optional(),
+  manual_casualty_index: z.number().int().min(0).optional(),
+  casualty_token: z.string().optional(),
+  capture_source: z.enum(['table','spell']).optional(),
   brokenWeapons: z.array(brokenWeaponSchema).optional(),
   attacker_warband_id: uuidSchema,
   attacker_id: z.string(),
@@ -101,7 +105,7 @@ export function applyBattleEvents(sheet: BattleLiveState, events: readonly Battl
   let takenOutBy = sheet.takenOutBy;
   const healed = new Set(sheet.healingHerbUses.filter(use => !use.correction).flatMap(use => use.healedEventIds.map(id => `${use.warriorId}:${id}`)));
   for (const e of events) {
-    if (e.reverted_at !== null || e.kind !== "attack") continue;
+    if (e.reverted_at !== null || e.kind !== "attack" || e.payload.metadata_only) continue;
     const p = e.payload;
     if (p.attacker_warband_id === warbandId && p.kill && p.attacker_kind === "hero") {
       tallies = withTallyChange(tallies, p.attacker_id, "hero", (t) => ({ ...t, enemiesOutOfAction: t.enemiesOutOfAction + 1 }));
@@ -134,7 +138,7 @@ export function eventContribution(events: readonly BattleEventRow[], warbandId: 
   let woundsLost = 0;
   let outOfAction = 0;
   for (const e of events) {
-    if (e.reverted_at !== null) continue;
+    if (e.reverted_at !== null || e.payload.metadata_only) continue;
     const p = e.payload;
     if (p.attacker_warband_id === warbandId && p.attacker_id === id && p.kill && p.attacker_kind === "hero") kills += 1;
     if (p.target_warband_id === warbandId && p.target_id === id) {

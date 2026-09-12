@@ -41,7 +41,7 @@ export function specialKillsFromEvents(events: readonly BattleEventRow[], ownWar
   for (const event of events) {
     if (event.kind !== 'attack' || event.reverted_at) continue
     const p = event.payload
-    if (!p.out_of_action || p.attacker_warband_id !== ownWarbandId || p.target_warband_id === ownWarbandId) continue
+    if (p.metadata_only || !p.out_of_action || p.attacker_warband_id !== ownWarbandId || p.target_warband_id === ownWarbandId) continue
     const unit = p.target_unit_template_id ?? units.get(`${p.target_warband_id}:${p.target_id}`)
     if (unit !== 'runts' && unit !== 'night_goblins_web_snotlings') continue
     count(p.target_warband_id, p.target_id, p.attacker_id, unit).events++

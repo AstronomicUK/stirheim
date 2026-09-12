@@ -50,6 +50,7 @@ describe('special enemy experience (#112)',()=>{
   const roster:RosterWarband={id:enemy,name:'Enemy',warbandTemplateId:'snotlings',gold:0,wyrdstone:0,veteranPool:null,heroes:[],henchmenGroups:[{...group,id:'r',unitTemplateId:'runts'}],hiredSwords:[],stash:[]}
   const event=battleEventRowSchema.parse({id:'00000000-0000-4000-8000-000000000001',match_id:'00000000-0000-4000-8000-000000000002',actor_id:'00000000-0000-4000-8000-000000000003',actor_warband_id:own,summary:'Attack',reverted_at:null,reverted_by:null,revert_note:null,at:'2026-09-11T00:00:00Z',kind:'attack',payload:{attacker_id:'h',attacker_name:'Renamed',attacker_kind:'hero',attacker_warband_id:own,target_id:'r',target_name:'Anything',target_kind:'group',target_warband_id:enemy,target_size:3,phase:'melee',out_of_action:true,kill:true,wounds_lost:1,turn:1}})
   expect(specialKillsFromEvents([event],own,[roster]).h.runts).toBe(1)
+  expect(specialKillsFromEvents([{...event,payload:{...event.payload,metadata_only:true}}],own,[roster])).toEqual({})
   const sheets=[{warband_id:enemy,live_state:{...emptyBattleLiveState(),takenOutBy:{r:[{warbandId:own,modelId:'h',name:'Renamed Hero',turn:1}]}}}]
   expect(specialKillsFromEvents([],own,[roster],sheets).h.runts).toBe(1)
   expect(specialKillsFromEvents([event],own,[roster],sheets).h.runts).toBe(1)

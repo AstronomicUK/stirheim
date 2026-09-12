@@ -1,3 +1,6 @@
+import {useManualCasualty,manualCasualtyToken} from '../../../api/manualCasualties'
+import {attackEventPayloadSchema} from '../../../domain/battleEvent'
+import {subjugatorCaptures} from '../../../rules/resolve/forcedCapture'
 import { TabletopChambers } from './TabletopChambers'
 import { combatantsOf } from '../fight/combatants'
 import type { ReactNode } from 'react'
@@ -12,7 +15,7 @@ import { useState } from 'react'
 import { warbandTurnKey, eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterWarband } from '../../../rules/types/roster'
-import { Button, Stepper } from '../../../ui'
+import { Button, Stepper, Notice } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
 import { ExperienceReminders } from './ExperienceReminders'
@@ -48,7 +51,24 @@ interface Asking {
   index: number
 }
 
-export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, readOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false, tabletopAmmunition = false }: MyWarbandTabProps) {
+export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: editSheet, readOnly: externallyReadOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false, tabletopAmmunition = false }: MyWarbandTabProps) {
+  const casualty=useManualCasualty()
+  const [busy,setBusy]=useState(false),[casualtyError,setCasualtyError]=useState('')
+  const readOnly=externallyReadOnly||busy||casualty.isPending
+  const edit:MyWarbandTabProps['edit']=(fn)=>{
+    if(readOnly)return
+    const next=fn(rawSheet)
+    const remove=events.filter(e=>!e.reverted_at&&e.payload.metadata_only&&e.payload.target_warband_id===roster.id&&e.payload.casualty_token&&
+      (e.payload.manual_casualty_index??0)>=(next.tallies.find(t=>t.id===e.payload.target_id)?.outOfAction??0)&&
+      (rawSheet.tallies.find(t=>t.id===e.payload.target_id)?.outOfAction??0)>(next.tallies.find(t=>t.id===e.payload.target_id)?.outOfAction??0))
+    if(!matchId||!remove.length){editSheet(fn);return}
+    setBusy(true);setCasualtyError('')
+    void (async()=>{
+      try{for(const e of remove)await casualty.mutateAsync({matchId,warbandId:roster.id,token:e.payload.casualty_token!,reason:'Manual casualty removed from the battle sheet.'});editSheet(fn)}
+      catch(e){setCasualtyError(e instanceof Error?e.message:'Could not remove the casualty.')}
+      finally{setBusy(false)}
+    })()
+  }
   const turns = useBattleTurns(matchId ?? '')
   const ammunition = (id:string) => {
     if(!tabletopAmmunition)return null
@@ -62,19 +82,35 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
   const enemies = useEnemyRosters(matchId ?? '', matchId ? others : [])
   const [asking, setAsking] = useState<Asking | null>(null)
 
-  function answer(by: TakenOutBy) {
-    if (!asking) return
+  async function answer(by: TakenOutBy) {
+    if (!asking||readOnly) return
     const { id, index } = asking
-    edit((s) => {
-      const current = [...takenOutBy(s, id)]
-      current[index] = by
-      return setTakenOutBy(s, id, current.map((x) => x ?? { warbandId: null, modelId: null, name: 'unknown', turn: s.turn }))
-    })
-    setAsking(null)
+    setBusy(true);setCasualtyError('')
+    try{
+      if(matchId){
+        const token=manualCasualtyToken(matchId,roster.id,id,index)
+        const enemy=enemies.warbands.find(w=>w.roster.id===by.warbandId)
+        const attacker=enemy?.roster.heroes.find(h=>h.id===by.modelId)
+        const target=combatantsOf(roster,template,roster.name,sheet).find(w=>w.id===id)
+        const captured=attacker&&target&&subjugatorCaptures({outOfAction:true,attackerIsHero:true,skills:attacker.skillIds,equipment:attacker.equipment.filter(e=>e.quantity>0).flatMap(e=>e.itemId?[e.itemId]:[]),targetLarge:target.traitIds.includes('large_target')})
+        if(captured){
+          const payload=attackEventPayloadSchema.parse({attacker_warband_id:enemy!.roster.id,attacker_id:attacker.id,attacker_kind:'hero',attacker_name:attacker.name,target_warband_id:roster.id,target_id:id,target_kind:target.kind==='henchman'?'group':'hero',target_name:target.name,target_size:target.groupSize??1,target_unit_template_id:target.unitTemplateId,out_of_action:true,kill:false,wounds_lost:0,outcome:'Captured at the table',turn:sheet.turn,capture_reason:'subjugator',capture_source:'table',metadata_only:true,manual_casualty_index:index,casualty_token:token})
+          await casualty.mutateAsync({matchId,warbandId:roster.id,token,payload})
+        }else if(events.some(e=>!e.reverted_at&&e.payload.casualty_token===token))await casualty.mutateAsync({matchId,warbandId:roster.id,token,reason:'Changed who caused this manual casualty.'})
+      }
+      editSheet((s) => {
+        const current = [...takenOutBy(s, id)]
+        current[index] = by
+        return setTakenOutBy(s, id, current.map((x) => x ?? { warbandId: null, modelId: null, name: 'unknown', turn: s.turn }))
+      })
+      setAsking(null)
+    }catch(e){setCasualtyError(e instanceof Error?e.message:'Could not record the capture.')}
+    finally{setBusy(false)}
   }
 
   return (
     <>
+      {casualtyError?<Notice tone="error" title="Could not update the casualty">{casualtyError}</Notice>:null}
       <BugmansAleControl roster={roster} template={template} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
@@ -86,11 +122,11 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
       <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((group) => (
-          <div key={group.id}><MyGroupCard fromLog={eventContribution(events,roster.id,group.id).outOfAction} chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />{ammunition(group.id)}<RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
+          <div key={group.id}><MyGroupCard manualOut={groupOut(rawSheet,group.id)} fromLog={eventContribution(events,roster.id,group.id).outOfAction} chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} />{ammunition(group.id)}<RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
         ))}
       </Section>
 
-      <TakenOutBySheet open={asking !== null} subjectName={asking?.name ?? ''} enemies={enemies.warbands} enemiesPending={Boolean(matchId) && enemies.isPending} turn={sheet.turn} onPick={answer} onClose={() => setAsking(null)} />
+      <TakenOutBySheet open={asking !== null} subjectName={asking?.name ?? ''} enemies={enemies.warbands} enemiesPending={Boolean(matchId) && enemies.isPending} turn={sheet.turn} pending={busy||casualty.isPending} error={casualtyError} onPick={answer} onClose={() => {if(!busy&&!casualty.isPending)setAsking(null)}} />
 
       {animals.length > 0 ? (
         <Section title="Animals" aside={`${animals.length} on the table`}>
@@ -106,7 +142,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
                         {animal.holderName}'s · {animal.kind.countsForRout ? 'counts for rout tests' : 'does not count for rout tests'} · dead on 1-2 after the game
                       </p>
                     </div>
-                    <Button variant={out ? 'secondary' : 'danger'} disabled={readOnly} onClick={() => edit((s) => toggleHeroOut(s, animal.id))} aria-pressed={out}>
+                    <Button variant={out ? 'secondary' : 'danger'} disabled={readOnly||eventContribution(events,roster.id,animal.id).outOfAction>0} onClick={() => {edit((s) => toggleHeroOut(s, animal.id));if(!out)setAsking({id:animal.id,name:animal.name,index:0})}} aria-pressed={out}>
                       {out ? 'Back in' : 'Out of action'}
                     </Button>
                   </li>
@@ -195,7 +231,7 @@ function MyWarriorCard({ chambers, condition, entry, template, sheet, edit, read
           <div className="flex flex-col items-end gap-1">
             <Button
               variant={out ? 'secondary' : 'danger'}
-              disabled={readOnly}
+              disabled={readOnly||fromLog.outOfAction>0}
               onClick={() => {
                 edit((s) => toggleHeroOut(s, warrior.id))
                 if (!out) onAsk(warrior.name)
@@ -204,7 +240,8 @@ function MyWarriorCard({ chambers, condition, entry, template, sheet, edit, read
             >
               {out ? 'Back in' : 'Out of action'}
             </Button>
-            {out && !readOnly ? (
+            {fromLog.outOfAction>0?<p className="max-w-52 text-right text-xs text-ink-dim">Recorded in the combat log. Reverse that entry to correct it.</p>:null}
+            {out && !readOnly && !fromLog.outOfAction ? (
               <button type="button" onClick={() => onAsk(warrior.name)} className="text-xs text-brass underline-offset-4 hover:underline">
                 {by ? 'Change who did it' : 'Who did it?'}
               </button>
@@ -217,6 +254,7 @@ function MyWarriorCard({ chambers, condition, entry, template, sheet, edit, read
 }
 
 interface MyGroupCardProps {
+  manualOut: number
   fromLog: number
   chambers?: ReactNode
   condition?: string
@@ -229,7 +267,7 @@ interface MyGroupCardProps {
   onAsk: (index: number) => void
 }
 
-function MyGroupCard({ fromLog, chambers, condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
+function MyGroupCard({ manualOut, fromLog, chambers, condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
   const [expanded, setExpanded] = useState(false)
   const out = groupOut(sheet, group.id)
   const by = takenOutBy(sheet, group.id)
@@ -292,7 +330,7 @@ function MyGroupCard({ fromLog, chambers, condition, group, template, sheet, edi
             {by.map((b, i) => (
               <li key={i} className="flex items-center justify-between gap-2">
                 <span>{modelLabel(group.modelNames, i)}: taken out by {b.name}</span>
-                {!readOnly ? (
+                {!readOnly&&i<manualOut ? (
                   <button type="button" onClick={() => onAsk(i)} className="text-brass underline-offset-4 hover:underline">
                     Change
                   </button>

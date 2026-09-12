@@ -186,6 +186,9 @@ begin
   perform set_config('stirheim.audit_reason', 'Unpaid upkeep: dismissed before starting battle ' || p_match_id::text, true);
   update public.heroes set status = 'left', flags = flags - 'upkeepOwedAfter' - 'contractCheckOwed'
     where id = any(v_unpaid);
+  -- Carried forward from 049/050: Trapmaster traps and Fanatic doses are prepared here too.
+  perform public.prepare_trap_supplies(p_match_id);
+  perform public.prepare_fanatic_supplies(p_match_id);
   perform set_config('stirheim.audit_reason', 'start_match', true);
   update public.matches set state = 'in_progress', started_at = now(), combat_mode = v_mode where id = p_match_id;
   return 'in_progress';

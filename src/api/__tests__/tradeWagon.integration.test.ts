@@ -18,7 +18,7 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   const rows=await admin.from('items').select('*').eq('warband_id',merchant);if(rows.error)throw rows.error
   snapshot={match_id:match,merchant_id:merchant,captor_id:captor,failed_rout:true,driver_present:false,merchant_all_ooa:false,rare_search_blocked:true,wagon:{kind:'item',expected:rows.data.find(i=>i.id===wagon)},cargo:{items:[rows.data.find(i=>i.id===cargo)],wyrdstone:3}}
  })
- afterEach(async()=>{await admin.from('campaigns').delete().eq('id',campaign);await admin.from('warbands').delete().in('id',[merchant,captor])})
+ afterEach(async()=>{const released=await admin.rpc('release_trade_wagon_capture',{p_report_id:report});if(released.error)throw released.error;await admin.from('campaigns').delete().eq('id',campaign);await admin.from('warbands').delete().in('id',[merchant,captor])})
  const validate=(value:Record<string,any>=snapshot)=>admin.rpc('validate_trade_wagon_capture',{p_report_id:report,p_capture:value})
  it('accepts original cargo without transferring anything or taking gold',async()=>{
   expect((await validate()).error).toBeNull()
@@ -46,6 +46,44 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   expect((await validate(value)).error).toBeNull()
   await admin.from('henchman_groups').update({size:0}).eq('id',wagon)
   expect((await validate(value)).error?.message).toContain('Trade Wagon changed')
+ })
+ it('reserves cargo outside spendable inventory and restores it without overwriting later treasure',async()=>{
+  expect((await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:snapshot})).error).toBeNull()
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toEqual([])
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:80,wyrdstone:0})
+  expect((await admin.from('trade_wagon_captures').select('state').eq('report_id',report).single()).data?.state).toBe('pending')
+  expect((await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:snapshot})).error).not.toBeNull()
+  await admin.from('trade_wagon_captures').update({state:'settled'}).eq('report_id',report)
+  try {expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error?.message).toContain('Undo the agreed')}
+  finally {await admin.from('trade_wagon_captures').update({state:'pending'}).eq('report_id',report)}
+  await admin.from('warbands').update({gold:91,wyrdstone:2}).eq('id',merchant)
+  expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error).toBeNull()
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:91,wyrdstone:5})
+  expect((await admin.from('items').select('id,quantity,notes').eq('warband_id',merchant).order('notes')).data).toEqual([{id:cargo,quantity:2,notes:'Family blades'},{id:wagon,quantity:1,notes:'Two draft horses'}])
+  expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error).toBeNull()
+  expect((await admin.from('warbands').select('wyrdstone').eq('id',merchant).single()).data?.wyrdstone).toBe(5)
+ })
+ it('rolls back the whole release if an original cargo identity has been reused',async()=>{
+  expect((await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:snapshot})).error).toBeNull()
+  const collision=await admin.from('items').insert({id:cargo,warband_id:captor,holder_type:'stash',item_rules_id:'axe',quantity:1});expect(collision.error).toBeNull()
+  try {
+   expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error?.message).toContain('identity is already in use')
+   expect((await admin.from('items').select('id').eq('id',wagon)).data).toEqual([])
+   expect((await admin.from('warbands').select('wyrdstone').eq('id',merchant).single()).data?.wyrdstone).toBe(0)
+  }finally {await admin.from('items').delete().eq('id',cargo)}
+ })
+ it('makes a group-form wagon unavailable and restores its original group identity',async()=>{
+  await admin.from('items').delete().eq('id',wagon)
+  const group=await admin.from('henchman_groups').insert({id:wagon,warband_id:merchant,name:'Trade Wagon',unit_type_rules_id:'merchant_trade_wagon',size:1,stats:{M:0,WS:0,BS:0,S:0,T:8,W:4,I:0,A:0,Ld:0}}).select('*').single();expect(group.error).toBeNull()
+  const value={...snapshot,wagon:{kind:'group',expected:group.data}}
+  const attached=crypto.randomUUID()
+  expect((await admin.from('items').insert({id:attached,warband_id:merchant,holder_type:'group',holder_id:wagon,item_rules_id:'sword',quantity:1})).error).toBeNull()
+  expect((await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:value})).error?.message).toContain('equipment attached')
+  await admin.from('items').delete().eq('id',attached)
+  expect((await admin.rpc('reserve_trade_wagon_capture',{p_report_id:report,p_capture:value})).error).toBeNull()
+  expect((await admin.from('henchman_groups').select('size').eq('id',wagon).single()).data?.size).toBe(0)
+  expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error).toBeNull()
+  expect((await admin.from('henchman_groups').select('size').eq('id',wagon).single()).data?.size).toBe(1)
  })
  it('rejects a recorded losing captor and a changed wagon',async()=>{
   await admin.from('items').update({notes:'Later modification'}).eq('id',wagon)

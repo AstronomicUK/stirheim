@@ -30,7 +30,6 @@ export function CaptiveCard({detail,campaignId,userId}:{detail:WarbandDetail;cam
  return <Section title="Captured warriors">
   {active.map(c=><CaseCard key={c.id} item={c} detail={detail} campaign={campaign.data} canAct={gm||mine} gm={gm} userId={userId}/>)}
   {legacy.length?<LegacyCaptiveForm detail={detail} held={legacy} campaign={campaign.data} campaignId={campaignId} userId={userId} gm={gm}/>:null}
-  {cases.error?<Notice tone="error" title="Could not load captive cases">{cases.error.message}</Notice>:null}
  </Section>
 }
 

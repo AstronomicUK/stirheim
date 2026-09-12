@@ -59,6 +59,7 @@ function useInvalidateTradeWagon() {
   const qc=useQueryClient()
   return ()=>Promise.all([
     qc.invalidateQueries({queryKey:['trade-wagon-captures']}),
+    qc.invalidateQueries({queryKey:['trade-wagon-search']}),
     qc.invalidateQueries({queryKey:warbandKeys.all}),
     qc.invalidateQueries({queryKey:['reports']}),
   ])

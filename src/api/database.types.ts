@@ -1896,6 +1896,18 @@ export type Database = {
         }
         Returns: number
       }
+      record_rare_item_trade: {
+        Args: {
+          p_changes: Json
+          p_haggle?: Json
+          p_heroes_searched: string[]
+          p_match_id: string
+          p_reason: string
+          p_warband_id: string
+          p_wyrdstone_sold: boolean
+        }
+        Returns: number
+      }
       record_staff_dispel: {
         Args: {
           p_active_warband_id: string
@@ -2058,6 +2070,10 @@ export type Database = {
           p_warband_id: string
         }
         Returns: Database["public"]["Enums"]["match_state"]
+      }
+      trade_wagon_rare_search_blocked: {
+        Args: { p_warband_id: string }
+        Returns: boolean
       }
       transfer_warband: {
         Args: { p_new_owner: string; p_warband_id: string }

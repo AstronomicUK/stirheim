@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { useLatestReport, useTradePhaseState, useWarbandCampaign, type WarbandCampaign } from '../../api/trading'
+import { useTradeWagonSearchRestriction, useLatestReport, useTradePhaseState, useWarbandCampaign, type WarbandCampaign } from '../../api/trading'
 import { useWarband, type WarbandDetail } from '../../api/warbands'
 import { useSession } from '../../app/session'
 import { applyHouseRuleDefaults } from '../../rules/resolve/houseRules'
@@ -36,6 +36,7 @@ export function TradingPage() {
   const { id } = useParams<{ id: string }>()
   const warband = useWarband(id)
   const campaign = useWarbandCampaign(id)
+  const restriction = useTradeWagonSearchRestriction(id)
   const report = useLatestReport(id)
   const matchId = report.data?.match_id ?? null
   const state = useTradePhaseState(id, matchId)
@@ -53,7 +54,7 @@ export function TradingPage() {
     />
   )
 
-  if (warband.isPending || campaign.isPending || report.isPending || (matchId !== null && (state.isPending || reports.isPending))) {
+  if (restriction.isPending || warband.isPending || campaign.isPending || report.isPending || (matchId !== null && (state.isPending || reports.isPending))) {
     return (
       <>
         {header}
@@ -63,7 +64,7 @@ export function TradingPage() {
       </>
     )
   }
-  const loadError = warband.error ?? campaign.error ?? report.error ?? state.error
+  const loadError = restriction.error ?? warband.error ?? campaign.error ?? report.error ?? state.error
   if (loadError || !warband.data) {
     return (
       <>
@@ -78,7 +79,7 @@ export function TradingPage() {
   return (
     <>
       {header}
-      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id))} />
+      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={{...phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id)),rareItemSearchBlocked:restriction.data}} />
     </>
   )
 }
@@ -92,12 +93,13 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
   const trade = useTrade(detail, houseRules, phase, isOwner, perks)
   const [tab, setTab] = useState<Tab>(detail.roster.wyrdstone > 0 && !phase.wyrdstoneSold ? 'wyrdstone' : 'buy')
 
-  const searchesLeft = eligibleSearchers(detail.roster, phase.heroesSearched, phase.heroesOutOfAction).length
+  const searchesLeft = phase.rareItemSearchBlocked ? 0 : eligibleSearchers(detail.roster, phase.heroesSearched, phase.heroesOutOfAction).length
   const searchesUsed = phase.heroesSearched.length
   const stashCount = detail.roster.stash.reduce((n, i) => n + i.quantity, 0)
 
   return (
     <>
+      {phase.rareItemSearchBlocked?<Notice tone="info" title="Rare-item searches unavailable">Local traders refuse rare-item searches after the captured Merchant Caravan wagon. This ends when your next battle starts. Common purchases and character searches remain available.</Notice>:null}
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
         <KeyValue icon="gold" label="Gold" value={`${detail.warband.gold} gc`} />
         <KeyValue icon="wyrdstone" label="Wyrdstone" value={detail.warband.wyrdstone} />

@@ -75,6 +75,7 @@ export async function fetchTradePhaseState(warbandId: string, matchId: string): 
 export interface HaggleTrade {heroId:string; dice:[number,number]; requestId:string; itemName:string; priceBefore:number}
 
 export interface RecordTradeInput {
+  rareItemSearch?: boolean
   haggle?: HaggleTrade;
   /** The current phase (latest report's match), or null when the warband has not fought yet. */
   matchId: string | null
@@ -90,6 +91,11 @@ export interface RecordTradeInput {
 
 /** Returns the number of roster changes applied. */
 export async function recordTrade(warbandId: string, input: RecordTradeInput): Promise<number> {
+  if(input.rareItemSearch) {
+    const {data,error}=await supabase.rpc('record_rare_item_trade',{p_warband_id:warbandId,p_match_id:input.matchId!,p_changes:input.changes as unknown as Json,p_wyrdstone_sold:input.wyrdstoneSold,p_heroes_searched:input.heroesSearched,p_reason:input.reason??'',p_haggle:input.haggle as unknown as Json??undefined})
+    if(error)throw new Error(error.message)
+    return data
+  }
   if(input.haggle) {
     const h=input.haggle
     if(!input.matchId)throw new Error('Haggle requires a post-battle sequence.')
@@ -139,4 +145,12 @@ export function useRecordTrade(warbandId: string) {
         qc.invalidateQueries({ queryKey: tradeKeys.all }),
       ]),
   })
+}
+
+export function useTradeWagonSearchRestriction(warbandId:string|undefined) {
+  return useQuery({queryKey:['trade-wagon-search',warbandId],enabled:!!warbandId,queryFn:async()=>{
+    const {data,error}=await supabase.rpc('trade_wagon_rare_search_blocked',{p_warband_id:warbandId!})
+    if(error)throw new Error(error.message)
+    return data
+  }})
 }

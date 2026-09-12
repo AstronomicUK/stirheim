@@ -11,6 +11,7 @@ import { diffRoster } from '../../domain/rosterDiff'
 import type { CampaignHouseRules, RosterWarband } from '../../rules/types/roster'
 
 export interface TradeOptions {
+  rareItemSearch?: boolean
   haggle?: HaggleTrade;
   wyrdstoneSold?: boolean
   heroesSearched?: string[]
@@ -19,6 +20,7 @@ export interface TradeOptions {
 }
 
 export interface PhaseInfo {
+  rareItemSearchBlocked?: boolean
   /** The latest report's match, or null when the warband has never filed one (no limits). */
   matchId: string | null
   wyrdstoneSold: boolean
@@ -67,6 +69,7 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
         wyrdstoneSold: opts.wyrdstoneSold ?? false,
         heroesSearched: opts.heroesSearched ?? [],
         reason: opts.reason,
+        rareItemSearch: opts.rareItemSearch,
         haggle: opts.haggle,
       })
       return true

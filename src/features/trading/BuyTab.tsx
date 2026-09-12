@@ -27,7 +27,7 @@ export function BuyTab({ trade }: { trade: TradeContext }) {
   const [selected, setSelected] = useState<Item | null>(null)
   const bans = trade.houseRules.bans
   const groups = useMemo(() => groupCatalogue(SHOP_ITEMS.filter((i) => !isBanned(bans, 'items', i.id)), query), [query, bans])
-  const searchesLeft = eligibleSearchers(trade.roster, trade.phase.heroesSearched, trade.phase.heroesOutOfAction).length
+  const searchesLeft = trade.phase.rareItemSearchBlocked ? 0 : eligibleSearchers(trade.roster, trade.phase.heroesSearched, trade.phase.heroesOutOfAction).length
 
   return (
     <div className="flex flex-col gap-4">
@@ -87,7 +87,7 @@ interface BuySheetProps {
 function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const { roster, houseRules, phase, canTrade, pending, run, error, clearError } = trade
   const tracked = phase.matchId !== null
-  const searchers = useMemo(() => eligibleSearchers(roster, phase.heroesSearched, phase.heroesOutOfAction), [roster, phase.heroesSearched, phase.heroesOutOfAction])
+  const searchers = useMemo(() => phase.rareItemSearchBlocked ? [] : eligibleSearchers(roster, phase.heroesSearched, phase.heroesOutOfAction), [roster, phase.heroesSearched, phase.heroesOutOfAction, phase.rareItemSearchBlocked])
   const downCount = phase.heroesOutOfAction.filter((id) => roster.heroes.some((h) => h.id === id && h.status === 'active')).length
   const destinations = useMemo(() => locationOptions(roster), [roster])
   // Dice in the price never change with the buyer, so the listed entry is enough to size the fields.
@@ -151,7 +151,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const wornGemBonus = displayedGemRareBonus(roster.heroes.find(h => h.id === searcherId)?.equipment ?? [])
   const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus + (roster.scenarioEffects?.rarePenalty ?? 0)
   const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
-  const needsSearcher = isRare && tracked
+  const needsSearcher = isRare && (tracked || !!phase.rareItemSearchBlocked)
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
   const available = kind === 'common' || kind === 'special' || search?.available === true
 
@@ -202,6 +202,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     ].filter((r): r is string => Boolean(r))
     const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, notes, total ?? undefined).value, {
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
+      rareItemSearch: needsSearcher && !!searcherId,
       ...(hagglerId&&haggler&&beforeHaggle!==null?{haggle:{heroId:hagglerId,dice:haggleDice as [number,number],requestId:haggleRequestId,itemName:item.name,priceBefore:beforeHaggle}}:{}),
       reason: reasons.length ? reasonWith('trading', reasons.join(' · ')) : undefined,
     })
@@ -213,6 +214,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     const spend = pricing.paidOnFailure && beforeHaggle !== null ? beforeHaggle : 0
     const ok = await run(() => (spend > 0 ? { ...roster, gold: Math.max(0, roster.gold - spend) } : roster), {
       heroesSearched: [searcherId],
+      rareItemSearch: true,
       reason: spend > 0 ? reasonWith('trading', `${item.name}: ${spend} gc spent on a failed search (paid on failure)`) : undefined,
     })
     if (ok) setSearchRecorded(true)

@@ -184,6 +184,28 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   expect(settled.error).toBeNull()
   expect(tradeWagonCaptureSchema.parse(settled.data)).toMatchObject({state:'settled',settlement:{kind:'ransom',gold:25}})
  })
+ it('blocks rare searches through pending and ransomed capture, but not ordinary trade or the next battle',async()=>{
+  await reserveAndWinner()
+  const blocked=()=>player.rpc('trade_wagon_rare_search_blocked',{p_warband_id:captor})
+  expect((await blocked()).data).toBe(true)
+  const attempt=()=>player.rpc('record_rare_item_trade',{p_warband_id:captor,p_match_id:match,p_changes:[],p_wyrdstone_sold:false,p_heroes_searched:[],p_reason:'Rare item search'})
+  expect((await attempt()).error?.message).toContain('Local traders refuse')
+  expect((await player.rpc('record_trade',{p_warband_id:captor,p_match_id:match,p_changes:[],p_wyrdstone_sold:false,p_heroes_searched:[],p_reason:'Common purchase'})).error).toBeNull()
+  expect((await ransom()).error).toBeNull();expect((await blocked()).data).toBe(true)
+  const next=crypto.randomUUID()
+  expect((await admin.from('matches').insert({id:next,campaign_id:campaign,created_by:uid,state:'scheduled',created_at:'2099-01-01T00:00:00Z'})).error).toBeNull()
+  expect((await admin.from('match_participants').insert({match_id:next,warband_id:captor,accepted_at:new Date().toISOString()})).error).toBeNull()
+  expect((await blocked()).data).toBe(true)
+  expect((await admin.from('matches').update({state:'in_progress',started_at:'2099-01-01T00:00:00Z'}).eq('id',next)).error).toBeNull()
+  expect((await blocked()).data).toBe(false)
+  expect((await attempt()).error).toBeNull()
+ })
+ it('allows rare searches when all Merchant models were out of action',async()=>{
+  snapshot={...snapshot,merchant_all_ooa:true,rare_search_blocked:false}
+  await reserveAndWinner()
+  expect((await player.rpc('trade_wagon_rare_search_blocked',{p_warband_id:captor})).data).toBe(false)
+  expect((await player.rpc('record_rare_item_trade',{p_warband_id:captor,p_match_id:match,p_changes:[],p_wyrdstone_sold:false,p_heroes_searched:[],p_reason:'Allowed search'})).error).toBeNull()
+ })
  it('protects both settled reports but allows withdrawal after the ransom is undone',async()=>{
   await reserveAndWinner();expect((await ransom()).error).toBeNull()
   expect((await admin.from('match_reports').update({undo:null}).eq('match_id',match).eq('warband_id',captor)).error?.message).toContain('Undo the agreed Trade Wagon settlement')

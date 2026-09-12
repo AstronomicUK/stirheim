@@ -221,6 +221,8 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       reportId: matchReports.data?.find(r => r.warband_id === participant.warband_id)?.id,
       template: findWarbandTemplate(rosterData.roster.warbandTemplateId),
       items: rosterData.items,
+      rawGroups: rosterData.groups,
+      opponentResults: Object.fromEntries((matchReports.data??[]).map(r=>[r.warband_id,r.result])),
       matchId: match.id,
       scenarioId: match.scenario_rules_id, campaignId: match.campaign_id,
       myRating: participant.rating,

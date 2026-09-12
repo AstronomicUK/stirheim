@@ -1,3 +1,4 @@
+import {reportTradeWagon,applyTradeWagonToReport} from './tradeWagonReport'
 import { brokenWeaponSettlement } from './brokenWeapons'
 import { delayedLeaderUnit, leaderWaitingGameUpdates } from '../../../rules/resolve/leaderReplacement'
 import {specialKillProblems, type SpecialKillXp} from './specialKillXp'
@@ -77,6 +78,8 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  rawGroups?: readonly import('../../../domain').HenchmanGroupRow[]
+  opponentResults?: Record<string,'won'|'lost'|'draw'>
   battleEvents?: import('../../../domain').BattleEventRow[]
   specialKillXp?: Record<string, SpecialKillXp>
   specialKillXpLoading?: boolean
@@ -1052,7 +1055,10 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
+  const wagonCapture=nonCampaign?{snapshot:undefined,problems:[] as string[],notes:[] as string[]}:reportTradeWagon(draft,ctx)
+  applyTradeWagonToReport(wagonCapture,applied,ctx.rawGroups??[])
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
+  problems.outcome.push(...wagonCapture.problems)
   problems.injuries.push(...brokenEquipment.problems,...equipmentLosses.problems,...medicine.problems,...lycanthrope.problems,...lycanthropeEquipmentProblems)
   if(ctx.scenarioId==='brigands_in_the_pasturelands'&&!['attacker','defender'].includes(draft.scenarioRewards?.brigands?.role??''))problems.outcome.push('Choose your Brigands role for experience.')
   if(ctx.scenarioId==='the_hunters_become_the_hunted'&&draft.result==='won'&&(!Number.isInteger(draft.scenarioRewards?.hunters?.alive)||draft.scenarioRewards!.hunters!.alive!<0||draft.scenarioRewards!.hunters!.alive!>2))problems.outcome.push('Record the number of Cold Ones alive (0–2) for survivor experience.')
@@ -1088,7 +1094,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...wagonCapture.notes,...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

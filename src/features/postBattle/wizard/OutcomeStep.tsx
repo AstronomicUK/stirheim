@@ -1,3 +1,4 @@
+import {TradeWagonFacts} from './TradeWagonFacts'
 import type { HarpyDraft } from '../model/harpyRewards'
 import { Notice, SegmentedControl, SelectField, TextField, DieField, NumberField } from '../../../ui'
 import { Card } from '../../roster/view/bits'
@@ -60,6 +61,7 @@ export function OutcomeStep({ draft, derived, update, mine, opponents, opponentR
         checked={draft.routed}
         onChange={(routed) => update((d) => setRouted(d, routed))}
       />
+      <TradeWagonFacts draft={draft} ctx={ctx} update={update}/>
       <Card className="px-4 py-2">
         <Row label={`${mine.warband_name} rating`} value={mine.rating} />
         {opponents.map((o) => (

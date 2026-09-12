@@ -132,6 +132,7 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  tradeWagon?: import('./tradeWagonReport').WagonReportFacts
   brokenWeaponTotals?: Record<string, number | null>
   woods?: import('./lycanthropeReport').WoodsDraft
   plantCasualties?: Record<string, boolean>
@@ -309,7 +310,7 @@ export function setResult(draft: ReportDraft, result: ReportResult): ReportDraft
 }
 
 export function setRouted(draft: ReportDraft, routed: boolean): ReportDraft {
-  return { ...draft, routed, routCause: routed === draft.routed ? draft.routCause : undefined }
+  return { ...draft, routed, routCause: routed === draft.routed ? draft.routCause : undefined, tradeWagon: routed === draft.routed ? draft.tradeWagon : undefined }
 }
 
 export function setUnderdog(draft: ReportDraft, underdog: boolean): ReportDraft {

@@ -195,7 +195,7 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
     preBattle: { label: "Rubbing the Monkey's Paw after the battle", appliesTo: "self", note: "Mark it to roll the wishes in the report. After the third use it disappears." },
   },
   tears_of_shallaya: { consumable: "battle", preBattle: { label: "Drank the Tears of Shallaya", appliesTo: "self", traits: ["immune_to_poison"] } },
-  healing_herbs: { consumable: "use", note: "Healing Herbs: restore all wounds lost, once, outside combat." },
+  healing_herbs: { consumable: "use", note: "Healing Herbs: a Hero restores all lost Wounds at the start of recovery, outside hand-to-hand combat. Reusable unless the campaign uses the single-use house rule." },
 
   // ---- Other consumables ----
   garlic: { consumable: "battle", note: "Garlic: a Vampire must pass a Leadership test to charge the bearer." },

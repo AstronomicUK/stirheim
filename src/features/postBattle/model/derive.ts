@@ -108,6 +108,7 @@ export interface ReportContext {
   preBattle?: Record<string, string>
   /** Consumables marked as used on the battle sheet: warrior id -> item ids. */
   itemsUsed?: Record<string, string[]>
+  healingHerbUses?: import('../../../domain/battle').BattleLiveState['healingHerbUses']
   /** Doses the habit already used up at battle start (addiction_supplies for this match): the report must not use a second one. */
   addictionSupplies?: readonly { hero_id: string; item_rules_id: string }[]
   /** Warriors of this warband a Nurgle's Rot carrier wounded on a 6 (from the shared combat log): they contract the Rot. */
@@ -435,6 +436,12 @@ export function reportAdjustments(draft: ReportDraft, participants: Participants
 
 function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration: ExplorationDerived, kit: KitDerived, ctx: ReportContext): Record<StepId, string[]> {
   const problems: Record<StepId, string[]> = { outcome: [], casualties: [], injuries: [], experience: [], advances: [], exploration: [], veterans: [], review: [] }
+  const herbCounts = new Map<string, number>()
+  for (const use of ctx.healingHerbUses ?? []) if (use.singleUse && !use.correction) herbCounts.set(use.itemRowId, (herbCounts.get(use.itemRowId) ?? 0) + 1)
+  for (const [id, count] of herbCounts) {
+    const row = ctx.items.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
+    if (!row || row.quantity < count) problems.review.push('Healing Herbs stock changed after use. Restore the spent doses to their original inventory row or correct the battle-sheet use before filing.')
+  }
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
   if (ctx.specialKillXpLoading) problems.experience.push('Checking the opposing units for special experience rules.')
   if (ctx.specialKillXpError) problems.experience.push(ctx.specialKillXpError)
@@ -497,6 +504,8 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
   for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed ?? {})) {
     for (const itemId of new Set(itemIds)) {
       if (!isConsumable(itemId)) continue
+      // Herbs have explicit use records; a legacy checkbox must not consume reusable herbs.
+      if (itemId === 'healing_herbs') continue
       // Exact-once: a dose start_match already used up for this hero (and recorded in the ledger for
       // this very match) is the dose he took; ticking it must not cost a second copy (#139/#140).
       if (ctx.addictionSupplies?.some((s) => s.hero_id === holderId && s.item_rules_id === itemId)) continue
@@ -504,6 +513,12 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       if (!row || patches.some((p) => p.id === row.id)) continue
       patches.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
     }
+  }
+  const herbCounts = new Map<string, number>()
+  for (const use of ctx.healingHerbUses ?? []) if (use.singleUse && !use.correction) herbCounts.set(use.itemRowId, (herbCounts.get(use.itemRowId) ?? 0) + 1)
+  for (const [id, count] of herbCounts) {
+    const row = rows.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
+    if (row && row.quantity >= count) patches.push({ id, quantity: row.quantity - count })
   }
   const mapsUsed = new Set(draft.exploration.aids.filter((u) => u.aidKey.startsWith('map:')).map((u) => u.aidKey.slice('map:'.length)))
   for (const holder of mapsUsed) {

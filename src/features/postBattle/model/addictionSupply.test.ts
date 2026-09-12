@@ -11,6 +11,13 @@ function ctx(over: Partial<ReportContext>): ReportContext {
 }
 
 describe('report item patches and the addiction ledger (#139/#140)', () => {
+  it('consumes the recorded number of single-use Herbs doses, ignoring reusable and corrected uses', () => {
+    const use = { id: 'use', warriorId: 'kurt', itemRowId: 'herbs', at: 'now', singleUse: true, woundsRestored: 1, manualWounds: 1, healedEventIds: [] }
+    const items = [row('herbs', 'kurt', 'healing_herbs', 2)]
+    const context = ctx({ items, itemsUsed: { kurt: ['healing_herbs'] }, healingHerbUses: [use, { ...use, id: 'second' }, { ...use, id: 'reusable', singleUse: false }, { ...use, id: 'corrected', correction: 'Mistake' }] })
+    expect(itemPatchesFor(context, emptyDraft())).toEqual([{ id: 'herbs', quantity: 0 }])
+    expect(itemPatchesFor({ ...context, healingHerbUses: [{ ...use, singleUse: false }] }, emptyDraft())).toEqual([])
+  })
   it('does not use a second dose for a hero whose habit already took one at battle start', () => {
     const items = [row('shade', 'kurt', 'crimson_shade', 1), row('root', 'kurt', 'mandrake_root', 1)]
     const used = { kurt: ['crimson_shade', 'mandrake_root'] }

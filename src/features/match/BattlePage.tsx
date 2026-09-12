@@ -375,7 +375,7 @@ function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scen
             }}
           />
 
-          {sideTab === 'mine' ? <MyWarbandTab roster={roster} template={template} sheet={shown} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
+          {sideTab === 'mine' ? <MyWarbandTab roster={roster} items={items} healingHerbsSingleUse={houseRules.healingHerbsSingleUse} template={template} sheet={shown} rawSheet={handle.sheet} edit={handle.edit} readOnly={readOnly} events={events} matchId={match.id} others={others} /> : null}
           {sideTab === 'enemy' ? <EnemyView matchId={match.id} participants={others} sessions={sessions} events={events} turn={shown.turn} /> : null}
           {sideTab === 'cast' ? <CastTab events={events} sessions={sessions} matchId={match.id} roster={roster} template={template} others={others} sheet={shown} readOnly={readOnly} edit={readOnly ? undefined : handle.edit} /> : null}
           {sideTab === 'fight' && inApp ? (

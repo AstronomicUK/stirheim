@@ -1,4 +1,6 @@
 import { useBattleTurns } from '../../../api/battleTurns'
+import { HealingHerbsControl } from './HealingHerbsControl'
+import type { ItemRow } from '../../../domain'
 import { conditionsFor } from './sheet'
 import { useState } from 'react'
 import { eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
@@ -16,9 +18,12 @@ import type { MatchParticipantView } from '../../../api/matches'
 import type { TakenOutBy } from '../../../domain'
 
 export interface MyWarbandTabProps {
+  items?: readonly ItemRow[]
+  healingHerbsSingleUse?: boolean
   roster: RosterWarband
   template: WarbandTemplate | undefined
   sheet: BattleLiveState
+  rawSheet?: BattleLiveState
   edit: (fn: (sheet: BattleLiveState) => BattleLiveState) => void
   readOnly: boolean
   /** The shared combat log, to say which tallies came from it. */
@@ -36,7 +41,7 @@ interface Asking {
   index: number
 }
 
-export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events = [], matchId, others = [] }: MyWarbandTabProps) {
+export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, readOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false }: MyWarbandTabProps) {
   const turns = useBattleTurns(matchId ?? '')
   const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries)
   const warriors = splitWarriors(roster, sheet)
@@ -61,7 +66,7 @@ export function MyWarbandTab({ roster, template, sheet, edit, readOnly, events =
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <MyWarriorCard condition={conditions.get(entry.warrior.id)} key={entry.warrior.id} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />
+          <div key={entry.warrior.id}><MyWarriorCard condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
         ))}
       </Section>
 

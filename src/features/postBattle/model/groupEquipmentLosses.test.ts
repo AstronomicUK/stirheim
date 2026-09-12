@@ -30,7 +30,7 @@ describe('Henchman casualty equipment and replacement recruits',()=>{
   const d=draft();d.groupInjuries.g=[6];expect(deriveReport(d,context()).equipmentLosses.patches).toEqual([])
  })
  it('does not assume used consumables belonged to survivors or casualties',()=>{
-  const ctx=context();ctx.items=[{...ctx.items[0],item_rules_id:'healing_herbs'}];ctx.itemsUsed={g:['healing_herbs']}
+  const ctx=context();ctx.items=[{...ctx.items[0],item_rules_id:'black_lotus'}];ctx.itemsUsed={g:['black_lotus']}
   const r=deriveReport(draft(),ctx);expect(r.equipmentLosses.rows[0]).toMatchObject({manual:true,available:2,lost:null});expect(r.report).toBeNull()
  })
 })

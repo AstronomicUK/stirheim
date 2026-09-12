@@ -97,6 +97,7 @@ function withTallyChange(tallies: BattleWarriorTally[], id: string, kind: Battle
 export function applyBattleEvents(sheet: BattleLiveState, events: readonly BattleEventRow[], warbandId: string): BattleLiveState {
   let tallies = sheet.tallies;
   let takenOutBy = sheet.takenOutBy;
+  const healed = new Set(sheet.healingHerbUses.filter(use => !use.correction).flatMap(use => use.healedEventIds.map(id => `${use.warriorId}:${id}`)));
   for (const e of events) {
     if (e.reverted_at !== null || e.kind !== "attack") continue;
     const p = e.payload;
@@ -105,7 +106,7 @@ export function applyBattleEvents(sheet: BattleLiveState, events: readonly Battl
     }
     if (p.target_warband_id === warbandId) {
       tallies = withTallyChange(tallies, p.target_id, p.target_kind, (t) => {
-        const woundsLost = t.woundsLost + p.wounds_lost;
+        const woundsLost = t.woundsLost + (healed.has(`${p.target_id}:${e.id}`) ? 0 : p.wounds_lost);
         if (!p.out_of_action) return { ...t, woundsLost };
         const outOfAction = p.target_kind === "hero" ? 1 : Math.min(p.target_size, t.outOfAction + 1);
         return { ...t, woundsLost, outOfAction };

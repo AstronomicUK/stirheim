@@ -96,6 +96,13 @@ export const battleLiveStateSchema = z.object({
   preBattle: z.record(z.string(), z.string()).default({}),
   /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
   itemsUsed: z.record(z.string(), z.array(z.string())).default({}),
+  /** Actual Healing Herbs uses. Event identities prevent old healing from erasing later wounds. */
+  healingHerbUses: z.array(z.object({
+    id: z.string(), warriorId: z.string(), itemRowId: z.string(), at: z.string(),
+    singleUse: z.boolean(), woundsRestored: z.number().int().min(1),
+    manualWounds: z.number().int().min(0), healedEventIds: z.array(z.string()),
+    correction: z.string().optional(),
+  })).default([]),
   /**
    * Who took each of this warband's warriors out of action: warrior or group id -> one entry per
    * model out (the enemy model by id and name, or a fall / other with no id). Fills the report's

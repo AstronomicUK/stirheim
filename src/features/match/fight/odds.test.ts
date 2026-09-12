@@ -830,3 +830,14 @@ it('Recovery fire is one automatic S4 hit with no ignition, critical or shooting
  expect(odds.weapons[0].input.ignitionThreshold).toBeUndefined(); expect(odds.chain.anyCrit).toBe(0)
  expect(odds.weapons[0].input.armourThreshold).toBe(6)
 })
+
+
+it('ongoing fire cannot be Dodged and does not use a missile-only ward', () => {
+ const victim = combatant('Burning dodger', [], { skillIds: ['dodge'] })
+ const initial = setup(victim, victim, 'dagger', null)
+ const primary = { id: 'fire_recovery_hit', name: 'Recovery fire', type: 'ranged' as const, strength: 4, critCategory: 'missile' as const, concussion: false, special: ['fireRecoveryHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } }
+ const odds = computeOdds({ ...initial, primary, defenderKit: { ...initial.defenderKit, missileWardSaveThreshold: 2, wardSaveThreshold: 6 }, attackLimit: 1 })
+ expect(odds.weapons[0].input.dodgeThreshold).toBeUndefined()
+ expect(odds.weapons[0].input.wardSaveThreshold).toBe(6)
+ expect(odds.notes.join(' ')).not.toContain('2+ special save against missiles')
+})

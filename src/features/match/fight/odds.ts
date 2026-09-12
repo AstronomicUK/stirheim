@@ -451,7 +451,7 @@ function oddsNotes(setup: FightSetup, weapons: WeaponOdds[]): string[] {
   if (setup.defenderKit.firstHitDiscard !== null) notes.push(`Lucky Charm: the first hit on ${setup.defender.name} in the battle is discarded on a ${setup.defenderKit.firstHitDiscard}+ (offered when rolling, not in the odds).`)
   if (setup.defenderKit.afterSaveThreshold !== null) notes.push(`Peg Leg: a ${setup.defenderKit.afterSaveThreshold}+ save after any failed save.`)
   if (setup.defenderKit.ownSave) notes.push(`Cloak: a ${setup.primary.type === 'melee' ? setup.defenderKit.ownSave.melee : setup.defenderKit.ownSave.missile}+ save of its own where better than the armour worn.`)
-  if (setup.defenderKit.missileWardSaveThreshold !== null && setup.primary.type === 'ranged') notes.push(`A ${setup.defenderKit.missileWardSaveThreshold}+ special save against missiles.`)
+  if (setup.defenderKit.missileWardSaveThreshold !== null && setup.primary.type === 'ranged' && !setup.primary.special.includes('fireRecoveryHit')) notes.push(`A ${setup.defenderKit.missileWardSaveThreshold}+ special save against missiles.`)
   if (setup.defenderKit.stunSave) notes.push(`Stun save ${setup.defenderKit.stunSave.threshold}+${setup.defenderKit.stunSave.unmodifiable ? ', never modified' : ''}.`)
   if (setup.defender.stats.W > 1) {
     const left = setup.defender.stats.W - Math.max(0, Math.min(setup.defender.stats.W, setup.woundsAlreadyLost ?? 0))

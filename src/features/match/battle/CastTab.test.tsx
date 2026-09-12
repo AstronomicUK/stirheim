@@ -39,3 +39,18 @@ it('blocks casting after a stored Stupidity failure without recording a spell at
   expect(edit).not.toHaveBeenCalled()
   expect(stored.casts).toEqual([])
 })
+
+it('blocks a burning caster, and restores casting when extinguished or the ignition is reverted', () => {
+  const edit = vi.fn()
+  const roster = { id: 'w', heroes: [], hiredSwords: [], henchmenGroups: [], name: 'Test' } as any
+  const event = { id: 'fire', reverted_at: null, payload: { targetOnFire: true, target_warband_id: 'w', target_id: 'wizard', target_size: 1, out_of_action: false } } as any
+  const sheet = emptyBattleLiveState()
+  const castButton = (state = sheet, events = [event]) => nodes(CastTab({ matchId: 'test', roster, template: undefined, others: [], sheet: state, events, readOnly: false, edit })).find(n => n.props.onClick && nodes(n).some(child => child.props.children === 'Cast'))!
+  const blocked = castButton()
+  expect(blocked.props.disabled).toBe(true)
+  blocked.props.onClick()
+  expect(edit).not.toHaveBeenCalled()
+  const extinguished = { ...sheet, fireRecoveryTests: [{ id: 'test', warriorId: 'wizard', actorId: 'helper', actorName: 'Helper', turnKey: 'legacy:1', eventIds: ['fire'], die: 4, confirmed: true }] }
+  expect(castButton(extinguished).props.disabled).toBeFalsy()
+  expect(castButton(sheet, [{ ...event, reverted_at: 'now' }]).props.disabled).toBeFalsy()
+})

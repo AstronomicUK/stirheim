@@ -310,7 +310,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
 
   // ---- Defensive extras: Step Aside (melee, after armour) / Dodge (ranged, before to-wound) ----
   const stepAsideSkill = weapon.type === "melee" ? findActiveEffect(defenderSkills, context, weapon.type, "extraSaveThreshold") : undefined;
-  const dodgeSkill = weapon.type === "ranged" ? findActiveEffect(defenderSkills, context, weapon.type, "extraSaveThreshold") : undefined;
+  const dodgeSkill = weapon.type === "ranged" && !weapon.special.includes("fireRecoveryHit") ? findActiveEffect(defenderSkills, context, weapon.type, "extraSaveThreshold") : undefined;
 
   // ---- Injury roll modifiers ----
   const injuryRollModifier = (weapon.injuryRollModifier ?? 0) + sumEffect(attackerSkills, context, weapon.type, "injuryRollModifier") + (vsTraitsApply ? weapon.vsTraits?.injury ?? 0 : 0);
@@ -382,7 +382,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const autoHitKnockedDown = weapon.type === "melee" && Boolean(context.targetKnockedDown);
   const autoOutOfActionStunned = weapon.type === "melee" && Boolean(context.targetStunned);
   // Amulet of the Moon and the Shield of Sigmar: a special save against missiles, the better of it and any Ward.
-  const missileWard = weapon.type === "ranged" ? defender.missileWardSaveThreshold ?? null : null;
+  const missileWard = weapon.type === "ranged" && !weapon.special.includes("fireRecoveryHit") ? defender.missileWardSaveThreshold ?? null : null;
   const wardCandidates = [defender.wardSaveThreshold, missileWard].filter((t): t is number => t !== null && t !== undefined);
   const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 

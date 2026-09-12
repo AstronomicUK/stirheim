@@ -39,7 +39,7 @@ function FireTest({ warriorId, name, warbandId, turnKey, sheet, events, helpers,
   return <Sheet open title={`${name}: extinguish fire`} onClose={close}>
     <div className="flex flex-col gap-4 p-4">
       <label className="flex flex-col gap-2">Who is trying to extinguish the fire?
-        <select className="rounded border border-border bg-surface-low p-2" value={actorId} onChange={e => { setActorId(e.target.value); setContact(false) }}>
+        <select aria-label="Who is trying to extinguish the fire?" className="rounded border border-border bg-surface-low p-2" value={actorId} onChange={e => { setActorId(e.target.value); setContact(false) }}>
           <option value={warriorId}>{name} (own Recovery test)</option>
           {helpers.map(h => <option key={h.id} value={h.id}>{h.name} (helping)</option>)}
         </select>

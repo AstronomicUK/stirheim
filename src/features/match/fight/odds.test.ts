@@ -841,3 +841,15 @@ it('ongoing fire cannot be Dodged and does not use a missile-only ward', () => {
  expect(odds.weapons[0].input.wardSaveThreshold).toBe(6)
  expect(odds.notes.join(' ')).not.toContain('2+ special save against missiles')
 })
+
+it('Cathayan backfire is an automatic S6 hit with no second ignition or backfire', () => {
+ const thrower = combatant('Thrower', [])
+ const initial = setup(thrower, thrower, 'dagger', null)
+ const primary = { id: 'cathayan_backfire_hit', name: 'Backfire', type: 'ranged' as const, strength: 6, critCategory: 'missile' as const, concussion: false, special: ['volatileSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } }
+ const odds = computeOdds({ ...initial, primary, attackLimit: 1 })
+ expect(odds.attacks).toBe(1); expect(odds.weapons[0].pHit).toBe(1); expect(odds.weapons[0].strength).toBe(6)
+ expect(odds.weapons[0].input.automaticHitReason).toBe('volatileBackfire')
+ expect(odds.weapons[0].input.volatileBackfire).toBeUndefined(); expect(odds.weapons[0].input.ignitionThreshold).toBeUndefined()
+ const candles = combatant('Candles', [{ itemId: 'cathayan_candles', quantity: 1 }])
+ expect(computeOdds(setup(candles, thrower, 'cathayan_candles', null)).weapons[0].input.volatileBackfire).toBe(true)
+})

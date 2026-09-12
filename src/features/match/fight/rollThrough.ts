@@ -93,6 +93,7 @@ interface Current {
 }
 
 export interface RollState {
+  volatileBackfires?: number
   targetOnFire?: boolean
   smokeHit?: boolean
   hitBatch?: { phase: 'collect' | 'parry' | 'resolve'; hits: { roll: number | null; outcome?: Outcome }[]; parryIndices: number[] }
@@ -320,6 +321,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
           pending: { kind: 'hitReroll', who: 'attacker', label: `${attackName(state)}: reroll to hit`, detail: `Needs ${thresholdText(input.hitThreshold)}` },
         }
       }
+      if (roll === 1 && input.volatileBackfire) return finishAttack(log({ ...state, volatileBackfires: (state.volatileBackfires ?? 0) + 1 }, `Cathayan Candles: rolled 1${rollTag} to hit. They explode in the thrower’s hand; the intended target is not hit. Log this result, then resolve the separate Strength 6 hit on the thrower.`, 'bad'), 'backfire')
       return finishAttack(log(state, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Missed.`, 'bad'), 'miss')
     }
     case 'luckyCharm': {

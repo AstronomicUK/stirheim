@@ -25,3 +25,5 @@ export * from "./mortarShot";
 export * from "./firepotSmoke";
 
 export * from './burning';
+
+export * from './volatileBackfire';

@@ -37,6 +37,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Cathayan Candles: a final natural 1 to hit explodes at the thrower. */
+  volatileBackfire?: boolean;
   /** Ignition after a surviving hit; ongoing fire is separate from ordinary wound odds. */
   ignitionThreshold?: number;
   smokeOnHit?: boolean;
@@ -55,7 +57,7 @@ export interface AttackInput {
   barrageOnFailedWound?: boolean;
   /** Already-established hits, such as a successfully cast damage spell. */
   automaticHits?: boolean;
-  automaticHitReason?: "fireRecovery" | "zeroWeaponSkill" | "blunderbussLine" | "pigeonBlast" | "blackpowderExplosion" | "grapeShot" | "mortarBlast";
+  automaticHitReason?: "volatileBackfire" | "fireRecovery" | "zeroWeaponSkill" | "blunderbussLine" | "pigeonBlast" | "blackpowderExplosion" | "grapeShot" | "mortarBlast";
   /** Minimum D6 to hit, with all modifiers (opposed WS or flat BS + cover/range/moving/large-target stack) already folded in. */
   hitThreshold: Threshold;
   /** Minimum D6 to wound (attacker/weapon Strength vs defender Toughness), with skill modifiers already folded in. */

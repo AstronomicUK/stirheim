@@ -205,3 +205,15 @@ it('keeps pending app rolls through confirmation and requires an explanation for
  expect(() => recordFireRecovery(pending, [e], { ...fireOptions, originalDie: 5 })).toThrow(/original app roll/)
  expect(() => recordFireRecovery(emptyBattleLiveState(), [attack({ targetOnFire: true, out_of_action: false, target_size: 3 })], fireOptions)).toThrow(/individually/)
 })
+
+it('tracks every Cathayan backfire independently and respects both reversals', async () => {
+ const { pendingVolatileBackfires } = await import('../volatileBackfire')
+ const source = attack({ volatileBackfires: 2, out_of_action: false, wounds_lost: 0 })
+ const pending = pendingVolatileBackfires([source], A)
+ expect(pending).toHaveLength(2)
+ expect(pendingVolatileBackfires([source], B)).toEqual([])
+ const damage = attack({ volatileBackfireKey: pending[0].key })
+ expect(pendingVolatileBackfires([source, damage], A).map(h => h.key)).toEqual([pending[1].key])
+ expect(pendingVolatileBackfires([source, { ...damage, reverted_at: 'now' }], A)).toHaveLength(2)
+ expect(pendingVolatileBackfires([{ ...source, reverted_at: 'now' }, damage], A)).toEqual([])
+})

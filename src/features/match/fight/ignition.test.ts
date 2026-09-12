@@ -31,3 +31,22 @@ it('retains fire across later failed ignition attempts without repeating a hit t
  expect(state.targetOnFire).toBe(true)
  expect(state.log.filter(l => l.text.startsWith('Ignition:'))).toHaveLength(2)
 })
+
+it('a final natural 1 saves a Cathayan backfire instead of hitting or igniting the intended target', () => {
+ const result = applyRoll(begin({ volatileBackfire: true }), 1, false)
+ expect(result.done).toBe(true); expect(result.worst).toBe('backfire'); expect(result.volatileBackfires).toBe(1)
+ expect(result.woundsLost).toBe(0); expect(result.targetOnFire).toBeUndefined()
+ expect(result.log.map(l => l.text).join(' ')).toContain('rolled 1 (rolled by the app)')
+})
+it('a permitted hit reroll replaces the original die; only the final 1 backfires', () => {
+ let state = applyRoll(begin({ volatileBackfire: true, rerollToHit: true }), 1)
+ expect(state.pending?.kind).toBe('hitReroll'); expect(state.volatileBackfires).toBeUndefined()
+ expect(applyRoll(state, 1).volatileBackfires).toBe(1)
+ state = applyRoll(state, 4)
+ expect(state.pending?.kind).toBe('ignition'); expect(state.volatileBackfires).toBeUndefined()
+})
+it('two backfires in a phase require two separate self-hits', () => {
+ let state = begin({ volatileBackfire: true }, 2)
+ while (!state.done) state = applyRoll(state, 1)
+ expect(state.volatileBackfires).toBe(2)
+})

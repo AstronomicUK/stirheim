@@ -27,3 +27,5 @@ export * from "./firepotSmoke";
 export * from './burning';
 
 export * from './volatileBackfire';
+
+export * from './weaponLoss';

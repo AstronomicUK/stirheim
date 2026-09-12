@@ -1,3 +1,4 @@
+import { brokenWeaponSchema } from './weaponLoss'
 // The shared combat log (battle_events). An attack event records what one calculator walk-through
 // did to a target; every phone lays the match's unreverted events over its own sheet, so the
 // attacker's kill and the target's Wounds lost / out of action appear on both sides without either
@@ -8,6 +9,7 @@ import { withRollAttempt, type TakenOutBy, type BattleLiveState, type BattleWarr
 import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
+  brokenWeapons: z.array(brokenWeaponSchema).optional(),
   attacker_warband_id: uuidSchema,
   attacker_id: z.string(),
   attacker_kind: z.enum(["hero", "group"]),

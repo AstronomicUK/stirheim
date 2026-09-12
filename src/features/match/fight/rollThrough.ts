@@ -232,10 +232,11 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
     return { ...next, done: true, index: state.plans.length }
   }
   const doubleBarrel = state.plans[state.index].barrels === 2
-  const reachedWound = ['noWound', 'saved', 'ignored', 'wounded', 'knockedDown', 'stunned'].includes(outcome)
+  const separateHits = state.plans[state.index].input.separateBarrelHits
+  const reachedWound = ['noWound', 'saved', 'ignored', 'wounded', 'knockedDown', 'stunned'].includes(outcome) || Boolean(separateHits && ['dodged','charmed','parried'].includes(outcome))
   if (doubleBarrel && !state.cur.barrelIndex && reachedWound) {
     next = log({ ...next, cur: { ...freshCurrent(), barrelIndex: 1, hitRoll: state.cur.hitRoll } }, 'Second barrel: use the same successful hit; roll to wound separately.', 'neutral')
-    return askWound(next)
+    return separateHits ? (state.plans[state.index].input.dodgeThreshold !== undefined ? afterHit(next) : offerCharmOrContinue(next)) : askWound(next)
   }
   const barrage = outcome === 'noWound' && state.plans[state.index].input.barrageOnFailedWound
   if (state.cur.crit?.extraAttack || barrage) {
@@ -401,7 +402,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
         return { ...log(state, `To wound: rolled ${roll}${rollTag}. No wound on the first die; roll the second and keep the highest.`), pending: { kind: 'woundReroll', who: 'attacker', label: 'To wound (second die)', detail: `Needs ${thresholdText(input.woundThreshold)}` } }
       }
       if (!wounded) return finishAttack(log(state, `To wound: rolled ${roll}${rollTag}. No wound.`, 'bad'), 'noWound')
-      const critEligible = (!state.critUsed || plan.barrels === 2) && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
+      const critEligible = (!state.critUsed || (plan.barrels === 2 && !input.separateBarrelHits)) && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
       if (critEligible) {
         const s = log({ ...state, critUsed: true }, `To wound: rolled ${roll}${rollTag}. Wounded, and it is a critical hit!`, 'good')
         return { ...s, pending: { kind: 'critTable', who: 'attacker', label: 'Critical hit table', detail: input.critTableRollModifier ? `D6 ${input.critTableRollModifier > 0 ? '+' : ''}${input.critTableRollModifier}` : 'Roll a D6' } }

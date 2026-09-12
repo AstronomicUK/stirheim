@@ -26,3 +26,24 @@ it('an impossible hit leaves the target untouched',()=>{
  expect(result.anyWoundProbability).toBe(0)
  expect(result.distribution.none).toBe(1)
 })
+
+it('Ostland resolves Dodge separately for each of its two hits',()=>{
+ const result=resolveTurn([resolveSingleAttack({...input,separateBarrelHits:true,dodgeThreshold:4})],0,3)
+ expect(result.anyWoundProbability).toBeCloseTo(.5*(1-.75**2))
+ expect(Object.values(result.distribution).reduce((a,b)=>a+b,0)).toBeCloseTo(1)
+})
+it('Ostland retains the normal one-critical limit',()=>{
+ const result=resolveTurn([resolveSingleAttack({...input,separateBarrelHits:true,automaticHits:true,critTriggerFaces:[6]})],0,4)
+ expect(result.outOfActionProbability).toBe(0)
+ expect(result.criticalHitProbability).toBeCloseTo(1-(5/6)**2)
+})
+
+it('a parry of a Nuln shared hit stops both wound rolls',()=>{
+ const attack=resolveSingleAttack({...input,parryEligible:true,parrySuccessProbGivenAttempt:.5})
+ expect(resolveTurn([attack],1,3).anyWoundProbability).toBeCloseTo(.5*.5*.75)
+})
+it('a single parry of Ostlander two hits leaves the second hit to resolve',()=>{
+ const attack=resolveSingleAttack({...input,separateBarrelHits:true,parryEligible:true,parrySuccessProbGivenAttempt:1})
+ expect(resolveTurn([attack],1,3).anyWoundProbability).toBeCloseTo(.5*.5)
+ expect(resolveTurn([attack],2,3).anyWoundProbability).toBe(0)
+})

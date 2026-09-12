@@ -1,3 +1,4 @@
+import { doubleBarrelState } from '../../../domain/chambers'
 import { expect, it } from 'vitest'
 import { emptyBattleLiveState, parseBattleLiveState } from '../../../domain/battle'
 import type { ItemRow } from '../../../domain'
@@ -35,4 +36,14 @@ it('keeps the crossbow opener separate, without a blackpowder reload charge',()=
  expect(s.blackpowderShots).toHaveLength(0)
  expect(pistolCombatBlock(s,'hero:0','33333333-3333-4333-8333-333333333333',bow,'crossbow','phase2',2)).toContain('first round')
  expect(pistolCombatBlock(s,'hero:0','33333333-3333-4333-8333-333333333333',weapon,'crossbow','phase1',1)).toContain('appropriate')
+})
+
+it('spends the declared combat barrels on only the selected physical double pistol',()=>{
+ const double=weaponLossSnapshot({...row,item_rules_id:'double_barrelled_pistol'},'double_barrelled_pistol','Double-barrelled pistol',1,0)
+ const s=recordCombatPistolUse(start(),{...args,weapon:double,barrels:2,mode:'brace'})
+ expect(s.blackpowderShots[0].barrels).toBe(2)
+ expect(doubleBarrelState(s,{warriorId:args.warriorId,modelIndex:0,weaponKey:physicalGunKey(double,''),name:double.name},1).loaded).toBe(0)
+ const second=weaponLossSnapshot({...row,item_rules_id:'double_barrelled_pistol'},'double_barrelled_pistol','Double-barrelled pistol',1,1)
+ expect(pistolCombatBlock(s,'hero:0',args.warriorId,second,'brace','phase1',1)).toBeNull()
+ expect(doubleBarrelState(s,{warriorId:args.warriorId,modelIndex:0,weaponKey:physicalGunKey(second,''),name:second.name},1).loaded).toBe(2)
 })

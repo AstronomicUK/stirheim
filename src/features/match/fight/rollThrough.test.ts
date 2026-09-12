@@ -731,3 +731,26 @@ describe('Nuln double-barrel shooting', () => {
     expect(state.outcomes).toEqual(['outOfAction'])
   })
 })
+
+describe('Ostlander double-barrel hits',()=>{
+ const double=(extra:Partial<AttackInput>={}):AttackPlan=>({...plan('Ostlander pistol',{armourThreshold:IMPOSSIBLE,separateBarrelHits:true,...extra}),barrels:2})
+ it('offers a fresh Dodge for the second hit after the first is dodged',()=>{
+  let state=rolls(startPhase([double({dodgeThreshold:5})],3,0),4,5)
+  expect(state.pending?.kind).toBe('dodge')
+  state=rolls(state,1,4)
+  expect(state.done).toBe(true)
+  expect(state.outcomes).toEqual(['dodged','wounded'])
+ })
+ it('the Lucky Charm discards only the first hit',()=>{
+  let state=rolls(startPhase([{...double(),luckyCharm:4}],3,0,0,true),4,4)
+  expect(state.pending?.kind).toBe('wound')
+  state=applyRoll(state,4)
+  expect(state.outcomes).toEqual(['charmed','wounded'])
+ })
+ it('does not grant Nuln separate criticals to Ostlander weapons',()=>{
+  let state=rolls(startPhase([double()],10,0),4,6,1)
+  state=applyRoll(state,6)
+  expect(state.done).toBe(true)
+  expect(state.woundsLost).toBe(3)
+ })
+})

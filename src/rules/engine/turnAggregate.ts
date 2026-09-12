@@ -59,11 +59,23 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
 
   if (attack.sequence) {
     let current = state;
+    const parried = emptyState(maxParries, maxWounds);
+    if (attack.sequenceParry !== undefined) {
+      current = emptyState(maxParries, maxWounds);
+      for (let p = 0; p <= maxParries; p++) for (let c = 0; c < 2; c++) for (let w = 0; w <= maxWounds; w++) for (let s = 0; s < 4; s++) {
+        const mass = state[p][c][w][s];
+        if (p < maxParries && s !== 3) {
+          parried[p+1][c][w][s] += mass * attack.sequenceParry;
+          current[p+1][c][w][s] += mass * (1-attack.sequenceParry);
+        } else current[p][c][w][s] += mass;
+      }
+    }
     for (const part of attack.sequence) {
       const result = applyAttack(current, part, maxParries, maxWounds);
       current = result.next;
       ricochetDelta += result.ricochetDelta;
     }
+    for (let p = 0; p <= maxParries; p++) for (let c = 0; c < 2; c++) for (let w = 0; w <= maxWounds; w++) for (let s = 0; s < 4; s++) current[p][c][w][s] += parried[p][c][w][s];
     return { next: current, ricochetDelta };
   }
 
@@ -164,7 +176,7 @@ function applyAttack(state: DPState, attack: SingleAttackBreakdown, maxParries: 
         for (let worst = 0; worst < 4; worst++) {
           const p = state[parriesUsed][critConsumed][woundsTaken][worst];
           if (p === 0) continue;
-          if (attack.independentCritical && worst === 3) { addMass(parriesUsed, critConsumed, woundsTaken, 3, p); continue; }
+          if (attack.independentCritical !== undefined && worst === 3) { addMass(parriesUsed, critConsumed, woundsTaken, 3, p); continue; }
 
           // At the 6+ cap with no remaining parry, repeated hit/failed-wound
           // attempts leave the state unchanged. Sum that geometric tail exactly.

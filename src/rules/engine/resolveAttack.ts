@@ -39,6 +39,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 export interface AttackInput {
   /** Nuln: one hit roll, two independent wound rolls and criticals. */
   barrels?: 1 | 2;
+  /** Ostland produces two hits: each is dodged separately, with the normal critical limit. */
+  separateBarrelHits?: boolean;
   /** Cathayan Candles: a final natural 1 to hit explodes at the thrower. */
   volatileBackfire?: boolean;
   /** Ignition after a surviving hit; ongoing fire is separate from ordinary wound odds. */
@@ -301,6 +303,8 @@ function nextBarrageInput(input: AttackInput): AttackInput {
 
 export interface SingleAttackBreakdown {
   sequence?: SingleAttackBreakdown[];
+  /** One parry discards a shared hit before either Nuln wound roll. */
+  sequenceParry?: number;
   independentCritical?: boolean;
   /** Mutually exclusive ranged outcomes; preserve their wound/save correlation through the phase. */
   branches?: { probability: number; attack: SingleAttackBreakdown }[];
@@ -344,16 +348,17 @@ export function resolveSingleAttack(input: AttackInput): SingleAttackBreakdown {
     const base = resolveSingleAttack({ ...input, barrels: undefined, firePermissionThreshold: undefined });
     const permission = input.firePermissionThreshold === undefined ? 1 : probabilityAtLeast(input.firePermissionThreshold);
     const dodge = input.dodgeThreshold === undefined ? 0 : probabilityAtLeast(input.dodgeThreshold);
-    const faces = base.hitFaces?.filter(face => face.face !== 0) ?? [{ probability: base.pHit, wound: base.pHit ? base.pWound / base.pHit : 0, trigger: base.pHit ? base.pWoundTriggerEligible / base.pHit : 0 }];
+    const faces = base.hitFaces?.filter(face => face.face !== 0) ?? [{ probability: base.pHit, wound: base.pHit ? base.pWound / base.pHit : 0, trigger: base.pHit ? base.pWoundTriggerEligible / base.pHit : 0, parry: base.parrySuccessProbGivenAttempt }];
     const miss = { ...base, hitFaces: undefined, pHit: 0, pWound: 0, pWoundNormal: 0, pWoundTriggerEligible: 0 };
     const branches: NonNullable<SingleAttackBreakdown['branches']> = [];
     let landed = 0, wound = 0;
     for (const face of faces) {
-      const probability = face.probability * permission * (1 - dodge);
+      const probability = face.probability * permission * (input.separateBarrelHits ? 1 : 1 - dodge);
       if (!probability) continue;
-      const w = face.wound / (1 - dodge), trigger = face.trigger / (1 - dodge);
-      const barrel = { ...base, hitFaces: undefined, pHit: 1, pWound: w, pWoundNormal: Math.max(0, w - trigger), pWoundTriggerEligible: trigger, parryEligible: false, independentCritical: true };
-      branches.push({ probability, attack: { ...barrel, sequence: [barrel, barrel] } });
+      const divisor = input.separateBarrelHits ? 1 : 1 - dodge;
+      const w = face.wound / divisor, trigger = face.trigger / divisor;
+      const barrel = { ...base, hitFaces: undefined, pHit: 1, pWound: w, pWoundNormal: Math.max(0, w - trigger), pWoundTriggerEligible: trigger, parryEligible: Boolean(input.separateBarrelHits && base.parryEligible), parrySuccessProbGivenAttempt: face.parry, independentCritical: !input.separateBarrelHits };
+      branches.push({ probability, attack: { ...barrel, sequence: [barrel, barrel], sequenceParry: !input.separateBarrelHits && base.parryEligible ? face.parry : undefined } });
       landed += probability;
       wound += probability * (1 - (1 - w) ** 2);
     }

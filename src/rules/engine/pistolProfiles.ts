@@ -2,7 +2,7 @@ import type { Weapon } from '../types'
 
 /** Core rulebook pp29–32. The crossbow pistol's BS shot is a separate opening action. */
 export function corePistolCombatProfile(source: Weapon): Weapon | null {
-  if (!['pistol', 'duelling_pistol', 'warplock_pistol', 'crossbow_pistol'].includes(source.id)) return null
+  if (!['pistol', 'duelling_pistol', 'warplock_pistol', 'crossbow_pistol', 'double_barrelled_pistol', 'double_barrelled_duelling_pistol', 'ostlander_double_barrelled_pistol'].includes(source.id)) return null
   const crossbow = source.id === 'crossbow_pistol'
   return {
     ...source, id: `${source.id}:combat`, physicalWeaponId: source.id,
@@ -11,6 +11,6 @@ export function corePistolCombatProfile(source: Weapon): Weapon | null {
     rangedProfile: crossbow ? { shortRange: 5, maxRange: 10, shotsPerTurn: 1 } : null,
     moveOrFire: false, paired: false,
     toHitBonus: crossbow ? -2 : source.toHitBonus,
-    special: [crossbow ? 'crossbowPistolOpeningShot' : 'pistolHandToHand'],
+    special: [crossbow ? 'crossbowPistolOpeningShot' : 'pistolHandToHand', ...source.special.filter(rule=>rule.startsWith('doubleBarrelled'))],
   }
 }

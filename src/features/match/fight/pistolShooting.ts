@@ -4,7 +4,7 @@ import type { Combatant } from './combatants'
 import { physicalWeaponChoices } from './weaponLoss'
 
 export const CORE_PISTOLS = ['pistol', 'duelling_pistol', 'warplock_pistol', 'crossbow_pistol'] as const
-export const SHOOTING_PISTOLS = [...CORE_PISTOLS, 'double_barrelled_pistol', 'double_barrelled_duelling_pistol'] as const
+export const SHOOTING_PISTOLS = [...CORE_PISTOLS, 'double_barrelled_pistol', 'double_barrelled_duelling_pistol', 'ostlander_double_barrelled_pistol'] as const
 export function isCorePistol(id: string): boolean { return (CORE_PISTOLS as readonly string[]).includes(id) }
 
 /** A group is represented by one fighter at a time; copies stay assigned to that model. */

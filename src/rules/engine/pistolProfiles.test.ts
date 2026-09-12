@@ -6,7 +6,7 @@ import { corePistolCombatProfile } from './pistolProfiles'
 import { computeAttackCount, effectiveOffensiveStats, buildAttackInput, weaponAttackCounts } from './buildAttackInput'
 const hero: Character={id:'hero',name:'Captain',warband:'Test',role:'hero',stats:{M:4,WS:4,BS:2,S:7,T:3,W:1,I:3,A:3,Ld:7},equippedWeapons:[],armour:{type:'none',shield:false,buckler:false},helmet:false,skills:['mighty_blow','pistolier'],traits:['frenzy'],wardSaveThreshold:null,notes:''}
 const ctx=defaultCombatContext()
-it.each([['pistol',4],['duelling_pistol',4],['warplock_pistol',5]] as const)('uses fixed strength and one WS-based, parryable attack for %s', (id,strength)=>{
+it.each([['pistol',4],['duelling_pistol',4],['warplock_pistol',5],['double_barrelled_pistol',4],['double_barrelled_duelling_pistol',4],['ostlander_double_barrelled_pistol',4]] as const)('uses fixed strength and one WS-based, parryable attack for %s', (id,strength)=>{
  const weapon=corePistolCombatProfile(findWeapon(id)!)!
  const defender=characterToDefenderProfile({...hero,stats:{...hero.stats,WS:3,S:3,T:3},traits:[],skills:[]},[])
  defender.parryWeaponCount=1
@@ -14,7 +14,7 @@ it.each([['pistol',4],['duelling_pistol',4],['warplock_pistol',5]] as const)('us
  expect(computeAttackCount(hero,weapon,true,ctx)).toBe(1)
  expect(effectiveOffensiveStats(hero,weapon,ctx).strength).toBe(strength)
  const input=buildAttackInput({attacker:hero,weapon,defender,context:ctx})
- expect(input.hitThreshold).toBe(id==='duelling_pistol'?2:3)
+ expect(input.hitThreshold).toBe(id.includes('duelling_pistol')?2:3)
  expect(input.parryEligible).toBe(true)
 })
 it('does not double the pistol bonus for Frenzy or increase brace attacks with A or Pistolier',()=>{

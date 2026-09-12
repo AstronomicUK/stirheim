@@ -22,6 +22,7 @@ import { loadoutOf, type Combatant, type Loadout } from './combatants'
 
 export interface FightSetup {
   barrels?: 1 | 2
+  combatBarrels?: (1 | 2 | undefined)[]
   ladyBlessing?: boolean
   attacker: Combatant
   attackerKit: Loadout
@@ -297,11 +298,11 @@ export function computeOdds(setup: FightSetup): FightOdds {
   const context: CombatContext = { ...setup.context, firePermissionThreshold: setup.ladyBlessing ? 4 : undefined, twoHanded: phase === 'melee' && isTwoHandedUse(setup.attackerKit, setup.offHand) }
 
   let remaining = setup.attackLimit ?? Number.POSITIVE_INFINITY
-  const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context, [], defender).map(({ weapon, count: full }) => {
+  const perWeapon: WeaponOdds[] = weaponAttackCounts(attacker, weaponsForPhase(weapons, phase), context, [], defender).map(({ weapon, count: full }, weaponIndex) => {
     const attacks = Math.min(full, Math.max(0, remaining))
     remaining -= attacks
     const raw = weapon.id === 'blessed_water' ? blessedWaterAttack({ attacker, defender, context, houseRules }) : buildAttackInput({ attacker, weapon, defender, context, houseRules })
-    const input = { ...adjustForCoatings(raw, weapon, phase, dosed.kit), barrels: phase === 'ranged' && weapon.special.includes('doubleBarrelledOptionalSecondWoundRollPerHit') ? setup.barrels : undefined }
+    const input = { ...adjustForCoatings(raw, weapon, phase, dosed.kit), barrels: weapon.special.some(rule=>['doubleBarrelledOptionalSecondWoundRollPerHit','doubleBarrelledTwoHitsPerSuccessfulShot'].includes(rule)) ? phase === 'ranged' ? setup.barrels : setup.combatBarrels?.[weaponIndex] : undefined, separateBarrelHits: weapon.special.includes('doubleBarrelledTwoHitsPerSuccessfulShot') }
     const single = resolveSingleAttack(input)
     const { ws, strength } = effectiveOffensiveStats(attacker, weapon, context)
     const pSave = probabilityAtLeast(input.armourThreshold)

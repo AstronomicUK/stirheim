@@ -883,3 +883,40 @@ it('routes a Blessed Water throw through the shared odds as exactly one automati
   expect(result.weapons[0].input.armourThreshold).toBe(IMPOSSIBLE)
   expect(result.weapons[0].input.critTriggerFaces).toEqual([])
 })
+
+
+it('keeps a poison coating on one physical sword and does not substitute that copy for its twin', () => {
+  const a = combatant('Swordsman', [{ itemId: 'sword', quantity: 2 }])
+  const d = combatant('Target', [])
+  const sword = findWeapon('sword')!
+  const first = { ...sword, choiceId: 'row:0' }, second = { ...sword, choiceId: 'row:1' }
+  const kit = { ...loadoutFor(a), melee: [first, second] }
+  const poison = { label: 'Black Lotus', appliesTo: 'nonBlackpowder' as const, autoWoundOnSixToHit: true, weaponChoiceId: 'row:0' }
+  const coated = applyPreBattle(a, kit, [poison])
+  expect(coated.kit.melee[0].poisoned).toBe(true)
+  expect(coated.kit.melee[1].poisoned).toBeUndefined()
+  const result = computeOdds(setup(a, d, 'sword', null, { attackerKit: kit, primary: second, offHand: first, attackerPreBattle: [poison] }))
+  expect(result.weapons[0].input.autoWoundOnNaturalSixToHit).toBe(false)
+  expect(result.weapons[1].input.autoWoundOnNaturalSixToHit).toBe(true)
+  const missing = applyPreBattle(a, kit, [{ ...poison, weaponChoiceId: 'missing' }])
+  expect(missing.kit.melee.every(weapon => !weapon.poisoned)).toBe(true)
+})
+
+it('an explicit poison choice still cannot coat a blackpowder weapon', () => {
+  const a = combatant('Pistol carrier', [{ itemId: 'pistol', quantity: 1 }])
+  const kit = loadoutFor(a)
+  const ranged = kit.ranged.map(weapon => ({ ...weapon, choiceId: 'pistol:0' }))
+  const coated = applyPreBattle(a, { ...kit, ranged }, [{ label: 'Dark Venom', appliesTo: 'nonBlackpowder', strengthBonus: 1, weaponChoiceId: 'pistol:0' }])
+  expect(coated.kit.ranged[0].strength).toBe(ranged[0].strength)
+})
+
+
+it('uses weapon identity for the poison prohibition, even when a pistol profile is used in melee', () => {
+  const a = combatant('Warrior', [])
+  const pistol = { ...findWeapon('pistol')!, type: 'melee' as const }
+  const bow = { ...findWeapon('bow')!, saveModifier: 2 }
+  const kit = { ...loadoutFor(a), melee: [pistol], ranged: [bow] }
+  const coated = applyPreBattle(a, kit, [{ label: 'Black Lotus', appliesTo: 'nonBlackpowder', autoWoundOnSixToHit: true }])
+  expect(coated.kit.melee[0].poisoned).toBeUndefined()
+  expect(coated.kit.ranged[0].poisoned).toBe(true)
+})

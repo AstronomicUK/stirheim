@@ -90,6 +90,8 @@ export interface ItemPricing {
 
 /** How a pre-battle consumable changes the wielder's attacks or defence for the battle. */
 export interface PreBattleEffect {
+  /** Optional physical weapon choice key: a coating then affects only that copy, not every matching catalogue weapon. */
+  weaponChoiceId?: string;
   /** "Coated with Dark Venom", "Drunk before the battle". */
   label: string;
   /** Which attacks it changes: melee weapons, missile weapons, bows only, black powder only, every weapon,

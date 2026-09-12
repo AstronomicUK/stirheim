@@ -1,3 +1,4 @@
+import { isBlackpowderWeapon } from '../../../rules/resolve/ladyBlessing'
 import { blessedWaterAttack } from '../../../rules/engine/blessedWater'
 import { isChaosWarhound } from '../../../rules/resolve/barbedWhip'
 import { ignoresFear, causesFearAgainst } from '../../../rules/engine/psychology'
@@ -83,8 +84,9 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
       for (const t of e.traits ?? []) if (!traits.includes(t)) traits.push(t)
       continue
     }
-    const blackpowder = (w: Weapon) => w.type === 'ranged' && (w.saveModifier ?? 0) >= 2 && w.strength !== 'user'
+    const blackpowder = isBlackpowderWeapon
     const touches = (w: Weapon) => {
+      if (e.weaponChoiceId !== undefined && w.choiceId !== e.weaponChoiceId) return false;
       if (e.appliesTo === 'allWeapons') return true
       if (e.appliesTo === 'nonBlackpowder') return !blackpowder(w)
       if (e.appliesTo === 'melee') return w.type === 'melee'
@@ -238,7 +240,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
   if (setup.defenderStaffPower) { defender.parryWeaponCount = 0; defender.parryReroll = false }
   const phase: WeaponKind = setup.primary.type
   // The chosen weapons, as coated: the same entries by id in the dosed kit.
-  const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => k.id === w.id) ?? w
+  const pick = (w: Weapon): Weapon => [...dosed.kit.melee, ...dosed.kit.ranged].find((k) => w.choiceId !== undefined ? k.choiceId === w.choiceId : k.id === w.id) ?? w
   const primary = pick(setup.primary)
   const offHand = setup.offHand ? pick(setup.offHand) : null
   const weapons = offHand && phase === 'melee' ? [primary, offHand] : [primary]

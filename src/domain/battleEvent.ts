@@ -33,6 +33,7 @@ export const attackEventPayloadSchema = z.object({
   /** Bolas condition, separate from wounds and injury results. */
   entangled: z.boolean().optional(),
   /** First own turn in which the Firepot smoke test is due. */
+  fireRecoveryId: z.string().optional(),
   targetOnFire: z.boolean().optional(),
   smokeDueTurnKey: z.string().optional(),
   blackpowderSelfShotId: z.string().optional(),

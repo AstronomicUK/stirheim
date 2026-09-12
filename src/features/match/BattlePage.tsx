@@ -1,3 +1,4 @@
+import { FireRecovery } from './battle/FireRecovery'
 import { FirepotSmokeTests } from './battle/FirepotSmokeTests'
 import { GuidingDreamTargets } from './battle/GuidingDreamTargets'
 import { BolasRecovery } from './battle/BolasRecovery'
@@ -320,6 +321,7 @@ function PlayerBattle({ match, sessions, events, onLogEvent, roster, scenario, h
 
       {inApp ? <TurnControls matchId={match.id} state={turns.data} participants={match.participants} myId={roster.id} readOnly={readOnly} loading={turns.isPending} error={turns.error?.message} onBattleOver={onBattleOver} hasBolasRecovery={activeBolasEntanglements(events, roster.id, shown.bolasRecoveredEventIds).length > 0} /> : null}
       {readOnly ? <AwaitingReportsNotice matchId={match.id} /> : null}
+      {!readOnly && !turns.isPending && !turns.isError ? <FireRecovery roster={roster} template={template} sheet={shown} events={events} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <FirepotSmokeTests roster={roster} template={template} sheet={shown} events={events} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <BolasRecovery sheet={shown} events={events} warbandId={roster.id} turns={turns.data} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <StupidityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}

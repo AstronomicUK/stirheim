@@ -1,3 +1,4 @@
+import { activeFires, warriorIsBurning, pendingFireHits, recordFireRecovery } from '../burning'
 import { nextOwnTurnKey, smokeEventsThisTurn, smokeBlocksWarrior, recordSmokeTest } from '../firepotSmoke'
 import { warbandTurnKey, battleLiveStateSchema } from '../battle'
 import { describe, expect, it } from "vitest";
@@ -164,4 +165,43 @@ it('smoke rolls use strict under-Initiative, retain app dice and require reasons
  expect(recordSmokeTest(passed,event,'legacy:2',9,6,undefined,'other','Agreed correction').smokeTests[0].failed).toBe(true)
  expect(()=>recordSmokeTest(initial,{...event,payload:{...event.payload,target_size:3}},'legacy:2',3,1,undefined,'a')).toThrow(/individually/)
  expect(()=>recordSmokeTest(initial,event,'legacy:1',3,1,undefined,'a')).toThrow(/not due/)
+})
+
+
+const fireOptions = { id: 'fire-test', warbandId: B, warriorId: 'skritch', warriorName: 'Skritch', actorId: 'skritch', actorName: 'Skritch', turnKey: 'own:2', die: 4 }
+it('fire recovery clears recorded ignitions but a later fire remains, and reverted fire disappears', () => {
+ const e = attack({ targetOnFire: true, out_of_action: false, wounds_lost: 0 })
+ expect(warriorIsBurning(emptyBattleLiveState(), [e], B, 'skritch')).toBe(true)
+ const out = recordFireRecovery(emptyBattleLiveState(), [e], fireOptions)
+ expect(activeFires(out, [e], B)).toEqual([])
+ const later = attack({ targetOnFire: true, out_of_action: false })
+ expect(activeFires(out, [e, later], B)).toEqual([later])
+ expect(activeFires(emptyBattleLiveState(), [{ ...e, reverted_at: 'now' }], B)).toEqual([])
+ expect(battleLiveStateSchema.parse(out).fireRecoveryTests[0].confirmed).toBe(true)
+})
+it('a failed own test owes one hit, unlike failed help; successful help does not erase damage already owed', () => {
+ const e = attack({ targetOnFire: true, out_of_action: false })
+ const failed = recordFireRecovery(emptyBattleLiveState(), [e], { ...fireOptions, die: 2 })
+ expect(pendingFireHits(failed, [e])).toHaveLength(1)
+ const helped = recordFireRecovery(failed, [e], { ...fireOptions, id: 'help', actorId: 'helper', actorName: 'Helper', die: 6 })
+ expect(activeFires(helped, [e], B)).toEqual([]); expect(pendingFireHits(helped, [e])).toHaveLength(1)
+ const damage = attack({ fireRecoveryId: 'fire-test' })
+ expect(pendingFireHits(helped, [e, damage])).toEqual([])
+ expect(pendingFireHits(helped, [e, { ...damage, reverted_at: 'now' }])).toHaveLength(1)
+ expect(pendingFireHits(failed, [{ ...e, reverted_at: 'now' }])).toEqual([])
+ const helperFailed = recordFireRecovery(emptyBattleLiveState(), [e], { ...fireOptions, actorId: 'helper', die: 1 })
+ expect(pendingFireHits(helperFailed, [e])).toEqual([])
+})
+it('keeps pending app rolls through confirmation and requires an explanation for repeat tests', () => {
+ const e = attack({ targetOnFire: true, out_of_action: false })
+ const pending = recordFireRecovery(emptyBattleLiveState(), [e], { ...fireOptions, die: 2, originalDie: 2, pending: true })
+ expect(activeFires(pending, [e], B)).toHaveLength(1); expect(pendingFireHits(pending, [e])).toEqual([])
+ const confirmed = recordFireRecovery(pending, [e], { ...fireOptions, die: 4 })
+ expect(confirmed.rollAttempts.at(-1)?.rolls.join(' ')).toContain('App rolled 2; player changed it to 4')
+ expect(() => recordFireRecovery(confirmed, [e], { ...fireOptions, id: 'again' })).toThrow(/corrected/)
+ const corrected = recordFireRecovery(confirmed, [e], { ...fireOptions, die: 1, reason: 'Agreed correction' })
+ expect(activeFires(corrected, [e], B)).toHaveLength(1)
+ expect(pendingFireHits(corrected, [e])).toHaveLength(1)
+ expect(() => recordFireRecovery(pending, [e], { ...fireOptions, originalDie: 5 })).toThrow(/original app roll/)
+ expect(() => recordFireRecovery(emptyBattleLiveState(), [attack({ targetOnFire: true, out_of_action: false, target_size: 3 })], fireOptions)).toThrow(/individually/)
 })

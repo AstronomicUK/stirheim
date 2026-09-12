@@ -57,7 +57,7 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   jolly_roger: { leadership: { note: "Jolly Roger: Pirates within 12\" never count as all alone." } },
   standard_of_nagarythe: { leadership: { note: "Standard of Nagarythe: Shadow Warriors within 12\" re-roll failed Leadership tests." } },
   sashimono: { leadership: { note: "Sashimono: re-roll non-rout Leadership tests, keeping the second roll." } },
-  bugmans_ale: { traits: ["immune_to_fear"], consumable: "battle", preBattle: { label: "Drunk before the battle", appliesTo: "self", traits: ["immune_to_fear"], note: "The whole warband is immune to fear this battle." } },
+  bugmans_ale: { consumable: "battle", note: "Declare the barrel before battle on My Warband: the whole warband is immune to fear for this battle, except Elves. One barrel supplies one battle." },
   elven_wine: { traits: ["immune_to_fear"], consumable: "battle", preBattle: { label: "Drunk before the battle", appliesTo: "self", traits: ["immune_to_fear"], note: "The warband is immune to fear this battle." } },
 
   // ---- Poisons and coatings (used up per battle) ----

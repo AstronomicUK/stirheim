@@ -299,6 +299,14 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       woundsLost: 0,
     })
   }
+  if (sheet?.warbandConsumables.some(use => use.itemRulesId === 'bugmans_ale' && !use.correction)) {
+    for (const warrior of out) {
+      const hire = roster.hiredSwords.find(h => h.id === warrior.id)
+      const elven = hire ? /elf|elven/i.test(`${hire.hiredSwordId} ${findHiredSword(hire.hiredSwordId)?.name ?? ''}`)
+        : warrior.kind !== 'animal' && /elf|elven/i.test(`${template?.race ?? ''} ${warrior.unitTemplateId ?? ''}`)
+      if (!elven && !warrior.traitIds.includes('immune_to_fear')) warrior.traitIds = [...warrior.traitIds, 'immune_to_fear']
+    }
+  }
   return out.map(warrior => warrior.equipment.some(entry => entry.quantity > 0 && (entry.itemId === 'swivel_gun' || (!entry.itemId && resolveEquipmentName(entry.customName ?? '')?.id === 'swivel_gun')))
     ? { ...warrior, stats: { ...warrior.stats, M: Math.max(0, warrior.stats.M - 1), I: Math.max(0, warrior.stats.I - 1) } }
     : warrior)

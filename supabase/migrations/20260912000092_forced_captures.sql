@@ -25,7 +25,7 @@ revoke all on function public.captive_item_key(text, text, text) from public;
 create function public.open_forced_capture_cases() returns trigger language plpgsql security definer set search_path = '' as $$
 declare
   line jsonb; cap jsonb; k jsonb; ev public.battle_events%rowtype; g jsonb; grow public.henchman_groups%rowtype; ordinal int; v_case uuid; v_owner uuid; v_captor_owner uuid; v_captor_name text;
-  patched int; expected_size int; captured_count int; seen uuid[] := '{}'; used jsonb; before_row jsonb; lost int; kit jsonb; sid uuid; q int; key_row text; key_cap text;
+  captured_count int; seen uuid[] := '{}'; used jsonb; before_row jsonb; lost int; kit jsonb; sid uuid; q int; key_row text; key_cap text;
 begin
   if new.undo is null or old.undo is not null then return new; end if;
   for line in select x from jsonb_array_elements(coalesce(new.injuries, '[]'::jsonb)) x
@@ -33,13 +33,13 @@ begin
     if (line->>'subjectId') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then raise exception 'Captured henchmen: the group id is not valid.' using errcode = '22023'; end if;
     select * into grow from public.henchman_groups where id = (line->>'subjectId')::uuid and warband_id = new.warband_id;
     if not found then raise exception 'Captured henchmen: group % is not in this warband.', line->>'subjectName' using errcode = '22023'; end if;
+    -- The pre-report group: the undo before-row when the report patched it, otherwise the row as it
+    -- stands (a report may recruit replacements in the same filing, so the final size proves nothing).
     select e->'before' into g from jsonb_array_elements(coalesce(new.undo->'groups', '[]'::jsonb)) e where e->>'id' = line->>'subjectId' limit 1;
-    if g is null then raise exception 'Captured henchmen: % was not patched by this report, so its models cannot have been removed.', grow.name using errcode = '22023'; end if;
+    if g is null then g := jsonb_build_object('stats', grow.stats, 'size', grow.size, 'xp', grow.xp, 'level_ups', grow.level_ups, 'campaign_state', grow.campaign_state); end if;
     captured_count := jsonb_array_length(line->'captured');
-    select (p->'patch'->>'size')::int into patched from jsonb_array_elements(coalesce(new.applied->'groups', '[]'::jsonb)) p where p->>'id' = line->>'subjectId' limit 1;
-    expected_size := (g->>'size')::int - coalesce((line->>'dead')::int, 0) - captured_count;
-    if patched is null or patched <> expected_size then
-      raise exception 'Captured henchmen: % should be patched to % models (% before, % dead, % captured) but the report patches it to %.', grow.name, expected_size, g->>'size', coalesce((line->>'dead')::int, 0), captured_count, coalesce(patched::text, 'nothing') using errcode = '22023';
+    if coalesce((line->>'dead')::int, 0) + captured_count > (g->>'size')::int then
+      raise exception 'Captured henchmen: % had % models before the battle but the report loses % dead and % captured.', grow.name, g->>'size', coalesce((line->>'dead')::int, 0), captured_count using errcode = '22023';
     end if;
     used := '{}'::jsonb;
     for cap in select x from jsonb_array_elements(line->'captured') x loop
@@ -61,17 +61,28 @@ begin
       if (cap->>'captorWarbandId')::uuid = new.warband_id or not exists (select 1 from public.match_participants where match_id = new.match_id and warband_id = (cap->>'captorWarbandId')::uuid) then
         raise exception 'Captured henchmen: the captor must be another warband in this battle.' using errcode = '22023';
       end if;
-      -- Kit: each entry names a pre-report item row of this group; the quantities claimed across all
-      -- captured models of the group never exceed what the report actually removed from that row.
+      -- Kit: each entry names a pre-report item row of this group. The pool the captured models may
+      -- claim from a row is the injury-stage casualty accounting (line.equipmentLost, what left with
+      -- the casualties, net of supplies spent), itself capped by the pre-report inventory; final
+      -- quantities prove nothing because the same report may recruit replacements and re-arm them.
+      -- A report without that accounting falls back to before − final, conservatively.
       kit := '[]'::jsonb;
       for k in select x from jsonb_array_elements(coalesce(cap->'kit', '[]'::jsonb)) x loop
         sid := (k->>'sourceItemId')::uuid; q := (k->>'quantity')::int;
         if sid is null or q is null or q < 1 then raise exception 'Captured henchmen: each kit entry needs its source item and a positive quantity.' using errcode = '22023'; end if;
         select u->'row' || jsonb_build_object('before_quantity', (u->'before'->>'quantity')::int) into before_row from jsonb_array_elements(coalesce(new.undo->'items', '[]'::jsonb)) u
           where (u->>'id')::uuid = sid and u->'row'->>'holder_type' = 'group' and u->'row'->>'holder_id' = line->>'subjectId' limit 1;
-        if before_row is null then raise exception 'Captured henchmen: kit item % was not carried by % before this report, or the report did not remove any of it.', sid, grow.name using errcode = '22023'; end if;
-        lost := (before_row->>'before_quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(new.applied->'item_patches', '[]'::jsonb)) pt where (pt->>'id')::uuid = sid limit 1), (before_row->>'before_quantity')::int);
-        if coalesce((used->>sid::text)::int, 0) + q > lost then raise exception 'Captured henchmen: the report removed only % of % from %, but the captured models claim more.', lost, coalesce(before_row->>'item_rules_id', before_row->>'custom_name'), grow.name using errcode = '22023'; end if;
+        if before_row is null then
+          select to_jsonb(i) || jsonb_build_object('before_quantity', i.quantity) into before_row from public.items i where i.id = sid and i.warband_id = new.warband_id and i.holder_type = 'group' and i.holder_id = grow.id;
+        end if;
+        if before_row is null then raise exception 'Captured henchmen: kit item % was not carried by % before this report.', sid, grow.name using errcode = '22023'; end if;
+        if jsonb_typeof(line->'equipmentLost') = 'array' then
+          lost := coalesce((select (e->>'quantity')::int from jsonb_array_elements(line->'equipmentLost') e where (e->>'sourceItemId')::uuid = sid limit 1), 0);
+          if lost > (before_row->>'before_quantity')::int then raise exception 'Captured henchmen: the report records % of % lost from % but the group only carried %.', lost, coalesce(before_row->>'item_rules_id', before_row->>'custom_name'), grow.name, before_row->>'before_quantity' using errcode = '22023'; end if;
+        else
+          lost := (before_row->>'before_quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(new.applied->'item_patches', '[]'::jsonb)) pt where (pt->>'id')::uuid = sid limit 1), (before_row->>'before_quantity')::int);
+        end if;
+        if coalesce((used->>sid::text)::int, 0) + q > lost then raise exception 'Captured henchmen: the casualties took only % of % from %, but the captured models claim more.', lost, coalesce(before_row->>'item_rules_id', before_row->>'custom_name'), grow.name using errcode = '22023'; end if;
         used := jsonb_set(used, array[sid::text], to_jsonb(coalesce((used->>sid::text)::int, 0) + q));
         key_row := coalesce(before_row->>'item_rules_id', 'custom:' || coalesce(before_row->>'custom_name', ''));
         key_cap := coalesce(k->>'itemId', 'custom:' || coalesce(k->>'customName', ''));

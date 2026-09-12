@@ -12,7 +12,7 @@ const NG='33333333-3333-4333-8333-aaaaaaaaaaaa'
 const check=(r:{data:unknown;error:{message:string}|null}):any=>{if(r.error)throw Error(r.error.message);return r.data}
 describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229)',()=>{
  let admin:SupabaseClient,victim:SupabaseClient,captor:SupabaseClient,gm:SupabaseClient
- const users:string[]=[];let vw:string,cw:string,campaign:string,match:string,group:string,swords:string,shields:string,moulder:string,events:string[]=[]
+ const users:string[]=[];let vw:string,cw:string,pw:string,campaign:string,match:string,group:string,swords:string,shields:string,moulder:string,events:string[]=[]
  beforeAll(async()=>{
   admin=createClient(process.env.SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const clients:SupabaseClient[]=[]
@@ -25,7 +25,7 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
  })
  beforeEach(async()=>{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bands=check(await admin.from('warbands').insert([{owner_id:users[0],name:'Disposable Reiklanders',type_rules_id:'mercenaries_reikland',gold:100},{owner_id:users[1],name:'Disposable Moulder',type_rules_id:'skaven_of_clan_moulder',gold:100}]).select('id'));[vw,cw]=bands.map((b:any)=>b.id)
+  const bands=check(await admin.from('warbands').insert([{owner_id:users[0],name:'Disposable Reiklanders',type_rules_id:'mercenaries_reikland',gold:100},{owner_id:users[1],name:'Disposable Moulder',type_rules_id:'skaven_of_clan_moulder',gold:100}]).select('id'));[vw,cw]=bands.map((b:any)=>b.id);pw=cw
   campaign=check(await admin.from('campaigns').insert({gm_id:users[2],name:'Disposable Subjugator',settings:{reportApproval:false}}).select('id').single()).id
   check(await admin.from('campaign_members').insert([{campaign_id:campaign,warband_id:vw,user_id:users[0]},{campaign_id:campaign,warband_id:cw,user_id:users[1]}]))
   match=check(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2],state:'awaiting_reports'}).select('id').single()).id
@@ -51,8 +51,8 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
  afterAll(async()=>{for(const id of users)await admin.auth.admin.deleteUser(id)})
  const kit=(q=1)=>[{sourceItemId:swords,itemId:'sword',quantity:q},{sourceItemId:shields,itemId:'shield',quantity:q,notes:'Painted red'}]
  const cap=(modelIndex:number,eventId:string,extra:Record<string,unknown>={})=>({modelIndex,eventId,captorWarbandId:cw,reason:'subjugator',kit:kit(),...extra})
- const file=(captured:unknown[],over:{size?:number;swordQty?:number;shieldQty?:number;rolls?:number[];dead?:number}={})=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],
-  injuries:[{subjectType:'group',subjectId:group,subjectName:'Warriors',rolls:over.rolls??[4],dead:over.dead??0,captured}],
+ const file=(captured:unknown[],over:{size?:number;swordQty?:number;shieldQty?:number;rolls?:number[];dead?:number;swordsLost?:number;shieldsLost?:number;unaccounted?:boolean}={})=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],
+  injuries:[{subjectType:'group',subjectId:group,subjectName:'Warriors',rolls:over.rolls??[4],dead:over.dead??0,captured,...(over.unaccounted?{}:{equipmentLost:[{sourceItemId:swords,quantity:over.swordsLost??2},{sourceItemId:shields,quantity:over.shieldsLost??2}]})}],
   applied:{heroes:[],groups:[{id:group,patch:{size:over.size??1}}],item_patches:[{id:swords,quantity:over.swordQty??1},{id:shields,quantity:over.shieldQty??1}]}}})
  const fileCaptor=()=>captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',applied:{}}})
  const cases=async(client=victim)=>check(await client.from('captive_cases').select('*,proposals:captive_proposals(id,state,message)').eq('match_id',match).order('model_index'))
@@ -71,16 +71,17 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect((await file([cap(1,events[0]),cap(1,events[1])])).error?.message).toMatch(/casualty 2 of the group, not 1/)
   expect((await file([cap(1,events[0]),cap(2,events[0])])).error?.message).toMatch(/casualty 1 of the group, not 2|used twice/)
   expect((await file([cap(3,events[2])],{size:2})).error?.message).toMatch(/no unreverted Subjugator capture event/)
-  expect((await file([cap(1,events[0]),cap(2,events[1])],{size:2})).error?.message).toMatch(/should be patched to 1 models/)
-  expect((await file([cap(1,events[0],{kit:kit(2)}),cap(2,events[1],{kit:kit(2)})])).error?.message).toMatch(/removed only 2 of sword/)
+  expect((await file([cap(1,events[0]),cap(2,events[1])],{rolls:[1,1],dead:2,size:0})).error?.message).toMatch(/had 3 models before the battle but the report loses 2 dead and 2 captured/)
+  expect((await file([cap(1,events[0],{kit:kit(2)}),cap(2,events[1],{kit:kit(2)})])).error?.message).toMatch(/casualties took only 2 of sword/)
+  expect((await file([cap(1,events[0]),cap(2,events[1])],{swordsLost:4})).error?.message).toMatch(/records 4 of sword lost from Warriors but the group only carried 3/)
   expect((await file([cap(1,events[0],{kit:[{sourceItemId:swords,itemId:'axe',quantity:1}]}),cap(2,events[1])])).error?.message).toMatch(/names axe but the source row is sword/)
   expect((await file([cap(1,events[0],{captorWarbandId:vw}),cap(2,events[1])])).error?.message).toMatch(/no unreverted Subjugator capture event/)
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',events[1]))
   expect((await file([cap(1,events[0]),cap(2,events[1])])).error?.message).toMatch(/no unreverted Subjugator capture event/)
   expect(await cases()).toHaveLength(0)
-  // Kit the owner used or discarded in the same report is not a capture claim: swords 3 → 0 with one sword captured is legitimate.
+  // Kit the owner used or discarded in the same report is not a capture claim: swords 3 → 0 with one sword taken by the casualties is legitimate.
   check(await admin.from('battle_events').update({reverted_at:null}).eq('id',events[1]))
-  check(await file([cap(1,events[0],{kit:[{sourceItemId:swords,itemId:'sword',quantity:1},kit()[1]]}),cap(2,events[1],{kit:[kit()[1]]})],{swordQty:0}))
+  check(await file([cap(1,events[0],{kit:[{sourceItemId:swords,itemId:'sword',quantity:1},kit()[1]]}),cap(2,events[1],{kit:[kit()[1]]})],{swordQty:0,swordsLost:1}))
   const opened=await cases();expect(opened).toHaveLength(2)
   expect(opened[0].model_snapshot.items.map((i:any)=>[i.item_rules_id,i.quantity])).toEqual([['sword',1],['shield',1]]);expect(opened[1].model_snapshot.items.map((i:any)=>i.item_rules_id)).toEqual(['shield'])
   expect(check(await admin.from('items').select('id').eq('id',swords))).toHaveLength(0)
@@ -198,5 +199,18 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:idS,p_action:'accept'}))
   expect(check(await admin.from('warbands').select('gold').eq('id',cw).single()).gold).toBe(120)
   expect(check(await admin.from('items').select('item_rules_id,quantity,notes').eq('warband_id',cw).eq('holder_type','stash').order('item_rules_id'))).toEqual([{item_rules_id:'shield',quantity:1,notes:'Painted red'},{item_rules_id:'sword',quantity:1,notes:''}])
+ })
+
+ it('accepts a full report whose exploration recruits offset the captures in the same filing, and falls back conservatively without casualty accounting',async()=>{
+  // Two captured, then two Prisoners recruited and armed alike: final size 3 and six swords again.
+  check(await file([cap(1,events[0]),cap(2,events[1])],{size:3,swordQty:3,shieldQty:3}));check(await fileCaptor())
+  const opened=await cases();expect(opened).toHaveLength(2);expect(opened[0].model_snapshot.items.map((i:any)=>[i.item_rules_id,i.quantity])).toEqual([['sword',1],['shield',1]])
+  expect((await groupRow()).size).toBe(3)
+  check(await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:pw}))
+  check(await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:vw}))
+  // An older report without equipmentLost: claims are bounded by before − final only.
+  expect((await file([cap(1,events[0]),cap(2,events[1])],{unaccounted:true,swordQty:2})).error?.message).toMatch(/casualties took only 1 of sword/)
+  check(await file([cap(1,events[0]),cap(2,events[1])],{unaccounted:true}))
+  expect(await cases()).toHaveLength(2)
  })
 })

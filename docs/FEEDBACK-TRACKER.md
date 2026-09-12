@@ -4028,3 +4028,12 @@ Too Big uses the same oversized weapon family as Snotling Small Hands, with the 
 Validation:20focused and2,052ordinary tests pass; build/typecheck pass; lint3oldwarnings. Tests cover all6Halflingtypes, weapontraining andVillageOgre exception. No UI/DB change or new browserQA. Logs /tmp/stirheim-halfling-equipment-{tests,all-tests,build,lint}.log. Localonly, noSQL/push/deploy.
 
 Next#67 Outlaws (both original andRedux): source grade1bpart2:835 / grade2apart2:286 says one missile weapon per warrior; mandatorybow exceptCleric; no additional ballisticweapon despite learnedskill. Implement roster warning for missingbows includinggroupquantity, cap1initemRestrictionWarnings, preservehiredkit andClericoptionalbow. Stashcurrentlychecks destinationonly; removinglastbow shouldatleastshowrosterwarning, avoidclaiming pre-move sourcewarningwithoutimplementingit. BowIDs short_bow/bow/longbow/elf_bow; HuntingArrows notmissileweapon. ExactClericIDs outlaws_cleric and cleric. Creation-onlyHuntingArrows/Ithilmar andremainingSlayer clauses stillopen. Morningquestionsunchanged.
+
+
+## Next local batch — #67 Outlaw bow requirement and missile cap
+
+Original and Redux Outlaws now warn against non-bow missile equipment for ordinary warriors even with Weapons Expert, cap missile inventory at one per model, and show missing-bow roster warnings even for empty inventories. Group bows must cover every model. Cleric bow remains optional; no new non-bow ban is imposed specifically on Clerics beyond existing list access. Hired-sword kit/stash unaffected. Source grade1bpart2:835 and grade2apart2:286. Changes remain warning/recorded-override policy.
+
+Validation:21focused and2,053ordinary tests pass; build/typecheck pass; lint3oldwarnings. Covers both lists, missing/adequate bows, group quantities, extra weapons, weapon skills, Cleric and hired-kit exceptions. No UI/DB changes or newbrowserQA. Logs /tmp/stirheim-outlaw-equipment-{tests,all-tests,build,lint}.log. NoSQL/push/deploy.
+
+Remaining: stash moves currently check destination restrictions; removing the last mandatory bow shows a roster warning afterward, but no pre-move source warning is claimed. requiredEquipmentWarnings(warband,holder) is exported for that follow-up. Creation-only Hunting Arrows/Ithilmar and remaining Slayer clauses still open under#67. Morningquestions unchanged.

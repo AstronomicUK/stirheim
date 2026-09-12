@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { findItem, equipmentListOptions, equipmentBundle } from '../../data/items'
 import type { RosterHero, RosterWarband } from '../../types/roster'
 import { equipmentListWarning } from '../equipmentLists'
-import { itemRestrictionWarnings, type ItemHolder } from '../itemRestrictions'
+import { itemRestrictionWarnings, requiredEquipmentWarnings, rosterItemWarnings, type ItemHolder } from '../itemRestrictions'
 import { equipmentBanReason } from '../roster'
 const hero = (unitTemplateId: string, skillIds: string[] = []): RosterHero => ({ id: 'hero', name: 'Warrior', unitTemplateId, skillIds, skillTableIds: [], spellIds: [], stats: { M: 4, WS: 3, BS: 3, S: 3, T: 3, W: 1, I: 3, A: 1, Ld: 7 }, xp: 0, levelUps: 0, flags: {}, equipment: [], injuries: [], status: 'active' })
 const roster = (warbandTemplateId: string, h: RosterHero): RosterWarband => ({ id: 'w', name: 'Warband', warbandTemplateId, heroes: [h], henchmenGroups: [], hiredSwords: [], stash: [], gold: 100, wyrdstone: 0, veteranPool: null })
@@ -231,4 +231,23 @@ it('applies Halfling Too Big to the actual Halflings, preserving the Village Ogr
     expect(equipmentBanReason('halflings', unit, { itemId: 'short_bow', quantity: 1 })).toBeNull()
   }
   for (const id of banned) expect(equipmentBanReason('halflings', 'halflings_village_ogre_henchman', { itemId: id, quantity: 1 })).toBeNull()
+})
+
+
+it('checks both Outlaw bow requirements, Cleric exemption and one-missile limit', () => {
+  for (const [warband, unit, clericId] of [['outlaws_of_stirwood_forest', 'outlaws_champion', 'outlaws_cleric'], ['outlaws_of_stirwood_forest_redux', 'champions', 'cleric']]) {
+    const h = hero(unit, ['weapons_expert']), r = roster(warband, h)
+    expect(rosterItemWarnings(r).some(w => w.message.includes('must carry a bow'))).toBe(true)
+    const cleric = hero(clericId)
+    expect(requiredEquipmentWarnings(roster(warband, cleric), holder(cleric))).toEqual([])
+    const armed = { ...h, equipment: [{ itemId: 'bow', quantity: 1 }] }
+    expect(requiredEquipmentWarnings(roster(warband, armed), holder(armed))).toEqual([])
+    expect(itemRestrictionWarnings(r, findItem('crossbow')!, holder(h)).join(' ')).toContain('even with Weapons Expert')
+    expect(itemRestrictionWarnings(roster(warband, armed), findItem('bow')!, holder(armed)).join(' ')).toContain('may carry only one')
+    const group: ItemHolder = { kind: 'henchmanGroup', name: 'Archers', unitTemplateId: unit, size: 3, equipment: [{ itemId: 'bow', quantity: 2 }] }
+    expect(requiredEquipmentWarnings(r, group).join(' ')).toContain('for each model')
+    expect(requiredEquipmentWarnings(r, { ...group, equipment: [{ itemId: 'bow', quantity: 3 }] })).toEqual([])
+    expect(requiredEquipmentWarnings(r, { kind: 'hiredSword', equipment: [] })).toEqual([])
+    expect(itemRestrictionWarnings(r, findItem('bow')!, { ...group, equipment: [{ itemId: 'bow', quantity: 3 }] }, { alreadyHeld: true }).join(' ')).not.toContain('may carry only one')
+  }
 })

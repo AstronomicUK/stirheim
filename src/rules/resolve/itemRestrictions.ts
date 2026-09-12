@@ -48,6 +48,18 @@ export interface RestrictionOptions {
   alreadyHeld?: boolean;
 }
 
+const OUTLAW_WARBANDS = new Set(["outlaws_of_stirwood_forest", "outlaws_of_stirwood_forest_redux"]);
+const OUTLAW_CLERICS = new Set(["outlaws_cleric", "cleric"]);
+const BOW_IDS = new Set(["short_bow", "bow", "longbow", "elf_bow"]);
+
+/** Required kit is checked separately so empty inventories are also covered. */
+export function requiredEquipmentWarnings(warband: RosterWarband, holder: ItemHolder): string[] {
+  if (!OUTLAW_WARBANDS.has(warband.warbandTemplateId) || !["hero", "henchmanGroup"].includes(holder.kind) || OUTLAW_CLERICS.has(holder.unitTemplateId ?? "")) return [];
+  const models = holder.kind === "henchmanGroup" ? Math.max(1, holder.size ?? 1) : 1;
+  const bows = holder.equipment.reduce((n, entry) => n + (entry.itemId && BOW_IDS.has(entry.itemId) ? entry.quantity : 0), 0);
+  return bows >= models ? [] : [`${holder.name ?? "This warrior"} must carry ${models > 1 ? "a bow for each model" : "a bow"} under the Outlaws equipment rule; crossbows do not qualify. Only the Cleric may choose to go without a bow.`];
+}
+
 export const MAX_HAND_WEAPONS = 2;
 export const MAX_MISSILE_WEAPONS = 2;
 
@@ -81,6 +93,11 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
   const rule = itemRestriction(item.id);
   const quantity = opts.quantity ?? 1;
   const warbandId = warband.warbandTemplateId;
+  const outlaw = OUTLAW_WARBANDS.has(warbandId) && ["hero", "henchmanGroup"].includes(holder.kind);
+
+  if (outlaw && !OUTLAW_CLERICS.has(holder.unitTemplateId ?? "") && countsAsMissileWeapon(item.id) && !BOW_IDS.has(item.id)) {
+    out.push(`${item.name}: Outlaws must use a bow as their only missile weapon, even with Weapons Expert.`);
+  }
 
   if (opts.bans && isBanned(opts.bans, "items", item.id)) out.push(`${item.name} is banned in this campaign.`);
 
@@ -140,7 +157,8 @@ export function itemRestrictionWarnings(warband: RosterWarband, item: Item, hold
     }
     if (countsAsMissileWeapon(item.id) && rule.countsAsMissile !== false) {
       const after = missileWeaponCount(opts.alreadyHeld ? kit : [...kit, { itemId: item.id, quantity: addedPerModel }]);
-      if (after > MAX_MISSILE_WEAPONS) out.push(`${each ? `${each} ` : ""}${holder.name ?? "This warrior"} would carry ${after} missile weapons; the rulebook allows up to two different missile weapons per warrior, a brace of pistols counting as one (Weapons and Armour, Equipment).`);
+      if (outlaw && after > 1) out.push(`${holder.name ?? "This warrior"} would carry ${after} missile weapons per model; Outlaws may carry only one.`);
+      else if (!outlaw && after > MAX_MISSILE_WEAPONS) out.push(`${each ? `${each} ` : ""}${holder.name ?? "This warrior"} would carry ${after} missile weapons; the rulebook allows up to two different missile weapons per warrior, a brace of pistols counting as one (Weapons and Armour, Equipment).`);
     }
   }
   const listWarning = equipmentListWarning(warband, item, holder, { atCreation: opts.atCreation });
@@ -170,6 +188,7 @@ export function sellBlockReason(itemId: string | null): string | null {
 export function rosterItemWarnings(warband: RosterWarband, opts: Pick<RestrictionOptions, "atCreation" | "bans"> = {}): { subjectId: string; message: string }[] {
   const out: { subjectId: string; message: string }[] = [];
   const check = (holder: ItemHolder & { id: string }) => {
+    for (const message of requiredEquipmentWarnings(warband, holder)) out.push({ subjectId: holder.id, message });
     const seen = new Set<string>();
     for (const entry of holder.equipment) {
       if (!entry.itemId || seen.has(entry.itemId)) continue;

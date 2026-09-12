@@ -189,6 +189,11 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect(check(await admin.from('warbands').select('gold').eq('id',vw).single()).gold).toBe(85)
   // Reverse the ransom and sell the second model instead: the builder sends both rows to the captor's stash with notes intact.
   check(await gm.rpc('reverse_captive_resolution',{p_case_id:second.id,p_reason:'They preferred the coin'}))
+  // A group recruited back to five while he was away cannot take him: the builder forms a new group and the server insists on it.
+  check(await admin.from('henchman_groups').update({xp:2,size:5}).eq('id',group));check(await admin.from('items').update({quantity:5}).in('id',[swords,shields]))
+  const full=await viaBuilder((await cases())[1],victim,{kind:'release'});expect(full.built.rejoins).toBe(false);expect(full.built.message).toMatch(/returns as his own group/)
+  expect((await propose(victim,second.id,{kind:'release'},[{table:'henchman_groups',op:'update',id:group,data:{size:6}},{table:'items',op:'update',id:swords,data:{quantity:6}},{table:'items',op:'update',id:shields,data:{quantity:6}}],[])).error?.message).toMatch(/full five models/)
+  check(await admin.from('henchman_groups').update({xp:5,size:2}).eq('id',group));check(await admin.from('items').update({quantity:2}).in('id',[swords,shields]))
   const s=await viaBuilder((await cases())[1],captor,{kind:'sell',d6:4,originalD6:4});const idS=check(s.r);expect(s.built.message).toMatch(/app rolled 4/)
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:idS,p_action:'accept'}))
   expect(check(await admin.from('warbands').select('gold').eq('id',cw).single()).gold).toBe(120)

@@ -8,7 +8,7 @@ import { findItem } from '../rules/data/items'
  * Pure builder for a forced-captured henchman's outcome (migration 092): release, ransom or sale.
  * It produces the two rosters exactly as the server validates them — the returning model rejoins his
  * original group only while that group still matches the snapshot (profile, experience, state and
- * kit per model), otherwise he forms a new group carrying the snapshot; kit identity includes the
+ * kit per model, and fewer than five models), otherwise he forms a new group carrying the snapshot; kit identity includes the
  * roster notes, so two rows of one item with different annotations stay distinct.
  */
 export type ForcedCaptiveChoice = ({ kind: 'release' } | { kind: 'ransom'; gold: number } | { kind: 'sell'; d6: number; originalD6?: number | null }) & { groupId?: string }
@@ -50,7 +50,7 @@ export function sameJson(a: unknown, b: unknown): boolean {
 export function canReturnToGroup(owner: WarbandDetail, item: CaptiveCase): boolean {
   const snap = forcedCaptureSnapshot(item)
   const row = owner.groups.find(g => g.id === item.hero_id)
-  if (!snap || !row) return false
+  if (!snap || !row || row.size >= 5) return false
   if (row.unit_type_rules_id !== snap.group.unit_type_rules_id || !sameJson(row.stats, snap.group.stats) || row.xp !== snap.group.xp) return false
   if (row.level_ups !== (snap.group.level_ups ?? row.level_ups) || !sameJson(row.campaign_state, snap.group.campaign_state ?? {}) || !sameJson(row.stat_increases, snap.group.stat_increases ?? {})) return false
   if (row.size === 0) return true

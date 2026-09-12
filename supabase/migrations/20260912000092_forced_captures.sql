@@ -123,8 +123,9 @@ begin
                    from jsonb_array_elements(coalesce(snap->'items', '[]'::jsonb)) i group by 1) x);
   select * into grow from public.henchman_groups where id = p_case.hero_id and warband_id = v.id;
   -- The original group takes him back only if it is still what he left: same profile, experience,
-  -- state, and the same kit per model (an emptied group has no kit to match).
-  compatible := found and grow.unit_type_rules_id = sgroup->>'unit_type_rules_id' and grow.stats = sgroup->'stats' and grow.xp = (sgroup->>'xp')::int
+  -- state, the same kit per model (an emptied group has no kit to match), and room for him (a group
+  -- already at five models formed while he was away does not grow to six).
+  compatible := found and grow.size < 5 and grow.unit_type_rules_id = sgroup->>'unit_type_rules_id' and grow.stats = sgroup->'stats' and grow.xp = (sgroup->>'xp')::int
                 and grow.level_ups = coalesce((sgroup->>'level_ups')::int, grow.level_ups) and grow.campaign_state = coalesce(sgroup->'campaign_state', '{}'::jsonb) and grow.stat_increases = coalesce(sgroup->'stat_increases', '{}'::jsonb)
                 and (grow.size = 0 or snap_kit = (select coalesce(jsonb_object_agg(x.key, x.per_model), '{}'::jsonb) from (
                        select public.captive_item_key(i.item_rules_id, i.custom_name, i.notes) as key, sum(i.quantity) / grow.size as per_model
@@ -144,7 +145,7 @@ begin
       if not (keys <@ array['gold']) then raise exception 'This outcome may only change the warband''s gold.' using errcode = '22023'; end if;
       og := (d->>'gold')::int - v.gold;
     elsif t = 'henchman_groups' and op = 'update' and v_id = p_case.hero_id then
-      if not compatible then raise exception '% has changed since the capture (profile, experience or state); the returning model forms a new group carrying his snapshot instead.', grow.name using errcode = '22023'; end if;
+      if not compatible then raise exception '% has changed since the capture (profile, experience, state, kit or a full five models); the returning model forms a new group carrying his snapshot instead.', grow.name using errcode = '22023'; end if;
       if group_seen then raise exception 'The returning model joins or forms exactly one group.' using errcode = '22023'; end if;
       if not (keys <@ array['size', 'model_names']) or coalesce((d->>'size')::int, 0) <> grow.size + 1 or coalesce(jsonb_array_length(d->'model_names'), 0) > grow.size + 1 then raise exception 'Returning adds exactly one model to %.', grow.name using errcode = '22023'; end if;
       group_updated := true;

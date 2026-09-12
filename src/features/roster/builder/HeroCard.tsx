@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
+import { findItem } from '../../../rules/data/items'
 import type { CampaignBans } from '../../../rules/types/roster'
 import { equipmentOptionsFor, removeDraftHero, renameDraftHero, type DraftHero } from '../../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../../rules/types'
@@ -80,7 +81,11 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
         open={confirmRemove}
         onClose={() => setConfirmRemove(false)}
         title="Remove this hero?"
-        description={`${hero.name.trim() || unit?.name || 'This hero'} and everything bought for them will be gone, with no way to bring them back.`}
+        description={`${hero.name.trim() || unit?.name || 'This hero'} and everything bought for them${
+          hero.equipment.length > 0
+            ? ` — ${hero.equipment.map((i) => `${i.quantity > 1 ? `${i.quantity} × ` : ''}${(i.itemId && findItem(i.itemId)?.name) || i.customName || i.itemId || 'item'}`).join(', ')} —`
+            : ''
+        } will be gone, with no way to bring them back. The gold returns to your purse.`}
         footer={
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setConfirmRemove(false)}>

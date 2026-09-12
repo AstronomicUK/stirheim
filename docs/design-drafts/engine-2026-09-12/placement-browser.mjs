@@ -1,0 +1,35 @@
+import {chromium,expect} from '@playwright/test';
+const browser=await chromium.launch();
+try {
+ const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:5193/docs/design-drafts/engine-2026-09-12/app-preview.html');
+ await page.getByRole('button',{name:'Preview imprisonment proposal'}).click();
+ await expect(page.getByRole('dialog',{name:'Imprison Kurgan'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Propose imprisonment'})).toBeDisabled();
+ await expect(page.getByRole('radio',{name:/Ashbound/})).toBeDisabled();
+ await expect(page.getByRole('radio',{name:/The Last Chain/})).toBeDisabled();
+ await page.getByRole('radio',{name:/The Iron Maw/}).check();
+ await expect(page.getByText('The Iron Maw: 6 of 6 places occupied.')).toBeVisible();
+ await expect(page.getByText('A chipped family heirloom')).toBeVisible();
+ await expect(page.getByRole('button',{name:'Propose imprisonment'})).toBeEnabled();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'docs/design-drafts/engine-2026-09-12/placement-mobile.png'});
+ await page.setViewportSize({width:1200,height:950});
+ await expect(page.getByRole('button',{name:'Propose imprisonment'})).toBeVisible();
+ await page.screenshot({path:'docs/design-drafts/engine-2026-09-12/placement-desktop.png'});
+ await page.getByRole('button',{name:'Propose imprisonment'}).click();
+ await expect(page.getByRole('dialog',{name:'Proposal preview: engine-1'})).toBeVisible();
+ await page.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:/Grukk/}).click();
+ await expect(page.getByRole('dialog',{name:'Grukk'})).toBeVisible();
+ await expect(page.getByText(/Large captive · 2 places/)).toBeVisible();
+ await expect(page.getByText('A chipped family heirloom')).toBeVisible();
+ await page.getByText('Prisoner history',{exact:true}).click();
+ await expect(page.getByText(/after both players agreed the equipment transfer/)).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'docs/design-drafts/engine-2026-09-12/prisoner-mobile.png'});
+ expect(errors).toEqual([]);
+ console.log('PASS: Large captive needs two places, away/insufficient engines disabled, full consent kit shown, phone/desktop layout and callback. Preview only.');
+} finally {await browser.close()}

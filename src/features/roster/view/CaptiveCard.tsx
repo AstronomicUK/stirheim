@@ -83,8 +83,8 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
    {canAct&&!otherId?null:other.error?<Notice tone="error" title="Could not load the other warband">{other.error.message}</Notice>:null}
    {!canAct?<p className="text-sm text-ink-dim">Only the two players (or the campaign GM) can propose or accept an outcome.</p>:null}
   </>:null}
-  {item.state==='resolved'?<>
-   <Notice tone="info" title="Recorded outcome">{item.resolution_message}</Notice>
+  {item.state==='resolved'||item.state==='held'?<>
+   <Notice tone="info" title={item.state==='held'?'Imprisoned in an Engine of Chaos':'Recorded outcome'}>{item.resolution_message}</Notice>
    {gm||bothMine?<div className="flex flex-wrap items-end gap-2">
     <p className="w-full text-sm text-ink-dim">If another captive outcome changed either roster afterwards, reverse the newer outcome first.</p>
     <TextField label="Reason to reverse" value={reason} onChange={e=>setReason(e.target.value)} placeholder="What was recorded wrongly"/>
@@ -113,7 +113,7 @@ function OutcomeForm({owner,captor,heroId,submitLabel,pending,onSubmit,disabledR
   {kind==='ransom'?<label className="text-sm">Agreed ransom (gc)<input className="ml-2 w-24 rounded border border-border p-2" type="number" min="0" value={gold} onChange={e=>setGold(e.target.value)}/></label>:null}
   {['sell','throne','slaveWork'].includes(kind)?<CaptiveRoll key={kind} label={kind==='sell'?'Slaver payment D6':kind==='throne'?'Throne of Worms D6':'Slave work D6'} sides={6} value={die} original={originalDie} onChange={setDie} onOriginal={setOriginalDie}/>:null}
   {kind==='exchange'?<SelectField label="Captive returned in exchange" value={otherId} onChange={e=>setOtherId(e.target.value)}><option value="">Choose the other captive</option>{[...captor.roster.heroes,...captor.roster.hiredSwords].filter(h=>h.status==='captured').map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>:null}
-  {(kind==='sacrifice'||(kind==='throne'&&die===6))?<SelectField label={kind==='throne'?'Randomly selected hero':'Warband leader'} value={leaderId} onChange={e=>setLeaderId(e.target.value)}><option value="">Choose the leader</option>{captor.roster.heroes.filter(h=>h.status==='active').map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>:null}
+  {(kind==='sacrifice'||(kind==='throne'&&die===6))?<SelectField label={kind==='throne'?'Randomly selected hero':'Warband leader'} value={leaderId} onChange={e=>setLeaderId(e.target.value)}><option value="">{kind==='throne'?'Choose the randomly selected hero':'Choose the leader'}</option>{captor.roster.heroes.filter(h=>h.status==='active').map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>:null}
   {kind==='slaveWork'&&die===1?<CaptiveRoll label="Escape experience D3" sides={3} value={escapeXp} original={originalXp} onChange={setEscapeXp} onOriginal={setOriginalXp}/>:null}
   {error?<p className="text-sm text-ink-dim">{error}</p>:null}
   {preview?<Notice tone="info" title="Outcome to record">{preview.message}</Notice>:null}

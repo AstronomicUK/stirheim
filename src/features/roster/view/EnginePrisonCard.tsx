@@ -14,6 +14,7 @@ export interface EnginePrisonView {
  id:string
  name:string
  number:number
+ state?:'present'|'away'
  prisoners:EnginePrisonerView[]
  journey?:EngineJourneyView
 }
@@ -30,13 +31,14 @@ export function EnginePrisonCard({engine,onPrisoner,onHistory,onDispatch,onJourn
 }){
  const load=enginePrisonLoad(engine.prisoners)
  const journey=engine.journey
+ const away=Boolean(journey||engine.state==='away')
  return <article className="overflow-hidden rounded-lg border border-border bg-surface-low shadow-[0_6px_18px_#49351607]" aria-label={`${engine.name}, Engine of Chaos ${engine.number}`}>
   <header className="flex items-center gap-3 px-4 pb-4 pt-5 sm:px-5">
    <EngineIcon/>
    <div className="min-w-0"><h3 className="break-words font-headline text-2xl">{engine.name}</h3><p className="text-xs text-ink-dim">Engine of Chaos · {engine.number}</p></div>
-   <span className="ml-auto self-start whitespace-nowrap rounded-full border border-border px-2 py-1 text-[9px] uppercase tracking-wider text-brass">{journey?journey.readyToReturn?'Return due':'Away':'Present'}</span>
+   <span className="ml-auto self-start whitespace-nowrap rounded-full border border-border px-2 py-1 text-[9px] uppercase tracking-wider text-brass">{away?journey?.readyToReturn?'Return due':'Away':'Present'}</span>
   </header>
-  {journey?<div className="px-4 pb-5 sm:px-5">
+  {away&&!journey?<p className="px-4 pb-5 text-sm text-ink-dim sm:px-5">This engine is away with its escort and cannot receive prisoners.</p>:journey?<div className="px-4 pb-5 sm:px-5">
    <div className="rounded-md border border-border bg-surface p-4">
     <p className="text-xs text-ink-dim">Escorted by <strong className="ml-1 font-semibold text-ink">{journey.escortName}</strong></p>
     <div className="mt-4 flex items-center gap-1.5" aria-hidden><span className="h-2 w-2 rounded-full bg-brass"/><span className="h-px flex-1 bg-border"/><span className="h-2 w-2 rounded-full bg-brass"/><span className="h-px flex-1 bg-border"/><span className={`h-2 w-2 rounded-full border border-brass ${journey.readyToReturn?'bg-brass':'bg-surface-low'}`}/></div>
@@ -65,7 +67,7 @@ export function EnginePrisonCard({engine,onPrisoner,onHistory,onDispatch,onJourn
   </>}
   {(onHistory||onDispatch||onJourney||onReturn)?<footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-5">
    {journey?(onJourney?<Button variant="ghost" onClick={onJourney} disabled={pending}>View journey</Button>:null):(onHistory?<Button variant="ghost" onClick={onHistory} disabled={pending}>View history</Button>:null)}
-   {journey?.readyToReturn&&onReturn?<Button variant="secondary" onClick={onReturn} pending={pending}>Record return</Button>:!journey&&onDispatch?<Button variant="secondary" onClick={onDispatch} disabled={pending||!load.models||load.overCapacity}>Prepare a journey</Button>:journey?<span className="text-xs text-ink-dim">{journey.readyToReturn?'Return due':'Return pending'}</span>:null}
+   {journey?.readyToReturn&&onReturn?<Button variant="secondary" onClick={onReturn} pending={pending}>Record return</Button>:!away&&onDispatch?<Button variant="secondary" onClick={onDispatch} disabled={pending||!load.models||load.overCapacity}>Prepare a journey</Button>:journey?<span className="text-xs text-ink-dim">{journey.readyToReturn?'Return due':'Return pending'}</span>:null}
   </footer>:null}
  </article>
 }

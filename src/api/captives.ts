@@ -36,7 +36,7 @@ export function useResolveCaptive() {
   }, onSuccess: () => Promise.all([cache.invalidateQueries({ queryKey: warbandKeys.all }), cache.invalidateQueries({ queryKey: ['advances'] }), cache.invalidateQueries({ queryKey: ['captives'] })]) })
 }
 
-export type CaptiveCaseState = 'unassigned' | 'open' | 'resolved' | 'withdrawn'
+export type CaptiveCaseState = 'unassigned' | 'open' | 'held' | 'resolved' | 'withdrawn'
 export type CaptiveProposalState = 'proposed' | 'accepted' | 'rejected' | 'withdrawn' | 'stale' | 'reversed'
 export interface CaptiveProposal {
   id: string
@@ -89,7 +89,7 @@ export function useCaptiveCases(warbandId: string | undefined) {
     const { data, error } = await from('captive_cases')
       .select(`*,victim:warbands!captive_cases_victim_warband_id_fkey(name),captor:warbands!captive_cases_captor_warband_id_fkey(name),proposals:captive_proposals(${PROPOSAL_COLUMNS})`)
       .or(`victim_warband_id.eq.${warbandId},captor_warband_id.eq.${warbandId}`)
-      .in('state', ['unassigned', 'open', 'resolved'])
+      .in('state', ['unassigned', 'open', 'held', 'resolved'])
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
     return (data as CaptiveCase[]).map(c => ({ ...c, proposals: [...c.proposals].sort((a, b) => b.created_at.localeCompare(a.created_at)) }))

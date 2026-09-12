@@ -141,6 +141,17 @@ describe("applyHeroInjury", () => {
     expect(light.flags.singleHandedWeaponsOnly).toBeUndefined();
   });
 
+  it("runs overlapping recovery concurrently in either injury order (Tom's #193 ruling)", () => {
+    const armFirst = applyHeroInjury(makeHero(), 23, 4).value.hero;
+    const deepAfterArm = applyHeroInjury(armFirst, 35, 3).value.hero;
+    expect(deepAfterArm.flags.missNextGames).toBe(3);
+
+    const deepFirst = applyHeroInjury(makeHero(), 35, 3).value.hero;
+    const armAfterDeep = applyHeroInjury(deepFirst, 23, 4).value.hero;
+    expect(armAfterDeep.flags.missNextGames).toBe(3);
+    expect(armAfterDeep.injuries).toHaveLength(2);
+  });
+
   it("Madness and Smashed Leg map their sub-rolls to flags", () => {
     expect(applyHeroInjury(makeHero(), 24, 2).value.hero.flags.stupidity).toBe(true);
     expect(applyHeroInjury(makeHero(), 24, 5).value.hero.flags.frenzy).toBe(true);

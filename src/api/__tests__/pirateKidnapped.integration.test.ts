@@ -48,9 +48,9 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   await admin.from('app_notifications').delete().in('user_id',users)
  })
  afterAll(async()=>{for(const id of users)await admin.auth.admin.deleteUser(id)})
- const fileVictim=(opts:{heroCaptured?:boolean;henchmenLost?:boolean;result?:'lost'|'won'|'draw'}={})=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:opts.result??'lost',ooa:[],
+ const fileVictim=(opts:{heroCaptured?:boolean;henchmenLost?:boolean;unaccounted?:boolean;result?:'lost'|'won'|'draw'}={})=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:opts.result??'lost',ooa:[],
   injuries:[...(opts.heroCaptured===false?[]:[{subjectType:'hero',subjectId:hero,subjectName:'Taken Captain',rolls:[61],outcome:'captured',injuryCode:'captured',injuryName:'Captured',effect:''}]),
-            ...(opts.henchmenLost?[{subjectType:'group',subjectId:warriors,subjectName:'Warriors',rolls:[1,4,2],dead:2}]:[])],
+            ...(opts.henchmenLost?[{subjectType:'group',subjectId:warriors,subjectName:'Warriors',rolls:[1,4,2],dead:2,...(opts.unaccounted?{}:{equipmentLost:[{sourceItemId:warriorSwords,quantity:2}]})}]:[])],
   applied:{heroes:opts.heroCaptured===false?[]:[{id:hero,patch:{status:'captured',flags:{captured:true}}}],groups:opts.henchmenLost?[{id:warriors,patch:{size:1}}]:[],item_patches:opts.henchmenLost?[{id:warriorSwords,quantity:1}]:[]}}})
  const filePirates=(result:'won'|'lost'|'draw'='won')=>pirate.rpc('submit_battle_report',{p_match_id:match,p_warband_id:pw,p_report:{result,applied:{}}})
  const cases=async(client=victim)=>check(await client.from('captive_cases').select('*,proposals:captive_proposals(id,state,message,reason)').eq('match_id',match).order('model_index'))
@@ -241,7 +241,7 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   const trio=check(await admin.from('henchman_groups').insert({warband_id:vw,name:'Trio',unit_type_rules_id:'mercenaries_reikland_swordsmen',size:3,stats:warriorStats,xp:0}).select('id').single()).id
   const trioShields=check(await admin.from('items').insert({warband_id:vw,holder_type:'group',holder_id:trio,item_rules_id:'shield',quantity:3}).select('id').single()).id
   check(await victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],
-   injuries:[{subjectType:'group',subjectId:pair,subjectName:'Pair',rolls:[1,5],dead:1},{subjectType:'group',subjectId:trio,subjectName:'Trio',rolls:[2,1,4],dead:2}],
+   injuries:[{subjectType:'group',subjectId:pair,subjectName:'Pair',rolls:[1,5],dead:1,equipmentLost:[{sourceItemId:pairSwords,quantity:2}]},{subjectType:'group',subjectId:trio,subjectName:'Trio',rolls:[2,1,4],dead:2,equipmentLost:[{sourceItemId:trioShields,quantity:3}]}],
    applied:{heroes:[],groups:[{id:pair,patch:{size:1}},{id:trio,patch:{size:1}}],item_patches:[{id:pairSwords,quantity:2},{id:trioShields,quantity:0}]}}}))
   check(await filePirates('won'))
   const opened=await cases()
@@ -270,5 +270,14 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   const [t0]=(await cases()).filter((c:any)=>c.id===trioCases[0].id);expect(t0.model_snapshot).toMatchObject({kit_unresolved:false,allocation:{reason:'He carried two of the three shields'}});expect(t0.model_snapshot.items[0].quantity).toBe(2)
   expect((await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:1}}]))).error?.message).toMatch(/own share of kit may be kept \(shield ×2\)/)
   check(await propose(pirate,trioCases[0].id,{...choice('swabbie',[1,1],[6,6]),groupId:G2,crew:{groupId:G2,size:0,stats:crewStats,skillIds:[]}},[],swabbie2([{table:'items',op:'insert',data:{holder_type:'stash',item_rules_id:'shield',quantity:2}}])))
+ })
+
+ it('a report without casualty kit accounting leaves the share unresolved rather than inferring it from the row totals',async()=>{
+  check(await fileVictim({heroCaptured:false,henchmenLost:true,unaccounted:true}));check(await filePirates('won'))
+  const [c]=await cases()
+  expect(c.model_snapshot.kit_unresolved).toBe(true)
+  expect(c.model_snapshot.items).toEqual([expect.objectContaining({item_rules_id:'sword',quantity:null,lost:2})])
+  check(await victim.rpc('allocate_kidnap_kit',{p_case_id:c.id,p_items:[{id:warriorSwords,quantity:1}],p_reason:'One sword each, nothing was spent'}))
+  expect((await cases())[0].model_snapshot.items[0].quantity).toBe(1)
  })
 })

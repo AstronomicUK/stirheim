@@ -336,13 +336,19 @@ begin
         if not exists (select 1 from public.kidnap_eligible_units e where e.unit_type_rules_id = gunit and e.warband_type_rules_id = vr.type_rules_id) then continue; end if;
         select e->'before' into g from jsonb_array_elements(coalesce(vr.undo->'groups', '[]'::jsonb)) e where e->>'id' = line->>'subjectId' limit 1;
         if g is null then select jsonb_build_object('stats', stats, 'size', size, 'xp', xp, 'level_ups', level_ups, 'campaign_state', campaign_state) into g from public.henchman_groups where id = (line->>'subjectId')::uuid; end if;
-        -- Each lost model's share of the group's kit: the quantity the report actually removed from
-        -- each pre-report row (before-row minus the applied patch), divided evenly across the dead.
-        -- Metadata is kept; an allocation that does not divide evenly is flagged, not guessed.
+        -- Each lost model's share of the group's kit. The report's own casualty accounting
+        -- (line.equipmentLost: what the dead models actually took with them, net of supplies spent in
+        -- the battle) is the pool, divided evenly across the dead; a pool that does not divide is
+        -- flagged for the victim's player to allocate by hand. A report without that accounting only
+        -- records the rows the report reduced, as candidates with no quantity: inferring a share from
+        -- before − final could hand the Pirates a vial the owner drank.
         select coalesce(jsonb_agg(((u->'row') - 'quantity' - 'updated_at' - 'created_at') || jsonb_build_object('quantity', share.per_model, 'lost', share.lost)), '[]'::jsonb) into items
           from jsonb_array_elements(coalesce(vr.undo->'items', '[]'::jsonb)) u
-          cross join lateral (select (u->'before'->>'quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(vr.applied->'item_patches', '[]'::jsonb)) pt where pt->>'id' = u->>'id' limit 1), (u->'before'->>'quantity')::int) as lost) l
-          cross join lateral (select l.lost, case when l.lost > 0 and l.lost % greatest((line->>'dead')::int, 1) = 0 then l.lost / greatest((line->>'dead')::int, 1) else null end as per_model) share
+          cross join lateral (select case when jsonb_typeof(line->'equipmentLost') = 'array'
+                                            then coalesce((select (e->>'quantity')::int from jsonb_array_elements(line->'equipmentLost') e where e->>'sourceItemId' = u->>'id' limit 1), 0)
+                                            else (u->'before'->>'quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(vr.applied->'item_patches', '[]'::jsonb)) pt where pt->>'id' = u->>'id' limit 1), (u->'before'->>'quantity')::int) end as lost,
+                                     jsonb_typeof(line->'equipmentLost') = 'array' as accounted) l
+          cross join lateral (select l.lost, case when l.accounted and l.lost > 0 and l.lost % greatest((line->>'dead')::int, 1) = 0 then l.lost / greatest((line->>'dead')::int, 1) else null end as per_model) share
           where u->'row'->>'holder_id' = line->>'subjectId' and l.lost > 0;
         i := 0;
         for roll in select x from jsonb_array_elements_text(coalesce(line->'rolls', '[]'::jsonb)) x loop

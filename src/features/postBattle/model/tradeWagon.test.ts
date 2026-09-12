@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest'
 import type {ItemRow} from '../../../domain'
-import {tradeWagonAbandonment,tradeWagonCargo,type TradeWagonFacts} from './tradeWagon'
+import {tradeWagonAbandonment,tradeWagonCargo,tradeWagonCaptureSnapshot,type TradeWagonFacts} from './tradeWagon'
 const facts:TradeWagonFacts={merchantId:'merchant',wagonPresent:true,routed:true,routCause:'failed-test',driverPresent:false,captorId:'winner',winningWarbandIds:['winner'],everyMerchantModelOut:false}
 it('abandons only a driverless wagon after a failed Rout test',()=>{
  expect(tradeWagonAbandonment(facts)).toMatchObject({abandoned:true,captorId:'winner',rareSearchBlocked:true,problems:[]})
@@ -34,4 +34,18 @@ it('carries a known failed test into the report and clears it when routing is co
  expect(reportRouted(report,false).routCause).toBeUndefined()
  expect(setRouted(state,false).routCause).toBeUndefined()
  expect(seedFromBattleSheet(makeWarband(),{...emptyBattleLiveState(),routed:true}).routCause).toBeUndefined()
+})
+
+it('snapshots the actual wagon once, excluding its item row from cargo and rejecting foreign identities',()=>{
+ const wagon={id:'wagon',warband_id:'merchant',holder_type:'stash',holder_id:null,item_rules_id:'trade_wagon',quantity:1,custom_name:null,notes:'Two draft horses included',created_at:'before',updated_at:'before'} as ItemRow
+ const sword={...wagon,id:'sword',item_rules_id:'sword',notes:'Family blade'}
+ const input={matchId:'battle',facts,wagonId:wagon.id,items:[wagon,sword],groups:[],wyrdstone:4}
+ const snapshot=tradeWagonCaptureSnapshot(input)
+ expect(snapshot.wagon).toEqual({kind:'item',expected:wagon})
+ expect(snapshot.cargo.items.map(i=>i.id)).toEqual(['sword'])
+ expect(snapshot.cargo.wyrdstone).toBe(4)
+ sword.notes='Changed after capture';expect(snapshot.cargo.items[0].notes).toBe('Family blade')
+ expect(()=>tradeWagonCaptureSnapshot({...input,wagonId:'other'})).toThrow('actual single Trade Wagon')
+ expect(()=>tradeWagonCaptureSnapshot({...input,facts:{...facts,driverPresent:true}})).toThrow('not been abandoned')
+ expect(snapshot).not.toHaveProperty('gold')
 })

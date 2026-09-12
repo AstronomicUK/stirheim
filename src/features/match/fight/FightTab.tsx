@@ -1,3 +1,4 @@
+import { isCorePistol, pistolShootingOptions } from './pistolShooting'
 import { PoisonControls } from '../battle/PoisonControls'
 import { recordedPoisonEffects } from '../battle/poisonUses'
 import { blessedWaterWeapon } from '../../../rules/engine/blessedWater'
@@ -186,6 +187,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const [waterCorrection, setWaterCorrection] = useState('')
   const [waterError, setWaterError] = useState<string | null>(null)
   // First generic core cadence path: handguns. Pistols need brace/per-copy attack allocation separately.
+  const [pistolModel, setPistolModel] = useState(0)
+  const [pistolCorrection, setPistolCorrection] = useState('')
   const [handgunCorrection, setHandgunCorrection] = useState('')
   const isCoreHandgun = !selfDamage && primary?.id === 'handgun'
   const handgunCopies = isCoreHandgun && attacker ? physicalWeaponChoices(items, events, roster.id, attacker.id, 'handgun') : []
@@ -230,6 +233,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const turns = useBattleTurns(matchId)
   const phaseKey = combatPhaseKey(sheet.turn, turns.data)
   const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
+  const isPistolShot = !selfDamage && primary?.type === 'ranged' && isCorePistol(primary.id)
+  const pistolSlot = Math.min(pistolModel, Math.max(0, (attacker?.groupSize ?? 1) - 1))
+  const pistol = isPistolShot && attacker && primary ? pistolShootingOptions(sheet, attacker, items, events, primary.id, physicalSelection[`${attacker.id}:pistol:${pistolSlot}`], Number(ownTurnKey.split(':').at(-1)), pistolSlot) : null
   const individualStupidity = Boolean(attacker && (attacker.kind !== 'henchman' || (attacker.groupSize ?? 1) <= 1))
   const [groupStupidity, setGroupStupidity] = useState<{ id: string; turnKey: string; failed: boolean } | null>(null)
   const burningBlocked = Boolean(attacker && !areaTarget && warriorIsBurning(sheet, events, roster.id, attacker.id))
@@ -290,7 +296,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ weaponChoiceKeys: hasPoison && !areaTarget ? [poisonBindings[0],poisonBindings[1]] : undefined, ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ weaponChoiceKeys: hasPoison && !areaTarget ? [poisonBindings[0],poisonBindings[1]] : undefined, ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : isPistolShot ? Math.min(1, attackLimit ?? 1) : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -428,6 +434,16 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
       {events.some(e => !e.reverted_at && e.payload.brokenWeapons?.some(loss => loss.warbandId === roster.id)) ? <Notice tone="warn" title="Broken equipment">Broken copies are excluded from available weapons. Groups with some intact copies can still select the weapon: use those only for the members who carry them. Revert the break in the battle Log to correct it.</Notice> : null}
       {swordBreaker || hasPoison ? <Notice tone="warn" title={swordBreaker ? "Sword Breaker opponent" : "Selected weapon copies"}><div className="flex flex-col gap-2"><p>{swordBreaker ? "A successful parry allows a 4+ Trap Blade roll. Select the carried copy at risk; breaking it does not erase hits already rolled." : "Select the physical copy used in each hand. Only the recorded copy receives its poison bonus."}</p>{physicalBindings.map((binding, index) => binding.choices.length > 1 ? <SelectField key={binding.key} label={`Weapon copy for ${index === 0 ? 'main hand' : 'off hand'}`} value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(choice => <option key={choice.key} value={choice.key}>{choice.label}</option>)}</SelectField> : null)}{duplicateWeapon ? <p>Select different physical copies for the two hands.</p> : null}</div></Notice> : null}
+      {pistol && attacker ? <Notice title="Pistol shooting">
+        <p>{pistol.blocked ?? `${pistol.remaining} pistol shot${pistol.remaining === 1 ? '' : 's'} available this own turn. Resolve one shot, then choose the next loaded pistol if Pistolier permits another.`}</p>
+        {(attacker.groupSize ?? 1) > 1 ? <SelectField label="Firing group member" value={pistolSlot} onChange={event => setPistolModel(Number(event.target.value))}>{Array.from({ length: attacker.groupSize! }, (_, index) => <option key={index} value={index}>Model {index + 1}</option>)}</SelectField> : null}
+        {pistol.copies.length ? <SelectField label="Pistol copy" value={pistol.selected?.key ?? ''} onChange={event => setPhysicalSelection(current => ({ ...current, [`${attacker.id}:pistol:${pistolSlot}`]: event.target.value }))}>{pistol.copies.map(copy => <option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField> : null}
+        <details><summary className="cursor-pointer text-sm">Correct a pistol firing attempt</summary>
+          <TextField label="Reason for pistol correction" value={pistolCorrection} onChange={event => setPistolCorrection(event.target.value)} />
+          <p className="text-xs">This restores firing availability. Correct earlier attack results separately in the combat log.</p>
+          {sheet.blackpowderShots.filter(shot => shot.warriorId === attacker.id && !shot.correction && shot.heldWeapon && isCorePistol(shot.heldWeapon.weaponId)).map(shot => <Button key={shot.id} variant="ghost" disabled={readOnly || !pistolCorrection.trim()} onClick={() => edit?.(state => correctBlackpowderShot(state, shot.id, pistolCorrection))}>Correct {shot.weaponName}, copy {shot.heldWeapon!.copyIndex + 1}, turn {shot.ownTurn}</Button>)}
+        </details>
+      </Notice> : null}
       {isCoreHandgun ? <Notice title="Handgun reload">
         <p>{handgunBlocked ?? (attacker?.skillIds.includes('hunter') ? 'Hunter allows this handgun to fire every own turn.' : 'After firing, this handgun needs a complete own turn to reload.')}</p>
         {handgunBlocked && edit && !readOnly ? <div className="flex flex-col gap-2"><TextField label="Reason to correct this firing restriction" value={handgunCorrection} onChange={e => setHandgunCorrection(e.target.value)} /><Button variant="secondary" disabled={!handgunCorrection.trim()} onClick={() => {
@@ -689,11 +705,11 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={unresolvedPoison || waterUnavailable || Boolean(handgunBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (unresolvedPoison || waterUnavailable || handgunBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(handgunBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (pistol?.blocked || unresolvedPoison || waterUnavailable || handgunBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             key={attackKey}
             odds={rollSetup}
-            restartBlocked={waterUnavailable}
+            restartBlocked={waterUnavailable || Boolean(pistol?.blocked)}
             beforeStart={isBlessedWater ? id => {
               if (!edit || !waterRow) return false
               try {
@@ -707,6 +723,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if (next.critUsed && areaId) edit(s => ({ ...s, areaCriticals: { ...s.areaCriticals, [areaId]: true } }))
               const blastShotId = grapeSpread?.shotId ?? mortarShot?.id
               if (next.critUsed && blastShotId) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === blastShotId ? { ...shot, criticalUsed: true } : shot) }))
+              if (pistol?.selected && !areaTarget && primary) {
+                const startsPistol = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
+                if (startsPistol) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: physicalGunKey(pistol.selected!.snapshot, pistol.selected!.key), weaponName: primary.name, heldWeapon: pistol.selected!.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds, pistol.pistolCount) ?? 0, experimental: false, at: new Date().toISOString() }, attacker.name))
+              }
               if (isCoreHandgun && !areaTarget && primary) {
                 const startsHandgun = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
                 if (startsHandgun) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: handgunKey, weaponName: primary.name, heldWeapon: handgunHeld?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds) ?? 1, experimental: false, at: new Date().toISOString() }, attacker.name))
@@ -720,9 +740,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))
               if (primary?.id === 'swivel_gun_grape_shot' && hit) edit(s => startGrapeShotSpread(s, { shotId: attemptId, warriorId: attacker.id, warbandId: roster.id, shooterName: attacker.name, at: new Date().toISOString(), primary: { key: `${defender.warbandId}:${defender.id}:${Math.min(grapePrimarySlot, Math.max(0, (defender.groupSize ?? 1) - 1))}`, warriorId: defender.id, warbandId: defender.warbandId, name: defender.name }, primaryInCover: Boolean(context.cover || defenderKit?.armour.pavise) }))
             } : undefined}
-            heldWeapons={physicalBindings.map(binding => binding.chosen?.snapshot)}
+            heldWeapons={pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={isBlessedWater || Boolean(areaTarget)}
+            forceLog={isPistolShot || isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}

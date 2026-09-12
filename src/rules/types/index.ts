@@ -199,6 +199,8 @@ export interface Character {
   role: CharacterRole;
   stats: Stats;
   equippedWeapons: string[];
+  /** Known per-warrior inventory counts; omitted for abstract engine-only profiles. */
+  equippedWeaponCounts?: Record<string, number>;
   armour: Armour;
   helmet: boolean;
   skills: string[];

@@ -21,7 +21,7 @@ import { IMPOSSIBLE, type Threshold } from "./dice";
 // is this tool's own bridging choice, documented here.
 //   Quick Shot (03:395): "twice per turn with a bow or crossbow (but not a crossbow pistol)".
 //   Pistolier (03:401): "a brace of pistols of any type (including crossbow pistols)" — the brace
-//     itself isn't checked here (a single pistol is assumed to be one of a pair).
+//     count is checked when the caller supplies per-warrior inventory counts.
 //   Knife-Fighter (03:437): "a maximum of three" throwing knives/stars.
 //   Hunter (03:431) is NOT an attack-count skill — it lets a handgun / long rifle fire every turn
 //   instead of every other turn, which a single-turn model can't show, so it is not modelled.
@@ -97,6 +97,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
       if (skill.effect.type !== "attackCountModifier") continue;
       if (!isActive(skill, context)) continue;
       if (!appliesToAttackType(skill.effect.appliesTo, weapon.type)) continue;
+      if (skill.id === "pistolier" && character.equippedWeaponCounts && (character.equippedWeaponCounts[weapon.id] ?? 0) < 2) continue;
       const restriction = ATTACK_COUNT_WEAPON_RESTRICTIONS[skill.id];
       if (restriction && !restriction.includes(weapon.id)) continue;
       bonus += skill.effect.value ?? 0;

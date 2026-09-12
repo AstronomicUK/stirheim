@@ -16,7 +16,7 @@ import type { Character, CombatContext, DefenderProfile, SkillCategory, Weapon, 
 import { defaultCombatContext } from '../../../rules/types'
 import type { CampaignHouseRules } from '../../../rules/types/roster'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
-import type { Combatant, Loadout } from './combatants'
+import { loadoutOf, type Combatant, type Loadout } from './combatants'
 
 export interface FightSetup {
   ladyBlessing?: boolean
@@ -129,6 +129,13 @@ export function weaponInjuryBonus(w: Weapon): number {
 }
 
 export function toCharacter(c: Combatant, kit: Loadout): Character {
+  const equippedWeaponCounts: Record<string, number> = {}
+  for (const entry of c.equipment) {
+    const carried = loadoutOf([entry])
+    for (const id of new Set([...carried.melee, ...carried.ranged].map(weapon => weapon.id))) {
+      equippedWeaponCounts[id] = (equippedWeaponCounts[id] ?? 0) + entry.quantity
+    }
+  }
   return {
     unitTemplateId: c.unitTemplateId,
     isAnimal: c.isAnimal,
@@ -138,6 +145,7 @@ export function toCharacter(c: Combatant, kit: Loadout): Character {
     role: c.kind === 'henchman' ? 'henchman' : 'hero',
     stats: c.stats,
     equippedWeapons: [...kit.melee, ...kit.ranged].map((w) => w.id),
+    equippedWeaponCounts,
     armour: c.traitIds.includes('black_orc') || kit.traitIds.includes('black_orc') || c.skillIds.includes('black_orcs_skills_proven_warrior') ? { ...kit.armour, naturalSaveBonus: Math.max(1, kit.armour.naturalSaveBonus ?? 0) } : kit.armour,
     helmet: kit.helmet,
     skills: [...c.skillIds, ...kit.skillIds.filter((s) => !c.skillIds.includes(s))],

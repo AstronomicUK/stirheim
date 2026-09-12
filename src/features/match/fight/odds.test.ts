@@ -962,3 +962,21 @@ it('binds selected physical copies without adding attacks or coating every sword
   expect(single.attacks).toBe(1)
   expect(single.weapons[0].strength).toBe(4)
 })
+
+
+describe('Pistolier carried copies', () => {
+  it.each(['pistol', 'duelling_pistol', 'crossbow_pistol'])('requires a real brace for two %s shots', itemId => {
+    const single = combatant('Pistolier', [{ itemId, quantity: 1 }], { skillIds: ['pistolier'] })
+    const brace = { ...single, equipment: [{ itemId, quantity: 2 }] }
+    expect(computeOdds(setup(single, captain, itemId, null)).attacks).toBe(1)
+    expect(computeOdds(setup(brace, captain, itemId, null)).attacks).toBe(2)
+    expect(computeOdds(setup({ ...brace, skillIds: [] }, captain, itemId, null)).attacks).toBe(1)
+  })
+  it('counts split inventory rows once each, without treating melee profiles as additional pistols', () => {
+    const single = combatant('Pistolier', [{ itemId: 'pistol', quantity: 1 }], { skillIds: ['pistolier'] })
+    const kit = loadoutOf(single.equipment)
+    expect(toCharacter(single, kit).equippedWeaponCounts?.pistol).toBe(1)
+    const split = { ...single, equipment: [...single.equipment, { itemId: 'pistol', quantity: 1 }] }
+    expect(computeOdds(setup(split, captain, 'pistol', null)).attacks).toBe(2)
+  })
+})

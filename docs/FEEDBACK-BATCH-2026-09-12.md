@@ -2,6 +2,21 @@
 
 Tom approved #230 first, then #229, then #231. Keep a single release batch. Core Priority 1–5 is already deployed; do not repeat that work. Codex owns design, frontend and integration; Claude assists with bounded backend implementation and source audit. Questions to Tom go through Codex.
 
+## Current handoff status — overnight 12–13 September
+
+This section supersedes older milestone lists below; those are a chronological record, not a fresh backlog.
+
+| Area | Verified locally | Still outstanding |
+| --- | --- | --- |
+| #230 tracker | Responsive boards, submissions, attribution, maintainers, merging/following, releases, private notifications, pagination, unread navigation | One final production release; set up verified AstronomicUK maintainer and import the reviewed public manifest only at release |
+| #229 core flows | Agreed-recipient Awakening; two-player Captured; exact kit; exchange/ransom/sale; corrected dice history; reversal/report dependencies; notifications | Specialist extensions below; final production release |
+| #229 further covered flows | Pirates recovery/contest/kit and inherited skills; Subjugator Hero/group/companion captures including manual casualties | Engine of Chaos/Man-catcher custody, rescue and journeys; Slaaneshi lock/end-battle capture; Cursed Cavalcade Misericordia Capture! trigger and henchman Throne flow; Ogre Gluttony; Pit Fighters’ In the Pit |
+| #231 chambers | Core guns, Nuln/Ostlander double barrels, shooting/melee sequencing, mini View Rosters, players-calculated ammunition and corrections | Hunter/Pistolier double-barrel house-rule discussion deferred by Tom; final release |
+
+Tom says to keep working until he messages that he is awake. Claude reset: 00:30 Europe/London, 13 September. Reset handoff: `ENGINE-OF-CHAOS-CAPTURE-BRIEF-2026-09-12.md`; establish the persistent custody contract before UI integration. Codex owns visual design. Next free migration number is **100** after the new 099 exact-kit fix. Do not reset or rebuild the shared local database destructively; apply only new migrations/functions. Do not push individual commits or publish a partial release.
+
+Latest broad evidence: 2,374 ordinary tests passed; all 273 API integration checks passed serially before 099. After 099, 14 core captive checks passed, then all three new equipment identity/reward tests passed (the third was added after the combined run). New migrations 097–099 strengthen correction, dice history and kit identity. Browser acceptance includes actual mobile core Hero sale and mobile/desktop unread counts. Engine design preview is illustrative only.
+
 ## #230 backend contract (Codex/Claude)
 
 UI types: src/features/feedback/types.ts. Tables/RPC names below are interface agreement, not implemented status.
@@ -152,3 +167,7 @@ All **273 database tests across 49 files** passed serially after migrations 097�
 The first ordinary-test run passed 2,373 tests but one dynamic-import-heavy test timed out during concurrent browser verification; that file passed all six tests alone. A rerun with bounded worker concurrency follows. No production changes.
 
 Final ordinary regression at this checkpoint: **2,374 passed across 196 files**, with the 273 local API checks skipped in that separate command as intended (already passed against the database). Four-worker rerun avoided the earlier import timeout. The Engine of Chaos ledger has an inspected mobile/desktop draft, with its Large-captive capacity distinction and per-engine travel state. This is a design/foundation milestone only; persistent custody and journeys are not yet implemented.
+
+### Core exact-kit identity — local
+
+Migration 099 requires matching annotations when Hero equipment passes to the captor, including merges into an existing stash copy. It also separates an existing Enchanted Skins item from the extra Lustrian Amazon sacrifice reward. Both earlier faults were reproduced before the migration; the corrected kit-transfer tests pass, including existing skins plus one legitimate additional copy. Ordinary free daggers issued by conversion cannot carry invented custom modifications. Core captive regression passed 14 checks; the final focused kit suite passed three. No production changes.

@@ -33,6 +33,7 @@ export const attackEventPayloadSchema = z.object({
   /** Bolas condition, separate from wounds and injury results. */
   entangled: z.boolean().optional(),
   /** First own turn in which the Firepot smoke test is due. */
+  bolasBackfires: z.number().int().min(0).optional(),
   volatileBackfires: z.number().int().min(0).optional(),
   volatileBackfireKey: z.string().optional(),
   fireRecoveryId: z.string().optional(),
@@ -69,8 +70,8 @@ export type BattleEventRow = z.infer<typeof battleEventRowSchema>;
 
 /** One line for the log and the enemy view: "Turn 2: Captain took Skritch out of action." */
 export function attackSummary(p: AttackEventPayload): string {
-  const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.targetOnFire ? `set ${p.target_name} on fire` : p.smokeDueTurnKey ? `hit ${p.target_name} with Firepot smoke` : p.entangled ? `entangled ${p.target_name} with Bolas` : p.volatileBackfires ? `did not wound ${p.target_name}` : `${p.outcome.toLowerCase()} ${p.target_name}`;
-  return `Turn ${p.turn}: ${p.attacker_name} ${what}.${p.volatileBackfires ? ` Cathayan Candles backfired ${p.volatileBackfires} time${p.volatileBackfires === 1 ? "" : "s"}; resolve the Strength 6 hit${p.volatileBackfires === 1 ? "" : "s"} on ${p.attacker_name}.` : ""}${p.nurgles_rot ? ` ${p.target_name} contracts Nurgle's Rot.` : ""}`;
+  const what = p.out_of_action ? `took ${p.target_name} out of action` : p.wounds_lost > 0 ? `wounded ${p.target_name} (${p.outcome.toLowerCase()})` : p.targetOnFire ? `set ${p.target_name} on fire` : p.smokeDueTurnKey ? `hit ${p.target_name} with Firepot smoke` : p.entangled ? `entangled ${p.target_name} with Bolas` : p.volatileBackfires || p.bolasBackfires ? `did not wound ${p.target_name}` : `${p.outcome.toLowerCase()} ${p.target_name}`;
+  return `Turn ${p.turn}: ${p.attacker_name} ${what}.${p.bolasBackfires ? ` Bolas backfired ${p.bolasBackfires} time${p.bolasBackfires === 1 ? "" : "s"}; resolve the Strength 3 hit${p.bolasBackfires === 1 ? "" : "s"} on ${p.attacker_name}.` : ""}${p.volatileBackfires ? ` Cathayan Candles backfired ${p.volatileBackfires} time${p.volatileBackfires === 1 ? "" : "s"}; resolve the Strength 6 hit${p.volatileBackfires === 1 ? "" : "s"} on ${p.attacker_name}.` : ""}${p.nurgles_rot ? ` ${p.target_name} contracts Nurgle's Rot.` : ""}`;
 }
 
 /** Every roll behind the summary, condensed onto one line: "rolled 5 to hit. Hit. To wound: rolled 4. Wounded. ..." */

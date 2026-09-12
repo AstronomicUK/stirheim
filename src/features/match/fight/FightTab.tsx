@@ -251,7 +251,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? 'Cathayan Candles backfire' : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? 6 : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: areaTarget ? 1 : staffUse?.used ? 0 : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
@@ -292,11 +292,11 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
     <>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
       {burningBlocked ? <Notice tone="warn" title="On fire">This warrior may only move until the flames are extinguished. Use Fire recovery above.</Notice> : null}
-      {volatileHits.length > 0 ? <Notice tone="warn" title="Cathayan Candles backfire"><div className="flex flex-col gap-2">{volatileHits.map(hit => <Button key={hit.key} variant="secondary" disabled={readOnly} onClick={() => {
+      {volatileHits.length > 0 ? <Notice tone="warn" title="Weapon backfire"><div className="flex flex-col gap-2">{volatileHits.map(hit => <Button key={hit.key} variant="secondary" disabled={readOnly} onClick={() => {
         setAttackerId(hit.warriorId); setSelfShotId(null); setFireHitId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setVolatileKey(hit.key); setRollSetup(null); setRolling(true)
         const model = mine.find(w => w.id === hit.warriorId)
         if (model?.kind === 'henchman') setWoundsOverride({ id: model.id, value: 0 })
-      }}>Resolve candle backfire: {hit.name}</Button>)}</div></Notice> : null}
+      }}>Resolve {hit.weaponName} backfire: {hit.name}</Button>)}</div></Notice> : null}
       {fireHits.length > 0 ? <Notice tone="warn" title="Fire damage to resolve"><div className="flex flex-col gap-2">{fireHits.map(test => <Button key={test.id} variant="secondary" disabled={readOnly} onClick={() => {
         setAttackerId(test.warriorId); setSelfShotId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setFireHitId(test.id); setVolatileKey(null); setRollSetup(null); setRolling(true)
       }}>Resolve fire hit: {mine.find(w => w.id === test.warriorId)?.name ?? test.actorName}</Button>)}</div></Notice> : null}
@@ -537,7 +537,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
             }
           >
           {!rollSetup ? <div className="flex flex-col gap-4 py-3">
-            {areaTarget ? <p className="text-sm">One automatic Strength {volatileHit ? 6 : selfDamage || pigeonTarget ? 4 : mortarTarget ? mortarShot!.strength : grapeTarget ? grapeStrength : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
+            {areaTarget ? <p className="text-sm">One automatic Strength {volatileHit ? volatileHit.strength : selfDamage || pigeonTarget ? 4 : mortarTarget ? mortarShot!.strength : grapeTarget ? grapeStrength : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
             {!areaTarget ? <><p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
             <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} /></> : defender.kind === 'henchman' && defender.stats.W > 1 ? <Stepper label="Wounds already lost by this model" value={woundsAlreadyLost} onChange={value => setWoundsOverride({ id: defender.id, value })} max={defender.stats.W} /> : null}
             {needsInterception ? <div className="flex flex-col gap-3 rounded border border-brass p-3">
@@ -620,6 +620,7 @@ export function FightTab({ matchId, roster, template, others, sessions, houseRul
                 pigeonTargetKey: pigeonTarget?.key,
                 kill: defender.warbandId !== attacker.warbandId && state.worst === 'outOfAction' && (attacker.kind === 'hero' || attacker.kind === 'hiredSword'),
                 entangled: state.outcomes.includes('entangled'),
+                bolasBackfires: state.bolasBackfires || undefined,
                 volatileBackfires: state.volatileBackfires || undefined,
                 targetOnFire: state.targetOnFire || undefined,
                 smokeDueTurnKey: state.smokeHit ? nextOwnTurnKey(warbandTurnKey(defender.warbandId,sheet.turn,turns.data)) : undefined,
@@ -1013,16 +1014,17 @@ function RollSection({ onRestart, onProgress, forceLog, odds, attacker, defender
                         : state.worst === 'entangled' ? `${defender.name} cannot move and has −2 melee Weapon Skill until freed in Recovery.` : state.targetOnFire ? `${defender.name} is on fire; resolve Recovery before its next actions.` : state.smokeHit ? `${defender.name} must test against Firepot smoke at the start of its next own turn.` : `${defender.name} is unharmed.`}
                 </span>
               </p>
+              {state.bolasBackfires ? <p className="text-sm text-ink">Log this result to resolve a separate Strength 3 hit on {attacker.name}.</p> : null}
               {state.volatileBackfires ? <p className="text-sm text-ink">Log this result to resolve {state.volatileBackfires} separate Strength 6 hit{state.volatileBackfires === 1 ? '' : 's'} on {attacker.name}.</p> : null}
-              {(forceLog || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
+              {(forceLog || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
                   {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
-              {(forceLog || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
-                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : state.volatileBackfires ? 'Cathayan backfire' : state.targetOnFire ? 'fire condition' : state.smokeHit ? 'Firepot hit and smoke test' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
+              {(forceLog || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
+                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : state.bolasBackfires ? 'Bolas backfire' : state.volatileBackfires ? 'Cathayan backfire' : state.targetOnFire ? 'fire condition' : state.smokeHit ? 'Firepot hit and smoke test' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
               ) : null}
             </div>
           ) : null}

@@ -50,3 +50,13 @@ it('two backfires in a phase require two separate self-hits', () => {
  while (!state.done) state = applyRoll(state, 1)
  expect(state.volatileBackfires).toBe(2)
 })
+
+it('a Bolas natural 1 owes S3 self-damage without entangling or wounding the target', () => {
+ const result = applyRoll(begin({ ignitionThreshold: undefined, entangleInsteadOfWound: true }), 1)
+ expect(result.bolasBackfires).toBe(1); expect(result.volatileBackfires).toBeUndefined()
+ expect(result.worst).toBe('backfire'); expect(result.woundsLost).toBe(0)
+ expect(result.log.map(l => l.text).join(' ')).toContain('Strength 3 hit')
+ const reroll = applyRoll(begin({ ignitionThreshold: undefined, entangleInsteadOfWound: true, rerollToHit: true }), 1)
+ expect(reroll.bolasBackfires).toBeUndefined()
+ expect(applyRoll(reroll, 4).worst).toBe('entangled')
+})

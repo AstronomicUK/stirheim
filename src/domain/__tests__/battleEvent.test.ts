@@ -217,3 +217,12 @@ it('tracks every Cathayan backfire independently and respects both reversals', a
  expect(pendingVolatileBackfires([source, { ...damage, reverted_at: 'now' }], A)).toHaveLength(2)
  expect(pendingVolatileBackfires([{ ...source, reverted_at: 'now' }, damage], A)).toEqual([])
 })
+
+it('Bolas and candles retain their own self-hit strengths and distinct obligation keys', async () => {
+ const { pendingVolatileBackfires } = await import('../volatileBackfire')
+ const event = attack({ bolasBackfires: 1, volatileBackfires: 1, wounds_lost: 0, out_of_action: false })
+ const hits = pendingVolatileBackfires([event], A)
+ expect(hits.map(h => h.strength)).toEqual([6, 3])
+ expect(new Set(hits.map(h => h.key)).size).toBe(2)
+ expect(attackSummary(event.payload)).toContain('Bolas backfired 1 time; resolve the Strength 3 hit on Captain')
+})

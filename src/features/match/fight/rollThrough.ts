@@ -43,7 +43,7 @@ const OUTCOME_RANK: Record<Outcome, number> = { misfire: 0, misfireExplosion: 0,
 export const OUTCOME_LABEL: Record<Outcome, string> = {
   misfire: 'Misfired — the target was not hit',
   misfireExplosion: 'Weapon destroyed — resolve its Strength 4 self-hit',
-  backfire: 'Exploded at the firer — resolve the blast at the table',
+  backfire: 'Backfired',
   cannotFire: 'Unable to fire',
   entangled: 'Entangled',
   miss: 'Missed',
@@ -93,6 +93,7 @@ interface Current {
 }
 
 export interface RollState {
+  bolasBackfires?: number
   volatileBackfires?: number
   targetOnFire?: boolean
   smokeHit?: boolean
@@ -313,7 +314,6 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
         if (input.dodgeThreshold !== undefined && input.dodgeThreshold !== IMPOSSIBLE) return afterHit(s)
         return offerCharmOrContinue(s)
       }
-      if (roll === 1 && input.entangleInsteadOfWound) state = log(state, 'Bolas backfire: resolve a separate Strength 3 hit on the wielder at the table. This target result does not apply that self-hit.', 'bad')
       if (pending.kind === 'hit' && input.rerollToHit) {
         return {
           ...log(state, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Missed, but the miss may be rerolled.`),
@@ -321,6 +321,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
           pending: { kind: 'hitReroll', who: 'attacker', label: `${attackName(state)}: reroll to hit`, detail: `Needs ${thresholdText(input.hitThreshold)}` },
         }
       }
+      if (roll === 1 && input.entangleInsteadOfWound) return finishAttack(log({ ...state, bolasBackfires: (state.bolasBackfires ?? 0) + 1 }, `Bolas: rolled 1${rollTag} to hit. The bolas strike their wielder; the intended target is not entangled. Log this result to resolve the separate Strength 3 hit on the wielder.`, 'bad'), 'backfire')
       if (roll === 1 && input.volatileBackfire) return finishAttack(log({ ...state, volatileBackfires: (state.volatileBackfires ?? 0) + 1 }, `Cathayan Candles: rolled 1${rollTag} to hit. They explode in the thrower’s hand; the intended target is not hit. Log this result, then resolve the separate Strength 6 hit on the thrower.`, 'bad'), 'backfire')
       return finishAttack(log(state, `${attackName(state)}: rolled ${roll}${rollTag} to hit. Missed.`, 'bad'), 'miss')
     }

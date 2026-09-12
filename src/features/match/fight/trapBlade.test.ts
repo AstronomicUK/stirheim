@@ -34,3 +34,15 @@ it('keeps separate copies in a single physical stack distinguishable', () => {
  state = applyRoll(applyRoll(state, 5), 4)
  expect(state.brokenWeapons?.map(w => w.copyIndex)).toEqual([0, 1])
 })
+
+it('records a BOOM loss for the selected gun copy but leaves jams and clicks intact',()=>{
+ const gun={...heldWeapon,weaponId:'swivel_gun_ball_shot',name:'Swivel Gun: Ball Shot',copyIndex:1}
+ const shot={...plan,heldWeapon:gun,swordBreakerParry:false,input:{...plan.input,parryEligible:false,misfireEnhanced:{...plan.input,parryEligible:false}}}
+ const pending=applyRoll(startPhase([shot],1,0),1)
+ expect(pending.pending?.kind).toBe('misfire')
+ const boom=applyRoll(pending,1)
+ expect(boom.brokenWeapons).toEqual([gun]);expect(boom.outcomes).toEqual(['misfireExplosion']);expect(boom.woundsLost).toBe(0)
+ for(const roll of [2,3,4,5,6])expect(applyRoll(pending,roll).brokenWeapons).toBeUndefined()
+ const manual=applyRoll(applyRoll(startPhase([{...shot,heldWeapon:undefined}],1,0),1),1)
+ expect(manual.brokenWeapons).toBeUndefined()
+})

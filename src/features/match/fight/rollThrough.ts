@@ -306,7 +306,9 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
 
     case 'misfire': {
       const result = blackpowderMisfire(roll)
-      const next = log(state, `Misfire: rolled ${roll}${rollTag}. ${result.name}: ${result.detail}`, result.fires ? 'good' : 'bad')
+      const destroyed = result.weaponDestroyed ? plan.heldWeapon : undefined
+      const brokenWeapons = destroyed && !state.brokenWeapons?.some(loss => loss.itemId === destroyed.itemId && loss.copyIndex === destroyed.copyIndex) ? [...(state.brokenWeapons ?? []), destroyed] : state.brokenWeapons
+      const next = log({ ...state, brokenWeapons }, `Misfire: rolled ${roll}${rollTag}. ${result.name}: ${result.detail}`, result.fires ? 'good' : 'bad')
       if (!result.fires) return finishAttack(next, result.weaponDestroyed ? 'misfireExplosion' : 'misfire')
       const enhanced = input.misfireEnhanced!
       const changed = { ...next, plans: next.plans.map((p, index) => index === next.index ? { ...p, input: { ...enhanced, firePermissionThreshold: undefined, misfireEnhanced: undefined } } : p), cur: { ...next.cur, hitRoll: 1 } }

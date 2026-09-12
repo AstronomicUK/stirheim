@@ -990,3 +990,18 @@ it('surfaces the recorded Bitter Enmity target without treating every opponent a
  expect(computeOdds(fight).weapons[0].pHit).toBeCloseTo(0.5)
  expect(computeOdds({ ...fight, context: { ...fight.context, vsHatedEnemy: true } }).weapons[0].pHit).toBeGreaterThan(0.5)
 })
+
+it('coats one fighting claw without doubling the pair bonus or affecting the other blade', () => {
+ const warrior = combatant('Claw fighter', [{ itemId: 'fighting_claws', quantity: 1 }], { stats: { ...base, A: 3 }, traitIds: ['frenzy'] })
+ const fight = setup(warrior, captain, 'fighting_claws', null)
+ const venom = itemEffect('dark_venom')!.preBattle!
+ for (const blade of [0, 1]) {
+   const coated = { ...fight, weaponChoiceKeys: ['pair:0', undefined] as const, attackerPreBattle: [{ ...venom, weaponChoiceId: `pair:0:blade:${blade}` }] }
+   const odds = computeOdds(coated)
+   expect(odds.attacks).toBe(7)
+   expect(odds.chain.attacks).toBe(7)
+   expect(odds.weapons.map(w => w.attacks)).toEqual([6, 1])
+   expect(odds.weapons.map(w => w.strength)).toEqual(blade === 0 ? [4, 3] : [3, 4])
+ }
+ expect(computeOdds(fight).attacks).toBe(7)
+})

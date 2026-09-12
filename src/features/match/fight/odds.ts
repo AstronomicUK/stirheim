@@ -248,8 +248,12 @@ export interface FightOdds {
 function withPhysicalWeaponChoices(setup: FightSetup): FightSetup {
   if (!setup.weaponChoiceKeys) return setup
   const bind = (weapon: Weapon, key: string | undefined) => key ? { ...weapon, choiceId: key } : weapon
-  const primary = bind(setup.primary, setup.weaponChoiceKeys[0])
-  const offHand = setup.offHand ? bind(setup.offHand, setup.weaponChoiceKeys[1]) : null
+  const pairKey = setup.weaponChoiceKeys[0]
+  const splitPair = setup.primary.paired && pairKey && setup.attackerPreBattle?.some(effect => effect.weaponChoiceId?.startsWith(`${pairKey}:blade:`))
+  // A vial coats one blade. A paired profile's A+1 becomes A with the main blade
+  // and one off-hand attack, preserving the total rather than granting another pair bonus.
+  const primary = splitPair ? { ...setup.primary, paired: false, choiceId: `${pairKey}:blade:0` } : bind(setup.primary, pairKey)
+  const offHand = splitPair ? { ...setup.primary, paired: false, choiceId: `${pairKey}:blade:1` } : setup.offHand ? bind(setup.offHand, setup.weaponChoiceKeys[1]) : null
   const selected = [primary, ...(offHand ? [offHand] : [])]
   return {
     ...setup, primary, offHand,

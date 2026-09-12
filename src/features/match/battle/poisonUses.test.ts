@@ -40,3 +40,16 @@ it('restores only active, physical-weapon effects after reloading and correction
  expect(recordedPoisonEffects(saved, 'another-warrior')).toEqual([])
  expect(recordedPoisonEffects(correctPoisonApplication(saved, 'first', 'Wrong sword'), hero).map(effect => effect.weaponChoiceId)).toEqual([`${sword.id}:1`])
 })
+
+it('requires one blade per vial for paired weapons and allows the other blade to use a separate vial', () => {
+ const pair = { ...sword, item_rules_id: 'fighting_claws', quantity: 1 }
+ const key = `${pair.id}:0`
+ const coat = (sheet = emptyBattleLiveState(), blade?: 0 | 1, id = 'pair') => applyPoisonToWeapon(sheet, warrior, vial, [pair], [], 'fighting_claws', key, id, blade)
+ expect(() => coat()).toThrow('main or off-hand')
+ const first = coat(undefined, 0)
+ expect(() => coat(first, 0, 'duplicate')).toThrow('already has')
+ const both = parseBattleLiveState(JSON.parse(JSON.stringify(coat(first, 1, 'other'))))
+ expect(poisonVialsRemaining(both, vial)).toBe(0)
+ expect(recordedPoisonEffects(both, hero).map(effect => effect.weaponChoiceId)).toEqual([`${key}:blade:0`, `${key}:blade:1`])
+ expect(both.poisonApplications[1].weapon.name).toContain('off-hand blade')
+})

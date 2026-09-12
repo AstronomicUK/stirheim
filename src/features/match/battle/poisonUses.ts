@@ -11,7 +11,7 @@ export function poisonVialsRemaining(sheet: BattleLiveState, item: ItemRow): num
   return Math.max(0, item.quantity - sheet.poisonApplications.filter(use => use.itemRowId === item.id && !use.correction).length)
 }
 
-export function applyPoisonToWeapon(sheet: BattleLiveState, warrior: Combatant, vial: ItemRow, rows: readonly ItemRow[], events: readonly BattleEventRow[], weaponId: string, weaponKey: string, id: string): BattleLiveState {
+export function applyPoisonToWeapon(sheet: BattleLiveState, warrior: Combatant, vial: ItemRow, rows: readonly ItemRow[], events: readonly BattleEventRow[], weaponId: string, weaponKey: string, id: string, bladeIndex?: 0 | 1): BattleLiveState {
   if (sheet.poisonApplications.some(use => use.id === id)) return sheet
   const poison = vial.item_rules_id
   if (!id.trim() || warrior.out || warrior.kind === 'animal' || (poison !== 'black_lotus' && poison !== 'dark_venom') || vial.warband_id !== warrior.warbandId || (vial.holder_type !== 'stash' && vial.holder_id !== warrior.id) || poisonVialsRemaining(sheet, vial) < 1) throw new Error('Select an available vial of Black Lotus or Dark Venom from this warrior or the warband stash.')
@@ -19,14 +19,15 @@ export function applyPoisonToWeapon(sheet: BattleLiveState, warrior: Combatant, 
   if (!profile || isBlackpowderWeapon(profile)) throw new Error('Poison cannot be applied to a blackpowder weapon.')
   const chosen = physicalWeaponChoices(rows, events, warrior.warbandId, warrior.id, weaponId).find(choice => choice.key === weaponKey)
   if (!chosen) throw new Error('Select an intact physical weapon carried by this warrior.')
-  if (profile.paired) throw new Error('A vial coats one individual weapon; paired weapons need an individual blade selection.')
-  if (sheet.poisonApplications.some(use => !use.correction && use.itemRulesId === poison && `${use.weapon.itemId}:${use.weapon.copyIndex}` === weaponKey)) throw new Error('This weapon already has that poison for this battle.')
-  const use: BattleLiveState['poisonApplications'][number] = { id, warriorId: warrior.id, warriorName: warrior.name, itemRowId: vial.id, itemRulesId: poison, weapon: chosen.snapshot, at: new Date().toISOString() }
+  if (profile.paired && bladeIndex === undefined) throw new Error('Select the main or off-hand blade of this pair.')
+  if (!profile.paired && bladeIndex !== undefined) throw new Error('This weapon is not a paired weapon.')
+  if (sheet.poisonApplications.some(use => !use.correction && use.itemRulesId === poison && use.bladeIndex === bladeIndex && `${use.weapon.itemId}:${use.weapon.copyIndex}` === weaponKey)) throw new Error('This weapon already has that poison for this battle.')
+  const use: BattleLiveState['poisonApplications'][number] = { id, warriorId: warrior.id, warriorName: warrior.name, itemRowId: vial.id, itemRulesId: poison, weapon: bladeIndex === undefined ? chosen.snapshot : { ...chosen.snapshot, name: `${chosen.snapshot.name} (${bladeIndex === 0 ? 'main' : 'off-hand'} blade)` }, bladeIndex, at: new Date().toISOString() }
   const name = poison === 'black_lotus' ? 'Black Lotus' : 'Dark Venom'
   return withRollAttempt({ ...sheet, poisonApplications: [...sheet.poisonApplications, use] }, {
     id: `poison:${id}`, at: use.at, turn: sheet.turn, kind: 'attack', status: 'complete',
     label: `${warrior.name}: applied ${name}`,
-    rolls: [`One vial coats ${chosen.label} for this battle only. No other weapon is coated; inventory is settled in the post-battle report.`],
+    rolls: [`One vial coats ${use.weapon.name}${bladeIndex === undefined ? `, copy ${chosen.snapshot.copyIndex + 1}` : `, pair ${chosen.snapshot.copyIndex + 1}`} for this battle only. No other weapon is coated; inventory is settled in the post-battle report.`],
   })
 }
 
@@ -44,6 +45,6 @@ export function correctPoisonApplication(sheet: BattleLiveState, id: string, rea
 
 export function recordedPoisonEffects(sheet: BattleLiveState, warriorId: string) {
   return sheet.poisonApplications.filter(use => use.warriorId === warriorId && !use.correction).map(use => ({
-    ...itemEffect(use.itemRulesId)!.preBattle!, weaponChoiceId: `${use.weapon.itemId}:${use.weapon.copyIndex}`,
+    ...itemEffect(use.itemRulesId)!.preBattle!, weaponChoiceId: `${use.weapon.itemId}:${use.weapon.copyIndex}${use.bladeIndex === undefined ? '' : `:blade:${use.bladeIndex}`}`,
   }))
 }

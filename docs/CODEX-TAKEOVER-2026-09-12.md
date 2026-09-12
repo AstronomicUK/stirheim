@@ -174,3 +174,9 @@ Holy Relic now offers Fear, All Alone and a named tabletop Leadership test on in
 Combatants now carry the exact saved flags.hates prose into a Bitter Enmity reminder and the Hatred toggle hint; no opponent is assumed to match automatically. Full structured target storage remains #96.
 
 Claude handed over P1/P5 in fccb52c3 (b3f9e57, f1656dc, f346443). Assigned next task #96 in 14788f46. Released rules/types/roster.ts, injuries resolver tests, postBattle/model/derive.ts, model/state.ts and PostBattlePage.tsx for Claude to claim. Codex retains combatants/odds/FightTab; Claude must send the flag shape/helper interface for combat integration. Continue equipment, paired poison and close-combat pistols while Claude handles #96. No user ruling blocks this split.
+
+### Paired blades — core poison gap resolved locally
+
+One vial now selects the main or off-hand blade of a paired weapon. The pair is split only inside the calculation into normal main-hand attacks and one off-hand attack: no extra paired bonus, no poison on the other blade. Frenzy A3 stays seven total attacks (six main, one off-hand). Physical pair identity remains intact for equipment tracking. Each blade can have its own vial; correction restores only that vial.
+
+93 focused poison/odds tests pass. /tmp/stirheim-paired-poison-qa.mjs passed actual mobile selection/reload/correction, post-battle filing (one active vial consumed), and withdrawal (original stack restored). The previous paired-blade exclusion in this checkpoint is superseded. Combined suite before this addition passed 2245 tests with 214 DB tests skipped; TypeScript passed before Claude began the current #96 edits.

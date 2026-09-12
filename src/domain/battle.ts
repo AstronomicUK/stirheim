@@ -101,7 +101,7 @@ export const battleLiveStateSchema = z.object({
   poisonApplications: z.array(z.object({
     id: z.string(), warriorId: z.string(), warriorName: z.string(),
     itemRowId: z.string(), itemRulesId: z.enum(['black_lotus', 'dark_venom']),
-    weapon: brokenWeaponSchema, at: z.string(), correction: z.string().optional(),
+    weapon: brokenWeaponSchema, bladeIndex: z.union([z.literal(0), z.literal(1)]).optional(), at: z.string(), correction: z.string().optional(),
   })).default([]),
   /** One physical vial per declared Blessed Water throw, including misses. */
   blessedWaterUses: z.array(z.object({

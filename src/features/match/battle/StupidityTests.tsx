@@ -1,4 +1,4 @@
-import { canUseRelic, passStupidityWithRelic } from './relicRules'
+import { canUseRelic, passStupidityWithRelic, recordLeadershipTest } from './relicRules'
 import { useState } from 'react'
 import type { BattleTurns } from '../../../api/battleTurns'
 import { recordStupidityTest, withRollAttempt, warbandTurnKey, type BattleLiveState } from '../../../domain'
@@ -49,8 +49,8 @@ function TestSheet({ roster, sheet, warrior, correction, turn, turnKey, edit, cl
   const failed = ready && (dice[0]! + dice[1]!) > leadership
   const changedLd = leadership !== warrior.stats.Ld
   const canSave = ready && validLeadership && (!correction || correctionReason.trim()) && (!changedLd || reason.trim()) && (!failed || combat === 'yes' || (combat === 'no' && movement !== null))
-  function pending(rolls: string[]) {
-    edit(state => withRollAttempt(state, { id: attemptId, at: new Date().toISOString(), turn, kind: 'attack', status: 'incomplete', label: `${warrior.name}: Stupidity test in progress`, rolls }))
+  function pending(rolls: string[], leadershipRolled = false) {
+    edit(state => withRollAttempt(leadershipRolled ? recordLeadershipTest(state, warrior.id, 'stupidity') : state, { id: attemptId, at: new Date().toISOString(), turn, kind: 'attack', status: 'incomplete', label: `${warrior.name}: Stupidity test in progress`, rolls }))
   }
   return <Sheet open onClose={close} title={`${warrior.name}: Stupidity`} footer={<Button block disabled={!canSave} onClick={() => {
     const roll = { attemptId, correctionReason, originalMovementDie: originalMovement, dice: dice as number[], originalDice: original, leadership, baseLeadership: warrior.stats.Ld, leadershipReason: reason, inCombat: combat === 'yes', movementDie: movement ?? undefined }
@@ -69,7 +69,7 @@ function TestSheet({ roster, sheet, warrior, correction, turn, turnKey, edit, cl
       {correction ? <TextField label="Why another test is needed" value={correctionReason} onChange={e => setCorrectionReason(e.target.value)} /> : null}
       {changedLd ? <TextField label="Why this Leadership applies" value={reason} onChange={e => setReason(e.target.value)} placeholder="Within 6 inches of the leader…" /> : null}
       <div className="grid grid-cols-2 gap-3">{dice.map((die, i) => <DieField key={i} label={i === 0 ? 'First D6' : 'Second D6'} sides={6} value={die} onChange={value => setDice(ds => ds.map((d, j) => j === i ? value : d))} />)}</div>
-      <Button variant="secondary" disabled={Boolean(original) || !validLeadership || (changedLd && !reason.trim()) || (correction && !correctionReason.trim())} onClick={() => { const rolled = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; setDice(rolled); setOriginal(rolled); setMovement(null); pending([`App rolled ${rolled.join(' + ')} for Stupidity. Result awaiting confirmation.`]) }}>Roll 2D6</Button>
+      <Button variant="secondary" disabled={Boolean(original) || !validLeadership || (changedLd && !reason.trim()) || (correction && !correctionReason.trim())} onClick={() => { const rolled = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; setDice(rolled); setOriginal(rolled); setMovement(null); pending([`App rolled ${rolled.join(' + ')} for Stupidity. Result awaiting confirmation.`], true) }}>Roll 2D6</Button>
       {original ? <p className="text-sm text-ink-dim">App rolled {original.join(' + ')}. Any changes above will be recorded with the original roll.</p> : null}
       {ready && validLeadership ? <p className="font-semibold">{dice[0]! + dice[1]!} against Leadership {leadership}: {failed ? 'failed' : 'passed'}.</p> : null}
       {failed ? <>

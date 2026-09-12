@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { blackpowderMisfire } from '../../rules/resolve/blackpowderMisfire'
 import { emptyBattleLiveState, parseBattleLiveState } from '../battle'
-import { recordBlackpowderShot, recordMisfireDie, blackpowderBlock, correctBlackpowderShot } from '../blackpowderShot'
+import { recordBlackpowderShot, recordMisfireDie, blackpowderBlock, correctBlackpowderShot, pendingBlackpowderLosses } from '../blackpowderShot'
 const shot = { id: 'shot', warriorId: 'gunner', weaponKey: 'gunner:swivel:0', weaponName: 'Swivel Gun', ownTurn: 1, reloadTurns: 1, experimental: false, at: '2026-09-11T17:15:00Z' }
 it('matches every printed misfire outcome, including no-critical self-hit and strengthened successful shot', () => {
   expect(blackpowderMisfire(1)).toMatchObject({ weaponDestroyed: true, fires: false, selfHit: { strength: 4, criticals: false } })
@@ -40,4 +40,20 @@ it('forces Experimental weapons to reload on non-BOOM outcomes even with no norm
   const sheet = recordMisfireDie(recordBlackpowderShot(emptyBattleLiveState(), { ...shot, experimental: true, reloadTurns: 0 }, 'Gunner'), 'shot', 6)
   expect(blackpowderBlock(sheet, 'gunner', shot.weaponKey, 2)).toContain('turn 3')
   expect(blackpowderBlock(sheet, 'gunner', shot.weaponKey, 3)).toBeNull()
+})
+
+it('preserves the exact gun through a saved misfire and avoids recording its destruction twice',async()=>{
+ const {weaponLossSnapshot}=await import('../weaponLoss')
+ const held=weaponLossSnapshot({id:'aaaaaaaa-0000-4000-8000-000000000001',warband_id:'aaaaaaaa-0000-4000-8000-000000000002',holder_id:'aaaaaaaa-0000-4000-8000-000000000003',holder_type:'hero',item_rules_id:'swivel_gun',custom_name:null,quantity:2,notes:'Crew gun',created_at:'',updated_at:''},'swivel_gun_ball_shot','Swivel Gun',1,1)
+ let state=recordBlackpowderShot(emptyBattleLiveState(),{...shot,heldWeapon:held},'Gunner')
+ state=recordMisfireDie(state,shot.id,1,1,false)
+ expect(pendingBlackpowderLosses(state,[])).toEqual([])
+ state=parseBattleLiveState(JSON.parse(JSON.stringify(state)))
+ state=recordMisfireDie(state,shot.id,1)
+ expect(pendingBlackpowderLosses(state,[])[0].heldWeapon).toEqual(held)
+ const event={payload:{brokenWeapons:[held]},reverted_at:null} as unknown as import('../battleEvent').BattleEventRow
+ expect(pendingBlackpowderLosses(state,[event])).toEqual([])
+ expect(pendingBlackpowderLosses(state,[{...event,reverted_at:'now'}])).toHaveLength(1)
+ expect(pendingBlackpowderLosses(correctBlackpowderShot(state,shot.id,'Corrected tabletop result'),[])).toEqual([])
+ expect(pendingBlackpowderLosses({...state,blackpowderShots:[{...state.blackpowderShots[0],heldWeapon:undefined}]},[])).toEqual([])
 })

@@ -3,6 +3,7 @@
 // the other players see it update in real time.
 
 import { z } from "zod";
+import { brokenWeaponSchema } from "./weaponLoss";
 
 export const BATTLE_LIVE_STATE_VERSION = 1;
 
@@ -103,6 +104,7 @@ export const battleLiveStateSchema = z.object({
   serpentStaffUses: z.array(serpentStaffUseSchema).default([]),
   blackpowderShots: z.array(z.object({
     id: z.string(), warriorId: z.string(), weaponKey: z.string(), weaponName: z.string(), ownTurn: z.number().int().min(0),
+    heldWeapon: brokenWeaponSchema.optional(),
     criticalUsed: z.boolean().optional(),
     reloadTurns: z.number().int().min(0), at: z.string(), misfireDie: z.number().int().min(1).max(6).optional(),
     misfirePending: z.boolean().optional(), misfireOriginal: z.number().int().min(1).max(6).optional(), experimental: z.boolean().default(false), correction: z.string().optional(),
@@ -111,6 +113,7 @@ export const battleLiveStateSchema = z.object({
   mortarShots: z.array(z.object({
     id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), weaponKey: z.string(), ownTurn: z.number().int().min(0), at: z.string(),
     primary: z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() }),
+    heldWeapon: brokenWeaponSchema.optional(),
     hitThreshold: z.number(), permissionRequired: z.boolean(),
     stage: z.enum(['permission', 'hit', 'misfire', 'scatter', 'blast', 'stopped', 'complete']),
     original: z.array(z.number().int()).optional(), strength: z.number().default(4), onTarget: z.boolean().default(false),

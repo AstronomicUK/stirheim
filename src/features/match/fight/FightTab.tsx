@@ -1,3 +1,4 @@
+import { BlackpowderLosses } from './BlackpowderLosses'
 import { physicalWeaponChoices, withBrokenWeapons } from './weaponLoss'
 import type { ItemRow, BrokenWeapon } from '../../../domain'
 import { pendingVolatileBackfires } from '../../../domain/volatileBackfire'
@@ -307,6 +308,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   return (
     <>
+      <BlackpowderLosses sheet={sheet} events={events} readOnly={readOnly} onLog={onLogEvent} names={Object.fromEntries(mine.map(w=>[w.id,w.name]))}/>
       {psychologyLoading && turns.isError ? <Notice tone="warn">Refresh the battle to load turn details before recording Stupidity or starting attacks.</Notice> : null}
       {events.some(e => !e.reverted_at && e.payload.brokenWeapons?.some(loss => loss.warbandId === roster.id)) ? <Notice tone="warn" title="Broken equipment">Broken copies are excluded from available weapons. Groups with some intact copies can still select the weapon: use those only for the members who carry them. Revert the break in the battle Log to correct it.</Notice> : null}
       {swordBreaker ? <Notice tone="warn" title="Sword Breaker opponent"><div className="flex flex-col gap-2"><p>A successful parry allows a 4+ Trap Blade roll. Select the carried copy at risk; breaking it does not erase hits already rolled.</p>{physicalBindings.map((binding, index) => binding.choices.length > 1 ? <SelectField key={binding.key} label={`Weapon copy for ${index === 0 ? 'main hand' : 'off hand'}`} value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(choice => <option key={choice.key} value={choice.key}>{choice.label}</option>)}</SelectField> : null)}{duplicateWeapon ? <p>Select different physical copies for the two hands.</p> : null}</div></Notice> : null}
@@ -358,7 +360,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setFireHitId(null); setVolatileKey(null); setRollSetup(null); setRolling(true)
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
               }} /> : null}
-              {isMortar ? <MortarControls key={attacker.id} attacker={attacker} defender={defender} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} hitThreshold={odds?.weapons[0]?.input.hitThreshold ?? null} requiresPermission={Boolean(ladyTest)} mayFire={!burningBlocked && !attacker.out && !psychologyLoading && !active.failedStupidity && (!context.movedThisTurn || [...attacker.skillIds, ...(attackerKit?.skillIds ?? [])].includes('nimble')) && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onSelfHit={id => {
+              {isMortar ? <MortarControls items={items} key={attacker.id} attacker={attacker} defender={defender} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} hitThreshold={odds?.weapons[0]?.input.hitThreshold ?? null} requiresPermission={Boolean(ladyTest)} mayFire={!burningBlocked && !attacker.out && !psychologyLoading && !active.failedStupidity && (!context.movedThisTurn || [...attacker.skillIds, ...(attackerKit?.skillIds ?? [])].includes('nimble')) && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onSelfHit={id => {
                 setGrapeSelection(null); setMortarSelection(null); setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setFireHitId(null); setVolatileKey(null); setRollSetup(null); setRolling(true)
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
               }} onResolve={(shot, target) => {
@@ -585,7 +587,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if (!isSwivel || areaTarget) return
               if (next.critUsed) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, criticalUsed: true } : shot) }))
               const startsShot = (!previous && next.pending?.kind === 'hit') || (previous?.pending?.kind === 'firePermission' && next.pending?.kind === 'hit')
-              if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, weaponName: 'Swivel Gun', ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
+              if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
               if (previous?.pending?.kind === 'hit' && next.pending?.kind === 'misfire') edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, misfirePending: true } : shot) }))
               if (previous?.pending?.kind === 'misfire' && rolled) edit(s => recordMisfireDie(s, attemptId, rolled.value, rolled.manual ? undefined : rolled.value))
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))

@@ -48,3 +48,8 @@ export function correctBlackpowderShot(sheet: BattleLiveState, shotId: string, r
     rolls: [`Restored firing availability: ${reason.trim()}.`, 'Existing damage and roster changes are not undone; correct those separately.'],
   })
 }
+
+/** Saved BOOM results remain actionable after reloading; a logged physical break already settles that copy. */
+export function pendingBlackpowderLosses(sheet: BattleLiveState, events: readonly import('./battleEvent').BattleEventRow[]) {
+  return sheet.blackpowderShots.filter(shot => shot.misfireDie === 1 && !shot.correction && shot.heldWeapon && !events.some(event => !event.reverted_at && event.payload.brokenWeapons?.some(loss => loss.warbandId === shot.heldWeapon!.warbandId && loss.itemId === shot.heldWeapon!.itemId && shot.heldWeapon!.copyIndex >= loss.copyIndex && shot.heldWeapon!.copyIndex < loss.copyIndex + loss.quantity)))
+}

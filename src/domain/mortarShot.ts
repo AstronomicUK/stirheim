@@ -7,7 +7,7 @@ export type MortarStage = MortarShot['stage']
 const label: Record<MortarStage, string> = { permission: 'firing permission', hit: 'to hit', misfire: 'misfire', scatter: 'scatter', blast: 'blast victims', stopped: 'shot stopped', complete: 'blast' }
 function active(sheet: BattleLiveState, id: string) { return sheet.mortarShots.find(s => s.id === id && !s.correction) }
 function replace(sheet: BattleLiveState, shot: MortarShot): BattleLiveState { return { ...sheet, mortarShots: sheet.mortarShots.map(s => s.id === shot.id ? shot : s) } }
-function fire(sheet: BattleLiveState, shot: MortarShot) { return recordBlackpowderShot(sheet, { id: shot.id, warriorId: shot.warriorId, weaponKey: shot.weaponKey, weaponName: 'Hand-held Mortar', ownTurn: shot.ownTurn, reloadTurns: 1, experimental: true, at: shot.at }, shot.shooterName) }
+function fire(sheet: BattleLiveState, shot: MortarShot) { return recordBlackpowderShot(sheet, { id: shot.id, warriorId: shot.warriorId, weaponKey: shot.weaponKey, weaponName: 'Hand-held Mortar', heldWeapon: shot.heldWeapon, ownTurn: shot.ownTurn, reloadTurns: 1, experimental: true, at: shot.at }, shot.shooterName) }
 export function beginMortarShot(sheet: BattleLiveState, input: Omit<MortarShot, 'stage' | 'original' | 'strength' | 'onTarget' | 'targets' | 'scatter' | 'correction'>): BattleLiveState {
   if (sheet.mortarShots.some(s => s.id === input.id)) return sheet
   const blocked = blackpowderBlock(sheet, input.warriorId, input.weaponKey, input.ownTurn)

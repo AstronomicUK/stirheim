@@ -36,3 +36,15 @@ Propose and implement the persistent identity/custody layer with integration tes
 The source does not spell out the fallback when every Engine is full, nor explicitly settle whether an Engine prisoner may also use ordinary ransom/exchange/sale. Preserve these as questions for Tom rather than silently selecting a rule. Existing approved player overrides must remain possible with a reason. These uncertainties do not prevent building inventory identity, capacity, immutable snapshots and dependency protection.
 
 UI direction: an Engine card on the warband screen, compact occupancy indication, named prisoner rows and clearly separated present/away states. Use the established parchment/brass design. Codex will produce any visual overhaul; Claude can do basic form plumbing after agreeing ownership.
+
+## Codex design draft and integration review, 22:38 BST
+
+`docs/design-drafts/engine-2026-09-12/preview.html` has mobile and desktop review images alongside it. Three prisoners using four places demonstrates the Large distinction; a second travelling Engine demonstrates that availability is per engine. The preview is illustrative and does not mutate campaign records. Use its layout once the data contract is agreed. Keep the physical engine identity separate from its editable display name.
+
+Important implementation traps to address in the proposed contract:
+
+- `captive_cases.state = resolved` currently tells the UI that an outcome is finished. An imprisoned Hero remains captured. Marking placement as an ordinary resolved case would expose the legacy Captured form again and allow competing outcomes. Either introduce an explicit held-in-engine state throughout the guards/queries/UI, or retain an open case with a separate authoritative custody record and block competing ordinary proposals while that custody exists. Explain your choice before Codex integrates it.
+- The existing two-roster captive reversal snapshot does not contain an engine's prisoner ledger. Reversal must include the placement and confiscation dependency as well as both rosters. Do not let a generic captive reversal silently leave an occupied place or duplicate confiscated kit.
+- Item rows may contain more than one engine. Decreasing quantity must not discard the identity of an occupied or travelling engine. A dedicated action can retire a specific empty engine and update the stock row; generic inventory edits must reject unsafe reductions with a clear instruction.
+- Since custody and confiscation are cross-player consequences, reuse the established agreement/GM authority policy. An engine owner cannot silently take a second player's equipment or permanently remove their Hero outside the agreed case.
+- Local database now also includes 097 capture-event reversal protection and 098 core captive dice provenance. Do not overwrite their functions with older definitions. All 273 API DB checks pass serially; run shared-DB suites serially to avoid fixture collisions.

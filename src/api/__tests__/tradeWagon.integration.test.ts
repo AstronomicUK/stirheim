@@ -206,6 +206,27 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   expect((await player.rpc('trade_wagon_rare_search_blocked',{p_warband_id:captor})).data).toBe(false)
   expect((await player.rpc('record_rare_item_trade',{p_warband_id:captor,p_match_id:match,p_changes:[],p_wyrdstone_sold:false,p_heroes_searched:[],p_reason:'Allowed search'})).error).toBeNull()
  })
+ it('reserves capture before exploration finds and restores it after ordinary report withdrawal',async()=>{
+  const updated=await admin.from('match_reports').update({applied:{trade_wagon_capture:snapshot,warband:{gold_delta:7,wyrdstone_delta:2},stash_items:[{item_rules_id:'axe',quantity:1}]}}).eq('id',report);expect(updated.error).toBeNull()
+  const payload=(await admin.from('match_reports').select('applied').eq('id',report).single()).data!.applied
+  expect((await admin.from('match_reports').delete().eq('id',report)).error).toBeNull()
+  expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:merchant,p_report:{version:1,won:false,result:'lost',routed:true,applied:payload}})).error).toBeNull()
+  report=(await admin.from('match_reports').select('id').eq('match_id',match).eq('warband_id',merchant).single()).data!.id
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:87,wyrdstone:2})
+  expect((await admin.from('items').select('item_rules_id').eq('warband_id',merchant)).data).toEqual([{item_rules_id:'axe'}])
+  expect((await admin.from('trade_wagon_captures').select('snapshot').eq('report_id',report).single()).data?.snapshot.cargo.wyrdstone).toBe(3)
+  expect((await player.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:merchant})).error).toBeNull()
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:80,wyrdstone:3})
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data?.map(i=>i.id).sort()).toEqual([wagon,cargo].sort())
+  expect((await admin.from('trade_wagon_captures').select('report_id').eq('report_id',report)).data).toEqual([])
+ })
+ it('rejects overlapping report equipment changes without reserving cargo',async()=>{
+  expect((await admin.from('match_reports').update({applied:{trade_wagon_capture:snapshot,item_patches:[{id:cargo,quantity:1}]}}).eq('id',report)).error).toBeNull()
+  expect((await admin.from('match_reports').delete().eq('id',report)).error).toBeNull()
+  expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:merchant,p_report:{version:1,won:false,result:'lost',routed:true,applied:{trade_wagon_capture:snapshot,item_patches:[{id:cargo,quantity:1}]}}})).error?.message).toContain('overlapping equipment')
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toHaveLength(2)
+  expect((await admin.from('trade_wagon_captures').select('report_id').eq('report_id',report)).data).toEqual([])
+ })
  it('protects both settled reports but allows withdrawal after the ransom is undone',async()=>{
   await reserveAndWinner();expect((await ransom()).error).toBeNull()
   expect((await admin.from('match_reports').update({undo:null}).eq('match_id',match).eq('warband_id',captor)).error?.message).toContain('Undo the agreed Trade Wagon settlement')

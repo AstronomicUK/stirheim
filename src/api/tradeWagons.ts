@@ -1,20 +1,11 @@
 import {z} from 'zod'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {useSession} from '../app/session'
-import {henchmanGroupRowSchema,itemRowSchema,uuidSchema} from '../domain/rows'
+import {uuidSchema} from '../domain/rows'
+import {tradeWagonSnapshotSchema} from '../domain/tradeWagon'
 import {supabase} from './supabase'
 import {warbandKeys} from './warbands'
 
-const snapshotSchema=z.object({
-  match_id:uuidSchema,merchant_id:uuidSchema,captor_id:uuidSchema,
-  failed_rout:z.literal(true),driver_present:z.literal(false),
-  merchant_all_ooa:z.boolean(),rare_search_blocked:z.boolean(),
-  wagon:z.discriminatedUnion('kind',[
-    z.object({kind:z.literal('item'),expected:itemRowSchema}),
-    z.object({kind:z.literal('group'),expected:henchmanGroupRowSchema}),
-  ]),
-  cargo:z.object({items:z.array(itemRowSchema),wyrdstone:z.number().int().nonnegative()}),
-})
 const settlementSchema=z.object({
   kind:z.enum(['ransom','keep']),reason:z.string(),recorded_by:uuidSchema,
   recorded_at:z.string(),gold:z.number().int().nonnegative().optional(),
@@ -23,7 +14,7 @@ const settlementSchema=z.object({
 export const tradeWagonCaptureSchema=z.object({
   report_id:uuidSchema,match_id:uuidSchema,merchant_id:uuidSchema,captor_id:uuidSchema,
   state:z.enum(['pending','settled']),created_at:z.string(),
-  snapshot:snapshotSchema,settlement:settlementSchema.nullable(),
+  snapshot:tradeWagonSnapshotSchema,settlement:settlementSchema.nullable(),
 })
 export type TradeWagonCapture=z.infer<typeof tradeWagonCaptureSchema>
 export async function fetchTradeWagonCaptures(warbandId:string) {

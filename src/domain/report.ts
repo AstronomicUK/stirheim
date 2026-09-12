@@ -1,3 +1,4 @@
+import {tradeWagonSnapshotSchema} from './tradeWagon'
 import { brokenWeaponSchema } from './weaponLoss'
 // The post-battle report one warband files for a match (match_reports row), and the patches the
 // submit function applies to the roster in the same transaction.
@@ -115,6 +116,7 @@ export const pendingAdvanceRequestSchema = z.object({
   threshold_xp: z.number().int().min(1),
 });
 export const reportAppliedSchema = z.object({
+  trade_wagon_capture: tradeWagonSnapshotSchema.optional(),
   weapon_loss_non_campaign: z.literal(true).optional(),
   broken_weapons: z.array(brokenWeaponSchema.extend({ event_id: z.string().uuid() })).optional(),
   pirate_mixed_upkeep_due: z.boolean().optional(),

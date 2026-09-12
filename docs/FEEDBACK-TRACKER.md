@@ -4641,3 +4641,6 @@ No new user ruling blocks these tasks. No push or deployment occurred. Supplemen
 
 
 **Follow-up — #140/#186, 12 September:** reasoned Crimson Shade Initiative correction implemented and mobile-verified; original roll, old/new values and reason retained, earlier attacks and stock unchanged. Pair/one-die casting rerolls now browser-verified by Claude, including no second reroll, per-turn reset and unspent-source retention. Detailed evidence: CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md. Other reopened core clauses remain outstanding; no deployment.
+
+
+**Follow-up — #70/#156/#30, 12 September:** weapon/profile/copy choices now persist; mobile defender Dagger selection survives reload. Individual Fear/situation choices expire by combat phase; ended Frenzy persists across turns and requires a reason to clear. Group-model psychology remains explicitly table-managed. Corrected melee-to-ranged default reset as part of this slice; final shared-turn/desktop integration still to check. See CORE-RULEBOOK-SCOPE-RECHECK-2026-09-12.md for precise evidence. Core melee pistols and Relic correction remain outstanding; no deployment.

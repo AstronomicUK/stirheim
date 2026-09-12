@@ -1,3 +1,4 @@
+import { savedFightSituations, setFightSituation } from '../battle/fightSituations'
 import { ItemRollCorrection } from '../battle/ItemRollCorrection'
 import { TailFightingControl } from '../battle/TailFightingControl'
 import { isCorePistol, pistolShootingOptions } from './pistolShooting'
@@ -39,7 +40,7 @@ import { Button, DicePicker, HoverCard, Notice, RollResult, SelectField, Sheet, 
 import { Card, ItemLines, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from '../battle/cards'
 import { combatantLabel, combatantsOf, withGuidingDream, withBolasEntanglement, emptyLoadout, defaultOffHand, defaultPrimary, kitWithSelectedWeapons, loadoutFor, offHandCandidates, type Combatant, type Loadout, type BattleBoosts } from './combatants'
-import { toCharacter, combatContextFor, computeOdds, preBattleWithRolls, preBattleRollsOwed, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
+import { toCharacter, combatContextFor, computeOdds, applyPreBattle, preBattleWithRolls, preBattleRollsOwed, percent, relevantToggles, thresholdText, type FightOdds, type WeaponOdds } from './odds'
 import { conditionsFor, itemsUsedBy, itemRollsBy, setItemRoll, setItemUsed } from '../battle/sheet'
 import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { applyRoll, declineRoll, OUTCOME_LABEL, startPhase, type AttackPlan, type Outcome, type PendingRoll, type RollKind, type RollState } from './rollThrough'
@@ -139,6 +140,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   const [attackerId, setAttackerId] = useState<string | null>(null)
   const [defenderId, setDefenderId] = useState<string | null>(null)
+  const [seenMode, setSeenMode] = useState(startWith)
+  if (seenMode !== startWith) { setSeenMode(startWith); setAttackerId(null) }
   // Ranged Attack should open on a warrior who can actually shoot, not just the first one fit to
   // fight — otherwise it silently falls back to a melee weapon default, defeating the point of
   // having tapped Ranged specifically.
@@ -154,23 +157,38 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   const attackerKit = useMemo(() => (attacker ? loadoutFor(attacker) : null), [attacker])
   const defenderCarriedKit = useMemo(() => (defender ? loadoutFor(defender) : null), [defender])
-  const [defenderChoice, setDefenderChoice] = useState<{ id: string; primary: number; offHand: number } | null>(null)
   const defenderWeapons = defenderCarriedKit?.melee.length ? defenderCarriedKit.melee : [defaultPrimary([])]
-  const validDefenderChoice = defender && defenderChoice && defenderChoice.id === defender.id && defenderWeapons[defenderChoice.primary] ? defenderChoice : null
+  const defenderChoiceKey = defender ? `${defender.warbandId}:${defender.id}:melee` : ''
+  const savedDefenderChoice = sheet.fightWeaponChoices[defenderChoiceKey] ?? sessions.find(s => s.warband_id === defender?.warbandId)?.live_state.fightWeaponChoices[defenderChoiceKey]
+  const defenderChoice = savedDefenderChoice ? { primary: defenderWeapons.findIndex(w => w.id === savedDefenderChoice.primary), offHand: defenderWeapons.findIndex(w => w.id === savedDefenderChoice.offHand) } : null
+  const validDefenderChoice = defenderChoice && defenderChoice.primary >= 0 ? defenderChoice : null
+  function setDefenderChoice(next: { id: string; primary: number; offHand: number }) {
+    if (readOnly || !defenderWeapons[next.primary]) return
+    edit?.(state => ({ ...state, fightWeaponChoices: { ...state.fightWeaponChoices, [defenderChoiceKey]: { primary: defenderWeapons[next.primary].id, offHand: defenderWeapons[next.offHand]?.id ?? null } } }))
+  }
   const defenderPrimary = validDefenderChoice ? defenderWeapons[validDefenderChoice.primary] : defaultPrimary(defenderWeapons)
   const defenderOffOptions = offHandCandidates(defenderWeapons, defenderPrimary)
   const preferredDefenderOff = validDefenderChoice ? defenderWeapons[validDefenderChoice.offHand] : defaultOffHand(defenderWeapons, defenderPrimary)
   const defenderOff = preferredDefenderOff && defenderOffOptions.includes(preferredDefenderOff) ? preferredDefenderOff : null
 
   // Weapon choice follows the attacker: a new attacker gets sensible defaults.
-  const [physicalSelection, setPhysicalSelection] = useState<Record<string, string>>({})
-  const [choice, setChoice] = useState<WeaponChoice | null>(null)
+  const physicalSelection = sheet.fightPhysicalChoices
+  function setPhysicalSelection(change: (current: Record<string, string>) => Record<string, string>) {
+    if (!readOnly) edit?.(state => ({ ...state, fightPhysicalChoices: change(state.fightPhysicalChoices) }))
+  }
   const waterRows = attacker && !selfDamage && !attacker.traitIds.some(trait => trait === 'undead' || trait === 'possessed') ? items.filter(item => item.warband_id === roster.id && item.holder_id === attacker.id && item.item_rules_id === 'blessed_water' && item.quantity > 0) : []
   const waterWeapon = waterRows.length && attacker && attackerKit ? blessedWaterWeapon(toCharacter(attacker, attackerKit)) : null
   const weapons: Weapon[] = attackerKit ? [...(attackerKit.melee.length > 0 ? attackerKit.melee : [defaultPrimary([])]), ...attackerKit.ranged, ...(waterWeapon ? [waterWeapon] : [])] : []
   const melee = attackerKit && attackerKit.melee.length > 0 ? attackerKit.melee : weapons.slice(0, 1)
+  const attackerChoiceKey = attacker ? `${attacker.warbandId}:${attacker.id}:${startWith}` : ''
+  const savedChoice = sheet.fightWeaponChoices[attackerChoiceKey]
+  const choice = savedChoice && attacker ? { attackerId: attacker.id, primary: weapons.findIndex(w => w.id === savedChoice.primary), offHand: melee.findIndex(w => w.id === savedChoice.offHand) } : null
+  function setChoice(next: WeaponChoice) {
+    if (readOnly || !weapons[next.primary]) return
+    edit?.(state => ({ ...state, fightWeaponChoices: { ...state.fightWeaponChoices, [attackerChoiceKey]: { primary: weapons[next.primary].id, offHand: melee[next.offHand]?.id ?? null } } }))
+  }
   const current: WeaponChoice | null = attacker
-    ? choice && choice.attackerId === attacker.id && choice.primary < weapons.length
+    ? choice && choice.attackerId === attacker.id && choice.primary >= 0 && choice.primary < weapons.length
       ? choice
       : (() => {
           const ranged = startWith === 'ranged' ? weapons.filter(weapon => weapon.type === 'ranged') : []
@@ -215,7 +233,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   const [staffCorrection, setStaffCorrection] = useState('')
   const [bolasCorrection, setBolasCorrection] = useState('')
-  const [toggles, setToggles] = useState<Record<string, boolean>>({})
+  const [situationReason, setSituationReason] = useState('')
+  const [groupSituations, setGroupSituations] = useState<Record<string, Record<string, boolean>>>({})
   // The roll-through lives in a sheet the dice button opens, rather than a slab down the page.
   const [rolling, setRolling] = useState(false)
   const [rollSetup, setRollSetup] = useState<FightOdds | null>(null)
@@ -235,6 +254,16 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const turns = useBattleTurns(matchId)
   const phaseKey = combatPhaseKey(sheet.turn, turns.data)
   const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
+  const situationKey = `${attacker?.id}:${defender?.warbandId}:${defender?.id}`
+  const individualPsychology = Boolean(attacker && (attacker.kind !== 'henchman' || (attacker.groupSize ?? 1) <= 1))
+  const groupSituationKey = `${phaseKey}:${situationKey}`
+  const toggles = attacker ? (individualPsychology ? savedFightSituations(sheet, attacker.id, situationKey, phaseKey) : groupSituations[groupSituationKey] ?? {}) : {}
+  function changeSituation(field: string, checked: boolean) {
+    if (readOnly || !attacker) return
+    if (!individualPsychology) setGroupSituations(current => ({ ...current, [groupSituationKey]: { ...current[groupSituationKey], [field]: checked } }))
+    else edit?.(state => setFightSituation(state, attacker.id, attacker.name, situationKey, phaseKey, field, checked, situationReason))
+    setSituationReason('')
+  }
   const isPistolShot = !selfDamage && primary?.type === 'ranged' && isCorePistol(primary.id)
   const pistolSlot = Math.min(pistolModel, Math.max(0, (attacker?.groupSize ?? 1) - 1))
   const pistol = isPistolShot && attacker && primary ? pistolShootingOptions(sheet, attacker, items, events, primary.id, physicalSelection[`${attacker.id}:pistol:${pistolSlot}`], Number(ownTurnKey.split(':').at(-1)), pistolSlot) : null
@@ -256,7 +285,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
       ? parryOverride.used
       : targetMemory?.parryUsedTurn === sheet.turn
     : false)
-  const toggleList = attacker && primary ? relevantToggles(attacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined).filter(t => t.field !== 'serpentStaffPower' && !(t.field === 'charging' && smokeBlocksWarrior(sheet,events,attacker.id,ownTurnKey))) : []
+  const toggleAttacker = attacker && attackerKit ? applyPreBattle(attacker, attackerKit, preBattleWithRolls(attackerKit.consumables, itemsUsedBy(sheet, attacker.id), itemRollsBy(sheet, attacker.id))).combatant : attacker
+  const toggleList = toggleAttacker && attacker && primary ? relevantToggles(toggleAttacker, primary.type, primary, defenderKit ?? undefined, offHandValid ? offHand : null, defender ?? undefined).filter(t => t.field !== 'serpentStaffPower' && !(t.field === 'charging' && smokeBlocksWarrior(sheet,events,attacker.id,ownTurnKey))) : []
   const active: Partial<CombatContext> = {}
   for (const t of toggleList) (active as Record<string, boolean>)[t.field] = toggles[t.field] ?? Boolean(t.defaultOn)
   // Already knocked down or stunned (from an earlier, already-logged phase this turn): hits it
@@ -401,15 +431,17 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
       {toggleList.length > 0 ? (
         <fieldset className="flex min-w-0 flex-col gap-0.5">
           <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Situation</legend>
+          {!individualPsychology ? <p className="text-xs text-ink-dim">This group contains several models. These situation choices apply only to the model being resolved now; record each model’s Fear/Frenzy state at the table. They are not saved for the whole group.</p> : null}
+          {individualPsychology && (toggles.frenzyEnded || toggles.failedFearWhenCharged) ? <TextField label="Reason to correct Fear or Frenzy" value={situationReason} onChange={event => setSituationReason(event.target.value)} hint="To clear a recorded condition, enter a reason, then untick it. Earlier attack results stay unchanged." disabled={locked || readOnly} /> : null}
           {toggleList.map((t) => (
             <label key={t.field} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={t.hint}>
-              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" disabled={locked || (t.field === 'failedStupidity' && (readOnly || (individualStupidity && (!edit || psychologyLoading))))} checked={t.field === 'failedStupidity' ? Boolean(active.failedStupidity) : toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => {
+              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" disabled={locked || readOnly || turns.isPending || turns.isError || (individualPsychology && ['frenzyEnded', 'failedFearWhenCharged'].includes(t.field) && Boolean(toggles[t.field]) && !situationReason.trim()) || (t.field === 'failedStupidity' && (readOnly || (individualStupidity && (!edit || psychologyLoading))))} checked={t.field === 'failedStupidity' ? Boolean(active.failedStupidity) : toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => {
                 const checked = e.target.checked
                 if (t.field === 'failedStupidity' && attacker && !readOnly) {
                   if (individualStupidity && edit) edit(s => recordStupidityResult(s, attacker.id, ownTurnKey, attacker.name, checked, sheet.turn))
                   else setGroupStupidity({ id: attacker.id, turnKey: ownTurnKey, failed: checked })
                 }
-                else setToggles(s => ({ ...s, [t.field]: checked }))
+                else changeSituation(t.field, checked)
               }} />
               <span>{t.label}{(t.field === 'longRange' || t.field === 'failedStupidity') && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.field === 'failedStupidity' && !individualStupidity ? "This group has several models. Apply this only to the model currently attacking; record each model’s test at the table. This choice is not saved for the whole group." : t.hint}</span> : null}</span>
             </label>
@@ -621,14 +653,14 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           ) : null}
           {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
           {defender && defenderCarriedKit ? <>
-            <SelectField label="Weapon held" disabled={Boolean(staffDefenderWeapon)} value={String(defenderWeapons.indexOf(staffDefenderWeapon ?? defenderPrimary))} onChange={e => {
+            <SelectField label="Weapon held" disabled={readOnly || Boolean(staffDefenderWeapon)} value={String(defenderWeapons.indexOf(staffDefenderWeapon ?? defenderPrimary))} onChange={e => {
               const index = Number(e.target.value)
               const off = defaultOffHand(defenderWeapons, defenderWeapons[index])
               setDefenderChoice({ id: defender.id, primary: index, offHand: off ? defenderWeapons.indexOf(off) : -1 })
             }}>
               {defenderWeapons.map((w, i) => <option key={i} value={i}>{w.name}</option>)}
             </SelectField>
-            {!staffDefenderWeapon && defenderOffOptions.length > 0 ? <SelectField label="Other hand" value={defenderOff ? String(defenderWeapons.indexOf(defenderOff)) : '-1'} onChange={e => setDefenderChoice({ id: defender.id, primary: defenderWeapons.indexOf(defenderPrimary), offHand: Number(e.target.value) })}>
+            {!staffDefenderWeapon && defenderOffOptions.length > 0 ? <SelectField label="Other hand" disabled={readOnly} value={defenderOff ? String(defenderWeapons.indexOf(defenderOff)) : '-1'} onChange={e => setDefenderChoice({ id: defender.id, primary: defenderWeapons.indexOf(defenderPrimary), offHand: Number(e.target.value) })}>
               <option value="-1">Nothing</option>
               {defenderOffOptions.map(w => <option key={defenderWeapons.indexOf(w)} value={defenderWeapons.indexOf(w)}>{w.name}</option>)}
             </SelectField> : null}

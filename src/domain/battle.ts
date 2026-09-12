@@ -88,7 +88,7 @@ export const battleLiveStateSchema = z.object({
   notes: z.string().default(""),
   /** Leadership history for first-test item limits; relics are not consumed from inventory. */
   leadershipTests: z.array(z.object({
-    id: z.string().optional(), correction: z.string().optional(),
+    id: z.string().optional(), correction: z.string().optional(), turnKey: z.string().optional(),
     warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity"]),
     relic: z.boolean().default(false), at: z.string(),
   })).default([]),
@@ -98,6 +98,11 @@ export const battleLiveStateSchema = z.object({
   /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
   itemsUsed: z.record(z.string(), z.array(z.string())).default({}),
   /** One core poison vial bound to one physical weapon for this battle. */
+  /** Selected profiles and physical copies; IDs survive inventory ordering changes. */
+  fightWeaponChoices: z.record(z.string(), z.object({ primary: z.string(), offHand: z.string().nullable() })).default({}),
+  fightSituations: z.record(z.string(), z.object({ phaseKey: z.string(), values: z.record(z.string(), z.boolean()) })).default({}),
+  frenzyEnded: z.record(z.string(), z.boolean()).default({}),
+  fightPhysicalChoices: z.record(z.string(), z.string()).default({}),
   tailChoices: z.record(z.string(), z.object({ mode: z.enum(['none', 'shield', 'weapon']), weaponId: z.string().optional(), weaponKey: z.string().optional() })).default({}),
   poisonApplications: z.array(z.object({
     id: z.string(), warriorId: z.string(), warriorName: z.string(),

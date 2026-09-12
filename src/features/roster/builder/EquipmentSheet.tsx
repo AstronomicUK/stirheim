@@ -1,6 +1,7 @@
 import { draftCosts, addDraftEquipment, removeDraftEquipment, type DraftItem, type DraftSubject, type EquipmentOption } from '../../../rules/resolve/builder'
 import type { WarbandTemplate } from '../../../rules/types'
 import { Button, Sheet, Stepper } from '../../../ui'
+import { canAffordAnother } from './affordability'
 import { useDraftStore } from './draftStore'
 import { PriceField } from './EquipmentRows'
 import { discountedCostText, formatAmount, groupEquipmentOptions, optionForItem, quantityOf } from './helpers'
@@ -50,6 +51,8 @@ export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment
                   const quantity = quantityOf(equipment, option)
                   const unpriced = option.cost.kind === 'multiplier' || option.cost.kind === 'unknown'
                   const stack = quantity > 0 ? equipment.find((item) => optionForItem([option], item) === option) : undefined
+                  // #41: grey the "+" once the next copy would overspend, so nobody shops blind behind the sheet.
+                  const affordable = !draft || canAffordAnother(draft, subject, option, template, houseRules)
                   return (
                     <li key={option.name} className="flex flex-col gap-2 py-2">
                       <div className="flex items-center justify-between gap-3">
@@ -58,6 +61,7 @@ export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment
                         <span className="text-xs tabular-nums text-ink-dim">
                           {discountedCostText(option.cost.text, option.item, houseRules)}
                           {unpriced ? ' · enter the price once taken' : ''}
+                          {!affordable ? ' · not enough gold for another' : ''}
                         </span>
                         {!option.item ? <span className="text-xs text-warn">Not in the item catalogue; saved by name.</span> : null}
                       </div>
@@ -65,6 +69,7 @@ export function EquipmentSheet({ open, onClose, subjectLabel, subject, equipment
                         label={option.name}
                         value={quantity}
                         min={0}
+                        max={affordable ? null : quantity}
                         onChange={(next) =>
                           update((d) =>
                             next > quantity

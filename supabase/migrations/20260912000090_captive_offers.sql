@@ -527,12 +527,16 @@ begin
     where match_id = p_case.match_id and warband_id in (p_case.victim_warband_id, p_case.captor_warband_id) and undo is not null;
   if p_proposal.choice->>'kind' = 'exchange' then
     -- The captor's returned captive has his own case (possibly from another battle): it is resolved
-    -- by this proposal, and its report is protected too.
+    -- by this proposal, and its report is protected too. A hero exchange names the hero; a case-to-case
+    -- exchange (henchmen, companions, mixed) names the partner case (migration 095).
     update public.captive_cases set state = 'resolved', resolved_at = now(), resolution_kind = 'exchange', resolved_by_proposal = p_proposal.id,
            resolution_message = 'Returned in exchange: ' || p_proposal.message,
            history = history || jsonb_build_object('at', now(), 'by', auth.uid(), 'event', 'resolved_by_exchange', 'proposal_id', p_proposal.id)
-      where hero_id = (p_proposal.choice->>'otherHeroId')::uuid and victim_warband_id = p_case.captor_warband_id and state in ('unassigned', 'open')
+      where victim_warband_id = p_case.captor_warband_id and captor_warband_id = p_case.victim_warband_id and state in ('unassigned', 'open')
+        and ((p_proposal.choice ? 'otherCaseId' and id = (p_proposal.choice->>'otherCaseId')::uuid)
+             or (not (p_proposal.choice ? 'otherCaseId') and subject_kind = 'hero' and hero_id = (p_proposal.choice->>'otherHeroId')::uuid))
       returning report_id into v_partner_report;
+    if p_proposal.choice ? 'otherCaseId' and v_partner_report is null then raise exception 'The captive offered in exchange is no longer held (his case closed).' using errcode = 'P0001'; end if;
     if v_partner_report is not null and not (v_partner_report = any(v_links)) then v_links := v_links || v_partner_report; end if;
     update public.captive_proposals set state = 'stale', resolved_at = now(), reason = 'The captive was returned in an exchange.'
       where state = 'proposed' and case_id in (select id from public.captive_cases where resolved_by_proposal = p_proposal.id);

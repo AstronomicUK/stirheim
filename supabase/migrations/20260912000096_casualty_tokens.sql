@@ -16,13 +16,23 @@ grant execute on function public.casualty_token(uuid, uuid, text, integer) to au
 
 create function public.mark_casualty_event(p_match_id uuid, p_actor_warband_id uuid, p_payload jsonb, p_summary text default '')
 returns uuid language plpgsql security definer set search_path = '' as $$
-declare v_token text := p_payload->>'casualty_token'; v_id uuid;
+declare v_token text := p_payload->>'casualty_token'; v_id uuid; parts text[]; v_target text;
 begin
   if auth.uid() is null then raise exception 'Sign in first.' using errcode = '42501'; end if;
   if jsonb_typeof(p_payload) <> 'object' or coalesce(v_token, '') = '' then raise exception 'A casualty event needs its casualty_token.' using errcode = '22023'; end if;
-  if v_token !~ ('^casualty:' || p_match_id || ':[0-9a-f-]{36}:[^:]+(:[^:]+)*:[0-9]+$') then raise exception 'The casualty token does not belong to this match.' using errcode = '22023'; end if;
+  -- casualty:<match>:<target warband>:<target id>:<n>; the target id may itself contain colons (animal ids).
+  parts := string_to_array(v_token, ':');
+  if cardinality(parts) < 5 or parts[1] <> 'casualty' or parts[2] <> p_match_id::text or parts[3] !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' or parts[cardinality(parts)] !~ '^[0-9]+$' then
+    raise exception 'The casualty token does not belong to this match.' using errcode = '22023';
+  end if;
+  v_target := array_to_string(parts[4:cardinality(parts) - 1], ':');
+  if p_payload->>'target_warband_id' is distinct from parts[3] or p_payload->>'target_id' is distinct from v_target then
+    raise exception 'The casualty token names a different target (% of %) from the payload.', v_target, parts[3] using errcode = '22023';
+  end if;
   if not coalesce((p_payload->>'out_of_action')::boolean, false) then raise exception 'A casualty event records a model out of action.' using errcode = '22023'; end if;
   if not (public.is_match_participant(p_match_id) or public.is_campaign_gm(public.match_campaign(p_match_id))) then raise exception 'Only a player at this table or the campaign GM records casualties.' using errcode = '42501'; end if;
+  if not exists (select 1 from public.match_participants where match_id = p_match_id and warband_id = p_actor_warband_id) then raise exception 'The recording warband is not in this battle.' using errcode = '22023'; end if;
+  if not (public.can_edit_warband(p_actor_warband_id) or public.is_campaign_gm(public.match_campaign(p_match_id))) then raise exception 'Record casualties for your own warband (or as the campaign GM).' using errcode = '42501'; end if;
   if not exists (select 1 from public.matches m where m.id = p_match_id and m.state = 'in_progress') then raise exception 'The battle is not in progress.' using errcode = 'P0001'; end if;
   perform pg_advisory_xact_lock(hashtext(v_token));
   select id into v_id from public.battle_events where match_id = p_match_id and reverted_at is null and payload->>'casualty_token' = v_token;

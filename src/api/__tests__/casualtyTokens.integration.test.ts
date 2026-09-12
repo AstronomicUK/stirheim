@@ -43,6 +43,14 @@ describe.skipIf(!enabled)('Casualty tokens: one standing event per model going d
   expect((await mark(outsider,2)).error?.message).toMatch(/player at this table/)
   expect((await mark(reik,2,{out_of_action:false})).error?.message).toMatch(/records a model out of action/)
   expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(2),casualty_token:`casualty:${crypto.randomUUID()}:${vw}:${group}:2`}})).error?.message).toMatch(/does not belong to this match/)
+  expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(2),target_id:skrit}})).error?.message).toMatch(/names a different target/)
+  expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(2),casualty_token:`casualty:${match}:${cw}:${group}:2`}})).error?.message).toMatch(/names a different target/)
+  expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:cw,p_payload:payload(2)})).error?.message).toMatch(/your own warband/)
+  expect((await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:ow,p_payload:payload(2)})).error?.message).toMatch(/not in this battle/)
+  // An animal id keeps its own colons inside the token.
+  const animalToken=`casualty:${match}:${vw}:animal:${skrit}:wardogs:1:0`
+  const animal=check(await reik.rpc('mark_casualty_event',{p_match_id:match,p_actor_warband_id:vw,p_payload:{...payload(0),casualty_token:animalToken,target_id:`animal:${skrit}:wardogs:1`,target_kind:'hero',target_name:'Wardog'}}))
+  check(await reik.rpc('unmark_casualty_event',{p_match_id:match,p_token:animalToken}));expect((await events()).find((e:any)=>e.id===animal).reverted_at).not.toBeNull()
   // A raw insert with a standing token is refused by the index too.
   expect((await admin.from('battle_events').insert({match_id:match,actor_id:users[0],actor_warband_id:vw,kind:'attack',payload:payload(0),summary:'dup'})).error?.message).toMatch(/battle_events_casualty_token_key/)
  })

@@ -110,4 +110,17 @@ describe.skipIf(!enabled)('Captured equipment companions (Subjugator of Mankind,
   check(await captor.rpc('respond_captive_proposal',{p_proposal_id:idT,p_action:'accept'}))
   expect(await dogQty(null)).toEqual([{quantity:1,notes:'Brindle pair'}])
  })
+
+ it('ties each animal number to the item row that actually holds it when a Hero has several rows of the same companion',async()=>{
+  // Gert also has a second Wardog row (one more dog, differently annotated): numbers run 1-2 on the first row, 3 on the second.
+  const second=check(await admin.from('items').insert({warband_id:vw,holder_type:'hero',holder_id:handler,item_rules_id:'wardogs',quantity:1,notes:'Old grey'}).select('id').single()).id
+  const ev3=check(await admin.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:cw,at:'2026-09-12T18:03:00Z',kind:'attack',summary:'dog 3',payload:{attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Master Moulder Skrit',target_warband_id:vw,target_id:`animal:${handler}:wardogs:3`,target_kind:'hero',target_name:'Wardog 3',target_size:1,wounds_lost:1,out_of_action:true,kill:false,outcome:'Out of action',turn:3,capture_reason:'subjugator'}}).select('id').single()).id
+  const fileRows=(captured:unknown[],patches:unknown[])=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],injuries:[],applied:{heroes:[],groups:[],item_patches:patches,captured_companions:captured}}})
+  // Number 3 claimed against the first row, or number 1 against the second, is refused.
+  expect((await fileRows([{...cap(3,ev3)}],[{id:dogs,quantity:1}])).error?.message).toMatch(/not one of the animals on item row .* \(that row holds numbers 1 to 2\)/)
+  expect((await fileRows([{...cap(1,events[0]),sourceItemId:second}],[{id:second,quantity:0}])).error?.message).toMatch(/that row holds numbers 3 to 3/)
+  check(await fileRows([cap(1,events[0]),{...cap(3,ev3),sourceItemId:second}],[{id:dogs,quantity:1},{id:second,quantity:0}]))
+  const opened=await cases()
+  expect(opened.map((c:any)=>[c.model_index,c.hero_id,c.model_snapshot.item.notes])).toEqual([[1,dogs,'Brindle pair'],[3,second,'Old grey']])
+ })
 })

@@ -13,7 +13,7 @@ alter table public.captive_cases add constraint captive_cases_subject_kind_check
 create function public.open_companion_capture_cases() returns trigger language plpgsql security definer set search_path = '' as $$
 declare
   cap jsonb; ev public.battle_events%rowtype; parts text[]; hero public.heroes%rowtype; before_row jsonb; lost int; used jsonb := '{}'::jsonb; seen uuid[] := '{}';
-  sid uuid; n int; v_case uuid; v_owner uuid; v_captor_owner uuid; v_captor_name text; kind_name text;
+  sid uuid; n int; n_from int; n_to int; v_case uuid; v_owner uuid; v_captor_owner uuid; v_captor_name text; kind_name text;
 begin
   if new.undo is null or old.undo is not null then return new; end if;
   for cap in select x from jsonb_array_elements(coalesce(new.applied->'captured_companions', '[]'::jsonb)) x loop
@@ -49,6 +49,20 @@ begin
     if before_row is null then raise exception 'Captured companions: item % was not a % carried by % before this report, or the report did not remove it.', sid, kind_name, hero.name using errcode = '22023'; end if;
     lost := (before_row->>'before_quantity')::int - coalesce((select (pt->>'quantity')::int from jsonb_array_elements(coalesce(new.applied->'item_patches', '[]'::jsonb)) pt where (pt->>'id')::uuid = sid limit 1), (before_row->>'before_quantity')::int);
     if coalesce((used->>sid::text)::int, 0) + 1 > lost then raise exception 'Captured companions: the report removed only % % from %, but more are recorded as captured.', lost, kind_name, hero.name using errcode = '22023'; end if;
+    -- The animal's number n runs continuously over the holder's rows of that item in roster order
+    -- (created_at), so n must fall inside the source row's own range of numbers.
+    select offset_before, offset_before + qty into n_from, n_to from (
+      select r.id, r.qty, coalesce(sum(r.qty) over (order by r.created_at, r.id rows between unbounded preceding and 1 preceding), 0) as offset_before
+        from (
+          select (u->>'id')::uuid as id, (u->'row'->>'created_at')::timestamptz as created_at, (u->'before'->>'quantity')::int as qty
+            from jsonb_array_elements(coalesce(new.undo->'items', '[]'::jsonb)) u
+           where u->'row'->>'holder_type' = 'hero' and u->'row'->>'holder_id' = cap->>'holderId' and u->'row'->>'item_rules_id' = cap->>'itemId'
+          union all
+          select i.id, i.created_at, i.quantity from public.items i
+           where i.warband_id = new.warband_id and i.holder_type = 'hero' and i.holder_id = hero.id and i.item_rules_id = cap->>'itemId'
+             and not exists (select 1 from jsonb_array_elements(coalesce(new.undo->'items', '[]'::jsonb)) u2 where (u2->>'id')::uuid = i.id)
+        ) r) ranges where ranges.id = sid;
+    if n_from is null or n <= n_from or n > n_to then raise exception 'Captured companions: % is not one of the animals on item row % (that row holds numbers % to %).', cap->>'animalId', sid, coalesce(n_from, 0) + 1, coalesce(n_to, 0) using errcode = '22023'; end if;
     used := jsonb_set(used, array[sid::text], to_jsonb(coalesce((used->>sid::text)::int, 0) + 1));
     insert into public.captive_cases (report_id, report_revision, match_id, victim_warband_id, captor_warband_id, hero_id, hero_name, state, assigned_at, subject_kind, model_index, source, model_snapshot)
       values (new.id, new.revision, new.match_id, new.warband_id, (cap->>'captorWarbandId')::uuid, sid, kind_name || ' of ' || hero.name, 'open', now(), 'companion', n, 'forced_capture_companion',

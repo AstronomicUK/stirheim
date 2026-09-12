@@ -175,7 +175,9 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   }
   check(await file([cap(1,events[0]),cap(2,events[1])]));check(await fileCaptor())
   const [first,second]=await cases()
-  const a=await viaBuilder(first,victim,{kind:'release'});expect(a.built.rejoins).toBe(true);expect(canReturnToGroup(a.owner,first)).toBe(true);const idA=check(a.r)
+  // Stats stored with a different key order are still the same profile.
+  check(await admin.from('henchman_groups').update({stats:{Ld:5,A:1,I:4,W:1,T:3,S:3,BS:3,WS:3,M:5}}).eq('id',group))
+  const a=await viaBuilder(first,victim,{kind:'release'});expect(a.built.rejoins).toBe(true);expect(canReturnToGroup(a.owner,first)).toBe(true);expect(a.built.message).toMatch(/Sword, Shield \(Painted red\)/);const idA=check(a.r)
   check(await captor.rpc('respond_captive_proposal',{p_proposal_id:idA,p_action:'accept'}))
   expect(await groupRow()).toEqual({size:2,xp:2});expect(await qty(swords)).toBe(2);expect(await qty(shields)).toBe(2)
   check(await admin.from('henchman_groups').update({xp:5}).eq('id',group))

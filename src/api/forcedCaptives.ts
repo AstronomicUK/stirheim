@@ -2,6 +2,7 @@ import type { WarbandDetail } from './warbands'
 import type { CaptiveCase } from './captives'
 import type { RosterHenchmanGroup, RosterItem, RosterWarband } from '../rules/types/roster'
 import type { Stats } from '../rules/types'
+import { findItem } from '../rules/data/items'
 
 /**
  * Pure builder for a forced-captured henchman's outcome (migration 092): release, ransom or sale.
@@ -35,7 +36,15 @@ export function snapshotKit(snap: ForcedCaptureSnapshot): RosterItem[] {
   return snap.items.map(i => ({ itemId: i.item_rules_id, ...(i.item_rules_id ? {} : { customName: i.custom_name ?? undefined }), quantity: i.quantity, ...(i.notes ? { notes: i.notes } : {}) }))
 }
 
-function sameJson(a: unknown, b: unknown): boolean { return JSON.stringify(a ?? {}) === JSON.stringify(b ?? {}) }
+/** Deep equality the way PostgreSQL compares jsonb: object key order does not matter. */
+export function sameJson(a: unknown, b: unknown): boolean {
+  const x = a ?? {}, y = b ?? {}
+  if (x === y) return true
+  if (typeof x !== 'object' || typeof y !== 'object' || x === null || y === null || Array.isArray(x) !== Array.isArray(y)) return false
+  if (Array.isArray(x) && Array.isArray(y)) return x.length === y.length && x.every((v, i) => sameJson(v, y[i]))
+  const kx = Object.keys(x as object).sort(), ky = Object.keys(y as object).sort()
+  return kx.length === ky.length && kx.every((k, i) => k === ky[i] && sameJson((x as Record<string, unknown>)[k], (y as Record<string, unknown>)[k]))
+}
 
 /** Whether the original group can take the model back, mirroring the server's compatibility rule. */
 export function canReturnToGroup(owner: WarbandDetail, item: CaptiveCase): boolean {
@@ -67,7 +76,7 @@ export function buildForcedCaptiveProposal(input: ForcedCaptiveProposalInput): {
   const snap = forcedCaptureSnapshot(item)
   if (!snap) throw new Error('This case is not a forced capture.')
   const kit = snapshotKit(snap)
-  const kitText = kit.map(i => `${i.itemId ?? i.customName}${i.quantity > 1 ? ` ×${i.quantity}` : ''}${i.notes ? ` (${i.notes})` : ''}`).join(', ') || 'no equipment'
+  const kitText = kit.map(i => `${(i.itemId ? findItem(i.itemId)?.name : undefined) ?? i.itemId ?? i.customName}${i.quantity > 1 ? ` ×${i.quantity}` : ''}${i.notes ? ` (${i.notes})` : ''}`).join(', ') || 'no equipment'
   let nextOwner = owner.roster, nextCaptor = captor.roster, rejoins = false, message: string
   if (choice.kind === 'sell') {
     if (!Number.isInteger(choice.d6) || choice.d6 < 1 || choice.d6 > 6) throw new Error('Enter a D6 result from 1 to 6.')

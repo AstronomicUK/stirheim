@@ -6,7 +6,7 @@ Tom's instruction: finish the current Trade Wagon capture work, then agree the p
 
 The agreed #114/#122/#163/#112 release is already live. Subsequent equipment, combat, skills and Trade Wagon changes are local and must be batched. Do not repeat the earlier deployment. The main tracker status lines are often older than their dated follow-ups; they are not reliable remaining-work counts on their own.
 
-Trade Wagon keep/ransom, report filing and withdrawal, cargo protection, mobile controls and the rare-search restriction have local verification. Contents-only theft awaits Tom's answer about the empty wagon. The question has already been sent; do not repeat it. #146 (wagon destruction/storage absence) is a separate supplement project and is not part of closing abandonment under #68.
+Trade Wagon keep/ransom, report filing and withdrawal, cargo protection, mobile controls and the rare-search restriction have local verification. Contents-only theft is now implemented and tested under Tom's ruling: return the empty wagon and its two draft horses to the Merchant Caravan. The Trade Wagon abandonment project is complete locally, awaiting a batched release. #146 (wagon destruction/storage absence) is a separate supplement project and is not part of closing abandonment under #68.
 
 ## Recommended order
 

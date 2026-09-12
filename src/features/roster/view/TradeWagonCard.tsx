@@ -22,7 +22,7 @@ function Capture({capture:c,userId}:{capture:TradeWagonCapture;userId?:string}) 
   const merchant=useWarband(c.merchant_id),captor=useWarband(c.captor_id)
   const match=useMatch(c.match_id,userId),campaign=useCampaign(match.data?.campaign_id)
   const save=useSettleTradeWagon(),undo=useUndoTradeWagon()
-  const [kind,setKind]=useState<'ransom'|'keep'>('ransom'),[gold,setGold]=useState('0')
+  const [kind,setKind]=useState<'ransom'|'keep'|'loot'>('ransom'),[gold,setGold]=useState('0')
   const [vehicle,setVehicle]=useState<'wagon'|'stagecoach'>('wagon'),[allowed,setAllowed]=useState(false)
   const [reason,setReason]=useState(''),[confirmed,setConfirmed]=useState(false),[undoOpen,setUndoOpen]=useState(false)
   const m=merchant.data?.warband,k=captor.data?.warband
@@ -34,7 +34,7 @@ function Capture({capture:c,userId}:{capture:TradeWagonCapture;userId?:string}) 
   const error=save.error??undo.error??merchant.error??captor.error??match.error??campaign.error
   return <Card className="mb-3 flex min-w-0 flex-col gap-3 p-4">
     <p className="font-medium">{m?.name??'Merchant Caravan'} → {k?.name??'Capturing warband'}</p>
-    <p className="text-sm text-ink-dim">{pending?'Awaiting an agreed outcome. The wagon and this cargo are held aside.':c.settlement?.kind==='ransom'?`Returned for ${c.settlement.gold} gc.`:`Kept as a ${c.settlement?.vehicle==='stagecoach'?'Stage Coach':'Wagon'}.`}</p>
+    <p className="text-sm text-ink-dim">{pending?'Awaiting an agreed outcome. The wagon and this cargo are held aside.':c.settlement?.kind==='ransom'?`Returned for ${c.settlement.gold} gc.`:c.settlement?.kind==='loot'?'Contents stolen; empty wagon and two draft horses returned to the Merchant.':`Kept as a ${c.settlement?.vehicle==='stagecoach'?'Stage Coach':'Wagon'}.`}</p>
     <details><summary className="cursor-pointer text-sm">View captured wagon and cargo</summary>
       <ul className="mt-2 list-inside list-disc text-sm">
         <li>Trade Wagon with two draft horses</li>
@@ -45,19 +45,19 @@ function Capture({capture:c,userId}:{capture:TradeWagonCapture;userId?:string}) 
     {!pending&&c.settlement?<p className="text-sm">{c.settlement.reason}</p>:null}
     {!permitted?<p className="text-sm text-ink-dim">The campaign GM, or an owner of both warbands, records the agreed outcome.</p>:pending?<>
       <SelectField label="Agreed outcome" value={kind} onChange={e=>{setKind(e.target.value as typeof kind);reset()}}>
-        <option value="ransom">Return wagon and cargo for a ransom</option><option value="keep">Keep wagon and cargo</option>
+        <option value="ransom">Return wagon and cargo for a ransom</option><option value="keep">Keep wagon and cargo</option><option value="loot">Steal contents; return the empty wagon</option>
       </SelectField>
-      {kind==='ransom'?<TextField label="Agreed ransom (gc)" type="number" min="0" step="1" value={gold} onChange={e=>{setGold(e.target.value);reset()}} hint={m?`${m.name} has ${m.gold} gc.`:undefined}/>:<>
+      {kind==='ransom'?<TextField label="Agreed ransom (gc)" type="number" min="0" step="1" value={gold} onChange={e=>{setGold(e.target.value);reset()}} hint={m?`${m.name} has ${m.gold} gc.`:undefined}/>:kind==='keep'?<>
         <SelectField label="Keep as" value={vehicle} onChange={e=>{setVehicle(e.target.value as typeof vehicle);reset()}}><option value="wagon">Wagon</option><option value="stagecoach">Stage Coach</option></SelectField>
         <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={allowed} onChange={e=>{setAllowed(e.target.checked);reset()}} className="mt-1"/>I have checked that this warband is allowed to keep this vehicle.</label>
-      </>}
+      </>:null}
       <TextField label="Agreement or ruling to record" value={reason} onChange={e=>{setReason(e.target.value);reset()}}/>
-      <p className="text-sm">{kind==='ransom'&&validAmount?`${m!.name} pays ${amount} gc (${m!.gold-amount} gc left). ${k?.name??'The captor'} receives it. All captured equipment and shards return to ${m!.name}.`:kind==='keep'?`${k?.name??'The captor'} receives the wagon, two draft horses, equipment and ${c.snapshot.cargo.wyrdstone} shards. No gold changes hands.`:'Enter an affordable whole-number ransom.'}</p>
+      <p className="text-sm">{kind==='ransom'&&validAmount?`${m!.name} pays ${amount} gc (${m!.gold-amount} gc left). ${k?.name??'The captor'} receives it. All captured equipment and shards return to ${m!.name}.`:kind==='keep'?`${k?.name??'The captor'} receives the wagon, two draft horses, equipment and ${c.snapshot.cargo.wyrdstone} shards. No gold changes hands.`:kind==='loot'?`${k?.name??'The captor'} receives the stored equipment and ${c.snapshot.cargo.wyrdstone} shards. The empty Trade Wagon and two draft horses return to ${m?.name??'the Merchant Caravan'}. No gold changes hands.`:'Enter an affordable whole-number ransom.'}</p>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} className="mt-1"/>Both players have agreed to this outcome.</label>
-      <Button pending={busy} disabled={!m||!k||!confirmed||!reason.trim()||(kind==='ransom'?!validAmount:!allowed)} onClick={()=>{
+      <Button pending={busy} disabled={!m||!k||!confirmed||!reason.trim()||(kind==='ransom'?!validAmount:kind==='keep'&&!allowed)} onClick={()=>{
         if(!m||!k)return
         const common={reportId:c.report_id,reason,merchantUpdated:m.updated_at,captorUpdated:k.updated_at}
-        save.mutate(kind==='ransom'?{...common,kind,gold:amount}:{...common,kind,vehicle,vehicleAllowed:allowed})
+        save.mutate(kind==='ransom'?{...common,kind,gold:amount}:kind==='loot'?{...common,kind}:{...common,kind,vehicle,vehicleAllowed:allowed})
       }}>Record agreed outcome</Button>
     </>:<>
       <Button onClick={()=>{setUndoOpen(!undoOpen);setReason('');reset()}}>Correct this outcome</Button>

@@ -19,7 +19,7 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   const rows=await admin.from('items').select('*').eq('warband_id',merchant);if(rows.error)throw rows.error
   snapshot={match_id:match,merchant_id:merchant,captor_id:captor,failed_rout:true,driver_present:false,merchant_all_ooa:false,rare_search_blocked:true,wagon:{kind:'item',expected:rows.data.find(i=>i.id===wagon)},cargo:{items:[rows.data.find(i=>i.id===cargo)],wyrdstone:3}}
  })
- afterEach(async()=>{const state=await admin.from('trade_wagon_captures').select('state,settlement').eq('report_id',report).maybeSingle();if(state.data?.state==='settled'&&state.data.settlement?.kind==='ransom'){const undone=await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Disposable QA cleanup'});if(undone.error)throw undone.error}if(state.data?.state==='settled'&&state.data.settlement?.kind==='keep'){const undone=await player.rpc('undo_kept_trade_wagon',{p_report_id:report,p_reason:'Disposable QA cleanup'});if(undone.error)throw undone.error}const released=await admin.rpc('release_trade_wagon_capture',{p_report_id:report});if(released.error)throw released.error;await admin.from('campaigns').delete().eq('id',campaign);await admin.from('warbands').delete().in('id',[merchant,captor])})
+ afterEach(async()=>{const state=await admin.from('trade_wagon_captures').select('state,settlement').eq('report_id',report).maybeSingle();if(state.data?.state==='settled'&&state.data.settlement?.kind==='ransom'){const undone=await player.rpc('undo_trade_wagon_ransom',{p_report_id:report,p_reason:'Disposable QA cleanup'});if(undone.error)throw undone.error}if(state.data?.state==='settled'&&state.data.settlement?.kind==='keep'){const undone=await player.rpc('undo_kept_trade_wagon',{p_report_id:report,p_reason:'Disposable QA cleanup'});if(undone.error)throw undone.error}if(state.data?.state==='settled'&&state.data.settlement?.kind==='loot'){const undone=await player.rpc('undo_looted_trade_wagon',{p_report_id:report,p_reason:'Disposable QA cleanup'});if(undone.error)throw undone.error}const released=await admin.rpc('release_trade_wagon_capture',{p_report_id:report});if(released.error)throw released.error;await admin.from('campaigns').delete().eq('id',campaign);await admin.from('warbands').delete().in('id',[merchant,captor])})
  const validate=(value:Record<string,any>=snapshot)=>admin.rpc('validate_trade_wagon_capture',{p_report_id:report,p_capture:value})
  it('accepts original cargo without transferring anything or taking gold',async()=>{
   expect((await validate()).error).toBeNull()
@@ -226,6 +226,35 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Trade Wagon capture snapshot 
   expect((await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:merchant,p_report:{version:1,won:false,result:'lost',routed:true,applied:{trade_wagon_capture:snapshot,item_patches:[{id:cargo,quantity:1}]}}})).error?.message).toContain('overlapping equipment')
   expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toHaveLength(2)
   expect((await admin.from('trade_wagon_captures').select('report_id').eq('report_id',report)).data).toEqual([])
+ })
+ const loot=async()=>{
+  const rows=await admin.from('warbands').select('id,updated_at').in('id',[merchant,captor]);if(rows.error)throw rows.error
+  return player.rpc('loot_captured_trade_wagon',{p_report_id:report,p_reason:'Contents taken, empty wagon returned as agreed',p_merchant_updated:rows.data.find(w=>w.id===merchant)!.updated_at,p_captor_updated:rows.data.find(w=>w.id===captor)!.updated_at})
+ }
+ it.each(['item','group'])('returns the empty %s wagon and transfers only cargo, with exact reversal',async(kind)=>{
+  if(kind==='group'){
+   await admin.from('items').delete().eq('id',wagon)
+   const group=await admin.from('henchman_groups').insert({id:wagon,warband_id:merchant,name:'Trade Wagon',unit_type_rules_id:'merchant_trade_wagon',size:1,stats:{M:0,WS:0,BS:0,S:0,T:8,W:4,I:0,A:0,Ld:0}}).select('*').single();expect(group.error).toBeNull()
+   snapshot={...snapshot,wagon:{kind:'group',expected:group.data}}
+  }
+  await reserveAndWinner();expect((await loot()).error).toBeNull()
+  expect((await admin.from('items').select('id,quantity,notes').eq('warband_id',captor)).data).toEqual([{id:cargo,quantity:2,notes:'Family blades'}])
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:80,wyrdstone:0})
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',captor).single()).data).toEqual({gold:0,wyrdstone:3})
+  if(kind==='item')expect((await admin.from('items').select('item_rules_id,notes').eq('id',wagon).single()).data).toEqual({item_rules_id:'trade_wagon',notes:'Two draft horses'})
+  else expect((await admin.from('henchman_groups').select('size').eq('id',wagon).single()).data?.size).toBe(1)
+  expect((await loot()).error?.message).toContain('no longer awaiting')
+  expect((await player.rpc('trade_wagon_rare_search_blocked',{p_warband_id:captor})).data).toBe(true)
+  const read=await player.from('trade_wagon_captures').select('*').eq('report_id',report).single()
+  expect(tradeWagonCaptureSchema.parse(read.data).settlement?.kind).toBe('loot')
+  await admin.from('items').update({notes:'Later edit'}).eq('id',cargo)
+  expect((await player.rpc('undo_looted_trade_wagon',{p_report_id:report,p_reason:'Correction'})).error?.message).toContain('equipment changed')
+  await admin.from('items').update({notes:'Family blades'}).eq('id',cargo)
+  expect((await player.rpc('undo_looted_trade_wagon',{p_report_id:report,p_reason:'Correction'})).error).toBeNull()
+  expect((await admin.from('items').select('id').eq('warband_id',captor)).data).toEqual([])
+  expect((await admin.rpc('release_trade_wagon_capture',{p_report_id:report})).error).toBeNull()
+  expect((await admin.from('warbands').select('gold,wyrdstone').eq('id',merchant).single()).data).toEqual({gold:80,wyrdstone:3})
+  expect((await admin.from('items').select('id').eq('warband_id',merchant)).data).toHaveLength(kind==='item'?2:1)
  })
  it('protects both settled reports but allows withdrawal after the ransom is undone',async()=>{
   await reserveAndWinner();expect((await ransom()).error).toBeNull()

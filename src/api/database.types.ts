@@ -1788,6 +1788,15 @@ export type Database = {
         Args: { p_campaign_id: string; p_warband_id: string }
         Returns: undefined
       }
+      loot_captured_trade_wagon: {
+        Args: {
+          p_captor_updated: string
+          p_merchant_updated: string
+          p_reason: string
+          p_report_id: string
+        }
+        Returns: undefined
+      }
       match_campaign: { Args: { p_match_id: string }; Returns: string }
       may_act_for_warband: {
         Args: { p_match_id: string; p_warband_id: string }
@@ -1941,6 +1950,10 @@ export type Database = {
         Args: { p_report_id: string }
         Returns: undefined
       }
+      reserve_report_trade_wagon: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
       reserve_trade_wagon_capture: {
         Args: { p_capture: Json; p_report_id: string }
         Returns: undefined
@@ -2084,6 +2097,10 @@ export type Database = {
         Returns: undefined
       }
       undo_kept_trade_wagon: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: undefined
+      }
+      undo_looted_trade_wagon: {
         Args: { p_reason: string; p_report_id: string }
         Returns: undefined
       }

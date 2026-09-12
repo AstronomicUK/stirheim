@@ -593,3 +593,15 @@ NEXT ifanswerarrives implementchosenlootflow+checkedundo+UIandtests. Whilewaitin
 
 ## Core-first priority proposal prepared while loot ruling pending
 Added docs/CORE-FIRST-PRIORITIES-2026-09-12.md: recommends coremagic/prayers, corebattlepsychology, coreequipmentconsequences, sourceverification, sharedusability; severeconfirmedcorebugs jumpahead. Separatesmixedsupplementclauses andalreadyimplemented#176/#180/#70/#59/#67 fromremainingwork. No newprojectimplementationorproductionchanges. Maintrackerlabelsarestale; proposalsneedcurrentreproductionbeforecommitments. Awaitexistingasyncemptywagonruling, thenfinishcontents-onlyoutcomeandpresentpriorityreview. No repeatedquestion.
+
+
+## Trade Wagon loot-only ruling — Tom, 12 September 2026
+> Return to the merchant caravan
+
+Applies to the empty wagon after contents-only theft: return the original wagon and its two draft horses to the Merchant Caravan. Transfer stored equipment and wyrdstone to the captor; gold stays with its owner. Implement under #68 with logged settlement and checked undo. This supersedes the pending question; do not ask again.
+
+
+## #68 Trade Wagon abandonment — completed locally, awaiting batched release
+Tom resolved contents-only theft: return the empty wagon to the Merchant Caravan. Migration86 loot_captured_trade_wagon transfersoriginalcargo+reservedwyrdstonetocaptor,returnsoriginalitem/groupwagonanditstwohorsestomerchant,goldunchanged. GM/both-ownerpermissions,filedwinningreport,freshtimestampsandreasonrequired. undo_looted_trade_wagon validatesaftertreasuries/items/returnedgroup,returnsto pendingescrow,thenordinarywithdrawrestoresoriginals. RaresearchrestrictionpersistsunlessallMerchantmodelsOOA. Existingreportdependencyguardcoversloot. Snapshot/API/UIacceptloot,explainreturnandprovidecorrectioncontrols. No furtheremptywagonrulingneeded.
+Migration86 APPLIED LOCAL ONLY; no productionSQL/push/deploy.23wagonDBtests passincludingbothwagonforms,originalreturn,cargoIDs/notes,unchangedgold,duplicaterefusal,changedcargo guard,rarebanandundo. Fullordinary2111pass/208DBskipped; separatefullDB208pass/36files; productionbuild/typecheck/focusedlintanddiffcheckpass. Mobile390 /tmp/stirheim-wagon-loot-mobile-qa.mjs passesselection,agreement,transfer,emptywagonreturn,reloadhistoryandundo; disposablefixturescleaned,noerrors/overflow. PrioractualFile/withdrawmobilecoverage remainsvalid. Logs/tmp/stirheim-wagon-loot-{mobile,full-tests,build}.log and/tmp/stirheim-weapon-loss-full-integration.log.
+Trade Wagon abandonment project nowcomplete locally: explicitreportfacts;originalcargoreservationbeforefinds;keep/ransom/loot;pairedhorsespreservation;permissions/Englishhistory;reportwithdrawal/dependencyguards;rareb anexpiry;rewardchoiceprotection;mobilechecks. This doesNOT close separate#146wagon destruction/storageabsence, orclaimallumbrella#68clauses auditedagain. Allpost-releaseworkremainslocal. NextprojectmustbeagreedwithTom usingcore-firstpriorityproposal alreadyshared; noautostartofnewproject. Pauseheartbeatnowthatcurrentprojectiscomplete,awaitingTom’snextproject/releaseinstruction.

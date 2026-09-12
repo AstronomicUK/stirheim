@@ -111,6 +111,7 @@ export interface ReportContext {
   itemsUsed?: Record<string, string[]>
   healingHerbUses?: import('../../../domain/battle').BattleLiveState['healingHerbUses']
   blessedWaterUses?: import('../../../domain/battle').BattleLiveState['blessedWaterUses']
+  poisonApplications?: import('../../../domain/battle').BattleLiveState['poisonApplications']
   /** Doses the habit already used up at battle start (addiction_supplies for this match): the report must not use a second one. */
   addictionSupplies?: readonly { hero_id: string; item_rules_id: string }[]
   /** Warriors of this warband a Nurgle's Rot carrier wounded on a 6 (from the shared combat log): they contract the Rot. */
@@ -445,6 +446,12 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
     if (!row || row.quantity < count) problems.review.push('Healing Herbs stock changed after use. Restore the spent doses to their original inventory row or correct the battle-sheet use before filing.')
   }
+  const poisonCounts = new Map<string, { count: number; itemId: string }>()
+  for (const use of ctx.poisonApplications ?? []) if (!use.correction) poisonCounts.set(use.itemRowId, { count: (poisonCounts.get(use.itemRowId)?.count ?? 0) + 1, itemId: use.itemRulesId })
+  for (const [id, spent] of poisonCounts) {
+    const row = ctx.items.find(item => item.id === id && item.item_rules_id === spent.itemId)
+    if (!row || row.quantity < spent.count) problems.review.push('Poison stock changed after application. Restore the spent vials to their original inventory row or correct the application before filing.')
+  }
   const waterCounts = new Map<string, number>()
   for (const use of ctx.blessedWaterUses ?? []) if (!use.correction) waterCounts.set(use.itemRowId, (waterCounts.get(use.itemRowId) ?? 0) + 1)
   for (const [id, count] of waterCounts) {
@@ -515,6 +522,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       if (!isConsumable(itemId)) continue
       // Herbs have explicit use records; a legacy checkbox must not consume reusable herbs.
       if (itemId === 'healing_herbs') continue
+      if (ctx.poisonApplications?.some(use => use.warriorId === holderId && use.itemRulesId === itemId)) continue
       if (itemId === 'blessed_water' && ctx.blessedWaterUses?.some(use => use.warriorId === holderId)) continue
       if (itemId === 'garlic') continue // Expires whether used or not, handled below.
       // Exact-once: a dose start_match already used up for this hero (and recorded in the ledger for
@@ -523,6 +531,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       const row = rows.find((r) => r.holder_id === holderId && r.item_rules_id === itemId) ?? rows.find((r) => r.holder_type === 'stash' && r.item_rules_id === itemId)
       if (!row || patches.some((p) => p.id === row.id)) continue
       if (itemId === 'blessed_water' && ctx.blessedWaterUses?.some(use => use.itemRowId === row.id)) continue
+      if (ctx.poisonApplications?.some(use => use.itemRowId === row.id)) continue
       patches.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
     }
   }
@@ -531,6 +540,12 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
   for (const [id, count] of herbCounts) {
     const row = rows.find(item => item.id === id && item.item_rules_id === 'healing_herbs')
     if (row && row.quantity >= count) patches.push({ id, quantity: row.quantity - count })
+  }
+  const poisonCounts = new Map<string, { count: number; itemId: string }>()
+  for (const use of ctx.poisonApplications ?? []) if (!use.correction) poisonCounts.set(use.itemRowId, { count: (poisonCounts.get(use.itemRowId)?.count ?? 0) + 1, itemId: use.itemRulesId })
+  for (const [id, spent] of poisonCounts) {
+    const row = rows.find(item => item.id === id && item.item_rules_id === spent.itemId)
+    if (row && row.quantity >= spent.count) patches.push({ id, quantity: row.quantity - spent.count })
   }
   const waterCounts = new Map<string, number>()
   for (const use of ctx.blessedWaterUses ?? []) if (!use.correction) waterCounts.set(use.itemRowId, (waterCounts.get(use.itemRowId) ?? 0) + 1)
@@ -1134,7 +1149,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [...(ctx.blessedWaterUses ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of Blessed Water spent on a throw in turn ${use.turn}, whether it hit or missed.`),...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...(ctx.poisonApplications ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of ${use.itemRulesId === 'black_lotus' ? 'Black Lotus' : 'Dark Venom'} coated ${use.weapon.name}, copy ${use.weapon.copyIndex + 1}, for this battle.`),...(ctx.blessedWaterUses ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of Blessed Water spent on a throw in turn ${use.turn}, whether it hit or missed.`),...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

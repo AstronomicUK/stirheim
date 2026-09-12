@@ -51,3 +51,11 @@ describe('Blessed Water report consumption', () => {
     expect(itemPatchesFor(ctx({ items: [row('water', 'kurt', 'blessed_water', 1)], itemsUsed: { kurt: ['blessed_water'] } }), emptyDraft())).toEqual([{ id: 'water', quantity: 0 }])
   })
 })
+
+
+it('settles multiple poison vials by physical stock row without duplicate legacy ticks', () => {
+  const use = { id: 'first', warriorId: 'kurt', warriorName: 'Kurt', itemRowId: 'poison', itemRulesId: 'black_lotus' as const, at: 'now', weapon: {} as NonNullable<ReportContext['poisonApplications']>[number]['weapon'] }
+  const context = ctx({ items: [row('poison', 'kurt', 'black_lotus', 2)], itemsUsed: { kurt: ['black_lotus'] }, poisonApplications: [use, { ...use, id: 'second' }, { ...use, id: 'mistake', correction: 'Wrong weapon' }] })
+  expect(itemPatchesFor(context, emptyDraft())).toEqual([{ id: 'poison', quantity: 0 }])
+  expect(itemPatchesFor({ ...context, poisonApplications: [{ ...use, correction: 'Wrong weapon' }] }, emptyDraft())).toEqual([])
+})

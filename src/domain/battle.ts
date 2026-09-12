@@ -96,6 +96,12 @@ export const battleLiveStateSchema = z.object({
   preBattle: z.record(z.string(), z.string()).default({}),
   /** Consumables marked as taken or applied this battle: warrior id -> catalogue item ids. The report uses them up. */
   itemsUsed: z.record(z.string(), z.array(z.string())).default({}),
+  /** One core poison vial bound to one physical weapon for this battle. */
+  poisonApplications: z.array(z.object({
+    id: z.string(), warriorId: z.string(), warriorName: z.string(),
+    itemRowId: z.string(), itemRulesId: z.enum(['black_lotus', 'dark_venom']),
+    weapon: brokenWeaponSchema, at: z.string(), correction: z.string().optional(),
+  })).default([]),
   /** One physical vial per declared Blessed Water throw, including misses. */
   blessedWaterUses: z.array(z.object({
     id: z.string(), warriorId: z.string(), warriorName: z.string(), itemRowId: z.string(),

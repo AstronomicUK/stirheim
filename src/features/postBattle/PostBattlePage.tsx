@@ -235,6 +235,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       itemsUsed: liveState?.itemsUsed ?? {},
       healingHerbUses: liveState?.healingHerbUses ?? [],
       blessedWaterUses: liveState?.blessedWaterUses ?? [],
+      poisonApplications: liveState?.poisonApplications ?? [],
       addictionSupplies: supplies.data,
       rotVictims,
       map: settings?.mapCampaign && district && perks ? { districtId: district.id, districtName: district.name, abundance: district.abundance, perks } : null,

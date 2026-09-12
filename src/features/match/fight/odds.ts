@@ -49,19 +49,27 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
   const traits = [...c.traitIds]
   let melee = kit.melee
   let ranged = kit.ranged
-  for (const e of effects) {
+  // "Crimson Shade has no effect on Undead such as Vampires and Zombies, or the Possessed" (02:1981,
+  // likewise Mandrake Root 02:2017 and Mad Cap Mushrooms 02:2009): the dose is still used up, but
+  // an Undead or Possessed warrior gets nothing from it.
+  const active = effects.filter((e) => !e.noEffectOn?.some((group) => c.traitIds.includes(group)))
+  for (const e of active) {
     if (e.appliesTo === 'self') {
       if (e.toughnessBonus) stats = { ...stats, T: stats.T + e.toughnessBonus }
+      // Crimson Shade's +1 Strength (02:1981) is the warrior's own, so it reaches every weapon he uses.
+      if (e.strengthBonus) stats = { ...stats, S: stats.S + e.strengthBonus }
       for (const t of e.traits ?? []) if (!traits.includes(t)) traits.push(t)
       continue
     }
+    const blackpowder = (w: Weapon) => w.type === 'ranged' && (w.saveModifier ?? 0) >= 2 && w.strength !== 'user'
     const touches = (w: Weapon) => {
       if (e.appliesTo === 'allWeapons') return true
+      if (e.appliesTo === 'nonBlackpowder') return !blackpowder(w)
       if (e.appliesTo === 'melee') return w.type === 'melee'
       if (e.appliesTo === 'ranged') return w.type === 'ranged'
       if (e.appliesTo === 'crossbows') return w.id === 'crossbow'
       if (e.appliesTo === 'bows') return ['bow', 'short_bow', 'longbow', 'elf_bow'].includes(w.id)
-      if (e.appliesTo === 'blackpowder') return w.type === 'ranged' && (w.saveModifier ?? 0) >= 2 && w.strength !== 'user'
+      if (e.appliesTo === 'blackpowder') return blackpowder(w)
       return false
     }
     const coat = (w: Weapon): Weapon => {
@@ -84,7 +92,7 @@ export function applyPreBattle(c: Combatant, kit: Loadout, effects: readonly Pre
     melee = melee.map(coat)
     ranged = ranged.map(coat)
   }
-  const stunned = effects.some((e) => e.appliesTo === 'self' && e.stunnedBecomesKnockedDown)
+  const stunned = active.some((e) => e.appliesTo === 'self' && e.stunnedBecomesKnockedDown)
   if (stunned && !traits.includes('no_pain')) traits.push('no_pain')
   return { combatant: { ...c, stats, traitIds: traits }, kit: { ...kit, melee, ranged } }
 }

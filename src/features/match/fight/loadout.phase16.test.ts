@@ -85,6 +85,43 @@ describe('loadout from the item rules', () => {
     expect(dosed.kit.ranged[0].special).toContain('injuryBonus:1')
   })
 
+  it("Crimson Shade's +1 Strength reaches the warrior himself, so every weapon he swings (#140, 02:1981)", () => {
+    const kit = loadoutOf([item('sword'), item('bow'), item('crimson_shade')])
+    const dosed = applyPreBattle(combatant([]), kit, kit.consumables.map((c) => c.effect))
+    expect(dosed.combatant.stats.S).toBe(4)
+    expect(dosed.combatant.stats.T).toBe(3)
+    // The bow's own Strength is the weapon's, not the shooter's — unchanged.
+    expect(dosed.kit.ranged[0].strength).toBe(3)
+  })
+
+  it('drugs do nothing for the Undead or the Possessed, though the dose is still spent (02:1981, 02:2009, 02:2017)', () => {
+    const kit = loadoutOf([item('sword'), item('mandrake_root'), item('crimson_shade'), item('mad_cap_mushrooms')])
+    for (const group of ['undead', 'possessed']) {
+      const dosed = applyPreBattle({ ...combatant([]), traitIds: [group] }, kit, kit.consumables.map((c) => c.effect))
+      expect(dosed.combatant.stats).toEqual(stats)
+      expect(dosed.combatant.traitIds).toEqual([group])
+    }
+    const human = applyPreBattle(combatant([]), kit, kit.consumables.map((c) => c.effect))
+    expect(human.combatant.stats.T).toBe(4)
+    expect(human.combatant.stats.S).toBe(4)
+    expect(human.combatant.traitIds).toEqual(expect.arrayContaining(['frenzy', 'no_pain']))
+  })
+
+  it('poison never coats a blackpowder weapon (02:1966), but does coat everything else', () => {
+    const kit = loadoutOf([item('sword'), item('bow'), item('pistol'), item('dark_venom'), item('black_lotus')])
+    const dosed = applyPreBattle(combatant([]), kit, kit.consumables.map((c) => c.effect))
+    const sword = dosed.kit.melee.find((w) => w.id === 'sword')!
+    const bow = dosed.kit.ranged.find((w) => w.id === 'bow')!
+    const pistol = dosed.kit.ranged.find((w) => w.id === 'pistol')!
+    expect(sword.strengthBonus).toBe(1)
+    expect(sword.autoWoundOnNaturalSixToHit).toBe(true)
+    expect(bow.strength).toBe(4)
+    expect(bow.poisoned).toBe(true)
+    expect(pistol.strength).toBe(kit.ranged.find((w) => w.id === 'pistol')!.strength)
+    expect(pistol.poisoned).toBeUndefined()
+    expect(pistol.special).not.toContain('preBattleEffect')
+  })
+
   it('two-handed use means no off-hand weapon, shield or buckler', () => {
     expect(isTwoHandedUse(loadoutOf([item('ogre_club')]), null)).toBe(true)
     expect(isTwoHandedUse(loadoutOf([item('ogre_club'), item('shield')]), null)).toBe(false)

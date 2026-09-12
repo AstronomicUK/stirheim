@@ -92,8 +92,9 @@ export interface ItemPricing {
 export interface PreBattleEffect {
   /** "Coated with Dark Venom", "Drunk before the battle". */
   label: string;
-  /** Which attacks it changes: melee weapons, missile weapons, bows only, black powder only, or the warrior himself. */
-  appliesTo: "melee" | "ranged" | "bows" | "crossbows" | "blackpowder" | "allWeapons" | "self";
+  /** Which attacks it changes: melee weapons, missile weapons, bows only, black powder only, every weapon,
+   * every weapon except black powder ("Poison may not be used with blackpowder weapons", 02:1966), or the warrior himself. */
+  appliesTo: "melee" | "ranged" | "bows" | "crossbows" | "blackpowder" | "allWeapons" | "nonBlackpowder" | "self";
   strengthBonus?: number;
   /** The Strength bonus does not worsen the armour save (Reptile Venom). */
   strengthBonusNoSaveModifier?: boolean;

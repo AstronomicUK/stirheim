@@ -1718,11 +1718,11 @@ Left open (the five further gaps above, none touched by this fix): the Catacombs
 
 ### 67. Trading post never checks a warrior's own equipment list or armour bans, and rare items aren't quantity-capped
 
-**Status:** 🟡 Partially fixed
+**Status:** 🟢 Fixed locally — awaiting batched deployment
 
 **Current local batch — 12 September (not deployed):** Equipment-list membership and the named unit restrictions are now implemented with Tom's warning/recorded-override policy. Purchases and stash moves check eligibility; moving required Outlaw bows also checks the source. Weapon skills, Proven Warrior/leader access, bundle alternatives, material variants and ordinary club/mace/hammer aliases are handled. The faction clauses below now cover Bergjaeger longbows, Hochland henchmen, Horned Hunter/Morr/Slayer restrictions, Halfling/Snotling size limits, Nippon vows, Pilgrim weapons, Outlaw bow limits and initial recruitment arrows, and Wood Elf initial Ithilmar benefits. Rememberer exceptions are preserved. Original Outlaw Marksmen may use Hunting Arrows.
 
-**Remaining local follow-up:** warn before selling required bows (roster warnings already detect the result), and finish the final review before closing this broad entry. The earlier implementation-gap bullets below are retained as historical audit evidence, not the current implementation status. Latest validation:2,062 ordinary tests, build/typecheck and disposable mobile recruitment/move checks pass. No additional deployment.
+**Final local review — 12 September:** The named equipment-list and faction clauses are complete in the local batch, including warnings before selling required bows. Rare-item quantity limits remain enforced with the brace exception. Purchases, moves and sales preserve recorded player overrides. Validation: 2,062 ordinary tests pass (178 database tests skipped in this run); build/typecheck pass; lint has only three pre-existing audit-file warnings. Disposable mobile purchase/move/recruitment/sale checks passed during this batch. Awaiting the next batched deployment; historical gaps below do not describe the current local implementation.
 
 **Priority:** 🟠 Medium
 **Reported:** n/a — found by the income and trading rules audit, reviewed by Tom, sent directly for the tracker; includes a decided ruling from Tom

@@ -356,3 +356,7 @@ Main#67 now has a currentlocal-progress summary above historicnotes. Remaining f
 
 ## Local follow-up — #67 required equipment sales
 Selling a warrior’s last required Outlaw bow now warns before confirmation and requires a saved player exception reason. The existing rule also covers a group falling below one bow per model; Clerics and spare bows remain exempt. Approved overrides remain available. Mobile QA on a disposable local warband verified the disabled confirmation, saved explanation, removed item and correct 5gc payment, with no page errors or overflow. All 25 equipment-list tests and the production build pass. No migration, push or deployment. Broad #67 remains pending final review.
+
+
+## #67 final local review
+Reviewed original scope and named reconciliation clauses against the accumulated equipment changes. Required-bow sale warning is complete; rare quantity caps and brace exception still gate purchases. Marked #67 fixed locally, explicitly awaiting batched deployment. Full ordinary suite 2,062 passed/178 database tests skipped; production build/typecheck passed in preceding sale check; lint three existing audit warnings only. No new SQL/push/deployment. Next independent priority: special weapon consequences (#152/#153); keep Sword Breaker physical weapon loss and reversal as a full lifecycle task, not a text-only checkbox.

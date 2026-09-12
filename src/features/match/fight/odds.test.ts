@@ -819,3 +819,14 @@ it('sets source-specific ignition thresholds without granting unrelated weapons 
  }
  expect(computeOdds(setup(captain, skaven, 'sword', null)).weapons[0].input.ignitionThreshold).toBeUndefined()
 })
+
+
+it('Recovery fire is one automatic S4 hit with no ignition, critical or shooting permission roll', () => {
+ const victim = combatant('Burning warrior', [{ itemId: 'light_armour', quantity: 1 }])
+ const fire = { id: 'fire_recovery_hit', name: 'Recovery fire', type: 'ranged' as const, strength: 4, critCategory: 'missile' as const, concussion: false, special: ['fireRecoveryHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } }
+ const odds = computeOdds({ ...setup(victim, victim, 'dagger', null), primary: fire, attackLimit: 1 })
+ expect(odds.attacks).toBe(1); expect(odds.weapons[0].pHit).toBe(1); expect(odds.weapons[0].strength).toBe(4)
+ expect(odds.weapons[0].input.automaticHitReason).toBe('fireRecovery')
+ expect(odds.weapons[0].input.ignitionThreshold).toBeUndefined(); expect(odds.chain.anyCrit).toBe(0)
+ expect(odds.weapons[0].input.armourThreshold).toBe(6)
+})

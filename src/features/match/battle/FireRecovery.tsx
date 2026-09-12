@@ -62,6 +62,7 @@ function FireRoll({ warriorId, name, warbandId, actorId, actorName, turnKey, she
   const ready = allowed && (hasFire || Boolean(previous)) && (!previous?.confirmed || Boolean(reason.trim()))
   const record = (value: number, originalDie: number | undefined, pending = false) => edit(s => recordFireRecovery(s, events, { id, warbandId, warriorId, warriorName: name, actorId, actorName, turnKey, die: value, originalDie, reason, pending }))
   return <>
+    {previous?.confirmed && previous.die < 4 && events.some(e => !e.reverted_at && e.payload.fireRecoveryId === previous.id) ? <p>This failed test already has a damage result. If the correction changes that damage, revert its separate entry in the battle Log as well.</p> : null}
     {previous?.confirmed ? <TextField label="Reason for correcting fire recovery" value={reason} onChange={e => setReason(e.target.value)} /> : null}
     <DieField label="Extinguish fire D6" sides={6} value={die} onChange={setDie} />
     <Button variant="secondary" disabled={!ready || original !== undefined || previous?.confirmed} onClick={() => { const n = 1 + Math.floor(Math.random() * 6); setDie(n); setOriginal(n); record(n, n, true) }}>Roll extinguish D6</Button>

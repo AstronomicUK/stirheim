@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+import { RosterChambers } from './RosterChambers'
 import { RelicLeadershipControl } from './RelicLeadershipControl'
 import { BugmansAleControl } from './BugmansAleControl'
 import { useBattleTurns } from '../../../api/battleTurns'
@@ -69,14 +71,14 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <div key={entry.warrior.id}><MyWarriorCard condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} /><RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
+          <div key={entry.warrior.id}><MyWarriorCard chambers={<RosterChambers warbandId={roster.id} warriorId={entry.warrior.id} items={items} events={events} sheet={sheet} matchId={matchId} />} condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} /><RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
         ))}
       </Section>
 
       <Section title="Henchmen" aside={`${groups.reduce((n, g) => n + g.size, 0)} models`}>
         {groups.length === 0 ? <p className="text-sm text-ink-dim">No henchman groups.</p> : null}
         {groups.map((group) => (
-          <div key={group.id}><MyGroupCard condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} /><RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
+          <div key={group.id}><MyGroupCard chambers={<RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={sheet} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} condition={conditions.get(group.id)} group={group} template={template} sheet={sheet} edit={edit} readOnly={readOnly} onAsk={(index) => setAsking({ id: group.id, name: `one of the ${group.name}`, index })} /><RelicLeadershipControl roster={roster} warriorId={group.id} name={group.name} sheet={sheet} readOnly={readOnly} edit={edit} /></div>
         ))}
       </Section>
 
@@ -131,6 +133,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit, 
 }
 
 interface MyWarriorCardProps {
+  chambers?: ReactNode
   condition?: string
   entry: SheetWarrior
   template: WarbandTemplate | undefined
@@ -142,7 +145,7 @@ interface MyWarriorCardProps {
   onAsk: (name: string) => void
 }
 
-function MyWarriorCard({ condition, entry, template, sheet, edit, readOnly, fromLog, onAsk }: MyWarriorCardProps) {
+function MyWarriorCard({ chambers, condition, entry, template, sheet, edit, readOnly, fromLog, onAsk }: MyWarriorCardProps) {
   const [expanded, setExpanded] = useState(false)
   const { warrior } = entry
   const out = isHeroOut(sheet, warrior.id)
@@ -163,6 +166,7 @@ function MyWarriorCard({ condition, entry, template, sheet, edit, readOnly, from
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
       />
+      {chambers}
       <WarriorBody equipment={warrior.equipment} skillIds={warrior.skillIds} rules={warriorRules(entry, template)} expanded={expanded}>
         {warrior.stats.W > 1 ? (
           <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
@@ -205,6 +209,7 @@ function MyWarriorCard({ condition, entry, template, sheet, edit, readOnly, from
 }
 
 interface MyGroupCardProps {
+  chambers?: ReactNode
   condition?: string
   group: RosterHenchmanGroup
   template: WarbandTemplate | undefined
@@ -215,7 +220,7 @@ interface MyGroupCardProps {
   onAsk: (index: number) => void
 }
 
-function MyGroupCard({ condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
+function MyGroupCard({ chambers, condition, group, template, sheet, edit, readOnly, onAsk }: MyGroupCardProps) {
   const [expanded, setExpanded] = useState(false)
   const out = groupOut(sheet, group.id)
   const by = takenOutBy(sheet, group.id)
@@ -235,6 +240,7 @@ function MyGroupCard({ condition, group, template, sheet, edit, readOnly, onAsk 
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
       />
+      {chambers}
       <WarriorBody
         equipment={kit.items}
         kitLabel={kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'}

@@ -1,4 +1,5 @@
 import { withRollAttempt, type BattleLiveState } from './battle'
+import { doubleBarrelState } from './chambers'
 import type { BrokenWeapon } from './weaponLoss'
 import { blackpowderMisfire } from '../rules/resolve/blackpowderMisfire'
 
@@ -30,11 +31,14 @@ export function recordBlackpowderShot(sheet: BattleLiveState, shot: BlackpowderS
   if (!Number.isInteger(shot.ownTurn) || shot.ownTurn < 0 || !Number.isInteger(shot.reloadTurns) || shot.reloadTurns < 0) throw new Error('Valid own-turn and reload values are required.')
   const weaponKey=physicalGunKey(shot.heldWeapon,shot.weaponKey)
   const legacyWeaponKey=shot.legacyWeaponKey??(weaponKey!==shot.weaponKey?shot.weaponKey:undefined)
-  const blocked = blackpowderBlock(sheet, shot.warriorId, weaponKey, shot.ownTurn,legacyWeaponKey)
+  const chambers = shot.barrels === undefined ? null : doubleBarrelState(sheet, {warriorId:shot.warriorId,modelIndex:shot.modelIndex??0,weaponKey,name:shot.weaponName}, shot.ownTurn)
+  if (shot.barrels !== undefined && shot.barrels !== 1 && shot.barrels !== 2) throw new Error('Choose one or both barrels.')
+  const blocked = chambers ? chambers.block : blackpowderBlock(sheet, shot.warriorId, weaponKey, shot.ownTurn,legacyWeaponKey)
+  if (chambers && shot.barrels! > chambers.loaded) throw new Error('There are not enough loaded barrels for this shot.')
   if (blocked) throw new Error(blocked)
   return withRollAttempt({ ...sheet, blackpowderShots: [...sheet.blackpowderShots, { ...shot, weaponKey, legacyWeaponKey, misfireDie: undefined, misfirePending: false, misfireOriginal: undefined, correction: undefined }] }, {
     id: shot.id, at: shot.at, turn: sheet.turn, kind: 'attack', status: 'incomplete', label: `${name}: ${shot.weaponName} firing attempt`,
-    rolls: ['Firing attempt recorded. Resolve the to-hit roll and any required misfire.'],
+    rolls: [shot.barrels === undefined ? 'Firing attempt recorded. Resolve the to-hit roll and any required misfire.' : `${shot.barrels} barrel${shot.barrels === 1 ? '' : 's'} fired. Resolve one to-hit roll and a separate wound roll for each barrel that hits.`],
   })
 }
 

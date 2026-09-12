@@ -40,3 +40,15 @@ Five initial DB integration tests passed, with actual report filing and withdraw
 ## Chamber display milestone — existing core guns only
 
 The metallic chamber component is connected to ordinary blackpowder pistols and core handgun/rifle controls. A brace shows each physical copy separately and lets the player select it. Crossbow pistols retain their bolt-oriented controls rather than displaying a lead ball. Existing firing/reload logic is unchanged. Fifteen focused tests pass; an actual mobile battle proves firing empties only the selected pistol and reopening preserves one empty/one loaded copy without overflow or page errors. Script: audits/2026-09-12-chambers/core-pistols-browser.mjs. The double-barrel mockup uses illustrative states. Double-barrel persistence, wound sequence and house-rule integration are not yet implemented. Tom was asked whether the extra chamber bonus is per warrior versus per weapon; no answer yet.
+
+### Chamber ledger checkpoint — 12 September, 19:21 BST (local only)
+
+Added a backward-compatible chamber reload ledger and barrel count on firing attempts. The domain layer now tracks each model and physical gun separately, rejects firing more barrels than remain loaded, records one-barrel-per-gun reloads, blocks firing in the same reload phase, preserves corrections, and rejects reloads while a misfire remains unresolved. Existing ordinary-gun cadence remains unchanged. Focused chamber, blackpowder, reload and pistol tests pass (23); TypeScript passed before the final pending-misfire guard/test.
+
+This is a foundation, not a finished double-barrel feature: the firing UI, shared hit/separate wound sequence and house-rule choices still need integration. No deployment performed. Claude was asked to confirm the corrected historical-import handover before continuing the Captured backend; no fresh handover had arrived at this checkpoint.
+
+### View Rosters mini chambers — user addition
+
+User requested: “Can we have a mini version on the unit box in ‘View Rosters’ on the battle sheet?” Added compact, always-visible physical-gun indicators inside own and opposing warrior/group cards. Uses the same core pistol/handgun availability calculation as the firing controls; group copies identify their model where equipment divides evenly. No controls are hidden behind these indicators. Double-barrel integration remains part of the ongoing #231 work.
+
+Validation: full `tsc -b` and targeted lint pass. Disposable local mobile browser journey fired one pistol from a brace, reloaded the page, and verified the roster shows two mini indicators with exactly one loaded chamber, no overflow or page errors. First browser run stopped because the test left the firing dialog open; the corrected test closes it normally and passes. Local only; not deployed.

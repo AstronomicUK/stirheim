@@ -142,9 +142,14 @@ export const battleLiveStateSchema = z.object({
     legacyWeaponKey: z.string().optional(),
     heldWeapon: brokenWeaponSchema.optional(),
     criticalUsed: z.boolean().optional(),
+    /** Declared loaded barrels for double-barrel weapons; omitted on older/core single-shot records. */
+    barrels: z.union([z.literal(1),z.literal(2)]).optional(),
+    modelIndex: z.number().int().min(0).optional(),
     reloadTurns: z.number().int().min(0), at: z.string(), misfireDie: z.number().int().min(1).max(6).optional(),
     misfirePending: z.boolean().optional(), misfireOriginal: z.number().int().min(1).max(6).optional(), experimental: z.boolean().default(false), correction: z.string().optional(),
   })).default([]),
+  /** Explicit end-of-shooting reloads for double-barrel chamber tracking. */
+  chamberReloads: z.array(z.object({id:z.string(),warriorId:z.string(),modelIndex:z.number().int().min(0),weaponKey:z.string(),weaponName:z.string(),ownTurn:z.number().int().min(0),amount:z.number().int().min(1).max(2),at:z.string(),correction:z.string().optional()})).default([]),
   areaCriticals: z.record(z.string(), z.boolean()).default({}),
   mortarShots: z.array(z.object({
     id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), weaponKey: z.string(), ownTurn: z.number().int().min(0), at: z.string(),

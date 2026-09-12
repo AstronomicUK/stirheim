@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react'
+import { RosterChambers } from './RosterChambers'
+import type { ItemRow } from '../../../domain'
 import {useBattleBribes} from '../../../api/battleBribes'
 import { useBattleTurns } from '../../../api/battleTurns'
 import { useMemo, useState } from 'react'
@@ -32,6 +35,7 @@ export function EnemyView({ matchId, participants, sessions, events = [], turn =
       {participants.map((p) => (
         <EnemyWarband
           key={p.warband_id}
+          events={events}
           matchId={matchId}
           participant={p}
           paidExclusions={bribes.data?.filter(b => b.warband_id === p.warband_id).length ?? 0}
@@ -66,6 +70,7 @@ function EnemyHeader({ participant }: { participant: MatchParticipantView }) {
 }
 
 function EnemyWarband({
+  events,
   matchId,
   participant,
   session,
@@ -77,6 +82,7 @@ function EnemyWarband({
   session: BattleSessionView | undefined
   paidExclusions: number
   conditions: Map<string, string>
+  events: BattleEventRow[]
 }) {
   const query = useMatchRoster(matchId, participant.warband_id)
   const roster = query.data?.roster
@@ -117,12 +123,13 @@ function EnemyWarband({
           {query.error.message}
         </Notice>
       ) : null}
-      {roster ? <EnemyRoster roster={roster} template={template} session={session} conditions={conditions} /> : null}
+      {roster ? <EnemyRoster items={query.data?.items ?? []} events={events} matchId={matchId} roster={roster} template={template} session={session} conditions={conditions} /> : null}
     </section>
   )
 }
 
 function EnemyRoster({
+  items, events, matchId,
   roster,
   template,
   session,
@@ -132,6 +139,9 @@ function EnemyRoster({
   template: WarbandTemplate | undefined
   session: BattleSessionView | undefined
   conditions: Map<string, string>
+  items: ItemRow[]
+  events: BattleEventRow[]
+  matchId: string
 }) {
   const warriors = splitWarriors(roster, session?.live_state)
   const groups = fightingGroups(roster)
@@ -140,6 +150,7 @@ function EnemyRoster({
       {warriors.fighting.map((entry) => (
         <EnemyWarriorCard
           key={entry.warrior.id}
+          chambers={session && <RosterChambers warbandId={roster.id} warriorId={entry.warrior.id} items={items} events={events} sheet={session.live_state} matchId={matchId} />}
           entry={entry}
           template={template}
           out={session ? isHeroOut(session.live_state, entry.warrior.id) : false}
@@ -147,7 +158,7 @@ function EnemyRoster({
         />
       ))}
       {groups.map((group) => (
-        <EnemyGroupCard key={group.id} group={group} template={template} out={session ? groupOut(session.live_state, group.id) : 0} condition={conditions.get(group.id)} />
+        <EnemyGroupCard chambers={session && <RosterChambers warbandId={roster.id} warriorId={group.id} items={items} events={events} sheet={session.live_state} matchId={matchId} groupSize={group.rosterSize ?? group.size} />} key={group.id} group={group} template={template} out={session ? groupOut(session.live_state, group.id) : 0} condition={conditions.get(group.id)} />
       ))}
       {warriors.notFighting.length > 0 ? (
         <p className="text-xs text-ink-dim">
@@ -158,7 +169,7 @@ function EnemyRoster({
   )
 }
 
-function EnemyWarriorCard({ entry, template, out, condition }: { entry: SheetWarrior; template: WarbandTemplate | undefined; out: boolean; condition?: string }) {
+function EnemyWarriorCard({ chambers, entry, template, out, condition }: { chambers?: ReactNode; entry: SheetWarrior; template: WarbandTemplate | undefined; out: boolean; condition?: string }) {
   const [expanded, setExpanded] = useState(false)
   const { warrior } = entry
   const tags = warriorTags(warrior)
@@ -175,12 +186,13 @@ function EnemyWarriorCard({ entry, template, out, condition }: { entry: SheetWar
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
       />
+      {chambers}
       <WarriorBody equipment={warrior.equipment} skillIds={warrior.skillIds} rules={warriorRules(entry, template)} expanded={expanded} />
     </Card>
   )
 }
 
-function EnemyGroupCard({ group, template, out, condition }: { group: RosterHenchmanGroup; template: WarbandTemplate | undefined; out: number; condition?: string }) {
+function EnemyGroupCard({ chambers, group, template, out, condition }: { chambers?: ReactNode; group: RosterHenchmanGroup; template: WarbandTemplate | undefined; out: number; condition?: string }) {
   const [expanded, setExpanded] = useState(false)
   const kit = perModelKit(group.equipment, group.rosterSize ?? group.size)
   const tags: CardTag[] = [{ label: group.size === 1 ? '1 model' : `${group.size} models`, tone: 'neutral' }]
@@ -197,6 +209,7 @@ function EnemyGroupCard({ group, template, out, condition }: { group: RosterHenc
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
       />
+      {chambers}
       <WarriorBody equipment={kit.items} kitLabel={kit.exact && group.size > 1 ? 'Each carries' : 'Equipment'} rules={groupRules(group, template)} expanded={expanded} />
     </Card>
   )

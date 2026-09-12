@@ -48,8 +48,10 @@ export function WarriorHead({ name, typeName, isLarge, tags, stats, expanded, on
             {isLarge ? ' · Large' : ''}
           </p>
         </div>
+        {/* min-w-0, not shrink-0: several badges (an out-of-action attribution, conditions) must wrap
+            inside the card on a phone instead of pushing the row past the viewport (#203). */}
         {tags.length > 0 ? (
-          <div className="flex shrink-0 flex-wrap justify-end gap-1">
+          <div className="flex min-w-0 flex-wrap justify-end gap-1">
             {tags.map((t) => (
               <Tag key={t.label} tone={t.tone}>
                 {t.label}

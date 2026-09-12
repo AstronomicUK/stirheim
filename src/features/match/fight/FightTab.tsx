@@ -309,6 +309,75 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   })
   const duplicateWeapon = swordBreaker && physicalBindings.some(binding => binding.duplicate)
 
+  // #24 Option A (Tom's pick): the roll popup carries its own Setup section — weapon, other hand,
+  // attack count and only the situation toggles that apply — open before the first roll and folded
+  // to a one-line summary once dice are in play. Changing it mid-sequence means starting the attack
+  // again; the incomplete attempt has already been recorded, so nothing is lost from the record.
+  const shownOdds = rollSetup ?? odds
+  const setupSummary = attacker && current && primary && shownOdds
+    ? [
+        `${weaponLabel(weapons, current.primary)}${offHandValid && offHand ? ` + ${offHand.name}` : ''}`,
+        shownOdds.attacks === 1 ? '1 attack' : `${shownOdds.attacks} attacks`,
+        shownOdds.weapons[0]?.input.hitThreshold ? `hits on ${shownOdds.weapons[0].input.hitThreshold}+` : null,
+      ].filter(Boolean).join(' · ')
+    : null
+  const setupControls = (locked: boolean) => attacker && current && primary ? (
+    <>
+      <SelectField
+        label="Weapon"
+        disabled={locked}
+        value={String(current.primary)}
+        onChange={(e) => {
+          setLineSelection(null); setPigeonSelection(null); setSelfShotId(null)
+          const index = Number(e.target.value)
+          const next = weapons[index]
+          const off = next.type === 'melee' ? defaultOffHand(melee, next) : null
+          setChoice({ attackerId: attacker.id, primary: index, offHand: off ? melee.indexOf(off) : -1 })
+        }}
+      >
+        {weapons.map((_, i) => (
+          <option key={i} value={String(i)}>
+            {weaponLabel(weapons, i)}
+          </option>
+        ))}
+      </SelectField>
+      {primary.type === 'melee' && offHandOptions.length > 0 ? (
+        <SelectField label="Other hand" disabled={locked} value={offHandValid && offHand ? String(melee.indexOf(offHand)) : '-1'} onChange={(e) => setChoice({ ...current, offHand: Number(e.target.value) })}>
+          <option value="-1">Nothing</option>
+          {offHandOptions.map((w) => (
+            <option key={melee.indexOf(w)} value={String(melee.indexOf(w))}>
+              {w.name}
+            </option>
+          ))}
+        </SelectField>
+      ) : null}
+      {odds && odds.fullAttacks > 1 && !areaTarget ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-ink-dim">Attacks at {defender?.name ?? 'the target'} (of {odds.fullAttacks} max)</span>
+          <Stepper value={odds.attacks} disabled={locked} onChange={(v) => setAttackLimitChoice({ key: attackKey, value: v })} label={`attacks at ${defender?.name ?? 'the target'}`} min={1} max={odds.fullAttacks} />
+        </div>
+      ) : null}
+      {toggleList.length > 0 ? (
+        <fieldset className="flex min-w-0 flex-col gap-0.5">
+          <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Situation</legend>
+          {toggleList.map((t) => (
+            <label key={t.field} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={t.hint}>
+              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" disabled={locked || (t.field === 'failedStupidity' && (readOnly || (individualStupidity && (!edit || psychologyLoading))))} checked={t.field === 'failedStupidity' ? Boolean(active.failedStupidity) : toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => {
+                const checked = e.target.checked
+                if (t.field === 'failedStupidity' && attacker && !readOnly) {
+                  if (individualStupidity && edit) edit(s => recordStupidityResult(s, attacker.id, ownTurnKey, attacker.name, checked, sheet.turn))
+                  else setGroupStupidity({ id: attacker.id, turnKey: ownTurnKey, failed: checked })
+                }
+                else setToggles(s => ({ ...s, [t.field]: checked }))
+              }} />
+              <span>{t.label}{(t.field === 'longRange' || t.field === 'failedStupidity') && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.field === 'failedStupidity' && !individualStupidity ? "This group has several models. Apply this only to the model currently attacking; record each model’s test at the table. This choice is not saved for the whole group." : t.hint}</span> : null}</span>
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
+    </>
+  ) : null
+
   return (
     <>
       <BlackpowderLosses sheet={sheet} events={events} readOnly={readOnly} onLog={onLogEvent} names={Object.fromEntries(mine.map(w=>[w.id,w.name]))}/>
@@ -413,40 +482,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   <Button variant="secondary" disabled={readOnly || !edit || turns.isPending || turns.isError} onClick={() => edit?.(s => activateSerpentStaff(s, attacker.id, phaseKey, attacker.name, sheet.turn))}>Confirm and awaken staff</Button>
                 </>}
               </div> : null}
-              {primary.type === 'melee' && offHandOptions.length > 0 ? (
-                <SelectField label="Other hand" value={offHandValid && offHand ? String(melee.indexOf(offHand)) : '-1'} onChange={(e) => setChoice({ ...current, offHand: Number(e.target.value) })}>
-                  <option value="-1">Nothing</option>
-                  {offHandOptions.map((w) => (
-                    <option key={melee.indexOf(w)} value={String(melee.indexOf(w))}>
-                      {w.name}
-                    </option>
-                  ))}
-                </SelectField>
-              ) : null}
-              {odds && odds.fullAttacks > 1 ? (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs text-ink-dim">Attacks here (of {odds.fullAttacks} max)</span>
-                  <Stepper value={odds.attacks} onChange={(v) => setAttackLimitChoice({ key: attackKey, value: v })} label={`attacks at ${defender?.name ?? 'the target'}`} min={1} max={odds.fullAttacks} />
-                </div>
-              ) : null}
-              {toggleList.length > 0 ? (
-                <fieldset className="flex min-w-0 flex-col gap-0.5">
-                  <legend className="mb-0.5 text-[10px] uppercase tracking-wider text-ink-dim">Situation</legend>
-                  {toggleList.map((t) => (
-                    <label key={t.field} className="flex min-h-9 items-start gap-2 py-0.5 text-xs text-ink" title={t.hint}>
-                      <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-brass" disabled={t.field === 'failedStupidity' && (readOnly || (individualStupidity && (!edit || psychologyLoading)))} checked={t.field === 'failedStupidity' ? Boolean(active.failedStupidity) : toggles[t.field] ?? Boolean(t.defaultOn)} onChange={(e) => {
-                        const checked = e.target.checked
-                        if (t.field === 'failedStupidity' && attacker && !readOnly) {
-                          if (individualStupidity && edit) edit(s => recordStupidityResult(s, attacker.id, ownTurnKey, attacker.name, checked, sheet.turn))
-                          else setGroupStupidity({ id: attacker.id, turnKey: ownTurnKey, failed: checked })
-                        }
-                        else setToggles(s => ({ ...s, [t.field]: checked }))
-                      }} />
-                      <span>{t.label}{(t.field === 'longRange' || t.field === 'failedStupidity') && t.hint ? <span className="mt-0.5 block text-xs text-ink-dim">{t.field === 'failedStupidity' && !individualStupidity ? "This group has several models. Apply this only to the model currently attacking; record each model’s test at the table. This choice is not saved for the whole group." : t.hint}</span> : null}</span>
-                    </label>
-                  ))}
-                </fieldset>
-              ) : null}
+              {/* #24 Option A: the other hand, attack count and situation toggles live in the roll popup's
+                  Setup section now, alongside the dice; the weapon stays here too because the special
+                  weapon controls above hang off it and the odds below read it. */}
+              {setupSummary ? <p className="text-xs text-ink-dim">{setupSummary} · set up in the roll popup</p> : null}
             </>
           ) : null}
 
@@ -553,7 +592,6 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           <Sheet
             open={rolling}
             onClose={() => { setRolling(false); setLineSelection(null); setPigeonSelection(null); setSelfShotId(null); setFireHitId(null); setVolatileKey(null); setGrapeSelection(null); setMortarSelection(null) }}
-            size="full"
             title={`${attacker.name} attacks ${defender.name}`}
             description={`${(rollSetup ?? odds).attacks === 1 ? '1 attack' : `${(rollSetup ?? odds).attacks} attacks`} this phase. Roll your dice one step at a time, or tap Roll.`}
             footer={
@@ -562,10 +600,25 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               </Button>
             }
           >
+          {!areaTarget && setupControls ? (
+            <details key={rollSetup ? 'locked' : 'open'} open={!rollSetup} className="stirheim-setup my-3 rounded-md border border-border bg-surface px-3 py-2">
+              <summary className="flex cursor-pointer select-none items-center justify-between gap-3 text-sm font-semibold text-ink">
+                <span className="min-w-0 truncate">{setupSummary ?? 'Setup'}</span>
+                <span className="shrink-0 text-xs font-normal text-ink-dim">{rollSetup ? 'Locked while rolling' : 'Setup'}</span>
+              </summary>
+              <div className="flex flex-col gap-3 pt-3">
+                {setupControls(Boolean(rollSetup))}
+                {rollSetup ? (
+                  <Button variant="ghost" onClick={() => setRollSetup(null)}>
+                    Change setup — starts this attack again
+                  </Button>
+                ) : null}
+              </div>
+            </details>
+          ) : null}
           {!rollSetup ? <div className="flex flex-col gap-4 py-3">
             {areaTarget ? <p className="text-sm">One automatic Strength {volatileHit ? volatileHit.strength : selfDamage || pigeonTarget ? 4 : mortarTarget ? mortarShot!.strength : grapeTarget ? grapeStrength : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
-            {!areaTarget ? <><p className="text-sm text-ink">Choose how many attacks to direct at {defender.name}. Maximum: {odds.fullAttacks}.</p>
-            <Stepper value={odds.attacks} onChange={value => setAttackLimitChoice({ key: attackKey, value })} label="attacks in this phase" min={1} max={odds.fullAttacks} /></> : defender.kind === 'henchman' && defender.stats.W > 1 ? <Stepper label="Wounds already lost by this model" value={woundsAlreadyLost} onChange={value => setWoundsOverride({ id: defender.id, value })} max={defender.stats.W} /> : null}
+            {areaTarget && defender.kind === 'henchman' && defender.stats.W > 1 ? <Stepper label="Wounds already lost by this model" value={woundsAlreadyLost} onChange={value => setWoundsOverride({ id: defender.id, value })} max={defender.stats.W} /> : null}
             {needsInterception ? <div className="flex flex-col gap-3 rounded border border-brass p-3">
               <p className="font-medium">Merchant’s Guardian</p>
               <p className="text-sm">An unengaged bodyguard intercepts shooting and charges against {defender.name}. Confirm the situation on the tabletop before rolling.</p>
@@ -970,7 +1023,7 @@ function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProg
               ) : null}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-headline text-2xl leading-tight text-ink">{ROLL_KIND_HEADING[state.pending.kind]}</p>
+                  <p className="font-headline text-[2rem] leading-none text-ink lg:text-4xl">{ROLL_KIND_HEADING[state.pending.kind]}</p>
                   <p className="text-sm text-ink-dim">{state.pending.label}</p>
                   <p className="mt-1 text-base font-semibold text-ink">{state.pending.detail}</p>
                 </div>
@@ -1036,7 +1089,7 @@ function RollSection({ heldWeapons = [], swordBreaker = false, onRestart, onProg
           {state.done ? (
             <div key={state.log.length} className={`flex flex-col gap-2 border-t border-border pt-3 ${state.worst ? (RESULT_ANIMATION_CLASS[state.worst] ?? '') : ''}`}>
               <p role="status" className="text-base text-ink">
-                <span className="font-headline text-xl font-semibold">Result: {state.worst ? OUTCOME_LABEL[state.worst] : 'Nothing happened'}.</span>{' '}
+                <span className="font-headline text-2xl font-semibold">Result: {state.worst ? OUTCOME_LABEL[state.worst] : 'Nothing happened'}.</span>{' '}
                 <span className="text-ink-dim">
                   {state.worst === 'outOfAction'
                     ? `${defender.name} is out of action.`

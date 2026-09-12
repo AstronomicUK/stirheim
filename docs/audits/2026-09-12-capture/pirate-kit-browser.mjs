@@ -1,0 +1,44 @@
+import {chromium,expect} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/node_modules/@playwright/test/index.mjs';
+import {createClient} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/node_modules/@supabase/supabase-js/dist/index.mjs';
+import {execFileSync} from 'node:child_process';
+const raw=execFileSync('npx',['supabase','status','-o','env'],{cwd:'/Users/tombrookes/Documents/Claude Scripts/stirheim',env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
+const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
+const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),player=createClient(env.API_URL,env.ANON_KEY);
+const auth=await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'});if(auth.error)throw auth.error;
+const uid=auth.data.user.id,ids=[];let campaign,b;
+const must=r=>{if(r.error)throw Error(r.error.message);return r.data};
+let match;
+try {
+ for(const name of ['Scenario Rewards QA','Scenario Opponent QA']) ids.push(must(await player.rpc('create_warband',{payload:{name,type_rules_id:ids.length===0?'pirates':'mercenaries_reikland',gold:100,heroes:[],henchman_groups:[],stash:[]}})));
+ campaign=must(await admin.from('campaigns').insert({name:'Disposable Scenario Rewards QA',gm_id:uid}).select('id').single()).id;
+ must(await admin.from('campaign_members').insert(ids.map(warband_id=>({campaign_id:campaign,warband_id,user_id:uid}))));
+ match=must(await admin.from('matches').insert({campaign_id:campaign,created_by:uid,state:'in_progress',scenario_rules_id:'hidden_treasure'}).select('id').single()).id;
+ must(await admin.from('match_participants').insert(ids.map(warband_id=>({match_id:match,warband_id,accepted_at:new Date().toISOString()}))));
+ b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];p.on('pageerror',e=>{errors.push(e.message); console.error(e.message)});
+ await p.goto('http://127.0.0.1:5193/sign-in');await p.getByLabel('Email',{exact:true}).fill('player@stirheim.test');await p.getByLabel('Password',{exact:true}).fill('stirheim-dev');await p.getByRole('button',{name:'Sign in',exact:true}).click();await p.waitForURL('http://127.0.0.1:5193/');
+
+ const heroes=must(await admin.from('heroes').insert(ids.map((warband_id,i)=>({warband_id,name:i?'QA Defender':'QA Captain',unit_type_rules_id:i?'mercenaries_reikland_captain':'pirates_captain',is_hired_sword:false,status:'active',skills:['skaven_of_clan_moulder_special_skills_subjugator_of_mankind'],flags:{},xp:20,level_ups:8,stats:{M:4,WS:4,BS:3,S:3,T:4,W:1,I:3,A:1,Ld:8}}))).select('id,warband_id'));
+ must(await admin.from('items').insert(heroes.flatMap(h=>['thingcatcher','dagger'].map(item_rules_id=>({warband_id:h.warband_id,holder_type:'hero',holder_id:h.id,item_rules_id,quantity:2})))));
+ must(await admin.from('heroes').insert({warband_id:ids[0],name:'QA Friend',unit_type_rules_id:'mercenaries_reikland_champion',is_hired_sword:false,status:'active',skills:['skaven_of_clan_moulder_special_skills_subjugator_of_mankind'],flags:{},xp:8,level_ups:4,stats:{M:4,WS:4,BS:3,S:3,T:4,W:1,I:3,A:1,Ld:8}}).select('id').single());
+ must(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match));
+ const group=must(await admin.from('henchman_groups').insert({warband_id:ids[1],name:'QA Mixed Kit',unit_type_rules_id:'mercenaries_reikland_warriors',size:3,xp:0,stats:{M:4,WS:3,BS:3,S:3,T:3,W:1,I:3,A:1,Ld:7}}).select('id').single());
+ const shield=must(await admin.from('items').insert({warband_id:ids[1],holder_type:'group',holder_id:group.id,item_rules_id:'shield',quantity:3}).select('id').single());
+ must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[1],p_report:{result:'lost',injuries:[{subjectType:'group',subjectId:group.id,subjectName:'QA Mixed Kit',rolls:[1,1],dead:2,equipmentLost:[{sourceItemId:shield.id,quantity:3}]}],applied:{groups:[{id:group.id,patch:{size:1}}],item_patches:[{id:shield.id,quantity:0}]}}}));
+ must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[0],p_report:{result:'won',applied:{}}}));
+ await p.goto(`http://127.0.0.1:5193/warbands/${ids[0]}`);
+ const forms=p.getByText('Record the fallen model’s equipment',{exact:true});
+ await expect(forms).toHaveCount(2);
+ await p.getByLabel('Shield',{exact:true}).first().fill('2');
+ await p.getByLabel('How was their equipment identified?',{exact:true}).first().fill('Two shields belonged to this model');
+ await p.getByRole('button',{name:'Record this model’s equipment',exact:true}).first().click();
+ await expect(forms).toHaveCount(1);
+ await p.getByLabel('Shield',{exact:true}).fill('1');
+ await p.getByLabel('How was their equipment identified?',{exact:true}).fill('The remaining shield belonged to this model');
+ await p.getByRole('button',{name:'Record this model’s equipment',exact:true}).click();
+ await expect(forms).toHaveCount(0);
+ const saved=must(await admin.from('captive_cases').select('model_snapshot').eq('match_id',match));
+ expect(saved.map(c=>c.model_snapshot.items[0].quantity).sort()).toEqual([1,2]);
+ expect(saved.every(c=>!c.model_snapshot.kit_unresolved)).toBe(true);
+ expect(errors).toEqual([]);
+ console.log('PASS: mobile Pirate equipment allocation records separate exact shares for two casualties.');
+} finally {await b?.close();if(match){const cases=must(await admin.from('captive_cases').select('id').eq('match_id',match));for(const c of cases)await admin.from('app_notifications').delete().like('dedupe_key',`captive:${c.id}:%`);await admin.from('matches').delete().eq('id',match);}if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}

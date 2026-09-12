@@ -241,17 +241,17 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         </Card>
       ) : null}
           {animals.length > 0 ? (
-        <Section title="Animals (D6 each)">
-          {animals.map(({ animal, roll, dead }) => (
+        <Section title="Animal casualties">
+          {animals.map(({ animal, roll, dead, capture }) => (
             <Card key={animal.id} className="flex flex-col gap-3 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{animal.name}</p>
-                  <p className="text-xs text-ink-dim">{animal.holderName}&apos;s · {burning ? '1–5 dead, 6 survives' : '1–2 dead (the item is lost), 3–6 survives'}</p>
+                  <p className="text-xs text-ink-dim">{animal.holderName}&apos;s · {capture ? 'Captured by Subjugator of Mankind; no injury roll' : burning ? '1–5 dead, 6 survives' : '1–2 dead (the item is lost), 3–6 survives'}</p>
                 </div>
-                {dead !== null ? <Tag tone={dead ? 'danger' : 'brass'}>{dead ? 'Dead' : 'Survives'}</Tag> : null}
+                {capture?<Tag tone="brass">Captured</Tag>:dead !== null ? <Tag tone={dead ? 'danger' : 'brass'}>{dead ? 'Dead' : 'Survives'}</Tag> : null}
               </div>
-              <DieField label="D6" sides={6} value={roll} onChange={(v) => update((d) => setAnimalInjury(d, animal.id, v))} rollable />
+              {capture?<p className="text-sm text-ink-dim">Their captive case will appear on the warband screen after this report is applied.</p>:<DieField label="D6" sides={6} value={roll} onChange={(v) => update((d) => setAnimalInjury(d, animal.id, v))} rollable />}
             </Card>
           ))}
         </Section>

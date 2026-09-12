@@ -80,5 +80,15 @@ it('separates a captured model’s kit from supplies already used in the battle'
  r=deriveReport(d,ctx)
  expect(r.equipmentLosses.problems).toEqual([])
  expect(r.equipmentLosses.patches).toEqual([{id:'swords',quantity:1}])
+ expect(r.injuries.groups[0].resolution.line?.equipmentLost).toEqual([{sourceItemId:'swords',quantity:1}])
  expect(r.injuries.groups[0].resolution.line?.captured?.[0].kit).toMatchObject([{itemId:'black_lotus',quantity:1}])
+})
+it('records captive losses separately when an exploration recruit replaces the model in the same report',()=>{
+ const ctx=forcedContext(3,6),d=draft();d.groupInjuries.g=[]
+ d.exploration.rolls=[3,3,3];d.exploration.gold=2;d.exploration.recruitChoice='g'
+ const r=deriveReport(d,ctx)
+ expect(r.problems.exploration).toEqual([])
+ expect(r.injuries.groups[0].resolution.line?.equipmentLost).toEqual([{sourceItemId:'swords',quantity:2}])
+ expect(r.report?.applied.groups.find(g=>g.id==='g')?.patch.size).toBe(3)
+ expect(r.report?.applied.item_patches).toContainEqual({id:'swords',quantity:6})
 })

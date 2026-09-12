@@ -1,3 +1,5 @@
+import { CaptiveExchangePanel } from './CaptiveExchangePanel'
+import { CompanionCaptivePanel } from './CompanionCaptivePanel'
 import { ForcedCaptivePanel } from './ForcedCaptivePanel'
 import { useState } from 'react'
 import { useCampaign, type CampaignDetail } from '../../../api/campaigns'
@@ -43,6 +45,7 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
  const lastRejected=item.proposals.find(p=>p.state==='rejected')
  const pirates=captor?.roster.warbandTemplateId==='pirates'
  const henchman=item.subject_kind==='henchman'
+ const companion=item.subject_kind==='companion'
  const forced=henchman&&item.source==='forced_capture'
  const side:'pirates'|'victim'|null=captor&&captor.warband.owner_id===userId?'pirates':owner&&owner.warband.owner_id===userId?'victim':null
  const error=assign.error??propose.error??respond.error??reverse.error
@@ -69,11 +72,13 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
     </div>:null}
    </Notice>})}
    {lastRejected&&!pending.length?<p className="text-sm text-ink-dim">Last proposal rejected: {lastRejected.reason}</p>:null}
-   {captor&&pirates&&!forced&&!pending.length?<PirateKidnappedCard item={item} owner={owner} captor={captor} side={side} gm={gm} otherName={otherName}/>:null}
+   {captor&&pirates&&!forced&&!companion&&!pending.length?<PirateKidnappedCard item={item} owner={owner} captor={captor} side={side} gm={gm} otherName={otherName}/>:null}
+   {canAct&&owner&&captor&&companion&&!pending.length?<CompanionCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
    {canAct&&owner&&captor&&forced&&!pending.length?<ForcedCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
-   {canAct&&owner&&captor&&!henchman&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
+   {canAct&&owner&&captor&&!henchman&&!companion&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
      submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}
      onSubmit={(preview,choice)=>propose.mutate({caseId:item.id,choice,owner,captor,nextOwner:preview.owner,nextCaptor:preview.captor,message:preview.message})}/>:null}
+   {canAct&&owner&&captor&&!pending.length&&!(henchman&&item.source==='pirates_kidnapped')?<CaptiveExchangePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed exchange':`Propose exchange to ${otherName}`}/>:null}
    {canAct&&!otherId?null:other.error?<Notice tone="error" title="Could not load the other warband">{other.error.message}</Notice>:null}
    {!canAct?<p className="text-sm text-ink-dim">Only the two players (or the campaign GM) can propose or accept an outcome.</p>:null}
   </>:null}

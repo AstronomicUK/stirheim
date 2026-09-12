@@ -61,3 +61,10 @@ describe("animals fighting as warriors", () => {
     expect(rating.breakdown.filter((b) => b.subjectId.startsWith("animal:")).map((b) => b.points)).toEqual([5, 5, 5, 5]);
   });
 });
+
+it('keeps companion identities distinct across separate equipment rows of the same kind',()=>{
+ const band={...roster,heroes:[hero('handler','ogre_hunting_party_ogre_hunter',[{itemId:'wardogs',quantity:1,notes:'First dog'},{itemId:'wardogs',quantity:2,notes:'Later dogs'}])]}
+ expect(animalFighters(band).map(a=>[a.id,a.name])).toEqual([
+  ['animal:handler:wardogs:1','Wardog 1'],['animal:handler:wardogs:2','Wardog 2'],['animal:handler:wardogs:3','Wardog 3'],
+ ])
+})

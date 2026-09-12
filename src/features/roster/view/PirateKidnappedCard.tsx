@@ -1,3 +1,4 @@
+import { PirateKitAllocation } from './PirateKitAllocation'
 import { useState } from 'react'
 import type { WarbandDetail } from '../../../api/warbands'
 import { useMatchReports } from '../../../api/reports'
@@ -34,10 +35,11 @@ function PirateKidnappedForm({ item, owner, captor, side, gm, otherName }: Pirat
   const captainLd = pirateCaptainLeadership(captor.roster)
   const subject = kidnapSubject(item, owner)
   const needsRecovery = item.subject_kind === 'henchman' && !rec
+  const needsKit=Boolean((item.model_snapshot as {kit_unresolved?:boolean}|null)?.kit_unresolved)
   const bothRolled = Boolean(contest.pirates && contest.victim)
   const error = recovery.error ?? dice.error ?? reset.error ?? propose.error
   let preview: ReturnType<typeof buildKidnappedProposal> | null = null, previewError = ''
-  if (bothRolled && owner && subject && piratesFiled) {
+  if (bothRolled && owner && subject && piratesFiled && !needsKit) {
     try { preview = buildKidnappedProposal({ item, owner, captor, winner, joinGroupId: joinGroupId || undefined, kit, newGroupId }) } catch (e) { previewError = e instanceof Error ? e.message : 'Review the contest.' }
   }
   const crewGroups = captor.roster.henchmenGroups.filter(g => g.unitTemplateId === 'pirates_crew' && g.size <= 4)
@@ -48,6 +50,7 @@ function PirateKidnappedForm({ item, owner, captor, side, gm, otherName }: Pirat
       <span className="text-xs text-ink-dim">{item.subject_kind === 'henchman' ? 'Lost henchman the Pirates may press-gang' : 'The Pirates’ alternative to ransom, exchange or sale'}</span>
     </div>
     {subject ? <p className="text-sm text-ink-dim">{subject.victim.name}: Leadership {subject.victim.stats.Ld}{subject.victim.skillIds.length ? `, skills ${subject.victim.skillIds.map(skillName).join(', ')}` : ''}. Captain’s Leadership {captainLd ?? '—'}. Battle result on file: {piratesFiled ? winner === 'pirates' ? 'Pirates won (+1)' : winner === 'victim' ? `${otherName} won (+1)` : 'draw' : 'the Pirates have not filed their report yet'}.</p> : null}
+    <PirateKitAllocation key={item.id} item={item} canAllocate={gm||side==='victim'||side==='pirates'&&owner?.warband.owner_id===captor.warband.owner_id}/>
     {needsRecovery ? canPirate ? <div className="flex flex-wrap items-end gap-2">
       <DieField label="Recover the body (4+)" sides={6} value={recD} onChange={(v, source) => { setRecD(v); if (source === 'app') setRecOriginal(v) }} rollable />
       <Button variant="secondary" disabled={!recD} pending={recovery.isPending} onClick={() => recovery.mutate({ caseId: item.id, d6: recD!, original: recOriginal })}>Record recovery roll</Button>

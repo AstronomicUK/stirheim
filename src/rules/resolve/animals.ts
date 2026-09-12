@@ -65,12 +65,16 @@ export function animalFighters(roster: RosterWarband, fighting: (hero: RosterHer
   const out: AnimalFighter[] = [];
   for (const hero of roster.heroes) {
     if (!fighting(hero)) continue;
+    const counts = new Map<string, number>();
     for (const entry of hero.equipment) {
       if (!entry.itemId) continue;
       const kind = ANIMAL_KINDS[entry.itemId];
       if (!kind) continue;
-      for (let n = 1; n <= entry.quantity; n++) {
-        out.push({ id: `animal:${hero.id}:${entry.itemId}:${n}`, itemId: entry.itemId, kind, name: entry.quantity > 1 ? `${kind.name} ${n}` : kind.name, holderId: hero.id, holderName: hero.name });
+      const offset = counts.get(entry.itemId) ?? 0;
+      counts.set(entry.itemId, offset + entry.quantity);
+      const total = hero.equipment.filter(e=>e.itemId===entry.itemId).reduce((sum,e)=>sum+e.quantity,0);
+      for (let n = offset + 1; n <= offset + entry.quantity; n++) {
+        out.push({ id: `animal:${hero.id}:${entry.itemId}:${n}`, itemId: entry.itemId, kind, name: total > 1 ? `${kind.name} ${n}` : kind.name, holderId: hero.id, holderName: hero.name });
       }
     }
   }

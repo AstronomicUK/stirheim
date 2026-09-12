@@ -38,3 +38,15 @@ it('the forced result also replaces an ordinary hired sword survival die',()=>{
  it('ignores a capture from another match even when the same warrior fought',()=>{
  expect(run([{...event,match_id:enemy}]).heroes[0].resolution.pending.kind).not.toBe('done')
  })
+
+it('a captured companion bypasses its injury die and appears in the capture summary',()=>{
+ const handler=makeHero({equipment:[{itemId:'wardogs',quantity:1}]}),band=makeWarband({id,heroes:[handler]})
+ const animalId=`animal:${handler.id}:wardogs:1`
+ const saved={...event,payload:{...event.payload,target_id:animalId}}
+ const d={...emptyDraft(),animalsOut:[animalId],animalInjuries:{[animalId]:1}}
+ const result=deriveInjuries(d,participantsOf(band,undefined),id,band,null,null,[saved])
+ expect(result.animals[0]).toMatchObject({roll:null,dead:false,capture:{event:{id}}})
+ expect(result.summary).toMatchObject({captured:1,pending:0,henchmenDead:0})
+ const reverted=deriveInjuries(d,participantsOf(band,undefined),id,band,null,null,[{...saved,reverted_at:event.at}])
+ expect(reverted.animals[0]).toMatchObject({roll:1,dead:true})
+})

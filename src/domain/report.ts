@@ -65,6 +65,7 @@ export const capturedGroupModelSchema = z.object({
   kit: z.array(z.object({sourceItemId: uuidSchema, itemId: z.string().nullable(), customName: z.string().optional(), quantity: z.number().int().min(1), notes: z.string().optional()})),
 });
 export const henchmanInjuryLineSchema = z.object({
+  equipmentLost: z.array(z.object({sourceItemId:uuidSchema,quantity:z.number().int().min(0)})).optional(),
   captured: z.array(capturedGroupModelSchema).optional(),
   subjectType: z.literal("group"),
   subjectId: z.string(),
@@ -159,6 +160,7 @@ export const reportAppliedSchema = z.object({
   stash_items: z.array(z.object({ item_rules_id: z.string().nullable(), custom_name: z.string().nullable(), quantity: z.number().int().min(1) })).default([]),
   /** Item rows changed in place: consumables used up (quantity) and maps spent (notes). A quantity of 0 removes the row. */
   shrine_equipment: z.object({item_id:z.string().uuid(),expected:z.record(z.string(),z.unknown())}).optional(),
+  captured_companions: z.array(z.object({sourceItemId:z.string().uuid(),holderId:z.string().uuid(),itemId:z.enum(['wardogs','gnoblar_fighter']),animalId:z.string(),eventId:z.string().uuid(),captorWarbandId:z.string().uuid(),reason:z.literal('subjugator')})).optional(),
   item_patches: z.array(z.object({ id: z.string(), quantity: z.number().int().min(0).optional(), notes: z.string().optional(), holder_type:z.enum(["stash","hero","group"]).optional(), holder_id:z.string().uuid().nullable().optional() })).default([]),
 });
 export type ReportApplied = z.infer<typeof reportAppliedSchema>;

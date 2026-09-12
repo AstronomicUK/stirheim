@@ -1,9 +1,9 @@
-import {useState} from 'react'
+import {useState, type ReactNode} from 'react'
 import {Button, DicePicker, Notice, NumberField, SelectField} from '../../../ui'
 
 export type ForcedCaptiveChoice={kind:'release'|'ransom'|'sell';groupId:string;gold?:number;d6?:number;originalD6?:number|null}
 /** One captured henchman is a temporary case, never an extra permanent warband. */
-export function ForcedCaptiveForm({name,ownerGold,pending,submitLabel,onSubmit,error}:{name:string;ownerGold:number;pending:boolean;submitLabel:string;onSubmit:(choice:ForcedCaptiveChoice)=>void;error?:string}){
+export function ForcedCaptiveForm({name,ownerGold,pending,submitLabel,onSubmit,error,companionReturn}:{name:string;ownerGold:number;pending:boolean;submitLabel:string;onSubmit:(choice:ForcedCaptiveChoice)=>void;error?:string;companionReturn?:ReactNode}){
  const [kind,setKind]=useState<ForcedCaptiveChoice['kind']>('release')
  const [gold,setGold]=useState<number|null>(null)
  const [die,setDie]=useState<number|null>(null),[original,setOriginal]=useState<number|null>(null)
@@ -21,8 +21,8 @@ export function ForcedCaptiveForm({name,ownerGold,pending,submitLabel,onSubmit,e
    {die!==null?<NumberField label="Sale die result" value={die} onChange={setDie} hint="D6 × 5 gc. Changes to an app roll stay in the record."/>:null}
    {original!==null&&die!==original?<p className="text-sm text-ink-dim">App rolled {original}; changed to {die??'—'}.</p>:null}
   </div>
-  <Notice tone={kind==='sell'?'warn':'info'} title={kind==='sell'?'The captive will not return':'Return with the recorded equipment'}>
-   {kind==='sell'?`${name} leaves permanently. The captor receives ${die!==null?die*5:'D6 × 5'} gc and the captive’s recorded equipment.`:`${name} returns with their recorded equipment${kind==='ransom'&&gold!==null?` once ${gold} gc is paid`:''}. If their old group has changed, they return as a separate group with their saved profile.`}
+  <Notice tone={kind==='sell'?'warn':'info'} title={kind==='sell'?'The captive will not return':companionReturn?'Return to the warband':'Return with the recorded equipment'}>
+   {companionReturn?(kind==='sell'?`${name} leaves permanently. The captor receives ${die!==null?die*5:'D6 × 5'} gc. No equipment is transferred.`:companionReturn):kind==='sell'?`${name} leaves permanently. The captor receives ${die!==null?die*5:'D6 × 5'} gc and the captive’s recorded equipment.`:`${name} returns with their recorded equipment${kind==='ransom'&&gold!==null?` once ${gold} gc is paid`:''}. If their old group has changed, they return as a separate group with their saved profile.`}
   </Notice>
   <Button pending={pending} disabled={!valid} onClick={()=>onSubmit({kind,groupId,...(kind==='ransom'?{gold:gold!}:{}),...(kind==='sell'?{d6:die!,originalD6:original}:{})})}>{submitLabel}</Button>
   {error?<Notice tone="error" title="Could not propose this outcome">{error}</Notice>:null}

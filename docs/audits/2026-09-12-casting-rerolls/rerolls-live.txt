@@ -27,3 +27,15 @@ PASS* after reload, turn 2, Necro Focus is offered his Familiar — he never spe
 Not exercised live: Magic Gubbinz (gated re-roll; unit test "has to pass its own D6"), Rosary (prayer
 per-turn), Rat Familiar (per-game). Same state machine (availableRerolls / applyCastRoll), different
 source objects; unit tests in src/rules/resolve/__tests__/casting.test.ts cover them.
+
+## Daemon Soul save, seen live (same evening; script node_modules/.cache/p1-daemon-soul-save.mjs)
+Fixtures: Protectorate warband with a Warrior Priest (Soulfire); Possessed warband with a Magister carrying
+a Daemon Soul; in-progress match. Dice entered by hand.
+PASS  Soulfire offers the affected-enemies checklist
+PASS  the protection step offers "Magister Grix — Daemon Soul" for the ticked Magister
+PASS  6 + 6 against 9+ recites the prayer; a 4 on the Daemon Soul D6 against 4+ saves —
+      "Saved — Soulfire does not affect Magister Grix; other models are still affected" and
+      "Cast. Brother Ulf casts Soulfire (Magister Grix unaffected)"
+PASS  the log records the Daemon Soul save with its die
+PASS  the saved cast stands — outcome cast, target Magister Grix
+5/5 — screenshot p1-daemon-soul-save.png

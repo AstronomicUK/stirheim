@@ -50,6 +50,14 @@ describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
   expect((await necromancer.rpc('resolve_awakening',{p_offer_id:offer.id,p_action:'accept'})).error?.message).toMatch(/already been resolved/)
   expect(check(await admin.from('match_reports').select('notes').eq('match_id',match)).every((r:any)=>r.notes.includes('raised as a Zombie'))).toBe(true)
  })
+ it('counts fighting companions towards the printed model limit while preserving reasoned overrides',async()=>{
+  check(await fileVictim());const [offer]=await offers();check(await fileCaster())
+  check(await admin.from('henchman_groups').insert({warband_id:to,name:'Zombies',unit_type_rules_id:'undead_zombies',size:13,stats,xp:0}))
+  check(await admin.from('items').insert({warband_id:to,holder_type:'hero',holder_id:caster,item_rules_id:'wardogs',quantity:1}))
+  expect((await necromancer.rpc('resolve_awakening',{p_offer_id:offer.id,p_action:'accept'})).error?.message).toMatch(/printed model limit/)
+  check(await necromancer.rpc('resolve_awakening',{p_offer_id:offer.id,p_action:'accept',p_reason:'Campaign GM agreed an extra model for this scenario'}))
+  expect((await offers())[0].state).toBe('accepted')
+ })
  it('requires a genuine Hero death and a surviving eligible caster',async()=>{
   check(await fileVictim(66));expect(await offers()).toHaveLength(0)
  })

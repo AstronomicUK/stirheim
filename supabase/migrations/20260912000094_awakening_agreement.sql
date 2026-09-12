@@ -92,7 +92,8 @@ begin
  if o.allocation_required and o.agreed_recipient_warband_id is distinct from o.to_warband_id then raise exception 'The fallen Hero’s player or GM must record this warband as the agreed Awakening recipient first.'; end if;
  select template.* into t from public.awakening_templates template join public.warbands w on w.type_rules_id=template.warband_rules_id where w.id=o.to_warband_id;
  if not found then raise exception 'This warband has no supported Zombie entry.'; end if;
- select (select count(*) from public.heroes where warband_id=o.to_warband_id and status in('active','captured') and not is_hired_sword)+coalesce((select sum(size) from public.henchman_groups where warband_id=o.to_warband_id),0) into model_count;
+ select (select count(*) from public.heroes where warband_id=o.to_warband_id and status in('active','captured') and not is_hired_sword)+coalesce((select sum(size) from public.henchman_groups where warband_id=o.to_warband_id),0)
+  +coalesce((select sum(i.quantity) from public.items i join public.heroes h on h.id=i.holder_id and h.warband_id=i.warband_id where i.warband_id=o.to_warband_id and i.holder_type='hero' and i.item_rules_id in('wardogs','gnoblar_fighter') and h.status='active' and not h.is_hired_sword),0) into model_count;
  if model_count>=t.base_limit and char_length(btrim(p_reason))<5 then raise exception 'The warband is at its printed model limit. Dismiss a warrior first, or record the rule/house-rule reason allowing a larger warband.'; end if;
  if exists(select 1 from jsonb_array_elements(o.snapshot->'items') x where x->>'item_rules_id' is null) and char_length(btrim(p_reason))<5 then raise exception 'This Hero had custom equipment. Record how it was treated at the table before raising the Hero; only recognised weapons and armour transfer automatically.'; end if;
  perform set_config('stirheim.audit_reason','Spell of Awakening: '||o.hero_name||' raised as a Zombie.',true);

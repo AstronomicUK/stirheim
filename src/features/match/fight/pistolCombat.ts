@@ -24,7 +24,7 @@ export function pistolCombatBlock(state: BattleLiveState, modelKey: string, warr
   return mode === 'crossbow' ? null : blackpowderBlock(state, warriorId, physicalGunKey(weapon, ''), ownTurn)
 }
 
-export function useCombatPistol(state: BattleLiveState, args: { id: string; modelKey: string; warriorId: string; name: string; weapon: BrokenWeapon; mode: 'single' | 'brace' | 'crossbow'; phaseKey: string; ownTurn: number; reloadTurns: number }): BattleLiveState {
+export function recordCombatPistolUse(state: BattleLiveState, args: { id: string; modelKey: string; warriorId: string; name: string; weapon: BrokenWeapon; mode: 'single' | 'brace' | 'crossbow'; phaseKey: string; ownTurn: number; reloadTurns: number }): BattleLiveState {
   if (state.pistolCombatUses.some(use => use.id === args.id)) return state
   const block = pistolCombatBlock(state, args.modelKey, args.warriorId, args.weapon, args.mode, args.phaseKey, args.ownTurn)
   if (block) throw new Error(block)

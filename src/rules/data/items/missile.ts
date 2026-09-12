@@ -111,10 +111,10 @@ export const MISSILE_ITEMS: Item[] = [
     range: "10\"",
     strength: "4",
     specialRules: [
-      { name: "Shoot In Hand-To-Hand Combat", text: "A model armed with a crossbow pistol may shoot it in the first round of a hand-to-hand combat and this shot is always resolved first, before any blows are struck. This shot has an extra -2 to hit penalty. Use model's Ballistic Skill to see whether it hits or not.This bonus attack is in addition to any close combat weapon attacks." },
-      { name: "Hand-To-Hand", text: "Pistols can be used in hand-to-hand combat as well as for shooting. A model armed with a pistol and another close combat weapon gains +1 Attack, which is resolved at Strength 4. This bonus attack can be used only once per combat. If you are firing a brace of pistols, your model can fight with 2 Attacks in the first turn of close combat. These attacks are resolved with a model's Weapon Skill like any normal close combat attack and likewise may be parried. Successful hits are resolved at Strength 4, regardless of the firer's Strength." },
+      { name: "Shoot In Hand-To-Hand Combat", text: "A model armed with a crossbow pistol may shoot it in the first round of a hand-to-hand combat and this shot is always resolved first, before any blows are struck. This shot has an extra -2 to hit penalty. Use model's Ballistic Skill to see whether it hits or not. This bonus attack is in addition to any close combat weapon attacks." },
     ],
     weaponId: "crossbow_pistol",
+    // Original core p29 has only the BS opener; the scrape appended a normal-pistol WS paragraph.
     source: { publication: "Mordheim Rulebook (core)", file: "02-weapons-armour-equipment.md:819-828" },
   },
   {

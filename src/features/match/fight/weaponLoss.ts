@@ -4,6 +4,7 @@ import { loadoutOf, type Combatant } from './combatants'
 
 /** Resolve profiles through the same loadout mapping used by the actual battle sheet. */
 export function breakableWeaponChoices(rows: readonly ItemRow[], events: readonly BattleEventRow[], warbandId: string, warriorId: string, weaponId: string) {
+  weaponId = weaponId.replace(/:combat(?::\d+)?$/, '')
   return rows.filter(row => row.warband_id === warbandId && row.holder_id === warriorId && row.holder_type !== 'stash' && weaponQuantityRemaining(row, events) > 0)
     .flatMap(row => {
       const kit = loadoutOf([toRosterItem(row)])
@@ -13,6 +14,7 @@ export function breakableWeaponChoices(rows: readonly ItemRow[], events: readonl
 }
 
 export function physicalWeaponChoices(rows: readonly ItemRow[], events: readonly BattleEventRow[], warbandId: string, warriorId: string, weaponId: string) {
+  weaponId = weaponId.replace(/:combat(?::\d+)?$/, '')
   const losses = events.filter(e => !e.reverted_at).flatMap(e => e.payload.brokenWeapons ?? [])
   return breakableWeaponChoices(rows, events, warbandId, warriorId, weaponId).flatMap(choice =>
     Array.from({ length: choice.row.quantity }, (_, copyIndex) => copyIndex)

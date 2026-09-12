@@ -682,3 +682,17 @@ it('explains an unaffected Blessed Water target without asking for an impossible
   expect(state.outcomes).toEqual(['noWound'])
   expect(state.log.at(-1)?.text).toContain('no effect')
 })
+
+describe('sequential pistol phases', () => {
+ it('does not batch brace hits even against a parrying defender, and stops before the second pistol on OOA', () => {
+  const plans = [plan('Pistol 1',{parryEligible:true,armourThreshold:IMPOSSIBLE}),plan('Pistol 2',{parryEligible:true,armourThreshold:IMPOSSIBLE})]
+  let state = startPhase(plans,1,1,0,false,true)
+  expect(state.hitBatch).toBeUndefined()
+  state = applyRoll(state,4)
+  if(state.pending?.kind === 'parry') state = declineRoll(state)
+  state = rolls(state,4,6)
+  expect(state.done).toBe(true)
+  expect(state.outcomes).toEqual(['outOfAction'])
+  expect(state.log.some(line=>line.text.includes('Second attack'))).toBe(false)
+ })
+})

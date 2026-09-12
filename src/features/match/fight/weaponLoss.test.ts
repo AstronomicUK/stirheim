@@ -66,3 +66,11 @@ it('a broken tail weapon stops supplying the tail attack without silently choosi
  const otherCopy = event(weaponLossSnapshot(row, 'sword', 'Sword', 1, 1))
  expect(withBrokenWeapons([fighter], [row], [otherCopy])[0].tailChoice).toEqual(fighter.tailChoice)
 })
+
+it('combat pistol profiles resolve the same physical copies as shooting, including broken copies', () => {
+ const pistol = {...row, item_rules_id:'pistol'}
+ const broken = event(weaponLossSnapshot(pistol,'pistol','Pistol',1,0))
+ const choices = physicalWeaponChoices([pistol],[broken],band,warrior,'pistol:combat:1')
+ expect(choices).toHaveLength(1)
+ expect(choices[0].snapshot).toMatchObject({weaponId:'pistol',itemId:row.id,copyIndex:1})
+})

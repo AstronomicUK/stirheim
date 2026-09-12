@@ -4,7 +4,7 @@ import type { Weapon } from '../types'
 const BLACKPOWDER = new Set(ITEMS.filter(item => item.category === 'blackpowder').flatMap(item => [item.weaponId, ...(item.additionalWeaponIds ?? [])]).filter((id): id is string => Boolean(id)))
 BLACKPOWDER.add('veskit_warplock_pistols')
 export function isBlackpowderWeapon(weapon: Weapon): boolean {
-  return BLACKPOWDER.has(weapon.id) || weapon.special.includes('blackpowderMisfireRulesAlwaysOn') || weapon.special.includes('experimentalBlackpowderRulesAlwaysOn')
+  return BLACKPOWDER.has(weapon.physicalWeaponId ?? weapon.id) || weapon.special.includes('blackpowderMisfireRulesAlwaysOn') || weapon.special.includes('experimentalBlackpowderRulesAlwaysOn')
 }
 const KNIGHTS = new Set(['bretonnian_knights_questing_knight', 'bretonnian_knights_knight_errant'])
 

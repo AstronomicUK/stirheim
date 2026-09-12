@@ -139,7 +139,7 @@ function passesSave(roll: number, threshold: Threshold): boolean {
   return roll >= 2 && roll >= threshold
 }
 
-export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: number, woundsAlreadyLost = 0, charmAvailable = false): RollState {
+export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: number, woundsAlreadyLost = 0, charmAvailable = false, forceSequential = false): RollState {
   const state: RollState = {
     plans,
     index: 0,
@@ -155,7 +155,7 @@ export function startPhase(plans: AttackPlan[], defenderW: number, maxParries: n
     outcomes: [],
     worst: null,
     done: plans.length === 0,
-    hitBatch: plans.length > 1 && maxParries > 0 && plans.some(p => p.input.parryEligible) && !plans.some(p => p.input.automaticHits || p.input.autoHitKnockedDown || p.input.autoOutOfActionStunned)
+    hitBatch: !forceSequential && plans.length > 1 && maxParries > 0 && plans.some(p => p.input.parryEligible) && !plans.some(p => p.input.automaticHits || p.input.autoHitKnockedDown || p.input.autoOutOfActionStunned)
       ? { phase: 'collect', hits: [], parryIndices: [] } : undefined,
   }
   return state.done ? state : beginAttack(state)

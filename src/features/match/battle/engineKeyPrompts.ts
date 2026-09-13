@@ -16,6 +16,8 @@ export function engineKeyPrompts(events:readonly BattleEventRow[],records:readon
    for(const key of r.state.keys){
     const keeper=key.keeper;if(!keeper)continue
     const [id,member]=keeper.id.split(':')
+    // manual_casualty_index numbers table casualty markers, not physical roster
+    // members. Only target_model_index can identify the particular key carrier.
     if(id!==p.target_id||(member!==undefined&&p.target_model_index!==undefined&&Number(member)!==p.target_model_index))continue
     const acquired=r.history.filter(h=>!h.revertedAt&&h.action&&'by' in h.action&&h.action.by?.id===keeper.id).at(-1)
     const source=events.find(e=>e.id===acquired?.action?.sourceEventId)

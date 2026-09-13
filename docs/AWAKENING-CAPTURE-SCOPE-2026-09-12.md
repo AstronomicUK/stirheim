@@ -25,6 +25,8 @@ See FEEDBACK-BATCH-2026-09-12.md for the evolving implementation/verification re
 
 This supersedes the old gap matrix below. The original audit remains for provenance.
 
+Claude's final handover (`d5e89bf1`, 13 September) identified **Sacrificial Ritual** as an additional unimplemented Engine consumer. Verified source: `reference/rules/03-campaigns-magic-optional-rules.md:3117–3123`. Require contact, selected held captives, pre-roll additional sacrifices and difficulty reduction, D3 Sorcerer XP, original-roster removal, consent and reversible audit history. This is supplementary content, not a newly discovered core-rulebook defect. Do not route it through dispatch and pretend the spell has been cast.
+
 | Flow | Connected and verified locally | Remaining boundary |
 | --- | --- | --- |
 | Ordinary Hero Awakening | Filed death, eligible spell-knowing enemy, agreed recipient, notification, exact profile/weapon/armour transfer, acceptance and reversal guards | Hired Sword eligibility needs a ruling |

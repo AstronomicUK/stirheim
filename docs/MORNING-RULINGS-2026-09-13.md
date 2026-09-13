@@ -1,6 +1,6 @@
 # Questions held for Tom — current overnight batch
 
-Do not interrupt Tom overnight. He asked Codex to keep working until he says he is awake. These questions do not block independent work. Do not present specialist rules as core-rulebook blockers.
+Tom is now awake and has asked Codex to continue until the agreed batch is complete and ready to deploy. The overnight coordination heartbeat is paused. Three questions have been sent: the extra-chamber allocation, recording agreed specialist aftermath rulings, and Hired Sword eligibility for Awakening. Answers remain pending; do not infer approval. These questions do not block independent work. Do not present specialist rules as core-rulebook blockers.
 
 ## Already answered — do not ask again
 

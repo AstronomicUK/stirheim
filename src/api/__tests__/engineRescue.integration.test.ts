@@ -55,6 +55,7 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
  })
  it('identifies unknown keys and corrects shared facts in order with history retained',async()=>{
   const [engine,second]=await engines();let r=check(await start(engine.id));const other=check(await start(second.id))
+  expect((await act(r,{type:'gaolerOut',gaolerId:wielder,by:null},victim)).error?.code).toBe('42501')
   r=check(await act(r,{type:'gaolerOut',gaolerId:wielder,by:null},captor))
   r=check(await act(r,{type:'locateKeys',gaolerId:wielder,by:{id:target+':0'}}))
   const correct=(row:any,client=victim)=>client.rpc('correct_last_engine_rescue_action',{p_rescue_id:row.id,p_revision:row.revision,p_reason:'The table record was mistaken.'})

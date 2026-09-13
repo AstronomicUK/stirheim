@@ -19,3 +19,10 @@ it('only an exact held-key group casualty prompts transfer when a model index is
  const r=record();r.history=[{at:exact.at,action:{type:'keeperOut',keeperId:'warriors:1',by:null,sourceEventId:exact.id}}]
  expect(engineKeyPrompts([exact],[r],engines,gaolers)).toEqual([])
 })
+it('asks which model fell when only a table casualty ordinal is known',()=>{
+ const casualty=event({target_id:'warriors',target_kind:'group',target_warband_id:a,manual_casualty_index:0,metadata_only:true})
+ const prompts=engineKeyPrompts([casualty],[record()],engines,gaolers)
+ expect(prompts).toHaveLength(1)
+ expect(prompts[0].note).toContain('Confirm that this was the particular model carrying the keys.')
+ expect(prompts[0].keeperId).toBe('warriors:1')
+})

@@ -1,3 +1,4 @@
+import {spawn} from 'node:child_process'
 import {beforeAll,afterAll,beforeEach,afterEach,describe,it,expect} from 'vitest'
 import {createClient,type SupabaseClient} from '@supabase/supabase-js'
 const enabled=process.env.SUPABASE_LOCAL==='1'
@@ -75,6 +76,26 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
   check(await victim.rpc('correct_last_engine_rescue_action',{p_rescue_id:r.id,p_revision:r.revision,p_reason:'Correcting the source casualty first.'}))
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id))
   expect(check(await victim.from('app_notifications').select('id').eq('dedupe_key','engine-keys:'+event.id))).toEqual([])
+ })
+ it('serializes a combat correction behind an uncommitted key handover',async()=>{
+  const [engine]=await engines();const r=check(await start(engine.id))
+  const event=check(await victim.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:vw,kind:'attack',summary:'Gaoler casualty',payload:{attacker_warband_id:vw,attacker_id:target,attacker_kind:'group',attacker_name:'Warriors',target_warband_id:cw,target_id:wielder,target_kind:'hero',target_name:'Gaoler',wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:1}}).select('id').single())
+  const child=spawn('docker',['exec','-i','supabase_db_stirheim','psql','-U','postgres','-d','postgres','-qAt','-v','ON_ERROR_STOP=1'],{env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'}})
+  let output='',errors='';child.stderr.on('data',chunk=>errors+=chunk)
+  const exit=new Promise(resolve=>child.once('exit',resolve))
+  const ready=new Promise<void>((resolve,reject)=>{child.stdout.on('data',chunk=>{output+=chunk;if(output.includes('ACTION_READY'))resolve()});child.once('error',reject);child.once('exit',()=>reject(Error(errors||'Transaction exited before the handover was ready')))})
+  const action=JSON.stringify({type:'gaolerOut',gaolerId:wielder,by:{id:target+':0'},sourceEventId:event.id})
+  child.stdin.write(`BEGIN; SELECT set_config('request.jwt.claim.sub','${users[1]}',true); SELECT public.record_engine_rescue_action('${r.id}',${r.revision},'${action}'::jsonb,'Confirmed concurrent handover.'); SELECT 'ACTION_READY';\n`)
+  let reverting:Promise<{error:{message:string}|null}>|undefined
+  try{
+   await ready
+   reverting=Promise.resolve(victim.rpc('revert_battle_event',{p_event_id:event.id,p_note:'Concurrent correction'}))
+   const started=Promise.resolve(reverting)
+   await new Promise(resolve=>setTimeout(resolve,150))
+   child.stdin.end('COMMIT;\n');expect(await exit).toBe(0)
+   expect((await started).error?.message).toMatch(/linked prison-key event/)
+   expect(check(await admin.from('battle_events').select('reverted_at').eq('id',event.id).single()).reverted_at).toBeNull()
+  }finally{if(!child.stdin.writableEnded)child.stdin.end('ROLLBACK;\n');await exit;if(reverting)await reverting}
  })
  it('requires a reviewed revision and rejects a Gaoler taking their own keys',async()=>{
   const [engine]=await engines();const r=check(await start(engine.id))

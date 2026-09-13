@@ -48,3 +48,7 @@ Mobile/readability fixes, local verification, exact-equipment preservation, dice
 ### Cavalcade — two Throne rewards with only one Thrall place left
 
 Source: `reference/rules/warbands/grade-1c.md:1068–1075,1337`. A warband with four Captured Thralls can capture two models in one battle, but two subsequent 3–5 Throne results would exceed the separate five-Thrall maximum. The source does not say what replaces the second reward. The app must not invent a reroll, sacrifice or sixth Thrall. Keep the second case unresolved and ask for a recorded table ruling. Captured Thralls sit outside the normal thirteen-model maximum; that exemption is implemented and verified independently.
+
+### Engine rescue aftermath at battle end
+
+The source explicitly says freed prisoners move towards the nearest table edge, but does not settle a freed prisoner still on the table when the game ends, or one taken out of action on the way. Completed escapes can be implemented independently. Keep the other two outcomes unresolved for an agreed table ruling rather than automatically returning, killing or recapturing the model.

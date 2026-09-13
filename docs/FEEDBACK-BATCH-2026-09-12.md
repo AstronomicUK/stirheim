@@ -281,3 +281,7 @@ Mobile actual-combat verification passes: model 2 held, no OOA/kill XP, end conf
 ### Continued hold checkpoint — local 119
 
 Further hits against the same held model retain one hold/captive with all supporting attacks. Correcting one hit preserves another; later explicit release remains authoritative. Mobile app hit → tabletop hit → end confirmation → one captive passes. New-target attempts are blocked before dice while the catcher is occupied. 26 focused capture API tests and all 113 migration files pass. No deployment.
+
+### Engine rescue battle facts — local 120
+
+Four lifecycle checks, two API checks and separate-player mobile verification pass. Present Engines snapshot their held prisoners; actual Gaoler keys use canonical physical model IDs and are shared across the same warband’s Engines. Confirmed contact or destruction frees captives; reaching the edge is recorded separately. Anonymous/non-participating prisoners use the printed basic Human profile. No permanent roster or kit changes happen at this stage. All 114 migrations replay in isolation; TypeScript passes. Return consent, reversal/corrections and unresolved freed-on-table outcomes remain unfinished. Codex owns follow-up 121; Claude has not acknowledged the contract review. No deployment.

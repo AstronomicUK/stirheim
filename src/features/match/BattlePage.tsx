@@ -1,3 +1,4 @@
+import {EngineRescuePanel} from './battle/EngineRescuePanel'
 import {SlaaneshiHoldsPanel} from './battle/SlaaneshiHoldsPanel'
 import {useSlaaneshiHolds} from '../../api/slaaneshiHolds'
 import type { ItemRow } from '../../domain'
@@ -201,6 +202,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
         </header>
         {!inProgress ? <AwaitingReportsNotice matchId={match.id} /> : null}
         {holdPanel()}
+    <EngineRescuePanel matchId={match.id} participants={match.participants} editable={inProgress && (Boolean(mine)||isGm)} isGm={isGm}/>
         <EnemyView matchId={match.id} participants={match.participants} sessions={shownSessions} />
         <LogTab matchId={match.id} events={events} sessions={shownSessions} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} />
         {canEnd ? (
@@ -241,6 +243,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
       </select>
     </label> : null}
     {holdPanel()}
+    <EngineRescuePanel matchId={match.id} participants={match.participants} editable={inProgress && (Boolean(mine)||isGm)} isGm={isGm}/>
     <PlayerBattle
       match={match}
       sessions={shownSessions}

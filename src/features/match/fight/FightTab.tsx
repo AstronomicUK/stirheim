@@ -1,3 +1,4 @@
+import {useSlaaneshiHolds,useSlaaneshiHoldAction} from '../../../api/slaaneshiHolds'
 import {useCavalcadeCaptureFacts} from '../../../api/cavalcadeCaptives'
 import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
 import {canManCatcherCapture} from '../../../rules/resolve/engineOfChaos'
@@ -150,6 +151,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   )
 
   const [attackerId, setAttackerId] = useState<string | null>(null)
+  const [targetMemberChoice,setTargetMemberChoice]=useState(0)
   const [defenderId, setDefenderId] = useState<string | null>(null)
   const [seenMode, setSeenMode] = useState(startWith)
   if (seenMode !== startWith) { setSeenMode(startWith); setAttackerId(null) }
@@ -291,6 +293,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
       : Math.min(defender.stats.W, Math.max(defender.woundsLost, targetMemory?.woundsLost ?? 0))
     : 0
   const turns = useBattleTurns(matchId)
+  const holds = useSlaaneshiHolds(matchId)
+  const releaseHold = useSlaaneshiHoldAction(matchId)
+  const wieldersHold = holds.data?.find(h => !h.released_at && h.wielder_id === attacker?.id)
+  const switchingHeldWeapon = Boolean(!areaTarget && wieldersHold && primary && !primary.special.includes('lockKnocksDownAndCaptures'))
   const phaseKey = combatPhaseKey(sheet.turn, turns.data)
   const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
   const situationKey = `${attacker?.id}:${defender?.warbandId}:${defender?.id}`
@@ -356,7 +362,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   active.serpentStaffPower = Boolean(staffUse)
   if (attacker?.entangled) active.charging = false
   if (attacker) active.failedStupidity = attacker.traitIds.includes('stupidity') && !attacker.traitIds.includes('deathwish') && (individualStupidity ? failedStupidityThisTurn(sheet, attacker.id, ownTurnKey) : groupStupidity?.id === attacker.id && groupStupidity.turnKey === ownTurnKey && groupStupidity.failed)
-  const defenderCondition = defender ? conditionsFor(events, defender.warbandId, sheet.turn, turns.data?.recoveries).get(defender.id) : undefined
+  const targetMember=Math.min(targetMemberChoice,Math.max(0,(defender?.groupSize??1)-1))
+  const defenderConditions=defender?conditionsFor(events,defender.warbandId,sheet.turn,turns.data?.recoveries,holds.data):undefined
+  const defenderCondition = defender ? defenderConditions?.get(defender.kind==='henchman'?`${defender.id}:${targetMember}`:defender.id)??defenderConditions?.get(defender.id) : undefined
   if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
   if (defenderCondition === 'Stunned') active.targetStunned = true
   const context = combatContextFor(houseRules, active)
@@ -744,8 +752,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           ) : null}
           {enemies.error ? <Notice tone="error">{enemies.error}</Notice> : null}
           {!enemies.isPending && targets.length === 0 ? <p className="text-xs text-ink-dim">No enemy models to pick from.</p> : null}
-          {targets.length > 0 ? (
-            <SelectField label="Enemy model" disabled={Boolean(areaTarget)} hideLabel value={defender?.id ?? ''} onChange={(e) => setDefenderId(e.target.value)}>
+          {targets.length > 0 ? (<>
+            <SelectField label="Enemy model" disabled={Boolean(areaTarget)} hideLabel value={defender?.id ?? ''} onChange={(e) => {setDefenderId(e.target.value);setTargetMemberChoice(0)}}>
               {areaTarget && defender?.warbandId === roster.id ? <option value={defender.id}>{areaTarget.name}</option> : null}
               {enemies.warbands.map((w) => (
                 <optgroup key={w.participant.warband_id} label={w.participant.warband_name}>
@@ -760,7 +768,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 </optgroup>
               ))}
             </SelectField>
-          ) : null}
+            {defender?.kind==='henchman'&&(primary?.special.includes('lockKnocksDownAndCaptures')||holds.data?.some(h=>h.target_id===defender.id))?<SelectField label="Target group member" value={targetMember} disabled={readOnly} onChange={e=>setTargetMemberChoice(Number(e.target.value))}>{Array.from({length:defender.groupSize??1},(_,i)=><option key={i} value={i}>Model {i+1}{holds.data?.some(h=>!h.released_at&&h.target_id===defender.id&&h.target_model_index===i)?' — held':''}</option>)}</SelectField>:null}
+          </>) : null}
           {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
           {defender && defenderCarriedKit ? <>
             <SelectField label="Weapon held" disabled={readOnly || Boolean(staffDefenderWeapon)} value={String(defenderWeapons.indexOf(staffDefenderWeapon ?? defenderPrimary))} onChange={e => {
@@ -856,7 +865,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
             {checkCavalcade?<p className="text-sm text-ink-dim">{cavalcadeFacts.error?`Could not check Capture!: ${cavalcadeFacts.error.message}`:cavalcadeFacts.isPending?'Checking Capture! eligibility…':cavalcadeFacts.data?.eligible?'Capture!: a Misericordia out-of-action result will prompt a D6 to capture this henchman.':cavalcadeFacts.data?.targetIsEnemyHumanHenchman?'Capture! limit reached; resolve ordinary casualties.':'Capture! only applies to enemy human henchmen.'}</p>:null}
-            <Button block disabled={cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            {switchingHeldWeapon && wieldersHold ? <div className="rounded-md border border-brass bg-surface p-3 text-sm">
+              <p>Switching weapons releases {wieldersHold.target_name} from the Man-Catcher. They remain knocked down until their normal Recovery.</p>
+              <Button variant="secondary" disabled={readOnly || releaseHold.isPending} onClick={() => releaseHold.mutate({id:wieldersHold.id,action:'weaponSwitched'})}>Release hold and use this weapon</Button>
+              {releaseHold.error ? <p role="alert">{releaseHold.error.message}</p> : null}
+            </div> : null}
+            <Button block disabled={switchingHeldWeapon || cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (switchingHeldWeapon || cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             cavalcadeCapture={Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade}
             key={attackKey}
@@ -906,7 +920,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             } : undefined}
             heldWeapons={isDoubleBarrel ? [doubleHeld?.snapshot] : pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
+            forceLog={Boolean(primary?.special.includes('lockKnocksDownAndCaptures')) || Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
@@ -934,6 +948,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if(availableEngines?.error)throw new Error(`Could not check Engine availability: ${availableEngines.error.message}`)
               const manCatcher=canManCatcherCapture({outOfAction:state.worst==='outOfAction',usedManCatcher:isManCatcherItem(state.outOfActionWeaponId??null),engineAvailable:Boolean(availableEngines?.data?.some(engine=>engine.state==='present')),targetLarge:defender.traitIds.includes('large_target'),targetAnimal:Boolean(defender.isAnimal||defender.kind==='animal')})
               return onLogEvent({
+                slaaneshi_lock:state.slaaneshiLock?{weaponId:state.slaaneshiLockWeaponId??primary?.id??'',modelIndex:targetMember}:undefined,
+                target_model_index:defender.kind==='henchman'?targetMember:undefined,
                 cavalcade_capture: state.cavalcadeCapture,
                 out_of_action_weapon_id: state.outOfActionWeaponId,
                 capture_reason: state.cavalcadeCapture?.captured?'cavalcade':subjugatorCaptures({outOfAction:state.worst==='outOfAction',attackerIsHero:attacker.kind==='hero',skills:attacker.skillIds,equipment:attacker.equipment.flatMap(item=>item.itemId&&item.quantity>0?[item.itemId]:[]),targetLarge:defender.traitIds.includes('large_target')})?'subjugator':manCatcher?'man_catcher':undefined,

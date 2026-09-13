@@ -1,3 +1,5 @@
+import {TabletopSlaaneshiHold} from './TabletopSlaaneshiHold'
+import {useSlaaneshiHolds} from '../../../api/slaaneshiHolds'
 import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
 import {fetchEngines} from '../../../api/engines'
 import {canManCatcherCapture} from '../../../rules/resolve/engineOfChaos'
@@ -73,12 +75,13 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
     })()
   }
   const turns = useBattleTurns(matchId ?? '')
+  const holds = useSlaaneshiHolds(matchId)
   const ammunition = (id:string) => {
     if(!tabletopAmmunition)return null
     const warrior=combatantsOf(roster,template,roster.name,sheet).find(w=>w.id===id)
     return warrior?<TabletopChambers warrior={warrior} items={items} events={events} sheet={sheet} ownTurn={Number(warbandTurnKey(roster.id,sheet.turn,turns.data).split(':').at(-1))} readOnly={readOnly} edit={edit}/>:null
   }
-  const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries)
+  const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries, holds.data)
   const warriors = splitWarriors(roster, sheet)
   const groups = fightingGroups(roster)
   const animals = animalsFighting(roster)
@@ -118,6 +121,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
   return (
     <>
       {casualtyError?<Notice tone="error" title="Could not update the casualty">{casualtyError}</Notice>:null}
+      {matchId?<TabletopSlaaneshiHold matchId={matchId} roster={roster} enemies={enemies.warbands} turn={sheet.turn} readOnly={readOnly||enemies.isPending}/>:null}
       <BugmansAleControl roster={roster} template={template} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}

@@ -61,7 +61,8 @@ export const capturedGroupModelSchema = z.object({
   modelIndex: z.number().int().min(1),
   eventId: uuidSchema,
   captorWarbandId: uuidSchema,
-  reason: z.enum(['subjugator','man_catcher','cavalcade']),
+  reason: z.enum(['subjugator','man_catcher','cavalcade','slaaneshi_lock']),
+  heldModelIndex: z.number().int().positive().optional(),
   kit: z.array(z.object({sourceItemId: uuidSchema, itemId: z.string().nullable(), customName: z.string().optional(), quantity: z.number().int().min(1), notes: z.string().optional()})),
 });
 export const henchmanInjuryLineSchema = z.object({

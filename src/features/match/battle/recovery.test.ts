@@ -32,3 +32,22 @@ describe('recovery timeline', () => {
     expect(conditionsFor([event('Stunned', t(0))], B, 2).size).toBe(0)
   })
 })
+
+it('keeps the particular held Hero down through recovery and releases only for a later recovery',()=>{
+ const source=event('Knocked down',t(0),{slaaneshi_lock:{weaponId:'slaaneshi_man_catcher',modelIndex:0}})
+ const hold={id:A,match_id:A,source_event_id:A,wielder_warband_id:A,wielder_id:'a',target_warband_id:B,target_id:'b',target_kind:'hero' as const,target_model_index:0,target_name:'B',created_at:t(0),released_at:null,release_reason:null,confirmed_end_at:null}
+ const recoveries=[{warbandId:B,at:t(1)}]
+ expect(conditionsFor([source],B,4,recoveries,[hold]).get('b')).toBe('Knocked down')
+ const released={...hold,released_at:t(2),release_reason:'magicEscape'}
+ expect(conditionsFor([source],B,4,recoveries,[released]).get('b')).toBe('Knocked down')
+ expect(conditionsFor([source],B,4,[...recoveries,{warbandId:B,at:t(3)}],[released]).has('b')).toBe(false)
+})
+it.each([false,true])('a held henchman never knocks the whole group down (wounds already recorded: %s)',(metadata_only)=>{
+ const source=event('Knocked down',t(0),{metadata_only,target_kind:'group',target_size:3,slaaneshi_lock:{weaponId:'slaaneshi_man_catcher',modelIndex:1}})
+ const hold={id:A,match_id:A,source_event_id:A,wielder_warband_id:A,wielder_id:'a',target_warband_id:B,target_id:'b',target_kind:'group' as const,target_model_index:1,target_name:'B',created_at:t(0),released_at:null,release_reason:null,confirmed_end_at:null}
+ const conditions=conditionsFor([source],B,4,[{warbandId:B,at:t(1)}],[hold])
+ expect(conditions.has('b')).toBe(false);expect(conditions.get('b:1')).toBe('Knocked down');expect(conditions.has('b:0')).toBe(false)
+ const released={...hold,released_at:t(2)}
+ expect(conditionsFor([source],B,4,[{warbandId:B,at:t(1)}],[released]).get('b:1')).toBe('Knocked down')
+ expect(conditionsFor([source],B,4,[{warbandId:B,at:t(1)},{warbandId:B,at:t(3)}],[released]).has('b:1')).toBe(false)
+})

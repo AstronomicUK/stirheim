@@ -410,6 +410,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
     smokeOnHit: weapon.id === 'firepots_miragliano' || undefined,
     fishHookFallThreshold: weapon.id === 'fish_hook_shot' && context.fishHookFall ? Math.max(0,Math.min(5,effectiveStat(attacker.stats,attackerSkills,context,weapon.type,'S','self')-(context.largeTarget?1:0))) : undefined,
     chainShotKnockdown: weapon.special.includes("allWrappedUpKnocksDownUnwoundedTargetOn4Plus"),
+    slaaneshiLock: weapon.special.includes("lockKnocksDownAndCaptures") && !context.largeTarget && !defender.activeTraitIds.some(t=>t==='large_target'||t==='steed'),
     firePermissionThreshold: !pigeonBlast && (weapon.type === "ranged" || isBlackpowderWeapon(weapon)) && !weapon.special.includes("autoHitLine16inLongBy1inWide") ? context.firePermissionThreshold : undefined,
     hitThreshold: weapon.special.includes("temperamentalD6ToHitInsteadOfBS") ? 5 : hitThreshold,
     temperamentalPigeon: !pigeonBlast && weapon.special.includes("temperamentalD6ToHitInsteadOfBS") || undefined,

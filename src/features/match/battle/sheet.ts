@@ -1,3 +1,4 @@
+import type {SlaaneshiHold} from '../../../api/slaaneshiHolds'
 import { unitRules } from '../../../rules/data/campaignRules'
 import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
 // Pure helpers behind the battle sheet: who is fighting, tally edits, the rout warning, and the
@@ -424,10 +425,12 @@ export const EXPERIENCE_REMINDERS: readonly { who: string; text: string }[] = [
  * knocked-down or stunned model recovers, so only results from the current turn count, and being
  * hit again later in the same turn replaces the earlier state.
  */
-export function conditionsFor(events: BattleEventRow[], warbandId: string, turn: number, recoveries?: readonly { warbandId: string; at: string }[]): Map<string, string> {
+export function conditionsFor(events: BattleEventRow[], warbandId: string, turn: number, recoveries?: readonly { warbandId: string; at: string }[], holds: readonly SlaaneshiHold[] = []): Map<string, string> {
   const out = new Map<string, string>()
+  const validHolds=holds.filter(h=>h.target_warband_id===warbandId&&events.some(e=>e.id===h.source_event_id&&!e.reverted_at))
+  const heldAt=(id:string,at:string)=>validHolds.some(h=>(h.target_kind==='group'?`${h.target_id}:${h.target_model_index}`:h.target_id)===id&&Date.parse(h.created_at)<=Date.parse(at)&&(!h.released_at||Date.parse(h.released_at)>Date.parse(at)))
   const timeline = [
-    ...events.filter(e => e.reverted_at === null && !e.payload.metadata_only && e.payload.target_warband_id === warbandId && (recoveries !== undefined || e.payload.turn === turn)).map(event => ({ at: event.at, event })),
+    ...events.filter(e => e.reverted_at === null && (!e.payload.metadata_only || Boolean(e.payload.slaaneshi_lock)) && e.payload.target_warband_id === warbandId && (recoveries !== undefined || e.payload.turn === turn)).map(event => ({ at: event.at, event })),
     ...(recoveries ?? []).filter(r => r.warbandId === warbandId).map(r => ({ at: r.at, event: null })),
   ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
   const removed = new Set<string>()
@@ -435,18 +438,21 @@ export function conditionsFor(events: BattleEventRow[], warbandId: string, turn:
     if (!entry.event) {
       for (const [id, condition] of out) {
         if (condition === 'Stunned') out.set(id, 'Knocked down')
-        else if (condition === 'Knocked down') out.delete(id)
+        else if (condition === 'Knocked down' && !heldAt(id,entry.at)) out.delete(id)
       }
       continue
     }
     const p = entry.event.payload
+    const member=p.slaaneshi_lock?.modelIndex??p.target_model_index
+    const conditionKey=p.target_kind==='group'&&member!==undefined&&validHolds.some(h=>h.target_id===p.target_id&&h.target_model_index===member)?`${p.target_id}:${member}`:p.target_id
     const outcome = p.outcome.toLowerCase()
-    if (p.out_of_action || outcome === 'out of action') { out.delete(p.target_id); if (p.target_kind === 'hero' || p.target_size === 1) removed.add(p.target_id) }
-    else if (!removed.has(p.target_id) && (outcome === 'knocked down' || outcome === 'stunned')) {
-      out.set(p.target_id, outcome === 'stunned' ? 'Stunned' : 'Knocked down')
+    if (p.out_of_action || outcome === 'out of action') { out.delete(conditionKey); if (p.target_kind === 'hero' || p.target_size === 1 || conditionKey!==p.target_id) removed.add(conditionKey) }
+    else if (!removed.has(conditionKey) && (outcome === 'knocked down' || outcome === 'stunned')) {
+      out.set(conditionKey, outcome === 'stunned' ? 'Stunned' : 'Knocked down')
     }
     // A missed attack or successful save never makes a downed warrior stand up.
   }
+  for(const hold of validHolds)if(!hold.released_at){const key=hold.target_kind==='group'?`${hold.target_id}:${hold.target_model_index}`:hold.target_id;if(!removed.has(key)&&!out.has(key))out.set(key,'Knocked down')}
   return out
 }
 

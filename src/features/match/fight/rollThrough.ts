@@ -104,6 +104,9 @@ interface Current {
 }
 
 export interface RollState {
+  /** The caller must persist the particular model held before another combat is started. */
+  slaaneshiLock?: boolean;
+  slaaneshiLockWeaponId?: string;
   cavalcadeCapture?: { roll: number; originalRoll: number | null; captured: boolean }
   /** Actual weapon that caused the terminal OOA, before the attack index advances. */
   outOfActionWeaponId?: string
@@ -467,7 +470,7 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
         return nextSaveStep(log({ ...state, cur: { ...state.cur, savedWounds, saveQueue: queue } }, `Armour save (wound ${step.wound + 1}): rolled ${roll}${rollTag}. Saved.`, 'bad'))
       }
       const s = log(state, `Armour save: rolled ${roll}${rollTag}. Failed.`, 'good')
-      if (state.cur.crit?.autoOOAOnFailedSave) return finishAttack(log(s, 'Bludgeoned: straight out of action.', 'good'), 'outOfAction')
+      if (state.cur.crit?.autoOOAOnFailedSave && !input.slaaneshiLock) return finishAttack(log(s, 'Bludgeoned: straight out of action.', 'good'), 'outOfAction')
       return nextSaveStep({ ...s, cur: { ...s.cur, saveQueue: s.cur.saveQueue.slice(1) } })
     }
     case 'stepAside':
@@ -604,6 +607,9 @@ function woundsThrough(state: RollState): RollState {
   if (through <= 0) {
     if (state.cur.crit?.minSeverityKnockedDown) return finishAttack(log(state, 'Thrust: the target is knocked down all the same.', 'good'), 'knockedDown')
     return finishAttack(state, 'saved')
+  }
+  if (state.plans[state.index].input.slaaneshiLock) {
+    return log({...state,woundsLost:state.woundsLost+through,outcomes:[...state.outcomes,'knockedDown'],worst:state.worst==='stunned'?'stunned':'knockedDown',slaaneshiLock:true,slaaneshiLockWeaponId:state.plans[state.index].weaponId??state.plans[state.index].heldWeapon?.weaponId,done:true,pending:null,index:state.plans.length},'Slaaneshi Man-Catcher: the unsaved wound knocks the target down and holds them. No injury roll. Record the particular model held; this is not an out-of-action kill.','good')
   }
   if (state.cur.crit?.autoOOAOnFailedSave) return finishAttack(log(state, 'Bludgeoned: straight out of action.', 'good'), 'outOfAction')
   if (state.plans[state.index].input.autoHitKnockedDown) {

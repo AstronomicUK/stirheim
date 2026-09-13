@@ -1,3 +1,4 @@
+import type {SlaaneshiHold} from '../../../api/slaaneshiHolds'
 import {cavalcadeCaptureLimit} from '../../../rules/resolve/cavalcadeCapture'
 import {captureRuleName} from '../../../rules/resolve/forcedCapture'
 import { captureEvents } from './captureEvents'
@@ -87,6 +88,8 @@ export interface CaptureLimits {
   captorByHero: Record<string,string>
 }
 export interface ReportContext {
+  slaaneshiHolds?: readonly SlaaneshiHold[]
+  slaaneshiHoldsError?: string
   captureLimits?: CaptureLimits
   captureLimitsError?: string
   engineAvailable?: boolean
@@ -254,16 +257,20 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
   }
 }
 
-export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null, battleEvents: import('../../../domain').BattleEventRow[] = [], captureLimits?: CaptureLimits): InjuriesDerived {
+export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null, battleEvents: import('../../../domain').BattleEventRow[] = [], captureLimits?: CaptureLimits, holds: readonly SlaaneshiHold[] = []): InjuriesDerived {
   const proposedCaptures: Record<string,number> = {}
+  const held=holds.filter(h=>h.match_id===matchId&&h.target_warband_id===roster?.id&&!h.released_at&&h.confirmed_end_at&&battleEvents.some(e=>e.id===h.source_event_id&&!e.reverted_at)).slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id))
+  const heldFor=(id:string)=>held.filter(h=>h.target_id===id)
+  const capturesFor=(id:string):{event:import('../../../domain').BattleEventRow;modelIndex:number;heldModelIndex?:number}[]=>[...captureEvents(battleEvents,matchId,roster?.id,id),...heldFor(id).map((h,i)=>({event:{...battleEvents.find(e=>e.id===h.source_event_id)!,payload:{...battleEvents.find(e=>e.id===h.source_event_id)!.payload,capture_reason:'slaaneshi_lock' as const}},modelIndex:(draft.groupsOut[id]??0)+i,heldModelIndex:h.target_model_index+1}))]
+
   const burning = scenarioId === 'mordheim_s_burning'
   const plant = (id:string) => scenarioId === 'the_hunters_become_the_hunted' && !!draft.plantCasualties?.[id]
   const out = heroOoaIds(draft)
   const heroes = participants.heroes
-    .filter((h) => out.has(h.id))
+    .filter((h) => out.has(h.id)||heldFor(h.id).length>0)
     .map((hero) => {
       const skip = draft.injurySkips[hero.id]
-      const capture = captureEvents(battleEvents,matchId,roster?.id,hero.id)[0]?.event
+      const capture = capturesFor(hero.id)[0]?.event
       if(capture && skip===undefined){
         const res=resolveHeroInjuryFlow(hero,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
         const effect=`${captureRuleName(capture.payload.capture_reason)}: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
@@ -301,10 +308,10 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       return {hero,resolution}
     })
   const hiredSwords = participants.hiredSwords
-    .filter((s) => out.has(s.id))
+    .filter((s) => out.has(s.id)||heldFor(s.id).length>0)
     .map((sword) => {
       const skip = draft.injurySkips[sword.id]
-      const capture = captureEvents(battleEvents,matchId,roster?.id,sword.id)[0]?.event
+      const capture = capturesFor(sword.id)[0]?.event
       if(capture && skip===undefined){
         const res=resolvePersonaInjury(sword,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
         const effect=`${captureRuleName(capture.payload.capture_reason)}: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
@@ -329,7 +336,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       return { sword, resolution: skip !== undefined ? skippedSword(sword, skip) : resolveHiredSwordInjury(sword, draft.swordInjuries[sword.id] ?? null) }
     })
   const groups = participants.groups
-    .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0)
+    .filter((g) => (draft.groupsOut[g.id] ?? 0) > 0 || heldFor(g.id).length>0)
     .map((group) => {
       const outOfAction = Math.min(group.size, draft.groupsOut[group.id] ?? 0)
       const captured = captureEvents(battleEvents,matchId,roster?.id,group.id).filter(c=>c.modelIndex<outOfAction)
@@ -352,10 +359,10 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       }
       return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
     }).map(row => {
-      const captures = captureEvents(battleEvents,matchId,roster?.id,row.group.id).filter(c=>c.modelIndex<row.outOfAction)
+      const captures = capturesFor(row.group.id).filter(c=>c.event.payload.capture_reason==='slaaneshi_lock'||c.modelIndex<row.outOfAction)
       if (!captures.length) return row
       const resolution: GroupInjuryResolution = {...row.resolution, group:{...row.resolution.group,size:Math.max(0,row.resolution.group.size-captures.length)}}
-      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(({event,modelIndex})=>({modelIndex:modelIndex+1,eventId:event.id,captorWarbandId:event.payload.attacker_warband_id,reason:event.payload.capture_reason as 'subjugator'|'man_catcher'|'cavalcade',kit:[]}))}
+      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(c=>({modelIndex:c.modelIndex+1,...(c.heldModelIndex!==undefined?{heldModelIndex:c.heldModelIndex}:{}),eventId:c.event.id,captorWarbandId:c.event.payload.attacker_warband_id,reason:c.event.payload.capture_reason as 'subjugator'|'man_catcher'|'cavalcade'|'slaaneshi_lock',kit:[]}))}
       return {...row,resolution}
     })
 
@@ -515,6 +522,8 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
     if (!row || row.quantity < count || ctx.blessedWaterUses?.some(use => !use.correction && use.itemRowId === id && use.warriorId !== row.holder_id)) problems.review.push('Blessed Water stock changed after a throw. Restore the spent vials to their original inventory row or correct the throw before filing.')
   }
   if (ctx.captureLimitsError) problems.injuries.push(ctx.captureLimitsError)
+  if (ctx.slaaneshiHoldsError) problems.injuries.push(ctx.slaaneshiHoldsError)
+  if (ctx.slaaneshiHolds?.some(h=>!h.released_at&&!h.confirmed_end_at)) problems.injuries.push('Confirm or release the remaining Man-Catcher holds on the battle sheet before filing.')
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
   if (ctx.specialKillXpLoading) problems.experience.push('Checking the opposing units for special experience rules.')
   if (ctx.specialKillXpError) problems.experience.push(ctx.specialKillXpError)
@@ -1065,7 +1074,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const wagonCapture=nonCampaign?{snapshot:undefined,problems:[] as string[],notes:[] as string[]}:reportTradeWagon(draft,ctx)
   const postCaptureContext=afterTradeWagonCapture(ctx,wagonCapture)
   const participants = participantsOf(ctx.roster, ctx.template)
-  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId, ctx.battleEvents, ctx.captureLimits)
+  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId, ctx.battleEvents, ctx.captureLimits, ctx.slaaneshiHolds)
   const lycanthrope=lycanthropeReport(draft,postCaptureContext,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
   const injuries=lycanthrope.injuries
   const casualtyDraft=woodsCasualtyDraft(draft,ctx.scenarioId)

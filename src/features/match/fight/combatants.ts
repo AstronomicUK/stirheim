@@ -149,6 +149,7 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
  */
 export function kindTraits(warbandTemplateId: string, unitTemplateId: string, unitRulesText: readonly NamedRule[], isHero = false): string[] {
   const out: string[] = []
+  if(unitTemplateId==='companion_filly')out.push('steed')
   if (isHero && unitRules(unitTemplateId).promotionAdvanceSkill === 'dwarf_slayer_cult_skills_deathwish') out.push('deathwish', 'immune_to_psychology', 'immune_to_all_alone')
   // The two published Wight Blades rules differ; never infer either from the shared heading.
   if (unitTemplateId === 'restless_dead_grave_guards' || (isHero && unitTemplateId === 'restless_dead_wights')) out.push('wight_blades_auto_wound')

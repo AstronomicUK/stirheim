@@ -1,0 +1,43 @@
+import {chromium,expect} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/node_modules/@playwright/test/index.mjs';
+import {createClient} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/node_modules/@supabase/supabase-js/dist/index.mjs';
+import {execFileSync} from 'node:child_process';
+const raw=execFileSync('npx',['supabase','status','-o','env'],{cwd:'/Users/tombrookes/Documents/Claude Scripts/stirheim',env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
+const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
+if(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(env.API_URL))throw Error('Local only');
+const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),player=createClient(env.API_URL,env.ANON_KEY);
+const auth=await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'});if(auth.error)throw auth.error;
+const uid=auth.data.user.id,ids=[];let campaign,b;
+const must=r=>{if(r.error)throw Error(r.error.message);return r.data};
+let match;
+try {
+ for(const name of ['Scenario Rewards QA','Scenario Opponent QA']) ids.push(must(await player.rpc('create_warband',{payload:{name,type_rules_id:name==='Scenario Rewards QA'?'court_of_the_profane_pleasures':'mercenaries_reikland',gold:100,heroes:[],henchman_groups:[],stash:[]}})));
+ campaign=must(await admin.from('campaigns').insert({name:'Disposable Scenario Rewards QA',gm_id:uid}).select('id').single()).id;
+ must(await admin.from('campaign_members').insert(ids.map(warband_id=>({campaign_id:campaign,warband_id,user_id:uid}))));
+ match=must(await admin.from('matches').insert({campaign_id:campaign,created_by:uid,state:'in_progress',scenario_rules_id:'hidden_treasure'}).select('id').single()).id;
+ must(await admin.from('match_participants').insert(ids.map(warband_id=>({match_id:match,warband_id,accepted_at:new Date().toISOString()}))));
+ b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];p.on('pageerror',e=>{errors.push(e.message); console.error(e.message)});
+ await p.goto('http://127.0.0.1:5193/sign-in');await p.getByLabel('Email',{exact:true}).fill('player@stirheim.test');await p.getByLabel('Password',{exact:true}).fill('stirheim-dev');await p.getByRole('button',{name:'Sign in',exact:true}).click();await p.waitForURL('http://127.0.0.1:5193/');
+
+ const heroes=must(await admin.from('heroes').insert(ids.map((warband_id,i)=>({warband_id,name:i?'QA Defender':'QA Captain',unit_type_rules_id:i?'mercenaries_reikland_captain':'court_of_pleasures_whipmaster',is_hired_sword:false,status:'active',skills:[],flags:{},xp:20,level_ups:8,stats:{M:4,WS:4,BS:3,S:3,T:4,W:1,I:3,A:1,Ld:8}}))).select('id,warband_id'));
+ must(await admin.from('items').insert(heroes.flatMap(h=>['slaaneshi_man_catcher','dagger'].map(item_rules_id=>({warband_id:h.warband_id,holder_type:'hero',holder_id:h.id,item_rules_id,quantity:2})))));
+ must(await admin.from('heroes').insert({warband_id:ids[0],name:'QA Friend',unit_type_rules_id:'mercenaries_reikland_champion',is_hired_sword:false,status:'active',skills:[],flags:{},xp:8,level_ups:4,stats:{M:4,WS:4,BS:3,S:3,T:4,W:1,I:3,A:1,Ld:8}}).select('id').single());
+ const group=must(await admin.from('henchman_groups').insert({warband_id:ids[1],name:'QA Captives',unit_type_rules_id:'mercenaries_reikland_warriors',size:4,xp:0,level_ups:0,stats:{M:4,WS:3,BS:3,S:3,T:4,W:1,I:3,A:1,Ld:7}}).select('id').single());
+ must(await admin.from('items').insert({warband_id:ids[1],holder_type:'group',holder_id:group.id,item_rules_id:'axe',quantity:8}));
+ const wielder=heroes.find(h=>h.warband_id===ids[0]);
+ const attack=()=>player.from('battle_events').insert({match_id:match,actor_id:uid,actor_warband_id:ids[0],kind:'attack',summary:'Whipmaster holds model 2',payload:{attacker_warband_id:ids[0],attacker_id:wielder.id,attacker_kind:'hero',attacker_name:'QA Captain',target_warband_id:ids[1],target_id:group.id,target_kind:'group',target_name:'QA Captives',target_size:4,wounds_lost:1,out_of_action:false,kill:false,outcome:'Knocked down',slaaneshi_lock:{weaponId:'slaaneshi_man_catcher',modelIndex:1}}});
+ must(await attack());
+ await p.goto(`http://127.0.0.1:5193/matches/${match}/battle`);
+ const panel=p.getByRole('region',{name:'Man-Catcher holds'});
+ await expect(panel.getByText('QA Captives · model 2',{exact:true})).toBeVisible();
+ await panel.getByRole('button',{name:'Record release',exact:true}).click();
+ const dialog=p.getByRole('dialog');await dialog.getByLabel('Why did the hold end?',{exact:true}).selectOption('magicEscape');await dialog.getByLabel('Optional note',{exact:true}).fill('Escape spell agreed at the table');await dialog.getByRole('button',{name:'Record release',exact:true}).click();
+ await expect(panel).toHaveCount(0);
+ const released=must(await admin.from('slaaneshi_holds').select('release_reason,history').eq('match_id',match));expect(released[0].release_reason).toBe('magicEscape');
+ must(await attack());await p.reload();await expect(panel).toBeVisible();
+ await p.getByRole('button',{name:'Battle over',exact:false}).first().click();
+ const end=p.getByRole('dialog');await end.getByRole('button',{name:'Still held at battle end',exact:true}).click();
+ await expect(end.getByRole('button',{name:'Confirmed',exact:true})).toBeDisabled();
+ expect(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await p.screenshot({path:'/tmp/stirheim-slaaneshi-hold-mobile.png',fullPage:true});
+ expect(errors).toEqual([]);console.log('PASS: mobile shared hold shows exactly model 2, records magic release, and confirms a subsequent hold at battle end.');
+}finally{await b?.close();if(match){await admin.from('slaaneshi_holds').delete().eq('match_id',match);const cases=must(await admin.from('captive_cases').select('id').eq('match_id',match));for(const c of cases)await admin.from('app_notifications').delete().like('dedupe_key',`captive:${c.id}:%`);await admin.from('captive_cases').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match);}if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}

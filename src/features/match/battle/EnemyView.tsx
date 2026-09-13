@@ -1,3 +1,4 @@
+import {useSlaaneshiHolds} from '../../../api/slaaneshiHolds'
 import type { ReactNode } from 'react'
 import { RosterChambers } from './RosterChambers'
 import type { ItemRow } from '../../../domain'
@@ -28,6 +29,7 @@ export interface EnemyViewProps {
 /** Every other warband at the table: their roster for reference and their live tallies. */
 export function EnemyView({ matchId, participants, sessions, events = [], turn = 0 }: EnemyViewProps) {
   const turns = useBattleTurns(matchId)
+  const holds = useSlaaneshiHolds(matchId)
   const bribes = useBattleBribes(matchId)
   return (
     <>
@@ -40,7 +42,7 @@ export function EnemyView({ matchId, participants, sessions, events = [], turn =
           participant={p}
           paidExclusions={bribes.data?.filter(b => b.warband_id === p.warband_id).length ?? 0}
           session={sessions.find((s) => s.warband_id === p.warband_id)}
-          conditions={conditionsFor(events, p.warband_id, turn, turns.data?.recoveries)}
+          conditions={conditionsFor(events, p.warband_id, turn, turns.data?.recoveries, holds.data)}
         />
       ))}
     </>

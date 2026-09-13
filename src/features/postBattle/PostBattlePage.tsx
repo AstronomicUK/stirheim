@@ -1,3 +1,4 @@
+import {useSlaaneshiHolds} from '../../api/slaaneshiHolds'
 import {fetchCavalcadeCaptureFacts} from '../../api/cavalcadeCaptives'
 import { useEngines } from '../../api/engines'
 import {specialKillsFromEvents} from './model/specialKillXp'
@@ -218,6 +219,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
     }]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [JSON.stringify(enemyData.map((d) => d?.roster.id))])
+  const reportHolds = useSlaaneshiHolds(match.id)
   const killEvents = useBattleEvents(match.id)
   const killSheets = useBattleSessions(match.id)
   const cavalcadeOpponents = enemyData.flatMap(d=>d?.roster.warbandTemplateId==='the_cursed_cavalcade'?[d.roster]:[])
@@ -248,6 +250,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   )
   const ctx = useMemo<ReportContext>(
     () => ({
+      slaaneshiHolds:reportHolds.data, slaaneshiHoldsError:reportHolds.isPending?'Checking held models…':reportHolds.error?.message,
       captureLimits, captureLimitsError,
       engineAvailable: engines.data?.some(engine => engine.state === 'present'),
       engineAvailabilityError: rosterData.roster.warbandTemplateId === 'black_dwarfs' ? engines.error?.message ?? (engines.isPending ? 'Checking Engine availability before resolving these captives…' : undefined) : undefined,
@@ -282,7 +285,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       takenOutByDetail: liveState?.takenOutBy ?? {},
       enemies,
     }),
-    [captureLimits, captureLimitsError, engines.data, engines.error, engines.isPending, killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
+    [reportHolds.data, reportHolds.isPending, reportHolds.error, captureLimits, captureLimitsError, engines.data, engines.error, engines.isPending, killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

@@ -1,3 +1,5 @@
+import {SlaaneshiHoldsPanel} from './battle/SlaaneshiHoldsPanel'
+import {useSlaaneshiHolds} from '../../api/slaaneshiHolds'
 import type { ItemRow } from '../../domain'
 import { FireRecovery } from './battle/FireRecovery'
 import { FirepotSmokeTests } from './battle/FirepotSmokeTests'
@@ -139,6 +141,8 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
   const [endError, setEndError] = useState<string | null>(null)
   const end = useEndMatch()
 
+  const holdPanel=(confirmingEnd=false)=><SlaaneshiHoldsPanel matchId={match.id} editable={inProgress} managedWarbands={match.participants.filter(p=>p.mine).map(p=>p.warband_id)} isGm={isGm} confirmingEnd={confirmingEnd}/>
+
   const canEnd = inProgress && (mine !== undefined || isGm)
 
   async function confirmEnd() {
@@ -177,6 +181,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
         {handle.saveState === 'pending' || handle.saveState === 'saving' ? 'Your latest taps will be saved first. ' : ''}
         Nothing is applied to any roster yet; that happens in the report.
       </p>
+      {holdPanel(true)}
     </Sheet>
   )
 
@@ -195,6 +200,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
           </p>
         </header>
         {!inProgress ? <AwaitingReportsNotice matchId={match.id} /> : null}
+        {holdPanel()}
         <EnemyView matchId={match.id} participants={match.participants} sessions={shownSessions} />
         <LogTab matchId={match.id} events={events} sessions={shownSessions} participants={match.participants} canRevert={inProgress && (isGm || mine !== undefined)} />
         {canEnd ? (
@@ -234,6 +240,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
         {match.participants.filter(p => p.mine).map(p => <option key={p.warband_id} value={p.warband_id}>{p.warband_name}</option>)}
       </select>
     </label> : null}
+    {holdPanel()}
     <PlayerBattle
       match={match}
       sessions={shownSessions}
@@ -280,6 +287,7 @@ interface PlayerBattleProps {
 
 function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scenario, handle, readOnly, tab, setTab, onBattleOver, others, houseRules, boosts, children }: PlayerBattleProps) {
   const turns = useBattleTurns(match.id)
+  const holds = useSlaaneshiHolds(match.id)
   const bribes = useBattleBribes(match.id)
   const paidExclusions = bribes.data?.filter(b => b.warband_id === roster.id).length ?? 0
   const myBoosts = boosts[roster.id] ?? NO_BOOSTS
@@ -351,7 +359,7 @@ function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scen
         </Notice>
       ) : null}
       {bribes.isError ? <Notice tone="info" title="Bribery payments could not be loaded">Check paid Bribery exclusions at the table before taking a Rout test.</Notice> : null}
-      {rout === 'test' && bribes.isSuccess && !readOnly ? <RoutCheck matchId={match.id} paidExclusions={paidExclusions} bribesReady={bribes.isSuccess} conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
+      {rout === 'test' && bribes.isSuccess && !readOnly ? <RoutCheck matchId={match.id} paidExclusions={paidExclusions} bribesReady={bribes.isSuccess} conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries, holds.data)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
       {advancesDue > 0 && !readOnly ? (
         <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still owed`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}

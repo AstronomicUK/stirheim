@@ -13,3 +13,11 @@ The source at reference/rules/warbands/grade-1c.md:915–917 gives an ongoing ho
 - Include app-calculated and table-calculated paths and a clear live condition display for both players. Do not expose only a combat flag that lacks these later stages.
 
 This is independent of the Engine of Chaos/ordinary Man-catcher extension delegated to Claude; the two weapons have different rules.
+
+## 13 September work in progress
+
+The shared attack input now supports an explicit `slaaneshiLock` flag. The probability engine turns an unsaved wound into Knocked Down at any remaining Wounds, without injury/OOA outcomes; the live roller waits for every save and then stops so the particular held model can be recorded before further combat. Six focused tests pass, plus the existing 79 roller tests. An initial insertion in the armour-save branch was caught by tests and moved to the final unsaved-wound boundary. The weapon builder now enables this flag locally. Migrations 116/117 connect persisted holds, per-model recovery, explicit release, battle-end confirmation and the report capture bridge. The actual mobile roller-to-henchman-capture flow passes, including exact equipment and no OOA/kill XP. This remains unfinished integration: companion animals, further correction cases and full regression still need completion.
+
+### 13 September: connected local flow
+
+The actual mobile attack selects a particular henchman (model 2), records an unsaved wound as a hold, confirms the hold at battle end, and shows the report without injury dice or an out-of-action tally. Submission creates exactly one captive with that model’s allocated equipment. The disposable browser fixture passes and cleans up. Weapon switching now requires explicit release before another attack. A separate tabletop hold form is under verification; it can avoid adding wounds already entered on the sheet. No production deployment.

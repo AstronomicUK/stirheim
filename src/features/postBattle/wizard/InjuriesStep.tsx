@@ -150,7 +150,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
             const rolls = draft.groupInjuries[group.id] ?? []
             const diceOverride = draft.groupInjuryDice[group.id]
             const captures=resolution.line?.captured??[]
-            const suggested=outOfAction-captures.length
+            const suggested=outOfAction-captures.filter(c=>c.reason!=='slaaneshi_lock').length
             return (
               <Card key={group.id} className="flex flex-col gap-3 px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
@@ -171,7 +171,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                     <Tag tone={resolution.dead > 0 ? 'danger' : 'brass'}>{captures.length?`${captures.length} captured; ${resolution.dead} dead`:resolution.dead === 0 ? 'All recover' : `${resolution.dead} dead`}</Tag>
                   ) : null}
                 </div>
-                {captures.map(c=><p key={c.eventId} className="text-sm">Casualty {c.modelIndex}: captured by {captureRuleName(c.reason)}; no injury roll.</p>)}
+                {captures.map(c=><p key={c.eventId} className="text-sm">{c.reason==='slaaneshi_lock'?`Model ${c.heldModelIndex}: held at battle end`:`Casualty ${c.modelIndex}: captured by ${captureRuleName(c.reason)}`}; no injury roll.</p>)}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs text-ink-dim">Dice to roll {diceOverride ? '(changed)' : `· suggested ${suggested}`}</span>

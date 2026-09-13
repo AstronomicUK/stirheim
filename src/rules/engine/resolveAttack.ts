@@ -37,6 +37,8 @@ function add(a: Severity4Distribution, b: Severity4Distribution): Severity4Distr
 }
 
 export interface AttackInput {
+  /** Eligible Slaaneshi Man-Catcher: an unsaved wound locks the target down instead of injury. */
+  slaaneshiLock?: boolean;
   /** Nuln: one hit roll, two independent wound rolls and criticals. */
   barrels?: 1 | 2;
   /** Ostland produces two hits: each is dodged separately, with the normal critical limit. */
@@ -134,6 +136,7 @@ export interface AttackInput {
  * any Injury rolls result they use `injury`. Probabilities within a set of events sum to 1.
  */
 export interface WoundEvent {
+  slaaneshiLock?: boolean;
   extraAttack?: boolean;
   probability: number;
   wounds: 0 | 1 | 2 | 3;
@@ -221,7 +224,7 @@ function woundEvents(input: AttackInput, opts: WoundResolutionOptions): WoundEve
   }
 
   return counts
-    .map((probability, k) => ({ probability, wounds: k as 0 | 1 | 2 | 3, injury, autoOOA: opts.autoOOA, minSeverityKnockedDown: opts.minSeverityKnockedDown }))
+    .map((probability, k) => ({ probability, wounds: k as 0 | 1 | 2 | 3, slaaneshiLock:input.slaaneshiLock, injury, autoOOA: opts.autoOOA, minSeverityKnockedDown: opts.minSeverityKnockedDown }))
     .filter((e) => e.probability > 0);
 }
 
@@ -272,6 +275,7 @@ function critWoundEvents(input: AttackInput): WoundEvent[] {
  * for every wound after that (01:770); several Injury rolls in one event take the highest.
  */
 export function eventSeverity(event: WoundEvent, woundsTaken: number, maxWounds: number): Severity4Distribution {
+  if (event.slaaneshiLock && event.wounds > 0) return {none:0,knockedDown:1,stunned:0,outOfAction:0};
   const total = woundsTaken + event.wounds;
   const rolls = event.wounds === 0 ? 0 : Math.max(0, total - Math.max(woundsTaken, maxWounds - 1));
   let dist: Severity4Distribution;

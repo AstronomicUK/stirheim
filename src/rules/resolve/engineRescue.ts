@@ -12,6 +12,7 @@ export interface EngineRescueState {
 }
 export type EngineRescueAction =
  |{type:'gaolerOut';gaolerId:string;by:RescueModel|null}
+ |{type:'locateKeys';gaolerId:string;by:RescueModel}
  |{type:'keeperOut';keeperId:string;by:RescueModel|null}
  |{type:'free';keeperId:string;baseContactConfirmed:boolean}
  |{type:'destroyed'}
@@ -24,6 +25,9 @@ export function applyEngineRescue(state:EngineRescueState,action:EngineRescueAct
   case 'gaolerOut':
    if(state.keys.some(k=>k.gaolerId===action.gaolerId))throw new RulesError('rescue.keysRecorded','The keys from this Gaoler are already recorded. Correct the earlier event if needed.')
    return {...state,keys:[...state.keys,{gaolerId:action.gaolerId,keeper:action.by}]}
+  case 'locateKeys':
+   if(!state.keys.some(k=>k.gaolerId===action.gaolerId&&k.keeper===null))throw new RulesError('rescue.knownKeeper','These keys already have a keeper, or were never recorded.')
+   return {...state,keys:state.keys.map(k=>k.gaolerId===action.gaolerId?{...k,keeper:action.by}:k)}
   case 'keeperOut':
    if(!state.keys.some(k=>k.keeper?.id===action.keeperId))throw new RulesError('rescue.noKeys','This model has no recorded prison keys.')
    if(action.by?.id===action.keeperId)throw new RulesError('rescue.sameKeeper','The model taken out of action cannot keep the keys.')

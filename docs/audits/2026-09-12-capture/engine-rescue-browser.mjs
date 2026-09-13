@@ -93,6 +93,14 @@ try {
  await victim.getByLabel('What happened at the table?',{exact:true}).fill('Grukk reached the nearest table edge.');
  await victim.getByRole('button',{name:'Record confirmed event',exact:true}).click();
  await expect.poll(async()=>must(await admin.from('engine_rescue_battles').select('state').eq('match_id',rescueMatch).single()).state.prisoners[0].state).toBe('escaped');
+ await victim.getByText('Correct a recorded event',{exact:true}).click();
+ await victim.getByLabel('Reason for correction',{exact:true}).fill('The first escape was recorded too early.');
+ await victim.getByRole('button',{name:'Undo latest rescue event',exact:true}).click();
+ await expect.poll(async()=>must(await admin.from('engine_rescue_battles').select('state').eq('match_id',rescueMatch).single()).state.prisoners[0].state).toBe('freed');
+ await victim.getByLabel('What happened at the table?',{exact:true}).fill('Grukk has now reached the nearest table edge.');
+ await victim.getByRole('button',{name:'Record confirmed event',exact:true}).click();
+ await expect.poll(async()=>must(await admin.from('engine_rescue_battles').select('state').eq('match_id',rescueMatch).single()).state.prisoners[0].state).toBe('escaped');
+
  expect(must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('captured');
  must(await users[0].api.rpc('submit_battle_report',{p_match_id:rescueMatch,p_warband_id:bands[0],p_report:{result:'lost',applied:{}}}));
  must(await users[1].api.rpc('submit_battle_report',{p_match_id:rescueMatch,p_warband_id:bands[1],p_report:{result:'won',applied:{}}}));

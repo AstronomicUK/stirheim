@@ -17,6 +17,9 @@ it('moves all carried keys to the new keeper and does not guess an unknown keepe
  state=applyEngineRescue(state,{type:'gaolerOut',gaolerId:'g2',by:keeper})
  state=applyEngineRescue(state,{type:'keeperOut',keeperId:keeper.id,by:null})
  expect(state.keys.every(k=>k.keeper===null)).toBe(true)
+ const located=applyEngineRescue(state,{type:'locateKeys',gaolerId:'g1',by:keeper})
+ expect(located.keys.find(k=>k.gaolerId==='g1')?.keeper).toEqual(keeper)
+ expect(located.keys.find(k=>k.gaolerId==='g2')?.keeper).toBeNull()
  expect(()=>applyEngineRescue(state,{type:'free',keeperId:keeper.id,baseContactConfirmed:true})).toThrow(/keys/)
 })
 it('destruction frees captives without keys, while an earlier rout leaves captives imprisoned',()=>{

@@ -76,6 +76,18 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id))
   expect(check(await victim.from('app_notifications').select('id').eq('dedupe_key','engine-keys:'+event.id))).toEqual([])
  })
+ it('notifies the actual key-holder player once across Engines and retracts a corrected casualty',async()=>{
+  const [first,second]=await engines();let r=check(await start(first.id));check(await start(second.id))
+  r=check(await act(r,{type:'gaolerOut',gaolerId:wielder,by:{id:target+':1'}}))
+  const casualty=async(index:number)=>check(await captor.from('battle_events').insert({match_id:match,actor_id:users[0],actor_warband_id:cw,kind:'attack',summary:'Key holder casualty',payload:{attacker_warband_id:cw,attacker_id:wielder,attacker_kind:'hero',attacker_name:'Gaoler',target_warband_id:vw,target_id:target,target_kind:'group',target_model_index:index,target_name:'Three warriors',wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:2}}).select('id').single())
+  const wrong=await casualty(0)
+  expect(check(await victim.from('app_notifications').select('id').like('dedupe_key','engine-key-loss:'+wrong.id+':%'))).toEqual([])
+  const exact=await casualty(1)
+  expect(check(await victim.from('app_notifications').select('title').like('dedupe_key','engine-key-loss:'+exact.id+':%'))).toEqual([{title:'Check your prison keys'}])
+  expect(check(await captor.from('app_notifications').select('id').like('dedupe_key','engine-key-loss:'+exact.id+':%'))).toEqual([])
+  check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',exact.id))
+  expect(check(await victim.from('app_notifications').select('id').like('dedupe_key','engine-key-loss:'+exact.id+':%'))).toEqual([])
+ })
  it('records release and escape without changing permanent custody or creating roster models',async()=>{
   const [engine]=await engines()
   const report=check(await admin.from('match_reports').insert({match_id:match,warband_id:cw,submitted_by:users[0],status:'pending',applied:{}}).select('id').single())

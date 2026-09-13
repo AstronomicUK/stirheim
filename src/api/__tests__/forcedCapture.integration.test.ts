@@ -277,6 +277,35 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect((await cases())[0].model_snapshot.reason).toBe('man_catcher')
  })
 
+ it('converts one captured Court henchman into a printed Wretch by agreement, with exact kit and reversible history',async()=>{
+  check(await admin.from('warbands').update({type_rules_id:'court_of_the_profane_pleasures',name:'Court'}).eq('id',cw))
+  check(await admin.from('heroes').update({unit_type_rules_id:'court_of_pleasures_flesh_merchant',name:'Flesh Merchant'}).eq('id',moulder))
+  check(await file([cap(1,events[0]),cap(2,events[1])]));check(await fileCaptor())
+  const [item]=await cases()
+  const detail=async(id:string)=>{const w=check(await admin.from('warbands').select('*').eq('id',id).single()),hs=check(await admin.from('heroes').select('*').eq('warband_id',id)),gs=check(await admin.from('henchman_groups').select('*').eq('warband_id',id)),is=check(await admin.from('items').select('*').eq('warband_id',id));return {warband:w,heroes:hs,groups:gs,items:is,roster:toRosterWarband(w,hs,gs,is)}}
+  const owner=await detail(vw),enemy=await detail(cw)
+  const result=buildForcedCaptiveProposal({item,owner,captor:enemy,choice:{kind:'wretch'},newGroupId:crypto.randomUUID()})
+  const changes=diffRoster(enemy,result.nextCaptor)
+  const offer=async(over:Record<string,unknown>={})=>captor.rpc('propose_captive_outcome',{p_case_id:item.id,p_choice:result.choice,p_message:result.message,p_expected:await expected(),p_owner_changes:diffRoster(owner,result.nextOwner),p_captor_changes:changes,p_advances:[],...over})
+  expect((await offer({p_owner_changes:[{table:'henchman_groups',op:'update',id:group,data:{size:0}}]})).error?.message).toMatch(/already left/)
+  expect((await offer({p_captor_changes:changes.filter(c=>c.table!=='items')})).error?.message).toMatch(/exactly the captive/)
+  expect((await offer({p_captor_changes:changes.map(c=>c.table==='henchman_groups'?{...c,data:{...c.data,xp:12}}:c)})).error?.message).toMatch(/printed profile/)
+  const proposal=check(await offer())
+  expect((await detail(cw)).roster.henchmenGroups).toHaveLength(0)
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}))
+  const saved=await detail(cw)
+  expect(saved.roster.gold).toBe(100)
+  expect(saved.roster.henchmenGroups).toHaveLength(1)
+  expect(saved.roster.henchmenGroups[0]).toMatchObject({unitTemplateId:'court_of_pleasures_wretches',size:1,xp:0,stats:{M:4,WS:2,BS:2,S:3,T:3,W:1,I:3,A:1,Ld:5},equipment:[]})
+  expect(saved.roster.stash).toEqual(expect.arrayContaining([{itemId:'sword',quantity:1},{itemId:'shield',quantity:1,notes:'Painted red'}]))
+  expect((await groupRow()).size).toBe(1)
+  expect((await cases())[0].resolution_message).toContain('became a Wretch')
+  check(await gm.rpc('reverse_captive_resolution',{p_case_id:item.id,p_reason:'Disposable conversion correction'}))
+  expect((await detail(cw)).roster.henchmenGroups).toHaveLength(0)
+  expect((await detail(cw)).roster.stash).toEqual([])
+  expect((await groupRow()).size).toBe(1)
+ })
+
  it.each([1,4,6])('resolves henchman Throne result %s through exact two-player consent (capture trigger tested separately)',async(d6)=>{
   // The established forced-capture fixture supplies per-model kit and report identity.
   // This exercises only the new outcome contract, not the pending Misericordia trigger.

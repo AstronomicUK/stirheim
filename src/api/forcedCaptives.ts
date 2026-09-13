@@ -1,3 +1,5 @@
+import {findWarbandTemplate} from '../rules/data/warbandTemplates'
+import {recruitHenchmen} from '../rules/resolve/recruitment'
 import type { WarbandDetail } from './warbands'
 import type { CaptiveCase } from './captives'
 import type { RosterHenchmanGroup, RosterItem, RosterWarband } from '../rules/types/roster'
@@ -11,7 +13,7 @@ import { findItem } from '../rules/data/items'
  * kit per model, and fewer than five models), otherwise he forms a new group carrying the snapshot; kit identity includes the
  * roster notes, so two rows of one item with different annotations stay distinct.
  */
-export type ForcedCaptiveChoice = ({ kind: 'release' } | { kind: 'ransom'; gold: number } | { kind: 'sell'; d6: number; originalD6?: number | null }) & { groupId?: string }
+export type ForcedCaptiveChoice = ({ kind: 'release' } | { kind: 'wretch' } | { kind: 'ransom'; gold: number } | { kind: 'sell'; d6: number; originalD6?: number | null }) & { groupId?: string }
 
 export interface ForcedCaptureSnapshot {
   group: { id: string; name: string; unit_type_rules_id: string; stats: Stats; size: number; xp: number; level_ups?: number; campaign_state?: Record<string, unknown> | null; stat_increases?: Record<string, number> | null; is_large?: boolean }
@@ -78,7 +80,13 @@ export function buildForcedCaptiveProposal(input: ForcedCaptiveProposalInput): {
   const kit = snapshotKit(snap)
   const kitText = kit.map(i => `${(i.itemId ? findItem(i.itemId)?.name : undefined) ?? i.itemId ?? i.customName}${i.quantity > 1 ? ` ×${i.quantity}` : ''}${i.notes ? ` (${i.notes})` : ''}`).join(', ') || 'no equipment'
   let nextOwner = owner.roster, nextCaptor = captor.roster, rejoins = false, message: string
-  if (choice.kind === 'sell') {
+  if (choice.kind === 'wretch') {
+    const template=findWarbandTemplate(captor.roster.warbandTemplateId)
+    if(template?.id!=='court_of_the_profane_pleasures')throw new Error('Only the Court can turn a captive into a Wretch.')
+    const recruited=recruitHenchmen(captor.roster,template,'court_of_pleasures_wretches',item.hero_name,1,groupId,{costOverride:0}).value.warband
+    nextCaptor={...recruited,stash:[...recruited.stash,...kit]}
+    message=`Cruel Fate: ${item.hero_name} becomes a Wretch with the printed profile and no experience. ${captor.warband.name} keeps the recorded equipment: ${kitText}.`
+  } else if (choice.kind === 'sell') {
     if (!Number.isInteger(choice.d6) || choice.d6 < 1 || choice.d6 > 6) throw new Error('Enter a D6 result from 1 to 6.')
     if (choice.originalD6 != null && (!Number.isInteger(choice.originalD6) || choice.originalD6 < 1 || choice.originalD6 > 6)) throw new Error('The app’s original D6 must be 1 to 6.')
     nextCaptor = { ...captor.roster, gold: captor.roster.gold + 5 * choice.d6, stash: [...captor.roster.stash, ...kit] }

@@ -25,7 +25,8 @@ export type BattleWarriorTally = z.infer<typeof battleWarriorTallySchema>;
 
 /** One "taken out by" record: an enemy model, or a fall / terrain / spell with no model. */
 export const takenOutBySchema = z.object({
-  captureWeapon: z.literal('man_catcher').optional(),
+  captureWeapon: z.enum(['man_catcher','misericordia','gromril_misericordia','ithilmar_misericordia']).optional(),
+  cavalcadeCapture: z.object({roll:z.number().int().min(1).max(6),originalRoll:z.number().int().min(1).max(6).nullable(),captured:z.boolean()}).optional(),
   /** Enemy warband, when a model did it. */
   warbandId: z.string().nullable(),
   /** Enemy warrior or group id, when a model did it. */

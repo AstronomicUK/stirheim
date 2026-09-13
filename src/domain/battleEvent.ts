@@ -10,8 +10,9 @@ import { withRollAttempt, type TakenOutBy, type BattleLiveState, type BattleWarr
 import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
+  cavalcade_capture: z.object({roll:z.number().int().min(1).max(6),originalRoll:z.number().int().min(1).max(6).nullable(),captured:z.boolean()}).optional(),
   out_of_action_weapon_id: z.string().optional(),
-  capture_reason: z.enum(['subjugator','man_catcher']).optional(),
+  capture_reason: z.enum(['subjugator','man_catcher','cavalcade']).optional(),
   metadata_only: z.boolean().optional(),
   manual_casualty_index: z.number().int().min(0).optional(),
   casualty_token: z.string().optional(),

@@ -6,6 +6,6 @@ export function subjugatorCaptures(input:{outOfAction:boolean;attackerIsHero:boo
   && input.equipment.includes('thingcatcher')
 }
 
-export const captureRuleName=(reason:'subjugator'|'man_catcher'|undefined)=>reason==='man_catcher'?'Man-catcher':'Subjugator of Mankind'
+export const captureRuleName=(reason:'subjugator'|'man_catcher'|'cavalcade'|undefined)=>reason==='cavalcade'?'Misericordia':reason==='man_catcher'?'Man-catcher':'Subjugator of Mankind'
 
 export const isManCatcherItem=(itemId:string|null)=>itemId!==null&&['man_catcher','gromril_man_catcher','ithilmar_man_catcher'].includes(itemId)

@@ -1,3 +1,5 @@
+import {useCavalcadeCaptureFacts} from '../../../api/cavalcadeCaptives'
+import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
 import {canManCatcherCapture} from '../../../rules/resolve/engineOfChaos'
 import {useEngines} from '../../../api/engines'
 import { subjugatorCaptures, isManCatcherItem } from '../../../rules/resolve/forcedCapture'
@@ -159,6 +161,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const selectedDefender = areaTarget ? [...mine, ...targets].find(c => c.id === areaTarget.warriorId && c.warbandId === areaTarget.warbandId) : targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
   const attacker = selectedAttacker ? withGuidingDream(selectedAttacker, selectedDefender, sheet) : selectedAttacker
   const defender = selectedDefender ? withGuidingDream(selectedDefender, selectedAttacker, (selectedDefender.warbandId === roster.id ? sheet : sessions.find(s => s.warband_id === selectedDefender.warbandId)?.live_state)) : selectedDefender
+  const checkCavalcade = Boolean(startWith==='melee' && roster.warbandTemplateId==='the_cursed_cavalcade' && attacker?.kind==='hero' && defender?.kind==='henchman' && attacker.equipment.some(i=>i.quantity>0&&isMisericordia(i.itemId??undefined)))
+  const cavalcadeRevision = `${roster.henchmenGroups.filter(g=>g.unitTemplateId==='cursed_cavalcade_captured_thrall').reduce((n,g)=>n+g.size,0)}:${events.filter(e=>!e.reverted_at&&e.payload.capture_reason).map(e=>e.id).join(',')}`
+  const cavalcadeFacts = useCavalcadeCaptureFacts(matchId,roster.id,attacker?.id,defender?.id,cavalcadeRevision,checkCavalcade)
+  const cavalcadeLoading = checkCavalcade && (cavalcadeFacts.isPending || cavalcadeFacts.isError)
   // Pin the defaults once chosen (state adjusted during render, the React way), so a logged kill that marks
   // the target out of action does not swap the fight under the player.
   if (attackerId === null && attacker) setAttackerId(attacker.id)
@@ -849,8 +855,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={!interceptionReason.trim()} onClick={()=>setInterception({key:interceptKey,note:`Guardian did not intercept the attack against ${defender.name}: ${interceptionReason.trim()}`})}>Keep the Merchant as target</Button>
             </div> : null}
             {interceptionNote ? <p className="text-sm text-ink-dim">{interceptionNote}</p> : null}
-            <Button block disabled={Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            {checkCavalcade?<p className="text-sm text-ink-dim">{cavalcadeFacts.error?`Could not check Capture!: ${cavalcadeFacts.error.message}`:cavalcadeFacts.isPending?'Checking Capture! eligibility…':cavalcadeFacts.data?.eligible?'Capture!: a Misericordia out-of-action result will prompt a D6 to capture this henchman.':cavalcadeFacts.data?.targetIsEnemyHumanHenchman?'Capture! limit reached; resolve ordinary casualties.':'Capture! only applies to enemy human henchmen.'}</p>:null}
+            <Button block disabled={cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
+            cavalcadeCapture={Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade}
             key={attackKey}
             odds={rollSetup}
             restartBlocked={Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || waterUnavailable || Boolean(pistol?.blocked) || Boolean(reloadBlocked)}
@@ -898,7 +906,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             } : undefined}
             heldWeapons={isDoubleBarrel ? [doubleHeld?.snapshot] : pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
+            forceLog={Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
@@ -926,8 +934,9 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if(availableEngines?.error)throw new Error(`Could not check Engine availability: ${availableEngines.error.message}`)
               const manCatcher=canManCatcherCapture({outOfAction:state.worst==='outOfAction',usedManCatcher:isManCatcherItem(state.outOfActionWeaponId??null),engineAvailable:Boolean(availableEngines?.data?.some(engine=>engine.state==='present')),targetLarge:defender.traitIds.includes('large_target'),targetAnimal:Boolean(defender.isAnimal||defender.kind==='animal')})
               return onLogEvent({
+                cavalcade_capture: state.cavalcadeCapture,
                 out_of_action_weapon_id: state.outOfActionWeaponId,
-                capture_reason: subjugatorCaptures({outOfAction:state.worst==='outOfAction',attackerIsHero:attacker.kind==='hero',skills:attacker.skillIds,equipment:attacker.equipment.flatMap(item=>item.itemId&&item.quantity>0?[item.itemId]:[]),targetLarge:defender.traitIds.includes('large_target')})?'subjugator':manCatcher?'man_catcher':undefined,
+                capture_reason: state.cavalcadeCapture?.captured?'cavalcade':subjugatorCaptures({outOfAction:state.worst==='outOfAction',attackerIsHero:attacker.kind==='hero',skills:attacker.skillIds,equipment:attacker.equipment.flatMap(item=>item.itemId&&item.quantity>0?[item.itemId]:[]),targetLarge:defender.traitIds.includes('large_target')})?'subjugator':manCatcher?'man_catcher':undefined,
                 blessedWaterUseId: isBlessedWater ? attemptId : undefined,
                 attacker_warband_id: attacker.warbandId,
                 attacker_id: attacker.id,
@@ -1151,6 +1160,7 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
 // ---------------------------------------------------------------------------------------------
 
 interface RollSectionProps {
+  cavalcadeCapture?: boolean
   heldWeapons?: (BrokenWeapon | undefined)[]
   swordBreaker?: boolean
   onRestart?: (attemptId: string) => void
@@ -1187,7 +1197,7 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ beforeStart, restartBlocked = false, heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
+function RollSection({ cavalcadeCapture=false, beforeStart, restartBlocked = false, heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
@@ -1212,6 +1222,7 @@ function RollSection({ beforeStart, restartBlocked = false, heldWeapons = [], sw
     attempt.current = nextAttempt
     const plans: AttackPlan[] = odds.weapons.flatMap((w, weaponIndex) =>
       Array.from({ length: w.attacks }, () => ({
+        cavalcadeCapture,
         barrels: w.input.barrels,
         heldWeapon: heldWeapons[weaponIndex],
         swordBreakerParry: swordBreaker,

@@ -315,4 +315,63 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   expect((await groupRow()).size).toBe(1)
  })
 
+ it('bridges actual Misericordia success/failure into precise report casualties and serializes the two-capture limit',async()=>{
+  check(await admin.from('battle_events').delete().eq('match_id',match))
+  check(await admin.from('warbands').update({type_rules_id:'the_cursed_cavalcade'}).eq('id',cw))
+  check(await admin.from('heroes').update({unit_type_rules_id:'cursed_cavalcade_aristocrat',skills:[]}).eq('id',moulder))
+  check(await admin.from('items').insert({warband_id:cw,holder_type:'hero',holder_id:moulder,item_rules_id:'misericordia',quantity:1}))
+  check(await admin.from('matches').update({state:'in_progress'}).eq('id',match))
+  const facts=()=>captor.rpc('cavalcade_capture_facts',{p_match_id:match,p_captor_id:cw,p_attacker_id:moulder,p_target_id:group})
+  expect(check(await facts())).toMatchObject({eligible:true,capturedThisBattle:0,capturedThralls:0})
+  expect((await captor.rpc('cavalcade_capture_facts',{p_match_id:match,p_captor_id:crypto.randomUUID(),p_attacker_id:moulder,p_target_id:group})).error?.message).toMatch(/does not belong to this battle/)
+  const payload={attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Aristocrat',target_warband_id:vw,target_id:group,target_kind:'group',target_name:'Warriors',target_size:3,wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:2,out_of_action_weapon_id:'misericordia'}
+  const record=(slot:number,attempt?:Record<string,unknown>,over:Record<string,unknown>={})=>captor.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:cw,at:`2026-09-13T07:00:0${slot}Z`,kind:'attack',summary:'Actual Misericordia casualty',payload:{...payload,...(attempt?{cavalcade_capture:attempt}:{}),...over}}).select('id,payload').single()
+  expect((await record(0)).error?.message).toMatch(/Record the Capture! D6/)
+  expect((await record(0,{roll:7,originalRoll:1})).error?.message).toMatch(/D6 result/)
+  expect((await record(0,{roll:5,originalRoll:2.5})).error?.message).toMatch(/original Capture/)
+  expect((await record(0,{roll:5,originalRoll:2},{out_of_action_weapon_id:'dagger'})).error?.message).toMatch(/actual Misericordia/)
+  const first=check(await record(0,{roll:5,originalRoll:2,captured:false}))
+  expect(first.payload).toMatchObject({capture_reason:'cavalcade',cavalcade_capture:{roll:5,originalRoll:2,captured:true}})
+  const failed=check(await record(1,{roll:2,originalRoll:6,captured:true}))
+  expect(failed.payload.capture_reason).toBeUndefined()
+  expect(failed.payload.cavalcade_capture).toMatchObject({captured:false,originalRoll:6})
+  // Only one of two simultaneous remaining attempts can use the last capture place.
+  const competing=await Promise.all([record(2,{roll:6,originalRoll:6}),record(2,{roll:5,originalRoll:null})])
+  expect(competing.filter(r=>!r.error)).toHaveLength(1)
+  expect(competing.find(r=>r.error)?.error?.message).toMatch(/capture limit/)
+  const last=competing.find(r=>!r.error)!.data!
+  expect(check(await facts())).toMatchObject({eligible:false,capturedThisBattle:2})
+  check(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match))
+  check(await file([cap(1,first.id,{reason:'cavalcade'}),cap(3,last.id,{reason:'cavalcade'})]));check(await fileCaptor())
+  const opened=await cases()
+  expect(opened).toHaveLength(2)
+  expect(opened.map((c:any)=>c.model_index)).toEqual([1,3])
+  expect(opened.every((c:any)=>c.model_snapshot.reason==='cavalcade')).toBe(true)
+  expect((await groupRow()).size).toBe(1)
+  expect(check(await victim.from('app_notifications').select('body')).some((n:any)=>n.body.includes('Throne of Worms'))).toBe(true)
+  expect((await captor.rpc('revert_battle_event',{p_event_id:first.id,p_note:'Cannot discard an applied capture'})).error).not.toBeNull()
+ })
+
+ it('records failed and corrected manual Misericordia dice without a duplicate casualty or kill',async()=>{
+  check(await admin.from('battle_events').delete().eq('match_id',match))
+  check(await admin.from('warbands').update({type_rules_id:'the_cursed_cavalcade'}).eq('id',cw))
+  check(await admin.from('heroes').update({unit_type_rules_id:'cursed_cavalcade_aristocrat',skills:[]}).eq('id',moulder))
+  check(await admin.from('items').insert({warband_id:cw,holder_type:'hero',holder_id:moulder,item_rules_id:'gromril_misericordia',quantity:1}))
+  check(await admin.from('matches').update({state:'in_progress'}).eq('id',match))
+  const token=`casualty:${match}:${vw}:${group}:manual:0`
+  const payload={attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Aristocrat',target_warband_id:vw,target_id:group,target_kind:'group',target_name:'Warriors',target_size:3,wounds_lost:0,out_of_action:true,kill:false,outcome:'Out of action at the table',turn:2,capture_source:'table',metadata_only:true,manual_casualty_index:0,casualty_token:token,out_of_action_weapon_id:'gromril_misericordia',cavalcade_capture:{roll:2,originalRoll:5,captured:false}}
+  const args={p_match_id:match,p_actor_warband_id:vw,p_payload:payload,p_summary:'Capture! failed: app 5 changed to 2.'}
+  const failed=check(await victim.rpc('mark_casualty_event',args))
+  expect(check(await victim.rpc('mark_casualty_event',args))).toBe(failed)
+  expect(check(await admin.from('battle_events').select('payload').eq('id',failed).single()).payload).toMatchObject({kill:false,wounds_lost:0,metadata_only:true,cavalcade_capture:{roll:2,originalRoll:5,captured:false}})
+  const successful=check(await victim.rpc('mark_casualty_event',{...args,p_payload:{...payload,capture_reason:'cavalcade',cavalcade_capture:{roll:5,originalRoll:2,captured:true}},p_summary:'Capture! corrected: app 2 changed to 5.'}))
+  expect(successful).not.toBe(failed)
+  expect(check(await admin.from('battle_events').select('reverted_at').eq('id',failed).single()).reverted_at).not.toBeNull()
+  expect(check(await admin.from('battle_events').select('id').eq('match_id',match).is('reverted_at',null))).toHaveLength(1)
+  check(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match))
+  check(await file([cap(1,successful,{reason:'cavalcade'})],{size:2,swordQty:2,shieldQty:2,swordsLost:1,shieldsLost:1,rolls:[]}))
+  expect((await cases()).map((c:any)=>c.model_index)).toEqual([1])
+  expect((await groupRow()).size).toBe(2)
+ })
+
 })

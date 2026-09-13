@@ -343,7 +343,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       const captures = captureEvents(battleEvents,matchId,roster?.id,row.group.id).filter(c=>c.modelIndex<row.outOfAction)
       if (!captures.length) return row
       const resolution: GroupInjuryResolution = {...row.resolution, group:{...row.resolution.group,size:Math.max(0,row.resolution.group.size-captures.length)}}
-      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(({event,modelIndex})=>({modelIndex:modelIndex+1,eventId:event.id,captorWarbandId:event.payload.attacker_warband_id,reason:event.payload.capture_reason as 'subjugator'|'man_catcher',kit:[]}))}
+      resolution.line={...(resolution.line??{subjectType:'group',subjectId:row.group.id,subjectName:row.group.name,rolls:[],dead:resolution.dead}),captured:captures.map(({event,modelIndex})=>({modelIndex:modelIndex+1,eventId:event.id,captorWarbandId:event.payload.attacker_warband_id,reason:event.payload.capture_reason as 'subjugator'|'man_catcher'|'cavalcade',kit:[]}))}
       return {...row,resolution}
     })
 

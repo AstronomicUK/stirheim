@@ -1,3 +1,5 @@
+import {CavalcadeCasualtyChoice} from './CavalcadeCasualtyChoice'
+import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
 import {useState} from 'react'
 import {isManCatcherItem} from '../../../rules/resolve/forcedCapture'
 // "Who took X out of action?" Asked whenever a warrior is marked out on the sheet, whichever way the
@@ -10,6 +12,8 @@ import type { EnemyWarband } from '../fight/useEnemyRosters'
 import { splitWarriors, fightingGroups } from './sheet'
 
 export interface TakenOutBySheetProps {
+  matchId?: string
+  targetGroupId?: string
   allowManCatcher?: boolean
   pending?: boolean
   error?: string
@@ -23,17 +27,19 @@ export interface TakenOutBySheetProps {
   onClose: () => void
 }
 
-export function TakenOutBySheet({ open, subjectName, enemies, enemiesPending, turn, onPick, onClose, pending=false, error, allowManCatcher=false }: TakenOutBySheetProps) {
+export function TakenOutBySheet({ matchId,targetGroupId,open, subjectName, enemies, enemiesPending, turn, onPick, onClose, pending=false, error, allowManCatcher=false }: TakenOutBySheetProps) {
   const [weaponChoice,setWeaponChoice]=useState<TakenOutBy|null>(null)
+  const [cavalcadeChoice,setCavalcadeChoice]=useState<{by:TakenOutBy;weaponId:NonNullable<TakenOutBy['captureWeapon']>;confirmed:boolean}|null>(null)
   const pick=(by:TakenOutBy,warband:EnemyWarband,equipment:readonly {itemId:string|null;quantity:number}[])=>{
     if(allowManCatcher&&warband.roster.warbandTemplateId==='black_dwarfs'&&equipment.some(item=>item.quantity>0&&isManCatcherItem(item.itemId)))setWeaponChoice(by)
+    else if(matchId&&targetGroupId&&warband.roster.warbandTemplateId==='the_cursed_cavalcade'&&warband.roster.heroes.some(h=>h.id===by.modelId)&&equipment.some(i=>i.quantity>0&&isMisericordia(i.itemId??undefined)))setCavalcadeChoice({by,weaponId:equipment.find(i=>i.quantity>0&&isMisericordia(i.itemId??undefined))!.itemId as NonNullable<TakenOutBy['captureWeapon']>,confirmed:false})
     else onPick(by)
   }
   return (
     <Sheet open={open} onClose={onClose} title={`Who took ${subjectName} out?`} description="Choose the enemy model responsible, including the caster if a spell caused it. Goes on the report as a key event.">
       <div className="flex flex-col gap-4 py-2">
         {error?<Notice tone="error" title="Could not record the casualty">{error}</Notice>:null}
-        {weaponChoice?<div className="flex flex-col gap-3">
+        {cavalcadeChoice&&matchId&&targetGroupId?<div className="flex flex-col gap-3">{cavalcadeChoice.confirmed?<CavalcadeCasualtyChoice matchId={matchId} targetId={targetGroupId} by={cavalcadeChoice.by} weaponId={cavalcadeChoice.weaponId} pending={pending} onPick={onPick}/>:<><p className="font-semibold">What caused the out-of-action result?</p><p className="text-sm text-ink-dim">{cavalcadeChoice.by.name} carries a Misericordia. Capture! applies only if that weapon dealt the blow.</p><Button disabled={pending} onClick={()=>setCavalcadeChoice({...cavalcadeChoice,confirmed:true})}>The Misericordia</Button><Button variant="secondary" disabled={pending} onClick={()=>onPick(cavalcadeChoice.by)}>Another weapon or a spell</Button></>}<Button variant="ghost" disabled={pending} onClick={()=>setCavalcadeChoice(null)}>Choose a different model</Button></div>:weaponChoice?<div className="flex flex-col gap-3">
           <p className="font-semibold">What caused the out-of-action result?</p>
           <p className="text-sm text-ink-dim">{weaponChoice.name} carries a Man-catcher. If it dealt the blow and an Engine of Chaos is available, the victim is captured instead of rolling for injury.</p>
           <Button disabled={pending} onClick={()=>onPick({...weaponChoice,captureWeapon:'man_catcher'})}>The Man-catcher</Button>

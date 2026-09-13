@@ -249,3 +249,11 @@ Migration 112 and buildHenchmanThrone resolve the saved henchman case without re
 The corrected tracker notification-order test passes all 7 checks.
 
 The real 390px/1200px two-account Throne form journey passes: app D6 → edited result → proposal → victim acceptance → one printed Thrall and exact annotated sword, with the original group still losing only its already-recorded one model. Refreshed both sides, no page errors or overflow; screenshot inspected and fixtures removed. Script: docs/audits/2026-09-12-capture/throne-outcome-browser.mjs. This remains an outcome-only fixture, pending the actual Misericordia bridge.
+
+### 13 September — actual Cavalcade capture bridge (113)
+
+Connected eligible Misericordia casualties to the combat roller and manual roster casualty controls. The original app die and any correction are preserved, failed attempts remain ordinary casualties, and successful captures enter the report without an injury roll. Both paths use the same server-checked two-capture/five-Thrall limits. The facts endpoint rejects captors outside the match.
+
+Validation: TypeScript and focused lint pass; 14 local forced-capture API checks pass, including simultaneous attempts for the final capture place, malformed dice and incorrect weapons, corrected manual events, exact kit, consent and reversal. The mobile browser journey passes actual hit/wound/save/injury/Capture dice, a failed then corrected manual casualty, report preview and the Throne reward. No production deployment.
+
+Remaining: audit human eligibility (the existing table incorrectly includes explicit Undead/animals); Hero 61 capacity rerolls; the previously recorded Thrall reward overflow ruling. These remain open and this does not mark the whole Cavalcade feature complete.

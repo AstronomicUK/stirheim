@@ -39,7 +39,7 @@ try {
  must(await users[0].api.rpc('submit_battle_report',{p_match_id:match,p_warband_id:bands[0],p_report:{result:'won',applied:{}}}));
  browser=await chromium.launch();const pages=[],errors=[];
  for(let i=0;i<2;i++){
-  const context=await browser.newContext({viewport:{width:i?390:1200,height:900},isMobile:!!i,hasTouch:!!i});const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
+  const context=await browser.newContext({viewport:{width:i?390:1200,height:900},isMobile:!!i,hasTouch:!!i});const p=await context.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));
   await p.goto('http://127.0.0.1:5193/sign-in');await p.getByLabel('Email',{exact:true}).fill(users[i].email);await p.getByLabel('Password',{exact:true}).fill(users[i].password);await p.getByRole('button',{name:'Sign in',exact:true}).click();await p.waitForURL('http://127.0.0.1:5193/');pages.push(p);
  }
  const [captor,victim]=pages;
@@ -94,9 +94,29 @@ try {
  await victim.getByRole('button',{name:'Record confirmed event',exact:true}).click();
  await expect.poll(async()=>must(await admin.from('engine_rescue_battles').select('state').eq('match_id',rescueMatch).single()).state.prisoners[0].state).toBe('escaped');
  expect(must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('captured');
+ must(await users[0].api.rpc('submit_battle_report',{p_match_id:rescueMatch,p_warband_id:bands[0],p_report:{result:'lost',applied:{}}}));
+ must(await users[1].api.rpc('submit_battle_report',{p_match_id:rescueMatch,p_warband_id:bands[1],p_report:{result:'won',applied:{}}}));
+ const rescue=must(await admin.from('engine_rescue_battles').select('id').eq('match_id',rescueMatch).single());
+ await victim.goto(`http://127.0.0.1:5193/matches/${rescueMatch}/battle`);
+ await victim.getByRole('button',{name:'Prisoners and rescue',exact:true}).click();
+ await victim.getByRole('button',{name:'Propose return to former warband',exact:true}).click();
+ await expect(victim.getByRole('link',{name:'Review the proposed return',exact:true})).toBeVisible();
+ const proposal=must(await admin.from('captive_proposals').select('id').eq('choice->>rescueId',rescue.id).eq('state','proposed').single()).id;
+ expect(must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('captured');
+ await captor.goto(`http://127.0.0.1:5193/warbands/${bands[0]}`);
+ await captor.getByRole('button',{name:'Accept and apply to both rosters',exact:true}).click();
+ await expect.poll(async()=>must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('active');
+ expect(must(await admin.from('items').select('id').eq('holder_id',hero))).toHaveLength(0);
+ expect(must(await admin.from('items').select('quantity').eq('warband_id',bands[0]).eq('item_rules_id','sword'))).toEqual([{quantity:1}]);
+ expect(must(await admin.from('engine_prisoners').select('state').eq('id',prisoner.id).single()).state).toBe('freed');
+ const originalCase=must(await admin.from('captive_proposals').select('case_id').eq('id',proposal).single());
+ must(await users[2].api.rpc('reverse_captive_resolution',{p_case_id:originalCase.case_id,p_reason:'QA correction of the recorded escape',p_release_only:false}));
+ expect(must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('captured');
+ expect(must(await admin.from('engine_prisoners').select('state').eq('id',prisoner.id).single()).state).toBe('held');
+ expect(must(await admin.from('captive_cases').select('state').eq('id',originalCase.case_id).single()).state).toBe('held');
  expect(await victim.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
  await victim.screenshot({path:'/tmp/stirheim-engine-rescue-mobile.png',fullPage:true});
- console.log('PASS: separate mobile player records Gaoler keys, confirmed contact, release and escape; original captive/kit remain unchanged pending consent.');
+ console.log('PASS: separate mobile player records Gaoler keys, confirmed contact, release and escape; agreed post-battle return preserves confiscated kit, and GM reversal restores custody.');
 } finally {
  await browser?.close();
  if(bands.length)must(await admin.from('engine_journeys').delete().in('warband_id',bands));

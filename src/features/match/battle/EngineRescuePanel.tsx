@@ -1,3 +1,4 @@
+import {EngineRescueReturns} from './EngineRescueReturns'
 import {useState} from 'react'
 import {useQueries} from '@tanstack/react-query'
 import {fetchEngines} from '../../../api/engines'
@@ -9,11 +10,11 @@ import {combatantsOf} from '../fight/combatants'
 import {EngineBattleCard} from './EngineBattleCard'
 import {Button,Notice,SelectField,Sheet,TextField} from '../../../ui'
 
-export function EngineRescuePanel({matchId,participants,editable,isGm=false}:{matchId:string;participants:MatchParticipantView[];editable:boolean;isGm?:boolean}){
+export function EngineRescuePanel({matchId,participants,editable,isGm=false,completed=false}:{matchId:string;participants:MatchParticipantView[];editable:boolean;isGm?:boolean;completed?:boolean}){
  const records=useEngineRescues(matchId),start=useStartEngineRescue(matchId),save=useEngineRescueAction(matchId)
  const rosters=useEnemyRosters(matchId,participants)
  const fleets=useQueries({queries:participants.map(p=>({queryKey:['engines',p.warband_id],queryFn:()=>fetchEngines(p.warband_id)}))})
- const engines=fleets.flatMap(f=>f.data??[]).filter(e=>e.state==='present')
+ const engines=fleets.flatMap(f=>f.data??[]).filter(e=>editable?e.state==='present':records.data?.some(r=>r.engine_id===e.id))
  const [selected,setSelected]=useState<string|null>(null),[type,setType]=useState<EngineRescueAction['type']>('gaolerOut'),[gaoler,setGaoler]=useState(''),[model,setModel]=useState(''),[keeper,setKeeper]=useState(''),[prisoner,setPrisoner]=useState(''),[contact,setContact]=useState(false),[note,setNote]=useState('')
  const record=records.data?.find(r=>r.engine_id===selected),engine=engines.find(e=>e.id===selected)
  const manages=(id:string)=>isGm||participants.some(p=>p.warband_id===id&&p.mine)
@@ -50,6 +51,7 @@ export function EngineRescuePanel({matchId,participants,editable,isGm=false}:{ma
     {!mayRecord?<p className="text-xs text-ink-dim">The relevant model’s player, the Engine owner or the GM must confirm this action.</p>:null}
    </div>:null}
    {record?.state.prisoners.some(p=>p.profile)?<div className="mt-5 space-y-3 border-t border-border pt-3"><h3 className="text-sm font-semibold">Captives on the table</h3>{record.state.prisoners.map(p=>p.profile?<div key={p.id}><p className="text-sm">{p.name}</p><div className="mt-1 flex flex-wrap gap-2">{['M','WS','BS','S','T','W','I','A','Ld'].map(stat=><span key={stat} className="rounded border border-border px-2 py-1 text-xs">{stat} {p.profile?.[stat]??'—'}</span>)}</div></div>:null)}</div>:null}
+   {record?<EngineRescueReturns record={record} completed={completed} managedWarbands={participants.filter(p=>p.mine).map(p=>p.warband_id)} isGm={isGm}/>:null}
    {record?.history.length?<div className="mt-5 border-t border-border pt-3"><h3 className="text-sm font-semibold">Rescue history</h3><ul className="mt-2 space-y-2 text-sm text-ink-dim">{record.history.filter(h=>h.note).map((h,i)=><li key={i}>{h.note}</li>)}</ul></div>:null}
   </Sheet>:null}
  </section>

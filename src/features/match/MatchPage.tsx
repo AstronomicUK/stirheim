@@ -1,3 +1,4 @@
+import {EngineRescuePanel} from './battle/EngineRescuePanel'
 import {RawhideCargoCard} from './RawhideCargoCard'
 import { CaravanRestriction } from './CaravanRestriction'
 import { FanaticSupplies } from './FanaticSupplies'
@@ -188,6 +189,7 @@ function MatchView({ match, userId }: { match: MatchSummary; userId: string | un
         {match.notes.trim() ? <p className="whitespace-pre-wrap border-t border-border pt-3 text-sm leading-relaxed text-ink">{match.notes}</p> : null}
       </Card>
 
+      {match.state==='completed'?<EngineRescuePanel matchId={match.id} participants={match.participants} completed editable={false} isGm={isGm}/>:null}
       {match.scenario_rules_id==='rawhide'?<RawhideCargoCard key={userId??'signed-out'} match={match}/>:null}
       {error ? <Notice tone="error">{error}</Notice> : null}
 

@@ -4690,6 +4690,8 @@ GitHub run `34706511272` passed both jobs: test/build and all **16 end-to-end br
 
 ### 229. Cross-player resurrection and capture opportunities need complete notification and resolution flows
 
+**Handover finding — 13 September, outstanding:** Sacrificial Ritual (`reference/rules/03-campaigns-magic-optional-rules.md:3117–3123`) needs an in-battle captive-consumption flow. The Sorcerer must contact an Engine; one captive is sacrificed, extra captives are sacrificed before the casting roll for −1 difficulty each, and the Sorcerer gains D3 XP. Consumption must update Engine custody and the original roster, with consent, dice provenance, notifications and correction dependencies. Existing dispatch/rescue writers do not implement this spell. Supplementary content; do not mark the whole #229 complete while this gap remains.
+
 **Current checkpoint — 13 September, local only:** Core Awakening and agreed-recipient handling, two-player capture/Pirate outcomes, capture weapons and Slaaneshi holds, Cavalcade triggers/Throne, Court Hero/henchman conversion, Engine custody/journeys/rescue and corrections are connected. Engine combat prompts and private key notifications are now included. Remaining specialist rules and source decisions are listed in `AWAKENING-CAPTURE-SCOPE-2026-09-12.md` and `MORNING-RULINGS-2026-09-13.md`; this umbrella is still partial. Latest evidence is in `FEEDBACK-BATCH-2026-09-12.md`. Older milestone backlog statements below are historical, not current. Nothing deployed.
 
 **Status:** 🛠 Working on — local implementation; not deployed

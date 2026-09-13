@@ -31,7 +31,7 @@ begin
     return v_id;
   end if;
   unit := public.warband_leader_unit(band_type);
-  if unit is null then raise exception 'The leader of this warband type is not catalogued yet.' using errcode = 'P0001'; end if;
+  if unit is null and coalesce(band_type not in (${rows.filter(r=>r.leader===null).map(r=>quote(r.id)).join(', ')}), true) then raise exception 'The leader of this warband type is not catalogued yet.' using errcode = 'P0001'; end if;
   select id into v_id from public.heroes where warband_id = p_warband_id and status = 'active' and not is_hired_sword and unit_type_rules_id = unit order by created_at, id limit 1;
   if v_id is null then select id into v_id from public.heroes where warband_id = p_warband_id and status = 'active' and not is_hired_sword and flags->>'leaderRoleId' = unit order by created_at, id limit 1; end if;
   if v_id is null then select id into v_id from public.heroes where warband_id = p_warband_id and status = 'active' and not is_hired_sword and coalesce((flags->>'temporaryLeader')::boolean, false) order by created_at, id limit 1; end if;

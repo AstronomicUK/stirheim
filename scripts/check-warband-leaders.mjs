@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 const root=fileURLToPath(new URL('..',import.meta.url));
 const generated=execFileSync(process.execPath,[`${root}/scripts/generate-warband-leaders.mjs`],{encoding:'utf8'});
-const migration=readFileSync(`${root}/supabase/migrations/20260913000128_warband_leader_catalogue.sql`,'utf8');
+const migration=readFileSync(`${root}/supabase/migrations/20260913000129_optional_leader_catalogue.sql`,'utf8');
 if(generated!==migration)throw Error('Leader migration differs from the current roster catalogue.');
 const sql=`begin;
 ${migration}
@@ -26,6 +26,10 @@ begin
  if public.warband_leader(band) is distinct from temp then raise exception 'Temporary succession failed'; end if;
  update public.heroes set is_hired_sword=true, unit_type_rules_id=null, hired_sword_rules_id='ogre_bodyguard' where id=temp;
  if public.warband_leader(band) is not null then raise exception 'Hired Sword became leader'; end if;
+ update public.warbands set type_rules_id='court_of_the_profane_pleasures' where id=band;
+ if public.warband_leader(band) is not null then raise exception 'Leader invented for a roster without a mandatory leader'; end if;
+ update public.heroes set is_hired_sword=false, unit_type_rules_id='court_of_pleasures_whipmaster', hired_sword_rules_id=null where id=temp;
+ if public.warband_leader(band) is distinct from temp then raise exception 'Optional-leader roster temporary succession failed'; end if;
  update public.warbands set type_rules_id='dreamwalkers_cult_of_morr' where id=band;
  insert into public.heroes(id,warband_id,name,unit_type_rules_id,stats,status) values
  (priest,band,'Priest','dreamwalkers_priest_of_morr',profile,'active'),

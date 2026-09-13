@@ -21,7 +21,7 @@ The battle sheet shows the state of each supported physical firearm, with a comp
 ## Release handling
 
 - Verify the final source checkpoint and outstanding changes before building. Do not sweep unrelated historical tracker/audit modifications into a release commit.
-- Apply the verified migrations after the currently deployed 087, in filename order. Local checks currently cover through 127; verify the final list at release time.
+- Apply the verified migrations after the currently deployed 087, in filename order. Local checks currently cover through 128; verify the final list at release time.
 - Run the historical feedback import dry run. The reviewed manifest accounts for all 231 previous IDs; excluded internal entries remain excluded. Import only after the backend is ready, using the existing guarded import script.
 - Set the existing AstronomicUK account as maintainer through the prepared exact-username setup; do not create or guess a new account.
 - Deploy the complete frontend once, then verify sign-in, public boards, mobile battle/roster views and private notifications on the actual release.
@@ -29,7 +29,7 @@ The battle sheet shows the state of each supported physical firearm, with a comp
 
 ## Current evidence
 
-2,422 ordinary tests pass across 204 files. The complete API run through 127 passes all 322 checks across 56 files. All 121 migration files install in order in an isolated database. TypeScript and the production build pass. Mobile capture/conversion, shared Engine rescue, agreed return, reversal and retired-history checks pass. Large-bundle warnings remain; invalid repeated list-marker CSS has been corrected.
+The earlier complete ordinary run passed 2,422 tests across 204 files. The complete API run through 128 passes all 323 checks across 56 files. All 122 migration files install in order in an isolated database. Leadership, rescue authority and physical-member follow-up regressions pass. The earlier production build passed; rerun at the final release checkpoint after the remaining work. Mobile capture/conversion, shared Engine rescue, agreed return, reversal and retired-history checks pass. Large-bundle warnings remain; invalid repeated list-marker CSS has been corrected.
 
 ## Decisions held for Tom
 

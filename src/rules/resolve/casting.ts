@@ -395,6 +395,9 @@ function modifierText(state: CastState): string {
 }
 
 export interface StartCastOptions {
+  /** Sacrificial Ritual only: additional captives already sacrificed before rolling.
+   * The custody workflow must confirm consumption; this is not a casting-roll bonus. */
+  ritualExtraSacrifices?: number;
   /** Selected affected model; personal protections must not become warband-wide. */
   targetId?: string;
   /** For an area spell with no single target: the enemy models the player marks as within its effect, so their own protections get a roll. */
@@ -410,7 +413,14 @@ export interface StartCastOptions {
 /** Actual Difficulty and separate casting-roll bonuses; bonuses never lower a dispel target. */
 export function effectiveDifficulty(profile: CasterProfile, spell: Spell, options: StartCastOptions = {}) {
   profile = profileForSpell(profile, spell.id);
-  const difficulty = profile.spells.find(s => s.spell.id === spell.id)?.difficulty ?? spell.difficulty;
+  let difficulty = profile.spells.find(s => s.spell.id === spell.id)?.difficulty ?? spell.difficulty;
+  if (options.ritualExtraSacrifices !== undefined) {
+    const extra = options.ritualExtraSacrifices;
+    if (spell.id !== 'sacrificial_ritual' || !Number.isInteger(extra) || extra < 0 || extra > 5) {
+      throw new Error('Choose a valid number of additional Sacrificial Ritual captives.');
+    }
+    if (difficulty !== null) difficulty = Math.max(0, difficulty - extra);
+  }
   const chosen = options.modifiers ?? [];
   const applied = profile.modifiers
     .filter((m) => !m.optional || chosen.some((c) => c.id === m.id))
@@ -444,6 +454,10 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     }),
   };
 
+  if (options.ritualExtraSacrifices) {
+    const count = options.ritualExtraSacrifices;
+    state.log.push({ text: `${count} additional captive${count === 1 ? '' : 's'} sacrificed before rolling: Difficulty reduced by ${count} to ${difficulty}.`, tone: 'neutral' });
+  }
   if (spell.difficulty === null) {
     state.outcome = "automatic";
     state.log.push({ text: `${spell.name} is cast automatically — no Difficulty roll.`, tone: "good" });

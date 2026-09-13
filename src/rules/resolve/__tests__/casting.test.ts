@@ -29,6 +29,22 @@ function hero(over: Partial<RosterHero> = {}): RosterHero {
 const profileOf = (h: RosterHero) => casterProfile({ hero: h, warbandName: "Cult of the Possessed", unitName: "Magister" })!;
 
 describe("who can cast", () => {
+  it('uses additional ritual sacrifices to lower Difficulty, including enemy dispels, separately from Sorcery', () => {
+    const p = profileOf(hero({ unitTemplateId: 'black_dwarfs_sorcerer', spellIds: ['sacrificial_ritual'], skillIds: ['sorcery'] }));
+    const spell = p.spells[0].spell;
+    const options = { ritualExtraSacrifices: 2 };
+    expect(effectiveDifficulty(p, spell, options)).toMatchObject({ base: 10, effective: 8, bonus: 1 });
+    const started = startCast(p, spell, options);
+    expect(started.difficulty).toBe(8);
+    expect(started.bonus).toBe(1);
+    expect(started.log.some(line => line.text.includes('2 additional captives sacrificed before rolling'))).toBe(true);
+    expect(applyCastRoll(started, [3, 4]).outcome).toBe('cast');
+    const dispel = applyCastRoll(startCast(p, spell, { ...options, enemyDispel: [{ id: 'elven_runestones', name: 'Runestones', detail: '', against: 'difficulty' }] }), [3, 4]);
+    expect(applyCastRoll(dispel, [4, 4]).outcome).toBe('dispelled');
+    for (const invalid of [-1, 0.5, 6, NaN]) expect(() => startCast(p, spell, { ritualExtraSacrifices: invalid })).toThrow(/valid number/);
+    const ordinary = profileOf(hero());
+    expect(() => startCast(ordinary, ordinary.spells[0].spell, options)).toThrow(/Sacrificial Ritual/);
+  });
   it('keeps casting bonuses separate from the reduced Difficulty used by dispels', () => {
     const p = profileOf(hero({ skillIds: ['sorcery'], flags: { spellDifficultyReductions: { vision_of_torment: 1 } } }));
     const spell = p.spells[0].spell;

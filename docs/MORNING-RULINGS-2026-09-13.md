@@ -43,6 +43,10 @@ Core Spell of Awakening targets a dead enemy Hero. Hired Swords use Hero-like ad
 
 ## Do not ask Tom to re-approve routine work
 
+### Sacrificial Ritual timing (new handover question, sent while Tom is awake)
+
+The source explicitly puts **additional** sacrifices before the Difficulty roll, but is less explicit about the initial captive. Asked whether all selected captives are consumed before rolling, even on failure, or whether the initial captive is consumed only on a successful cast. Selection/affected-player agreement planning and actual Difficulty reduction can be implemented independently; permanent consumption timing must not be guessed. Source: `reference/rules/03-campaigns-magic-optional-rules.md:3117–3123`.
+
 Mobile/readability fixes, local verification, exact-equipment preservation, dice provenance, notification visibility and correction safeguards are already within the approved batch. Continue those without additional permission. Deployment stays one coherent batch; no per-fix pushes.
 
 ### Cavalcade — two Throne rewards with only one Thrall place left

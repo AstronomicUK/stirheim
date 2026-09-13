@@ -35,10 +35,17 @@ describe.skipIf(!enabled)('Engine of Chaos custody (#229 / #95, migration 102)',
   engine=check(await admin.from('engine_of_chaos_units').select('id').eq('inventory_item_id',stock).single()).id
  })
  afterEach(async()=>{
-  if(match){await admin.from('captive_cases').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match)}
-  if(campaign)await admin.from('campaigns').delete().eq('id',campaign)
-  if(vw)await admin.from('warbands').delete().in('id',[vw,cw])
-  await admin.from('app_notifications').delete().in('user_id',users)
+  // A standing outcome pins its reports: the GM releases it first; cases and custody rows go before
+  // the match so the report guards pass; warbands go last (their cascade would otherwise touch cases
+  // mid-delete). Every step is checked so a leak fails loudly.
+  for(const c of check(await admin.from('captive_cases').select('id,state').eq('match_id',match)).filter((c:any)=>['held','resolved'].includes(c.state)))
+   check(await gm.rpc('reverse_captive_resolution',{p_case_id:c.id,p_reason:'Test teardown release',p_release_only:true}))
+  check(await admin.from('captive_cases').delete().eq('match_id',match))
+  check(await admin.from('engine_prisoners').delete().in('holder_warband_id',[vw,cw]))
+  check(await admin.from('matches').delete().eq('id',match))
+  if(campaign)check(await admin.from('campaigns').delete().eq('id',campaign))
+  if(vw)check(await admin.from('warbands').delete().in('id',[vw,cw]))
+  check(await admin.from('app_notifications').delete().in('user_id',users))
  })
  afterAll(async()=>{for(const id of users)await admin.auth.admin.deleteUser(id)})
  const fileVictim=()=>reik.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],

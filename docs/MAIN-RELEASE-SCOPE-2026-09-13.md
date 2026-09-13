@@ -34,3 +34,11 @@ Schema/defaults, settings change detection and plain-English campaign activity n
 - Both actual mobile battle modes complete 2/1/2/1 shots across refresh, with matching mini-roster counters and no non-firing reload record. Full reload checks also pass in both modes.
 - The actual mobile campaign form saves and reopens all three policies without overflow or page errors. Older campaigns default to no effect. Reviewed import dry-run accounts for 231 IDs, includes 221 and excludes 10; no remote write.
 - Production deployment, verified-account maintainer setup, historical import, release publication and live checks remain release-time actions. No push/deploy performed. Publish #230/#231 completion only after release; #229 stays in progress for its follow-up.
+
+## Production deployment — 13 September
+
+User explicitly approved database migrations 088–130 and deployment. All 43 pending migrations applied successfully; the subsequent remote dry run reports no pending migrations. Source `e115886` pushed to main and deployed once as Netlify `6aa6baefe0de31122a1ee7f4`, with automatic builds paused. Production build uses the live Supabase project.
+
+Live read-only checks pass at 390px and 1280px: sign-in, protected-route redirect, public tracker and changelog load without page errors or horizontal overflow. All five HTML entry assets match the local build bytes. Authenticated gameplay acceptance remains the previously completed disposable local tests; no live player records were changed by smoke tests.
+
+**Setup still pending:** automatic approval review separately rejected production service-role use for the historical import and AstronomicUK maintainer grant, requesting explicit authorization for these privileged mutations. No historical reports were imported, no maintainer grant made, and no release published. Request authorization to complete those actions, publish version 2026.09.13 and mark #230/#231 implemented while keeping #229 working on. Do not redeploy the frontend for this database-only setup.

@@ -403,8 +403,16 @@ export function effectiveSkillTables(hero: Pick<RosterHero, "skillIds" | "skillT
   return powerfulBuild ? [...new Set([...tables, "strength"])] : tables;
 }
 
+/** These supplements extend Academic, rather than granting a separate special table. */
+function selectableSkillTables(hero: RosterHero, warbandTemplateId?: string): string[] {
+  const tables = effectiveSkillTables(hero);
+  const additional = warbandTemplateId === "tomb_guardians" ? "tomb_guardians_additional_skills"
+    : warbandTemplateId === "sorcerous_society" ? "sorcerous_society_additional_academic_skills" : undefined;
+  return additional && tables.includes("academic") ? [...new Set([...tables, additional])] : tables;
+}
+
 function heroMayUseTable(hero: RosterHero, skill: ResolvedSkill, warbandTemplateId?: string): boolean {
-  if (effectiveSkillTables(hero).includes(skill.tableId)) return true;
+  if (selectableSkillTables(hero, warbandTemplateId).includes(skill.tableId)) return true;
   // Templates say "warband-unique" rather than naming the table; accept any warband skill table
   // in that case, restricted to the hero's own warband when we know it.
   if (skill.warbandId && hero.skillTableIds.includes(WARBAND_UNIQUE_TABLE_ID)) {
@@ -425,7 +433,7 @@ export function learnSkill(
   allSkillIds?: Set<string>,
   opts?: { warbandTemplateId?: string },
 ): Resolution<RosterHero> {
-  if (hero.skillIds.includes(skillId) && skillId !== MARAUDER_MUTANT) {
+  if ([...hero.skillIds, ...(unitRules(hero.unitTemplateId).startingSkillIds ?? [])].includes(skillId) && skillId !== MARAUDER_MUTANT) {
     throw new RulesError("SKILL_KNOWN", `${hero.name} already has the skill "${skillId}"`);
   }
   const skill = resolveSkill(skillId);
@@ -510,7 +518,7 @@ export function bonusSkillOptions(hero: RosterHero, skillId: string | null, warb
 }
 
 export function availableSkills(hero: RosterHero, warbandTemplateId?: string, opts: AvailableSkillsOptions = {}): AvailableSkillTable[] {
-  const known = new Set(hero.skillIds);
+  const known = new Set([...hero.skillIds, ...(unitRules(hero.unitTemplateId).startingSkillIds ?? [])]);
   const template = warbandTemplateId ? findWarbandTemplate(warbandTemplateId) : undefined;
   const annotate = (entry: AvailableSkill): AvailableSkill => {
     if (warbandTemplateId === 'battle_monks_of_cathay' && hero.unitTemplateId === 'battle_monks_emissary' && entry.id.startsWith('battle_monks_of_cathay_skills_') && !entry.id.endsWith('_warmonger')) return {...entry,blocked:'The Emissary may select only Warmonger from the Battle Monks special skills.'};
@@ -520,7 +528,7 @@ export function availableSkills(hero: RosterHero, warbandTemplateId?: string, op
   };
   const allowed = (id: string) => (!known.has(id) || id === MARAUDER_MUTANT) && !isBanned(opts.bans, "skills", id);
   const tables: AvailableSkillTable[] = [];
-  for (const tableId of effectiveSkillTables(hero)) {
+  for (const tableId of selectableSkillTables(hero, warbandTemplateId)) {
     if (CORE_SKILL_TABLE_IDS.includes(tableId)) {
       tables.push({
         tableId,

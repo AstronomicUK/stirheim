@@ -8,6 +8,10 @@ describe('Haggle and the Freetraders symbol',()=>{
   expect(hasHaggle(makeHero({equipment:[{itemId:'symbol_of_the_order_of_freetraders',quantity:0}]}))).toBe(false)
   expect(hasHaggle(makeHero({skillIds:['haggle'],status:'dead'}))).toBe(false)
  })
+ it('recognises inherent Haggle on older Masters of Finances, but not dead heroes',()=>{
+  expect(hasHaggle(makeHero({unitTemplateId:'mazzalupo_master_of_finances',skillIds:[]}))).toBe(true)
+  expect(hasHaggle(makeHero({unitTemplateId:'mazzalupo_master_of_finances',skillIds:[],status:'dead'}))).toBe(false)
+ })
  it('deducts both dice with a one-gold minimum and rejects invalid rolls',()=>{
   expect(hagglePrice(10,[2,3])).toBe(5);expect(hagglePrice(5,[6,6])).toBe(1)
   expect(()=>hagglePrice(10,[0,6])).toThrow();expect(()=>hagglePrice(10,[4])).toThrow()

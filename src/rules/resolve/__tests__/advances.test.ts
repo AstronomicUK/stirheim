@@ -420,3 +420,30 @@ describe("Powerful Build future skill access (#59)", () => {
     expect(hero.skillTableIds).not.toContain("strength");
   });
 });
+
+it('does not sell an inherent starting skill again to legacy heroes', () => {
+  for (const [unitTemplateId, skill, table] of [
+    ['pit_fighters_pit_king', 'pit_fighter', 'strength'],
+    ['carnival_of_chaos_brutes', 'strongman', 'strength'],
+    ['cursed_cavalcade_companions', 'expert_swordsman', 'combat'],
+  ]) {
+    const warrior = makeHero({ unitTemplateId, skillIds: [], skillTableIds: [table] })
+    expect(availableSkills(warrior).flatMap(t => t.skills).some(s => s.id === skill)).toBe(false)
+    expect(() => learnSkill(warrior, skill)).toThrow(/already has the skill/)
+  }
+})
+
+it('opens the supplementary Academic table only for its own warband’s academics', () => {
+  for (const [warband, skill] of [
+    ['tomb_guardians', 'tomb_guardians_additional_skills_drive_chariot_academic'],
+    ['sorcerous_society', 'sorcerous_society_additional_academic_skills_mind_focus'],
+  ]) {
+    const academic = makeHero({ skillTableIds: ['academic'] })
+    expect(availableSkills(academic, warband).flatMap(t => t.skills).map(s => s.id)).toContain(skill)
+    expect(learnSkill(academic, skill, undefined, { warbandTemplateId: warband }).value.skillIds).toContain(skill)
+    expect(availableSkills(academic, 'mercenaries_reikland').flatMap(t => t.skills).map(s => s.id)).not.toContain(skill)
+    const fighter = makeHero({ skillTableIds: ['combat', 'strength'] })
+    expect(availableSkills(fighter, warband).flatMap(t => t.skills).map(s => s.id)).not.toContain(skill)
+    expect(() => learnSkill(fighter, skill, undefined, { warbandTemplateId: warband })).toThrow(/may not pick/)
+  }
+})

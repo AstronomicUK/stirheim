@@ -125,6 +125,8 @@ export function traitsFromSkills(skillIds: readonly string[]): string[] {
     beastmen_raiders_special_skills_fearless: ['immune_to_fear', 'immune_to_all_alone'],
     the_cursed_cavalcade_skills_noblesse_obliges: ['immune_to_fear'],
     grave_robbers_skills_darkstalker: ['immune_to_all_alone'],
+    norse_explorers_special_skills_barbarian_courage: ['immune_to_all_alone'],
+    marauders_of_chaos_skills_heart_of_the_warrior: ['immune_to_fear', 'immune_to_all_alone'],
   }
   return unique(skillIds.flatMap(id => grants[id] ?? []))
 }
@@ -217,7 +219,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         stats: boosts.leaderLd && warrior.id === leaderId ? { ...warrior.stats, Ld: warrior.stats.Ld + boosts.leaderLd } : warrior.stats,
         equipment: warrior.equipment,
         unarmedProfile: unitRules(warrior.unitTemplateId).unarmedProfile,
-        skillIds: warrior.skillIds,
+        skillIds: unique([...warrior.skillIds, ...(unitRules(warrior.unitTemplateId).startingSkillIds ?? [])]),
         hatredReason: warrior.flags.hates,
         bitterEnmity: warrior.flags.bitterEnmity,
         tailChoice: sheet?.tailChoices[warrior.id],
@@ -277,7 +279,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       stats: group.stats,
       equipment: kit.items,
       unarmedProfile: unitRules(group.unitTemplateId).unarmedProfile,
-      skillIds: group.unitTemplateId === 'pirates_swabbie' ? unique(group.campaignState?.inheritedSkillIds ?? []) : [],
+      skillIds: unique([...(unitRules(group.unitTemplateId).startingSkillIds ?? []), ...(group.unitTemplateId === 'pirates_swabbie' ? group.campaignState?.inheritedSkillIds ?? [] : [])]),
       traitIds: unique(traits),
       out: sheet ? groupOut(sheet, group.id) >= group.size : false,
       woundsLost: sheet && group.size === 1 ? woundsLost(sheet, group.id) : 0,

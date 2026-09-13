@@ -23,6 +23,11 @@ describe.skipIf(process.env.SUPABASE_LOCAL!=='1')('Haggle purchase transaction',
   const h=await admin.from('heroes').select('flags').eq('id',hero).single();check(h);expect(h.data!.flags.haggleUse.dice).toEqual([6,6]);expect(h.data!.flags.haggleUse.priceAfter).toBe(1)
   expect((await player.rpc('record_haggled_trade',{...a,p_item_name:'Axe'})).error).toBeTruthy()
  })
+ it('allows a legacy Master of Finances to use inherent Haggle once per phase',async()=>{
+  check(await admin.from('heroes').update({skills:[],unit_type_rules_id:'mazzalupo_master_of_finances'}).eq('id',hero))
+  check(await player.rpc('record_haggled_trade',args()))
+  expect((await player.rpc('record_haggled_trade',args())).error).toBeTruthy()
+ })
  it('allows only one concurrent purchase for a Hero this phase',async()=>{
   const r=await Promise.all([player.rpc('record_haggled_trade',args()),player.rpc('record_haggled_trade',args())]);expect(r.filter(x=>!x.error)).toHaveLength(1)
  })

@@ -400,6 +400,8 @@ it.each([
   ['beastmen_raiders_special_skills_fearless', ['immune_to_fear', 'immune_to_all_alone']],
   ['the_cursed_cavalcade_skills_noblesse_obliges', ['immune_to_fear']],
   ['grave_robbers_skills_darkstalker', ['immune_to_all_alone']],
+  ['norse_explorers_special_skills_barbarian_courage', ['immune_to_all_alone']],
+  ['marauders_of_chaos_skills_heart_of_the_warrior', ['immune_to_fear', 'immune_to_all_alone']],
 ])('applies only learned %s psychology grants', (skill, expected) => {
   const cs = combatantsOf(warband({ heroes: [hero('learner', { skillIds: [skill] }), hero('ordinary')] }), undefined, 'QA', undefined)
   expect(cs.find(c => c.id === 'learner')?.traitIds).toEqual(expect.arrayContaining(expected))
@@ -578,4 +580,24 @@ it('an Awakening Zombie uses its retained weapon and armour instead of losing th
  expect(kit.armour.type).toBe('light')
  expect(model.skillIds).toEqual([])
  expect(unitGainsExperience('undead_zombies')).toBe(false)
+})
+
+it('applies a Fighting Ape’s inherent Dodge without saved henchman skills', () => {
+  const roster = warband({ warbandTemplateId: 'cursed_cavalcade', henchmenGroups: [group('ape', { unitTemplateId: 'cursed_cavalcade_fighting_ape', size: 1, equipment: [] })] })
+  const defender = combatantsOf(roster, findWarbandTemplate('cursed_cavalcade'), 'Cavalcade', undefined)[0]
+  expect(defender.skillIds).toEqual(['scale_sheer_surfaces', 'acrobat', 'dodge'])
+  const attacker = combatantsOf(warband({ heroes: [hero('archer', { equipment: [item('bow')] })] }), findWarbandTemplate('mercenaries_reikland'), 'Reikland', undefined)[0]
+  const kit = loadoutFor(attacker)
+  const houseRules = defaultCampaignHouseRules()
+  const setup = { attacker, attackerKit: kit, defender, defenderKit: loadoutFor(defender), primary: kit.ranged[0], offHand: null, context: combatContextFor(houseRules), houseRules }
+  expect(computeOdds(setup).weapons[0].input.dodgeThreshold).toBe(5)
+  expect(computeOdds({ ...setup, primary: loadoutOf([item('sword')]).melee[0] }).weapons[0].input.dodgeThreshold).toBeUndefined()
+})
+
+it('restores inherent hero skills for old rosters without duplicating saved skills', () => {
+  for (const skillIds of [[], ['strongman']]) {
+    const roster = warband({ warbandTemplateId: 'carnival_of_chaos', heroes: [hero('brute', { unitTemplateId: 'carnival_of_chaos_brutes', skillIds })] })
+    const brute = combatantsOf(roster, findWarbandTemplate('carnival_of_chaos'), 'Carnival', undefined)[0]
+    expect(brute.skillIds).toEqual(['strongman'])
+  }
 })

@@ -1,5 +1,5 @@
 import { leaderReplacementPurchaseBlock } from '../../rules/resolve/leaderReplacement'
-import { hasHaggle, hagglePrice } from '../../rules/resolve/haggle'
+import { hasHaggle, hasHaggleSkill, hagglePrice } from '../../rules/resolve/haggle'
 import { scenarioPurchasePrice } from '../../rules/resolve/scenarioCampaignEffects'
 import { useMemo, useState } from 'react'
 import { warbandRules } from '../../rules/data/campaignRules'
@@ -320,7 +320,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
           </section>
         ) : null}
         {tracked&&roster.heroes.some(hasHaggle) ? <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-          <SelectField label="Haggle for this purchase" value={hagglerId} onChange={e=>{setHagglerId(e.target.value);setHaggleDice([null,null])}}><option value="">Do not haggle</option>{hagglers.map(h=><option key={h.id} value={h.id}>{h.name}{h.skillIds.includes('haggle')?' — Haggle':' — Freetraders symbol'}</option>)}</SelectField>
+          <SelectField label="Haggle for this purchase" value={hagglerId} onChange={e=>{setHagglerId(e.target.value);setHaggleDice([null,null])}}><option value="">Do not haggle</option>{hagglers.map(h=><option key={h.id} value={h.id}>{h.name}{hasHaggleSkill(h)?' — Haggle':' — Freetraders symbol'}</option>)}</SelectField>
           {roster.heroes.filter(h=>h.flags.haggleUse?.matchId===phase.matchId).map(h=><p key={h.id} className="text-xs text-ink-dim">{h.name} has used Haggle this sequence on {h.flags.haggleUse!.itemName}.</p>)}
           {hagglerId?<><p className="text-sm">Reduce one item’s price by 2D6 gc, to a minimum of 1 gc. This Hero can haggle once this post-battle sequence.</p>
           {quantity!==1?<Notice>Choose a quantity of one to haggle.</Notice>:null}

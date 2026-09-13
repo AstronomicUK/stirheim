@@ -3,10 +3,10 @@ import { emptyBattleLiveState, battleLiveStateSchema, type ItemRow } from '../..
 import { findItem } from '../../../rules/data/items'
 import { itemPatchesFor, type ReportContext } from '../../postBattle/model/derive'
 import { emptyDraft } from '../../postBattle/model/state'
-import { correctSwivelSupply, swivelSupplyRow, useSwivelSupply } from './swivelSupply'
+import { correctSwivelSupply, swivelSupplyRow, recordSwivelSupply } from './swivelSupply'
 
 const row = (id: string, itemId = 'swivel_gun_ball_shot', quantity = 2): ItemRow => ({ id, warband_id: 'w', holder_type: 'stash', holder_id: null, item_rules_id: itemId, quantity, notes: '', custom_name: null, created_at: 't', updated_at: 't' })
-const fire = (sheet: ReturnType<typeof emptyBattleLiveState>, items: ItemRow[], itemId = 'swivel_gun_ball_shot', exception = '') => useSwivelSupply(sheet, items, 'w', 'gunner', itemId, exception, crypto.randomUUID(), 't')
+const fire = (sheet: ReturnType<typeof emptyBattleLiveState>, items: ItemRow[], itemId = 'swivel_gun_ball_shot', exception = '') => recordSwivelSupply(sheet, items, 'w', 'gunner', itemId, exception, crypto.randomUUID(), 't')
 const patches = (sheet: ReturnType<typeof emptyBattleLiveState>, items: ItemRow[]) => itemPatchesFor({ items, matchId: 'm', warbandConsumables: sheet.warbandConsumables } as unknown as ReportContext, emptyDraft())
 
 describe('Swivel Gun battle supplies (#69/#139)', () => {

@@ -1,4 +1,7 @@
-import { SWIVEL_SUPPLIES, usedSwivelSupply, swivelSupplyRow, useSwivelSupply, correctSwivelSupply } from './swivelSupply'
+import { PowderKegControls } from './PowderKegControls'
+import { powderKegTarget, canIgnitePowderKeg } from './powderKegTarget'
+import { beginPowderKeg, powderKegDestroyed, pendingPowderKegVictims } from '../../../domain'
+import { SWIVEL_SUPPLIES, usedSwivelSupply, swivelSupplyRow, recordSwivelSupply, correctSwivelSupply } from './swivelSupply'
 import {useSlaaneshiHolds,useSlaaneshiHoldAction} from '../../../api/slaaneshiHolds'
 import {useCavalcadeCaptureFacts} from '../../../api/cavalcadeCaptives'
 import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
@@ -137,9 +140,20 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const mortarCriticalUsed = sheet.blackpowderShots.some(s => s.id === mortarShot?.id && s.criticalUsed)
   const mortarTarget = mortarShot?.targets?.find(t => t.key === mortarSelection?.targetKey)
   const mortarDone = Boolean(mortarShot && mortarTarget && !unresolvedMortarTargets(mortarShot, events).some(t => t.key === mortarTarget.key))
-  const areaId = mortarShot ? `mortar:${mortarShot.id}` : grapeSpread ? `grape:${grapeSpread.shotId}` : pigeonLaunch ? `pigeon:${pigeonLaunch.id}` : lineShot ? `line:${lineShot.id}` : null
-  const selfDamage = Boolean(selfShot || fireHit || volatileHit)
-  const areaTarget = volatileHit ? { key: volatileHit.key, warriorId: volatileHit.warriorId, warbandId: roster.id, name: volatileHit.name } : fireHit ? { key: `fire:${fireHit.id}`, warriorId: fireHit.warriorId, warbandId: roster.id, name: 'the burning warrior' } : selfShot ? { key: `self:${selfShot.id}`, warriorId: selfShot.warriorId, warbandId: roster.id, name: 'the firer' } : mortarTarget ?? grapeTarget ?? pigeonTarget ?? lineTarget
+  const [kegMode, setKegMode] = useState(false)
+  const [kegName, setKegName] = useState('Powder Keg 1')
+  const [kegHit, setKegHit] = useState(0)
+  const [kegUnderground, setKegUnderground] = useState(false)
+  const [kegException, setKegException] = useState('')
+  const [kegItemId, setKegItemId] = useState('')
+  const [kegSelection, setKegSelection] = useState<{ attemptId: string; targetKey: string } | null>(null)
+  const kegAttempt = sheet.powderKegAttempts.find(a => a.id === kegSelection?.attemptId && !a.correction)
+  const kegVictim = kegAttempt?.targets.find(t => t.key === kegSelection?.targetKey)
+  const kegDone = Boolean(kegAttempt && kegVictim && !pendingPowderKegVictims(kegAttempt, events).some(t => t.key === kegVictim.key))
+  const kegAttack = kegMode && !kegVictim && !selfShot && !fireHit && !volatileHit && !mortarTarget && !grapeTarget && !pigeonTarget && !lineTarget
+  const areaId = kegAttempt ? `powderKeg:${kegAttempt.id}` : mortarShot ? `mortar:${mortarShot.id}` : grapeSpread ? `grape:${grapeSpread.shotId}` : pigeonLaunch ? `pigeon:${pigeonLaunch.id}` : lineShot ? `line:${lineShot.id}` : null
+  const selfDamage = Boolean(selfShot || fireHit || volatileHit || kegVictim)
+  const areaTarget = kegVictim ?? (volatileHit ? { key: volatileHit.key, warriorId: volatileHit.warriorId, warbandId: roster.id, name: volatileHit.name } : fireHit ? { key: `fire:${fireHit.id}`, warriorId: fireHit.warriorId, warbandId: roster.id, name: 'the burning warrior' } : selfShot ? { key: `self:${selfShot.id}`, warriorId: selfShot.warriorId, warbandId: roster.id, name: 'the firer' } : mortarTarget ?? grapeTarget ?? pigeonTarget ?? lineTarget)
 
   const mine = useMemo(() => withBrokenWeapons(withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), items, events), [roster, template, sheet, boosts, events, items])
   const targets = useMemo(
@@ -161,10 +175,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   // having tapped Ranged specifically.
   const rangedDefault = startWith === 'ranged' ? mine.find((c) => !c.out && loadoutFor(c).ranged.length > 0) : undefined
   const selectedAttacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
-  const selectedDefender = areaTarget ? [...mine, ...targets].find(c => c.id === areaTarget.warriorId && c.warbandId === areaTarget.warbandId) : targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
+  const selectedDefender = areaTarget ? [...mine, ...targets].find(c => c.id === areaTarget.warriorId && c.warbandId === areaTarget.warbandId) : kegAttack ? powderKegTarget(kegName, roster.id) : targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
   const attacker = selectedAttacker ? withGuidingDream(selectedAttacker, selectedDefender, sheet) : selectedAttacker
   const defender = selectedDefender ? withGuidingDream(selectedDefender, selectedAttacker, (selectedDefender.warbandId === roster.id ? sheet : sessions.find(s => s.warband_id === selectedDefender.warbandId)?.live_state)) : selectedDefender
-  const checkCavalcade = Boolean(startWith==='melee' && roster.warbandTemplateId==='the_cursed_cavalcade' && attacker?.kind==='hero' && defender?.kind==='henchman' && attacker.equipment.some(i=>i.quantity>0&&isMisericordia(i.itemId??undefined)))
+  const checkCavalcade = Boolean(!kegAttack && startWith==='melee' && roster.warbandTemplateId==='the_cursed_cavalcade' && attacker?.kind==='hero' && defender?.kind==='henchman' && attacker.equipment.some(i=>i.quantity>0&&isMisericordia(i.itemId??undefined)))
   const cavalcadeRevision = `${roster.henchmenGroups.filter(g=>g.unitTemplateId==='cursed_cavalcade_captured_thrall').reduce((n,g)=>n+g.size,0)}:${events.filter(e=>!e.reverted_at&&e.payload.capture_reason).map(e=>e.id).join(',')}`
   const cavalcadeFacts = useCavalcadeCaptureFacts(matchId,roster.id,attacker?.id,defender?.id,cavalcadeRevision,checkCavalcade)
   const cavalcadeLoading = checkCavalcade && (cavalcadeFacts.isPending || cavalcadeFacts.isError)
@@ -365,7 +379,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   active.serpentStaffPower = Boolean(staffUse)
   if (attacker?.entangled) active.charging = false
   if (attacker) active.failedStupidity = attacker.traitIds.includes('stupidity') && !attacker.traitIds.includes('deathwish') && (individualStupidity ? failedStupidityThisTurn(sheet, attacker.id, ownTurnKey) : groupStupidity?.id === attacker.id && groupStupidity.turnKey === ownTurnKey && groupStupidity.failed)
-  const targetMember=Math.min(targetMemberChoice,Math.max(0,(defender?.groupSize??1)-1))
+  const targetMember=Math.min(kegVictim ? Number(kegVictim.key.split(':').at(-1)) : targetMemberChoice,Math.max(0,(defender?.groupSize??1)-1))
   const holdTargetConflict=Boolean(!areaTarget && primary?.special.includes('lockKnocksDownAndCaptures') && wieldersHold && (wieldersHold.target_id!==defender?.id || wieldersHold.target_model_index!==targetMember))
   const defenderConditions=defender?conditionsFor(events,defender.warbandId,sheet.turn,turns.data?.recoveries,holds.data):undefined
   const defenderCondition = defender ? defenderConditions?.get(defender.kind==='henchman'?`${defender.id}:${targetMember}`:defender.id)??defenderConditions?.get(defender.id) : undefined
@@ -410,14 +424,18 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const attackLimit = attackLimitChoice?.key === attackKey ? attackLimitChoice.value : undefined
   const odds: FightOdds | null =
     attacker && defender && attackerKit && defenderKit && primary
-      ? computeOdds({ combatBarrels:[0,1].map(hand=>combatPistols.find(p=>p.handIndex===hand)?.barrels), barrels: isDoubleBarrel ? barrels : undefined, weaponChoiceKeys: hasPoison && !areaTarget ? [poisonBindings[0],poisonBindings[1]] : undefined, ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: isDoubleBarrel ? 1 : areaTarget ? 1 : staffUse?.used ? 0 : isPistolShot ? Math.min(1, attackLimit ?? 1) : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
+      ? computeOdds({ sceneryHitThreshold: kegAttack && primary?.type === 'melee' ? (kegHit || undefined) : undefined, combatBarrels:[0,1].map(hand=>combatPistols.find(p=>p.handIndex===hand)?.barrels), barrels: isDoubleBarrel ? barrels : undefined, weaponChoiceKeys: hasPoison && !areaTarget ? [poisonBindings[0],poisonBindings[1]] : undefined, ladyBlessing: !areaTarget && Boolean(ladyTest), attacker: selfDamage ? { ...attacker, skillIds: [], traitIds: [] } : attacker, attackerKit: selfDamage ? emptyLoadout() : attackerKit, defender, defenderKit, primary: selfDamage ? { id: 'blackpowder_self_hit', name: kegVictim ? 'Powder Keg blast' : volatileHit ? `${volatileHit.weaponName} backfire` : fireHit ? 'Recovery fire hit' : 'Exploding weapon', type: 'ranged', strength: kegVictim ? 6 : volatileHit ? volatileHit.strength : 4, critCategory: 'missile', concussion: false, special: [kegVictim ? 'powderKegBlastHit' : volatileHit ? 'volatileSelfHit' : fireHit ? 'fireRecoveryHit' : 'blackpowderSelfHit'], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : mortarTarget ? { id: 'mortar_blast_hit', name: 'Mortar blast', type: 'ranged', strength: mortarShot!.strength, critCategory: 'missile', concussion: false, saveModifier: 2, special: ['mortarBlastHit', ...(mortarCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : grapeTarget ? { id: 'grape_shot_hit', name: 'Grape Shot additional hit', type: 'ranged', strength: grapeStrength, critCategory: 'missile', concussion: false, special: ['grapeShotHit', 'noArmourSaveModifier', ...(grapeCriticalUsed ? ['noFurtherCritical'] : [])], rangedProfile: { shortRange: null, maxRange: null, shotsPerTurn: 1 } } : primary, offHand: !kegAttack && !selfDamage && offHandValid ? offHand : null, context: { ...(selfDamage ? combatContextFor(houseRules) : context), sharedCriticalUsed: Boolean(areaId && sheet.areaCriticals[areaId]), pigeonBlastHit: Boolean(pigeonTarget) }, houseRules, woundsAlreadyLost, parryUsed, defenderStaffPower: Boolean(defenderStaffUse), attackLimit: kegAttack || isDoubleBarrel ? 1 : areaTarget ? 1 : staffUse?.used ? 0 : isPistolShot ? Math.min(1, attackLimit ?? 1) : attackLimit, attackerPreBattle: selfDamage ? [] : attackerPreBattle, defenderPreBattle })
       : null
   const [interception, setInterception] = useState<{key:string; note:string} | null>(null)
   const [interceptionReason, setInterceptionReason] = useState('')
   const interceptKey = `${attackKey}:${sheet.turn}:${Boolean(context.charging)}`
   const guardians = defender ? targets.filter(c => c.protectsMerchantId === defender.id && c.warbandId === defender.warbandId && !c.out) : []
   const interceptionChecked = interception?.key === interceptKey
-  const needsInterception = !areaTarget && guardians.length > 0 && !interceptionChecked
+  const kegItems = items.filter(i => i.warband_id === roster.id && i.item_rules_id === 'powder_keg' && i.quantity > sheet.warbandConsumables.filter(u => u.itemRowId === i.id && !u.correction).length)
+  const kegInventory = kegItems.find(i => i.id === kegItemId)
+  const knownKegs = [...sheet.powderKegAttempts, ...sessions.filter(s => s.warband_id !== roster.id).flatMap(s => s.live_state.powderKegAttempts)]
+  const kegBlocked = kegDone || (kegAttack && ((primary?.type === 'melee' && !kegHit) || !kegName.trim() || (Boolean(kegItemId) && !kegInventory) || !primary || (!canIgnitePowderKeg(primary, usedIds) && !kegException.trim()) || knownKegs.some(a => a.kegKey === powderKegTarget(kegName, roster.id).id && !a.correction && (powderKegDestroyed(a) || a.stage !== 'stopped'))))
+  const needsInterception = !kegAttack && !areaTarget && guardians.length > 0 && !interceptionChecked
   const interceptionNote = interceptionChecked ? interception.note : undefined
   const charmAvailable = Boolean(defender && defenderKit && defenderKit.firstHitDiscard !== null && !targetMemory?.charmUsed)
 
@@ -551,6 +569,29 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
 
   return (
     <>
+      <details className="rounded-md border border-border p-3 text-sm" open={kegMode || undefined}>
+        <summary className="cursor-pointer">Attack a Powder Keg</summary>
+        <div className="mt-3 flex flex-col gap-3">
+          <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={kegMode} disabled={readOnly} onChange={e => { setKegMode(e.target.checked); setKegSelection(null); setRollSetup(null) }} />Target a keg instead of a warrior</label>
+          {kegMode ? <>
+            <SelectField label="Keg inventory" value={kegItemId} onChange={e => setKegItemId(e.target.value)}>
+              <option value="">Scenario / table scenery — no inventory deduction</option>
+              {kegItems.map(i => <option key={i.id} value={i.id}>Your Powder Keg — {i.holder_type === 'stash' ? 'stash' : mine.find(m => m.id === i.holder_id)?.name ?? 'carried'} ({i.quantity} recorded)</option>)}
+            </SelectField>
+            <TextField label="Keg name / table identifier" value={kegName} onChange={e => setKegName(e.target.value)} />
+            {primary?.type === 'melee' ? <SelectField label="To hit the keg (agree at the table)" value={kegHit} onChange={e => setKegHit(Number(e.target.value))}>
+              <option value={0}>Choose the required hit roll</option><option value={1}>Automatic hit</option>{[2,3,4,5,6].map(n => <option key={n} value={n}>{n}+</option>)}
+            </SelectField> : null}
+            <p>The keg has Toughness 4. Shooting uses the normal hit roll and situation settings. For melee, agree a hit requirement at the table: the keg has no printed Weapon Skill. Usual ammunition and reload limits apply.</p>
+            {primary && !canIgnitePowderKeg(primary, usedIds) ? <TextField label="Explain how this weapon can ignite the powder" value={kegException} onChange={e => setKegException(e.target.value)} /> : null}
+            <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={kegUnderground} onChange={e => setKegUnderground(e.target.checked)} />Horrors of the Underground — check for a cave-in</label>
+            {kegBlocked ? <p>Choose an eligible igniter and, for melee, a hit requirement. An exploded keg cannot be attacked again; use a different identifier for a different keg.</p> : null}
+          </> : null}
+        </div>
+      </details>
+      <PowderKegControls sheet={sheet} events={events} models={[...mine,...targets]} edit={edit} readOnly={readOnly} onResolve={(attempt,target) => {
+        setAttackerId(attempt.warriorId); setKegMode(false); setSelfShotId(null); setFireHitId(null); setVolatileKey(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setKegSelection({attemptId:attempt.id,targetKey:target.key}); setRollSetup(null); setRolling(true)
+      }} />
       {isBlessedWater && attacker ? <Notice>
         <p>Blessed Water: throw up to {2 * (odds?.weapons[0]?.strength ?? attacker.stats.S)}″. One vial per throw, including misses. No range or movement penalty. A hit automatically wounds Undead, Daemons or Possessed; no armour save.</p>
         {waterRows.length > 1 ? <SelectField label="Vial stack" value={waterRow?.id ?? ''} onChange={event => setWaterRowId(event.target.value)}>{waterRows.map((row, index) => <option key={row.id} value={row.id}>Stack {index + 1}: {blessedWaterRemaining(sheet, row)} available</option>)}</SelectField> : <p>{waterRow ? blessedWaterRemaining(sheet, waterRow) : 0} vials available.</p>}
@@ -619,15 +660,15 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
         {reloadCopies.length > 1 ? <SelectField label={`${primary?.name} copy`} value={reloadHeld?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [`${attacker?.id}:${primary?.id}`]: e.target.value }))}>{reloadCopies.map(copy => <option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField> : null}
       </ChamberDisplay> : null}
       {isSwivel ? <Notice tone="info" title="Gun at risk"><p>A BOOM result destroys the carried copy selected here. Save the attack result to include its removal in the post-battle report.</p>{physicalBindings.map(binding => binding.choices.length > 1 ? <SelectField key={binding.key} label="Carried gun copy" value={binding.chosen?.key ?? ''} onChange={e => setPhysicalSelection(current => ({ ...current, [binding.key]: e.target.value }))}>{binding.choices.map(copy => <option key={copy.key} value={copy.key}>{copy.label}</option>)}</SelectField> : null)}</Notice> : null}
-      {!isSwivel && !isMortar && pendingExplosions.length > 0 ? <Notice tone="warn" title="Unresolved explosion"><div className="flex flex-col gap-2">{pendingExplosions.map(shot => <Button key={shot.id} variant="secondary" disabled={readOnly} onClick={() => { setAttackerId(shot.warriorId); setSelfShotId(shot.id); setFireHitId(null); setVolatileKey(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setRollSetup(null); setRolling(true) }}>Resolve explosion self-hit: {mine.find(w => w.id === shot.warriorId)?.name ?? shot.weaponName}</Button>)}</div></Notice> : null}
+      {!isSwivel && !isMortar && pendingExplosions.length > 0 ? <Notice tone="warn" title="Unresolved explosion"><div className="flex flex-col gap-2">{pendingExplosions.map(shot => <Button key={shot.id} variant="secondary" disabled={readOnly} onClick={() => { setAttackerId(shot.warriorId); setSelfShotId(shot.id); setFireHitId(null); setVolatileKey(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setKegSelection(null); setRollSetup(null); setRolling(true) }}>Resolve explosion self-hit: {mine.find(w => w.id === shot.warriorId)?.name ?? shot.weaponName}</Button>)}</div></Notice> : null}
       {burningBlocked ? <Notice tone="warn" title="On fire">This warrior may only move until the flames are extinguished. Use Fire recovery above.</Notice> : null}
       {volatileHits.length > 0 ? <Notice tone="warn" title="Weapon backfire"><div className="flex flex-col gap-2">{volatileHits.map(hit => <Button key={hit.key} variant="secondary" disabled={readOnly} onClick={() => {
-        setAttackerId(hit.warriorId); setSelfShotId(null); setFireHitId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setVolatileKey(hit.key); setRollSetup(null); setRolling(true)
+        setAttackerId(hit.warriorId); setSelfShotId(null); setFireHitId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setKegSelection(null); setVolatileKey(hit.key); setRollSetup(null); setRolling(true)
         const model = mine.find(w => w.id === hit.warriorId)
         if (model?.kind === 'henchman') setWoundsOverride({ id: model.id, value: 0 })
       }}>Resolve {hit.weaponName} backfire: {hit.name}</Button>)}</div></Notice> : null}
       {fireHits.length > 0 ? <Notice tone="warn" title="Fire damage to resolve"><div className="flex flex-col gap-2">{fireHits.map(test => <Button key={test.id} variant="secondary" disabled={readOnly} onClick={() => {
-        setAttackerId(test.warriorId); setSelfShotId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setFireHitId(test.id); setVolatileKey(null); setRollSetup(null); setRolling(true)
+        setAttackerId(test.warriorId); setSelfShotId(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setKegSelection(null); setFireHitId(test.id); setVolatileKey(null); setRollSetup(null); setRolling(true)
       }}>Resolve fire hit: {mine.find(w => w.id === test.warriorId)?.name ?? test.actorName}</Button>)}</div></Notice> : null}
       {active.firepotSmoke ? <Notice tone="warn" title="Blinded by Firepot smoke">This warrior cannot charge or shoot until the start of its next own turn. Other movement, melee attacks and spells are unaffected.</Notice> : null}
       {/* Attacker and defender face each other, with the dice between them. */}
@@ -673,7 +714,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
               }} /> : null}
               {isMortar ? <MortarControls items={items} key={attacker.id} attacker={attacker} defender={defender} models={[...mine, ...targets]} sheet={sheet} events={events} ownTurn={Number(ownTurnKey.split(':').at(-1))} hitThreshold={odds?.weapons[0]?.input.hitThreshold ?? null} requiresPermission={Boolean(ladyTest)} mayFire={!burningBlocked && !attacker.out && !psychologyLoading && !active.failedStupidity && (!context.movedThisTurn || [...attacker.skillIds, ...(attackerKit?.skillIds ?? [])].includes('nimble')) && (!turns.data || (!turns.data.finished && turns.data.turn_order[turns.data.active_index] === roster.id))} readOnly={readOnly} edit={edit} onSelfHit={id => {
-                setGrapeSelection(null); setMortarSelection(null); setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setFireHitId(null); setVolatileKey(null); setRollSetup(null); setRolling(true)
+                setGrapeSelection(null); setMortarSelection(null); setKegSelection(null); setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setFireHitId(null); setVolatileKey(null); setRollSetup(null); setRolling(true)
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
               }} onResolve={(shot, target) => {
                 setSelfShotId(null); setFireHitId(null); setVolatileKey(null); setGrapeSelection(null); setLineSelection(null); setPigeonSelection(null); setMortarSelection({ shotId: shot.id, targetKey: target.key }); setRollSetup(null); setRolling(true)
@@ -759,7 +800,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
         </FightBox>
 
 
-        <FightBox icon="shield" title="Defender" tone="accent">
+        <FightBox icon="shield" title={kegAttack ? kegName : "Defender"} tone="accent">
+          {kegAttack ? <p className="text-sm">Powder Keg · Toughness 4. A successful wound triggers the explosion check. No warrior injury or casualty is recorded.</p> : null}
           {enemies.isPending && targets.length === 0 ? (
             <div className="flex justify-center py-3">
               <Spinner label="Loading the enemy rosters" />
@@ -767,7 +809,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           ) : null}
           {enemies.error ? <Notice tone="error">{enemies.error}</Notice> : null}
           {!enemies.isPending && targets.length === 0 ? <p className="text-xs text-ink-dim">No enemy models to pick from.</p> : null}
-          {targets.length > 0 ? (<>
+          {!kegAttack && targets.length > 0 ? (<>
             <SelectField label="Enemy model" disabled={Boolean(areaTarget)} hideLabel value={defender?.id ?? ''} onChange={(e) => {setDefenderId(e.target.value);setTargetMemberChoice(0)}}>
               {areaTarget && defender?.warbandId === roster.id ? <option value={defender.id}>{areaTarget.name}</option> : null}
               {enemies.warbands.map((w) => (
@@ -785,8 +827,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             </SelectField>
             {defender?.kind==='henchman'&&(primary?.special.includes('lockKnocksDownAndCaptures')||holds.data?.some(h=>h.target_id===defender.id))?<SelectField label="Target group member" value={targetMember} disabled={readOnly} onChange={e=>setTargetMemberChoice(Number(e.target.value))}>{Array.from({length:defender.groupSize??1},(_,i)=><option key={i} value={i}>Model {i+1}{holds.data?.some(h=>!h.released_at&&h.target_id===defender.id&&h.target_model_index===i)?' — held':''}</option>)}</SelectField>:null}
           </>) : null}
-          {defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
-          {defender && defenderCarriedKit ? <>
+          {!kegAttack && defender && defenderKit ? <CombatantLine c={defender} kit={defenderKit} defending compact /> : null}
+          {!kegAttack && defender && defenderCarriedKit ? <>
             <SelectField label="Weapon held" disabled={readOnly || Boolean(staffDefenderWeapon)} value={String(defenderWeapons.indexOf(staffDefenderWeapon ?? defenderPrimary))} onChange={e => {
               const index = Number(e.target.value)
               const off = defaultOffHand(defenderWeapons, defenderWeapons[index])
@@ -825,7 +867,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
+          disabled={kegBlocked || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -865,7 +907,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             </details>
           ) : null}
           {!rollSetup ? <div className="flex flex-col gap-4 py-3">
-            {areaTarget ? <p className="text-sm">One automatic Strength {volatileHit ? volatileHit.strength : selfDamage || pigeonTarget ? 4 : mortarTarget ? mortarShot!.strength : grapeTarget ? grapeStrength : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
+            {areaTarget ? <p className="text-sm">One automatic Strength {kegVictim ? 6 : volatileHit ? volatileHit.strength : selfDamage || pigeonTarget ? 4 : mortarTarget ? mortarShot!.strength : grapeTarget ? grapeStrength : 3} hit on {areaTarget.name}. For a group model, confirm any wounds already lost at the table before beginning.</p> : null}
             {areaTarget && defender.kind === 'henchman' && defender.stats.W > 1 ? <Stepper label="Wounds already lost by this model" value={woundsAlreadyLost} onChange={value => setWoundsOverride({ id: defender.id, value })} max={defender.stats.W} /> : null}
             {needsInterception ? <div className="flex flex-col gap-3 rounded border border-brass p-3">
               <p className="font-medium">Merchant’s Guardian</p>
@@ -886,7 +928,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={readOnly || releaseHold.isPending} onClick={() => releaseHold.mutate({id:wieldersHold.id,action:'weaponSwitched'})}>Release hold and use this weapon</Button>
               {releaseHold.error ? <p role="alert">{releaseHold.error.message}</p> : null}
             </div> : null}
-            <Button block disabled={holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={kegBlocked || holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (kegBlocked || holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             cavalcadeCapture={Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade}
             key={attackKey}
@@ -901,6 +943,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               } catch (error) { setWaterError(error instanceof Error ? error.message : 'No vial available.'); return false }
             } : undefined}
             onRestart={isSwivel && !areaTarget && edit ? id => edit(s => correctBlackpowderShot(s, id, 'Player restarted the attack roller; earlier dice are preserved.')) : undefined}
+            powderKeg={kegAttack}
             onProgress={edit ? (previous, next, attemptId, rolled) => {
               if (combatPistols.length && !areaTarget && attacker) {
                 const last = next.done ? previous?.index ?? 0 : next.index
@@ -928,7 +971,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if (!isSwivel || areaTarget) return
               if (next.critUsed) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, criticalUsed: true } : shot) }))
               const startsShot = firingAttemptStarted(previous,next)
-              if (startsShot && primary) edit(s => recordBlackpowderShot(useSwivelSupply(s, items, roster.id, attacker.id, primary.id, supplyReason, `supply:${attemptId}`, new Date().toISOString()), { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, legacyWeaponKey:swivelLegacyKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
+              if (startsShot && primary) edit(s => recordBlackpowderShot(recordSwivelSupply(s, items, roster.id, attacker.id, primary.id, supplyReason, `supply:${attemptId}`, new Date().toISOString()), { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, legacyWeaponKey:swivelLegacyKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
               if (previous?.pending?.kind === 'hit' && next.pending?.kind === 'misfire') edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, misfirePending: true } : shot) }))
               if (previous?.pending?.kind === 'misfire' && rolled) edit(s => recordMisfireDie(s, attemptId, rolled.value, rolled.manual ? undefined : rolled.value))
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))
@@ -936,7 +979,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             } : undefined}
             heldWeapons={isDoubleBarrel ? [doubleHeld?.snapshot] : pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={Boolean(primary?.special.includes('lockKnocksDownAndCaptures')) || Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
+            forceLog={kegAttack || Boolean(primary?.special.includes('lockKnocksDownAndCaptures')) || Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
@@ -946,7 +989,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             readOnly={readOnly}
             handOff={
               // Only worth offering when the defender belongs to somebody else at the table.
-              defender.warbandId !== roster.id
+              !kegAttack && defender.warbandId !== roster.id
                 ? {
                     matchId,
                     attackerWarbandId: roster.id,
@@ -959,6 +1002,11 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 : undefined
             }
             onLog={async(state, attemptId) => {
+              if (kegAttack) {
+                if (state.powderKegWounded) edit?.(s => beginPowderKeg(s, { id: attemptId, kegKey: defender.id, kegName: defender.name, warriorId: attacker.id, warbandId: roster.id, warriorName: attacker.name, weaponName: primary!.name, at: new Date().toISOString(), turn: sheet.turn, inventory: kegInventory ? { itemRowId: kegInventory.id, holderKey: kegInventory.holder_id ?? 'stash' } : undefined, ignitionNote: kegException.trim() ? `Igniter exception: ${kegException.trim()}` : 'The hit and wound dice are recorded in the attack attempt.', critical: Boolean(state.powderKegCritical), explosionDie: state.powderKegExplosionDie, underground: kegUnderground }))
+                return
+              }
+
               const needsEngineCheck=state.worst==='outOfAction'&&isManCatcherItem(state.outOfActionWeaponId??null)&&roster.warbandTemplateId==='black_dwarfs'
               const availableEngines=needsEngineCheck?await engines.refetch():null
               if(availableEngines?.error)throw new Error(`Could not check Engine availability: ${availableEngines.error.message}`)
@@ -988,6 +1036,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 volatileBackfireKey: volatileHit?.key,
                 fireRecoveryId: fireHit?.id,
                 blackpowderSelfShotId: selfShot?.id,
+                powderKegAttemptId: kegAttempt?.id,
+                powderKegTargetKey: kegVictim?.key,
                 mortarShotId: mortarShot?.id,
                 mortarTargetKey: mortarTarget?.key,
                 grapeShotId: grapeSpread?.shotId,
@@ -1007,10 +1057,10 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
               })
             }}
-            onFinished={state => { if (!areaTarget || defender.kind !== 'henchman') rememberFight(state) }}
+            onFinished={state => { if (!kegAttack && (!areaTarget || defender.kind !== 'henchman')) rememberFight(state) }}
           />}
           </Sheet>
-          <OddsSection odds={odds} attacker={attacker} defender={defender} />
+          {!kegAttack ? <OddsSection odds={odds} attacker={attacker} defender={defender} /> : null}
         </>
       ) : null}
     </>
@@ -1192,6 +1242,7 @@ function OddsSection({ odds, attacker, defender }: { odds: FightOdds; attacker: 
 // ---------------------------------------------------------------------------------------------
 
 interface RollSectionProps {
+  powderKeg?: boolean
   cavalcadeCapture?: boolean
   heldWeapons?: (BrokenWeapon | undefined)[]
   swordBreaker?: boolean
@@ -1229,7 +1280,7 @@ export interface HandOffTarget {
   turn: number
 }
 
-function RollSection({ cavalcadeCapture=false, beforeStart, restartBlocked = false, heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
+function RollSection({ powderKeg=false, cavalcadeCapture=false, beforeStart, restartBlocked = false, heldWeapons = [], swordBreaker = false, onRestart, onProgress, forceLog, odds, attacker, defender, defenderKit, readOnly, onLog, onFinished, charmAvailable, handOff, turn, onAttempt }: RollSectionProps) {
   const [state, setState] = useState<RollState | null>(null)
   const hand = useHandOff(handOff, (roll, manual) => advance((s) => applyRoll(s, roll, manual), { value: roll, label: 'Their roll', manual }), () => advance(declineRoll))
   // The die just thrown, held so the result can be shown as dice rather than only as a log line.
@@ -1254,8 +1305,8 @@ function RollSection({ cavalcadeCapture=false, beforeStart, restartBlocked = fal
     attempt.current = nextAttempt
     const plans: AttackPlan[] = odds.weapons.flatMap((w, weaponIndex) =>
       Array.from({ length: w.attacks }, () => ({
-        cavalcadeCapture,
-        barrels: w.input.barrels,
+        powderKeg,
+        cavalcadeCapture,        barrels: w.input.barrels,
         heldWeapon: heldWeapons[weaponIndex],
         swordBreakerParry: swordBreaker,
         weaponName: w.weapon.name,
@@ -1263,7 +1314,7 @@ function RollSection({ cavalcadeCapture=false, beforeStart, restartBlocked = fal
         input: w.input,
         parry: { beatsOrMatches: defender.skillIds.includes('master_of_blades'), reroll: defenderKitReroll(defenderKit), fixedThreshold: fixedParryThreshold(defenderKit) },
         luckyCharm: defenderKit.firstHitDiscard ?? undefined,
-        rot: w.weapon.type === 'melee' && carriesRot(attacker) && !['undead', 'possessed', 'daemon'].some((t) => defender.traitIds.includes(t)),
+        rot: !powderKeg && w.weapon.type === 'melee' && carriesRot(attacker) && !['undead', 'possessed', 'daemon'].some((t) => defender.traitIds.includes(t)),
       })),
     )
     setLogged('no')
@@ -1392,9 +1443,9 @@ function RollSection({ cavalcadeCapture=false, beforeStart, restartBlocked = fal
           {state.done ? (
             <div key={state.log.length} className={`flex flex-col gap-2 border-t border-border pt-3 ${state.worst ? (RESULT_ANIMATION_CLASS[state.worst] ?? '') : ''}`}>
               <p role="status" className="text-base text-ink">
-                <span className="font-headline text-2xl font-semibold">Result: {state.worst ? OUTCOME_LABEL[state.worst] : 'Nothing happened'}.</span>{' '}
+                <span className="font-headline text-2xl font-semibold">Result: {powderKeg && state.powderKegWounded ? 'Keg explodes' : state.worst ? OUTCOME_LABEL[state.worst] : 'Nothing happened'}.</span>{' '}
                 <span className="text-ink-dim">
-                  {state.worst === 'outOfAction'
+                  {powderKeg ? state.powderKegWounded ? 'Remove the keg and resolve its blast radius.' : 'The keg has not exploded.' : state.worst === 'outOfAction'
                     ? `${defender.name} is out of action.`
                     : state.worst === 'stunned' || state.worst === 'knockedDown'
                       ? `${defender.name} is ${OUTCOME_LABEL[state.worst].toLowerCase()}.`
@@ -1407,13 +1458,13 @@ function RollSection({ cavalcadeCapture=false, beforeStart, restartBlocked = fal
               {state.volatileBackfires ? <p className="text-sm text-ink">Log this result to resolve {state.volatileBackfires} separate Strength 6 hit{state.volatileBackfires === 1 ? '' : 's'} on {attacker.name}.</p> : null}
               {(forceLog || state.brokenWeapons?.length || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) && !readOnly ? (
                 <Button variant="primary" block disabled={logged === 'yes'} pending={logged === 'saving'} onClick={() => void log()}>
-                  {logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
+                  {powderKeg ? logged === 'yes' ? 'Keg result recorded' : 'Record keg result' : logged === 'yes' ? 'Logged to both sheets' : 'Log to both sheets'}
                 </Button>
               ) : null}
               {logError ? <Notice tone="error">{logError}</Notice> : null}
               {state.worst === 'outOfAction' && (attacker.kind === 'henchman' || attacker.kind === 'animal') ? <p className="text-xs text-ink-dim">{attacker.kind === 'animal' ? 'Animals' : 'Henchmen'} earn no experience for kills; the log still marks the casualty for the other side.</p> : null}
               {(forceLog || state.brokenWeapons?.length || state.bolasBackfires || state.volatileBackfires || state.targetOnFire || state.smokeHit || state.woundsLost > odds.woundsAlreadyLost || state.worst && ['entangled', 'wounded', 'knockedDown', 'stunned', 'outOfAction'].includes(state.worst)) ? (
-                <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : state.bolasBackfires ? 'Bolas backfire' : state.volatileBackfires ? 'Cathayan backfire' : state.targetOnFire ? 'fire condition' : state.smokeHit ? 'Firepot hit and smoke test' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p>
+                !powderKeg ? <p className="text-xs text-ink-dim">Logging puts the {state.worst === 'outOfAction' ? (attacker.warbandId === defender.warbandId ? 'casualty' : 'kill and the casualty') : state.worst === 'entangled' ? 'entanglement' : state.bolasBackfires ? 'Bolas backfire' : state.volatileBackfires ? 'Cathayan backfire' : state.targetOnFire ? 'fire condition' : state.smokeHit ? 'Firepot hit and smoke test' : 'Wounds lost'} on both sheets at once, and can be reverted from the Log tab.</p> : <p className="text-xs text-ink-dim">Records the ignition result without a warrior casualty. Resolve the explosion below.</p>
               ) : null}
             </div>
           ) : null}
@@ -1472,6 +1523,7 @@ function kitNames(c: Combatant): string {
 /** One side of the fight: a headed box so the two read as facing each other on a phone. */
 /** The big heading for a roll step, read from across a table: the phase, not the weapon or the reroll count. */
 const ROLL_KIND_HEADING: Record<RollKind, string> = {
+  powderKegExplosion: 'Explosion',
   cavalcadeCapture: 'Capture!',
   trapBlade: 'Trap Blade',
   ignition: 'Set on Fire',

@@ -29,3 +29,6 @@ export * from './burning';
 export * from './volatileBackfire';
 
 export * from './weaponLoss';
+
+export * from './powderKeg';
+export * from './powderKegBattle';

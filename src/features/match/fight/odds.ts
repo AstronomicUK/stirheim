@@ -21,6 +21,8 @@ import type { PreBattleEffect } from '../../../rules/data/itemRules'
 import { loadoutOf, type Combatant, type Loadout } from './combatants'
 
 export interface FightSetup {
+  /** Explicit table-agreed hit threshold for scenery, which has no Weapon Skill. */
+  sceneryHitThreshold?: number
   barrels?: 1 | 2
   combatBarrels?: (1 | 2 | undefined)[]
   ladyBlessing?: boolean
@@ -303,6 +305,7 @@ export function computeOdds(setup: FightSetup): FightOdds {
     remaining -= attacks
     const raw = weapon.id === 'blessed_water' ? blessedWaterAttack({ attacker, defender, context, houseRules }) : buildAttackInput({ attacker, weapon, defender, context, houseRules })
     const input = { ...adjustForCoatings(raw, weapon, phase, dosed.kit), barrels: weapon.special.some(rule=>['doubleBarrelledOptionalSecondWoundRollPerHit','doubleBarrelledTwoHitsPerSuccessfulShot'].includes(rule)) ? phase === 'ranged' ? setup.barrels : setup.combatBarrels?.[weaponIndex] : undefined, separateBarrelHits: weapon.special.includes('doubleBarrelledTwoHitsPerSuccessfulShot') }
+    if (setup.sceneryHitThreshold !== undefined) { input.hitThreshold = setup.sceneryHitThreshold; input.automaticHits = setup.sceneryHitThreshold === 1; input.automaticHitReason = undefined }
     const single = resolveSingleAttack(input)
     const { ws, strength } = effectiveOffensiveStats(attacker, weapon, context)
     const pSave = probabilityAtLeast(input.armourThreshold)

@@ -1,3 +1,4 @@
+import { powderKegAttemptSchema } from './powderKeg'
 // The live battle sheet one warband keeps during a match (battle_sessions.live_state). It is a
 // tally, not a report: the post-battle wizard (Phase 7) reads it to pre-fill the report, and
 // the other players see it update in real time.
@@ -157,6 +158,7 @@ export const battleLiveStateSchema = z.object({
   /** Explicit end-of-shooting reloads for double-barrel chamber tracking. */
   chamberReloads: z.array(z.object({id:z.string(),warriorId:z.string(),modelIndex:z.number().int().min(0),weaponKey:z.string(),weaponName:z.string(),ownTurn:z.number().int().min(0),amount:z.number().int().min(1).max(2),at:z.string(),correction:z.string().optional()})).default([]),
   areaCriticals: z.record(z.string(), z.boolean()).default({}),
+  powderKegAttempts: z.array(powderKegAttemptSchema).default([]),
   mortarShots: z.array(z.object({
     id: z.string(), warriorId: z.string(), warbandId: z.string(), shooterName: z.string(), weaponKey: z.string(), ownTurn: z.number().int().min(0), at: z.string(),
     primary: z.object({ key: z.string(), warbandId: z.string(), warriorId: z.string(), name: z.string() }),

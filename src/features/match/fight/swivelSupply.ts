@@ -17,7 +17,7 @@ export function swivelSupplyRow(items: readonly ItemRow[], warbandId: string, wa
 }
 
 /** Called on the first actual firing attempt, never on profile selection or opening the roller. */
-export function useSwivelSupply(sheet: BattleLiveState, items: readonly ItemRow[], warbandId: string, warriorId: string, itemId: string, exception: string, id: string, at: string): BattleLiveState {
+export function recordSwivelSupply(sheet: BattleLiveState, items: readonly ItemRow[], warbandId: string, warriorId: string, itemId: string, exception: string, id: string, at: string): BattleLiveState {
   if (!SWIVEL_SUPPLIES[itemId] || usedSwivelSupply(sheet, itemId)) return sheet
   const row = swivelSupplyRow(items, warbandId, warriorId, itemId)
   if (!row && !exception.trim()) throw new Error('Buy this ammunition supply or record why ammunition is available at the table.')

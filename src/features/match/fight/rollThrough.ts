@@ -12,7 +12,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'cavalcadeCapture' | 'trapBlade' | 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'powderKegExplosion' | 'cavalcadeCapture' | 'trapBlade' | 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -26,6 +26,8 @@ export interface PendingRoll {
 }
 
 export interface AttackPlan {
+  /** Stop after a successful wound against scenery; never roll warrior injuries. */
+  powderKeg?: boolean
   /** Caller has verified Cavalcade Hero, enemy human henchman and both capture limits. */
   cavalcadeCapture?: boolean
   /** Nuln double barrel: a shared hit roll followed by independent wound sequences. */
@@ -104,6 +106,9 @@ interface Current {
 }
 
 export interface RollState {
+  powderKegWounded?: boolean
+  powderKegCritical?: boolean
+  powderKegExplosionDie?: number
   /** The caller must persist the particular model held before another combat is started. */
   slaaneshiLock?: boolean;
   slaaneshiLockWeaponId?: string;
@@ -209,7 +214,7 @@ function beginAttack(state: RollState, permissionGranted = false): RollState {
     return askWound(log(fresh, `${attackName(state)}: automatic hit — the target is knocked down.`, 'good'))
   }
   if (plan.input.automaticHits) {
-    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'fireRecovery' ? 'automatic Strength 4 hit from failed fire Recovery' : plan.input.automaticHitReason === 'volatileBackfire' ? `${plan.weaponName}: automatic self-hit from the backfire` : plan.input.automaticHitReason === 'mortarBlast' ? 'automatic Mortar blast hit' : plan.input.automaticHitReason === 'grapeShot' ? 'automatic Grape Shot hit — no armour save modifier' : plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blackpowderExplosion' ? 'automatic Strength 4 self-hit from the exploding weapon; no critical hits' : plan.input.automaticHitReason === 'pigeonBlast' ? 'automatic Strength 4 hit — this model is in the Pigeon Bomb blast' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
+    const hit = log(fresh, `${attackName(state)}: ${plan.input.automaticHitReason === 'powderKegBlast' ? 'automatic Strength 6 Powder Keg blast hit' : plan.input.automaticHitReason === 'fireRecovery' ? 'automatic Strength 4 hit from failed fire Recovery' : plan.input.automaticHitReason === 'volatileBackfire' ? `${plan.weaponName}: automatic self-hit from the backfire` : plan.input.automaticHitReason === 'mortarBlast' ? 'automatic Mortar blast hit' : plan.input.automaticHitReason === 'grapeShot' ? 'automatic Grape Shot hit — no armour save modifier' : plan.input.automaticHitReason === 'zeroWeaponSkill' ? 'automatic hit — the target has Weapon Skill 0' : plan.input.automaticHitReason === 'blackpowderExplosion' ? 'automatic Strength 4 self-hit from the exploding weapon; no critical hits' : plan.input.automaticHitReason === 'pigeonBlast' ? 'automatic Strength 4 hit — this model is in the Pigeon Bomb blast' : plan.input.automaticHitReason === 'blunderbussLine' ? 'automatic hit — this model is in the blunderbuss line' : 'automatic spell hit'}.`, 'good')
     if (plan.input.automaticHitReason && plan.input.dodgeThreshold !== undefined && plan.input.dodgeThreshold !== IMPOSSIBLE) return afterHit(hit)
     return plan.input.automaticHitReason ? offerCharmOrContinue(hit) : askWound(hit)
   }
@@ -230,7 +235,7 @@ function log(state: RollState, text: string, tone: LogLine['tone'] = 'neutral'):
 }
 
 function finishAttack(state: RollState, outcome: Outcome): RollState {
-  if ((outcome === 'noWound' || outcome === 'saved') && state.plans[state.index]?.input.chainShotKnockdown && !state.cur.chainTested) return { ...state, cur: { ...state.cur, chainOriginalOutcome: outcome }, pending: { kind: 'chainKnockdown', who: 'attacker', label: 'Chain Shot knock-down', detail: 'Hit but no unsaved wound: 4+ knocks the target down, even if normally immune.' } }
+  if (!state.plans[state.index]?.powderKeg && (outcome === 'noWound' || outcome === 'saved') && state.plans[state.index]?.input.chainShotKnockdown && !state.cur.chainTested) return { ...state, cur: { ...state.cur, chainOriginalOutcome: outcome }, pending: { kind: 'chainKnockdown', who: 'attacker', label: 'Chain Shot knock-down', detail: 'Hit but no unsaved wound: 4+ knocks the target down, even if normally immune.' } }
 
   if (state.hitBatch?.phase === 'collect') return collectHit(state, outcome)
   if (state.hitBatch?.phase === 'parry') return nextBatchParry({ ...state, hitBatch: { ...state.hitBatch, hits: state.hitBatch.hits.map((h, i) => i === state.index ? { ...h, outcome } : h) } })
@@ -313,6 +318,10 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       const broken = roll >= 4 && plan.heldWeapon
       const losses = broken && !state.brokenWeapons?.some(loss => loss.itemId === broken.itemId && loss.copyIndex === broken.copyIndex) ? [...(state.brokenWeapons ?? []), broken] : state.brokenWeapons
       return finishAttack(log({ ...state, brokenWeapons: losses }, `Trap Blade: rolled ${roll}${rollTag}; needs 4+. ${broken ? `${broken.name} is broken and cannot be used for further attacks. Hits already rolled still resolve.` : 'The weapon is not broken.'}`, broken ? 'bad' : 'neutral'), 'parried')
+    }
+    case 'powderKegExplosion': {
+      const tested = log(state, `Powder Keg explosion: rolled ${roll}${rollTag}. ${roll >= 4 ? 'The keg explodes.' : 'The keg does not explode.'}`, roll >= 4 ? 'good' : 'neutral')
+      return roll >= 4 ? finishPowderKeg(tested, false, roll) : finishAttack(tested, 'noWound')
     }
     case 'ignition': {
       const ignited = roll >= (input.ignitionThreshold ?? 7)
@@ -423,6 +432,10 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
       }
       if (!wounded) return finishAttack(log(state, `To wound: rolled ${roll}${rollTag}. No wound.`, 'bad'), 'noWound')
       const critEligible = (!state.critUsed || (plan.barrels === 2 && !input.separateBarrelHits)) && input.woundThreshold !== IMPOSSIBLE && roll > input.woundThreshold && input.critTriggerFaces.includes(roll)
+      if (plan.powderKeg) {
+        const hit = log(state, `To wound: rolled ${roll}${rollTag}. ${critEligible ? 'Critical hit: the Powder Keg explodes automatically.' : 'Keg wounded: resolve its 4+ explosion test.'}`, 'good')
+        return critEligible ? finishPowderKeg(hit, true) : { ...hit, pending: { kind: 'powderKegExplosion', who: 'attacker', label: 'Powder Keg explosion', detail: '4+ explodes. If it does not explode, any second barrel still rolls to wound.' } }
+      }
       if (critEligible) {
         const s = log({ ...state, critUsed: true }, `To wound: rolled ${roll}${rollTag}. Wounded, and it is a critical hit!`, 'good')
         return { ...s, pending: { kind: 'critTable', who: 'attacker', label: 'Critical hit table', detail: input.critTableRollModifier ? `D6 ${input.critTableRollModifier > 0 ? '+' : ''}${input.critTableRollModifier}` : 'Roll a D6' } }
@@ -555,15 +568,21 @@ function afterHit(state: RollState): RollState {
   return askWound(state)
 }
 
+function finishPowderKeg(state: RollState, critical: boolean, explosionDie?: number): RollState {
+  return { ...state, powderKegWounded: true, powderKegCritical: critical, powderKegExplosionDie: explosionDie, critUsed: state.critUsed || critical,
+    outcomes: [...state.outcomes, 'wounded'], worst: 'wounded', pending: null, done: true, index: state.plans.length }
+}
+
 function askWound(state: RollState): RollState {
   const input = state.plans[state.index].input
-  if (input.ignitionThreshold !== undefined && !state.cur.ignitionTested) return { ...state, pending: { kind: 'ignition', who: 'attacker', label: 'Set target on fire', detail: `Roll ${input.ignitionThreshold}+; the normal wound roll follows whether or not the target catches fire.` } }
+  if (!state.plans[state.index].powderKeg && input.ignitionThreshold !== undefined && !state.cur.ignitionTested) return { ...state, pending: { kind: 'ignition', who: 'attacker', label: 'Set target on fire', detail: `Roll ${input.ignitionThreshold}+; the normal wound roll follows whether or not the target catches fire.` } }
   if (input.smokeOnHit) state = log({...state,smokeHit:true}, 'Firepot smoke: at the start of the target’s next own turn, roll under Initiative. Failure prevents charging and shooting until its following own turn. Resolve group members separately.')
   if (input.fishHookFallThreshold !== undefined) return {...state,pending:{kind:'fishHookFall',who:'attacker',label:'Fish-hook Strength test',detail:`Roll ${input.fishHookFallThreshold} or less; 6 always fails. The +1 test modifier against a large target is already included. This replaces all damage.`}}
   if (input.entangleInsteadOfWound) return finishAttack(log(state, 'Bolas entangle the target without a wound: it cannot move and has −2 Weapon Skill in hand-to-hand combat, but may shoot normally. At the table, roll a D6 in Recovery; 4+ frees it. Log this result to record entanglement for an individually identified target; track members of groups separately.', 'good'), 'entangled')
   if (input.noWoundReason && input.woundThreshold === IMPOSSIBLE && !input.automaticWound) return finishAttack(log(state, input.noWoundReason), 'noWound')
   if (input.automaticWound) {
     const next = log(state, `${state.plans[state.index].weaponName}: automatically causes one Wound. No wound roll or critical hit.`, 'good')
+    if (state.plans[state.index].powderKeg) return { ...next, pending: { kind: 'powderKegExplosion', who: 'attacker', label: 'Powder Keg explosion', detail: '4+ explodes.' } }
     return startSaves({ ...next, cur: { ...next.cur, crit: null, wounds: 1 } })
   }
   const auto = Boolean(input.autoWoundOnNaturalSixToHit) && state.cur.hitRoll === 6

@@ -46,6 +46,8 @@ export const attackEventPayloadSchema = z.object({
   entangled: z.boolean().optional(),
   /** First own turn in which the Firepot smoke test is due. */
   bolasBackfires: z.number().int().min(0).optional(),
+  powderKegAttemptId: z.string().optional(),
+  powderKegTargetKey: z.string().optional(),
   volatileBackfires: z.number().int().min(0).optional(),
   volatileBackfireKey: z.string().optional(),
   fireRecoveryId: z.string().optional(),

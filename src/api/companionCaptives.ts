@@ -47,6 +47,7 @@ export function buildCompanionCaptiveProposal(input: { item: CaptiveCase; owner:
   const kindName = ANIMAL_KINDS[snap.item.item_rules_id]?.name ?? snap.kind_name
   let nextOwner = owner.roster, nextCaptor = captor.roster, message: string, holderId: string | null = null, original = false
   if (choice.kind === 'sell') {
+    if(captor.roster.warbandTemplateId==='pit_fighters')throw new Error('Free the Slaves!: Pit Fighters cannot sell captives.')
     if (!Number.isInteger(choice.d6) || choice.d6 < 1 || choice.d6 > 6) throw new Error('Enter a D6 result from 1 to 6.')
     if (choice.originalD6 != null && (!Number.isInteger(choice.originalD6) || choice.originalD6 < 1 || choice.originalD6 > 6)) throw new Error('The app’s original D6 must be 1 to 6.')
     nextCaptor = { ...captor.roster, gold: captor.roster.gold + 5 * choice.d6 }

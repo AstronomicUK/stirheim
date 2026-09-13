@@ -3,19 +3,20 @@ import {Button, DicePicker, Notice, NumberField, SelectField} from '../../../ui'
 
 export type ForcedCaptiveChoice={kind:'release'|'ransom'|'sell'|'wretch';groupId:string;gold?:number;d6?:number;originalD6?:number|null}
 /** One captured henchman is a temporary case, never an extra permanent warband. */
-export function ForcedCaptiveForm({name,ownerGold,pending,submitLabel,onSubmit,error,companionReturn,allowWretch=false}:{name:string;ownerGold:number;pending:boolean;submitLabel:string;onSubmit:(choice:ForcedCaptiveChoice)=>void;error?:string;companionReturn?:ReactNode;allowWretch?:boolean}){
+export function ForcedCaptiveForm({name,ownerGold,pending,submitLabel,onSubmit,error,companionReturn,allowWretch=false,allowSell=true}:{name:string;ownerGold:number;pending:boolean;submitLabel:string;onSubmit:(choice:ForcedCaptiveChoice)=>void;error?:string;companionReturn?:ReactNode;allowWretch?:boolean;allowSell?:boolean}){
  const [kind,setKind]=useState<ForcedCaptiveChoice['kind']>('release')
  const [gold,setGold]=useState<number|null>(null)
  const [die,setDie]=useState<number|null>(null),[original,setOriginal]=useState<number|null>(null)
  const [groupId]=useState(()=>crypto.randomUUID())
- const valid=kind==='wretch'&&allowWretch||kind==='release'||kind==='ransom'&&gold!==null&&Number.isInteger(gold)&&gold>=0&&gold<=ownerGold||kind==='sell'&&die!==null&&Number.isInteger(die)&&die>=1&&die<=6
+ const valid=kind==='wretch'&&allowWretch||kind==='release'||kind==='ransom'&&gold!==null&&Number.isInteger(gold)&&gold>=0&&gold<=ownerGold||kind==='sell'&&allowSell&&die!==null&&Number.isInteger(die)&&die>=1&&die<=6
  return <div className="flex flex-col gap-3 border-t border-border pt-3">
   <SelectField label="Agree what happens to the captive" value={kind} onChange={e=>setKind(e.target.value as ForcedCaptiveChoice['kind'])}>
    {allowWretch?<option value="wretch">Cruel Fate — turn into a Wretch</option>:null}
    <option value="release">Release — return without payment</option>
    <option value="ransom">Ransom — pay for their return</option>
-   <option value="sell">Sell — remove the captive permanently</option>
+   {allowSell?<option value="sell">Sell — remove the captive permanently</option>:null}
   </SelectField>
+  {!allowSell?<p className="text-sm text-ink-dim">Free the Slaves!: Pit Fighters never sell captured opponents to slavers.</p>:null}
   {kind==='ransom'?<NumberField label="Agreed ransom (gc)" value={gold} onChange={setGold} hint={`The captive’s warband has ${ownerGold} gc.`}/>:null}
   <div className={kind==='sell'?'flex flex-col gap-3':'hidden'}>
    <DicePicker label="Captive sale" onComplete={(values,manual)=>{setDie(values[0]);if(!manual)setOriginal(values[0])}}/>

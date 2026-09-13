@@ -328,3 +328,8 @@ A deterministic two-connection test reproduced a key handover committing while i
 ### Final build checkpoint — 13 September, 11:13 BST
 
 The application build and TypeScript pass, with 2,422 ordinary tests across 204 files. The full API run passed 322 checks; an additional direct-update variant now separately proves the concurrent rescue guard as well as the ordinary correction RPC (both variants pass). No application changes followed the build. Public import dry run accounts for all 231 historical entries (221 included, 10 excluded). Remaining decisions and unimplemented specialist boundaries are explicit in the scope audit. No new Claude acknowledgment has arrived; the source-review handoff is queued. Nothing deployed.
+
+
+### Pit Fighter captive menu — local frontend follow-up
+
+Free the Slaves! was already enforced by all three server validators and the Hero menu. The shared henchman/companion menu nevertheless offered a sale that would fail on submission. Those menus now omit it and explain the rule; their proposal builders reject it immediately too. The actual shared form passes a mobile browser check for release/ransom options, visible explanation, disabled incomplete ransom and no overflow. TypeScript/lint pass. No migration was needed: 128 remains free. The separate In the Pit arena sequence/reward allocation is still unfinished. No deployment.

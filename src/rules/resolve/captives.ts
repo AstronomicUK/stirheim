@@ -1,3 +1,4 @@
+import { cavalcadeThroneReward } from './cavalcadeCapture'
 import type { RosterHero, RosterWarband } from '../types/roster'
 import { findWarbandTemplate } from '../data/warbandTemplates'
 import { leaderTemplate } from './roster'
@@ -46,13 +47,14 @@ export function resolveCaptive(owner: RosterWarband, captor: RosterWarband, hero
   nextCaptor={...captor,wyrdstone:captor.wyrdstone+1,stash:choice.d6===1?captor.stash:[...captor.stash,...hero.equipment]}
   nextHero=choice.d6===1?{...returned(hero,message),xp:hero.xp+choice.xp}:{...returned(hero,message),status:'dead',equipment:[]}
  } else {
-  if(choice.kind==='wretch'||choice.kind==='throne') {
+  if(choice.kind==='throne') {
+   const outcome=cavalcadeThroneReward(captor,hero,{d6:choice.d6,groupId:choice.groupId,heroId:choice.leaderId})
+   nextCaptor=outcome.captor;message=outcome.message
+  } else if(choice.kind==='wretch') {
    const template=findWarbandTemplate(faction)
-   if(!template || (choice.kind==='wretch' && faction!=='court_of_the_profane_pleasures') || (choice.kind==='throne' && faction!=='the_cursed_cavalcade')) throw new RulesError('capture.conversion','This warband does not have that capture rule.')
-   if(choice.kind==='throne' && (!Number.isInteger(choice.d6)||choice.d6<1||choice.d6>6)) throw new RulesError('capture.die','Enter a D6 result.')
-   if(choice.kind==='wretch'||(choice.d6>=3&&choice.d6<=5)) {nextCaptor=recruitHenchmen(captor,template,choice.kind==='wretch'?'court_of_pleasures_wretches':'cursed_cavalcade_captured_thrall',hero.name,1,choice.groupId,{costOverride:0}).value.warband;message=`${hero.name} became ${choice.kind==='wretch'?'a Wretch':'a Captured Thrall'}; removed from the original warband.`}
-   else if(choice.d6===6) { const chosen=captor.heroes.find(h=>h.id===choice.leaderId&&h.status==='active');if(!chosen)throw new RulesError('capture.randomHero','Randomly select a surviving hero for the +1 XP.');nextCaptor={...captor,heroes:captor.heroes.map(h=>h.id===chosen.id?{...h,xp:h.xp+1}:h)};message=`${hero.name} sacrificed to the Throne; randomly selected ${chosen.name} gains +1 XP.` }
-   else message=`${hero.name} swallowed by the Throne of Worms.`
+   if(!template||faction!=='court_of_the_profane_pleasures') throw new RulesError('capture.conversion','This warband does not have that capture rule.')
+   nextCaptor=recruitHenchmen(captor,template,'court_of_pleasures_wretches',hero.name,1,choice.groupId,{costOverride:0}).value.warband
+   message=`${hero.name} became a Wretch; removed from the original warband.`
   } else if(choice.kind==='sell') {
    if(!Number.isInteger(choice.d6)||choice.d6<1||choice.d6>6) throw new RulesError('capture.die','Enter a D6 result from 1 to 6.')
    nextCaptor={...captor,gold:captor.gold+choice.d6*5};message=`${hero.name} sold to slavers for ${choice.d6*5} gc (D6 ${choice.d6}); equipment retained by ${captor.name}.`

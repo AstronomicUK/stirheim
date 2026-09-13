@@ -1,3 +1,6 @@
+import {toRosterWarband} from '../../domain/roster'
+import {diffRoster} from '../../domain/rosterDiff'
+import {resolveCaptive} from '../../rules/resolve/captives'
 import { beforeAll, afterAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const enabled=process.env.SUPABASE_LOCAL==='1'
@@ -62,4 +65,33 @@ describe.skipIf(!enabled)('Core captive dice provenance (#229)',()=>{
   expect(check(await admin.from('captive_cases').select('resolution_message').eq('id',c.id).single()).resolution_message).toContain('app rolled 6; player changed this to 2')
   expect(check(await admin.from('warbands').select('gold').eq('id',cw).single()).gold).toBe(110)
  })
+ it('builds and accepts a real Throne transformation without treating a Thrall as a gold hire',async()=>{
+  check(await admin.from('warbands').update({type_rules_id:'the_cursed_cavalcade'}).eq('id',cw))
+  check(await admin.from('items').insert({warband_id:vw,holder_type:'hero',holder_id:hero,item_rules_id:'sword',quantity:1,notes:'Engraved heirloom'}))
+  check(await fileVictim('captured',[cw]))
+  check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',applied:{}}}))
+  const [c]=await cases()
+  async function rows(id:string){
+   const warband=check(await admin.from('warbands').select('*').eq('id',id).single())
+   const heroes=check(await admin.from('heroes').select('*').eq('warband_id',id))
+   const groups=check(await admin.from('henchman_groups').select('*').eq('warband_id',id))
+   const items=check(await admin.from('items').select('*').eq('warband_id',id))
+   return {warband,heroes,groups,items,roster:toRosterWarband(warband,heroes,groups,items)}
+  }
+  const owner=await rows(vw),enemy=await rows(cw)
+  const choice={kind:'throne' as const,d6:4,originalD6:1,groupId:crypto.randomUUID(),leaderId:''}
+  const result=resolveCaptive(owner.roster,enemy.roster,hero,choice)
+  const proposal=check(await captor.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:choice,p_message:result.message,p_advances:[],p_expected:await expected(),p_owner_changes:diffRoster(owner,result.owner),p_captor_changes:diffRoster(enemy,result.captor)}))
+  expect(check(await admin.from('henchman_groups').select('id').eq('warband_id',cw))).toHaveLength(0)
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}))
+  const saved=await rows(cw)
+  expect(saved.roster.henchmenGroups).toHaveLength(1)
+  expect(saved.roster.henchmenGroups[0]).toMatchObject({unitTemplateId:'cursed_cavalcade_captured_thrall',size:1,xp:0})
+  expect(saved.roster.gold).toBe(100)
+  expect(saved.roster.stash).toContainEqual(expect.objectContaining({itemId:'sword',quantity:1,notes:'Engraved heirloom'}))
+  expect((await rows(vw)).roster.heroes[0]).toMatchObject({status:'dead',equipment:[]})
+  expect(check(await admin.from('captive_cases').select('resolution_message').eq('id',c.id).single()).resolution_message).toContain('app rolled 1; player changed this to 4')
+  expect((await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'})).error).not.toBeNull()
+ })
+
 })

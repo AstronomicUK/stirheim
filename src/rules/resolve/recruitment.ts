@@ -120,6 +120,7 @@ export function recruitmentBlock(
   template: WarbandTemplate,
   unit: UnitTemplate,
   count: number,
+  ruleGranted = false,
 ): string | undefined {
   if (template.id === 'order_of_the_mare' && unit.id !== 'dame_of_the_mare' && warband.heroes.some(h => h.unitTemplateId === 'dame_of_the_mare') && !warband.heroes.some(h => h.unitTemplateId === 'dame_of_the_mare' && ['active','captured'].includes(h.status))) return 'Recruit a new Dame of the Mare before any other warriors.';
   if (unit.id === 'dreamwalkers_dreamer') { const block=dreamerRecruitmentBlock(warband); if(block)return block; }
@@ -132,7 +133,7 @@ export function recruitmentBlock(
   if (warband.heroes.some(h => h.status === 'active' && h.flags.leaderRoleId === unit.id)) return 'This leadership position is already held by the appointed successor.';
   if (template.id === 'necrarchs_the_soul_stealers' && warband.heroes.some(h => h.unitTemplateId === 'necrarchs_necrarch_vampire' && h.status === 'dead') && ['necrarchs_necrarch_vampire','necrarchs_thrall'].includes(unit.id)) return 'Death of the Leader: the Thrall succeeds the Necrarch; create a replacement Thrall from an existing Acolyte.';
   if (template.id === 'lustrian_reavers' && unit.role === 'hero' && warband.heroes.some(h => h.unitTemplateId === unit.id)) return 'Rare Heroes: this Hero type has already been hired. Promote a Prospect into the lost position instead.';
-  if (unit.cost === null) return `${unit.name} cannot be hired for gold`;
+  if (unit.cost === null && !ruleGranted) return `${unit.name} cannot be hired for gold`;
   if (unit.replacementFor) {
     const replaced = findUnitTemplate(template, unit.replacementFor)!;
     const cap = parseRosterLimit(replaced.rosterLimit).max;
@@ -267,6 +268,8 @@ export function recruitHero(
 }
 
 export interface RecruitHenchmenOptions {
+  /** A source-defined captive transformation, never a treasury purchase. */
+  captiveReward?: "throne";
   /** Add the recruits to this existing group (same unit type) instead of forming a new one. */
   intoGroupId?: string;
   /** Veteran experience already hired from this post-battle pool. Defaults to 0. */
@@ -314,7 +317,11 @@ export function recruitHenchmen(
     throw new RulesError("recruitment.duplicateId", `A henchman group with id "${id}" already exists`);
   }
 
-  const block = recruitmentBlock(warband, template, unit, size);
+  const rewardUnit = opts.captiveReward === 'throne' ? 'cursed_cavalcade_captured_thrall' : undefined;
+  if (opts.captiveReward && (unit.id !== rewardUnit || size !== 1 || opts.intoGroupId || opts.costOverride !== 0)) {
+    throw new RulesError('recruitment.captiveReward', 'A captive transformation creates one new warrior of the specified reward type, without a purchase.');
+  }
+  const block = recruitmentBlock(warband, template, unit, size, !!opts.captiveReward);
   if (block) throw new RulesError("recruitment.notAllowed", block);
 
   // Veterans.

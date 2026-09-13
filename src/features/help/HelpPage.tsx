@@ -360,7 +360,7 @@ function Go({ to, children }: { to: string; children: ReactNode }) {
 
 function Steps({ items }: { items: string[] }) {
   return (
-    <ol className="flex flex-col gap-2 pl-6 text-sm leading-relaxed text-ink marker:marker:text-brass">
+    <ol className="flex flex-col gap-2 pl-6 text-sm leading-relaxed text-ink marker:text-brass">
       {items.map((item) => (
         <li key={item} className="list-decimal">
           {item}

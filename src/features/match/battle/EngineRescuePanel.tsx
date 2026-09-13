@@ -16,7 +16,7 @@ import {Button,Notice,SelectField,Sheet,TextField} from '../../../ui'
 export function EngineRescuePanel({matchId,participants,editable,isGm=false,completed=false}:{matchId:string;participants:MatchParticipantView[];editable:boolean;isGm?:boolean;completed?:boolean}){
  const userId=useSession(s=>s.user?.id)
  const records=useEngineRescues(matchId),start=useStartEngineRescue(matchId),save=useEngineRescueAction(matchId),correct=useCorrectEngineRescue(matchId)
- const fleets=useQueries({queries:participants.map(p=>({queryKey:['engines',p.warband_id],queryFn:()=>fetchEngines(p.warband_id)}))})
+ const fleets=useQueries({queries:participants.map(p=>({queryKey:['engines',p.warband_id,...(completed?['battle-history']:[])],queryFn:()=>fetchEngines(p.warband_id,completed)}))})
  const engines=fleets.flatMap(f=>f.data??[]).filter(e=>editable?e.state==='present':records.data?.some(r=>r.engine_id===e.id))
  const rosters=useEnemyRosters(matchId,engines.length?participants:[])
  const events=useBattleEvents(engines.length?matchId:undefined)
@@ -29,7 +29,8 @@ export function EngineRescuePanel({matchId,participants,editable,isGm=false,comp
  const mayRecord=Boolean(record&&editable&&(type==='escaped'?(manages(record.state.holderWarbandId)||manages(record.state.prisoners.find(p=>p.id===prisoner)?.formerWarbandId??'')):type==='destroyed'||type==='holderRouted'?manages(record.state.holderWarbandId)||isGm:type==='free'||type==='keeperOut'?manages(keepers.find(k=>k.id===keeper)?.warbandId??''):model?manages(models.find(m=>m.id===model)?.warbandId??''):manages(record.state.holderWarbandId)))
  const prompts=editable?engineKeyPrompts(events.data??[],records.data??[],engines,rosters.warbands.flatMap(w=>w.roster.heroes.filter(h=>h.unitTemplateId==='black_dwarfs_gaolers').map(h=>({id:h.id,name:h.name,warbandId:w.roster.id})))):[]
  const actionReady=type==='gaolerOut'?Boolean(gaoler):type==='locateKeys'?Boolean(gaoler&&model):type==='keeperOut'?Boolean(keeper):type==='free'?Boolean(keeper&&contact):type==='escaped'?Boolean(prisoner):true
- if(!engines.length)return null
+ const loadError=records.error??fleets.find(f=>f.error)?.error
+ if(!engines.length)return loadError?<Notice tone="error" title="Could not check prisoners and rescue">{loadError.message}</Notice>:null
  async function open(id:string){setSelected(id);setNote('');setSourceEventId(undefined);setType('gaolerOut');setContact(false);setModel('');setKeeper('');setGaoler('');setPrisoner('');if(!records.data?.some(r=>r.engine_id===id)&&editable)await start.mutateAsync(id)}
  function submit(){
   if(!record||!mayRecord)return
@@ -40,7 +41,7 @@ export function EngineRescuePanel({matchId,participants,editable,isGm=false,comp
  }
  return <section aria-label="Engine rescue" className="space-y-3">
   <div><h2 className="font-headline text-xl">Prisoners and rescue</h2><p className="mt-1 text-sm text-ink-dim">Record keys, release and escape as they happen at the table.</p></div>
-  {prompts.map(prompt=><Notice key={prompt.sourceEventId+prompt.engineId} tone="info" title={prompt.title}><p className="mb-2 text-sm">{prompt.note}</p><Button variant="secondary" onClick={()=>{void open(prompt.engineId).then(()=>{setType(prompt.type);setGaoler(prompt.gaolerId??'');setKeeper(prompt.keeperId??'');setModel(prompt.byId??'');setSourceEventId(prompt.sourceEventId);setNote(prompt.note)}).catch(()=>{})}}>Record these keys</Button></Notice>)}
+  {prompts.map(prompt=><Notice key={[prompt.sourceEventId,prompt.engineId,prompt.type,prompt.keeperId??prompt.gaolerId].join(':')} tone="info" title={prompt.title}><p className="mb-2 text-sm">{prompt.note}</p><Button variant="secondary" onClick={()=>{void open(prompt.engineId).then(()=>{setType(prompt.type);setGaoler(prompt.gaolerId??'');setKeeper(prompt.keeperId??'');setModel(prompt.byId??'');setSourceEventId(prompt.sourceEventId);setNote(prompt.note)}).catch(()=>{})}}>Record these keys</Button></Notice>)}
   <div className="grid gap-3 md:grid-cols-2">{engines.map(e=>{const r=records.data?.find(x=>x.engine_id===e.id);return !r?<article key={e.id} className="rounded-lg border border-border bg-surface-low p-4"><h3 className="font-headline text-lg">{e.name}</h3><p className="my-2 text-sm text-ink-dim">{participants.find(p=>p.warband_id===e.warband_id)?.warband_name}</p><Button variant="secondary" disabled={!editable||start.isPending} onClick={()=>{void open(e.id).catch(()=>{})}}>View prisoners and rescue</Button></article>:<EngineBattleCard key={e.id} name={e.name} warbandName={participants.find(p=>p.warband_id===e.warband_id)?.warband_name??''} destroyed={r?.state.destroyed??false} keyHolders={r?.state.keys.flatMap(k=>k.keeper?[k.keeper.name]:['Keeper not yet known'])??[]} prisoners={r?.state.prisoners.map(p=>({...p,origin:participants.find(w=>w.warband_id===p.formerWarbandId)?.warband_name??(p.formerWarbandId?'From another warband':'Found while exploring')}))??[]} onManage={editable||r?()=>{void open(e.id).catch(()=>{})}:undefined}/>})}</div>
   {records.error?<Notice tone="error" title="Could not load rescue facts">{records.error.message}</Notice>:null}
   {selected?<Sheet open title={engine?.name??'Engine rescue'} onClose={()=>setSelected(null)} footer={record&&editable?<Button block disabled={!actionReady||!mayRecord||save.isPending||note.trim().length<3} onClick={submit}>Record confirmed event</Button>:undefined}>

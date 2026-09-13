@@ -17,7 +17,7 @@ Tom says to keep working until he messages that he is awake. Claude completed cu
 
 Coordination incident: a native Claude-app inspection was stuck in a computer-control permission prompt for about 6 hours 26 minutes, ending at 05:26 UTC. Codex was not progressing during that blocked call and did not send the intended 00:30 reset ping. Claude's independent work arrived on the shared bus and has been read and acknowledged; a new dispatch/return assignment was sent at 05:26 UTC and Claude replied with a contract. Do not imply uninterrupted overnight progress. Avoid native-app control for coordination; use the receiver-owned bus listener.
 
-Latest broad evidence: **2,419 ordinary tests across 203 files**, TypeScript and build pass through the rescue corrections. The latest full API run passes **318/318 across 56 files** through migration 123. The earlier leaked-fixture cleanup issue is fixed. Migration 124 additionally passes all 15 forced-capture API tests. Engine and Slaaneshi mobile flows are connected and verified, including player consent and exact kit. Nothing in this batch has been deployed.
+Latest broad evidence: **2,421 ordinary tests across 204 files**, TypeScript and build pass through the rescue corrections. The latest full API run passes **318/318 across 56 files** through migration 123. The earlier leaked-fixture cleanup issue is fixed. Migration 124 additionally passes all 15 forced-capture API tests. Engine and Slaaneshi mobile flows are connected and verified, including player consent and exact kit. Nothing in this batch has been deployed.
 
 ## #230 backend contract (Codex/Claude)
 
@@ -303,3 +303,8 @@ An actual Gaoler casualty now prompts the prison-key handover and notifies the a
 ### Court henchman conversion — local 124
 
 Cruel Fate is available for a captured henchman as well as the existing Hero outcome. The ordinary release/ransom/sale choices remain available: the source says captives may be converted. Two-player acceptance creates exactly one printed, zero-XP Wretch at no cost, retains exact annotated kit in the captor’s stash, and never removes a second original model. GM reversal restores the unresolved case. Fifteen capture API checks and actual mobile Man-Catcher attack → report → conversion pass. TypeScript/lint and all 118 migration files pass. Anonymous exploration conversion and the broader Court sacrifice/meat-shield rules are not claimed complete here. Nothing deployed.
+
+
+### Completed rescue history
+
+Retiring an empty Engine after an agreed escape no longer hides its record on the completed match. Completed battles fetch retired inventory for their existing rescue records; ordinary current rosters still omit it. Mobile retirement/history verification passes. A duplicate key on simultaneous rescue prompts and a repeated Help list-marker style were also corrected. No deployment.

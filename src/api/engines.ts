@@ -16,8 +16,10 @@ export interface EngineInventoryRow {
 }
 
 const client = supabase as unknown as SupabaseClient
-export async function fetchEngines(warbandId: string): Promise<EngineInventoryRow[]> {
-  const { data, error } = await client.from('engine_of_chaos_units').select('*').eq('warband_id', warbandId).neq('state', 'retired').order('created_at').order('id')
+export async function fetchEngines(warbandId: string, includeRetired = false): Promise<EngineInventoryRow[]> {
+  let query = client.from('engine_of_chaos_units').select('*').eq('warband_id', warbandId)
+  if (!includeRetired) query = query.neq('state', 'retired')
+  const { data, error } = await query.order('created_at').order('id')
   if (error) throw new Error(error.message)
   return data as EngineInventoryRow[]
 }

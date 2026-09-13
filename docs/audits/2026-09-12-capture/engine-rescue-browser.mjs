@@ -118,14 +118,24 @@ try {
  expect(must(await admin.from('items').select('id').eq('holder_id',hero))).toHaveLength(0);
  expect(must(await admin.from('items').select('quantity').eq('warband_id',bands[0]).eq('item_rules_id','sword'))).toEqual([{quantity:1}]);
  expect(must(await admin.from('engine_prisoners').select('state').eq('id',prisoner.id).single()).state).toBe('freed');
+ if(process.env.RETIRED_ENGINE_HISTORY==='1'){
+  const current=must(await admin.from('engine_of_chaos_units').select('id,updated_at').eq('id',engine).single());
+  must(await users[0].api.rpc('remove_engine_copy',{p_engine_id:engine,p_reason:'The empty Engine was retired after the rescue.',p_expected_updated_at:current.updated_at}));
+  await victim.goto(`http://127.0.0.1:5193/matches/${rescueMatch}`);
+  await expect(victim.getByRole('heading',{name:'The Iron Maw',exact:true})).toBeVisible();
+  await victim.getByRole('button',{name:'Prisoners and rescue',exact:true}).click();
+  await expect(victim.getByRole('heading',{name:'Rescue history',exact:true})).toBeVisible();
+  console.log('PASS: retiring the empty Engine preserves its completed battle rescue history.');
+ }else{
  const originalCase=must(await admin.from('captive_proposals').select('case_id').eq('id',proposal).single());
  must(await users[2].api.rpc('reverse_captive_resolution',{p_case_id:originalCase.case_id,p_reason:'QA correction of the recorded escape',p_release_only:false}));
  expect(must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('captured');
  expect(must(await admin.from('engine_prisoners').select('state').eq('id',prisoner.id).single()).state).toBe('held');
  expect(must(await admin.from('captive_cases').select('state').eq('id',originalCase.case_id).single()).state).toBe('held');
+ }
  expect(await victim.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
  await victim.screenshot({path:'/tmp/stirheim-engine-rescue-mobile.png',fullPage:true});
- console.log('PASS: separate mobile player records Gaoler keys, confirmed contact, release and escape; agreed post-battle return preserves confiscated kit, and GM reversal restores custody.');
+ console.log('PASS: separate mobile player records Gaoler keys, confirmed contact, release and escape; agreed post-battle return preserves confiscated kit.'+(process.env.RETIRED_ENGINE_HISTORY==='1'?' Retired Engine history stays visible.':' GM reversal restores custody.'));
 } finally {
  await browser?.close();
  if(bands.length)must(await admin.from('engine_journeys').delete().in('warband_id',bands));

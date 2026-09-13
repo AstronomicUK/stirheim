@@ -74,8 +74,9 @@ try {
  must(await admin.from('match_participants').insert(bands.map(warband_id=>({match_id:rescueMatch,warband_id,accepted_at:new Date().toISOString()}))));
  must(await admin.from('heroes').update({unit_type_rules_id:'black_dwarfs_gaolers',name:'Gaoler Drazh'}).eq('id',escort));
  const rescuer=must(await admin.from('heroes').insert({warband_id:bands[1],name:'Rescuer Karl',unit_type_rules_id:'mercenaries_reikland_captain',status:'active',stats:{M:4,WS:4,BS:4,S:3,T:3,W:1,I:4,A:1,Ld:8},xp:20}).select('id').single()).id;
+ must(await users[1].api.from('battle_events').insert({match_id:rescueMatch,actor_id:users[1].id,actor_warband_id:bands[1],kind:'attack',summary:'Karl took the Gaoler out of action',payload:{attacker_warband_id:bands[1],attacker_id:rescuer,attacker_kind:'hero',attacker_name:'Rescuer Karl',target_warband_id:bands[0],target_id:escort,target_kind:'hero',target_name:'Gaoler Drazh',wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:1}}));
  await victim.goto(`http://127.0.0.1:5193/matches/${rescueMatch}/battle`);
- await victim.getByRole('button',{name:'View prisoners and rescue',exact:true}).click();
+ await victim.getByRole('button',{name:'Record these keys',exact:true}).click();
  await victim.getByLabel('Gaoler',{exact:true}).selectOption(escort);
  await victim.getByLabel('Who now has the keys?',{exact:true}).selectOption(rescuer);
  await victim.getByLabel('What happened at the table?',{exact:true}).fill('Karl took Gaoler Drazh out of action and took the keys.');

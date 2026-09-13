@@ -65,6 +65,17 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
   r=check(await correct(r,captor));expect(r.state.keys).toEqual([])
   expect((await correct(r,captor)).error?.message).toMatch(/No recorded action/)
  })
+ it('links Gaoler keys to the actual combat result and withdraws a corrected notification',async()=>{
+  const [engine]=await engines();let r=check(await start(engine.id))
+  const event=check(await victim.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:vw,kind:'attack',summary:'Gaoler casualty',payload:{attacker_warband_id:vw,attacker_id:target,attacker_kind:'group',attacker_name:'Warriors',target_warband_id:cw,target_id:wielder,target_kind:'hero',target_name:'Gaoler',wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:1}}).select('id').single())
+  expect(check(await victim.from('app_notifications').select('id').eq('dedupe_key','engine-keys:'+event.id))).toHaveLength(1)
+  expect((await act(r,{type:'gaolerOut',gaolerId:wielder,by:{id:wielder},sourceEventId:event.id})).error?.message).toMatch(/match the attacker/)
+  r=check(await act(r,{type:'gaolerOut',gaolerId:wielder,by:{id:target+':1'},sourceEventId:event.id}))
+  expect((await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id)).error?.message).toMatch(/linked prison-key event/)
+  check(await victim.rpc('correct_last_engine_rescue_action',{p_rescue_id:r.id,p_revision:r.revision,p_reason:'Correcting the source casualty first.'}))
+  check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id))
+  expect(check(await victim.from('app_notifications').select('id').eq('dedupe_key','engine-keys:'+event.id))).toEqual([])
+ })
  it('records release and escape without changing permanent custody or creating roster models',async()=>{
   const [engine]=await engines()
   const report=check(await admin.from('match_reports').insert({match_id:match,warband_id:cw,submitted_by:users[0],status:'pending',applied:{}}).select('id').single())

@@ -293,3 +293,8 @@ Named escaped prisoners return only after the rescue match is completed, through
 ### Engine rescue corrections — local 122
 
 Unknown key holders can be identified later without fabricating a new Gaoler casualty. Corrections undo the latest remaining fact, retain crossed-out history, and propagate shared key/rout changes across Engines in order. Accepted/pending return dependencies block correction until reversed/withdrawn. Anonymous departures support a capacity-checked reversal and protect source/rescue reports. The mobile flow now includes undoing an early escape, recording the actual escape, proposing a return, separate-player acceptance and GM reversal. Six focused Engine API checks and all 116 migrations pass. Ordinary suite/build pass; API cleanup issue recorded above is fixed and the affected 15 checks pass.
+
+
+### Engine combat prompts — local 123
+
+An actual Gaoler casualty now prompts the prison-key handover and notifies the attacking player. Key-holder casualties also produce a contextual prompt. Physical henchman identity is never guessed. Linked facts validate the original attacker/casualty and must be corrected before reversing that combat result; notification retraction follows correction. Mobile combat prompt → keys → contact → escape correction → agreed return → GM reversal passes. Four Engine API tests, six focused rule/prompt tests, TypeScript/lint and all 117 migration files pass. Full API regression is running. Next free migration is 124. Nothing deployed.

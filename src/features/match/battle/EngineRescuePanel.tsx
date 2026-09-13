@@ -1,3 +1,5 @@
+import {engineKeyPrompts} from './engineKeyPrompts'
+import {useBattleEvents} from '../../../api/matches'
 import {useSession} from '../../../app/session'
 import {EngineRescueReturns} from './EngineRescueReturns'
 import {useState} from 'react'
@@ -17,25 +19,28 @@ export function EngineRescuePanel({matchId,participants,editable,isGm=false,comp
  const fleets=useQueries({queries:participants.map(p=>({queryKey:['engines',p.warband_id],queryFn:()=>fetchEngines(p.warband_id)}))})
  const engines=fleets.flatMap(f=>f.data??[]).filter(e=>editable?e.state==='present':records.data?.some(r=>r.engine_id===e.id))
  const rosters=useEnemyRosters(matchId,engines.length?participants:[])
- const [selected,setSelected]=useState<string|null>(null),[type,setType]=useState<EngineRescueAction['type']>('gaolerOut'),[gaoler,setGaoler]=useState(''),[model,setModel]=useState(''),[keeper,setKeeper]=useState(''),[prisoner,setPrisoner]=useState(''),[contact,setContact]=useState(false),[note,setNote]=useState(''),[correction,setCorrection]=useState('')
+ const events=useBattleEvents(engines.length?matchId:undefined)
+ const [selected,setSelected]=useState<string|null>(null),[type,setType]=useState<EngineRescueAction['type']>('gaolerOut'),[gaoler,setGaoler]=useState(''),[model,setModel]=useState(''),[keeper,setKeeper]=useState(''),[prisoner,setPrisoner]=useState(''),[contact,setContact]=useState(false),[note,setNote]=useState(''),[correction,setCorrection]=useState(''),[sourceEventId,setSourceEventId]=useState<string|undefined>()
  const record=records.data?.find(r=>r.engine_id===selected),engine=engines.find(e=>e.id===selected)
  const manages=(id:string)=>isGm||participants.some(p=>p.warband_id===id&&p.mine)
  const models:RescueModel[]=rosters.warbands.flatMap(w=>combatantsOf(w.roster,w.template,w.roster.name,undefined).filter(c=>c.kind!=='animal'&&!c.out).flatMap(c=>c.kind==='henchman'?Array.from({length:c.groupSize??1},(_,i)=>({id:`${c.id}:${i}`,warbandId:c.warbandId,name:`${c.name} · model ${i+1}`})):[{id:c.id,warbandId:c.warbandId,name:c.name}]))
  const keepers=record?.state.keys.flatMap(k=>k.keeper?[k.keeper]:[]).filter((k,i,all)=>all.findIndex(x=>x.id===k.id)===i)??[]
  const gaolers=rosters.warbands.find(w=>w.roster.id===engine?.warband_id)?.roster.heroes.filter(h=>h.unitTemplateId==='black_dwarfs_gaolers')??[]
  const mayRecord=Boolean(record&&editable&&(type==='escaped'?(manages(record.state.holderWarbandId)||manages(record.state.prisoners.find(p=>p.id===prisoner)?.formerWarbandId??'')):type==='destroyed'||type==='holderRouted'?manages(record.state.holderWarbandId)||isGm:type==='free'||type==='keeperOut'?manages(keepers.find(k=>k.id===keeper)?.warbandId??''):model?manages(models.find(m=>m.id===model)?.warbandId??''):manages(record.state.holderWarbandId)))
+ const prompts=editable?engineKeyPrompts(events.data??[],records.data??[],engines,rosters.warbands.flatMap(w=>w.roster.heroes.filter(h=>h.unitTemplateId==='black_dwarfs_gaolers').map(h=>({id:h.id,name:h.name,warbandId:w.roster.id})))):[]
  const actionReady=type==='gaolerOut'?Boolean(gaoler):type==='locateKeys'?Boolean(gaoler&&model):type==='keeperOut'?Boolean(keeper):type==='free'?Boolean(keeper&&contact):type==='escaped'?Boolean(prisoner):true
  if(!engines.length)return null
- async function open(id:string){setSelected(id);setNote('');setType('gaolerOut');setContact(false);setModel('');setKeeper('');setGaoler('');setPrisoner('');if(!records.data?.some(r=>r.engine_id===id)&&editable)await start.mutateAsync(id)}
+ async function open(id:string){setSelected(id);setNote('');setSourceEventId(undefined);setType('gaolerOut');setContact(false);setModel('');setKeeper('');setGaoler('');setPrisoner('');if(!records.data?.some(r=>r.engine_id===id)&&editable)await start.mutateAsync(id)}
  function submit(){
   if(!record||!mayRecord)return
   const by=models.find(m=>m.id===model)??null
   if(type==='locateKeys'&&!by)return
   const action:EngineRescueAction=type==='locateKeys'?{type,gaolerId:gaoler,by:by!}:type==='gaolerOut'?{type,gaolerId:gaoler,by}:type==='keeperOut'?{type,keeperId:keeper,by}:type==='free'?{type,keeperId:keeper,baseContactConfirmed:contact}:type==='escaped'?{type,prisonerId:prisoner}:{type}
-  save.mutate({record,action,note},{onSuccess:()=>{setNote('');setContact(false)}})
+  save.mutate({record,action:{...action,...(sourceEventId?{sourceEventId}:{})},note},{onSuccess:()=>{setNote('');setContact(false)}})
  }
  return <section aria-label="Engine rescue" className="space-y-3">
   <div><h2 className="font-headline text-xl">Prisoners and rescue</h2><p className="mt-1 text-sm text-ink-dim">Record keys, release and escape as they happen at the table.</p></div>
+  {prompts.map(prompt=><Notice key={prompt.sourceEventId+prompt.engineId} tone="info" title={prompt.title}><p className="mb-2 text-sm">{prompt.note}</p><Button variant="secondary" onClick={()=>{void open(prompt.engineId).then(()=>{setType(prompt.type);setGaoler(prompt.gaolerId??'');setKeeper(prompt.keeperId??'');setModel(prompt.byId??'');setSourceEventId(prompt.sourceEventId);setNote(prompt.note)}).catch(()=>{})}}>Record these keys</Button></Notice>)}
   <div className="grid gap-3 md:grid-cols-2">{engines.map(e=>{const r=records.data?.find(x=>x.engine_id===e.id);return !r?<article key={e.id} className="rounded-lg border border-border bg-surface-low p-4"><h3 className="font-headline text-lg">{e.name}</h3><p className="my-2 text-sm text-ink-dim">{participants.find(p=>p.warband_id===e.warband_id)?.warband_name}</p><Button variant="secondary" disabled={!editable||start.isPending} onClick={()=>{void open(e.id).catch(()=>{})}}>View prisoners and rescue</Button></article>:<EngineBattleCard key={e.id} name={e.name} warbandName={participants.find(p=>p.warband_id===e.warband_id)?.warband_name??''} destroyed={r?.state.destroyed??false} keyHolders={r?.state.keys.flatMap(k=>k.keeper?[k.keeper.name]:['Keeper not yet known'])??[]} prisoners={r?.state.prisoners.map(p=>({...p,origin:participants.find(w=>w.warband_id===p.formerWarbandId)?.warband_name??(p.formerWarbandId?'From another warband':'Found while exploring')}))??[]} onManage={editable||r?()=>{void open(e.id).catch(()=>{})}:undefined}/>})}</div>
   {records.error?<Notice tone="error" title="Could not load rescue facts">{records.error.message}</Notice>:null}
   {selected?<Sheet open title={engine?.name??'Engine rescue'} onClose={()=>setSelected(null)} footer={record&&editable?<Button block disabled={!actionReady||!mayRecord||save.isPending||note.trim().length<3} onClick={submit}>Record confirmed event</Button>:undefined}>
@@ -43,7 +48,7 @@ export function EngineRescuePanel({matchId,participants,editable,isGm=false,comp
    {start.error||save.error?<Notice tone="error" title="Could not record rescue facts">{start.error?.message??save.error?.message}</Notice>:null}
    {start.isPending?<p>Loading this Engine’s prisoners…</p>:null}
    {record&&editable?<div className="space-y-3">
-    <SelectField label="What happened?" value={type} onChange={e=>setType(e.target.value as EngineRescueAction['type'])}>
+    <SelectField label="What happened?" value={type} onChange={e=>{setType(e.target.value as EngineRescueAction['type']);setSourceEventId(undefined)}}>
      <option value="gaolerOut">A Gaoler was taken out of action</option><option value="locateKeys">The unknown key holder was identified</option><option value="keeperOut">A key holder was taken out of action</option><option value="free">A key holder reached the Engine</option><option value="destroyed">The Engine was destroyed</option><option value="holderRouted">The Chaos Dwarfs routed</option><option value="escaped">A freed prisoner reached the table edge</option>
     </SelectField>
     {type==='gaolerOut'||type==='locateKeys'?<SelectField label="Gaoler" value={gaoler} onChange={e=>setGaoler(e.target.value)}><option value="">Choose the Gaoler</option>{gaolers.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</SelectField>:null}
@@ -51,6 +56,7 @@ export function EngineRescuePanel({matchId,participants,editable,isGm=false,comp
     {type==='gaolerOut'||type==='keeperOut'||type==='locateKeys'?<SelectField label="Who now has the keys?" value={model} onChange={e=>setModel(e.target.value)}><option value="">Keeper not yet known</option>{models.map(m=><option key={m.id} value={m.id}>{m.name} · {participants.find(p=>p.warband_id===m.warbandId)?.warband_name}</option>)}</SelectField>:null}
     {type==='free'?<label className="flex gap-2 text-sm"><input type="checkbox" checked={contact} onChange={e=>setContact(e.target.checked)}/>The key holder is in base contact with this Engine.</label>:null}
     {type==='escaped'?<SelectField label="Escaped prisoner" value={prisoner} onChange={e=>setPrisoner(e.target.value)}><option value="">Choose the prisoner</option>{record.state.prisoners.filter(p=>p.state==='freed').map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</SelectField>:null}
+    {sourceEventId?<p className="text-xs text-ink-dim">Linked to the combat log. <button type="button" className="text-brass underline" onClick={()=>setSourceEventId(undefined)}>Use a separate tabletop confirmation</button></p>:null}
     <TextField label="What happened at the table?" value={note} maxLength={1000} onChange={e=>setNote(e.target.value)} hint="Record the agreed event so the other players can follow the rescue."/>
     {!mayRecord?<p className="text-xs text-ink-dim">The relevant model’s player, the Engine owner or the GM must confirm this action.</p>:null}
    </div>:null}

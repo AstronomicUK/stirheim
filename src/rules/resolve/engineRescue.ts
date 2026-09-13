@@ -10,7 +10,7 @@ export interface EngineRescueState {
  prisoners:RescuePrisoner[]
  keys:{gaolerId:string;keeper:RescueModel|null}[]
 }
-export type EngineRescueAction =
+export type EngineRescueAction = (
  |{type:'gaolerOut';gaolerId:string;by:RescueModel|null}
  |{type:'locateKeys';gaolerId:string;by:RescueModel}
  |{type:'keeperOut';keeperId:string;by:RescueModel|null}
@@ -18,6 +18,7 @@ export type EngineRescueAction =
  |{type:'destroyed'}
  |{type:'holderRouted'}
  |{type:'escaped';prisonerId:string}
+) & {sourceEventId?:string}
 
 /** Tabletop facts are explicit. This changes battle state only, never a permanent roster. */
 export function applyEngineRescue(state:EngineRescueState,action:EngineRescueAction):EngineRescueState {

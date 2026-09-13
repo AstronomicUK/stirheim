@@ -308,6 +308,12 @@ export interface RecruitHenchmenResult {
   poolRemaining: number | null;
 }
 
+/** Uncommon: round each Chaos Dwarf recruit's veteran requirement up, without changing gold. */
+export function veteranPoolCost(templateId: string, unitId: string, xp: number, quantity: number): number {
+  const uncommon = templateId === 'the_sons_of_hashut' && ['sons_of_hashut_chaos_dwarf_warriors','sons_of_hashut_blunderbuss_chaos_dwarfs'].includes(unitId);
+  return (uncommon ? Math.ceil(xp * 1.5) : xp) * quantity;
+}
+
 /**
  * Hire `size` henchmen as a new group, or add them to an existing group of the same type. Joining
  * an experienced group applies the veteran rule (see file header).
@@ -368,14 +374,14 @@ export function recruitHenchmen(
       );
     }
     const available = pool - poolUsed;
-    veteranXp = existing.xp * size;
+    veteranXp = veteranPoolCost(template.id,unit.id,existing.xp,size);
     if (veteranXp > available) {
       throw new RulesError(
         "recruitment.veteranPoolExceeded",
         `${size} recruit${size > 1 ? "s" : ""} for ${existing.name} need ${veteranXp} experience of veterans but only ${available} ${available === 1 ? "is" : "are"} available this time`,
       );
     }
-    veteranCost = VETERAN_XP_COST_GC * veteranXp;
+    veteranCost = VETERAN_XP_COST_GC * existing.xp * size;
   }
   const poolRemaining = pool === null ? null : pool - poolUsed - veteranXp;
 
@@ -412,7 +418,7 @@ export function recruitHenchmen(
       events.push({
         kind: "veterans.hired",
         subjectId: existing.id,
-        message: `Paid ${veteranCost} gc extra for ${veteranXp} experience of veterans (${VETERAN_XP_COST_GC} gc per point); ${poolRemaining} of ${pool} remaining in the pool`,
+        message: `Paid ${veteranCost} gc extra for ${existing.xp * size} experience (${VETERAN_XP_COST_GC} gc per point); used ${veteranXp} veteran pool points; ${poolRemaining} of ${pool} remaining in the pool`,
         data: { veteranXp, veteranCost, poolRemaining },
       });
     }

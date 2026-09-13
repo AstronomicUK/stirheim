@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { WARBAND_SIZE_BANDS, warbandSizeBandIndex } from '../../rules/data/campaign/income'
-import { hasMasterChef, incomeSize, sellWyrdstone, wyrdstoneQuote } from '../../rules/resolve/income'
+import { availableVictuals, hasMasterChef, incomeSize, sellWyrdstone, wyrdstoneQuote } from '../../rules/resolve/income'
 import { Button, Notice, Stepper, DicePicker } from '../../ui'
 import { Card, KeyValue } from '../roster/view/bits'
 import type { TradeContext } from './useTrade'
@@ -41,11 +41,14 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
     setCount(shards)
   }
 
+  const [supplies, setSupplies] = useState(0)
+  const stock = availableVictuals(roster)
+  const victuals = phase.matchId ? Math.min(supplies, stock) : 0
   const selling = Math.min(Math.max(count, 0), shards)
-  const sizing = incomeSize(roster, {masterChefRoll: chef.data?.roll})
+  const sizing = incomeSize(roster, {masterChefRoll: chef.data?.roll, victuals})
   const size = sizing.size
   const bandIndex = Math.max(0, Math.min(WARBAND_SIZE_BANDS.length - 1, warbandSizeBandIndex(size) + sizing.bandShift))
-  const saleOpts = { masterChefRoll: chef.data?.roll, ...(trade.perks?.wyrdstoneSaleBonus ? { bonusRate: trade.perks.wyrdstoneSaleBonus, bonusSource: trade.perks.wyrdstoneSaleSource?.districtName } : {}), scenarioMultiplier: burning ? 3 as const : undefined }
+  const saleOpts = { victuals, masterChefRoll: chef.data?.roll, ...(trade.perks?.wyrdstoneSaleBonus ? { bonusRate: trade.perks.wyrdstoneSaleBonus, bonusSource: trade.perks.wyrdstoneSaleSource?.districtName } : {}), scenarioMultiplier: burning ? 3 as const : undefined }
   const income = wyrdstoneQuote(roster, selling, saleOpts)
   const activeHiredSwords = roster.hiredSwords.filter((s) => s.status === 'active').length
   const soldAlready = phase.wyrdstoneSold || Boolean(chef.data?.sold)
@@ -53,7 +56,7 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
 
   async function confirm() {
     const result = sellWyrdstone(roster, selling, saleOpts)
-    await run(() => result.value, { wyrdstoneSold: true, reason: result.events.map(e => e.message).join(' '), sale: { gold: roster.gold, shards, chefRevision: chefRequired ? chef.data?.revision : undefined } })
+    await run(() => result.value, { wyrdstoneSold: true, reason: result.events.map(e => e.message).join(' '), sale: { victuals, gold: roster.gold, shards, chefRevision: chefRequired ? chef.data?.revision : undefined } })
   }
 
   return (
@@ -96,6 +99,13 @@ export function SellWyrdstoneTab({ trade }: { trade: TradeContext }) {
             <span className="text-sm text-ink">Shards to sell</span>
             <Stepper label="shards to sell" value={selling} min={1} max={shards} onChange={setCount} disabled={!canTrade} />
           </div>
+          {stock > 0 && <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Victuals to use ({stock} held)</span>
+              <Stepper label="Victuals to use" value={victuals} min={0} max={stock} onChange={setSupplies} disabled={!canTrade || pending || !phase.matchId} />
+            </div>
+            <p className="text-xs text-ink-dim">{phase.matchId ? 'Each supply moves you one income band lower, to a minimum of 1–3. Selected supplies are consumed only when you confirm the sale.' : 'Victuals can be used after a battle.'}</p>
+          </div>}
       {sizing.notes.length > 0 ? (
         <p className="text-xs text-ink-dim">
           Counted as {size} ({sizing.headCount} warriors): {sizing.notes.map(note => note.replace(/\.$/, '')).join('; ')}.

@@ -1,5 +1,11 @@
 # Feedback Tracker
 
+## Trading supplies and veterans — 13 September 2026
+
+Implemented and verified locally, awaiting combined deployment: **#145 Victuals**, **#133 Hochland Bandit variable-price resale**, and **#134 Sons of Hashut Uncommon veteran costs**. This supersedes their older open findings. The unsupported historic Pirate attribution in #133 is corrected; no Pirate bonus was added. See [the batch record](TRADING-SUPPLIES-VETERANS-BATCH-2026-09-13.md).
+
+Validation: 2,500 application tests, 349 local database tests, production build, mobile saved-outcome checks and all 130 migrations replayed successfully. Migration 136 is required alongside the existing pending migrations. Nothing pushed or deployed.
+
 ## Casualties and recovery batch — 13 September 2026
 
 Completed locally, awaiting combined deployment: #176 existing equipment-loss flow verified; #124 source-specific injury protections; #159 handler/Claimed Gnoblar transitions; #158 shared casualty looting; and the Restless Dead Goliath, Feed Upon Magic and Liche advancement clauses of #132. Other #132 actions and #130 specialist acquisition remain separate. See [the batch record](CASUALTIES-RECOVERY-BATCH-2026-09-13.md). This checkpoint supersedes older open findings for this scope.

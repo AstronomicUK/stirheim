@@ -20,8 +20,7 @@ import { outcomeFrom, useCommit, type Outcome } from './useCommit'
 
 /**
  * The 2D6 veteran pool is rolled in the post-battle wizard and lives on the warband row. The
- * resolver only reports what is left, so the remaining pool is written back here. The column only
- * accepts 2-12: a pool spent down to 0 or 1 is stored as null (no veterans available).
+ * resolver only reports what is left, so the remaining pool is written back here, including 0 or 1.
  */
 function withPool(result: RecruitHenchmenResult): RosterWarband {
   const { warband, poolRemaining } = result
@@ -40,8 +39,9 @@ export function HenchmenTab({ detail, template, canEdit, onDone, perks, bans }: 
         Henchmen arrive unarmed; new members of an existing group must be equipped like the rest of it at the trading post.
       </p>
       <Notice tone="info" title={pool === null ? 'No veterans available' : `Veteran pool: ${pool} experience`}>
-        Recruits joining a group with experience take on the group&apos;s experience: each one uses that many points of the 2D6 pool rolled
+        Recruits joining a group with experience take on the group&apos;s experience: each one normally uses that many points of the 2D6 pool rolled
         after the last battle and costs {VETERAN_XP_COST_GC} gc extra per point.
+        {template.id === 'the_sons_of_hashut' ? ' Uncommon: Chaos Dwarf recruits use 1.5× the normal pool points, rounded up per recruit; their gold surcharge and Hobgoblin costs are unchanged.' : ''}
         {pool === null ? ' Roll the pool in the post-battle wizard before adding to an experienced group; green groups are unaffected.' : ''}
       </Notice>
       <UnitList listings={listings} disabled={!canEdit} onPick={setPicked} />
@@ -93,7 +93,7 @@ function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone, bans
 
   const maxSize = useMemo(() => maxRecruitable(roster, template, unit), [roster, template, unit])
   const target = mode === 'join' ? groups.find((g) => g.id === groupId) : undefined
-  const quote = veteranQuote(target, size, roster.veteranPool)
+  const quote = veteranQuote(target, size, roster.veteranPool, roster.warbandTemplateId)
   const listedHire = (cheap ? cheap.cost : (unit.cost ?? 0)) * size
   const [costOverride, setCostOverride] = useState<Override | null>(null)
   const hireCost = overrideReady(costOverride) ? costOverride.amount : listedHire
@@ -185,8 +185,9 @@ function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone, bans
 
         {target && target.xp > 0 ? (
           <Notice tone={quote.needsPool || quote.exceedsPool ? 'warn' : 'info'} title={`${target.name} have ${target.xp} experience`}>
+            {quote.xp > target.xp * size && <p>Uncommon: Chaos Dwarfs use 1.5× veteran experience per recruit, rounded up. The gold surcharge remains 2 gc per actual XP.</p>}
             {quote.needsPool
-              ? `Each recruit would need ${target.xp} experience of veterans, but no 2D6 pool has been rolled since the last battle.`
+              ? `Each recruit would need ${quote.xp / size} experience of veterans, but no 2D6 pool has been rolled since the last battle.`
               : quote.exceedsPool
                 ? `${size} ${size === 1 ? 'recruit needs' : 'recruits need'} ${quote.xp} experience of veterans but only ${roster.veteranPool} ${roster.veteranPool === 1 ? 'is' : 'are'} in the pool.`
                 : `Uses ${quote.xp} of the ${roster.veteranPool} experience in the pool (${(roster.veteranPool ?? 0) - quote.xp} left) and costs ${quote.gold} gc on top of the hire fee.`}

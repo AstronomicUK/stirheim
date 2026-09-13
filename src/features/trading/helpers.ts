@@ -280,7 +280,7 @@ export function sellListing(roster: RosterWarband, opts: { resaleAtFull?: boolea
         item,
         catalogue,
         base,
-        each: base === null ? null : opts.resaleAtFull ? base : sellPrice(base),
+        each: base === null ? null : opts.resaleAtFull && catalogue && ['melee','missile','blackpowder','armour'].includes(catalogue.category) ? base : sellPrice(base),
       })
     })
   }

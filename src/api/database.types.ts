@@ -2646,6 +2646,8 @@ export type Database = {
       }
       record_wyrdstone_sale: {
         Args: {
+          p_victuals?: number
+          p_expected_victuals?: Json
           p_changes: Json
           p_chef_revision?: number
           p_expected_gold: number

@@ -4,12 +4,14 @@
 // every henchman. Hired swords are left out (Hired Swords rules: they "don't affect your income
 // from selling wyrdstone"); dead, retired and captured heroes are not in the warband.
 
-import type { Resolution, RosterWarband } from "../types/roster";
+import type { Resolution, RosterItem, RosterWarband } from "../types/roster";
 import { wyrdstoneIncome } from "../data/campaign/income";
 import { RulesError } from "./errors";
 import { unitRules, warbandRules } from "../data/campaignRules";
 
 export interface SellWyrdstoneOptions {
+  /** Supplies consumed for one smaller income band each. */
+  victuals?: number;
   /** Saved Master Chef D6 for this post-battle sequence. */
   masterChefRoll?: number;
   /** Use this size instead of counting the roster (e.g. a house rule or a hired sword that does count). */
@@ -50,7 +52,29 @@ export function hasMasterChef(warband: RosterWarband): boolean {
   return Boolean(rule?.bandShiftRollTarget && (warband.heroes.some(h => h.status === "active" && h.unitTemplateId === rule.bandShiftWith) || warband.henchmenGroups.some(g => g.size > 0 && g.unitTemplateId === rule.bandShiftWith)));
 }
 
+/** Supplies in the stash or carried by available warriors; hired equipment is excluded. */
+export function availableVictuals(w: RosterWarband): number {
+  const count = (items: RosterItem[]) => items.reduce((n, i) => n + (i.itemId === "victuals" ? i.quantity : 0), 0);
+  return count(w.stash) + w.heroes.filter(h => h.status === "active").reduce((n,h) => n + count(h.equipment),0)
+    + w.henchmenGroups.filter(g => g.size > 0).reduce((n,g) => n + count(g.equipment),0);
+}
+
+function consumeVictuals(w: RosterWarband, quantity: number): RosterWarband {
+  let remaining = quantity;
+  const take = (items: RosterItem[]) => items.flatMap(i => {
+    if (i.itemId !== "victuals" || remaining === 0) return [i];
+    const used = Math.min(i.quantity, remaining); remaining -= used;
+    return i.quantity === used ? [] : [{...i, quantity:i.quantity-used}];
+  });
+  const stash = take(w.stash);
+  const heroes = w.heroes.map(h => h.status === "active" ? {...h,equipment:take(h.equipment)} : h);
+  const henchmenGroups = w.henchmenGroups.map(g => g.size > 0 ? {...g,equipment:take(g.equipment)} : g);
+  return {...w,stash,heroes,henchmenGroups};
+}
+
 export function incomeSize(warband: RosterWarband, opts: SellWyrdstoneOptions = {}): IncomeSize {
+  const supplies = opts.victuals ?? 0;
+  if (!Number.isInteger(supplies) || supplies < 0 || supplies > availableVictuals(warband)) throw new RulesError("income.victuals", "Choose a whole number of Victuals available to this warband.");
   const notes: string[] = [];
   let heroes = 0;
   let heroCount = 0;
@@ -89,6 +113,8 @@ export function incomeSize(warband: RosterWarband, opts: SellWyrdstoneOptions = 
       notes.push(rules.note);
     }
   }
+  bandShift -= supplies;
+  if (supplies) notes.push(`Use ${supplies} Victuals: ${supplies} smaller income band${supplies === 1 ? "" : "s"} (minimum 1–3)`);
   return { size, headCount: heroCount + henchCount, bandShift, notes };
 }
 
@@ -108,7 +134,7 @@ function assertSellable(warband: RosterWarband, shards: number): void {
 export function wyrdstoneQuote(warband: RosterWarband, shards: number, opts: SellWyrdstoneOptions = {}): number {
   if (!Number.isInteger(shards) || shards < 1) return 0;
   const info = incomeSize(warband, opts);
-  return withSaleBonus(wyrdstoneIncome(shards, opts.sizeOverride ?? info.size, opts.sizeOverride !== undefined ? 0 : info.bandShift), opts.bonusRate) * (opts.scenarioMultiplier ?? 1);
+  return withSaleBonus(wyrdstoneIncome(shards, opts.sizeOverride ?? info.size, opts.sizeOverride !== undefined ? -(opts.victuals ?? 0) : info.bandShift), opts.bonusRate) * (opts.scenarioMultiplier ?? 1);
 }
 
 /** Sell wyrdstone: adds the chart income to gold and removes the shards. Once per post-battle sequence (see trading.TradePhaseState). */
@@ -121,16 +147,16 @@ export function sellWyrdstone(
   if (hasMasterChef(warband) && (!Number.isInteger(opts.masterChefRoll) || opts.masterChefRoll! < 1 || opts.masterChefRoll! > 6)) throw new RulesError("income.masterChefRollRequired", "Record the Master Chef D6 before selling wyrdstone.");
   const info = incomeSize(warband, opts);
   const size = opts.sizeOverride ?? info.size;
-  const shift = opts.sizeOverride !== undefined ? 0 : info.bandShift;
+  const shift = opts.sizeOverride !== undefined ? -(opts.victuals ?? 0) : info.bandShift;
   const chart = wyrdstoneIncome(shards, size, shift);
   const gold = withSaleBonus(chart, opts.bonusRate) * (opts.scenarioMultiplier ?? 1);
   return {
-    value: { ...warband, gold: warband.gold + gold, wyrdstone: warband.wyrdstone - shards },
+    value: { ...consumeVictuals(warband, opts.victuals ?? 0), gold: warband.gold + gold, wyrdstone: warband.wyrdstone - shards },
     events: [
       {
         kind: "wyrdstone.sold",
-        message: `Sold ${shards} wyrdstone for ${gold} gc (warband size ${size}${shift ? `, ${Math.abs(shift) === 1 ? "one" : Math.abs(shift)} ${shift < 0 ? "smaller" : "larger"} income band${Math.abs(shift) === 1 ? "" : "s"}` : ""}${opts.bonusRate ? `; ${chart} gc on the chart +${Math.round((opts.bonusRate ?? 0) * 100)}% from ${opts.bonusSource ?? "the map"}` : ""}${opts.scenarioMultiplier ? "; ×3 for Mordheim’s Burning" : ""})${hasMasterChef(warband) ? `; Master Chef rolled ${opts.masterChefRoll}: ${opts.masterChefRoll! >= 5 ? "5+ succeeded; one size band smaller (minimum 1–3)" : "5+ failed; normal income band"}` : ""}`,
-        data: { shards, gold, warbandSize: size, ...(opts.masterChefRoll !== undefined ? { masterChefRoll: opts.masterChefRoll } : {}) },
+        message: `${opts.victuals ? `Consumed ${opts.victuals} Victuals. ` : ""}Sold ${shards} wyrdstone for ${gold} gc (warband size ${size}${shift ? `, ${Math.abs(shift) === 1 ? "one" : Math.abs(shift)} ${shift < 0 ? "smaller" : "larger"} income band${Math.abs(shift) === 1 ? "" : "s"}` : ""}${opts.bonusRate ? `; ${chart} gc on the chart +${Math.round((opts.bonusRate ?? 0) * 100)}% from ${opts.bonusSource ?? "the map"}` : ""}${opts.scenarioMultiplier ? "; ×3 for Mordheim’s Burning" : ""})${hasMasterChef(warband) ? `; Master Chef rolled ${opts.masterChefRoll}: ${opts.masterChefRoll! >= 5 ? "5+ succeeded; one size band smaller (minimum 1–3)" : "5+ failed; normal income band"}` : ""}`,
+        data: { shards, gold, warbandSize: size, victuals: opts.victuals ?? 0, ...(opts.masterChefRoll !== undefined ? { masterChefRoll: opts.masterChefRoll } : {}) },
       },
     ],
   };

@@ -8,7 +8,7 @@ import { isBanned } from '../../rules/resolve/houseRules'
 import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import { isRulesError } from '../../rules/resolve/errors'
-import { canRecruit, type CanRecruitResult } from '../../rules/resolve/recruitment'
+import { veteranPoolCost, canRecruit, type CanRecruitResult } from '../../rules/resolve/recruitment'
 import { parseRosterLimit, unitCount, warbandHeroCount, warbandCapacityCount } from '../../rules/resolve/roster'
 import type { CharacterRole, UnitTemplate, WarbandTemplate } from '../../rules/types'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
@@ -95,12 +95,12 @@ export interface VeteranQuote {
 }
 
 /** What joining `group` with `size` recruits costs in veteran experience and gold (see recruitment.ts header). */
-export function veteranQuote(group: RosterHenchmanGroup | undefined, size: number, pool: number | null): VeteranQuote {
+export function veteranQuote(group: RosterHenchmanGroup | undefined, size: number, pool: number | null, templateId = ""): VeteranQuote {
   if (!group || group.xp <= 0 || size < 1) return { xp: 0, gold: 0, needsPool: false, exceedsPool: false }
-  const xp = group.xp * size
+  const xp = veteranPoolCost(templateId,group.unitTemplateId,group.xp,size)
   return {
     xp,
-    gold: xp * VETERAN_XP_COST_GC,
+    gold: group.xp * size * VETERAN_XP_COST_GC,
     needsPool: pool === null,
     exceedsPool: pool !== null && xp > pool,
   }

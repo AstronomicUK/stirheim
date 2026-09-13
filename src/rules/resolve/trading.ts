@@ -8,7 +8,7 @@ import type { CampaignHouseRules, Resolution, ResolutionEvent, RosterItem, Roste
 import type { Item } from "../types/items";
 import { rareItemAvailable, sellPrice } from "../data/campaign/trading";
 import { findItem } from "../data/items";
-import { minMax } from "./dice";
+import { minMax, parseDice } from "./dice";
 import { RulesError } from "./errors";
 import { moveBlockReason, sellBlockReason } from "./itemRestrictions";
 
@@ -242,6 +242,34 @@ export function buyItem(
   return { value: splitSpecialEquipmentGroups(next), events: [event] };
 }
 
+/** Printed Bandit rule; Pirate sources do not grant this bonus. */
+export function hasResaleBonus(w: Pick<RosterWarband, "warbandTemplateId">): boolean {
+  return w.warbandTemplateId === "hochland_bandits";
+}
+
+export interface ResaleOptions {
+  /** Separate price dice for each copy, before any multiplier. */
+  rolls?: number[][];
+  /** Existing map advantage for weapons and armour. */
+  fullBase?: boolean;
+}
+
+export function resaleQuote(w: Pick<RosterWarband, "warbandTemplateId">, itemId: string, quantity: number, base: number, opts: ResaleOptions = {}): number {
+  assertQuantity(quantity);
+  if (!Number.isInteger(base) || base < 0) throw new RulesError("trading.invalidPrice", "A listed price must be a non-negative whole number.");
+  const item = findItem(itemId);
+  const expression = hasResaleBonus(w) ? item?.price.dice : undefined;
+  if (!expression) return (opts.fullBase ? base : sellPrice(base)) * quantity;
+  const spec = parseDice(expression);
+  if (opts.rolls?.length !== quantity) throw new RulesError("trading.resaleDice", "Record the price dice for each item being sold.");
+  return opts.rolls.reduce((total, faces) => {
+    if (faces.length !== spec.count || faces.some(f => !Number.isInteger(f) || f < 1 || f > spec.sides)) throw new RulesError("trading.resaleDice", "Record valid price dice for each item being sold.");
+    const random = faces.reduce((n,f) => n+f,0) * spec.multiplier + spec.bonus;
+    // Independent offers: do not multiply the Bandit bonus by a map advantage.
+    return total + Math.max(opts.fullBase ? base : 0, sellPrice(base) + sellPrice(random));
+  },0);
+}
+
 /**
  * Sell `quantity` of `itemId` from `from` for half the listed price each, rounded down. For
  * variable-priced items pass the basic cost only ("merchants are far better at haggling").
@@ -252,6 +280,7 @@ export function sellItem(
   itemId: string,
   quantity = 1,
   listedBase: number,
+  opts: ResaleOptions = {},
 ): Resolution<RosterWarband> {
   assertQuantity(quantity);
   if (!Number.isInteger(listedBase) || listedBase < 0) {
@@ -262,13 +291,13 @@ export function sellItem(
   const where = describeLocation(warband, from);
   const inventory = removeStack(readInventory(warband, from), itemId, quantity, where);
   const each = sellPrice(listedBase);
-  const income = each * quantity;
+  const income = resaleQuote(warband,itemId,quantity,listedBase,opts);
   const next = writeInventory({ ...warband, gold: warband.gold + income }, from, inventory);
   const event: ResolutionEvent = {
     kind: "item.sold",
     subjectId: from.kind === "stash" ? undefined : from.id,
-    message: `Sold ${itemName(itemId)} x${quantity} from ${where} for ${income} gc (half of ${listedBase} gc each)`,
-    data: { itemId, quantity, listedBase, unitSale: each, income, from },
+    message: `Sold ${itemName(itemId)} x${quantity} from ${where} for ${income} gc (${opts.fullBase ? "map resale offer" : `half of ${listedBase} gc each`}${hasResaleBonus(warband) && findItem(itemId)?.price.dice ? `; Know Who To Sell To: price dice ${opts.rolls!.map(r => r.join(" + ")).join(" / ")}, half the random component included` : ""})`,
+    data: { itemId, quantity, listedBase, unitSale: each, income, from, rolls: opts.rolls },
   };
   return { value: next, events: [event] };
 }

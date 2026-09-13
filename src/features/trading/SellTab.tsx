@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { sellItem } from '../../rules/resolve/trading'
+import { hasResaleBonus, resaleQuote, sellItem } from '../../rules/resolve/trading'
 import { equipmentRemovalWarnings, sellBlockReason, type ItemHolder } from '../../rules/resolve/itemRestrictions'
-import { Button, NumberField, Notice, Sheet, Stepper, TextField } from '../../ui'
+import { Button, DicePicker, NumberField, Notice, Sheet, Stepper, TextField } from '../../ui'
+import { parseDice } from '../../rules/resolve/dice'
 import { itemName } from '../roster/shared/names'
 import { Tag } from '../roster/view/bits'
 import { sellForGold, sellListing, type SaleLine } from './helpers'
@@ -25,9 +26,10 @@ export function SellTab({ trade }: { trade: TradeContext }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm leading-relaxed text-ink-dim">
-        {trade.perks?.resaleAtFull ? `${trade.perks.resaleAtFull.districtName}: weapons and armour sell back at their purchase price (map advantage).` : 'Equipment sells for half its listed price, rounded down; variable-priced items fetch half the basic cost.'} Custom items and entries with no listed
+        {trade.perks?.resaleAtFull ? `${trade.perks.resaleAtFull.districtName}: weapons and armour sell back at their purchase price (map advantage).` : hasResaleBonus(trade.roster) ? 'Equipment sells for half the basic cost plus half any random price component, rounded down.' : 'Equipment sells for half its listed price, rounded down; variable-priced items fetch half the basic cost.'} Custom items and entries with no listed
         price take whatever the group agrees.
       </p>
+      {hasResaleBonus(trade.roster) && <Notice title="Know Who To Sell To">Variable-priced equipment also earns half its random price component, rounded down. Record separate price dice for each copy sold.</Notice>}
       {lines.length === 0 ? <p className="text-sm text-ink-dim">Nothing to sell: the stash and every warrior are empty-handed.</p> : null}
       {holders.map(({ holder, lines: held }) => (
         <section key={holder} className="flex flex-col gap-1">
@@ -53,7 +55,7 @@ export function SellTab({ trade }: { trade: TradeContext }) {
                       {line.base === null ? 'No listed price' : `Listed ${line.base} gc`}
                     </span>
                   </span>
-                  {unsellable ? <Tag tone="warn">Cannot be sold</Tag> : line.each === null ? <Tag tone="warn">Name a price</Tag> : <Tag tone="brass">{line.each} gc each</Tag>}
+                  {unsellable ? <Tag tone="warn">Cannot be sold</Tag> : line.each === null ? <Tag tone="warn">Name a price</Tag> : <Tag tone="brass">{line.each} gc each{hasResaleBonus(trade.roster) && line.catalogue?.price.dice ? " + price dice" : ""}</Tag>}
                 </button>
               </li>
               )
@@ -71,6 +73,13 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
   const [quantity, setQuantity] = useState(1)
   const [manualGold, setManualGold] = useState<number | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
+  const [rolls, setRolls] = useState<Record<number, number[]>>({})
+  const [rollSources, setRollSources] = useState<Record<number, string>>({})
+  const expression = hasResaleBonus(roster) ? line.catalogue?.price.dice : undefined
+  const spec = expression ? parseDice(expression) : null
+  const complete = !spec || Array.from({length:quantity},(_,i) => rolls[i]).every(Boolean)
+  const fullBase = Boolean(trade.perks?.resaleAtFull && line.catalogue && ['melee','missile','blackpowder','armour'].includes(line.catalogue.category))
+  const saleOptions = { fullBase, rolls: Array.from({length:quantity},(_,i) => rolls[i]) }
   const location = line.location
   let holder: ItemHolder | undefined
   if (location.kind === 'hero') {
@@ -81,16 +90,16 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
     if (group) holder = { kind: 'henchmanGroup', id: group.id, name: group.name, unitTemplateId: group.unitTemplateId, size: group.size, equipment: group.equipment }
   }
   const warnings = holder ? equipmentRemovalWarnings(roster, holder, line.item.itemId, quantity) : []
-  const computed = line.each === null ? null : line.each * quantity
+  const computed = line.base === null || line.item.itemId === null || !complete ? null : resaleQuote(roster,line.item.itemId,quantity,line.base,saleOptions)
   const gold = computed ?? manualGold
-  const ready = canTrade && gold !== null && Number.isInteger(gold) && gold >= 0 && (!warnings.length || Boolean(overrideReason.trim()))
+  const ready = canTrade && complete && gold !== null && Number.isInteger(gold) && gold >= 0 && (!warnings.length || Boolean(overrideReason.trim()))
 
   async function confirm() {
     if (!ready || gold === null) return
     const ok = await run(() => {
-      if (line.item.itemId !== null && line.base !== null) return sellItem(roster, line.location, line.item.itemId, quantity, line.base).value
+      if (line.item.itemId !== null && line.base !== null) return sellItem(roster, line.location, line.item.itemId, quantity, line.base, saleOptions).value
       return sellForGold(roster, line.location, line.item, quantity, gold)
-    }, warnings.length ? { reason: `${itemName(line.item)} sold from ${line.holder} despite: ${warnings.join(' ')} Reason: ${overrideReason.trim()}` } : undefined)
+    }, { reason: `Sold ${quantity} ${itemName(line.item)} from ${line.holder} for ${gold} gc.${spec ? ` Know Who To Sell To: ${Array.from({length:quantity},(_,i) => `${rollSources[i]} ${expression}: ${rolls[i].join(' + ')}`).join('; ')}; half the random price included.` : ''}${warnings.length ? ` Override: ${warnings.join(' ')} Reason: ${overrideReason.trim()}` : ''}` })
     if (ok) onClose()
   }
 
@@ -116,12 +125,16 @@ function SellSheet({ line, trade, onClose }: { line: SaleLine; trade: TradeConte
         {line.item.quantity > 1 ? (
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-ink">Quantity ({line.item.quantity} held)</span>
-            <Stepper label="quantity to sell" value={quantity} min={1} max={line.item.quantity} onChange={setQuantity} />
+            <Stepper label="quantity to sell" value={quantity} min={1} max={line.item.quantity} onChange={value => { setQuantity(value); setRolls({}); setRollSources({}) }} disabled={pending} />
           </div>
         ) : null}
+        {spec && Array.from({length:quantity},(_,i) => <div key={`${quantity}:${i}`} className="flex flex-col gap-2">
+          <DicePicker label={`Item ${i+1} price · ${expression}`} count={spec.count} sides={spec.sides} disabled={pending || !canTrade} onComplete={(faces,manual) => {setRolls(previous => ({...previous,[i]:faces})); setRollSources(previous => ({...previous,[i]:manual ? 'tabletop roll' : 'rolled in app'}))}} />
+          {rolls[i] && <p className="text-xs text-ink-dim">Recorded: {rolls[i].join(' + ')}</p>}
+        </div>)}
         {line.each !== null ? (
           <p className="text-sm tabular-nums text-ink">
-            {line.each} gc each ({trade.perks?.resaleAtFull ? `purchase price, ${trade.perks.resaleAtFull.districtName}` : `half of ${line.base} gc`}){quantity > 1 ? ` × ${quantity} = ${computed} gc` : ''}
+            {fullBase ? line.base : Math.floor(line.base! / 2)} gc basic price each ({fullBase ? `purchase price, ${trade.perks!.resaleAtFull!.districtName}` : `half of ${line.base} gc`}){spec ? ' + half the recorded random component' : ''}{computed !== null ? ` · Total ${computed} gc` : ''}
           </p>
         ) : (
           <NumberField

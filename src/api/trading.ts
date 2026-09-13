@@ -75,7 +75,7 @@ export async function fetchTradePhaseState(warbandId: string, matchId: string): 
 export interface HaggleTrade {heroId:string; dice:[number,number]; requestId:string; itemName:string; priceBefore:number}
 
 export interface RecordTradeInput {
-  sale?: { gold: number; shards: number; chefRevision?: number };
+  sale?: { victuals?: number; expectedVictuals?: {id:string; quantity:number; holder_type:string; holder_id:string|null}[]; gold: number; shards: number; chefRevision?: number };
   rareItemSearch?: boolean
   haggle?: HaggleTrade;
   /** The current phase (latest report's match), or null when the warband has not fought yet. */
@@ -93,7 +93,7 @@ export interface RecordTradeInput {
 /** Returns the number of roster changes applied. */
 export async function recordTrade(warbandId: string, input: RecordTradeInput): Promise<number> {
   if(input.sale) {
-    const {data,error}=await supabase.rpc("record_wyrdstone_sale",{p_warband_id:warbandId,p_match_id:input.matchId!,p_changes:input.changes as unknown as Json,p_reason:input.reason??"Sold wyrdstone",p_expected_gold:input.sale.gold,p_expected_shards:input.sale.shards,p_chef_revision:input.sale.chefRevision});
+    const {data,error}=await supabase.rpc("record_wyrdstone_sale",{p_warband_id:warbandId,p_match_id:input.matchId!,p_changes:input.changes as unknown as Json,p_reason:input.reason??"Sold wyrdstone",p_expected_gold:input.sale.gold,p_expected_shards:input.sale.shards,p_victuals:input.sale.victuals??0,p_expected_victuals:input.sale.expectedVictuals??[],p_chef_revision:input.sale.chefRevision});
     if(error)throw new Error(error.message);
     return data;
   }

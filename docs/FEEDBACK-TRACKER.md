@@ -4690,6 +4690,8 @@ GitHub run `34706511272` passed both jobs: test/build and all **16 end-to-end br
 
 ### 229. Cross-player resurrection and capture opportunities need complete notification and resolution flows
 
+**Current checkpoint — 13 September, local only:** Core Awakening and agreed-recipient handling, two-player capture/Pirate outcomes, capture weapons and Slaaneshi holds, Cavalcade triggers/Throne, Court Hero/henchman conversion, Engine custody/journeys/rescue and corrections are connected. Engine combat prompts and private key notifications are now included. Remaining specialist rules and source decisions are listed in `AWAKENING-CAPTURE-SCOPE-2026-09-12.md` and `MORNING-RULINGS-2026-09-13.md`; this umbrella is still partial. Latest evidence is in `FEEDBACK-BATCH-2026-09-12.md`. Older milestone backlog statements below are historical, not current. Nothing deployed.
+
 **Status:** 🛠 Working on — local implementation; not deployed
 **Priority:** Next batch requested by Tom, 12 September 2026
 **Reported by:** Tom
@@ -4704,6 +4706,8 @@ GitHub run `34706511272` passed both jobs: test/build and all **16 end-to-end br
 **Local milestone — 12 September:** Core ordinary-Hero Awakening now has report-backed snapshots, both-owner notifications, recipient resolution, guarded correction and withdrawal. Eight local DB tests and the actual two-owner mobile journey pass. Multiple recipients, Captured/Pirates and broader analogous rules remain outstanding; this umbrella is not complete.
 
 ### 230. Public in-app bug and improvement boards, submissions, notifications and release changelog
+
+**Current checkpoint — 13 September, local only:** Responsive boards, submissions, following/merging, private notifications, releases and historical import review are verified. The manifest accounts for 231 old entries, with 221 included and 10 internal entries excluded. AstronomicUK is the verified intended maintainer; production setup/import and the single release remain pending. Do not mark implemented or notify subscribers before deployment.
 
 **Status:** 🛠 Working on — local implementation; not deployed
 **Priority:** Next batch requested by Tom, 12 September 2026
@@ -4740,6 +4744,8 @@ GitHub run `34706511272` passed both jobs: test/build and all **16 end-to-end br
 **Local milestone — 12 September:** Public boards, submissions, follows, maintainer review, draft/public release notes and private inbox implemented in local commits. Seven backend tests and the actual two-user mobile/desktop workflow pass. Historical import is under renewed review after stale statuses were found; maintainer identity and final import/release checks remain.
 
 ### 231. Polished per-weapon chamber and reload UI with Hunter/Pistolier double-barrel house rules
+
+**Current checkpoint — 13 September, local only:** Physical chamber display, printed Nuln/Ostlander handling, sequential shooting/melee, player-calculated use/correction and the mini View Rosters display are verified. Tom explicitly deferred the Hunter/Pistolier double-barrel house-rule discussion until he is awake; those choices remain unfinished. No deployment.
 
 **Status:** 🛠 Working on — local implementation; not deployed
 **Priority:** Next batch requested by Tom, 12 September 2026

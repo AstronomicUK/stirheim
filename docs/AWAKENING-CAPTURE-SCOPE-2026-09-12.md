@@ -21,6 +21,27 @@ The original audit below records the starting position and is not a current comp
 
 See FEEDBACK-BATCH-2026-09-12.md for the evolving implementation/verification record. No changes from this batch are deployed.
 
+## Follow-up scope review — Codex, 13 September
+
+This supersedes the old gap matrix below. The original audit remains for provenance.
+
+| Flow | Connected and verified locally | Remaining boundary |
+| --- | --- | --- |
+| Ordinary Hero Awakening | Filed death, eligible spell-knowing enemy, agreed recipient, notification, exact profile/weapon/armour transfer, acceptance and reversal guards | Hired Sword eligibility needs a ruling |
+| Core Captured | Named captor, both-player outcome, exact kit, money/XP, notifications, report dependency and reversal | No new core gap identified in this pass |
+| Pirates | Hero contest and per-model henchman cases, exploration recruits, annotated kit, agreement and corrections | Do not infer non-human eligibility from a generic profile |
+| Subjugator / Man-catcher | Actual app/table casualty capture, Hero/group/companion cases, exact source and report losses | Table geometry remains a player fact |
+| Slaaneshi Man-Catcher | Non-OOA hold, physical member/companion identity, repeated hit history, release/recovery, end confirmation and Captured report | This is deliberately an in-battle hold, not only a final-report trigger |
+| Cavalcade | Human-henchman trigger, per-battle/five-Thrall limits, Hero 61 rerolls, Throne outcomes and dice provenance | Two rewards competing for the final Thrall place require a ruling |
+| Court Cruel Fate | Hero and captured-henchman conversion, exact kit, printed Wretch, two-player agreement and reversal | Anonymous exploration conversion is not implemented; the source does not supply a prisoner count for this alternative. Existing normal exploration rewards must not be duplicated |
+| Engine custody/journeys | Physical inventory, capacity/Large places, Hero/group/anonymous custody, confiscated kit, dispatch/escort/return and corrections | Full-capacity fallback and competing ordinary captive outcomes need rulings |
+| Engine rescue | Keys and later handover, combat prompts/notifications, contact/destruction/rout/escape facts, completed return consent, anonymous departure, corrections and retained historical display | Freed-but-unescaped/OOA aftermath needs ruling; captive profiles are displayed but are not full temporary combatants in ordinary attack selectors. Animal key holders and rescuing newly captured casualties during the same game remain outside the implemented path |
+| Ogre / Pit Fighters | Existing generic captive framework is available | Their bespoke aftermath is not implemented; questions are in MORNING-RULINGS-2026-09-13.md |
+
+The Court's carried-Wretch sacrifices, repeated advancement injury and Corruption of Mind and Flesh are separate existing warband gaps; this capture extension does not close those umbrella entries. Full #229 completion must not be claimed because the most visible core flows pass.
+
+Latest broad check through migration 124: 319 API tests, 2,421 ordinary tests; subsequent notification/validation changes have focused checks. Nothing in the batch is deployed. See FEEDBACK-BATCH-2026-09-12.md for exact latest migration and test evidence.
+
 ## 1. The rules, one by one
 
 ### 1.1 Spell of Awakening — core Necromancy, roll 1 (`03-campaigns-magic-optional-rules.md:2564`)

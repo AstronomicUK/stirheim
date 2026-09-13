@@ -76,6 +76,14 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id))
   expect(check(await victim.from('app_notifications').select('id').eq('dedupe_key','engine-keys:'+event.id))).toEqual([])
  })
+ it('requires a reviewed revision and rejects a Gaoler taking their own keys',async()=>{
+  const [engine]=await engines();const r=check(await start(engine.id))
+  const action={type:'gaolerOut',gaolerId:wielder,by:{id:wielder}}
+  expect((await act(r,action,captor)).error?.message).toMatch(/cannot take their own keys/)
+  expect((await victim.rpc('record_engine_rescue_action',{p_rescue_id:r.id,p_revision:null,p_action:{...action,by:{id:target+':0'}},p_note:'Confirmed at the table.'})).error?.message).toMatch(/changed on another device/)
+  const recorded=check(await act(r,{...action,by:{id:target+':0'}}))
+  expect((await victim.rpc('correct_last_engine_rescue_action',{p_rescue_id:recorded.id,p_revision:null,p_reason:'Correction without a reviewed version'})).error?.message).toMatch(/Refresh before correcting/)
+ })
  it('notifies the actual key-holder player once across Engines and retracts a corrected casualty',async()=>{
   const [first,second]=await engines();let r=check(await start(first.id));check(await start(second.id))
   r=check(await act(r,{type:'gaolerOut',gaolerId:wielder,by:{id:target+':1'}}))

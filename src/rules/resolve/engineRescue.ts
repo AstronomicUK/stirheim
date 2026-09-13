@@ -24,6 +24,7 @@ export type EngineRescueAction = (
 export function applyEngineRescue(state:EngineRescueState,action:EngineRescueAction):EngineRescueState {
  switch(action.type){
   case 'gaolerOut':
+   if(action.by?.id===action.gaolerId)throw new RulesError('rescue.sameKeeper','The Gaoler taken out of action cannot take their own keys.')
    if(state.keys.some(k=>k.gaolerId===action.gaolerId))throw new RulesError('rescue.keysRecorded','The keys from this Gaoler are already recorded. Correct the earlier event if needed.')
    return {...state,keys:[...state.keys,{gaolerId:action.gaolerId,keeper:action.by}]}
   case 'locateKeys':

@@ -31,3 +31,8 @@ it('destruction frees captives without keys, while an earlier rout leaves captiv
 it('cannot manufacture an escape for a prisoner who has not been freed',()=>{
  expect(()=>applyEngineRescue(initial,{type:'escaped',prisonerId:'named'})).toThrow(/freed/)
 })
+
+it('cannot assign prison keys to the Gaoler just taken out of action',()=>{
+ expect(()=>applyEngineRescue(initial,{type:'gaolerOut',gaolerId:keeper.id,by:keeper})).toThrow(/cannot take their own keys/)
+ expect(applyEngineRescue(initial,{type:'gaolerOut',gaolerId:keeper.id,by:null}).keys[0].keeper).toBeNull()
+})

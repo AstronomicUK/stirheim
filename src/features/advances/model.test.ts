@@ -716,3 +716,49 @@ it.each(['sisters_of_sigmar','cult_of_the_possessed','carnival_of_chaos'])('offe
  expect(rolled.next.heroes[0].flags.leaderMagicChoice).toBe(false)
  expect(rolled.next.heroes[0].spellIds).toEqual([])
 })
+
+
+describe('immediate skill choices (#59)', () => {
+  it.each([
+    ['snotlings', 'bigsnotz', 'snotlings_special_skills_big_bully', 'strongman', 'Strength'],
+    ['bretonnian_chapel_guard', 'bretonnian_chapel_guard_questing_knight', 'bretonnian_chapel_guard_skills_renowned_virtue', 'bretonnian_knights_virtues_virtue_of_valour', 'Virtue'],
+  ])('%s grants the extra choice in one advance, without opening its table', (warbandId, unitId, skillId, bonusSkillId, label) => {
+    const hero = { ...captain, unitTemplateId: unitId, skillIds: [], skillTableIds: ['combat', 'warband-unique'] };
+    const context = { roster: { ...roster, warbandTemplateId: warbandId, heroes: [hero] }, template: findWarbandTemplate(warbandId) };
+    const draft = setSkill(rolled(2, 2), skillId);
+    expect(planHero(draft, heroSubject(hero), context).result).toBeNull();
+    expect(planHero({ ...draft, bonusSkillId: 'quick_shot' }, heroSubject(hero), context).result).toBeNull();
+    const ready = planHero({ ...draft, bonusSkillId }, heroSubject(hero), context);
+    expect(ready.error).toBeNull();
+    const next = ready.result!.next.heroes[0];
+    expect(next.skillIds).toEqual([skillId, bonusSkillId]);
+    expect(next.levelUps).toBe(hero.levelUps + 1);
+    expect(next.skillTableIds).toEqual(hero.skillTableIds);
+    expect(ready.result!.resolution.text).toContain(label === 'Strength' ? 'Strongman' : 'Valour');
+    const known = { ...hero, skillIds: [bonusSkillId] };
+    expect(planHero({ ...draft, bonusSkillId }, heroSubject(known), context).result).toBeNull();
+    const banned = { ...context, bans: { skills: [bonusSkillId], items: [], spells: [], hiredSwords: [], characters: [] } };
+    expect(planHero({ ...draft, bonusSkillId }, heroSubject(hero), banned).result).toBeNull();
+    expect(setSkill({ ...draft, bonusSkillId }, 'step_aside').bonusSkillId).toBeUndefined();
+  });
+});
+
+
+describe('Forest Goblin Brave Animosity advance (#59/#70)', () => {
+  it('removes Animosity instead of a skill, persists the flag, and cannot repeat', () => {
+    const hero = { ...captain, unitTemplateId: 'forest_goblins_brave', skillIds: [], skillTableIds: ['combat', 'speed'] };
+    const context = { roster: { ...roster, warbandTemplateId: 'forest_goblins', heroes: [hero] }, template: findWarbandTemplate('forest_goblins') };
+    const draft = { ...rolled(2, 2), removeAnimosity: true };
+    const plan = planHero(draft, heroSubject(hero), context);
+    const next = plan.result!.next.heroes[0];
+    expect(next.flags.animosityRemoved).toBe(true);
+    expect(next.skillIds).toEqual([]);
+    expect(next.levelUps).toBe(hero.levelUps + 1);
+    expect(plan.result!.resolution.text).toContain('removed Animosity instead of learning a skill');
+    expect(planHero(draft, heroSubject(next), context).result).toBeNull();
+    expect(planHero(draft, heroSubject(captain), ctx).result).toBeNull();
+    const ordinary = planHero({ ...draft, removeAnimosity: false, skillId: 'step_aside' }, heroSubject(hero), context);
+    expect(ordinary.result!.next.heroes[0].flags.animosityRemoved).toBeUndefined();
+    expect(ordinary.result!.next.heroes[0].skillIds).toContain('step_aside');
+  });
+});

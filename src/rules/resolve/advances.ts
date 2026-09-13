@@ -396,8 +396,15 @@ function resolveSkill(skillId: string): ResolvedSkill | undefined {
   return undefined;
 }
 
+/** Printed skills that open future tables, including existing roster entries. */
+export function effectiveSkillTables(hero: Pick<RosterHero, "skillIds" | "skillTableIds">): string[] {
+  const tables = provenWarriorSkillTables(hero);
+  const powerfulBuild = hero.skillIds.some(id => id === "dark_elves_skills_powerful_build" || id === "shadow_warriors_special_skills_powerful_build");
+  return powerfulBuild ? [...new Set([...tables, "strength"])] : tables;
+}
+
 function heroMayUseTable(hero: RosterHero, skill: ResolvedSkill, warbandTemplateId?: string): boolean {
-  if (provenWarriorSkillTables(hero).includes(skill.tableId)) return true;
+  if (effectiveSkillTables(hero).includes(skill.tableId)) return true;
   // Templates say "warband-unique" rather than naming the table; accept any warband skill table
   // in that case, restricted to the hero's own warband when we know it.
   if (skill.warbandId && hero.skillTableIds.includes(WARBAND_UNIQUE_TABLE_ID)) {
@@ -435,11 +442,14 @@ export function learnSkill(
     throw new RulesError("UNKNOWN_SKILL", `No skill with id "${skillId}" exists`);
   }
   const learned = { ...hero, skillIds: [...hero.skillIds, skillId] };
-  const next = recordAdvanceTaken({ ...learned, skillTableIds: provenWarriorSkillTables(learned) });
+  const next = recordAdvanceTaken({ ...learned, skillTableIds: effectiveSkillTables(learned) });
   events.push(
     { kind: "skillLearned", subjectId: hero.id, message: `${hero.name} learns ${label}.`, data: { skillId, tableId: skill?.tableId } },
     { kind: "advanceTaken", subjectId: hero.id, message: `${hero.name} has taken ${next.levelUps} advance${next.levelUps === 1 ? "" : "s"}.`, data: { levelUps: next.levelUps } },
   );
+  if (next.skillTableIds.includes("strength") && !effectiveSkillTables(hero).includes("strength")) {
+    events.push({ kind: "skillLearned", subjectId: hero.id, message: `${hero.name} may choose Strength skills on future skill advances.`, data: { tableId: "strength" } });
+  }
   return { value: next, events };
 }
 
@@ -487,6 +497,18 @@ function warbandSkillEntry(s: WarbandSkill): AvailableSkill {
  * "warband-unique" resolves to that warband's own skill tables (without it, only the core
  * warband-unique entries in data/skills.ts are listed under that heading).
  */
+export function bonusSkillTable(skillId: string | null): string | null {
+  if (skillId === "snotlings_special_skills_big_bully") return "strength";
+  if (skillId === "bretonnian_chapel_guard_skills_renowned_virtue") return "bretonnian_knights_virtues";
+  return null;
+}
+
+/** A single immediate choice; this does not open the table for later advances. */
+export function bonusSkillOptions(hero: RosterHero, skillId: string | null, warbandTemplateId?: string, opts: AvailableSkillsOptions = {}): AvailableSkillTable[] {
+  const table = bonusSkillTable(skillId);
+  return table ? availableSkills({ ...hero, skillTableIds: [table] }, warbandTemplateId, opts).filter(t => t.tableId === table) : [];
+}
+
 export function availableSkills(hero: RosterHero, warbandTemplateId?: string, opts: AvailableSkillsOptions = {}): AvailableSkillTable[] {
   const known = new Set(hero.skillIds);
   const template = warbandTemplateId ? findWarbandTemplate(warbandTemplateId) : undefined;
@@ -498,7 +520,7 @@ export function availableSkills(hero: RosterHero, warbandTemplateId?: string, op
   };
   const allowed = (id: string) => (!known.has(id) || id === MARAUDER_MUTANT) && !isBanned(opts.bans, "skills", id);
   const tables: AvailableSkillTable[] = [];
-  for (const tableId of provenWarriorSkillTables(hero)) {
+  for (const tableId of effectiveSkillTables(hero)) {
     if (CORE_SKILL_TABLE_IDS.includes(tableId)) {
       tables.push({
         tableId,

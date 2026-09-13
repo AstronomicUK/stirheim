@@ -26,7 +26,7 @@ export function warriorTypeName(entry: SheetWarrior, template: WarbandTemplate |
 }
 
 export function warriorRules(entry: SheetWarrior, template: WarbandTemplate | undefined): NamedRule[] {
-  return entry.role === 'hiredSword' ? warriorSpecialRules(template, null, entry.warrior.hiredSwordId) : [...warriorSpecialRules(template, entry.warrior.unitTemplateId, null, undefined, true), ...inheritedLeadershipRules(template,entry.warrior.flags.leaderRoleId)]
+  return entry.role === 'hiredSword' ? warriorSpecialRules(template, null, entry.warrior.hiredSwordId) : [...warriorSpecialRules(template, entry.warrior.unitTemplateId, null, undefined, true), ...inheritedLeadershipRules(template,entry.warrior.flags.leaderRoleId)].filter(rule => !entry.warrior.flags.animosityRemoved || !/^animosity$/i.test(rule.name))
 }
 
 export function groupTypeName(group: RosterHenchmanGroup, template: WarbandTemplate | undefined): string {

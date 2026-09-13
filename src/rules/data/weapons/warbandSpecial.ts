@@ -26,7 +26,7 @@ export const WARBAND_SPECIAL_WEAPONS: Weapon[] = [
 
   // ---- Missile ----
   { id: "pebble", name: "Pebble", type: "ranged", strength: "user", critCategory: "missile", concussion: false, saveModifier: -1, special: ["thrownWeaponNoRangeOrMovingPenalty", "cannotBeUsedInCloseCombat", "doesNotCountAsMissileWeapon"], rangedProfile: { shortRange: 3, maxRange: 6, shotsPerTurn: 1 } },
-  { id: "slingshot", name: "Slingshot", type: "ranged", strength: 2, critCategory: "missile", concussion: false, special: ["fireTwiceAtMinus1IfStationaryWithinHalfRange"], rangedProfile: { shortRange: 9, maxRange: 18, shotsPerTurn: 1 } },
+  { id: "slingshot", name: "Slingshot", type: "ranged", strength: 2, critCategory: "missile", concussion: false, altFire: { label: "Two shots at half range", shots: 2, toHitPenalty: 1, hint: "Standing still and within 9\": fire twice, both at -1 to hit." }, special: ["fireTwiceAtMinus1IfStationaryWithinHalfRange"], rangedProfile: { shortRange: 9, maxRange: 18, shotsPerTurn: 1 } },
 
   // ---- Attacks granted by miscellaneous kit ----
   { id: "great_claw", name: "Great Claw", type: "melee", strength: "user", strengthBonus: 1, critCategory: "unarmed", concussion: false, maxAttacks: 1, special: ["mutationExtraAttack"], rangedProfile: null },

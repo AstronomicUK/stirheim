@@ -55,7 +55,7 @@ const PER_XP_RE = /(?:plus|\+)\s*(?:1|one)\s*point\b[^.]*?experience/i;
  */
 export function parseHiredSwordRating(text: string | undefined): HiredSwordRating {
   if (!text) return HIRED_SWORD_DEFAULT_RATING;
-  const base = BASE_RE.exec(text);
+  const base = BASE_RE.exec(text) ?? /^\s*\+?\s*(\d+)\s*points?\s*\.?\s*$/i.exec(text);
   if (!base) return HIRED_SWORD_DEFAULT_RATING;
   return { base: Number(base[1]), perXp: PER_XP_RE.test(text), parsed: true };
 }

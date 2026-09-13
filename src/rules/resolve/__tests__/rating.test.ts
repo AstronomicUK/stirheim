@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RosterHenchmanGroup, RosterHero, RosterHiredSword, RosterWarband } from "../../types/roster";
 import type { Stats } from "../../types";
-import { HIRED_SWORDS } from "../../data/campaign/hiredSwords";
+import { findHiredSword, HIRED_SWORDS } from "../../data/campaign/hiredSwords";
 import { HIRED_SWORD_DEFAULT_RATING, parseHiredSwordRating, warbandRating } from "../rating";
 
 // TODO switch to ./fixtures makeWarband once the shared fixtures file lands.
@@ -76,6 +76,16 @@ function makeWarband(over: Partial<RosterWarband> = {}): RosterWarband {
 }
 
 describe("warbandRating", () => {
+  it("counts Penthesilea at her printed fixed 70 points regardless of experience", () => {
+    const entry = findHiredSword("penthesilea_mark_of_the_serpent")!;
+    expect(entry).toBeDefined();
+    for (const xp of [0, 25]) {
+      const result = warbandRating(makeWarband({ heroes: [], henchmenGroups: [], hiredSwords: [hiredSword("penthesilea", entry.id, xp)] }));
+      expect(result.total).toBe(70);
+      expect(result.notes).toEqual([]);
+    }
+  });
+
   it("is 5 per model plus total experience", () => {
     const wb = makeWarband();
     const r = warbandRating(wb);

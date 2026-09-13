@@ -110,6 +110,7 @@ export function computeAttackCount(character: Character, weapon: Weapon, isPrima
     const nimble = skills.some((s) => s.id === "nimble" && isActive(s, context));
     if (weapon.moveOrFire && context.movedThisTurn && !nimble) return 0;
     if (weapon.id === "hand_held_mortar") return 1;
+    if (context.altFire && weapon.special.includes("fireTwiceAtMinus1IfStationaryWithinHalfRange") && (context.movedThisTurn || context.longRange)) return 0;
     // An alternative fire mode (single shot for repeaters, the Sling's double shot) replaces the profile's shots.
     const shots = context.altFire && weapon.altFire ? weapon.altFire.shots : (weapon.rangedProfile?.shotsPerTurn ?? 1);
     const count = shots + skillBonus();

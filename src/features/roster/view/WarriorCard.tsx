@@ -37,7 +37,7 @@ export function WarriorCard({ hero, equipment, template }: WarriorCardProps) {
     ? hiredSwordName(hero.hired_sword_rules_id ?? '')
     : unitTypeName(template?.id ?? '', hero.unit_type_rules_id ?? '')
   const tags = flagTags(hero.flags)
-  const ownRules = warriorSpecialRules(template, hero.unit_type_rules_id, hero.hired_sword_rules_id, hero.flags.luthorRole, true)
+  const ownRules = warriorSpecialRules(template, hero.unit_type_rules_id, hero.hired_sword_rules_id, hero.flags.luthorRole, true).filter(rule => !hero.flags.animosityRemoved || !/^animosity$/i.test(rule.name))
   const rules = [...ownRules, ...inheritedLeadershipRules(template,hero.flags.leaderRoleId).filter(r=>!ownRules.some(own=>own.name===r.name))]
   const drift = statDrift(hero.stats, startingProfile(template, hero.unit_type_rules_id, hero.hired_sword_rules_id))
   // #209: a spell's tooltip shows the Difficulty this caster actually needs, with the printed base

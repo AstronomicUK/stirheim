@@ -402,3 +402,21 @@ describe("promoteHenchman", () => {
     expect(group).toEqual(groupBefore);
   });
 });
+
+
+describe("Powerful Build future skill access (#59)", () => {
+  it.each([
+    ["dark_elves", "dark_elves_skills_powerful_build"],
+    ["shadow_warriors", "shadow_warriors_special_skills_powerful_build"],
+  ])("opens Strength for new and existing %s holders without awarding a free skill", (warbandTemplateId, skillId) => {
+    const hero = makeHero({ skillTableIds: ["combat", "warband-unique"], skillIds: [] });
+    const learned = learnSkill(hero, skillId, undefined, { warbandTemplateId });
+    expect(learned.value.skillTableIds).toContain("strength");
+    expect(learned.value.skillIds).toEqual([skillId]);
+    expect(learned.value.levelUps).toBe(hero.levelUps + 1);
+    const legacy = { ...hero, skillIds: [skillId] };
+    expect(availableSkills(legacy, warbandTemplateId).find(t => t.tableId === "strength")?.skills.some(s => s.id === "strongman")).toBe(true);
+    expect(learnSkill(legacy, "strongman").value.skillIds).toContain("strongman");
+    expect(hero.skillTableIds).not.toContain("strength");
+  });
+});

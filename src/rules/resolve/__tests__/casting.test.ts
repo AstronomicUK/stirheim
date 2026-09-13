@@ -262,8 +262,14 @@ describe("rolling a cast", () => {
     expect(cast.pending?.kind).toBe("toughness");
     expect(applyCastRoll(cast, [2]).done).toBe(true);
     const wracked = applyCastRoll(cast, [5]);
-    expect(wracked.pending?.kind).toBe("aptitudeInjury");
-    const hurt = applyCastRoll(wracked, [6, 6]);
+    expect(wracked.pending).toMatchObject({ kind: "aptitudeInjury", dice: 1 });
+    for (const face of [1, 2, 3, 4, 5, 6]) {
+      const injury = applyCastRoll(wracked, [face]);
+      expect(injury.done).toBe(true);
+      expect(injury.log.at(-1)?.text).toContain(face <= 2 ? "Knocked down" : "Stunned");
+      expect(injury.log.at(-1)?.text).not.toContain("NaN");
+    }
+    const hurt = applyCastRoll(wracked, [6]);
     expect(hurt.log.at(-1)?.text).toMatch(/Out of action counts as Stunned/);
     expect(hurt.done).toBe(true);
   });
@@ -323,8 +329,8 @@ describe("the persisted log and diceManual say app-rolled vs entered by hand (#2
     const aptCast = applyCastRoll(startCast(aptP, aptP.lore.spells[0]), [6, 6])
     const wracked = applyCastRoll(aptCast, [5], true)
     expect(has(wracked, /Toughness test: rolled 5 \(entered by hand\)/)).toBe(true)
-    const hurt = applyCastRoll(wracked, [6, 6], false)
-    expect(has(hurt, /Injury roll 6 \+ 6 \(rolled by the app\)/)).toBe(true)
+    const hurt = applyCastRoll(wracked, [6], false)
+    expect(has(hurt, /Injury roll 6 \(rolled by the app\)/)).toBe(true)
   });
 });
 

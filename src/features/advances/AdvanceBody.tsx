@@ -193,6 +193,9 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
   }
 
   const skillPicker = (<>
+    {plan.canRemoveAnimosity ? <SegmentedControl label="Use this advancement" value={draft.removeAnimosity ? 'remove' : 'learn'} options={[{value:'learn',label:'Learn a skill'},{value:'remove',label:'Remove Animosity'}]} onChange={value => update(d => ({...d, removeAnimosity: value === 'remove'}))} /> : null}
+    {draft.removeAnimosity && plan.canRemoveAnimosity ? <p className="text-sm">This Brave will no longer suffer from Animosity. No new skill is learned.</p> : <>
+
     {plan.allowSpell && (plan.lores?.length ?? 0) > 1 ? <SelectField label="Learn from lore" value={plan.lore?.id ?? ''} onChange={e => update(d => ({ ...d, spellLoreId: e.target.value, spellId: null }))}>{plan.lores!.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</SelectField> : null}
     <SkillOrSpellPicker
       draft={draft}
@@ -204,10 +207,15 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
       chooseSpell={chooseSpell}
       reward={plan.allowReward ? { plan: plan.reward, hero } : null}
     />
+    {draft.mode === 'skill' && Boolean(plan.bonusSkillTables?.length) ? <Block title="Choose the additional skill">
+      <p className="text-sm text-ink-dim">This choice is included in the same advancement. It does not grant access to this table on later advances.</p>
+      <SkillPicker tables={plan.bonusSkillTables!} selected={draft.bonusSkillId ?? null} onSelect={id => update(d => ({ ...d, bonusSkillId: id }))} />
+    </Block> : null}
     {hero && draft.mode === 'skill' && advancementGiftOptions(draft.skillId, hero).length ? <SelectField label="Mutation or Blessing bought with this skill" value={draft.giftId ?? ''} onChange={e => update(d => ({...d, giftId: e.target.value}))}>
       <option value="">Choose the purchase…</option>
       {advancementGiftOptions(draft.skillId, hero).map(({item, price}) => <option key={item.id} value={item.id}>{item.name} · {price} gc</option>)}
     </SelectField> : null}
+    </>}
   </>)
 
   if(plan.licheWoundChoice)return <Block title="Liche advancement"><p className="text-sm">A rolled Wound increase may be exchanged for a skill. As a wizard, the Liche may generate a spell instead of that skill.</p><SegmentedControl label="Wound or skill" value={draft.skillInstead?'skill':'stat'} options={[{value:'stat',label:'+1 Wound'},{value:'skill',label:'Skill or spell'}]} onChange={v=>update(d=>setSkillInstead(d,v==='skill'))}/>{draft.skillInstead?skillPicker:<StatGrid options={plan.statOptions} selected="W" onSelect={()=>update(d=>setSkillInstead(d,false))}/>}</Block>

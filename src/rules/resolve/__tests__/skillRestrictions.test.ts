@@ -202,3 +202,13 @@ it('warns against Slayer Cult magic skills without applying the rule to its Reme
   const slayer = hero('s', 'dwarf_slayer_cult_giant_slayer', { skillTableIds: ['academic'] })
   expect(availableSkills(slayer, template.id, { roster: warband(template.id, [slayer]) }).flatMap(t => t.skills).find(s => s.id === 'arcane_lore')?.blocked).toContain('may not learn magic')
 })
+
+
+describe('Snotling mutually exclusive skills', () => {
+  it.each([
+    ['snotlings_special_skills_big_bully', 'snotlings_special_skills_frustratingly_tiny'],
+    ['snotlings_special_skills_frustratingly_tiny', 'snotlings_special_skills_big_bully'],
+  ])('annotates %s when the incompatible skill is already known', (skillId, known) => {
+    expect(skillRestrictionBlock(undefined, { hero: hero('s', 'bigsnotz', { skillIds: [known] }), skillId })).toContain('cannot be combined');
+  });
+});

@@ -568,13 +568,13 @@ export function applyCastRoll(state: CastState, values: number[], manual?: boole
         next.done = true;
         return next;
       }
-      next.pending = CAST_STEP({ kind: "aptitudeInjury", dice: 2, label: "Injury roll", detail: "No saves. An Out of action result counts as Stunned instead." });
+      next.pending = CAST_STEP({ kind: "aptitudeInjury", dice: 1, label: "Injury roll", detail: "No saves. An Out of action result counts as Stunned instead." });
       return next;
     }
     case "aptitudeInjury": {
-      const sum = values[0] + values[1];
-      const band = sum <= 2 ? "Knocked down" : sum <= 4 ? "Stunned" : "Stunned (Out of action counts as Stunned)";
-      next.log.push({ text: `Injury roll ${values[0]} + ${values[1]}${rollTag} = ${sum}: ${band}.`, tone: "bad" });
+      const roll = values[0];
+      const band = roll <= 2 ? "Knocked down" : roll <= 4 ? "Stunned" : "Stunned (Out of action counts as Stunned)";
+      next.log.push({ text: `Injury roll ${roll}${rollTag}: ${band}.`, tone: "bad" });
       next.pending = null;
       next.done = true;
       return next;

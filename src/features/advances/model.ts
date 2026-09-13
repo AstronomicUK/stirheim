@@ -32,6 +32,8 @@ import { heroCapacity } from '../../rules/data/warbandTemplates'
 import { rewardsEligible } from '../../rules/data/campaign/rewards'
 import { emptyRewardChoices, planReward, type RewardChoices, type RewardPlan } from '../../rules/resolve/rewards'
 import {
+  bonusSkillOptions,
+  bonusSkillTable,
   CORE_SKILL_TABLE_IDS,
   STAT_KEYS,
   allowedSkillTablesFor,
@@ -258,6 +260,7 @@ export function advanceAuditText(draft: AdvanceRollAudit): string {
 }
 
 export interface AdvanceDraft extends AdvanceRollAudit {
+  removeAnimosity?: boolean
   protectorateChoice?: 'prayer' | 'roll'
   dismissHeroId?: string
 
@@ -277,6 +280,7 @@ export interface AdvanceDraft extends AdvanceRollAudit {
   reward: RewardChoices
   skillId: string | null
   giftId?: string
+  bonusSkillId?: string
   spellId: string | null
   stat: StatKey | null
   /** Every offered characteristic is at its maximum and the player takes a skill instead. */
@@ -317,7 +321,7 @@ export function diceTotal(draft: Pick<AdvanceDraft, 'dice'>): number | null {
 
 /** Anything chosen after the roll is forgotten when the roll changes. */
 function clearChoices(draft: AdvanceDraft): AdvanceDraft {
-  return { ...draft, dismissHeroId: undefined, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill', reward: emptyRewardChoices() }
+  return { ...draft, dismissHeroId: undefined, removeAnimosity: undefined, bonusSkillId: undefined, subRoll: null, skillId: null, spellId: null, stat: null, skillInstead: false, mode: 'skill', reward: emptyRewardChoices() }
 }
 
 export function setDie(draft: AdvanceDraft, index: 0 | 1, value: number | null, source?: RollSource): AdvanceDraft {
@@ -344,7 +348,7 @@ export function setStat(draft: AdvanceDraft, stat: StatKey | null): AdvanceDraft
 }
 
 export function setSkill(draft: AdvanceDraft, skillId: string | null): AdvanceDraft {
-  return { ...draft, skillId, giftId: undefined, spellId: null, mode: 'skill' }
+  return { ...draft, skillId, giftId: undefined, bonusSkillId: undefined, spellId: null, mode: 'skill' }
 }
 
 export function setSpell(draft: AdvanceDraft, spellId: string | null): AdvanceDraft {
@@ -463,7 +467,7 @@ export function defaultPromotedName(group: RosterHenchmanGroup, roster: RosterWa
 // The resolution stored on the row
 // ---------------------------------------------------------------------------------------------
 
-export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion' | 'reward' | 'casualty'
+export type AdvanceOutcome = 'skill' | 'spell' | 'stat' | 'promotion' | 'reward' | 'casualty' | 'removeAnimosity'
 
 export interface AdvanceResolution extends AdvanceRollAudit {
   version: 1
@@ -533,6 +537,9 @@ export function summaryText(p: ResolutionParts): string {
       body = `+1 ${STAT_NAMES[stat]}${who}, now ${stat}${p.after ?? ''}`
       break
     }
+    case 'removeAnimosity':
+      body = 'removed Animosity instead of learning a skill'
+      break
     case 'skill':
       body = `learned ${p.skillName ?? p.skillId ?? 'a skill'}${p.tableName ? ` (${p.tableName})` : ''}${p.restrictionNote ? ` · outside its restriction: ${p.restrictionNote}` : ''}`
       break
@@ -606,6 +613,7 @@ export interface StatOption {
 export type HeroNeed = 'maxima' | 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
 
 export interface HeroPlan {
+  canRemoveAnimosity?: boolean
   licheWoundChoice?: boolean;
   protectoratePrayerChoice?: boolean
   successionMagicLabel?: 'prayer' | 'spell'
@@ -629,6 +637,7 @@ export interface HeroPlan {
   reward: RewardPlan | null
   lore: SpellLore | null
   spells: Spell[]
+  bonusSkillTables?: AvailableSkillTable[]
   skillTables: AvailableSkillTable[]
   result: AdvanceResult | null
   error: string | null
@@ -683,6 +692,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
   const protectoratePrayerChoice = !isSword && ((warbandTemplateId === 'protectorate_of_sigmar' && hero.unitTemplateId === 'warrior_priest' && Boolean(hero.flags.protectoratePrayerChoice)) || Boolean(hero.flags.leaderMagicChoice))
   const successionMagicLabel = ['protectorate_of_sigmar','sisters_of_sigmar'].includes(warbandTemplateId) ? 'prayer' : 'spell'
   const plan: HeroPlan = {
+    canRemoveAnimosity: !isSword && hero.unitTemplateId === 'forest_goblins_brave' && !hero.flags.animosityRemoved,
     protectoratePrayerChoice,
     successionMagicLabel,
     total: diceTotal(draft),
@@ -699,6 +709,7 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     lore,
     lores,
     spells: lore ? unknownSpells(lore, hero, ctx.bans) : [],
+    bonusSkillTables: bonusSkillOptions(hero, draft.skillId, warbandTemplateId, { roster: ctx.roster, bans: ctx.bans }),
     skillTables: availableSkills(hero, warbandTemplateId, { roster: ctx.roster, bans: ctx.bans }),
     result: null,
     error: null,
@@ -745,6 +756,11 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
     const allowReward = !isSword && allowSpell && Boolean(ctx.houseRules?.rewardsOfTheShadowlord) && rewardsEligible(warbandTemplateId, hero.unitTemplateId)
     const out: HeroPlan = { ...plan, skillReason: reason, allowSpell: allowSpell && lore !== null, allowReward }
     try {
+      if (draft.removeAnimosity) {
+        if (!plan.canRemoveAnimosity) return { ...out, need: 'skill', error: 'Only a Forest Goblin Brave who still has Animosity may choose this.' }
+        const next = { ...hero, levelUps: hero.levelUps + 1, flags: { ...hero.flags, animosityRemoved: true } }
+        return { ...out, result: finish(next, [{ kind: 'advanceTaken', subjectId: hero.id, message: `${hero.name} removes Animosity instead of learning a skill; one advance used.` }], { outcome: 'removeAnimosity', ...(subRoll !== undefined ? { subRoll } : {}) }) }
+      }
       if (allowReward && draft.mode === 'reward') {
         const rp = planReward(ctx.roster, hero, draft.reward ?? emptyRewardChoices())
         if (!rp.result) return { ...out, need: 'reward', reward: rp }
@@ -775,13 +791,19 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
       if (giftOptions.length && !gift) return { ...out, need: 'skill' }
       if (gift && isBanned(ctx.bans, 'items', gift.item.id)) return { ...out, need: 'skill', error: 'This mutation or Blessing is banned in the campaign.' }
       if (gift && gift.price > ctx.roster.gold) return { ...out, need: 'skill', error: `The mandatory purchase costs ${gift.price} gc; the treasury has ${ctx.roster.gold} gc.` }
+      const bonus = plan.bonusSkillTables?.flatMap(t => t.skills).find(s => s.id === draft.bonusSkillId)
+      if (bonusSkillTable(draft.skillId) && !bonus) return { ...out, need: 'skill' }
       const r = learnSkill(hero, draft.skillId, undefined, { warbandTemplateId })
+      if (bonus) {
+        r.value = { ...r.value, skillIds: [...r.value.skillIds, bonus.id] }
+        r.events.push({ kind: 'skillLearned', subjectId: hero.id, message: `${hero.name} also learns ${bonus.name} through ${skill?.name ?? draft.skillId}; this uses no additional advance.`, data: { skillId: bonus.id } })
+      }
       if (gift) {
         r.value = {...r.value, stats: giftStats(r.value.stats, [gift.item.id]), equipment: [...r.value.equipment, ...giftEquipment([gift.item.id])]}
         r.events.push({kind: 'gold.spent', subjectId: hero.id, message: `${hero.name} buys ${gift.item.name} for ${gift.price} gc with this skill; profile changes applied.`})
       }
       const completed = finish(r.value, r.events, {
-        outcome: 'skill', skillId: draft.skillId, skillName: `${skill?.name ?? draft.skillId}${gift ? `; ${gift.item.name} (${gift.price} gc)` : ''}`,
+        outcome: 'skill', skillId: draft.skillId, skillName: `${skill?.name ?? draft.skillId}${bonus ? `; ${bonus.name}` : ''}${gift ? `; ${gift.item.name} (${gift.price} gc)` : ''}`,
         ...(skill?.blocked ? { restrictionNote: skill.blocked } : {}), ...(table ? { tableName: table.tableName } : {}), ...(subRoll !== undefined ? { subRoll } : {}),
       })
       if (gift) completed.next = {...completed.next, gold: completed.next.gold - gift.price}

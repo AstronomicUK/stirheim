@@ -142,6 +142,16 @@ describe("weapon rules the engine now reads", () => {
     expect(plain.woundHighestOfTwo).toBeUndefined();
   });
 
+  it.each(["sling", "slingshot"])("%s double shots require no movement and half range", (id) => {
+    const weapon = W(id);
+    expect(computeAttackCount(attacker(), weapon, true, ctx({ altFire: true }))).toBe(2);
+    for (const situation of [{ movedThisTurn: true }, { longRange: true }, { movedThisTurn: true, longRange: true }]) {
+      expect(computeAttackCount(attacker(), weapon, true, ctx({ ...situation, altFire: true }))).toBe(0);
+      expect(computeAttackCount(attacker(), weapon, true, ctx(situation))).toBe(1);
+    }
+    expect(buildAttackInput({ attacker: attacker(), weapon, defender: defender(), context: ctx({ altFire: true }) }).hitThreshold).toBe(4);
+  });
+
   it("a Ball and Chain makes its wielder harder to hit", () => {
     const input = buildAttackInput({ attacker: attacker(), weapon: W("sword"), defender: defender({ toBeHit: { melee: -1 } }), context: ctx() });
     expect(input.hitThreshold).toBe(4); // WS4 v WS3 is 3+, one harder

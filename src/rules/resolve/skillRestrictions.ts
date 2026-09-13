@@ -110,6 +110,12 @@ function spellcaster(ctx: SkillRestrictionContext): boolean {
  */
 export function skillRestrictionBlock(restriction: string | undefined, ctx: SkillRestrictionContext): string | null {
   if (ctx.skillId && ['arcane_lore', 'sorcery', 'warrior_wizard'].includes(ctx.skillId) && unitRules(ctx.hero.unitTemplateId).noMagic) return 'No Armour, No Toys: Slayer Cult warriors may not learn magic.';
+  const incompatible: Record<string, string> = {
+    snotlings_special_skills_big_bully: "snotlings_special_skills_frustratingly_tiny",
+    snotlings_special_skills_frustratingly_tiny: "snotlings_special_skills_big_bully",
+  };
+  const other = ctx.skillId && incompatible[ctx.skillId];
+  if (other && ctx.hero.skillIds.includes(other)) return "Big Bully and Frustratingly Tiny cannot be combined.";
   if (!restriction) return null;
   const text = restriction.trim();
   const lower = text.toLowerCase();

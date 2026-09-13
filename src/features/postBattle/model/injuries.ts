@@ -39,6 +39,7 @@ export interface HeroInjuryStep {
   effect: string | null
   /** Rolled during Multiple Injuries but excluded by the re-roll rule. */
   rerolled: boolean
+  captureRerollReason?: string
   /** A map district turned the result into a Full Recovery ("Temple of Morr, D6 5"). */
   medicineOriginal?: number
   rewrittenBy?: string
@@ -86,7 +87,7 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
     rolls,
     injuryCode: multiple ? 'multiple_injuries' : (applied[0]?.code ?? null),
     injuryName: multiple ? `Multiple Injuries: ${applied.slice(1).map((s) => s.name).join(', ')}` : (applied[0]?.name ?? 'Full Recovery'),
-    effect: [...flow.rolls.flatMap(r=>r.medicine?[`Medicine Chest consumed: original D66 ${r.d66}${r.medicine.originalSubRoll!==null?`, follow-up ${r.medicine.originalSubRoll}`:''}${r.medicine.originalDistrictRoll!==null?`, district D6 ${r.medicine.originalDistrictRoll}`:''} → replacement D66 ${r.medicine.d66}.`]:[]),...applied.map((s) => s.effect ?? '')].filter((e) => e !== '').join('; '),
+    effect: [...flow.rolls.flatMap(r=>r.medicine?[`Medicine Chest consumed: original D66 ${r.d66}${r.medicine.originalSubRoll!==null?`, follow-up ${r.medicine.originalSubRoll}`:''}${r.medicine.originalDistrictRoll!==null?`, district D6 ${r.medicine.originalDistrictRoll}`:''} → replacement D66 ${r.medicine.d66}.`]:[]),...steps.filter(s=>s.captureRerollReason).map(s=>`D66 ${s.d66} Captured rerolled: ${s.captureRerollReason}`),...applied.map((s) => s.effect ?? '')].filter((e) => e !== '').join('; '),
     outcome,
   }
 }
@@ -94,7 +95,7 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
 const FULL_RECOVERY_D66 = 41
 
 /** Replay a hero's injury rolls from the roster state at the end of the battle. */
-export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null): HeroInjuryResolution {
+export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null, captureRerollReason?: string): HeroInjuryResolution {
   const ctx = matchId ? { matchId } : undefined
   const steps: HeroInjuryStep[] = []
   let current = hero
@@ -134,6 +135,11 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
         continue
       }
     }
+    const captureReason = roll.captureRerollReason ?? captureRerollReason
+    if (injury.code === 'captured' && captureReason) {
+      steps.push({d66:roll.d66,subRoll:null,code:injury.code,name:injury.name,effect:captureReason,rerolled:true,captureRerollReason:captureReason})
+      continue
+    }
     const res = applyHeroInjury(current, roll.d66, roll.subRoll ?? undefined, ctx)
     if (res.value.needsSubRoll) {
       steps.push({ medicineOriginal:original.medicine?original.d66:undefined, d66: roll.d66, subRoll: null, code: injury.code, name: injury.name, effect: null, rerolled: false })
@@ -163,6 +169,7 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
   if (pending === null) {
     if (flow.rolls.length === 0) pending = { kind: 'd66', prompt: `${hero.name}: roll a D66 on the Serious Injuries chart` }
     else if (multi && remaining > 0) pending = { kind: 'd66', prompt: `${hero.name}: ${remaining} more ${remaining === 1 ? 'roll' : 'rolls'} (re-roll Dead, Captured and Multiple Injuries)` }
+    else if (steps.at(-1)?.captureRerollReason) pending = {kind:'d66',prompt:`${hero.name}: ${steps.at(-1)!.captureRerollReason} Roll another D66`}
     else pending = { kind: 'done' }
   }
 

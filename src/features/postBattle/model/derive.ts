@@ -1,3 +1,4 @@
+import {cavalcadeCaptureLimit} from '../../../rules/resolve/cavalcadeCapture'
 import {captureRuleName} from '../../../rules/resolve/forcedCapture'
 import { captureEvents } from './captureEvents'
 import { garlicExpiry } from './garlicExpiry'
@@ -81,7 +82,13 @@ import type { CampaignHouseRules } from '../../../rules/types/roster'
 import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
+export interface CaptureLimits {
+  byWarband: Record<string,{capturedThralls:number;capturedThisBattle:number}>
+  captorByHero: Record<string,string>
+}
 export interface ReportContext {
+  captureLimits?: CaptureLimits
+  captureLimitsError?: string
   engineAvailable?: boolean
   engineAvailabilityError?: string
   rawGroups?: readonly import('../../../domain').HenchmanGroupRow[]
@@ -247,7 +254,8 @@ function skippedSword(sword: RosterHiredSword, reason: string): HiredSwordInjury
   }
 }
 
-export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null, battleEvents: import('../../../domain').BattleEventRow[] = []): InjuriesDerived {
+export function deriveInjuries(draft: ReportDraft, participants: Participants, matchId: string, roster?: RosterWarband, perks?: MapPerks | null, scenarioId?: string | null, battleEvents: import('../../../domain').BattleEventRow[] = [], captureLimits?: CaptureLimits): InjuriesDerived {
+  const proposedCaptures: Record<string,number> = {}
   const burning = scenarioId === 'mordheim_s_burning'
   const plant = (id:string) => scenarioId === 'the_hunters_become_the_hunted' && !!draft.plantCasualties?.[id]
   const out = heroOoaIds(draft)
@@ -276,7 +284,11 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
         if (die === 6) res.hero = { ...res.hero, xp: res.hero.xp + 1 }
         return { hero, resolution: res }
       }
-      const resolution = skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId, perks)
+      const captor = captureLimits?.captorByHero[hero.id]
+      const limit = captor ? captureLimits?.byWarband[captor] : undefined
+      const reason = limit ? cavalcadeCaptureLimit(limit.capturedThralls,limit.capturedThisBattle+(proposedCaptures[captor!]??0)) ?? undefined : undefined
+      const resolution = skip !== undefined ? skippedHero(hero, skip) : resolveHeroInjuryFlow(hero, draft.heroInjuries[hero.id] ?? { rolls: [], countRoll: null }, matchId, perks, reason)
+      if(captor && resolution.outcome==='captured') proposedCaptures[captor]=(proposedCaptures[captor]??0)+1
       if (perks?.pitFightAutoWin && resolution.line?.injuryCode==='sold_to_the_pits' && resolution.hero.flags.pitFightOwed) {
         const {pitFightOwed: _owed,...flags}=resolution.hero.flags
         const effect=`${perks.pitFightAutoWin.districtName}: automatically won the pit fight; +50 gc, +2 Experience; kept equipment.`
@@ -502,6 +514,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === 'blessed_water')
     if (!row || row.quantity < count || ctx.blessedWaterUses?.some(use => !use.correction && use.itemRowId === id && use.warriorId !== row.holder_id)) problems.review.push('Blessed Water stock changed after a throw. Restore the spent vials to their original inventory row or correct the throw before filing.')
   }
+  if (ctx.captureLimitsError) problems.injuries.push(ctx.captureLimitsError)
   const scenario = scenarioAftermath(ctx.scenarioId, draft.scenarioMission, draft.scenarioUseBody)
   if (ctx.specialKillXpLoading) problems.experience.push('Checking the opposing units for special experience rules.')
   if (ctx.specialKillXpError) problems.experience.push(ctx.specialKillXpError)
@@ -1052,7 +1065,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const wagonCapture=nonCampaign?{snapshot:undefined,problems:[] as string[],notes:[] as string[]}:reportTradeWagon(draft,ctx)
   const postCaptureContext=afterTradeWagonCapture(ctx,wagonCapture)
   const participants = participantsOf(ctx.roster, ctx.template)
-  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId, ctx.battleEvents)
+  const initialInjuries = deriveInjuries(nonCampaign ? { ...draft, heroesOut: [], groupsOut: {}, animalsOut: [] } : woodsInjuryDraft(draft,ctx.scenarioId), participants, ctx.matchId, ctx.roster, ctx.map?.perks, ctx.scenarioId, ctx.battleEvents, ctx.captureLimits)
   const lycanthrope=lycanthropeReport(draft,postCaptureContext,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
   const injuries=lycanthrope.injuries
   const casualtyDraft=woodsCasualtyDraft(draft,ctx.scenarioId)

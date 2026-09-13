@@ -41,7 +41,7 @@ export interface HeroInjuryFlow {
    * `districtRoll` is the D6 a map district lets the player make to turn the result into a Full
    * Recovery (Temple of Morr, Temple of Sigmar), null until rolled.
    */
-  rolls: { d66: number; source?: 'app' | 'tabletop'; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
+  rolls: { d66: number; captureRerollReason?: string; source?: 'app' | 'tabletop'; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
   /** Multiple Injuries: the D6 that says how many further rolls to make. */
   countRoll: number | null
   /** Discarded attempts survive a restart; missing on older drafts. */
@@ -361,9 +361,10 @@ function flowOf(draft: ReportDraft, heroId: string): HeroInjuryFlow {
   return draft.heroInjuries[heroId] ?? { rolls: [], countRoll: null }
 }
 
-export function addHeroInjuryRoll(draft: ReportDraft, heroId: string, d66: number, source?: 'app' | 'tabletop'): ReportDraft {
+export function addHeroInjuryRoll(draft: ReportDraft, heroId: string, d66: number, source?: 'app' | 'tabletop', captureRerollReason?: string): ReportDraft {
   const flow = flowOf(draft, heroId)
-  return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, rolls: [...flow.rolls, { d66, subRoll: null, ...(source ? {source} : {}) }] } } }
+  const rolls = flow.rolls.map((roll,i)=>i===flow.rolls.length-1 && (roll.medicine?.d66??roll.d66)===61 && captureRerollReason ? {...roll,captureRerollReason} : roll)
+  return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, rolls: [...rolls, { d66, subRoll: null, ...(source ? {source} : {}) }] } } }
 }
 
 /** Replace one original result while retaining its provenance; later dependent rolls must be made afresh. */

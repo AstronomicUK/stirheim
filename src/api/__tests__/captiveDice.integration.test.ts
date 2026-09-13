@@ -49,6 +49,26 @@ describe.skipIf(!enabled)('Core captive dice provenance (#229)',()=>{
   return {warbands:w,heroes:h,henchman_groups:g,items:i}
  }
 
+ it('rejects a fresh Hero 61 at the Cavalcade Thrall limit without applying the victim report',async()=>{
+  check(await admin.from('warbands').update({type_rules_id:'the_cursed_cavalcade'}).eq('id',cw))
+  check(await admin.from('henchman_groups').insert({warband_id:cw,name:'Five Thralls',unit_type_rules_id:'cursed_cavalcade_captured_thrall',size:5,stats,xp:0}))
+  check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',applied:{}}}))
+  expect((await fileVictim()).error?.message).toMatch(/capture limit/)
+  expect(check(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('active')
+  expect(await cases()).toEqual([])
+  check(await fileVictim('recovered'))
+  expect(await cases()).toEqual([])
+ })
+ it('rejects three Hero captures in one report but accepts two',async()=>{
+  check(await admin.from('warbands').update({type_rules_id:'the_cursed_cavalcade'}).eq('id',cw))
+  const more=check(await admin.from('heroes').insert([1,2].map(n=>({warband_id:vw,name:`Other ${n}`,unit_type_rules_id:'mercenaries_reikland_champions',stats,xp:8,status:'active'}))).select('id')) as {id:string}[]
+  const ids=[hero,...more.map(h=>h.id)]
+  check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',applied:{}}}))
+  const file=(n:number)=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',injuries:ids.slice(0,n).map(id=>({subjectType:'hero',subjectId:id,subjectName:'Captured hero',rolls:[61],outcome:'captured',injuryCode:'captured',injuryName:'Captured',effect:''})),applied:{heroes:ids.slice(0,n).map(id=>({id,patch:{status:'captured',flags:{captured:true}}}))}}})
+  expect((await file(3)).error?.message).toMatch(/capture limit/)
+  expect(await cases()).toEqual([])
+  check(await file(2));expect(await cases()).toHaveLength(2)
+ })
  it('preserves an edited app sale die through consent and final resolution, rejecting impossible originals',async()=>{
   check(await fileVictim())
   check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',applied:{}}}))

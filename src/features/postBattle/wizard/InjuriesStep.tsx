@@ -108,7 +108,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               })() : undefined}
               skip={draft.injurySkips[hero.id]}
               onSkip={(reason) => update((d) => setInjurySkip(d, hero.id, reason))}
-              onD66={(d66, source) => update((d) => addHeroInjuryRoll(d, hero.id, d66, source))}
+              onD66={(d66, source) => update((d) => addHeroInjuryRoll(d, hero.id, d66, source, resolution.steps.at(-1)?.captureRerollReason))}
               onSubRoll={(index, v) => update((d) => (v === null ? d : setHeroInjurySubRoll(d, hero.id, index, v)))}
               onDistrictRoll={(index, v) => update((d) => (v === null ? d : setHeroDistrictRoll(d, hero.id, index, v)))}
               onCount={(v) => update((d) => (v === null ? d : setHeroInjuryCount(d, hero.id, v)))}
@@ -370,9 +370,9 @@ export function HeroInjuryCard({ restartReasonRequired = false, medicine, enmity
       {steps.length > 0 ? (
         <ol className="flex flex-col gap-1.5 border-l border-border pl-3 text-sm">
           {steps.map((s, i) => (
-            <li key={i} className={s.rerolled ? 'text-ink-dim line-through' : 'text-ink'}>
-              <span className="tabular-nums">{s.medicineOriginal!==undefined?`${s.medicineOriginal} → `:""}{s.d66}</span>{s.medicineOriginal!==undefined?<span className="text-xs"> (Medicine Chest reroll)</span>:null}
-              {s.subRoll !== null ? <span className="tabular-nums text-ink-dim"> / {s.subRoll}</span> : null} · {s.name}
+            <li key={i} className={s.rerolled ? 'text-ink-dim' : 'text-ink'}>
+              <span className={s.rerolled ? 'line-through' : undefined}><span className="tabular-nums">{s.medicineOriginal!==undefined?`${s.medicineOriginal} → `:""}{s.d66}</span>{s.medicineOriginal!==undefined?<span className="text-xs"> (Medicine Chest reroll)</span>:null}
+              {s.subRoll !== null ? <span className="tabular-nums text-ink-dim"> / {s.subRoll}</span> : null} · {s.name}</span>
               {s.rerolled ? <span className="text-xs"> (re-rolled)</span> : null}
               {s.effect ? <p className="text-xs text-ink-dim">{s.effect}</p> : null}
             </li>

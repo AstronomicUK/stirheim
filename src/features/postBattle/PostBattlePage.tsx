@@ -1,3 +1,4 @@
+import {fetchCavalcadeCaptureFacts} from '../../api/cavalcadeCaptives'
 import { useEngines } from '../../api/engines'
 import {specialKillsFromEvents} from './model/specialKillXp'
 import {useRawhideCargo} from '../../api/rawhide'
@@ -219,6 +220,19 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   }), [JSON.stringify(enemyData.map((d) => d?.roster.id))])
   const killEvents = useBattleEvents(match.id)
   const killSheets = useBattleSessions(match.id)
+  const cavalcadeOpponents = enemyData.flatMap(d=>d?.roster.warbandTemplateId==='the_cursed_cavalcade'?[d.roster]:[])
+  const captureQueries=useQueries({queries:cavalcadeOpponents.map(roster=>({queryKey:['reportCaptureLimits',match.id,roster.id],refetchInterval:15000,queryFn:()=>fetchCavalcadeCaptureFacts(match.id,roster.id,roster.id,roster.id)}))})
+  const captureLimitsKey=JSON.stringify({
+    byWarband:Object.fromEntries(cavalcadeOpponents.flatMap((roster,i)=>captureQueries[i].data?[[roster.id,captureQueries[i].data]]:[])),
+    captorByHero:Object.fromEntries(rosterData.roster.heroes.flatMap(hero=>{
+      const named=[...new Set((liveState?.takenOutBy[hero.id]??[]).map(by=>by.warbandId).filter((id):id is string=>!!id))]
+      const captor=opponents.length===1?opponents[0].warband_id:named.length===1?named[0]:undefined
+      return captor?[[hero.id,captor]]:[]
+    })),
+  })
+  const captureLimits=useMemo(()=>JSON.parse(captureLimitsKey) as NonNullable<ReportContext['captureLimits']>,[captureLimitsKey])
+  const captureLimitsError=enemyRosters.some(q=>q.isPending)||captureQueries.some(q=>q.isPending)?'Checking the enemy capture limits…':enemyRosters.some(q=>q.isError)||captureQueries.some(q=>q.isError)?'Could not check enemy capture limits. Reload before filing the report.':undefined
+
   const specialKillXp = specialKillsFromEvents(killEvents.data ?? [], participant.warband_id, enemyRosters.flatMap(r => r.data ? [r.data.roster] : []), killSheets.data ?? [])
   const specialKillXpLoading = enemyRosters.some(r => r.isPending) || killEvents.isPending || killSheets.isPending
   const specialKillXpError = enemyRosters.some(r => r.isError) || killEvents.isError || killSheets.isError ? 'Could not check special enemy experience. Reload the report to try again.' : undefined
@@ -234,6 +248,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   )
   const ctx = useMemo<ReportContext>(
     () => ({
+      captureLimits, captureLimitsError,
       engineAvailable: engines.data?.some(engine => engine.state === 'present'),
       engineAvailabilityError: rosterData.roster.warbandTemplateId === 'black_dwarfs' ? engines.error?.message ?? (engines.isPending ? 'Checking Engine availability before resolving these captives…' : undefined) : undefined,
       battleEvents: killEvents.data,
@@ -267,7 +282,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       takenOutByDetail: liveState?.takenOutBy ?? {},
       enemies,
     }),
-    [engines.data, engines.error, engines.isPending, killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
+    [captureLimits, captureLimitsError, engines.data, engines.error, engines.isPending, killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

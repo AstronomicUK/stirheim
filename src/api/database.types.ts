@@ -9,6 +9,143 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      casualty_loot_attempts: {
+        Row: {
+          body_index: number
+          casualty_id: string
+          created_at: string
+          created_items: Json
+          die: number
+          id: string
+          looter_id: string
+          looter_index: number
+          reason: string
+          recipient_report_id: string
+          reversed: boolean
+          warband_id: string
+          won: boolean
+        }
+        Insert: {
+          body_index: number
+          casualty_id: string
+          created_at?: string
+          created_items?: Json
+          die: number
+          id: string
+          looter_id: string
+          looter_index: number
+          reason?: string
+          recipient_report_id: string
+          reversed?: boolean
+          warband_id: string
+          won: boolean
+        }
+        Update: {
+          body_index?: number
+          casualty_id?: string
+          created_at?: string
+          created_items?: Json
+          die?: number
+          id?: string
+          looter_id?: string
+          looter_index?: number
+          reason?: string
+          recipient_report_id?: string
+          reversed?: boolean
+          warband_id?: string
+          won?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casualty_loot_attempts_casualty_id_fkey"
+            columns: ["casualty_id"]
+            isOneToOne: false
+            referencedRelation: "casualty_loot"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casualty_loot_attempts_recipient_report_id_fkey"
+            columns: ["recipient_report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casualty_loot_attempts_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casualty_loot: {
+        Row: {
+          allocations: Json | null
+          body_count: number
+          eligible_warbands: string[]
+          id: string
+          kit: Json
+          match_id: string
+          report_id: string
+          revision: number
+          source_warband_id: string
+          state: string
+          subject_id: string
+          subject_name: string
+        }
+        Insert: {
+          allocations?: Json | null
+          body_count: number
+          eligible_warbands: string[]
+          id?: string
+          kit: Json
+          match_id: string
+          report_id: string
+          revision: number
+          source_warband_id: string
+          state?: string
+          subject_id: string
+          subject_name: string
+        }
+        Update: {
+          allocations?: Json | null
+          body_count?: number
+          eligible_warbands?: string[]
+          id?: string
+          kit?: Json
+          match_id?: string
+          report_id?: string
+          revision?: number
+          source_warband_id?: string
+          state?: string
+          subject_id?: string
+          subject_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casualty_loot_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casualty_loot_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "match_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casualty_loot_source_warband_id_fkey"
+            columns: ["source_warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       addiction_supplies: {
         Row: {
           created_at: string
@@ -1882,30 +2019,89 @@ export type Database = {
           },
         ]
       }
+      restless_rituals: {
+        Row: {
+          after_state: Json
+          before_state: Json
+          created_at: string
+          die: number | null
+          group_id: string | null
+          hero_id: string
+          id: string
+          kind: string
+          match_id: string | null
+          note: string
+          undone: boolean
+          warband_id: string
+        }
+        Insert: {
+          after_state: Json
+          before_state: Json
+          created_at?: string
+          die?: number | null
+          group_id?: string | null
+          hero_id: string
+          id: string
+          kind: string
+          match_id?: string | null
+          note: string
+          undone?: boolean
+          warband_id: string
+        }
+        Update: {
+          after_state?: Json
+          before_state?: Json
+          created_at?: string
+          die?: number | null
+          group_id?: string | null
+          hero_id?: string
+          id?: string
+          kind?: string
+          match_id?: string | null
+          note?: string
+          undone?: boolean
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restless_rituals_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_phase_state: {
         Row: {
+          bone_goliath_constructed: boolean
           created_at: string
           heroes_searched: string[]
           match_id: string
           pirate_surcharge_paid: boolean
+          rare_item_searchers: string[]
           updated_at: string
           warband_id: string
           wyrdstone_sold: boolean
         }
         Insert: {
+          bone_goliath_constructed?: boolean
           created_at?: string
           heroes_searched?: string[]
           match_id: string
           pirate_surcharge_paid?: boolean
+          rare_item_searchers?: string[]
           updated_at?: string
           warband_id: string
           wyrdstone_sold?: boolean
         }
         Update: {
+          bone_goliath_constructed?: boolean
           created_at?: string
           heroes_searched?: string[]
           match_id?: string
           pirate_surcharge_paid?: boolean
+          rare_item_searchers?: string[]
           updated_at?: string
           warband_id?: string
           wyrdstone_sold?: boolean
@@ -2082,6 +2278,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      reverse_casualty_loot: {
+        Args: { p_attempt: string; p_reason: string }
+        Returns: undefined
+      }
+      roll_casualty_loot: {
+        Args: {
+          p_body: number
+          p_die: number
+          p_id: string
+          p_looter: string
+          p_looter_index: number
+          p_request: string
+          p_warband: string
+        }
+        Returns: string
+      }
+      allocate_casualty_loot: {
+        Args: { p_id: string; p_quantities: Json }
+        Returns: undefined
+      }
       addiction_supply: {
         Args: { p_match_id: string }
         Returns: {
@@ -2485,6 +2701,16 @@ export type Database = {
           p_second_updated: string
         }
         Returns: undefined
+      }
+      resolve_restless_ritual: {
+        Args: {
+          p_die?: number
+          p_kind: string
+          p_name?: string
+          p_request_id: string
+          p_warband_id: string
+        }
+        Returns: string
       }
       resolve_construct_repair: {
         Args: {

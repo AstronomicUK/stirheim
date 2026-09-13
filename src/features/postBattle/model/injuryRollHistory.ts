@@ -1,15 +1,16 @@
 import type {HeroInjuryFlow} from './state'
 
 /** Describes only known provenance; historical rolls never acquire an invented source. */
-export function describeInjuryAttempt(flow: Pick<HeroInjuryFlow, 'rolls' | 'countRoll'>): string {
+export function describeInjuryAttempt(flow: Pick<HeroInjuryFlow, 'rolls' | 'countRoll' | 'countRolls'>): string {
   return flow.rolls.map((roll,i) => [
     `D66 ${roll.d66}${roll.source==='app'?' (app roll)':roll.source==='tabletop'?' (entered from tabletop dice)':''}`,
     ...(roll.medicine ? [`Medicine Chest reroll: ${roll.medicine.d66}${roll.medicine.originalSubRoll!==null?`; original follow-up ${roll.medicine.originalSubRoll}`:''}${roll.medicine.originalDistrictRoll!==null?`; original district die ${roll.medicine.originalDistrictRoll}`:''}`] : []),
     ...(roll.captureRerollReason ? [`Captured rerolled: ${roll.captureRerollReason}`] : []),
     ...(roll.eternalChoice?[`Eternal: ${roll.eternalChoice==='accept'?'accepted the injury':roll.eternalDie?`Killed result: D3 ${roll.eternalDie} Wounds lost`:'sacrificed 1 Wound to ignore the injury'}`]:[]),
+    ...(roll.survivalDice?[`Will to Survive: Leadership dice ${roll.survivalDice.join(' + ')}${roll.survivalAbsence?`; D3 absence ${roll.survivalAbsence}`:''}`]:[]),
     ...(roll.subRoll!==null ? [`follow-up ${roll.subRoll}`] : []),
     ...(roll.districtRoll!=null ? [`district die ${roll.districtRoll}`] : []),
-    ...(i===0 && flow.countRoll!==null ? [`Multiple Injuries count die ${flow.countRoll}`] : []),
+    ...(i===0 && flow.countRoll!==null ? [`Multiple Injuries count die ${flow.countRoll}`] : i>0&&flow.countRolls?.[i]!==undefined?[`Multiple Injuries count die ${flow.countRolls[i]}`]:[]),
   ].join('; ')).join(' → ')
 }
 

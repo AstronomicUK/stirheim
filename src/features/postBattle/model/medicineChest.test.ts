@@ -39,3 +39,14 @@ describe('Medicine Chest injury reroll',()=>{
   expect(medicineChestUses(d,[],steps).problems[0]).toContain('no longer')
  })
 })
+
+it('clears survival tests and later root counts when replacing their injury',()=>{
+ let d=addHeroInjuryRoll(emptyDraft(),'hero',11)
+ d.heroInjuries.hero.rolls[0].survivalDice=[1,1]
+ d.heroInjuries.hero.rolls[0].survivalAbsence=2
+ d.heroInjuries.hero.countRolls={2:3}
+ d=setMedicineChestReroll(d,'hero',0,item.id,11)
+ expect(d.heroInjuries.hero.rolls[0].survivalDice).toBeUndefined()
+ expect(d.heroInjuries.hero.rolls[0].survivalAbsence).toBeUndefined()
+ expect(d.heroInjuries.hero.countRolls).toEqual({})
+})

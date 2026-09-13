@@ -356,7 +356,8 @@ function assertD6(d6: number): void {
 }
 
 /** The campaign rule that changes this group's injury roll (a Troll never rolls, a Hobgoblin leaves on 1-3), if any. */
-export function henchmanInjuryException(group: Pick<RosterHenchmanGroup, "unitTemplateId">): InjuryException | undefined {
+export function henchmanInjuryException(group: Pick<RosterHenchmanGroup, "unitTemplateId" | "campaignState">): InjuryException | undefined {
+  if(group.campaignState?.trainedSquig)return {deadOn:[1],label:'dead',note:'Trainin’: the trained guard dies only on 1.'};
   return unitRules(group.unitTemplateId).injury;
 }
 
@@ -364,7 +365,7 @@ export function henchmanInjuryException(group: Pick<RosterHenchmanGroup, "unitTe
  * Henchman out of action: D6, 1-2 the warrior is removed from the group (or as the unit's own rule says). Returns null when the
  * group is now empty (the caller removes it from the roster).
  */
-export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number, repairDie?: number): Resolution<RosterHenchmanGroup | null> {
+export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number, repairDie?: number, forceStandard=false): Resolution<RosterHenchmanGroup | null> {
   assertD6(d6);
   if(group.unitTemplateId==='masters_of_horror_flesh_construct' && d6<=2) {
     if(repairDie===undefined)throw new RulesError('injury.repairRollRequired','Roll D6 for the Flesh Construct repair cost');
@@ -372,7 +373,7 @@ export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number, repa
     const cost=repairDie*5;
     return {value:{...group,campaignState:{...group.campaignState,constructRepairs:[...(group.campaignState?.constructRepairs??[]),{cost,injuryRoll:d6,repairRoll:repairDie}]}},events:[{kind:'construct.damaged',subjectId:group.id,message:`${group.name}: damage retained on the roster; repairs cost ${cost} gc (D6 ${repairDie} × 5). Cannot fight until repaired or abandoned.`}]};
   }
-  const exception = henchmanInjuryException(group);
+  const exception = forceStandard ? undefined : henchmanInjuryException(group);
   const deadOn = exception?.deadOn ?? HENCHMAN_INJURY.deadOn;
   if (!deadOn.includes(d6)) {
     return {

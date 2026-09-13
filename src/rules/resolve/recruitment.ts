@@ -341,6 +341,10 @@ export function recruitHenchmen(
     throw new RulesError("recruitment.duplicateId", `A henchman group with id "${id}" already exists`);
   }
 
+  if(unit.id==='restless_dead_variant_bone_goliath')throw new RulesError('recruitment.construction','Use the Bone Goliath construction action to settle its Liche Wound cost and search restrictions.');
+  const trainedSquig=unit.id==='night_goblins_web_cave_squigs' && warband.heroes.some(h=>h.status==='active'&&h.unitTemplateId==='night_goblins_web_squig_herder'&&h.skillIds.some(s=>s.endsWith('_trainin'))) && !warband.henchmenGroups.some(g=>g.size>0&&g.campaignState?.trainedSquig)
+  if(existing?.campaignState?.trainedSquig)throw new RulesError('recruitment.trainedSquig','The trained Squig is one individual; other Squigs must form a separate group.')
+  if(trainedSquig&&(size!==1||existing))throw new RulesError('recruitment.trainedSquig','Trainin’: the next Squig must be bought as one new individual group, becoming the Herder’s trained guard.')
   if (unit.id === NIGHT_MOB && ((!existing && size !== 5) || (existing && existing.size + size > 5))) throw new RulesError('recruitment.mob', 'A new mob needs five Snotlings; replacements cost 10 gc each, up to five members.');
   if (unit.id === SCARECROW && (size !== 1 || existing || !opts.constructController || !warband.heroes.some(h=>h.unitTemplateId===opts.constructController && ["active","captured"].includes(h.status)) || warband.henchmenGroups.some(g => g.size > 0 && g.campaignState?.constructController === opts.constructController))) throw new RulesError('recruitment.controller', 'Recruit each Scarecrow separately with its own Liche or Necromancer controller.');
   if (WAR_BEASTS.includes(unit.id) && (!existing || existing.size + size > (existing.campaignState?.warBeastSlots ?? existing.size))) throw new RulesError('recruitment.warBeasts', 'War Beasts are bought at creation. Later recruits replace casualties in a previously established beast group.');
@@ -427,7 +431,7 @@ export function recruitHenchmen(
       xp: unit.startingExperience,
       levelUps: startingLevelUps(unit, "henchman"),
       statIncreases: {},
-      campaignState: opts.constructController ? {constructController: opts.constructController} : undefined,
+      campaignState: trainedSquig ? {trainedSquig:true} : opts.constructController ? {constructController: opts.constructController} : undefined,
       equipment: startingEquipment(template, unit).map(item => ({...item, quantity: item.quantity * size})),
     };
     group.equipment.push(...giftEquipment(opts.recruitGiftIds, size));

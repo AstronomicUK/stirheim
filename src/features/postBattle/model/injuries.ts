@@ -27,7 +27,8 @@ export type HeroInjuryPending =
   | { kind: 'subRoll'; die: 'D6' | 'D3'; prompt: string; rollIndex: number }
   /** A map district offers a D6 to turn this result into a Full Recovery. */
   | { kind: 'districtTest'; prompt: string; rollIndex: number; districtName: string; needed: number }
-  | { kind: 'count'; prompt: string }
+  | { kind: 'count'; prompt: string; rollIndex?:number }
+  | { kind: 'survival'; prompt:string; rollIndex:number; dice:[number|null,number|null]; absence?:number; passed:boolean }
   | { kind: 'eternal'; prompt:string; rollIndex:number; killed:boolean }
   | { kind: 'done' }
 
@@ -78,6 +79,7 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
     if (typeof districtRoll === 'number') rolls.push(districtRoll)
     if (s.subRoll !== null) rolls.push(s.subRoll)
     if (i === 0 && flow.countRoll !== null) rolls.push(flow.countRoll)
+    if(i>0&&flow.countRolls?.[i]!==undefined)rolls.push(flow.countRolls[i])
   })
   const multiple = applied.length > 1
   return {
@@ -87,7 +89,7 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
     subjectName: hero.name,
     rolls,
     injuryCode: multiple ? 'multiple_injuries' : (applied[0]?.code ?? null),
-    injuryName: multiple ? `Multiple Injuries: ${applied.slice(1).map((s) => s.name).join(', ')}` : (applied[0]?.name ?? 'Full Recovery'),
+    injuryName: multiple ? `Multiple Injuries: ${applied.filter(s=>s.code!=='multiple_injuries').map((s) => s.name).join(', ')}` : (applied[0]?.name ?? 'Full Recovery'),
     effect: [...flow.rolls.flatMap(r=>r.medicine?[`Medicine Chest consumed: original D66 ${r.d66}${r.medicine.originalSubRoll!==null?`, follow-up ${r.medicine.originalSubRoll}`:''}${r.medicine.originalDistrictRoll!==null?`, district D6 ${r.medicine.originalDistrictRoll}`:''} → replacement D66 ${r.medicine.d66}.`]:[]),...steps.filter(s=>s.captureRerollReason).map(s=>`D66 ${s.d66} Captured rerolled: ${s.captureRerollReason}`),...applied.map((s) => s.effect ?? '')].filter((e) => e !== '').join('; '),
     outcome,
   }
@@ -96,18 +98,20 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
 const FULL_RECOVERY_D66 = 41
 
 /** Replay a hero's injury rolls from the roster state at the end of the battle. */
-export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null, captureRerollReason?: string, allowEternal = true): HeroInjuryResolution {
+export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null, captureRerollReason?: string, allowEternal = true, guardianReason?: string): HeroInjuryResolution {
   const ctx = matchId ? { matchId } : undefined
   const steps: HeroInjuryStep[] = []
   let current = hero
   let multi = false
+  let rootsRemaining = allowEternal && (hero.unitTemplateId==='bigsnotz'||hero.unitTemplateId.startsWith('snotling_')) ? 2 : 1
   let remaining = 0
   let pending: HeroInjuryPending | null = null
 
   for (let i = 0; i < flow.rolls.length && pending === null; i++) {
     const original = flow.rolls[i]
     const roll = original.medicine ? {...original,d66:original.medicine.d66} : original
-    const injury = lookupHeroInjury(roll.d66)
+    let injury = lookupHeroInjury(roll.d66)
+    const survivor = allowEternal && !multi && injury.code==='dead' && hero.unitTemplateId==='lustrian_reavers_conqueror' && !current.flags.conquerorSurvivorUsed
     if (multi && MULTIPLE_INJURIES_REROLL_CODES.includes(injury.code)) {
       steps.push({ medicineOriginal:original.medicine?original.d66:undefined, d66: roll.d66, subRoll: null, code: injury.code, name: injury.name, effect: null, rerolled: true })
       continue
@@ -129,16 +133,42 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
         steps.push({ medicineOriginal:original.medicine?original.d66:undefined, d66: roll.d66, subRoll: null, code: 'full_recovery', name: `${injury.name} → Full Recovery`, effect: `${label}: the result becomes Full Recovery`, rerolled: false, rewrittenBy: label })
         if (multi) {
           remaining -= 1
-          if (remaining <= 0) pending = { kind: 'done' }
+          if (remaining <= 0) {multi=false;rootsRemaining-=1;if(rootsRemaining<=0)pending = { kind: 'done' }}
         } else {
-          pending = { kind: 'done' }
+          rootsRemaining-=1;if(rootsRemaining<=0)pending = { kind: 'done' }
         }
         continue
       }
     }
+    if(survivor) {
+      injury=lookupHeroInjury(16)
+      current={...current,flags:{...current.flags,conquerorSurvivorUsed:true}}
+    }
     const captureReason = roll.captureRerollReason ?? captureRerollReason
     if (injury.code === 'captured' && captureReason) {
       steps.push({d66:roll.d66,subRoll:null,code:injury.code,name:injury.name,effect:captureReason,rerolled:true,captureRerollReason:captureReason})
+      continue
+    }
+    if(allowEternal && injury.code==='dead' && current.skillIds.includes('druchii_skills_will_to_survive')) {
+      const dice=roll.survivalDice??[null,null]
+      const entered=dice.every(d=>isDie(d,6))
+      const passed=entered&&Number(dice[0])+Number(dice[1])<=hero.stats.Ld
+      if(!entered || passed&&!isDie(roll.survivalAbsence,3)) {
+        steps.push({d66:roll.d66,subRoll:null,code:injury.code,name:injury.name,effect:null,rerolled:false})
+        pending={kind:'survival',rollIndex:i,dice,absence:roll.survivalAbsence,passed,prompt:`Will to Survive: test unmodified Leadership ${hero.stats.Ld}. Success replaces death with D3 missed battles.`}
+        break
+      }
+      if(passed) {
+        current={...current,flags:{...current.flags,missNextGames:Math.max(current.flags.missNextGames??0,roll.survivalAbsence!)}}
+        steps.push({d66:roll.d66,subRoll:roll.survivalAbsence!,code:'will_to_survive',name:'Will to Survive',effect:`Leadership ${dice.join(' + ')} against ${hero.stats.Ld}: survived; misses D3 ${roll.survivalAbsence} battles.`,rerolled:false})
+        pending={kind:'done'};continue
+      }
+    }
+    if(guardianReason && ['captured','robbed','sold_to_the_pits'].includes(injury.code)) {
+      const recovered=applyHeroInjury(current,41,undefined,ctx)
+      current=recovered.value.hero
+      steps.push({d66:roll.d66,subRoll:null,code:'full_recovery',name:`${injury.name} → Full Recovery`,effect:guardianReason,rerolled:false})
+      if(multi){remaining-=1;if(remaining<=0)pending={kind:'done'}}else pending={kind:'done'}
       continue
     }
     const eternal=allowEternal && ['restless_dead_liche','restless_dead_variant_liche'].includes(current.unitTemplateId)
@@ -157,7 +187,7 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
         continue
       }
     }
-    const res = applyHeroInjury(current, roll.d66, roll.subRoll ?? undefined, ctx)
+    const res = applyHeroInjury(current, survivor ? 16 : roll.d66, roll.subRoll ?? undefined, ctx)
     if (res.value.needsSubRoll) {
       steps.push({ medicineOriginal:original.medicine?original.d66:undefined, d66: roll.d66, subRoll: null, code: injury.code, name: injury.name, effect: null, rerolled: false })
       pending = { kind: 'subRoll', die: res.value.needsSubRoll.die, prompt: res.value.needsSubRoll.prompt, rollIndex: i }
@@ -165,21 +195,22 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
     }
     current = res.value.hero
     const record = current.injuries[current.injuries.length - 1]
-    steps.push({ medicineOriginal:original.medicine?original.d66:undefined, d66: roll.d66, subRoll: roll.subRoll, code: injury.code, name: injury.name, effect: `${record?.effect ?? ''}${rewrite && rewrite.test !== undefined ? ` (${rewrite.source.districtName} D6 ${roll.districtRoll}: not ${rewrite.test}+)` : ''}`, rerolled: false })
+    steps.push({ medicineOriginal:original.medicine?original.d66:undefined, d66: roll.d66, subRoll: roll.subRoll, code: injury.code, name: injury.name, effect: `${survivor?'Survivor: first Dead result becomes Multiple Injuries; the once-only protection is now spent. ':''}${roll.survivalDice?`Will to Survive Leadership ${roll.survivalDice.join(' + ')} against ${hero.stats.Ld}. `:''}${record?.effect ?? ''}${rewrite && rewrite.test !== undefined ? ` (${rewrite.source.districtName} D6 ${roll.districtRoll}: not ${rewrite.test}+)` : ''}`, rerolled: false })
     if (res.value.needsMoreRolls) {
-      if (flow.countRoll === null) {
-        pending = { kind: 'count', prompt: `${hero.name}: roll a D6 for how many more times to roll on the chart` }
+      const count=i===0?flow.countRoll:flow.countRolls?.[i]??null
+      if (count === null) {
+        pending = { kind: 'count', rollIndex:i, prompt: `${hero.name}: roll a D6 for how many more times to roll on the chart` }
         break
       }
       multi = true
-      remaining = flow.countRoll
+      remaining = count
       continue
     }
     if (multi) {
       remaining -= 1
-      if (remaining <= 0) pending = { kind: 'done' }
+      if (remaining <= 0) {multi=false;rootsRemaining-=1;if(rootsRemaining<=0)pending = { kind: 'done' }}
     } else {
-      pending = { kind: 'done' }
+      rootsRemaining-=1;if(rootsRemaining<=0)pending = { kind: 'done' }
     }
   }
 
@@ -187,6 +218,7 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
     if (flow.rolls.length === 0) pending = { kind: 'd66', prompt: `${hero.name}: roll a D66 on the Serious Injuries chart` }
     else if (multi && remaining > 0) pending = { kind: 'd66', prompt: `${hero.name}: ${remaining} more ${remaining === 1 ? 'roll' : 'rolls'} (re-roll Dead, Captured and Multiple Injuries)` }
     else if (steps.at(-1)?.captureRerollReason) pending = {kind:'d66',prompt:`${hero.name}: ${steps.at(-1)!.captureRerollReason} Roll another D66`}
+    else if(rootsRemaining>0)pending={kind:'d66',prompt:`${hero.name}: roll the second Serious Injury result (Not-So-Tough Gits).`}
     else pending = { kind: 'done' }
   }
 
@@ -231,7 +263,7 @@ export interface GroupInjuryResolution {
 }
 
 /** One D6 per model out of action, applied in order; dice not yet entered leave the flow incomplete. */
-export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: number, rolls: readonly (number | null)[], repairDice: readonly (number | null)[] = []): GroupInjuryResolution {
+export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: number, rolls: readonly (number | null)[], repairDice: readonly (number | null)[] = [], forceStandard=false): GroupInjuryResolution {
   let current: RosterHenchmanGroup = group
   let dead = 0
   const entered: number[] = []
@@ -240,7 +272,7 @@ export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: nu
     if (!isDie(d6, 6)) break
     if(group.unitTemplateId==='masters_of_horror_flesh_construct' && d6<=2 && !isDie(repairDice[i],6))break
     entered.push(d6)
-    const res = applyHenchmanInjury(current, d6, repairDice[i] ?? undefined)
+    const res = applyHenchmanInjury(current, d6, repairDice[i] ?? undefined, forceStandard)
     if (res.value === null) {
       dead += 1
       current = { ...current, size: 0 }

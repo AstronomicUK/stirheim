@@ -116,11 +116,12 @@ function PitFightSheet({
 
         {loss && hero ? <>
           <HeroInjuryCard name={hero.name} type="Pit fight injury" resolution={loss} skip={undefined}
+            onSurvival={(index,patch)=>setFlow(f=>({...f,rolls:f.rolls.slice(0,index+1).map((r,i)=>i===index?{...r,...patch}:r)}))}
             onEternal={(index,choice,die)=>setFlow(f=>({...f,rolls:f.rolls.slice(0,index+1).map((r,i)=>i===index?{...r,eternalChoice:choice,eternalDie:die}:r)}))}
             onSkip={()=>{}} onDistrictRoll={()=>{}} onReset={reset}
             onD66={d66=>setFlow(f=>({...f,rolls:[...f.rolls,{d66,subRoll:null}]}))}
             onSubRoll={(index,value)=>setFlow(f=>({...f,rolls:f.rolls.map((r,i)=>i===index?{...r,subRoll:value}:r)}))}
-            onCount={countRoll=>setFlow(f=>({...f,countRoll}))}/>
+            onCount={(countRoll,index=0)=>setFlow(f=>index===0?{...f,countRoll}:{...f,countRolls:countRoll===null?Object.fromEntries(Object.entries(f.countRolls??{}).filter(([key])=>Number(key)!==index)):{...f.countRolls,[index]:countRoll}})}/>
           {lossReady ? <Button block pending={pending} onClick={()=>void onApply(finishPitFightLoss(detail.roster,loss.hero))}>Record injuries and equipment loss</Button> : null}
         </> : null}
       </div>

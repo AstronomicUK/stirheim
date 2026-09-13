@@ -41,11 +41,12 @@ export interface HeroInjuryFlow {
    * `districtRoll` is the D6 a map district lets the player make to turn the result into a Full
    * Recovery (Temple of Morr, Temple of Sigmar), null until rolled.
    */
-  rolls: { eternalChoice?: 'accept' | 'sacrifice'; eternalDie?: number; d66: number; captureRerollReason?: string; source?: 'app' | 'tabletop'; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
+  rolls: { medicalAid?: string; survivalDice?: [number|null,number|null]; survivalAbsence?: number; eternalChoice?: 'accept' | 'sacrifice'; eternalDie?: number; d66: number; captureRerollReason?: string; source?: 'app' | 'tabletop'; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
   /** Multiple Injuries: the D6 that says how many further rolls to make. */
   countRoll: number | null
+  countRolls?: Record<number,number>;
   /** Discarded attempts survive a restart; missing on older drafts. */
-  previousAttempts?: { rolls: HeroInjuryFlow['rolls']; countRoll: number | null; reason: string }[]
+  previousAttempts?: { rolls: HeroInjuryFlow['rolls']; countRoll: number | null; countRolls?:Record<number,number>; reason: string }[]
   /** Bitter Enmity (#96): who caused the injury, when the battle record could not say and the player names them. Null = left for the table. */
   enmityTarget?: { warbandId: string; modelId: string | null } | null
 }
@@ -136,6 +137,12 @@ export interface ExplorationDraft {
 }
 
 export interface ReportDraft {
+  trainedSquigGoneWild?:Record<string,boolean>;
+  groupFlamingCasualties?:Record<string,boolean>;
+  groupInjuryRerolls?:Record<string,{original:number;result:number;label:string}>;
+  medicalAidUsed?: Record<string,string>;
+  censerSelfInjury?: Record<string,boolean>;
+  claimedGnoblarDice?: Record<string,(number|null)[]>;
   tradeWagon?: import('./tradeWagonReport').WagonReportFacts
   brokenWeaponTotals?: Record<string, number | null>
   woods?: import('./lycanthropeReport').WoodsDraft
@@ -371,10 +378,10 @@ export function addHeroInjuryRoll(draft: ReportDraft, heroId: string, d66: numbe
 /** Replace one original result while retaining its provenance; later dependent rolls must be made afresh. */
 export function setMedicineChestReroll(draft:ReportDraft,heroId:string,rollIndex:number,itemId:string,d66:number):ReportDraft {
   const flow=flowOf(draft,heroId),original=flow.rolls[rollIndex]
-  if(!original||original.medicine||(flow.extraToughUsed&&rollIndex===0))return draft
+  if(!original||original.medicine||original.medicalAid||(flow.extraToughUsed&&rollIndex===0))return draft
   const rolls=flow.rolls.slice(0,rollIndex+1)
-  rolls[rollIndex]={...original,eternalChoice:undefined,eternalDie:undefined,subRoll:null,districtRoll:null,medicine:{itemId,d66,originalSubRoll:original.subRoll,originalDistrictRoll:original.districtRoll??null}}
-  return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls,countRoll:rollIndex===0?null:flow.countRoll}}}
+  rolls[rollIndex]={...original,survivalDice:undefined,survivalAbsence:undefined,eternalChoice:undefined,eternalDie:undefined,subRoll:null,districtRoll:null,medicine:{itemId,d66,originalSubRoll:original.subRoll,originalDistrictRoll:original.districtRoll??null}}
+  return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls,countRolls:Object.fromEntries(Object.entries(flow.countRolls??{}).filter(([index])=>Number(index)<rollIndex)),countRoll:rollIndex===0?null:flow.countRoll}}}
 }
 
 export function setHeroInjurySubRoll(draft: ReportDraft, heroId: string, rollIndex: number, subRoll: number): ReportDraft {
@@ -410,9 +417,9 @@ export function d3Of(d6: number | null): number | null {
   return isDie(d6, 6) ? Math.ceil(d6 / 2) : null
 }
 
-export function setHeroInjuryCount(draft: ReportDraft, heroId: string, countRoll: number): ReportDraft {
+export function setHeroInjuryCount(draft: ReportDraft, heroId: string, countRoll: number, rollIndex=0): ReportDraft {
   const flow = flowOf(draft, heroId)
-  return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: { ...flow, countRoll } } }
+  return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: rollIndex===0 ? { ...flow, countRoll } : { ...flow, countRolls:{...flow.countRolls,[rollIndex]:countRoll} } } }
 }
 
 export function resetHeroInjury(draft: ReportDraft, heroId: string, reason: string): ReportDraft {
@@ -420,7 +427,7 @@ export function resetHeroInjury(draft: ReportDraft, heroId: string, reason: stri
   if (!flow.rolls.length || !reason.trim()) return draft
   return { ...draft, heroInjuries: { ...draft.heroInjuries, [heroId]: {
     rolls: [], countRoll: null, extraToughUsed: flow.extraToughUsed,
-    previousAttempts: [...(flow.previousAttempts ?? []), {rolls: flow.rolls, countRoll: flow.countRoll, reason: reason.trim()}],
+    previousAttempts: [...(flow.previousAttempts ?? []), {rolls: flow.rolls, countRoll: flow.countRoll,countRolls:flow.countRolls, reason: reason.trim()}],
   } } }
 }
 
@@ -450,7 +457,9 @@ export function setGroupInjuryRoll(draft: ReportDraft, groupId: string, index: n
   const rolls = [...(draft.groupInjuries[groupId] ?? [])]
   while (rolls.length < count) rolls.push(null)
   rolls[index] = d6
-  return { ...draft, groupInjuries: { ...draft.groupInjuries, [groupId]: rolls }, groupEquipmentLosses: {}, brokenWeaponTotals: {} }
+  const key=`${groupId}:${index}`,reroll=draft.groupInjuryRerolls?.[key]
+  const groupInjuryRerolls=reroll&&d6!==null?{...draft.groupInjuryRerolls,[key]:{...reroll,result:d6,label:reroll.result===d6?reroll.label:`${reroll.label} (replacement corrected from ${reroll.result} to ${d6})`}}:draft.groupInjuryRerolls
+  return { ...draft, groupInjuryRerolls, groupInjuries: { ...draft.groupInjuries, [groupId]: rolls }, groupEquipmentLosses: {}, brokenWeaponTotals: {} }
 }
 
 export function addXpExtra(draft: ReportDraft, subjectId: string, extra: XpExtra): ReportDraft {
@@ -600,4 +609,17 @@ export function setEternalInjury(draft: ReportDraft, heroId: string, index: numb
  if(!flow.rolls[index])return draft
  const rolls=flow.rolls.slice(0,index+1).map((r,i)=>i===index?{...r,eternalChoice:choice,eternalDie:die}:r)
  return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls}}}
+}
+
+/** Changing the cause to fire invalidates a Construct reroll, restoring its original die. */
+export function setGroupFlamingCasualty(draft:ReportDraft,groupId:string,flaming:boolean):ReportDraft {
+ let next=draft
+ const rerolls={...draft.groupInjuryRerolls}
+ if(flaming)for(const [key,roll] of Object.entries(rerolls)){
+  if(key.startsWith(`${groupId}:`)&&roll.label.startsWith('Construct')){
+   next=setGroupInjuryRoll(next,groupId,Number(key.slice(groupId.length+1)),roll.original)
+   delete rerolls[key]
+  }
+ }
+ return {...next,groupInjuryRerolls:rerolls,groupFlamingCasualties:{...next.groupFlamingCasualties,[groupId]:flaming}}
 }

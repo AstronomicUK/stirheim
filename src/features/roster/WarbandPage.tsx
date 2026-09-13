@@ -1,3 +1,5 @@
+import {CasualtyLootCard} from '../aftermath/CasualtyLootCard'
+import {RestlessRituals} from './view/RestlessRituals'
 import { SuccessorCommandCard } from './view/SuccessorCommandCard'
 import { LeaderWaitingCard } from './view/LeaderWaitingCard'
 import { collapsedWarbandReason } from '../../rules/resolve/leaderReplacement'
@@ -204,6 +206,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
 
       {canEdit ? <PendingBattleCard warbandId={warband.id} campaignId={campaign.data?.campaignId} userId={user?.id} /> : null}
 
+      <CasualtyLootCard detail={detail} mayEdit={canEdit}/>
       <AwakeningCard warbandId={warband.id} mayEdit={canEdit} campaignId={campaign.data?.campaignId} />
 
       <ImportFixups detail={detail} canEdit={canEdit} />
@@ -246,6 +249,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         {detail.roster.explorationDiscoveries.freeHireReportId && !detail.roster.hiredSwords.some(h=>h.flags.returningFavourReportId===detail.roster.explorationDiscoveries?.freeHireReportId) ? <p className="text-sm">Returning a Favour: recruit one eligible Hired Sword free for the next battle. Afterwards, dismiss them or pay normal upkeep.</p> : null}
       </Card> : null}
 
+      <RestlessRituals detail={detail} allowed={canEdit}/>
       <ConstructRepairs detail={detail} userId={user?.id} />
       <EngineRosterSection detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
       <CaptiveCard detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />

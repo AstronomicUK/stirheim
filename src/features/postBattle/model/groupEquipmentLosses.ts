@@ -27,7 +27,7 @@ export function groupEquipmentLosses(ctx: ReportContext, draft: ReportDraft, inj
       const lost=allDead?available:manual?draft.groupEquipmentLosses?.[key]??null:item.quantity/casualty.group.size*dead
       out.rows.push({key,name,groupName:casualty.group.name,dead,available,lost,manual})
       if(lost===null||!Number.isInteger(lost)||lost<0||lost>available) {out.problems.push(`${casualty.group.name}: record how many ${name} were lost with the dead or captured models (0–${available}).`);continue}
-      casualty.resolution.line?.equipmentLost?.push({sourceItemId:item.id,quantity:lost})
+      casualty.resolution.line?.equipmentLost?.push({sourceItemId:item.id,quantity:lost,...(manual?{manual:true}:{})})
       let allocated=0
       for(const capture of captures){
         const captureKey=`${capture.eventId}:${key}`

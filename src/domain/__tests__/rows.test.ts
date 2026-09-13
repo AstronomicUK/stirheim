@@ -334,7 +334,7 @@ describe("row schemas parse realistic seed rows", () => {
       created_at: T0,
       updated_at: T0,
     };
-    expect(tradePhaseStateRowSchema.parse(trade)).toEqual(trade);
+    expect(tradePhaseStateRowSchema.parse(trade)).toEqual({...trade,rare_item_searchers:[],bone_goliath_constructed:false});
   });
 
   it("audit_log", () => {

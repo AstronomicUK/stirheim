@@ -108,6 +108,7 @@ export interface WarriorFlags {
   /** Leads in their original unit type until a replacement leader is recruited. */
   temporaryLeader?: boolean;
   chaosMark?: string;
+  conquerorSurvivorUsed?: boolean;
   retainedScoutId?: string;
   agreedRacialMaxima?: Stats;
   agreedRacialMaximaReason?: string;
@@ -175,6 +176,7 @@ export interface RosterHero {
 export interface HenchmanCampaignState {
   constructController?: "restless_dead_liche" | "restless_dead_necromancer";
   warBeastSlots?: number;
+  trainedSquig?: boolean;
   constructRepairReceipt?: {afterProfile:Record<string,unknown>;requestId:string;action:string;paid:number;beforeSize:number;afterSize:number;beforeState:Record<string,unknown>;afterState:Record<string,unknown>};
   constructRepairs?: {cost:number;injuryRoll:number;repairRoll:number}[];
   /** Captured Pirate Swabbies retain their former skills, but may never cast spells. */

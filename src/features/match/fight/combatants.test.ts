@@ -444,7 +444,7 @@ it('promoted Slayers ignore psychology while unpromoted Skittish henchmen do not
 it('uses explicit animal unit rules for henchmen, never names or lack of XP', () => {
   const animalIds = ['witch_hunters_war_hounds', 'skaven_giant_rats', 'norse_wolf', 'druchii_slavehounds', 'halflings_piggies', 'ogre_hunting_party_sabretusk_cubs']
   const otherIds = ['mercenaries_reikland_warriors', 'undead_zombies', 'carnival_of_chaos_nurglings']
-  const roster = warband({ henchmenGroups: [...animalIds, ...otherIds].map(id => group(id, { unitTemplateId: id, name: 'Wardog' })) })
+  const roster = warband({ heroes:[hero('wulfen',{unitTemplateId:'norse_wulfen'})], henchmenGroups: [...animalIds, ...otherIds].map(id => group(id, { unitTemplateId: id, name: 'Wardog' })) })
   const fighters = combatantsOf(roster, undefined, roster.name, undefined)
   for (const id of animalIds) expect(fighters.find(f => f.id === id)?.isAnimal).toBe(true)
   for (const id of otherIds) expect(fighters.find(f => f.id === id)?.isAnimal).not.toBe(true)
@@ -482,6 +482,7 @@ it('applies the carried Swivel Gun Movement and Initiative penalty once for the 
   expect(template).toBeDefined()
   const unit = [...template.heroTemplates, ...template.henchmanTemplates].find(u => u.id === unitTemplateId)!
   const roster = warband({warbandTemplateId: template.id, heroes: unit.role === 'hero' ? [hero('natural', {unitTemplateId,stats:unit.stats,equipment:[]})] : [], henchmenGroups:unit.role==='henchman' ? [group('natural',{unitTemplateId,stats:unit.stats,equipment:[],size:1})] : []})
+  for(const handler of ['norse_wulfen','kislevites_bear_tamer','dark_elves_beastmaster'])roster.heroes.push(hero(handler,{unitTemplateId:handler}));
   if(unitTemplateId === 'restless_dead_scarecrows') { roster.heroes.push(hero('controller',{unitTemplateId:'restless_dead_liche'})); roster.henchmenGroups[0].campaignState={constructController:'restless_dead_liche'}; }
   const c = combatantsOf(roster,template,'QA',undefined).find(c=>c.id==='natural')!, kit=loadoutFor(c), primary=defaultPrimary(kit.melee)
   expect(primary.id).toBe('natural_weapons')

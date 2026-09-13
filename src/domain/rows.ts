@@ -447,6 +447,8 @@ export const pendingAdvanceRowSchema = z
 export type PendingAdvanceRow = z.infer<typeof pendingAdvanceRowSchema>;
 
 export const tradePhaseStateRowSchema = z.object({
+  bone_goliath_constructed:z.boolean().default(false),
+  rare_item_searchers:z.array(uuidSchema).default([]),
   warband_id: uuidSchema,
   match_id: uuidSchema,
   wyrdstone_sold: z.boolean(),

@@ -1,5 +1,12 @@
 # Feedback Tracker
 
+## Casualties and recovery batch — 13 September 2026
+
+Completed locally, awaiting combined deployment: #176 existing equipment-loss flow verified; #124 source-specific injury protections; #159 handler/Claimed Gnoblar transitions; #158 shared casualty looting; and the Restless Dead Goliath, Feed Upon Magic and Liche advancement clauses of #132. Other #132 actions and #130 specialist acquisition remain separate. See [the batch record](CASUALTIES-RECOVERY-BATCH-2026-09-13.md). This checkpoint supersedes older open findings for this scope.
+
+Validation: 2,493 application tests, 344 local database tests, production build, mobile looting/Goliath checks and isolated replay of all 129 migration files passed. Migrations 134–135 join the existing undeployed 131–133. Nothing pushed or deployed.
+
+
 ## Local batch checkpoint — 2026-09-13: roster, injuries and starting equipment
 
 **Not deployed.** #126, #127, #129, #120 and #131 are implemented and verified locally for the scope recorded in [the batch brief](ROSTER-INJURY-RECRUITMENT-BATCH-2026-09-13.md). This checkpoint supersedes their older open status for that scope. Other starting skill choices (#59) and recruitment upgrades (#130) remain separate. Keep this batch with the prior #102/#103/#157 fixes for a later combined release; do not push yet.

@@ -1,3 +1,4 @@
+import { absentHandler } from '../../../rules/resolve/handlers'
 import type {SlaaneshiHold} from '../../../api/slaaneshiHolds'
 import { unitRules } from '../../../rules/data/campaignRules'
 import {absentGroupModels} from '../../../rules/resolve/groupAbsences'
@@ -80,7 +81,7 @@ export function splitWarriors(roster: RosterWarband, sheet?: BattleLiveState): S
 
 /** Groups with at least one model; a wiped-out group is kept on the roster for history only. */
 export function fightingGroups(roster: RosterWarband, sheet?: BattleLiveState): RosterHenchmanGroup[] {
-  return roster.henchmenGroups.filter((g) => g.size > 0 && !g.campaignState?.fanaticSittingOut && (g.unitTemplateId !== "restless_dead_scarecrows" || splitWarriors(roster, sheet).fighting.some(entry => entry.role === "hero" && entry.warrior.unitTemplateId === g.campaignState?.constructController))).map(g=>{const absent=absentGroupModels(g);return absent?{...g,rosterSize:g.size,size:g.size-absent}:g}).filter(g=>g.size>0)
+  return roster.henchmenGroups.filter((g) => !absentHandler(g, splitWarriors(roster,sheet).fighting.flatMap(entry=>entry.role==='hero'?[entry.warrior]:[])) && g.size > 0 && !g.campaignState?.fanaticSittingOut && (g.unitTemplateId !== "restless_dead_scarecrows" || splitWarriors(roster, sheet).fighting.some(entry => entry.role === "hero" && entry.warrior.unitTemplateId === g.campaignState?.constructController))).map(g=>{const absent=absentGroupModels(g);return absent?{...g,rosterSize:g.size,size:g.size-absent}:g}).filter(g=>g.size>0)
 }
 
 /** Animals (Wardogs, Gnoblar Fighters) brought by fighting heroes; each is a model on the table. */

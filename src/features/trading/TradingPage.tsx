@@ -79,7 +79,7 @@ export function TradingPage() {
   return (
     <>
       {header}
-      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={{...phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id)),rareItemSearchBlocked:restriction.data}} />
+      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={{...phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id)),rareItemSearchBlocked:restriction.data||state.data?.bone_goliath_constructed}} />
     </>
   )
 }
@@ -99,7 +99,7 @@ function TradingView({ detail, campaign, phase }: { detail: WarbandDetail; campa
 
   return (
     <>
-      {phase.rareItemSearchBlocked?<Notice tone="info" title="Rare-item searches unavailable">Local traders refuse rare-item searches after the captured Merchant Caravan wagon. This ends when your next battle starts. Common purchases and character searches remain available.</Notice>:null}
+      {phase.rareItemSearchBlocked?<Notice tone="info" title="Rare-item searches unavailable">Rare-item searches are unavailable after Bone Goliath construction or a captured Merchant Caravan wagon. Common purchases and character searches remain available.</Notice>:null}
       <Card className="grid grid-cols-3 gap-y-4 px-4 py-3">
         <KeyValue icon="gold" label="Gold" value={`${detail.warband.gold} gc`} />
         <KeyValue icon="wyrdstone" label="Wyrdstone" value={detail.warband.wyrdstone} />

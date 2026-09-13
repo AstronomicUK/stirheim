@@ -68,7 +68,7 @@ export const capturedGroupModelSchema = z.object({
 export const henchmanInjuryLineSchema = z.object({
   repairCosts: z.array(z.number().int().min(5).max(30)).optional(),
   effect: z.string().optional(),
-  equipmentLost: z.array(z.object({sourceItemId:uuidSchema,quantity:z.number().int().min(0)})).optional(),
+  equipmentLost: z.array(z.object({sourceItemId:uuidSchema,quantity:z.number().int().min(0),manual:z.boolean().optional()})).optional(),
   captured: z.array(capturedGroupModelSchema).optional(),
   subjectType: z.literal("group"),
   subjectId: z.string(),

@@ -1,0 +1,24 @@
+import {useState} from 'react'
+import {useQuery,useQueryClient} from '@tanstack/react-query'
+import {supabase} from '../../../api/supabase'
+import {useLatestReport,useTradePhaseState} from '../../../api/trading'
+import type {WarbandDetail} from '../../../api/warbands'
+import {Button,DieField,Notice,TextField} from '../../../ui'
+import {Card,Section} from './bits'
+export function RestlessRituals({detail,allowed,constructOnly=false,onDone}:{detail:WarbandDetail;allowed:boolean;constructOnly?:boolean;onDone?:(note:string)=>void}){
+ const id=detail.warband.id,qc=useQueryClient(),latest=useLatestReport(id),phase=useTradePhaseState(id,latest.data?.match_id??null)
+ const history=useQuery({queryKey:['restless-rituals',id],enabled:detail.warband.type_rules_id==='the_restless_dead_variant',queryFn:async()=>{const r=await supabase.from('restless_rituals').select('id,note,undone,created_at').eq('warband_id',id).order('created_at',{ascending:false}).limit(10);if(r.error)throw Error(r.error.message);return r.data}})
+ const [die,setDie]=useState<number|null>(null),[name,setName]=useState('Bone Goliath'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(''),[request,setRequest]=useState(()=>crypto.randomUUID())
+ if(detail.warband.type_rules_id!=='the_restless_dead_variant')return null
+ const liche=detail.roster.heroes.find(h=>h.unitTemplateId==='restless_dead_variant_liche'&&h.status==='active')
+ const initial=!latest.data&&!detail.roster.henchmenGroups.some(g=>g.unitTemplateId==='restless_dead_variant_bone_goliath')
+ const existing=detail.roster.henchmenGroups.some(g=>g.unitTemplateId==='restless_dead_variant_bone_goliath'&&g.size>0)
+ const last=history.data?.find(r=>!r.undone)
+ async function act(kind:'feed'|'construct'|'undo',undoId?:string){
+  setBusy(true);setError('');setDone('')
+  try{const r=await supabase.rpc('resolve_restless_ritual',{p_warband_id:id,p_request_id:undoId??request,p_kind:kind,p_die:die??undefined,p_name:name});if(r.error)throw Error(r.error.message);setDone(r.data);setRequest(crypto.randomUUID());setDie(null);await Promise.all([['warbands'],['trading'],['restless-rituals'],['campaigns']].map(queryKey=>qc.invalidateQueries({queryKey})));onDone?.(r.data)}catch(e){setError(e instanceof Error?e.message:'Could not save the ritual')}finally{setBusy(false)}
+ }
+ return <Section title={constructOnly?'Construct a Bone Goliath':'Liche rituals'}><Card className="flex flex-col gap-3 p-4">{error||history.error||latest.error||phase.error?<Notice tone="error">{error||history.error?.message||latest.error?.message||phase.error?.message}</Notice>:null}{done?<Notice tone="success">{done}</Notice>:null}{!liche?<p>An active Liche is required.</p>:<>
+ {constructOnly?<><TextField label="Goliath name" value={name} onChange={e=>setName(e.target.value)}/><p>225 gc. {initial?'Starting-warband exemption: no Liche Wounds are lost.':'The Liche permanently loses D3 Wounds, to a minimum of 1. The whole warband forgoes rare-item searches this phase.'}</p>{!initial?<DieField label="Permanent Wounds lost (D3)" sides={3} rollable value={die} onChange={setDie}/>:null}<p>Liche: {liche.stats.W} Wounds{die&&!initial?` → ${Math.max(1,liche.stats.W-die)}`:''}.</p><Button pending={busy} disabled={!allowed||existing||latest.isPending||latest.isError||phase.isError||(!initial&&!die)||detail.roster.gold<225||!name.trim()} onClick={()=>void act('construct')}>Construct for 225 gc</Button>{existing?<p>The warband already has its Bone Goliath.</p>:null}</>:<><p>Feed Upon Magic consumes D3 wyrdstone for +1 permanent Wound. If there are not enough shards, the available shards are consumed without a Wound gain. The Liche must have avoided going out of action and cannot search for rare items this phase.</p><p>{detail.roster.wyrdstone} shards available · Liche Wounds {liche.stats.W}</p><DieField label="Wyrdstone cost (D3)" sides={3} rollable value={die} onChange={setDie}/>{die?<p>{detail.roster.wyrdstone>=die?`Spend ${die} shards: Wounds ${liche.stats.W} → ${liche.stats.W+1}.`:`Consume ${detail.roster.wyrdstone} shards: no Wound gained.`}</p>:null}<Button pending={busy} disabled={!allowed||!latest.data||!die} onClick={()=>void act('feed')}>Perform Feed Upon Magic</Button>{!latest.data?<p>Available after the first battle report is filed.</p>:null}</>}
+ </>}{phase.data?.bone_goliath_constructed?<p>No rare-item searches this phase: a Bone Goliath was constructed.</p>:null}{!constructOnly&&last?<details><summary>Latest ritual and correction</summary><p className="my-2">{last.note}</p><Button variant="secondary" pending={busy} disabled={!allowed} onClick={()=>void act('undo',last.id)}>Undo latest ritual</Button><p className="mt-2 text-xs">Restores its gold, shards and Wounds. Later changes must be undone first.</p></details>:null}</Card></Section>
+}

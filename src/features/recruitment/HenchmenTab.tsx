@@ -1,3 +1,4 @@
+import {RestlessRituals} from '../roster/view/RestlessRituals'
 import { ConstructController } from './ConstructController'
 import { SINGLE_GROUP_UNITS, SCARECROW, NIGHT_MOB, CONTROLLERS } from '../../rules/resolve/rosterComposition'
 import { RecruitGifts } from './RecruitGifts'
@@ -44,7 +45,7 @@ export function HenchmenTab({ detail, template, canEdit, onDone, perks, bans }: 
         {pool === null ? ' Roll the pool in the post-battle wizard before adding to an experienced group; green groups are unaffected.' : ''}
       </Notice>
       <UnitList listings={listings} disabled={!canEdit} onPick={setPicked} />
-      {picked ? (
+      {picked?.unit.id==='restless_dead_variant_bone_goliath'?<Sheet open onClose={()=>setPicked(null)} title="Construct a Bone Goliath"><RestlessRituals detail={detail} allowed={canEdit} constructOnly onDone={note=>{setPicked(null);onDone({tone:'success',title:'Bone Goliath constructed',lines:[note]})}}/></Sheet>:picked ? (
         <HenchmenSheet
           key={picked.unit.id}
           detail={detail}

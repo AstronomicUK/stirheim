@@ -38,7 +38,7 @@ describe('printed starting equipment',()=>{
   const t=findWarbandTemplate('order_of_the_mare')!;const unit=t.heroTemplates.find(u=>u.id==='dame_of_the_mare')!
   const h=makeHero({unitTemplateId:unit.id,equipment:startingEquipment(t,unit)})
   expect(armourBlockingCasting(h)).toEqual([])
-  expect(applyHeroInjury(h,35).value.hero.equipment).toContainEqual({itemId:'ancient_armour',quantity:1})
+  expect(applyHeroInjury(h,36).value.hero.equipment).toContainEqual({itemId:'ancient_armour',quantity:1})
   const w={...draftToRosterWarband(newWarbandDraft(t,'Mare'),t),heroes:[h]}
   expect(()=>sellItem(w,{kind:'hero',id:h.id},'ancient_armour',1,0)).toThrow()
   expect(()=>moveItem(w,{kind:'hero',id:h.id},{kind:'stash'},'ancient_armour')).toThrow()

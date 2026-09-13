@@ -25,12 +25,12 @@ export function ExperienceStep({ draft, derived, update, match, ctx }: StepProps
   const noXp = (id: string) => !byId.has(id)
   const byRule = [
     ...participants.heroes.filter((h) => noXp(h.id) && !unitGainsExperience(h.unitTemplateId)).map((h) => h.name),
-    ...participants.groups.filter((g) => noXp(g.id) && !unitGainsExperience(g.unitTemplateId)).map((g) => g.name),
+    ...participants.groups.filter((g) => noXp(g.id) && !g.campaignState?.trainedSquig && !unitGainsExperience(g.unitTemplateId)).map((g) => g.name),
   ]
   const earnedNothing = [
     ...participants.heroes.filter((h) => noXp(h.id) && unitGainsExperience(h.unitTemplateId)).map((h) => h.name),
     ...participants.hiredSwords.filter((s) => noXp(s.id)).map((s) => s.name),
-    ...participants.groups.filter((g) => noXp(g.id) && unitGainsExperience(g.unitTemplateId)).map((g) => g.name),
+    ...participants.groups.filter((g) => noXp(g.id) && (g.campaignState?.trainedSquig || unitGainsExperience(g.unitTemplateId))).map((g) => g.name),
   ]
   const owed = lines.reduce((n, l) => n + l.advancesEarned, 0)
 

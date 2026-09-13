@@ -28,7 +28,7 @@ describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
   kit=check(await admin.from('items').insert(['sword','light_armour','rope_and_hook'].map(item_rules_id=>({warband_id:from,holder_type:'hero',holder_id:hero,item_rules_id,quantity:1}))).select('id')).map((i:any)=>i.id)
  })
  afterEach(async()=>{
-  if(match){await admin.from('awakening_offers').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match)}
+  if(match){const pools=check(await admin.from('casualty_loot').select('id').eq('match_id',match));for(const pool of pools)check(await admin.from('casualty_loot_attempts').delete().eq('casualty_id',pool.id));await admin.from('awakening_offers').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match)}
   if(campaign)await admin.from('campaigns').delete().eq('id',campaign)
   if(from&&to)await admin.from('warbands').delete().in('id',[from,to,...extraBands])
   await admin.from('app_notifications').delete().in('user_id',users)
@@ -117,6 +117,21 @@ describe.skipIf(!enabled)('Awakening report-backed opportunities',()=>{
   expect(check(await admin.from('henchman_groups').select('warband_id').eq('id',zombie).single()).warband_id).toBe(extra)
   expect((await victim.rpc('agree_awakening_recipient',{p_offer_id:first.id})).error?.message).toMatch(/Reverse the accepted/)
   expect(check(await victim.from('app_notifications').select('body')).some((n:any)=>n.body.includes('players agreed'))).toBe(true)
+ })
+
+ it('allows own-warband looting before Awakening without duplicating equipment',async()=>{
+  check(await admin.from('warbands').update({type_rules_id:'hochland_bandits'}).eq('id',from))
+  const looter=check(await admin.from('henchman_groups').insert({warband_id:from,name:'Looter',unit_type_rules_id:'hochland_bandits_looter',size:1,stats}).select('id').single()).id
+  check(await fileVictim());check(await fileCaster())
+  const pool=check(await victim.from('casualty_loot').select('id').eq('match_id',match).single()),request=crypto.randomUUID()
+  check(await victim.rpc('roll_casualty_loot',{p_id:pool.id,p_body:0,p_warband:from,p_looter:looter,p_looter_index:0,p_die:4,p_request:request}))
+  const offer=(await offers())[0]
+  const raised=check(await necromancer.rpc('resolve_awakening',{p_offer_id:offer.id,p_action:'accept'}))
+  expect(check(await admin.from('items').select('*').eq('holder_id',raised))).toHaveLength(0)
+  expect(check(await admin.from('items').select('*').eq('warband_id',from).eq('holder_type','stash'))).toHaveLength(3)
+  expect((await victim.rpc('reverse_casualty_loot',{p_attempt:request,p_reason:'QA undo recovery'})).error?.message).toContain('Reverse the later Awakening')
+  check(await necromancer.rpc('resolve_awakening',{p_offer_id:offer.id,p_action:'reverse',p_reason:'QA undo resurrection'}))
+  check(await victim.rpc('reverse_casualty_loot',{p_attempt:request,p_reason:'QA undo recovery'}))
  })
 
 })

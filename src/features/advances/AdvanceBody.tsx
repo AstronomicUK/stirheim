@@ -210,6 +210,7 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
     </SelectField> : null}
   </>)
 
+  if(plan.licheWoundChoice)return <Block title="Liche advancement"><p className="text-sm">A rolled Wound increase may be exchanged for a skill. As a wizard, the Liche may generate a spell instead of that skill.</p><SegmentedControl label="Wound or skill" value={draft.skillInstead?'skill':'stat'} options={[{value:'stat',label:'+1 Wound'},{value:'skill',label:'Skill or spell'}]} onChange={v=>update(d=>setSkillInstead(d,v==='skill'))}/>{draft.skillInstead?skillPicker:<StatGrid options={plan.statOptions} selected="W" onSelect={()=>update(d=>setSkillInstead(d,false))}/>}</Block>
   if (plan.roll?.kind === 'statSubRoll' && plan.subStat !== null) {
     const rolledOption = plan.statOptions[0]
     const taken = plan.statOptions.find((o) => o.stat === plan.subStat) ?? rolledOption

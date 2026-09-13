@@ -1,3 +1,5 @@
+import {GroupInjuryProtection} from './GroupInjuryProtection'
+import {MedicalAid} from './MedicalAid'
 import {captureRuleName} from '../../../rules/resolve/forcedCapture'
 import { ExtraTough } from './ExtraTough'
 import {LycanthropeAftermath} from './LycanthropeAftermath'
@@ -76,12 +78,13 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               {resolution.line ? <p className="text-sm">{resolution.line.effect}</p> : null}
             </Card> : <HeroInjuryCard
               key={hero.id}
+              onSurvival={(index,patch)=>update(d=>{const flow=d.heroInjuries[hero.id];return {...d,heroInjuries:{...d.heroInjuries,[hero.id]:{...flow,rolls:flow.rolls.slice(0,index+1).map((r,i)=>i===index?{...r,...patch}:r)}}}})}
               onEternal={(index,choice,die)=>update(d=>setEternalInjury(d,hero.id,index,choice,die))}
               restartReasonRequired
               name={hero.name}
               type={warriorTypeLabel(ctx, hero)}
               resolution={resolution}
-              medicine={<><ExtraTough hero={hero} draft={draft} update={update}/><MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/></>}
+              medicine={<><MedicalAid heroId={hero.id} ctx={ctx} draft={draft} derived={derived} update={update}/> {hero.skillIds.some(id=>id.endsWith('_rotten_body'))?<label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={draft.censerSelfInjury?.[hero.id]??false} onChange={e=>update(d=>({...d,censerSelfInjury:{...d.censerSelfInjury,[hero.id]:e.target.checked}}))}/>Rotten Body: went out of action from this warrior’s own failed censer test.</label>:null}<ExtraTough hero={hero} draft={draft} update={update}/><MedicineChest heroId={hero.id} draft={draft} items={ctx.items} resolution={resolution} update={update}/></>}
               enmity={resolution.hero.flags.bitterEnmity && resolution.hero.flags.bitterEnmity !== hero.flags.bitterEnmity ? (() => {
                 // Bitter Enmity rolled here (#96): show who it is from the battle record, or ask.
                 const flow = draft.heroInjuries[hero.id]
@@ -112,7 +115,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               onD66={(d66, source) => update((d) => addHeroInjuryRoll(d, hero.id, d66, source, resolution.steps.at(-1)?.captureRerollReason))}
               onSubRoll={(index, v) => update((d) => (v === null ? d : setHeroInjurySubRoll(d, hero.id, index, v)))}
               onDistrictRoll={(index, v) => update((d) => (v === null ? d : setHeroDistrictRoll(d, hero.id, index, v)))}
-              onCount={(v) => update((d) => (v === null ? d : setHeroInjuryCount(d, hero.id, v)))}
+              onCount={(v) => update((d) => (v === null ? d : setHeroInjuryCount(d, hero.id, v, resolution.pending.kind==='count'?resolution.pending.rollIndex??0:0)))}
               onReset={reason => update((d) => resetHeroInjury(d, hero.id, reason))}
             />
           ))}
@@ -151,7 +154,8 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
             const rolls = draft.groupInjuries[group.id] ?? []
             const diceOverride = draft.groupInjuryDice[group.id]
             const captures=resolution.line?.captured??[]
-            const suggested=outOfAction-captures.filter(c=>c.reason!=='slaaneshi_lock').length
+            const flamingTroll=group.unitTemplateId==='black_orcs_troll'&&draft.groupFlamingCasualties?.[group.id]===true
+            const suggested=!burning&&!flamingTroll&&henchmanInjuryException(group)?.deadOn.length===0?0:outOfAction-captures.filter(c=>c.reason!=='slaaneshi_lock').length
             return (
               <Card key={group.id} className="flex flex-col gap-3 px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
@@ -161,6 +165,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                       {outOfAction} of {group.size} out of action ·{' '}
                       {(() => {
                         if (burning) return 'dead on 1–5; 6 survives and earns +1 group XP'
+                        if(flamingTroll)return 'flaming injury: dead on 1–2; 3–6 recovers'
                         if(group.unitTemplateId==='masters_of_horror_flesh_construct')return '1–2: damaged, D6 × 5 gc to repair; 3–6: recovers'
                         const ex = henchmanInjuryException(group)
                         if (!ex) return `dead on ${HENCHMAN_INJURY.deadOn.join('-')}`
@@ -214,8 +219,9 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                     </Button>
                   ) : null}
                 </div>
+                {!burning?<GroupInjuryProtection group={group} ctx={ctx} draft={draft} derived={derived} update={update}/>:null}
                 {!burning && group.unitTemplateId==='masters_of_horror_flesh_construct' && rolls.slice(0,dice).map((roll,index)=>roll!==null && roll<=2 ? <DieField key={`repair-${index}`} label={`Repair cost, model ${index+1} · D6 × 5 gc`} sides={6} value={draft.constructRepairDice?.[group.id]?.[index]??null} rollable onChange={value=>update(d=>{const values=[...(d.constructRepairDice?.[group.id]??[])];values[index]=value;return {...d,constructRepairDice:{...d.constructRepairDice,[group.id]:values}}})}/> : null)}
-                {resolution.line?.effect && <p className="text-sm">{resolution.line.effect} Pay from the warband screen after filing this report, or leave the model awaiting repairs.</p>}
+                {resolution.line?.effect && <p className="text-sm">{resolution.line.effect}{group.unitTemplateId==='masters_of_horror_flesh_construct'?' Pay from the warband screen after filing this report, or leave the model awaiting repairs.':''}</p>}
                 {resolution.complete ? (
                   <p className="text-xs text-ink-dim">
                     {group.size} → {resolution.group.size} {resolution.group.size === 1 ? 'model' : 'models'}
@@ -300,6 +306,8 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
           })}
         </Section>
       ) : null}
+      {ctx.roster.henchmenGroups.filter(g=>g.campaignState?.trainedSquig&&g.size>0).map(g=><label key={g.id} className="flex items-center gap-3 text-sm"><input type="checkbox" checked={draft.trainedSquigGoneWild?.[g.id]??false} onChange={e=>update(d=>({...d,trainedSquigGoneWild:{...d.trainedSquigGoneWild,[g.id]:e.target.checked}}))}/>{g.name} went wild and could not protect the Squig Herder.</label>)}
+      {derived.handlerAftermath.rows.length?<Section title="Claimed Gnoblars"><p className="text-sm">Their Ogre went out of action. Each pet dies on 1–2; 3–6 survives.</p>{derived.handlerAftermath.rows.map(row=><Card key={row.id} className="flex flex-wrap gap-3 p-4">{Array.from({length:row.quantity},(_,i)=><DieField key={i} label={`${row.name} ${i+1}`} sides={6} rollable value={row.rolls[i]??null} onChange={value=>update(d=>{const dice=[...(d.claimedGnoblarDice?.[row.id]??[])];dice[i]=value;return {...d,claimedGnoblarDice:{...d.claimedGnoblarDice,[row.id]:dice}}})}/>)}</Card>)}</Section>:null}
       {derived.equipmentLosses.rows.length ? <Section title="Equipment lost with henchmen"><Card className="flex flex-col gap-3 px-4 py-3">
         <p className="text-sm">Equipment carried by dead or captured warriors leaves this group. Identical kit is removed automatically. For mixed or used equipment, record which copies left with those casualties.</p>
         {derived.equipmentLosses.rows.map(row=><div key={row.key} className="flex flex-col gap-1">
@@ -338,6 +346,7 @@ function SkipRow({ skip, onSkip }: { skip: string | undefined; onSkip: (reason: 
 }
 
 interface HeroInjuryCardProps {
+  onSurvival?: (index:number,patch:{survivalDice?:[number|null,number|null];survivalAbsence?:number})=>void
   onEternal?: (index:number,choice:'accept'|'sacrifice',die?:number)=>void
   restartReasonRequired?: boolean
   medicine?: ReactNode
@@ -355,7 +364,7 @@ interface HeroInjuryCardProps {
   onReset: (reason: string) => void
 }
 
-export function HeroInjuryCard({ onEternal, restartReasonRequired = false, medicine, enmity, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
+export function HeroInjuryCard({ onSurvival, onEternal, restartReasonRequired = false, medicine, enmity, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
   const [restarting, setRestarting] = useState(false)
   const [restartReason, setRestartReason] = useState('')
@@ -405,6 +414,7 @@ export function HeroInjuryCard({ onEternal, restartReasonRequired = false, medic
           <DieField label={pending.die} sides={pending.die === 'D3' ? 3 : 6} value={null} onChange={(v) => onSubRoll(pending.rollIndex, v)} rollable />
         </div>
       ) : null}
+      {pending.kind==='survival'?<div className="flex flex-col gap-2"><p>{pending.prompt}</p><div className="flex gap-3">{[0,1].map(i=><DieField key={i} label={`Leadership D6 ${i+1}`} sides={6} rollable value={pending.dice[i]} onChange={value=>onSurvival?.(pending.rollIndex,{survivalDice:i===0?[value,pending.dice[1]]:[pending.dice[0],value],survivalAbsence:undefined})}/>)}</div>{pending.passed?<DieField label="Battles missed (D3)" sides={3} rollable value={pending.absence??null} onChange={value=>{if(value!==null)onSurvival?.(pending.rollIndex,{survivalAbsence:value})}}/>:null}</div>:null}
       {pending.kind==='eternal' && <div className="flex flex-col gap-3">
         <p className="text-sm">{pending.prompt}</p>
         {pending.killed?<DieField label="Eternal Wounds lost (D3)" sides={3} value={null} rollable onChange={die=>{if(die!==null)onEternal?.(pending.rollIndex,'sacrifice',die)}}/>:<div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={()=>onEternal?.(pending.rollIndex,'accept')}>Accept injury result</Button><Button onClick={()=>onEternal?.(pending.rollIndex,'sacrifice')}>Sacrifice 1 Wound</Button></div>}

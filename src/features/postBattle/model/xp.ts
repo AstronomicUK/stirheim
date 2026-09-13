@@ -121,7 +121,7 @@ export function warriorXpLine(
 /** A henchman group's line: +1 for surviving as long as a model remains, plus underdog and extras. */
 export function groupXpLine(before: RosterHenchmanGroup, after: RosterHenchmanGroup, ctx: XpContext): XpLine | null {
   if (after.size <= 0) return null
-  if (!unitGainsExperience(before.unitTemplateId)) return null
+  if (!before.campaignState?.trainedSquig && !unitGainsExperience(before.unitTemplateId)) return null
   const test = needsSurvivalXpTest(before.unitTemplateId) ? ctx.survivalXpTests?.[before.id] : undefined
   const testResult = needsSurvivalXpTest(before.unitTemplateId) ? survivalXpTestResult(test, after.stats.Ld) : true
   const awards: Award[] = [{ amount: testResult === true ? ctx.scenarioAwards?.survival ?? 1 : 0, reason: 'survived the battle' }]

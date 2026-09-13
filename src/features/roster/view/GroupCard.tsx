@@ -55,7 +55,7 @@ export function GroupCard({ group, equipment, template }: GroupCardProps) {
           </div>
         </div>
         <StatLine stats={group.stats} raised={group.stat_increases} />
-        <XpBar xp={group.xp} levelUps={group.level_ups} role="henchman" rate={unitRules(group.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={!unitGainsExperience(group.unit_type_rules_id)} />
+        <XpBar xp={group.xp} levelUps={group.level_ups} role="henchman" rate={unitRules(group.unit_type_rules_id).advanceRate ?? 'normal'} noExperience={!group.campaign_state?.trainedSquig&&!unitGainsExperience(group.unit_type_rules_id)} />
       </button>
 
       <div className="flex flex-col gap-3 border-t border-border px-4 py-3">

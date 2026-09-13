@@ -606,6 +606,7 @@ export interface StatOption {
 export type HeroNeed = 'maxima' | 'roll' | 'subRoll' | 'stat' | 'skill' | 'reward'
 
 export interface HeroPlan {
+  licheWoundChoice?: boolean;
   protectoratePrayerChoice?: boolean
   successionMagicLabel?: 'prayer' | 'spell'
   lores?: SpellLore[]
@@ -843,6 +844,10 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
         return { ...plan, need: 'subRoll', error: errorMessage(e) }
       }
       const option = statOption(hero, stat, maxima.maxima)
+      if(stat==='W' && ['restless_dead_liche','restless_dead_variant_liche'].includes(hero.unitTemplateId)) {
+        const choice=draft.skillInstead ? skillRoute('Liche Advancement: chose a skill instead of +1 Wound.',true,draft.subRoll) : option.eligible ? statRoute(stat,draft.subRoll) : {...plan,need:'skill' as const}
+        return {...choice,licheWoundChoice:true,subStat:stat,statOptions:[option]}
+      }
       if (option.eligible) return { ...statRoute(stat, draft.subRoll), subStat: stat, statOptions: [option] }
 
       // "If a characteristic is at its maximum, take the other option": the pair's other characteristic,
@@ -993,6 +998,7 @@ export function planGroup(draft: AdvanceDraft, group: RosterHenchmanGroup, ctx: 
     }
     case 'ladsGotTalent': {
       if (ctx.promotionReroll) return { ...plan, need: 'reroll', rerollReason: 'One member has already been promoted for this advance. The remaining group must re-roll any result of 10–12.' }
+      if(group.campaignState?.trainedSquig)return {...plan,need:'reroll',rerollReason:'Trainin’: the trained Squig rerolls Lad’s Got Talent.'}
       const promotionRule = unitRules(group.unitTemplateId).promotion
       if (promotionRule && 'never' in promotionRule && promotionRule.casualty === 'executed') {
         const remaining = group.size - 1

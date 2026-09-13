@@ -76,6 +76,20 @@ try {
  const cases=must(await admin.from('captive_cases').select('model_index,source,model_snapshot').eq('match_id',match).order('model_index'));
  expect(cases.map(c=>c.model_index)).toEqual([1,2]);
  expect(cases.every(c=>c.source==='forced_capture'&&c.model_snapshot.items[0].quantity===2)).toBe(true);
+ await p.goto(`http://127.0.0.1:5193/warbands/${ids[0]}`);
+ await p.getByRole('button',{name:'Choose an engine',exact:true}).first().click();
+ await p.getByRole('radio',{name:/Engine of Chaos/}).check();
+ await expect(p.getByText('2 × Axe',{exact:true})).toBeVisible();
+ await p.getByRole('button',{name:'Record imprisonment',exact:true}).click();
+ await expect(p.getByRole('dialog')).toHaveCount(0);
+ await expect(p.getByRole('img',{name:'1 of 6 places occupied. Large captives use two places.'})).toBeVisible();
+ await p.getByRole('button',{name:/QA Captives.*1 place/}).click();
+ await expect(p.getByRole('dialog')).toBeVisible();
+ await expect(p.getByRole('dialog').getByText('Axe',{exact:true})).toBeVisible();
+ await p.getByRole('dialog').getByLabel('Reason to reverse',{exact:true}).fill('Recorded against the wrong engine');
+ await p.getByRole('dialog').getByRole('button',{name:'Reverse and restore both rosters',exact:true}).click();
+ await expect(p.getByRole('img',{name:'0 of 6 places occupied. Large captives use two places.'})).toBeVisible();
+ expect(must(await admin.from('engine_prisoners').select('state').eq('holder_warband_id',ids[0])).map(r=>r.state)).toEqual(['reversed']);
  expect(errors).toEqual([]);
- console.log('PASS: mixed app and manual Man-catcher casualties appear in injuries without dice and create two distinct cases with exact equipment.');
+ console.log('PASS: Engine imprisonment, exact kit, immediate occupancy refresh and reversal; mixed app and manual Man-catcher casualties appear in injuries without dice and create two distinct cases with exact equipment.');
 } finally {await b?.close();if(match){const cases=must(await admin.from('captive_cases').select('id').eq('match_id',match));for(const c of cases)await admin.from('app_notifications').delete().like('dedupe_key',`captive:${c.id}:%`);await admin.from('captive_cases').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match);}if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}

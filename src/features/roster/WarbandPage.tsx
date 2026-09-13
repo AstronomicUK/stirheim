@@ -39,6 +39,7 @@ import { HiredRosterRepairCard } from './view/HiredRosterRepairCard'
 import { HiredUpkeepCard } from './view/HiredUpkeepCard'
 import { TradeWagonCard } from './view/TradeWagonCard'
 import { AwakeningCard } from '../aftermath/AwakeningCard'
+import { EngineRosterSection } from './view/EngineRosterSection'
 import { CaptiveCard } from './view/CaptiveCard'
 import { PitFightCard } from './view/PitFightCard'
 import { PendingBattleCard } from './view/PendingBattleCard'
@@ -244,6 +245,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
         {detail.roster.explorationDiscoveries.freeHireReportId && !detail.roster.hiredSwords.some(h=>h.flags.returningFavourReportId===detail.roster.explorationDiscoveries?.freeHireReportId) ? <p className="text-sm">Returning a Favour: recruit one eligible Hired Sword free for the next battle. Afterwards, dismiss them or pay normal upkeep.</p> : null}
       </Card> : null}
 
+      <EngineRosterSection detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
       <CaptiveCard detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
       <TradeWagonCard warbandId={detail.warband.id} userId={user?.id} />
       <PitFightCard detail={detail} canEdit={canEdit} onError={setActionError} />

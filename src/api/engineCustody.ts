@@ -129,12 +129,12 @@ export function buildEnginePlacementProposal(input: EnginePlacementInput): { cho
     }
   }
   if (item.subject_kind !== 'hero') throw new Error('Only a captured Hero, hired sword or henchman can be locked in an Engine of Chaos.')
-  const hero = owner.roster.heroes.find(h => h.id === item.hero_id)
+  const hero = [...owner.roster.heroes, ...owner.roster.hiredSwords].find(h => h.id === item.hero_id)
   if (!hero) throw new Error('This warrior is no longer on the roster.')
   if (hero.status !== 'captured') throw new Error('This warrior is no longer recorded as captured.')
   const kit = hero.equipment
   const large = heroIsLarge(owner, item.hero_id)
-  const nextOwner: RosterWarband = { ...owner.roster, heroes: owner.roster.heroes.map(h => h.id === hero.id ? { ...h, equipment: [] } : h) }
+  const nextOwner: RosterWarband = { ...owner.roster, heroes: owner.roster.heroes.map(h => h.id === hero.id ? { ...h, equipment: [] } : h), hiredSwords: owner.roster.hiredSwords.map(h => h.id === hero.id ? { ...h, equipment: [] } : h) }
   const nextCaptor: RosterWarband = { ...captor.roster, stash: [...captor.roster.stash, ...kit.map(i => ({ ...i }))] }
   const kitText = kit.length ? kit.map(i => `${i.quantity > 1 ? `${i.quantity} × ` : ''}${itemName(i)}${i.notes ? ` (${i.notes})` : ''}`).join(', ') : 'no equipment'
   return {

@@ -1,3 +1,5 @@
+import { useEngines } from '../../../api/engines'
+import { EnginePlacementPanel } from './EnginePlacementPanel'
 import { CaptiveExchangePanel } from './CaptiveExchangePanel'
 import { CompanionCaptivePanel } from './CompanionCaptivePanel'
 import { ForcedCaptivePanel } from './ForcedCaptivePanel'
@@ -28,12 +30,12 @@ export function CaptiveCard({detail,campaignId,userId}:{detail:WarbandDetail;cam
  if(cases.isPending)return null
  if(!active.length&&!legacy.length)return null
  return <Section title="Captured warriors">
-  {active.map(c=><CaseCard key={c.id} item={c} detail={detail} campaign={campaign.data} canAct={gm||mine} gm={gm} userId={userId}/>)}
+  {active.map(c=><CaptiveCaseCard key={c.id} item={c} detail={detail} campaign={campaign.data} canAct={gm||mine} gm={gm} userId={userId}/>)}
   {legacy.length?<LegacyCaptiveForm detail={detail} held={legacy} campaign={campaign.data} campaignId={campaignId} userId={userId} gm={gm}/>:null}
  </Section>
 }
 
-function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;detail:WarbandDetail;campaign?:CampaignDetail;canAct:boolean;gm:boolean;userId?:string}) {
+export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;detail:WarbandDetail;campaign?:CampaignDetail;canAct:boolean;gm:boolean;userId?:string}) {
  const victimSide=item.victim_warband_id===detail.warband.id
  const otherId=victimSide?item.captor_warband_id??undefined:item.victim_warband_id
  const other=useWarband(otherId)
@@ -44,6 +46,10 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
  const otherName=(victimSide?item.captor?.name:item.victim?.name)??'the other warband'
  const pending=item.proposals.filter(p=>p.state==='proposed')
  const lastRejected=item.proposals.find(p=>p.state==='rejected')
+ const blackDwarfs=captor?.roster.warbandTemplateId==='black_dwarfs'
+ const engines=useEngines(blackDwarfs?captor?.warband.id:undefined)
+ const engineRoute=Boolean(blackDwarfs&&(engines.data?.length||item.source==='forced_capture'))
+ const checkingEngines=blackDwarfs&&(engines.isPending||engines.isError)
  const pirates=captor?.roster.warbandTemplateId==='pirates'
  const henchman=item.subject_kind==='henchman'
  const companion=item.subject_kind==='companion'
@@ -75,11 +81,13 @@ function CaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;deta
    {lastRejected&&!pending.length?<p className="text-sm text-ink-dim">Last proposal rejected: {lastRejected.reason}</p>:null}
    {captor&&pirates&&!forced&&!companion&&!pending.length?<PirateKidnappedCard item={item} owner={owner} captor={captor} side={side} gm={gm} otherName={otherName}/>:null}
    {canAct&&owner&&captor&&companion&&!pending.length?<CompanionCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
-   {canAct&&owner&&captor&&forced&&!pending.length?<ForcedCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
-   {canAct&&owner&&captor&&!henchman&&!companion&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
+   {canAct&&owner&&captor&&engineRoute&&!checkingEngines&&!pending.length&&!companion?<EnginePlacementPanel item={item} owner={owner} captor={captor} requiresAgreement={!gm&&!bothMine}/>:null}
+   {checkingEngines?<p className="text-sm text-ink-dim">{engines.error?`Could not check Engine availability: ${engines.error.message}`:'Checking Engine availability…'}</p>:null}
+   {canAct&&owner&&captor&&forced&&!engineRoute&&!checkingEngines&&!pending.length?<ForcedCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
+   {canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!henchman&&!companion&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
      submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}
      onSubmit={(preview,choice)=>propose.mutate({caseId:item.id,choice,owner,captor,nextOwner:preview.owner,nextCaptor:preview.captor,message:preview.message})}/>:null}
-   {canAct&&owner&&captor&&!pending.length&&!(henchman&&item.source==='pirates_kidnapped')?<CaptiveExchangePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed exchange':`Propose exchange to ${otherName}`}/>:null}
+   {canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!pending.length&&!(henchman&&item.source==='pirates_kidnapped')?<CaptiveExchangePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed exchange':`Propose exchange to ${otherName}`}/>:null}
    {canAct&&!otherId?null:other.error?<Notice tone="error" title="Could not load the other warband">{other.error.message}</Notice>:null}
    {!canAct?<p className="text-sm text-ink-dim">Only the two players (or the campaign GM) can propose or accept an outcome.</p>:null}
   </>:null}

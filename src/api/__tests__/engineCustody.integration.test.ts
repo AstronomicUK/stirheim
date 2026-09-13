@@ -124,6 +124,21 @@ describe.skipIf(!enabled)('Engine of Chaos custody (#229 / #95, migration 102)',
   check(await dwarf.rpc('remove_engine_copy',{p_engine_id:engine,p_reason:'Sold the engine after all',p_expected_updated_at:fresh.updated_at}))
  })
 
+ it('confiscates a hired sword’s kit without turning him into an ordinary Hero',async()=>{
+  check(await admin.from('heroes').update({is_hired_sword:true,hired_sword_rules_id:'ogre_bodyguard',unit_type_rules_id:null,is_large:false}).eq('id',hero))
+  check(await fileVictim())
+  const [c]=await cases()
+  const {built,ownerChanges,captorChanges}=await builtPlacement(c as CaptiveCase)
+  expect(built.large).toBe(true)
+  expect(built.nextOwner.heroes).toHaveLength(0)
+  expect(built.nextOwner.hiredSwords.find(h=>h.id===hero)?.equipment).toEqual([])
+  expect(ownerChanges.map(x=>[x.table,x.op]).sort()).toEqual([['items','delete'],['items','delete']])
+  const proposal=check(await propose(reik,c.id,built.choice,ownerChanges,captorChanges))
+  check(await dwarf.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}))
+  expect((await prisoners())[0]).toMatchObject({large:true,places:2,state:'held'})
+  expect(check(await admin.from('heroes').select('status,is_hired_sword').eq('id',hero).single())).toEqual({status:'captured',is_hired_sword:true})
+ })
+
  it('charges two places for a natively Large captive and refuses a full Engine under the inventory lock',async()=>{
   check(await admin.from('heroes').update({unit_type_rules_id:'ostlander_ogre',is_large:false}).eq('id',hero))
   check(await fileVictim())

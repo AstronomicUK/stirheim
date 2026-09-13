@@ -49,7 +49,7 @@ Important implementation traps to address in the proposed contract:
 - Since custody and confiscation are cross-player consequences, reuse the established agreement/GM authority policy. An engine owner cannot silently take a second player's equipment or permanently remove their Hero outside the agreed case.
 - Local database now also includes 097 capture-event reversal protection and 098 core captive dice provenance. Do not overwrite their functions with older definitions. All 273 API DB checks pass serially; run shared-DB suites serially to avoid fixture collisions.
 
-Latest database handoff: 099 preserves exact Hero kit annotations and distinguishes already-owned Enchanted Skins from Amazon bonuses; 100 retains complete readable consent with catalogue names. The next free migration number is **102**. All 35 affected capture DB checks pass. Do not revert these changes when integrating Engine custody.
+Latest database handoff: 099 preserves exact Hero kit annotations and distinguishes already-owned Enchanted Skins from Amazon bonuses; 100 retains complete readable consent with catalogue names. Migration 102 was subsequently completed; see the current integration note below. All 35 affected capture DB checks pass. Do not revert these changes when integrating Engine custody.
 
 ## Inventory handoff — 23:10 BST
 
@@ -60,3 +60,11 @@ Contract: `engine_of_chaos_units` has `id`, `warband_id`, nullable `inventory_it
 Your reset task is custody/consent (steps 2–5 above), not inventory. Send the proposed placement/proposal/reversal contract before client work. Reserve 102 for your migration and retain the 097–100 protections. Codex has prepared the actual `EnginePrisonCard` component and mobile/desktop preview, but no unfinished custody controls are exposed to live players.
 
 UI prepared: `EnginePlacementSheet` previews per-engine capacity and all confiscated kit, disables away/insufficient engines, and distinguishes a two-player proposal from immediate owner/GM recording. Phone/desktop browser preview passes. It is not connected to a mutation yet. All 282 local API tests pass after 101.
+
+## Connected custody — 13 September, 06:34 BST
+
+Claude completed local migrations 102 and 104 (Hero/Hired Sword and forced henchman custody), with 289 API tests passing before the UI integration. Codex connected EngineFleet, prisoner details, and the placement proposal to the warband page. Ordinary competing outcomes are suppressed while the Engine route applies. Acceptance and reversal refresh custody immediately. The actual mobile Man-catcher → report → imprisonment → kit display → reversal journey passes.
+
+Integration found the client builder searched only ordinary Heroes. It now also clears the exact kit from the matching Hired Sword collection, preserving the hired identity; the dedicated native-Large Ogre Bodyguard test and all four custody DB tests pass. Migration 102 also fixes reversal replacing physical Engine identities by restoring item rows in place. These findings are appended under #229 in the tracker.
+
+Still outstanding: anonymous exploration UI/provenance and reward routing (Codex, 106), dispatch/return backend (Claude, 105), rescue, and the other specialist capture rules. No changes from this batch are deployed. Do not treat prepared UI or passing custody tests as completion of the entire Engine extension.

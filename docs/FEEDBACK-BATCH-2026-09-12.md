@@ -257,3 +257,9 @@ Connected eligible Misericordia casualties to the combat roller and manual roste
 Validation: TypeScript and focused lint pass; 14 local forced-capture API checks pass, including simultaneous attempts for the final capture place, malformed dice and incorrect weapons, corrected manual events, exact kit, consent and reversal. The mobile browser journey passes actual hit/wound/save/injury/Capture dice, a failed then corrected manual casualty, report preview and the Throne reward. No production deployment.
 
 Remaining: audit human eligibility (the existing table incorrectly includes explicit Undead/animals); Hero 61 capacity rerolls; the previously recorded Thrall reward overflow ruling. These remain open and this does not mark the whole Cavalcade feature complete.
+
+### 13 September — human capture eligibility (114)
+
+Removed 21 explicit Undead/Daemon/animal/vehicle profiles that had inherited Human advancement maxima and consequently entered the capture eligibility table. Living human Necromancers, Dregs, mutants, Darksouls, Brethren and Grooms remain eligible. No existing cases or history were rewritten.
+
+Both Pirates and Cavalcade checks pass (24 local API tests across the two suites), including a lost Zombie producing no Pirate opportunity and a Zombie target disabling Cavalcade eligibility. All 108 migration files replay successfully in a separate empty database, which was then removed. This fixes future eligibility; Hero 61 capacity rerolls remain next.

@@ -323,6 +323,11 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   check(await admin.from('matches').update({state:'in_progress'}).eq('id',match))
   const facts=()=>captor.rpc('cavalcade_capture_facts',{p_match_id:match,p_captor_id:cw,p_attacker_id:moulder,p_target_id:group})
   expect(check(await facts())).toMatchObject({eligible:true,capturedThisBattle:0,capturedThralls:0})
+  check(await admin.from('warbands').update({type_rules_id:'the_undead'}).eq('id',vw))
+  check(await admin.from('henchman_groups').update({unit_type_rules_id:'undead_zombies'}).eq('id',group))
+  expect(check(await facts())).toMatchObject({eligible:false,targetIsEnemyHumanHenchman:false})
+  check(await admin.from('warbands').update({type_rules_id:'mercenaries_reikland'}).eq('id',vw))
+  check(await admin.from('henchman_groups').update({unit_type_rules_id:'mercenaries_reikland_warriors'}).eq('id',group))
   expect((await captor.rpc('cavalcade_capture_facts',{p_match_id:match,p_captor_id:crypto.randomUUID(),p_attacker_id:moulder,p_target_id:group})).error?.message).toMatch(/does not belong to this battle/)
   const payload={attacker_warband_id:cw,attacker_id:moulder,attacker_kind:'hero',attacker_name:'Aristocrat',target_warband_id:vw,target_id:group,target_kind:'group',target_name:'Warriors',target_size:3,wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:2,out_of_action_weapon_id:'misericordia'}
   const record=(slot:number,attempt?:Record<string,unknown>,over:Record<string,unknown>={})=>captor.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:cw,at:`2026-09-13T07:00:0${slot}Z`,kind:'attack',summary:'Actual Misericordia casualty',payload:{...payload,...(attempt?{cavalcade_capture:attempt}:{}),...over}}).select('id,payload').single()

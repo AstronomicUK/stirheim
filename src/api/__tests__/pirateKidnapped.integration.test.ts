@@ -48,6 +48,16 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   await admin.from('app_notifications').delete().in('user_id',users)
  })
  afterAll(async()=>{for(const id of users)await admin.auth.admin.deleteUser(id)})
+ it('keeps human captives eligible without treating Undead, Daemons, animals or wagons as humans',async()=>{
+  const rows=check(await pirate.from('kidnap_eligible_units').select('unit_type_rules_id')) as {unit_type_rules_id:string}[]
+  const ids=new Set(rows.map(row=>row.unit_type_rules_id))
+  for(const id of ['undead_zombies','undead_dire_wolves','carnival_of_chaos_plague_bearers','carnival_of_chaos_nurglings','carnival_of_chaos_plague_cart','lustrian_reavers_estalian_warhound','lustrian_reavers_barbary_monkey','lustrian_reavers_tilean_hunting_hawk','merchant_trade_wagon','restless_dead_zombies','restless_dead_skeletons','restless_dead_scarecrows','masters_of_horror_zombies','masters_of_horror_flesh_construct','necrarchs_skeletal_warriors','necrarchs_zombies','necrarchs_abomination','companion_filly','restless_dead_variant_zombies','restless_dead_variant_skeletons','restless_dead_variant_bone_goliath']) expect(ids.has(id),id).toBe(false)
+  for(const id of ['mercenaries_reikland_warriors','undead_necromancer','undead_dregs','cult_of_the_possessed_mutants','cult_of_the_possessed_darksouls','carnival_of_chaos_brethren','imperial_outriders_groom']) expect(ids.has(id),id).toBe(true)
+  check(await admin.from('warbands').update({type_rules_id:'the_undead'}).eq('id',vw))
+  check(await admin.from('henchman_groups').update({unit_type_rules_id:'undead_zombies'}).eq('id',warriors))
+  check(await fileVictim({heroCaptured:false,henchmenLost:true}));check(await filePirates())
+  expect(check(await pirate.from('captive_cases').select('id').eq('match_id',match).eq('source','pirates_kidnapped'))).toEqual([])
+ })
  const fileVictim=(opts:{heroCaptured?:boolean;henchmenLost?:boolean;unaccounted?:boolean;result?:'lost'|'won'|'draw'}={})=>victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:opts.result??'lost',ooa:[],
   injuries:[...(opts.heroCaptured===false?[]:[{subjectType:'hero',subjectId:hero,subjectName:'Taken Captain',rolls:[61],outcome:'captured',injuryCode:'captured',injuryName:'Captured',effect:''}]),
             ...(opts.henchmenLost?[{subjectType:'group',subjectId:warriors,subjectName:'Warriors',rolls:[1,4,2],dead:2,...(opts.unaccounted?{}:{equipmentLost:[{sourceItemId:warriorSwords,quantity:2}]})}]:[])],

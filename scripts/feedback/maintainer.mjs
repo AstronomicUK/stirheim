@@ -9,9 +9,9 @@ const host=new URL(url).hostname
 if(!['localhost','127.0.0.1'].includes(host)&&!process.argv.includes(`--confirm-host=${host}`))throw Error('Remote setup requires the matching --confirm-host argument')
 const db=createClient(url,key,{auth:{persistSession:false}})
 const check=result=>{if(result.error)throw Error(result.error.message);return result.data}
-const matches=check(await db.from('profiles').select('id,display_name').eq('display_name',username).limit(2))
+const matches=check(await db.from('profiles').select('user_id,display_name').eq('display_name',username).limit(2))
 if(matches.length!==1)throw Error('The username does not identify exactly one existing account. Resolve the account identity before granting access.')
-check(await db.from('feedback_maintainers').upsert({user_id:matches[0].id},{onConflict:'user_id',ignoreDuplicates:true}))
-const verified=check(await db.from('feedback_maintainers').select('user_id').eq('user_id',matches[0].id).single())
+check(await db.from('feedback_maintainers').upsert({user_id:matches[0].user_id},{onConflict:'user_id',ignoreDuplicates:true}))
+const verified=check(await db.from('feedback_maintainers').select('user_id').eq('user_id',matches[0].user_id).single())
 if(!verified)throw Error('Maintainer setup could not be verified')
 console.log(`Tracker management configured for ${matches[0].display_name}.`)

@@ -12,7 +12,7 @@ const existingRelease=must(await admin.from('feedback_releases').select('id').eq
 let b;
 try {
  const output=execFileSync('node',['scripts/feedback/import.mjs','--apply'],{cwd,env:{...process.env,SUPABASE_URL:env.API_URL,SUPABASE_SERVICE_ROLE_KEY:env.SERVICE_ROLE_KEY},encoding:'utf8'});process.stdout.write(output);
- const rows=must(await anon.from('feedback_issues').select('id,title,status').lte('id',231));expect(rows.length).toBe(221);
+ const rows=must(await anon.from('feedback_issues').select('id,title,status,reported_by').lte('id',231));expect(rows.length).toBe(221);expect(rows.find(r=>r.id===1).reported_by).toBe('AstronomicUK');
  expect(rows.find(r=>r.id===181).status).toBe('reviewed');expect(rows.find(r=>r.id===176).status).toBe('implemented');
  b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];p.on('pageerror',e=>errors.push(e.message));
  await p.goto('http://127.0.0.1:5193/feedback');

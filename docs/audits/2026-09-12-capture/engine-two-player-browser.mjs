@@ -1,6 +1,6 @@
 import {chromium,expect} from '@playwright/test';
 import {createClient} from '@supabase/supabase-js';
-import {execFileSync} from 'node:child_process';
+import {execFileSync,spawn} from 'node:child_process';
 const cwd='/Users/tombrookes/Documents/Claude Scripts/stirheim';
 const raw=execFileSync('npx',['supabase','status','-o','env'],{cwd,env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
 const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
@@ -8,6 +8,17 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(env.API_URL))throw Error('Local o
 const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),users=[],bands=[];
 const must=r=>{if(r.error)throw Error(r.error.message);return r.data};
 let browser,campaign,match;
+const dockerEnv={...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'};
+async function holdMatchRow(id){
+ const child=spawn('docker',['exec','-i','supabase_db_stirheim','psql','-U','postgres','-d','postgres','-qAt','-v','ON_ERROR_STOP=1'],{env:dockerEnv});
+ let output='',errors='';child.stderr.on('data',chunk=>errors+=chunk);
+ const exited=new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(Error(errors||`Lock process exited ${code}`)));});
+ const ready=new Promise((resolve,reject)=>{child.stdout.on('data',chunk=>{output+=chunk;if(output.includes('LOCKED'))resolve();});child.once('error',reject);child.once('exit',()=>{if(!output.includes('LOCKED'))reject(Error(errors||'Lock was not acquired'));});});
+ child.stdin.write(`BEGIN; SELECT id FROM public.matches WHERE id='${id}' FOR UPDATE; SELECT 'LOCKED';\n`);
+ await ready;
+ return {release:async()=>{child.stdin.end('COMMIT;\n');await exited;}};
+}
+
 try {
  for(let i=0;i<3;i++){
   const email=`engine-browser-${crypto.randomUUID()}@stirheim.test`,password=crypto.randomUUID();
@@ -131,11 +142,23 @@ try {
  for(const box of await captor.getByRole('checkbox').all())await box.check();
  await captor.getByLabel('Hero escort',{exact:true}).selectOption(escort);
  await expect(captor.getByText('2D3 Experience to share among Heroes, plus D6 × 5 gc',{exact:true})).toBeVisible();
- await captor.getByRole('button',{name:'Arrange the journey',exact:true}).click();
- await expect(captor.getByRole('dialog')).toHaveCount(0);
- await expect(captor.getByText('6 captives sent to the Dark Lands.',{exact:true})).toBeVisible();
- const returnBattle=must(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2].id,state:'awaiting_reports',scenario_rules_id:'skirmish',started_at:new Date().toISOString()}).select('id').single()).id;
+ // A start request can arrive first yet wait on the match row while departure finishes.
+ // Hold that row deliberately so this ordering is deterministic, not a timing lottery.
+ const returnBattle=must(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2].id,state:'scheduled',scenario_rules_id:'skirmish'}).select('id').single()).id;
  must(await admin.from('match_participants').insert(bands.map(warband_id=>({match_id:returnBattle,warband_id,accepted_at:new Date().toISOString()}))));
+ const heldStart=await holdMatchRow(returnBattle);
+ const starting=users[0].api.rpc('start_match',{p_match_id:returnBattle}).then(r=>r);
+ try {
+  await expect.poll(()=>Number(execFileSync('docker',['exec','supabase_db_stirheim','psql','-U','postgres','-d','postgres','-qAt','-c',"SELECT count(*) FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%start_match%'"],{env:dockerEnv,encoding:'utf8'}).trim())).toBeGreaterThan(0);
+  await captor.getByRole('button',{name:'Arrange the journey',exact:true}).click();
+  await expect(captor.getByRole('dialog')).toHaveCount(0);
+  await expect(captor.getByText('6 captives sent to the Dark Lands.',{exact:true})).toBeVisible();
+ } finally {await heldStart.release();}
+ must(await starting);
+ const departedAt=must(await admin.from('engine_journeys').select('departed_at').eq('warband_id',bands[0]).eq('captive_count',6).single()).departed_at;
+ const startedAt=must(await admin.from('matches').select('started_at').eq('id',returnBattle).single()).started_at;
+ expect(Date.parse(startedAt)).toBeGreaterThan(Date.parse(departedAt));
+ must(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',returnBattle));
  for(let i=0;i<2;i++)must(await users[i].api.rpc('submit_battle_report',{p_match_id:returnBattle,p_warband_id:bands[i],p_report:{result:i?'lost':'won',applied:{}}}));
  must(await admin.from('matches').update({state:'completed',completed_at:new Date().toISOString()}).eq('id',returnBattle));
  await captor.reload();await captor.getByRole('button',{name:'Record return',exact:true}).click();

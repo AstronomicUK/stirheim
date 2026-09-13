@@ -82,6 +82,8 @@ import type { MapPerks } from '../../../rules/resolve/mapAdvantages'
 import { d3Of } from './state'
 
 export interface ReportContext {
+  engineAvailable?: boolean
+  engineAvailabilityError?: string
   rawGroups?: readonly import('../../../domain').HenchmanGroupRow[]
   opponentResults?: Record<string,'won'|'lost'|'draw'>
   battleEvents?: import('../../../domain').BattleEventRow[]
@@ -1064,6 +1066,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const raidSpent=Number.isSafeInteger(raidRequested)&&raidRequested>=0&&raidRequested<=(ctx.roster.scenarioEffects?.raidCaptives??0)?raidRequested:0
   const explorationRoster = harpy?.stragglerNow ? { ...ctx.roster, explorationDiscoveries: { catacombs: false, tunnels: false, ...ctx.roster.explorationDiscoveries, straggler: true } } : ctx.roster
   const exploration = deriveExploration(draft.exploration, explorationRoster, {
+    engineAvailable: ctx.engineAvailable,
+    engineAvailabilityError: ctx.engineAvailabilityError,
     scenarioId: ctx.scenarioId,
     disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : ctx.scenarioId === 'stake_out' && draft.scenarioRewards?.stakeOut?.mode === 'income-only' ? 'Stake-Out: the table agreed to use the printed fixed income instead of exploration.' : undefined,
     won: draft.result === 'won',

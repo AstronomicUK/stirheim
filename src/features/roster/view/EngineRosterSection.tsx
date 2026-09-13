@@ -1,3 +1,4 @@
+import { EngineExplorationPanel } from './EngineExplorationPanel'
 import { useState } from 'react'
 import { useEngines } from '../../../api/engines'
 import { prisonerOriginalKit, useEnginePrisoners, useReverseAnonymousPlacement } from '../../../api/engineCustody'
@@ -30,10 +31,11 @@ export function EngineRosterSection({ detail, campaignId, userId }: { detail: Wa
   const origin = (id: string | null) => id ? cases.data?.find(c => c.id === id)?.victim?.name ?? 'Captured from another warband' : 'Found during exploration'
   return <>
     <EngineFleet engines={engines.data ?? []} prisoners={own.map(p => ({ ...p, origin: origin(p.case_id) }))} canEdit={canEdit} onPrisoner={id => { setReason(''); setSelected(id) }}/>
+    <EngineExplorationPanel warbandId={detail.warband.id} engines={engines.data ?? []} prisoners={own} canEdit={canEdit}/>
     {prisoner && engine ? <EnginePrisonerSheet prisoner={{ name: prisoner.name, origin: origin(prisoner.case_id), engineName: engine.name, large: prisoner.large, state: prisoner.state, placedAt: prisoner.placed_at,
       equipmentKnown: Boolean(kit || !prisoner.case_id), equipment: (kit ?? []).map((item, index) => ({ id: item.id ?? String(index), name: (item.item_rules_id ? findItem(item.item_rules_id)?.name : undefined) ?? item.custom_name ?? item.item_rules_id ?? 'Item', quantity: item.quantity, notes: item.notes })),
       history: prisoner.history.flatMap(entry => {
-        const text = entry.event === 'placed' ? `Imprisoned in ${engine.name}.` : entry.event === 'placement_reversed' ? `Placement reversed.${entry.reason ? ` ${entry.reason}` : ''}` : null
+        const text = ['placed','placed_from_exploration'].includes(entry.event) ? `Imprisoned in ${engine.name}.` : entry.event === 'exploration_count' ? prisoner.snapshot.location === 'straggler' ? 'One Straggler found.' : `Prisoners found: ${entry.count}. ${entry.maximum_finds ? 'Maximum find applied.' : entry.original_roll == null ? `Tabletop D3 result ${entry.count}.` : `App rolled ${entry.original_roll}${entry.original_roll !== entry.count ? `; player changed it to ${entry.count}` : ''}.`}` : entry.event === 'placement_reversed' ? `Placement reversed.${entry.reason ? ` ${entry.reason}` : ''}` : null
         return text ? [{ at: entry.at, text }] : []
       }),
     }} onClose={() => setSelected('')}>

@@ -72,7 +72,7 @@ try {
  const captured=must(await admin.from('battle_events').select('id,payload').eq('match_id',match)).sort((a,b)=>Number(Boolean(a.payload.metadata_only))-Number(Boolean(b.payload.metadata_only))).map((e,i)=>({modelIndex:i+1,eventId:e.id,captorWarbandId:ids[0],reason:'man_catcher',kit:[{sourceItemId:axe.id,itemId:'axe',quantity:2}]}));
  must(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match));
  must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[1],p_report:{result:'lost',injuries:[{subjectType:'group',subjectId:group.id,subjectName:'QA Captives',rolls:[],dead:0,captured,equipmentLost:[{sourceItemId:axe.id,quantity:4}]}],applied:{groups:[{id:group.id,patch:{size:2}}],item_patches:[{id:axe.id,quantity:4}]}}}));
- must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[0],p_report:{result:'won',applied:{}}}));
+ must(await player.rpc('submit_battle_report',{p_match_id:match,p_warband_id:ids[0],p_report:{result:'won',exploration:{diceAllowed:3,diceReason:'Two surviving heroes and winner die',rolls:[3,3,3],total:9,shards:2,locationId:'prisoners',locationName:'Prisoners',locationText:'Three captives found',subRoll:null,goldFound:0,itemsFound:[],notes:['App rolled 1; player changed it to 3.'],enginePrisoners:{count:3,originalRoll:1,maximumFinds:false}},applied:{}}}));
  const cases=must(await admin.from('captive_cases').select('model_index,source,model_snapshot').eq('match_id',match).order('model_index'));
  expect(cases.map(c=>c.model_index)).toEqual([1,2]);
  expect(cases.every(c=>c.source==='forced_capture'&&c.model_snapshot.items[0].quantity===2)).toBe(true);
@@ -90,6 +90,22 @@ try {
  await p.getByRole('dialog').getByRole('button',{name:'Reverse and restore both rosters',exact:true}).click();
  await expect(p.getByRole('img',{name:'0 of 6 places occupied. Large captives use two places.'})).toBeVisible();
  expect(must(await admin.from('engine_prisoners').select('state').eq('holder_warband_id',ids[0])).map(r=>r.state)).toEqual(['reversed']);
+ await p.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
+ await p.getByRole('button',{name:'Place captives',exact:true}).click();
+ await p.getByRole('button',{name:'More Captives to place in this engine',exact:true}).click();
+ await p.getByRole('combobox',{name:'Engine',exact:true}).selectOption({label:'Engine of Chaos — 6 places free'});
+ await p.getByLabel('Captive 1 name (optional)',{exact:true}).fill('Lost traveller');
+ await p.getByRole('button',{name:'Record placement',exact:true}).click();
+ await expect(p.getByRole('dialog')).toHaveCount(0);
+ await expect(p.getByText(/1 captive awaiting placement/)).toBeVisible();
+ await expect(p.getByRole('img',{name:'2 of 6 places occupied. Large captives use two places.'})).toBeVisible();
+ await p.getByRole('button',{name:/Lost traveller.*1 place/}).click();
+ await p.getByRole('dialog').getByText('Prisoner history',{exact:true}).click();
+ await expect(p.getByRole('dialog').getByText(/App rolled 1; player changed it to 3/)).toBeVisible();
+ await p.getByLabel('Reason to reverse placement',{exact:true}).fill('Duplicate traveller entered in error');
+ await p.getByRole('button',{name:'Reverse placement',exact:true}).click();
+ await expect(p.getByRole('dialog')).toHaveCount(0);
+ await expect(p.getByText(/2 captives awaiting placement/)).toBeVisible();
  expect(errors).toEqual([]);
- console.log('PASS: Engine imprisonment, exact kit, immediate occupancy refresh and reversal; mixed app and manual Man-catcher casualties appear in injuries without dice and create two distinct cases with exact equipment.');
-} finally {await b?.close();if(match){const cases=must(await admin.from('captive_cases').select('id').eq('match_id',match));for(const c of cases)await admin.from('app_notifications').delete().like('dedupe_key',`captive:${c.id}:%`);await admin.from('captive_cases').delete().eq('match_id',match);await admin.from('matches').delete().eq('id',match);}if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}
+ console.log('PASS: Engine imprisonment, exact kit, immediate occupancy refresh, exploration partial placement, original/edited D3 history and reversals; mixed app and manual Man-catcher casualties appear in injuries without dice and create two distinct cases with exact equipment.');
+} finally {await b?.close();if(match){const cases=must(await admin.from('captive_cases').select('id').eq('match_id',match));for(const c of cases)await admin.from('app_notifications').delete().like('dedupe_key',`captive:${c.id}:%`);await admin.from('captive_cases').delete().eq('match_id',match);await admin.from('engine_prisoners').delete().in('holder_warband_id',ids);await admin.from('matches').delete().eq('id',match);}if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}

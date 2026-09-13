@@ -161,6 +161,19 @@ describe.skipIf(!enabled)('Engine of Chaos custody (#229 / #95, migration 102)',
   expect((await admin.from('engine_prisoners').insert({engine_id:engine,holder_warband_id:cw,exploration_report_id:report,name:'Bad row',large:true,places:1,snapshot:{}})).error?.message).toMatch(/places/)
  })
 
+ it('uses the saved exploration count and original app die, rejecting duplicate gold and rerolls at placement',async()=>{
+  check(await fileDwarf({locationId:'prisoners',goldFound:10,enginePrisoners:{count:3,originalRoll:1,maximumFinds:false}}))
+  const report=check(await admin.from('match_reports').select('id').eq('match_id',match).eq('warband_id',cw).single()).id
+  const place=(roll:number)=>dwarf.rpc('place_anonymous_prisoners',{p_engine_id:engine,p_report_id:report,p_prisoners:[{name:'First prisoner'}],p_count_roll:roll})
+  expect((await place(3)).error?.message).toMatch(/already awarded gold/)
+  check(await admin.from('match_reports').update({exploration:{locationId:'prisoners',goldFound:0,enginePrisoners:{count:3,originalRoll:1,maximumFinds:false}}}).eq('id',report))
+  expect((await place(2)).error?.message).toMatch(/D3 saved in the battle report/)
+  check(await place(3))
+  expect((await prisoners())[0].snapshot).toMatchObject({count_roll:3,exploration_dice:{count:3,originalRoll:1,maximumFinds:false}})
+  expect((await prisoners())[0].history).toContainEqual(expect.objectContaining({event:'exploration_count',count:3,original_roll:1}))
+  expect((await dwarf.rpc('place_anonymous_prisoners_102',{p_engine_id:engine,p_report_id:report,p_prisoners:[{name:'Bypass attempt'}],p_count_roll:3})).error?.code).toBe('42501')
+ })
+
  it('records anonymous prisoners from the holder\'s own exploration within the location\'s count, fixes the D3 per report, and frees the report once they are reversed',async()=>{
   check(await fileDwarf({locationId:'straggler',locationName:'Straggler',benefits:['straggler'],diceAllowed:2,diceReason:'',rolls:[4,4],total:8,shards:1,locationText:null,subRoll:null,goldFound:0,itemsFound:[],notes:[]}))
   const report=check(await admin.from('match_reports').select('id').eq('match_id',match).eq('warband_id',cw).single()).id

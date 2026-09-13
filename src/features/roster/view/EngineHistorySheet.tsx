@@ -8,6 +8,7 @@ function historyText(entry: EngineInventoryRow['history'][number]) {
     case 'existing_inventory': return 'Engine already in the warband’s inventory.'
     case 'renamed': return `Renamed from “${entry.from ?? 'Engine of Chaos'}” to “${entry.to ?? 'Engine of Chaos'}”.`
     case 'retired': return `Removed from the inventory.${entry.reason ? ` ${entry.reason}` : ''}`
+    case 'prisoners_placed_from_exploration': return `${entry.count ?? 'Some'} exploration ${entry.count === 1 ? 'captive' : 'captives'} imprisoned.`
     case 'prisoner_placed': return `${entry.name ?? 'A prisoner'} imprisoned${entry.places ? `, using ${entry.places} ${entry.places === 1 ? 'place' : 'places'}` : ''}.`
     case 'placement_reversed': return `Prisoner placement reversed.${entry.reason ? ` ${entry.reason}` : ''}`
     default: return null

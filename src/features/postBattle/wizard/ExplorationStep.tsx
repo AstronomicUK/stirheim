@@ -9,7 +9,7 @@ import { heroOoaIds } from '../model/derive'
 import { useState } from 'react'
 import { findItem } from '../../../rules/data/items'
 import { rollDice, rollDie } from '../../../rules/resolve/dice'
-import { Button, DieFace, DieField, Markdown, Notice, NumberField, SegmentedControl, SelectField, Stepper, TextArea, TextField } from '../../../ui'
+import { Button, DicePicker, DieFace, DieField, Markdown, Notice, NumberField, SegmentedControl, SelectField, Stepper, TextArea, TextField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import {
   foundItemFromName,
@@ -186,7 +186,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
                 {ex.record !== null ? <Tag tone="brass">Resolved</Tag> : <Tag tone="warn">To resolve</Tag>}
               </div>
               <p className="text-sm italic leading-relaxed text-ink-dim">{ex.location.flavour}</p>
-              <Markdown source={ex.location.rules} className="text-sm" />
+              <Markdown source={ex.enginePrisoners ? ex.enginePrisoners.note : ex.location.rules} className="text-sm" />
 
               {ex.location.id==='shrine'&&['witch_hunters','sisters_of_sigmar'].includes(ctx.roster.warbandTemplateId)?<div className="flex flex-col gap-2 border-t border-border pt-3">
                 <SelectField label="Shrine discovery" value={draft.exploration.shrineChoice??''} onChange={e=>update(d=>({...d,exploration:{...d.exploration,shrineChoice:e.target.value as 'strip'|'save',shrineWeaponId:undefined}}))}><option value="">Choose…</option><option value="strip">Strip the shrine for 3D6 gc</option><option value="save">Save the relics: 3D6 gc and bless one weapon</option></SelectField>
@@ -306,6 +306,13 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
       </Section> : null}
 
       <PettyThief draft={draft} derived={derived} ctx={ctx} update={update} />
+      {ex.enginePrisoners ? <Section title="Captives found"><Card className="flex flex-col gap-3 px-4 py-3">
+        <p className="text-sm">{ex.enginePrisoners.note}</p>
+        {ex.enginePrisoners.usesD3 && !ex.enginePrisoners.maximumFinds ? <>
+          {draft.exploration.enginePrisonerRoll == null && draft.exploration.enginePrisonerOriginalRoll === undefined ? <DicePicker count={1} sides={3} label="Prisoners found" onComplete={(dice, manual) => update(d => ({...d, exploration:{...d.exploration,enginePrisonerRoll:dice[0],enginePrisonerOriginalRoll:manual?null:dice[0]}}))}/> : <DieField label="Prisoners found (D3)" sides={3} value={draft.exploration.enginePrisonerRoll ?? null} onChange={value => update(d => ({...d,exploration:{...d.exploration,enginePrisonerRoll:value}}))}/>}
+        </> : null}
+        <p className="text-sm text-ink-dim">After this report is applied, place the captives from your warband’s Engines of Chaos section. Each needs one free place. This replaces the ordinary gold, recruit or exploration-help reward.</p>
+      </Card></Section> : null}
       <LocationRecruits draft={draft} derived={derived} ctx={ctx} update={update} />
       <LocationExperience draft={draft} derived={derived} ctx={ctx} update={update} />
       {ex.result && ex.rewardsApply ? (

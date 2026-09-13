@@ -42,7 +42,7 @@ export interface EnginePrisonerRow {
   placed_at: string
   released_at: string | null
   release_reason: string
-  history: { event: string; at: string; by?: string | null; reason?: string; proposal_id?: string; report_id?: string; location?: string }[]
+  history: { count?: number; original_roll?: number | null; maximum_finds?: boolean; event: string; at: string; by?: string | null; reason?: string; proposal_id?: string; report_id?: string; location?: string }[]
 }
 
 const client = supabase as unknown as SupabaseClient

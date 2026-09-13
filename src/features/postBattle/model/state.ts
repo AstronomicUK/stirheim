@@ -85,6 +85,8 @@ export interface PirateRecruitDraft {
   people: { id: string; rolls: [number | null, number | null]; destination?: string; kitCost?: number | null; kitReason?: string }[]
 }
 export interface ExplorationDraft {
+  enginePrisonerRoll?: number | null
+  enginePrisonerOriginalRoll?: number | null
   raidCaptivesSpent?: number
 
   pirateRecruits?: PirateRecruitDraft
@@ -494,7 +496,7 @@ export function applyExplorationAid(draft: ReportDraft, use: AidUse): ReportDraf
   const rolls = [...draft.exploration.rolls]
   while (rolls.length <= use.dieIndex) rolls.push(null)
   rolls[use.dieIndex] = use.to
-  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
+  return withExploration(draft, { rolls, aids: [...draft.exploration.aids, use], subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, enginePrisonerRoll: null, enginePrisonerOriginalRoll: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
 }
 
 /** Roll a different number of exploration dice than suggested (1..12); null goes back to the suggestion. The reason is required to file. */
@@ -513,11 +515,11 @@ export function setExplorationRoll(draft: ReportDraft, index: number, value: num
   while (rolls.length <= index) rolls.push(null)
   if (rolls[index] === value) return draft
   rolls[index] = value
-  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
+  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, enginePrisonerRoll: null, enginePrisonerOriginalRoll: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
 }
 
 export function setExplorationRolls(draft: ReportDraft, rolls: (number | null)[]): ReportDraft {
-  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
+  return withExploration(draft, { rolls, kept: null, subRoll: null, testPassed: null, testSubjectId: null, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, enginePrisonerRoll: null, enginePrisonerOriginalRoll: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
 }
 
 /** Toggle whether a rolled die (by index) is one of the six kept and scored; extra picks past `limit` are ignored. */
@@ -532,11 +534,11 @@ export function toggleExplorationKeep(draft: ReportDraft, index: number, limit: 
 /** The location's D6; a new value resets the answers that depend on it. */
 export function setExplorationSubRoll(draft: ReportDraft, subRoll: number | null): ReportDraft {
   if (draft.exploration.subRoll === subRoll) return draft
-  return withExploration(draft, { subRoll, gold: null, extraShards: null, items: null, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
+  return withExploration(draft, { subRoll, gold: null, extraShards: null, items: null, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, enginePrisonerRoll: null, enginePrisonerOriginalRoll: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
 }
 
 export function setExplorationTest(draft: ReportDraft, testPassed: boolean | null): ReportDraft {
-  return withExploration(draft, { testPassed, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
+  return withExploration(draft, { testPassed, gold: null, extraShards: null, items: null, shrineChoice: undefined, shrineWeaponId: undefined, pitChoice: undefined, pitHeroId: undefined, pitShardDie: null, merchantDice: undefined, itemQuantities: {}, itemChoices: {}, artefactRoll: null, artefactOverrideReason: '', locationXpDie: null, locationXp: {}, locationLeaderId: undefined, pirateRecruits: undefined, enginePrisonerRoll: null, enginePrisonerOriginalRoll: undefined, recruitDie: null, recruitChoice: undefined, recruitGroupId: undefined, recruitKitCost: null, recruitKitReason: '' })
 }
 
 export function setExplorationTestSubject(draft: ReportDraft, heroId: string | null): ReportDraft {

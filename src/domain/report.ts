@@ -77,6 +77,7 @@ export const henchmanInjuryLineSchema = z.object({
 export type HenchmanInjuryLine = z.infer<typeof henchmanInjuryLineSchema>;
 
 export const explorationRecordSchema = z.object({
+  enginePrisoners: z.object({count:z.number().int().min(1).max(3),originalRoll:z.number().int().min(1).max(3).nullable(),maximumFinds:z.boolean()}).optional(),
   xpAwards: z.array(z.object({id:z.string(),name:z.string(),amount:z.number().int().min(1),reason:z.string()})).optional(),
   benefits: z.array(z.enum(['straggler'])).optional(),
   artefact: z.object({roll:z.number().int().min(1).max(6),overrideReason:z.string().optional()}).optional(),

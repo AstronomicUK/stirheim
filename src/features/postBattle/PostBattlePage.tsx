@@ -1,3 +1,4 @@
+import { useEngines } from '../../api/engines'
 import {specialKillsFromEvents} from './model/specialKillXp'
 import {useRawhideCargo} from '../../api/rawhide'
 import { useCampaignArtefacts } from '../../api/artefacts'
@@ -225,6 +226,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   // Doses start_match already used up for addicted heroes: the report must not use a second one (#139/#140).
   const supplies = useAddictionSupplies(match.id)
   const artefacts = useCampaignArtefacts(match.campaign_id)
+  const engines = useEngines(rosterData.roster.warbandTemplateId === 'black_dwarfs' ? participant.warband_id : undefined)
   const rawhideCargo=useRawhideCargo(match.scenario_rules_id==='rawhide'?match.id:undefined,match.state)
   const opponentReports = useMemo(
     () => (matchReports.data ?? []).filter((r) => r.warband_id !== participant.warband_id),
@@ -232,6 +234,8 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
   )
   const ctx = useMemo<ReportContext>(
     () => ({
+      engineAvailable: engines.data?.some(engine => engine.state === 'present'),
+      engineAvailabilityError: rosterData.roster.warbandTemplateId === 'black_dwarfs' ? engines.error?.message ?? (engines.isPending ? 'Checking Engine availability before resolving these captives…' : undefined) : undefined,
       battleEvents: killEvents.data,
       specialKillXp, specialKillXpLoading, specialKillXpError,
       roster: rosterData.roster,
@@ -263,7 +267,7 @@ function Wizard({ match, participant, rosterData, liveState, amending, houseRule
       takenOutByDetail: liveState?.takenOutBy ?? {},
       enemies,
     }),
-    [killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
+    [engines.data, engines.error, engines.isPending, killEvents.data, specialKillXp, specialKillXpLoading, specialKillXpError, rawhideCargo.data, match.state, artefacts.data, artefacts.error, matchReports.data, participant.warband_id, rosterData, match.id, match.scenario_rules_id, match.campaign_id, participant.rating, opponents, houseRules, liveState, supplies.data, enemies, rotVictims, settings?.mapCampaign, district, perks],
   )
 
   const derived = useMemo(() => (draft ? deriveReport(draft, ctx) : null), [draft, ctx])

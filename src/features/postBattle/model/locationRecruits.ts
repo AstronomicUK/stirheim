@@ -16,7 +16,7 @@ export function locationRecruits(draft:ReportDraft, ctx:ReportContext, ex:Explor
  if(ctx.roster.warbandTemplateId==='pirates'&&draft.exploration.pirateRecruits&&['straggler','prisoners'].includes(ex.location?.id??'')) return pirateRecruits(draft,ctx,injuries,ex.location!.id,budget)
  const faction=explorationFaction(ctx.roster.warbandTemplateId)
  const zombie=faction==='undead'&&['straggler','prisoners'].includes(ex.location?.id??'')
- const human=faction==='other'&&ex.location?.id==='prisoners'
+ const human=!ex.enginePrisoners&&faction==='other'&&ex.location?.id==='prisoners'
  const kind: 'zombie' | 'human' | null=zombie?'zombie':human?'human':null
  const needsDie=zombie&&ex.location?.id==='prisoners'
  const count=needsDie?(Number.isInteger(draft.exploration.recruitDie)&&draft.exploration.recruitDie!>=1&&draft.exploration.recruitDie!<=3?draft.exploration.recruitDie!:null):kind?1:0

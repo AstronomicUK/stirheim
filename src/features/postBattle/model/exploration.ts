@@ -1,3 +1,4 @@
+import { engineExplorationCaptives } from './engineExploration'
 import { locationXp } from './locationXp'
 import { explorationFaction } from '../../../rules/resolve/explorationDiscoveries'
 import type { ArtefactDiscovery } from '../../../api/artefacts'
@@ -32,6 +33,8 @@ import { isDie, type ExplorationDraft, type FoundItem } from './state'
 import { minMax } from '../../../rules/resolve/dice'
 
 export interface ExplorationInput {
+  engineAvailable?: boolean
+  engineAvailabilityError?: string
   artefacts?: ArtefactDiscovery[]
   rewardHeroes?: RosterHero[]
   leaderId?: string | null
@@ -63,6 +66,7 @@ export interface DiceAmount {
 }
 
 export interface ExplorationDerived {
+  enginePrisoners?: ReturnType<typeof engineExplorationCaptives>
   eligibleHeroes: RosterHero[]
   /** Dice actually rolled: the suggestion, or the player's override. Null when the warband cannot explore. */
   allowed: ExplorationDiceAllowed | null
@@ -252,9 +256,13 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     return true
   }) : []
 
+  const enginePrisoners = rewardsApply ? engineExplorationCaptives(location?.id, roster.warbandTemplateId, input.engineAvailable, draft, Boolean(input.maxFinds)) : undefined
+  if (roster.warbandTemplateId === 'black_dwarfs' && ['straggler','prisoners'].includes(location?.id ?? '') && input.engineAvailabilityError) problems.push(input.engineAvailabilityError)
+  if (enginePrisoners?.count === null) problems.push('Prisoners: roll D3 for the number of captives found.')
   const faction = explorationFaction(roster.warbandTemplateId)
   if (rewardsApply && location?.id === 'straggler' && faction === 'skaven') rewards = [{kind:'gold',amount:'2D6',text:'Straggler sold: 2D6 gc.'}]
   if (rewardsApply && !(roster.warbandTemplateId === 'pirates' && draft.pirateRecruits) && location?.id === 'prisoners' && (faction === 'skaven' || faction === 'other')) rewards = [{kind:'gold',amount:faction==='skaven'?'3D6':'2D6',text:faction==='skaven'?'Prisoners sold: 3D6 gc.':'Prisoners escorted to safety: 2D6 gc.'}]
+  if (enginePrisoners) rewards = []
   if (location?.id === 'graveyard' && ['witch_hunters','sisters_of_sigmar'].includes(roster.warbandTemplateId)) rewards = []
   const xp = locationXp(location?.id, roster.warbandTemplateId, draft, input.rewardHeroes ?? roster.heroes, input.leaderId)
   problems.push(...xp.problems)
@@ -317,6 +325,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const notes: string[] = xp.awards.map(a=>`${a.reason}: +${a.amount} XP to ${a.name}${xp.sides ? ` (D${xp.sides} ${draft.locationXpDie})` : ''}.`)
   if (merchant && merchantReady) notes.push(`Merchant’s House: D6 ${merchantDice.join(' + ')}; ${merchantSymbol ? 'doubles — Symbol of the Order of Freetraders instead of gold.' : `${merchantGold} gc${maxFinds ? ' (maximum find)' : ''}.`}`)
   if (pitSkipped) notes.push('The Pit: the warband chose not to send a Hero.')
+  if (enginePrisoners) notes.push(enginePrisoners.note, 'Place these captives in the Engine of Chaos from the warband screen once the report is applied.')
   if (pitHero && isDie(draft.subRoll,6)) notes.push(`The Pit: ${pitHero.name} sent; risk D6 ${draft.subRoll}. ${pitLostHeroId ? 'Devoured; permanently lost with carried equipment.' : `Returned with ${pitShards??'unresolved'} shards${maxFinds ? ' (maximum find)' : ` (D6 ${draft.pitShardDie??'?'} + 1)`}.`}`)
   if (artefact) notes.push(`Magical artefact D6 ${draft.artefactRoll}: ${artefact.name}.${draft.artefactOverrideReason?.trim() ? ` Agreed override: ${draft.artefactOverrideReason.trim()}` : ''}`)
   if (location?.id === 'shattered_building') notes.push(`Shattered Building: D3 shards are found regardless of the Leadership test.${testPassed === true ? ' The wardog joins; assign it from the stash to a Hero.' : testPassed === false ? ' The wardog does not join.' : ''}`)
@@ -341,9 +350,10 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
   const record: ExplorationRecord | null =
     problems.length === 0
       ? {
-          ...(location?.id === 'straggler' && explorationFaction(roster.warbandTemplateId) === 'other' && !(roster.warbandTemplateId === 'pirates' && draft.pirateRecruits) ? { benefits: ['straggler' as const] } : {}),
+          ...(!enginePrisoners && location?.id === 'straggler' && explorationFaction(roster.warbandTemplateId) === 'other' && !(roster.warbandTemplateId === 'pirates' && draft.pirateRecruits) ? { benefits: ['straggler' as const] } : {}),
           ...(artefact ? {artefact:{roll:draft.artefactRoll!, ...(draft.artefactOverrideReason?.trim() ? {overrideReason:draft.artefactOverrideReason.trim()} : {})}} : {}),
           ...(xp.awards.length ? {xpAwards:xp.awards} : {}),
+          ...(enginePrisoners?.count ? { enginePrisoners: {count:enginePrisoners.count,originalRoll:enginePrisoners.original,maximumFinds:enginePrisoners.maximumFinds} } : {}),
           diceAllowed: allowed.count,
           diceReason: allowed.reason,
           rolls: rolls as number[],
@@ -351,7 +361,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
           shards: totalShards,
           locationId: location?.id ?? null,
           locationName: location?.name ?? null,
-          locationText: location ? location.rules : null,
+          locationText: enginePrisoners ? enginePrisoners.note : location ? location.rules : null,
           subRoll: location?.subRoll && !pitSkipped ? (draft.subRoll ?? null) : null,
           goldFound: (gold.value ?? 0) + bonuses.gold,
           itemsFound: items.filter((i) => i.quantity >= 1 && (i.item_rules_id || i.custom_name)),
@@ -377,6 +387,7 @@ export function deriveExploration(draft: ExplorationDraft, roster: RosterWarband
     missNextGameHeroId,
     pitLostHeroId,
     rewardsApply,
+    enginePrisoners,
     gold,
     extraShards,
     itemQuantityPrompts,

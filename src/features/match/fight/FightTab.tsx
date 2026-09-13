@@ -1,3 +1,4 @@
+import { SWIVEL_SUPPLIES, usedSwivelSupply, swivelSupplyRow, useSwivelSupply, correctSwivelSupply } from './swivelSupply'
 import {useSlaaneshiHolds,useSlaaneshiHoldAction} from '../../../api/slaaneshiHolds'
 import {useCavalcadeCaptureFacts} from '../../../api/cavalcadeCaptives'
 import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
@@ -255,6 +256,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const reloadCopies = isCoreReloadGun && attacker && primary ? physicalWeaponChoices(items, events, roster.id, attacker.id, primary.id) : []
   const reloadHeld = reloadCopies.find(c => c.key === physicalSelection[`${attacker?.id}:${primary?.id}`]) ?? reloadCopies[0]
   const reloadKey = physicalGunKey(reloadHeld?.snapshot, `${attacker?.id}:${primary?.id}`)
+  const [swivelException, setSwivelException] = useState<Record<string, string>>({})
+  const [swivelCorrection, setSwivelCorrection] = useState('')
   const isSwivel = !selfDamage && Boolean(primary?.id.startsWith('swivel_gun_'))
   const swivelSlots = attacker?.kind === 'henchman' ? Math.max(1, attacker.groupSize ?? 1) : 1
   const swivelModel = Math.min(swivelSlot, swivelSlots - 1)
@@ -395,7 +398,11 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const doublePistol = isDoubleBarrel && attacker && primary && primary.id.includes('pistol') ? pistolShootingOptions(sheet,attacker,items,events,primary.id,doubleHeld?.key,Number(ownTurnKey.split(':').at(-1)),doubleSlot):null
   const doubleBlocked = isDoubleBarrel ? doublePistol?.remaining===0 ? 'This model has used its pistol shots for this own turn.' : doubleUneven ? 'Assign equal equipment to group members before tracking their barrels.' : !doubleState ? 'Select an intact double-barrelled weapon.' : doubleState.block ?? (barrels>doubleState.loaded?'Choose a loaded barrel before firing.':null) : null
   const reloadBlocked = isCoreReloadGun && attacker ? blackpowderBlock(sheet, attacker.id, reloadKey, Number(ownTurnKey.split(':').at(-1))) : null
-  const swivelBlocked = isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1)),swivelLegacyKey) : null
+  const supplyUsed = primary ? usedSwivelSupply(sheet, primary.id) : undefined
+  const supplyRow = attacker && primary ? swivelSupplyRow(items, roster.id, attacker.id, primary.id) : undefined
+  const supplyReason = primary ? swivelException[primary.id] ?? '' : ''
+  const supplyBlocked = isSwivel && !areaTarget && !supplyUsed && !supplyRow && !supplyReason.trim() ? 'No supply of this ammunition is recorded. Buy a supply or explain the table exception above.' : null
+  const swivelBlocked = supplyBlocked ?? (isSwivel && attacker ? blackpowderBlock(sheet, attacker.id, swivelKey, Number(ownTurnKey.split(':').at(-1)),swivelLegacyKey) : null)
   const blessedWarbands = enemies.warbands.filter(w => ladyBlessingActive(w.roster.warbandTemplateId, sessions.find(s => s.warband_id === w.roster.id)?.live_state.preBattle ?? {})).map(w => w.roster.id)
   const ladyTest = primary ? ladyBlessingReason(primary, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) ?? (offHandValid && offHand ? ladyBlessingReason(offHand, roster.id, defender?.warbandId ?? '', defender?.unitTemplateId, blessedWarbands) : undefined) : undefined
   // The engine's exact phase resolution is a few hundred multiplications; cheap enough to run on every render.
@@ -655,6 +662,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   </option>
                 ))}
               </SelectField>
+              {isSwivel && primary && !areaTarget ? <div className="rounded-md border border-border p-3 text-sm">
+                <p className="font-semibold">{SWIVEL_SUPPLIES[primary.id]} supply</p>
+                <p>{supplyUsed ? 'Opened for this battle. Further shots use the same supply.' : supplyRow ? 'One supply will be used when you fire. It lasts for the whole battle.' : 'No purchased supply in this gunner’s kit or the stash.'}</p>
+                {!supplyUsed && !supplyRow ? <TextField label="Reason to use ammunition supplied at the table" value={supplyReason} disabled={readOnly} onChange={e => setSwivelException(previous => ({ ...previous, [primary.id]: e.target.value }))} hint="An exception is saved with the first shot; no gold or inventory is deducted." /> : null}
+                {supplyUsed ? <details><summary className="cursor-pointer">Correct supply use</summary><TextField label="Reason for correcting ammunition use" value={swivelCorrection} onChange={e => setSwivelCorrection(e.target.value)} /><Button variant="secondary" disabled={readOnly || !swivelCorrection.trim()} onClick={() => { edit?.(state => correctSwivelSupply(state, primary.id, swivelCorrection)); setSwivelCorrection('') }}>Withdraw supply use</Button></details> : null}
+              </div> : null}
               {isSwivel ? <BlackpowderControls sheet={sheet} warriorId={attacker.id} weaponKey={swivelKey} legacyWeaponKey={swivelLegacyKey} slots={swivelSlots} slot={swivelModel} setSlot={setSwivelSlot} blocked={swivelBlocked} readOnly={readOnly} edit={edit} events={events} onSelfHit={id => {
                 setLineSelection(null); setPigeonSelection(null); setSelfShotId(id); setFireHitId(null); setVolatileKey(null); setRollSetup(null); setRolling(true)
                 if (attacker.kind === 'henchman') setWoundsOverride({ id: attacker.id, value: 0 })
@@ -915,7 +928,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               if (!isSwivel || areaTarget) return
               if (next.critUsed) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, criticalUsed: true } : shot) }))
               const startsShot = firingAttemptStarted(previous,next)
-              if (startsShot) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, legacyWeaponKey:swivelLegacyKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
+              if (startsShot && primary) edit(s => recordBlackpowderShot(useSwivelSupply(s, items, roster.id, attacker.id, primary.id, supplyReason, `supply:${attemptId}`, new Date().toISOString()), { id: attemptId, warriorId: attacker.id, weaponKey: swivelKey, legacyWeaponKey:swivelLegacyKey, weaponName: 'Swivel Gun', heldWeapon: physicalBindings[0]?.chosen?.snapshot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: 1, experimental: false, at: new Date().toISOString() }, attacker.name))
               if (previous?.pending?.kind === 'hit' && next.pending?.kind === 'misfire') edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === attemptId ? { ...shot, misfirePending: true } : shot) }))
               if (previous?.pending?.kind === 'misfire' && rolled) edit(s => recordMisfireDie(s, attemptId, rolled.value, rolled.manual ? undefined : rolled.value))
               const hit = previous && rolled && ((['hit', 'hitReroll'].includes(previous.pending?.kind ?? '') && next.cur.hitRoll !== null && next.pending?.kind !== 'misfire') || (previous.pending?.kind === 'misfire' && rolled.value === 6))

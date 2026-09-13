@@ -522,7 +522,7 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   }
   for (const [id, declared] of declaredConsumableCounts(ctx)) {
     const row = ctx.items.find(item => item.id === id && item.item_rules_id === declared.itemId)
-    if (!row || row.quantity < declared.count) problems.review.push('Bugman’s Ale stock changed after the barrel was declared drunk. Restore the barrel to its inventory row or withdraw the declaration on the battle sheet before filing.')
+    if (!row || row.quantity < declared.count) problems.review.push(declared.itemId === 'bugmans_ale' ? 'Bugman’s Ale stock changed after the barrel was declared drunk. Restore the barrel to its inventory row or withdraw the declaration on the battle sheet before filing.' : 'A declared battle supply has changed or is missing. Restore it to its inventory row or correct its use on the battle sheet before filing.')
   }
   const poisonCounts = poisonCountsFor(ctx)
   for (const [id, spent] of poisonCounts) {

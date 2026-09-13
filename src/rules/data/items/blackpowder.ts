@@ -8,6 +8,17 @@
 import type { Item } from "../../types/items";
 
 export const BLACKPOWDER_ITEMS: Item[] = [
+  ...([
+    ["swivel_gun_ball_shot", "Swivel Gun Ball Shot", 5],
+    ["swivel_gun_chain_shot", "Swivel Gun Chain Shot", 2],
+    ["swivel_gun_grape_shot", "Swivel Gun Grape Shot", 2],
+  ] as const).map(([id, name, cost]): Item => ({
+    id, name, category: "misc", price: { base: cost, text: `${cost} gc` },
+    availability: { kind: "common", text: "Common" },
+    description: "One battle’s supply of this Swivel Gun ammunition type. Requires a Swivel Gun; this ammunition is not a separate weapon.",
+    specialRules: [{ name: "Special Ammunition", text: "Each type only lasts one game, so if it is used in a game it cannot be used again until another supply is bought." }],
+    source: { publication: "Town Cryer 9 — Pirates", file: "02-weapons-armour-equipment.md:1205-1243" },
+  })),
   {
     id: "blunderbuss",
     name: "Blunderbuss",

@@ -60,7 +60,7 @@ describe("item catalogue", () => {
   it("has the expected number of items per category", () => {
     expect(MELEE_ITEMS.length).toBe(65);
     expect(MISSILE_ITEMS.length).toBe(22);
-    expect(BLACKPOWDER_ITEMS.length).toBe(17);
+    expect(BLACKPOWDER_ITEMS.length).toBe(20); // Includes three one-battle Swivel supplies.
     expect(ARMOUR_ITEMS.length).toBe(20);
     // 116 after #66 added the Jewelsmith's four gems plus the Alchemist's Notebook and Training
     // Manual — exploration-chart treasures that used to land as untyped, unpriced stash lines.
@@ -70,7 +70,7 @@ describe("item catalogue", () => {
     // material-variant generator; the floor here is a loose sanity check, not an exact count.
     expect(MATERIAL_VARIANT_ITEMS.length).toBeGreaterThan(65);
     expect(WARBAND_SPECIAL_ITEMS.length).toBe(40);
-    expect(ITEMS.length).toBe(254 + HIRED_SPECIAL_ITEMS.length + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length + SCENARIO_REWARD_ITEMS.length);
+    expect(ITEMS.length).toBe(257 + HIRED_SPECIAL_ITEMS.length + WARBAND_SPECIAL_ITEMS.length + MATERIAL_VARIANT_ITEMS.length + SCENARIO_REWARD_ITEMS.length);
     for (const category of CATEGORIES) {
       for (const item of itemsByCategory(category)) expect(item.category).toBe(category);
     }

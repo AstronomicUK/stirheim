@@ -17,7 +17,7 @@ Tom says to keep working until he messages that he is awake. Claude completed cu
 
 Coordination incident: a native Claude-app inspection was stuck in a computer-control permission prompt for about 6 hours 26 minutes, ending at 05:26 UTC. Codex was not progressing during that blocked call and did not send the intended 00:30 reset ping. Claude's independent work arrived on the shared bus and has been read and acknowledged; a new dispatch/return assignment was sent at 05:26 UTC and Claude replied with a contract. Do not imply uninterrupted overnight progress. Avoid native-app control for coordination; use the receiver-owned bus listener.
 
-Latest broad evidence: **2,421 ordinary tests across 204 files**, TypeScript and build pass through the rescue corrections. The latest full API run passes **322/322 across 56 files** through migration 127. The earlier leaked-fixture cleanup issue is fixed. Migration 124 additionally passes all 15 forced-capture API tests. Engine and Slaaneshi mobile flows are connected and verified, including player consent and exact kit. Nothing in this batch has been deployed.
+Latest broad evidence: **2,422 ordinary tests across 204 files**, TypeScript and build pass through the rescue corrections. The latest full API run passes **322/322 across 56 files** through migration 127. The earlier leaked-fixture cleanup issue is fixed. Migration 124 additionally passes all 15 forced-capture API tests. Engine and Slaaneshi mobile flows are connected and verified, including player consent and exact kit. Nothing in this batch has been deployed.
 
 ## #230 backend contract (Codex/Claude)
 
@@ -323,3 +323,8 @@ Missing reviewed revisions now reject actions and corrections rather than bypass
 ### Concurrent combat correction — local 127
 
 A deterministic two-connection test reproduced a key handover committing while its source casualty was also successfully reversed. The old trigger checked rescue history before waiting on a later match lock, so it missed the handover. The Engine guard now locks the match before checking, and the public combat-correction RPC takes that lock before its event update and re-reads the event. The same test now rejects the conflicting correction and retains the unreverted source. Thirteen affected Engine/capture tests, TypeScript and lint pass. All 121 migration files pass isolated replay, and the complete API run passes 322/322 checks across 56 files. No deployment.
+
+
+### Final build checkpoint — 13 September, 11:13 BST
+
+The application build and TypeScript pass, with 2,422 ordinary tests across 204 files. The full API run passed 322 checks; an additional direct-update variant now separately proves the concurrent rescue guard as well as the ordinary correction RPC (both variants pass). No application changes followed the build. Public import dry run accounts for all 231 historical entries (221 included, 10 excluded). Remaining decisions and unimplemented specialist boundaries are explicit in the scope audit. No new Claude acknowledgment has arrived; the source-review handoff is queued. Nothing deployed.

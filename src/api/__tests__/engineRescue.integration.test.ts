@@ -77,7 +77,7 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
   check(await admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id))
   expect(check(await victim.from('app_notifications').select('id').eq('dedupe_key','engine-keys:'+event.id))).toEqual([])
  })
- it('serializes a combat correction behind an uncommitted key handover',async()=>{
+ it.each(['rpc','direct'] as const)('serializes a %s combat correction behind an uncommitted key handover',async(path)=>{
   const [engine]=await engines();const r=check(await start(engine.id))
   const event=check(await victim.from('battle_events').insert({match_id:match,actor_id:users[1],actor_warband_id:vw,kind:'attack',summary:'Gaoler casualty',payload:{attacker_warband_id:vw,attacker_id:target,attacker_kind:'group',attacker_name:'Warriors',target_warband_id:cw,target_id:wielder,target_kind:'hero',target_name:'Gaoler',wounds_lost:1,out_of_action:true,kill:true,outcome:'Out of action',turn:1}}).select('id').single())
   const child=spawn('docker',['exec','-i','supabase_db_stirheim','psql','-U','postgres','-d','postgres','-qAt','-v','ON_ERROR_STOP=1'],{env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'}})
@@ -89,7 +89,7 @@ describe.skipIf(!enabled)('Engine rescue battle facts',()=>{
   let reverting:Promise<{error:{message:string}|null}>|undefined
   try{
    await ready
-   reverting=Promise.resolve(victim.rpc('revert_battle_event',{p_event_id:event.id,p_note:'Concurrent correction'}))
+   reverting=path==='rpc'?Promise.resolve(victim.rpc('revert_battle_event',{p_event_id:event.id,p_note:'Concurrent correction'})):Promise.resolve(admin.from('battle_events').update({reverted_at:new Date().toISOString()}).eq('id',event.id))
    const started=Promise.resolve(reverting)
    await new Promise(resolve=>setTimeout(resolve,150))
    child.stdin.end('COMMIT;\n');expect(await exit).toBe(0)

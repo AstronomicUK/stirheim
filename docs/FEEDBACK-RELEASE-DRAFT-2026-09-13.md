@@ -29,7 +29,7 @@ The battle sheet shows the state of each supported physical firearm, with a comp
 
 ## Current evidence
 
-2,421 ordinary tests pass across 204 files. The complete API run through 127 passes all 322 checks across 56 files. All 121 migration files install in order in an isolated database. TypeScript and the production build pass. Mobile capture/conversion, shared Engine rescue, agreed return, reversal and retired-history checks pass. Large-bundle warnings remain; invalid repeated list-marker CSS has been corrected.
+2,422 ordinary tests pass across 204 files. The complete API run through 127 passes all 322 checks across 56 files. All 121 migration files install in order in an isolated database. TypeScript and the production build pass. Mobile capture/conversion, shared Engine rescue, agreed return, reversal and retired-history checks pass. Large-bundle warnings remain; invalid repeated list-marker CSS has been corrected.
 
 ## Decisions held for Tom
 

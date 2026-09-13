@@ -69,6 +69,12 @@ export function warbandModelCount(warband: RosterWarband): number {
   return warbandHeroCount(warband) + warband.henchmenGroups.reduce((sum, g) => sum + g.size*(g.unitTemplateId==='black_orcs_troll'&&g.campaignState?.cheapTrollFeed?2:1), 0) + animalCount(warband);
 }
 
+/** Models counted against the list's maximum; source-exempt units retain their own unit limits. */
+export function warbandCapacityCount(warband: RosterWarband): number {
+  const outside = warband.henchmenGroups.filter(g => unitRules(g.unitTemplateId).relation?.outsideMaxModels).reduce((n, g) => n + g.size, 0);
+  return warbandModelCount(warband) - outside;
+}
+
 /** Heroes with status "active". Hired swords are not heroes for roster purposes. */
 export function warbandHeroCount(warband: RosterWarband): number {
   return warband.heroes.filter((h) => h.status === "active").length;
@@ -179,8 +185,7 @@ export function validateRoster(
   }
 
   // Warband size (units the list keeps outside the maximum are not counted).
-  const outside = warband.henchmenGroups.filter((g) => unitRules(g.unitTemplateId).relation?.outsideMaxModels).reduce((n, g) => n + g.size, 0);
-  const models = warbandModelCount(warband) - outside;
+  const models = warbandCapacityCount(warband);
   const maxModels = template.composition?.maxModels ?? null;
   if (maxModels !== null && models > maxModels) {
     problems.push({

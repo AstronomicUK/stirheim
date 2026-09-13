@@ -81,7 +81,11 @@ describe.skipIf(!enabled)('Core captive dice provenance (#229)',()=>{
   const owner=await rows(vw),enemy=await rows(cw)
   const choice={kind:'throne' as const,d6:4,originalD6:1,groupId:crypto.randomUUID(),leaderId:''}
   const result=resolveCaptive(owner.roster,enemy.roster,hero,choice)
-  const proposal=check(await captor.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:choice,p_message:result.message,p_advances:[],p_expected:await expected(),p_owner_changes:diffRoster(owner,result.owner),p_captor_changes:diffRoster(enemy,result.captor)}))
+  const offer=async()=>captor.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:choice,p_message:result.message,p_advances:[],p_expected:await expected(),p_owner_changes:diffRoster(owner,result.owner),p_captor_changes:diffRoster(enemy,result.captor)})
+  const capped=check(await admin.from('henchman_groups').insert({warband_id:cw,name:'Five existing Thralls',unit_type_rules_id:'cursed_cavalcade_captured_thrall',size:5,stats:{M:4,WS:3,BS:3,S:3,T:3,W:1,I:3,A:1,Ld:5},xp:0}).select('id').single()).id
+  expect((await offer()).error?.message).toMatch(/five Captured Thralls/)
+  check(await admin.from('henchman_groups').delete().eq('id',capped))
+  const proposal=check(await offer())
   expect(check(await admin.from('henchman_groups').select('id').eq('warband_id',cw))).toHaveLength(0)
   check(await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}))
   const saved=await rows(cw)

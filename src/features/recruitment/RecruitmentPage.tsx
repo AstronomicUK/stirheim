@@ -11,7 +11,7 @@ import { useWarband, type WarbandDetail } from '../../api/warbands'
 import { useWarbandCampaign } from '../../api/trading'
 import { useSession } from '../../app/session'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
-import { warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
+import { warbandHeroCount, warbandModelCount, warbandCapacityCount } from '../../rules/resolve/roster'
 import { IconTabs, Notice, PageHeader, Spinner, type IconTab } from '../../ui'
 import { warbandTypeName } from '../roster/shared/names'
 import { Card, KeyValue } from '../roster/view/bits'
@@ -74,6 +74,8 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
   const canEdit = isOwner && !warband.archived
   const capacity = template ? heroCapacity(template) : null
   const maxModels = template?.composition?.maxModels ?? null
+  const countedModels = warbandCapacityCount(roster)
+  const extraModels = warbandModelCount(roster) - countedModels
 
   function done(next: Outcome) {
     setOutcome(next)
@@ -97,7 +99,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
         <Card className="grid grid-cols-4 gap-y-3 px-4 py-3">
           <KeyValue label="Gold" value={`${roster.gold} gc`} />
           <KeyValue label="Veteran pool" value={roster.veteranPool === null ? '—' : `${roster.veteranPool} xp`} />
-          <KeyValue label="Models" value={maxModels === null ? warbandModelCount(roster) : `${warbandModelCount(roster)}/${maxModels}`} />
+          <KeyValue label="Models" value={maxModels === null ? warbandModelCount(roster) : <>{countedModels}/{maxModels}{extraModels > 0 && <span className="block text-xs font-normal text-ink-dim" title="These models do not count towards the warband limit">+{extraModels} extra</span>}</>} />
           <KeyValue label="Heroes" value={capacity === null ? warbandHeroCount(roster) : `${warbandHeroCount(roster)}/${capacity}`} />
         </Card>
       </div>

@@ -56,7 +56,7 @@ import { rollDie } from "./dice";
 import { spellForRoll } from "./grimoires";
 import { unitRules } from "../data/campaignRules";
 import { startingLevelUps, unitStartingStats } from "./builder";
-import { leaderTemplate, parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from "./roster";
+import { leaderTemplate, parseRosterLimit, unitCount, warbandHeroCount, warbandCapacityCount } from "./roster";
 
 /**
  * Published starting allocations. Khar-mel rolls D3 for the count; named full sets are below.
@@ -145,8 +145,9 @@ export function recruitmentBlock(
     return `The warband already has ${current} ${unit.name}; the limit is ${unit.rosterLimit}`;
   }
   const maxModels = template.composition?.maxModels ?? null;
-  const models = warbandModelCount(warband);
-  if (maxModels !== null && models + count > maxModels) {
+  const models = warbandCapacityCount(warband);
+  const addedModels = unitRules(unit.id).relation?.outsideMaxModels ? 0 : count;
+  if (maxModels !== null && models + addedModels > maxModels) {
     return `The warband has ${models} ${models === 1 ? "warrior" : "warriors"}; ${template.name} may have at most ${maxModels}`;
   }
   if (unit.role === "hero") {

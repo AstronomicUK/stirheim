@@ -1,3 +1,4 @@
+import { unitRules } from '../../rules/data/campaignRules'
 // Pure helpers for the recruitment screen: unit listings with counts and limits, hired-sword
 // eligibility, upkeep wording, default names and error messages. No React, no Supabase.
 
@@ -8,7 +9,7 @@ import { VETERAN_XP_COST_GC } from '../../rules/data/campaign/trading'
 import { findWarbandTemplate, heroCapacity } from '../../rules/data/warbandTemplates'
 import { isRulesError } from '../../rules/resolve/errors'
 import { canRecruit, type CanRecruitResult } from '../../rules/resolve/recruitment'
-import { parseRosterLimit, unitCount, warbandHeroCount, warbandModelCount } from '../../rules/resolve/roster'
+import { parseRosterLimit, unitCount, warbandHeroCount, warbandCapacityCount } from '../../rules/resolve/roster'
 import type { CharacterRole, UnitTemplate, WarbandTemplate } from '../../rules/types'
 import type { HiredSwordSummary } from '../../rules/types/campaignContent'
 import type { RosterHenchmanGroup, RosterHiredSword, RosterWarband, CampaignBans } from '../../rules/types/roster'
@@ -64,7 +65,7 @@ export function maxRecruitable(roster: RosterWarband, template: WarbandTemplate,
   const limit = parseRosterLimit(unit.rosterLimit)
   if (limit.max !== null) bounds.push(limit.max - unitCount(roster, unit))
   const maxModels = template.composition?.maxModels ?? null
-  if (maxModels !== null) bounds.push(maxModels - warbandModelCount(roster))
+  if (maxModels !== null && !unitRules(unit.id).relation?.outsideMaxModels) bounds.push(maxModels - warbandCapacityCount(roster))
   if (unit.role === 'hero') {
     const capacity = heroCapacity(template)
     if (capacity !== null) bounds.push(capacity - warbandHeroCount(roster))

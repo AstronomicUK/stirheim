@@ -2,6 +2,7 @@ import {expect,it} from 'vitest'
 import {findWarbandTemplate} from '../data/warbandTemplates'
 import {recruitHenchmen} from './recruitment'
 import {resolveCaptive} from './captives'
+import {warbandCapacityCount,warbandModelCount} from './roster'
 import type {RosterWarband} from '../types/roster'
 import {cavalcadeCaptureEligible,cavalcadeCaptureLimit,cavalcadeThroneReward,resolveCavalcadeCapture,type CavalcadeCaptureFacts} from './cavalcadeCapture'
 const facts:CavalcadeCaptureFacts={cavalcade:true,attackerIsHero:true,targetIsEnemyHumanHenchman:true,outOfAction:true,weaponId:'misericordia',capturedThralls:4,capturedThisBattle:1}
@@ -54,8 +55,13 @@ it('the rules reward retains both roster caps and cannot be bought through an or
  const first=cavalcadeThroneReward(roster,{name:'Thrall'},{d6:3,groupId:'t',heroId:''}).captor
  const fullThralls={...first,henchmenGroups:[{...first.henchmenGroups[0],size:5}]}
  expect(()=>cavalcadeThroneReward(fullThralls,{name:'Extra'},{d6:3,groupId:'extra',heroId:''})).toThrow(/limit is 0-5/)
- const fullWarband={...first,henchmenGroups:[{...first.henchmenGroups[0],unitTemplateId:'cursed_cavalcade_thrall',size:template.composition!.maxModels!}]}
- expect(()=>cavalcadeThroneReward(fullWarband,{name:'Extra'},{d6:3,groupId:'extra',heroId:''})).toThrow(/at most/)
+ const fullWarband={...roster,henchmenGroups:[{...first.henchmenGroups[0],unitTemplateId:'cursed_cavalcade_thrall',size:template.composition!.maxModels!-1}]}
+ const extra=cavalcadeThroneReward(fullWarband,{name:'Extra'},{d6:3,groupId:'extra',heroId:''}).captor
+ expect(warbandModelCount(extra)).toBe(14)
+ expect(warbandCapacityCount(extra)).toBe(13)
+ expect(()=>recruitHenchmen(extra,template,'cursed_cavalcade_thrall','Ordinary',1,'ordinary',{costOverride:0})).toThrow(/at most/)
+ const room={...extra,henchmenGroups:extra.henchmenGroups.map(g=>g.id==='t'?{...g,size:11}:g)}
+ expect(recruitHenchmen(room,template,'cursed_cavalcade_thrall','Ordinary',1,'ordinary',{costOverride:0}).value.warband.henchmenGroups).toHaveLength(3)
 })
 it('a Hero transformation removes the captive, confiscates kit once and retains edited dice',()=>{
  const captive={...roster.heroes[0],id:'victim',status:'captured' as const,flags:{captured:true},equipment:[{itemId:'sword',quantity:1}]}

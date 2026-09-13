@@ -41,7 +41,7 @@ export interface HeroInjuryFlow {
    * `districtRoll` is the D6 a map district lets the player make to turn the result into a Full
    * Recovery (Temple of Morr, Temple of Sigmar), null until rolled.
    */
-  rolls: { d66: number; captureRerollReason?: string; source?: 'app' | 'tabletop'; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
+  rolls: { eternalChoice?: 'accept' | 'sacrifice'; eternalDie?: number; d66: number; captureRerollReason?: string; source?: 'app' | 'tabletop'; subRoll: number | null; districtRoll?: number | null; medicine?: {itemId:string;d66:number;originalSubRoll:number|null;originalDistrictRoll:number|null} }[]
   /** Multiple Injuries: the D6 that says how many further rolls to make. */
   countRoll: number | null
   /** Discarded attempts survive a restart; missing on older drafts. */
@@ -181,6 +181,7 @@ export interface ReportDraft {
   swordInjuries: Record<string, number | null>
   /** Group id -> one D6 per model out of action. */
   groupInjuries: Record<string, (number | null)[]>
+  constructRepairDice?: Record<string, (number | null)[]>
   /** Hero or hired sword id -> reason no injury roll is made (counts as a full recovery); logged as an adjustment. */
   injurySkips: Record<string, string>
   /** Group id -> a different number of injury dice than models out of action, with the reason. */
@@ -372,7 +373,7 @@ export function setMedicineChestReroll(draft:ReportDraft,heroId:string,rollIndex
   const flow=flowOf(draft,heroId),original=flow.rolls[rollIndex]
   if(!original||original.medicine||(flow.extraToughUsed&&rollIndex===0))return draft
   const rolls=flow.rolls.slice(0,rollIndex+1)
-  rolls[rollIndex]={...original,subRoll:null,districtRoll:null,medicine:{itemId,d66,originalSubRoll:original.subRoll,originalDistrictRoll:original.districtRoll??null}}
+  rolls[rollIndex]={...original,eternalChoice:undefined,eternalDie:undefined,subRoll:null,districtRoll:null,medicine:{itemId,d66,originalSubRoll:original.subRoll,originalDistrictRoll:original.districtRoll??null}}
   return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls,countRoll:rollIndex===0?null:flow.countRoll}}}
 }
 
@@ -592,4 +593,11 @@ export function setPlantCasualty(draft:ReportDraft,id:string,checked:boolean):Re
   const group=id.match(/^(.*):(\d+)$/)
   if(group){const rolls=[...(draft.groupInjuries[group[1]]??[])];rolls[Number(group[2])]=null;return {...next,groupInjuries:{...draft.groupInjuries,[group[1]]:rolls}}}
   return {...next,scenarioInjuryDice:{...draft.scenarioInjuryDice,[id]:null},heroInjuries:{...draft.heroInjuries,[id]:{rolls:[],countRoll:null}},swordInjuries:{...draft.swordInjuries,[id]:null}}
+}
+
+export function setEternalInjury(draft: ReportDraft, heroId: string, index: number, choice: 'accept'|'sacrifice', die?: number): ReportDraft {
+ const flow=flowOf(draft,heroId)
+ if(!flow.rolls[index])return draft
+ const rolls=flow.rolls.slice(0,index+1).map((r,i)=>i===index?{...r,eternalChoice:choice,eternalDie:die}:r)
+ return {...draft,heroInjuries:{...draft.heroInjuries,[heroId]:{...flow,rolls}}}
 }

@@ -1,3 +1,4 @@
+import { withWarmonger, WARMONGER } from '../battle/warmonger'
 import { blessWeapon, shrineBlessed, SHRINE_BLESSING } from '../../../rules/resolve/shrineBlessing'
 import { legacyHiredItemId } from '../../../rules/data/items/hiredSpecial'
 import { GUARDIAN_RULES } from '../../../rules/resolve/hiredCompanions'
@@ -186,6 +187,7 @@ export interface BattleBoosts {
 export const NO_BOOSTS: BattleBoosts = { leaderLd: 0, leaderLdSources: [], fearImmunity: null }
 
 export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | undefined, warbandName: string, sheet: BattleLiveState | undefined, boosts: BattleBoosts = NO_BOOSTS): Combatant[] {
+  roster = withWarmonger(roster, sheet)
   // #70: template.specialRules (warband-wide) was tried here too, on the same theory as raceTraits
   // below, but reverted — several warbands (Beastmen included) list optional per-hero skills under
   // this same field ("Beastmen Skill: Fearless" is a skill a Beastman may take, not a trait every
@@ -252,13 +254,15 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       })
     }
   }
-  for (const group of fightingGroups(roster)) {
+  for (const group of fightingGroups(roster, sheet)) {
     const unit = template ? findUnitTemplate(template, group.unitTemplateId) : undefined
     const kit = perModelKit(group.equipment, group.size)
     const raceFor = unitRules(group.unitTemplateId).excludeRaceTraits ? [] : race
     const traits = [...raceFor, ...(unitRules(group.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...traitsFromRules(unit?.specialRules ?? []), ...kindTraits(roster.warbandTemplateId, group.unitTemplateId, unit?.specialRules ?? []), ...boostTraits]
     if (group.campaignState?.permanentStupidity) traits.push('stupidity')
     if (group.campaignState?.fanaticBattleMatch && !group.campaignState.fanaticSittingOut) traits.push('frenzy')
+    if (group.unitTemplateId === 'bretonnian_battle_pilgrims' && kit.items.some(item=>item.itemId==='holy_unholy_relic'&&item.quantity>0)) traits.push('frenzy')
+    if (group.unitTemplateId === 'battle_monks_raging_peasants' && roster.heroes.some(h=>h.status==='active'&&h.unitTemplateId==='battle_monks_emissary'&&h.skillIds.includes(WARMONGER))) traits.push('hatred')
     if (group.isLarge) traits.push('large_target')
     out.push({
       id: group.id,

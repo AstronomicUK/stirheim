@@ -1,3 +1,7 @@
+import { ConstructController } from './ConstructController'
+import { SINGLE_GROUP_UNITS, SCARECROW, NIGHT_MOB, CONTROLLERS } from '../../rules/resolve/rosterComposition'
+import { RecruitGifts } from './RecruitGifts'
+import { recruitGiftItems, recruitGiftProblem, recruitPurchasesTotal } from '../../rules/resolve/recruitPurchases'
 import type { PerkSource } from '../../rules/resolve/mapAdvantages'
 import { useMemo, useState } from 'react'
 import type { WarbandDetail } from '../../api/warbands'
@@ -25,7 +29,7 @@ function withPool(result: RecruitHenchmenResult): RosterWarband {
 }
 
 /** Hire henchmen as a new group or into an existing group of the same type, paying for veterans' experience. */
-export function HenchmenTab({ detail, template, canEdit, onDone, perks }: RecruitTabProps) {
+export function HenchmenTab({ detail, template, canEdit, onDone, perks, bans }: RecruitTabProps) {
   const listings = useMemo(() => listUnits(detail.roster, template, 'henchman'), [detail.roster, template])
   const [picked, setPicked] = useState<UnitListing | null>(null)
   const pool = detail.roster.veteranPool
@@ -44,6 +48,7 @@ export function HenchmenTab({ detail, template, canEdit, onDone, perks }: Recrui
         <HenchmenSheet
           key={picked.unit.id}
           detail={detail}
+          bans={bans}
           template={template}
           listing={picked}
           cheap={perks?.cheapRecruits[picked.unit.id] ?? null}
@@ -61,6 +66,7 @@ export function HenchmenTab({ detail, template, canEdit, onDone, perks }: Recrui
 type Mode = 'new' | 'join'
 
 interface HenchmenSheetProps {
+  bans?: RecruitTabProps["bans"]
   detail: WarbandDetail
   template: RecruitTabProps['template']
   listing: UnitListing
@@ -70,14 +76,18 @@ interface HenchmenSheetProps {
   onDone: (outcome: Outcome) => void
 }
 
-function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone }: HenchmenSheetProps) {
+function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone, bans }: HenchmenSheetProps) {
   const { roster } = detail
   const unit = listing.unit
   const groups = useMemo(() => groupsOfType(roster, unit.id), [roster, unit.id])
-  const [mode, setMode] = useState<Mode>(groups.length > 0 ? 'join' : 'new')
+  const [mode, setMode] = useState<Mode>(groups.length > 0 && !SINGLE_GROUP_UNITS.includes(unit.id) ? 'join' : 'new')
   const [groupName, setGroupName] = useState(() => defaultGroupName(unit, roster))
   const [groupId, setGroupId] = useState(groups[0]?.id ?? '')
-  const [size, setSize] = useState(1)
+  const [size, setSize] = useState(unit.id === NIGHT_MOB && !groups.length ? 5 : 1)
+  const [controller, setController] = useState<typeof CONTROLLERS[number]>()
+  const [giftIds, setGiftIds] = useState<string[]>([])
+  const giftProblem = recruitGiftProblem(template.id, unit.id, giftIds)
+  const giftCost = recruitPurchasesTotal(recruitGiftItems(giftIds)).total * size
   const { commit, error, pending } = useCommit(detail)
 
   const maxSize = useMemo(() => maxRecruitable(roster, template, unit), [roster, template, unit])
@@ -87,7 +97,7 @@ function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone }: He
   const [costOverride, setCostOverride] = useState<Override | null>(null)
   const hireCost = overrideReady(costOverride) ? costOverride.amount : listedHire
   const costBlocks = costOverride !== null && !overrideReady(costOverride)
-  const total = hireCost + quote.gold
+  const total = hireCost + quote.gold + giftCost
   const nameMissing = mode === 'new' && groupName.trim().length === 0
 
   async function confirm() {
@@ -97,6 +107,8 @@ function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone }: He
         recruitHenchmen(roster, template, unit.id, groupName.trim(), size, id, {
           intoGroupId: mode === 'join' ? groupId : undefined,
           poolUsed: 0,
+          recruitGiftIds: giftIds, bans,
+          constructController:controller,
           ...(overrideReady(costOverride) ? { costOverride: costOverride.amount } : cheap ? { costOverride: listedHire } : {}),
         }),
       withPool,
@@ -117,17 +129,17 @@ function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone }: He
       title={`Hire ${unit.name}`}
       description={`${listing.countText} on the roster · limit ${unit.rosterLimit}`}
       footer={
-        <Button block pending={pending} disabled={nameMissing || costBlocks || (mode === 'join' && !target)} onClick={() => void confirm()}>
+        <Button block pending={pending} disabled={nameMissing || costBlocks || !!giftProblem || (unit.id === SCARECROW && !controller) || (mode === 'join' && !target)} onClick={() => void confirm()}>
           Hire {size} for {total} gc
         </Button>
       }
     >
       <div className="flex flex-col gap-4 pb-2">
-        {groups.length > 0 ? (
+        {groups.length > 0 && !SINGLE_GROUP_UNITS.includes(unit.id) ? (
           <SegmentedControl<Mode>
             label="Where the recruits go"
             value={mode}
-            onChange={setMode}
+            onChange={value => { setMode(value); if (unit.id === NIGHT_MOB) setSize(value === 'new' ? 5 : 1) }}
             options={[
               { value: 'join', label: 'Add to existing group' },
               { value: 'new', label: 'New group' },
@@ -155,9 +167,11 @@ function HenchmenSheet({ detail, template, listing, cheap, onClose, onDone }: He
 
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-ink-dim">How many</span>
-          <Stepper label="recruits" value={size} onChange={setSize} min={1} max={maxSize} />
+          <Stepper label="recruits" value={size} onChange={setSize} min={unit.id === NIGHT_MOB && mode === "new" ? 5 : 1} max={SINGLE_GROUP_UNITS.includes(unit.id) ? 1 : maxSize} />
         </div>
 
+        {unit.id === SCARECROW ? <ConstructController value={controller} onChange={setController} /> : null}
+        <RecruitGifts warbandId={template.id} unitId={unit.id} ids={giftIds} onChange={setGiftIds} bans={bans} />
         <div className="grid grid-cols-3 gap-3">
           <KeyValue label="Hire cost" value={`${hireCost} gc`} />
           {cheap ? <p className="col-span-full text-xs text-ink-dim">{cheap.source.districtName}: {cheap.cost} gc each instead of {unit.cost ?? 0} gc (map advantage).</p> : null}

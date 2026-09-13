@@ -116,6 +116,7 @@ function PitFightSheet({
 
         {loss && hero ? <>
           <HeroInjuryCard name={hero.name} type="Pit fight injury" resolution={loss} skip={undefined}
+            onEternal={(index,choice,die)=>setFlow(f=>({...f,rolls:f.rolls.slice(0,index+1).map((r,i)=>i===index?{...r,eternalChoice:choice,eternalDie:die}:r)}))}
             onSkip={()=>{}} onDistrictRoll={()=>{}} onReset={reset}
             onD66={d66=>setFlow(f=>({...f,rolls:[...f.rolls,{d66,subRoll:null}]}))}
             onSubRoll={(index,value)=>setFlow(f=>({...f,rolls:f.rolls.map((r,i)=>i===index?{...r,subRoll:value}:r)}))}

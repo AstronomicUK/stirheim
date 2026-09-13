@@ -170,7 +170,7 @@ export function describeActivity(entry: CampaignActivity): string {
   const before = asRow(entry.before)
   const after = asRow(entry.after)
   if(entry.table_name==='master_chef_checks') return `${actorName(entry)} · ${entry.reason ?? 'Recorded Master Chef'}`
-  if(entry.table_name==='warbands' && entry.reason?.startsWith('Sold ')) return `${actorName(entry)} · ${entry.reason}`
+  if(['warbands','henchman_groups'].includes(entry.table_name) && /^(Sold |Repaired |Abandoned damaged |Undid Flesh Construct )/.test(entry.reason??'')) return `${actorName(entry)} · ${entry.reason}`
   switch (entry.table_name) {
     case 'warbands':
       return describeWarband(entry, before, after)
@@ -389,7 +389,7 @@ function campaignSettingChanges(before: Json | undefined, after: Json | undefine
  */
 export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
   if(entry.table_name==='master_chef_checks') return [{label:'Master Chef',before:'',after:'',sentence:entry.reason??'Recorded Master Chef.'}]
-  if(entry.table_name==='warbands' && entry.reason?.startsWith('Sold ')) return [{label:'Wyrdstone sale',before:'',after:'',sentence:entry.reason}]
+  if(['warbands','henchman_groups'].includes(entry.table_name) && /^(Sold |Repaired |Abandoned damaged |Undid Flesh Construct )/.test(entry.reason??'')) return [{label:'Wyrdstone sale',before:'',after:'',sentence:entry.reason??''}]
   if(entry.table_name==='match_reports')return reportActivityChanges(entry)
   if(entry.table_name==='pending_advances')return advanceActivityChanges(entry)
   const before = asRow(entry.before)

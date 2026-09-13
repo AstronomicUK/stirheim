@@ -1,3 +1,4 @@
+import { itemRestriction } from '../data/itemRules';
 // Sold to the Pits (#54): a Serious Injury that sends a captured Hero to fight a Pit Fighter for
 // the crowd's entertainment, off the injuries chart entirely — the app only ever recorded the flag
 // and gave up. Rulebook (paraphrased from the Serious Injuries entry): win and he returns with 50 gc
@@ -94,7 +95,7 @@ export function resolvePitFightLoss(warband: RosterWarband, d66: number, subRoll
   if (d66 < PIT_FIGHT_LOSS_ROLL_RANGE.min || d66 > PIT_FIGHT_LOSS_ROLL_RANGE.max) {
     throw new RulesError("pitFight.rollOutOfRange", `The follow-up roll must be ${PIT_FIGHT_LOSS_ROLL_RANGE.min}-${PIT_FIGHT_LOSS_ROLL_RANGE.max}, got ${d66}`);
   }
-  const stripped: RosterHero = { ...hero, equipment: hero.equipment.filter(e => !["melee", "missile", "blackpowder", "armour"].includes(findItem(e.itemId ?? "")?.category ?? "")) };
+  const stripped: RosterHero = { ...hero, equipment: hero.equipment.filter(e => itemRestriction(e.itemId ?? "").fused || !["melee", "missile", "blackpowder", "armour"].includes(findItem(e.itemId ?? "")?.category ?? "")) };
   const result = applyHeroInjury(stripped, d66, subRoll, ctx);
 
   if (result.value.needsSubRoll || result.value.needsMoreRolls) {
@@ -118,6 +119,6 @@ export function finishPitFightLoss(warband: RosterWarband, injured: RosterHero):
   const hire = warband.hiredSwords.find(h => h.id === injured.id);
   return replaceHero(warband, clearFlag({ ...injured,
     xp: hire && !hiredSwordGainsExperience(hire.hiredSwordId) ? original.xp : injured.xp,
-    equipment: injured.status === 'dead' ? [] : injured.equipment.filter(e => !['melee','missile','blackpowder','armour'].includes(findItem(e.itemId ?? "")?.category ?? '')),
+    equipment: injured.status === 'dead' ? [] : injured.equipment.filter(e => itemRestriction(e.itemId ?? '').fused || !['melee','missile','blackpowder','armour'].includes(findItem(e.itemId ?? "")?.category ?? '')),
   }, 'Lost the pit fight: follow-up serious injuries resolved; weapons and armour lost.'));
 }

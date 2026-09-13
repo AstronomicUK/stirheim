@@ -1,3 +1,4 @@
+import { NetterControl } from './NetterControl'
 import {TabletopSlaaneshiHold} from './TabletopSlaaneshiHold'
 import {useSlaaneshiHolds} from '../../../api/slaaneshiHolds'
 import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
@@ -84,7 +85,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
   }
   const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries, holds.data)
   const warriors = splitWarriors(roster, sheet)
-  const groups = fightingGroups(roster)
+  const groups = fightingGroups(roster, sheet)
   const animals = animalsFighting(roster)
   const enemies = useEnemyRosters(matchId ?? '', matchId ? others : [])
   const [asking, setAsking] = useState<Asking | null>(null)
@@ -127,7 +128,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}
         {warriors.fighting.map((entry) => (
-          <div key={entry.warrior.id}><MyWarriorCard chambers={<RosterChambers warbandId={roster.id} warriorId={entry.warrior.id} items={items} events={events} sheet={sheet} matchId={matchId} />} condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />{ammunition(entry.warrior.id)}<RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
+          <div key={entry.warrior.id}><MyWarriorCard chambers={<RosterChambers warbandId={roster.id} warriorId={entry.warrior.id} items={items} events={events} sheet={sheet} matchId={matchId} />} condition={conditions.get(entry.warrior.id)} entry={entry} template={template} sheet={sheet} edit={edit} readOnly={readOnly} fromLog={eventContribution(events, roster.id, entry.warrior.id)} onAsk={(name) => setAsking({ id: entry.warrior.id, name, index: 0 })} />{ammunition(entry.warrior.id)}<RelicLeadershipControl roster={roster} warriorId={entry.warrior.id} name={entry.warrior.name} sheet={sheet} readOnly={readOnly} edit={edit} />{entry.role === 'hero' ? <NetterControl hero={entry.warrior} sheet={sheet} edit={edit} readOnly={readOnly} /> : null}{entry.role === 'hero' ? <HealingHerbsControl warriorId={entry.warrior.id} roster={roster} items={items} sheet={sheet} rawSheet={rawSheet} events={events} edit={edit} readOnly={readOnly} singleUse={healingHerbsSingleUse} /> : null}</div>
         ))}
       </Section>
 

@@ -1,3 +1,4 @@
+import { MARAUDER_MUTANT } from './recruitPurchases';
 import { provenWarriorSkillTables } from "./blackOrcBlood";
 // Experience and advance resolvers (post-battle sequence step 2: "Experience").
 //
@@ -417,7 +418,7 @@ export function learnSkill(
   allSkillIds?: Set<string>,
   opts?: { warbandTemplateId?: string },
 ): Resolution<RosterHero> {
-  if (hero.skillIds.includes(skillId)) {
+  if (hero.skillIds.includes(skillId) && skillId !== MARAUDER_MUTANT) {
     throw new RulesError("SKILL_KNOWN", `${hero.name} already has the skill "${skillId}"`);
   }
   const skill = resolveSkill(skillId);
@@ -490,10 +491,12 @@ export function availableSkills(hero: RosterHero, warbandTemplateId?: string, op
   const known = new Set(hero.skillIds);
   const template = warbandTemplateId ? findWarbandTemplate(warbandTemplateId) : undefined;
   const annotate = (entry: AvailableSkill): AvailableSkill => {
+    if (warbandTemplateId === 'battle_monks_of_cathay' && hero.unitTemplateId === 'battle_monks_emissary' && entry.id.startsWith('battle_monks_of_cathay_skills_') && !entry.id.endsWith('_warmonger')) return {...entry,blocked:'The Emissary may select only Warmonger from the Battle Monks special skills.'};
+    if (entry.id === 'battle_monks_of_cathay_skills_warmonger' && hero.unitTemplateId !== 'battle_monks_emissary') return {...entry,blocked:'Warmonger is used by the Emissary.'};
     const blocked = skillRestrictionBlock(entry.restriction, { hero, roster: opts.roster, template, skillId: entry.id });
     return blocked ? { ...entry, blocked } : entry;
   };
-  const allowed = (id: string) => !known.has(id) && !isBanned(opts.bans, "skills", id);
+  const allowed = (id: string) => (!known.has(id) || id === MARAUDER_MUTANT) && !isBanned(opts.bans, "skills", id);
   const tables: AvailableSkillTable[] = [];
   for (const tableId of provenWarriorSkillTables(hero)) {
     if (CORE_SKILL_TABLE_IDS.includes(tableId)) {

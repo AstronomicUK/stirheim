@@ -173,6 +173,10 @@ export interface RosterHero {
 }
 
 export interface HenchmanCampaignState {
+  constructController?: "restless_dead_liche" | "restless_dead_necromancer";
+  warBeastSlots?: number;
+  constructRepairReceipt?: {afterProfile:Record<string,unknown>;requestId:string;action:string;paid:number;beforeSize:number;afterSize:number;beforeState:Record<string,unknown>;afterState:Record<string,unknown>};
+  constructRepairs?: {cost:number;injuryRoll:number;repairRoll:number}[];
   /** Captured Pirate Swabbies retain their former skills, but may never cast spells. */
   inheritedSkillIds?: string[];
   /** Individually named cursed members; the rest of the group is unaffected. */

@@ -1,0 +1,30 @@
+import {chromium,expect} from '@playwright/test';
+import {createClient} from '@supabase/supabase-js';
+import {execFileSync} from 'node:child_process';
+const raw=execFileSync('npx',['supabase','status','-o','env'],{env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
+const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
+if(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(env.API_URL))throw Error('Local only');
+const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),player=createClient(env.API_URL,env.ANON_KEY);
+const must=r=>{if(r.error)throw Error(r.error.message);return r.data;};
+const auth=must(await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'}));
+const campaign=crypto.randomUUID(),match=crypto.randomUUID(),constructBand=crypto.randomUUID(),licheBand=crypto.randomUUID(),cultBand=crypto.randomUUID(),group=crypto.randomUUID(),hero=crypto.randomUUID();const bands=[constructBand,licheBand,cultBand];let browser;
+const stats={M:4,WS:3,BS:3,S:3,T:4,W:4,I:3,A:1,Ld:8};
+try {
+ must(await admin.from('campaigns').insert({id:campaign,name:'Disposable roster browser QA',gm_id:auth.user.id}));
+ must(await admin.from('warbands').insert(bands.map((id,i)=>({id,name:['Construct QA','Liche QA','Gifts QA'][i],owner_id:auth.user.id,type_rules_id:['masters_of_horror','the_restless_dead','cult_of_the_possessed'][i],gold:i===0?30:500}))));
+ must(await admin.from('henchman_groups').insert({id:group,warband_id:constructBand,name:'Damaged Construct',unit_type_rules_id:'masters_of_horror_flesh_construct',size:1,stats,campaign_state:{constructRepairs:[{cost:20,injuryRoll:1,repairRoll:4}]}}));
+ must(await admin.from('heroes').insert({id:hero,warband_id:licheBand,name:'Eternal QA',unit_type_rules_id:'restless_dead_liche',stats,xp:20,level_ups:8}));
+ must(await admin.from('matches').insert({id:match,campaign_id:campaign,created_by:auth.user.id,state:'awaiting_reports'}));
+ must(await admin.from('match_participants').insert([constructBand,licheBand].map(warband_id=>({match_id:match,warband_id}))));
+ browser=await chromium.launch();const p=await browser.newPage({viewport:{width:390,height:844}});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ await p.goto('http://127.0.0.1:5193/sign-in');await p.getByLabel('Email',{exact:true}).fill('player@stirheim.test');await p.getByLabel('Password',{exact:true}).fill('stirheim-dev');await p.getByRole('button',{name:'Sign in',exact:true}).click();await p.waitForURL('http://127.0.0.1:5193/');
+ await p.goto(`http://127.0.0.1:5193/warbands/${constructBand}`);await p.getByRole('button',{name:'Pay 20 gc to repair',exact:true}).click();await expect(p.getByText('Repairs paid; the Construct can fight again.')).toBeVisible();
+ await p.reload();await expect(p.getByText('Repairs paid; the Construct can fight again.')).toBeVisible();expect(must(await admin.from('warbands').select('gold').eq('id',constructBand).single()).gold).toBe(10);
+ await p.getByRole('button',{name:/Undo last repair payment/}).click();await expect(p.getByRole('button',{name:'Pay 20 gc to repair'})).toBeVisible();expect(must(await admin.from('warbands').select('gold').eq('id',constructBand).single()).gold).toBe(30);
+ expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await p.screenshot({path:'/tmp/stirheim-repair-mobile.png',fullPage:true});
+ await p.evaluate(async({match,licheBand,hero})=>{const {emptyDraft}=await import('/src/features/postBattle/model/state.ts');localStorage.setItem(`stirheim.report.${match}.${licheBand}`,JSON.stringify({state:{draft:{...emptyDraft(),step:2,result:'lost',heroesOut:[hero],heroInjuries:{[hero]:{rolls:[{d66:24,subRoll:null,source:'app'}],countRoll:null}}},savedAt:new Date().toISOString()},version:6}));},{match,licheBand,hero});
+ await p.goto(`http://127.0.0.1:5193/matches/${match}/report/${licheBand}`);await expect(p.getByRole('button',{name:'Sacrifice 1 Wound'})).toBeVisible();await p.screenshot({path:'/tmp/stirheim-eternal-mobile.png',fullPage:true});await p.getByRole('button',{name:'Sacrifice 1 Wound'}).click();await expect(p.getByText(/4 → 3/).first()).toBeVisible();await p.reload();await expect(p.getByText(/4 → 3/).first()).toBeVisible();
+ await p.goto(`http://127.0.0.1:5193/warbands/${cultBand}/recruit`);await p.getByRole('button',{name:/Mutants/}).click();await expect(p.getByRole('button',{name:/Hire for/})).toBeDisabled();await p.getByRole('button',{name:'More Cloven Hoofs',exact:true}).click();await p.getByRole('button',{name:'More Cloven Hoofs',exact:true}).click();await expect(p.getByRole('button',{name:'Hire for 145 gc',exact:true})).toBeEnabled();expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await p.screenshot({path:'/tmp/stirheim-gifts-mobile.png',fullPage:true});await p.getByRole('button',{name:'Hire for 145 gc',exact:true}).click();await expect.poll(async()=>must(await admin.from('heroes').select('stats').eq('warband_id',cultBand)).length).toBe(1);expect(must(await admin.from('heroes').select('stats').eq('warband_id',cultBand).single()).stats.M).toBe(6);expect(must(await admin.from('warbands').select('gold').eq('id',cultBand).single()).gold).toBe(355);
+ await p.setViewportSize({width:1280,height:900});await p.goto(`http://127.0.0.1:5193/warbands/${cultBand}`);await expect(p.getByText(/Cloven Hoofs/).first()).toBeVisible();expect(errors).toEqual([]);
+ console.log('PASS mobile repair/pay/refresh/undo; Eternal choice persists; repeated mutation hire charges 145gc and saves M6; desktop roster, no page errors or mobile overflow.');
+}finally {await browser?.close();must(await admin.from('campaigns').delete().eq('id',campaign));for(const id of bands)must(await admin.from('warbands').delete().eq('id',id));await player.auth.signOut();}

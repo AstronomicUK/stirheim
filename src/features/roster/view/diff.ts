@@ -50,6 +50,7 @@ export interface HeroDraft {
 }
 
 export interface GroupDraft {
+  campaign_state?: import("../../../rules/types/roster").HenchmanCampaignState;
   id: string
   isNew: boolean
   name: string
@@ -118,6 +119,7 @@ export function heroDraftFromRow(row: HeroRow): HeroDraft {
 export function groupDraftFromRow(row: HenchmanGroupRow): GroupDraft {
   return {
     id: row.id,
+    campaign_state: row.campaign_state,
     isNew: false,
     name: row.name,
     unit_type_rules_id: row.unit_type_rules_id,
@@ -231,6 +233,7 @@ function heroUpdateData(before: HeroRow, after: HeroDraft): Record<string, unkno
 function groupInsertData(group: GroupDraft): Record<string, unknown> {
   return {
     name: group.name,
+    campaign_state: group.campaign_state ?? {},
     unit_type_rules_id: group.unit_type_rules_id,
     size: group.size,
     stats: group.stats,
@@ -246,6 +249,7 @@ function groupInsertData(group: GroupDraft): Record<string, unknown> {
 
 function groupUpdateData(before: HenchmanGroupRow, after: GroupDraft): Record<string, unknown> {
   const data: Record<string, unknown> = {}
+  if (JSON.stringify(after.campaign_state ?? {}) !== JSON.stringify(before.campaign_state ?? {})) data.campaign_state = after.campaign_state ?? {};
   if (after.name !== before.name) data.name = after.name
   if (after.size !== before.size) data.size = after.size
   if (!statsEqual(after.stats, before.stats)) data.stats = after.stats

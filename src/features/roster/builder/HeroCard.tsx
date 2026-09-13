@@ -1,3 +1,4 @@
+import { RecruitGifts } from '../../recruitment/RecruitGifts'
 import { useMemo, useState } from 'react'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
 import { findItem } from '../../../rules/data/items'
@@ -66,6 +67,8 @@ export function HeroCard({ hero, template, isLeader, bans }: HeroCardProps) {
         apprenticeSpells={hero.unitTemplateId === 'restless_dead_variant_necromancer' ? masterSpells ?? [] : undefined}
         onChoice={id => update(d => ({ ...d, heroes: d.heroes.map(h => h.id === hero.id ? { ...h, magicChoiceId: id, spellIds: [] } : h) }))}
         onSpells={ids => update(d => ({ ...d, heroes: d.heroes.map(h => h.id === hero.id ? { ...h, spellIds: ids } : h) }))} />
+
+      <RecruitGifts warbandId={template.id} unitId={hero.unitTemplateId} ids={hero.recruitGiftIds ?? []} bans={bans} onChange={ids => update(d => ({...d, heroes: d.heroes.map(entry => entry.id === hero.id ? {...entry, recruitGiftIds: ids} : entry)}))} />
 
       <EquipmentSheet
         open={shopping}

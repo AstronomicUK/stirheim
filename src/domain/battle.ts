@@ -108,6 +108,8 @@ export const battleLiveStateSchema = z.object({
   fightSituations: z.record(z.string(), z.object({ phaseKey: z.string(), values: z.record(z.string(), z.boolean()) })).default({}),
   frenzyEnded: z.record(z.string(), z.boolean()).default({}),
   fightPhysicalChoices: z.record(z.string(), z.string()).default({}),
+  warmonger: z.object({groupId:z.string(),heroId:z.string(),dice:z.tuple([z.number().int().min(1).max(6),z.number().int().min(1).max(6)]),leadership:z.number().int(),die:z.number().int().min(1).max(3).nullable(),count:z.number().int().min(0).max(4)}).optional(),
+  netterNetsUsed: z.record(z.string(), z.number().int().min(0).max(3)).optional(),
   tailChoices: z.record(z.string(), z.object({ mode: z.enum(['none', 'shield', 'weapon']), weaponId: z.string().optional(), weaponKey: z.string().optional() })).default({}),
   poisonApplications: z.array(z.object({
     id: z.string(), warriorId: z.string(), warriorName: z.string(),

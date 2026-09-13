@@ -65,7 +65,7 @@ function EquipmentRow({ subject, item, option, houseRules, models }: EquipmentRo
             {each !== null && models === 1 ? ` · ${formatAmount(each, currency)}` : ''}
           </span>
         </div>
-        {option ? (
+        {option && (item.itemId !== "ancient_armour") ? (
           confirmRemove ? (
             <div className="flex shrink-0 items-center gap-1 text-xs">
               <span className="text-ink-dim">Remove it?</span>
@@ -81,7 +81,7 @@ function EquipmentRow({ subject, item, option, houseRules, models }: EquipmentRo
               <Stepper
                 label={itemName(item)}
                 value={item.quantity}
-                min={0}
+                min={item.includedQuantity ?? 0}
                 onChange={(next) =>
                   update((d) =>
                     next > item.quantity
@@ -128,7 +128,7 @@ export function PriceField({ item, subject, option }: PriceFieldProps) {
         id={id}
         type="number"
         inputMode="numeric"
-        min={0}
+        min={item.includedQuantity ?? 0}
         step={1}
         placeholder="?"
         value={item.unitCost ?? ''}

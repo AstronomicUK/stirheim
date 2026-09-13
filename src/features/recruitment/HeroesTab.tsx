@@ -1,3 +1,4 @@
+import { RecruitGifts } from './RecruitGifts'
 import type { MapPerks } from '../../rules/resolve/mapAdvantages'
 import type { FirstSpellRule, CampaignBans } from '../../rules/types/roster'
 import { startingMagicFor, startingMagicOptions } from '../../rules/data/campaign/magic'
@@ -7,9 +8,7 @@ import type { WarbandDetail } from '../../api/warbands'
 import { overrideNote, overrideReady, reasonWith, type Override } from '../../domain/override'
 import { recruitHero, INITIAL_OUTLAW_ARROWS_COST } from '../../rules/resolve/recruitment'
 import { isBanned } from '../../rules/resolve/houseRules'
-import { buyItem } from '../../rules/resolve/trading'
-import { recruitPurchaseOptions, recruitPurchasesTotal } from '../../rules/resolve/recruitPurchases'
-import type { Item } from '../../rules/types/items'
+import { recruitGiftItems, recruitGiftProblem, recruitPurchasesTotal } from '../../rules/resolve/recruitPurchases'
 import type { WarbandTemplate } from '../../rules/types'
 import { Button, Notice, Sheet, TextField, OverrideField } from '../../ui'
 import { StatLine } from '../roster/shared/StatLine'
@@ -73,6 +72,8 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule,
   const unit = listing.unit
   const [magicChoiceId, setMagicChoiceId] = useState<string>()
   const [initialArrows, setInitialArrows] = useState(false)
+  const [wardog, setWardog] = useState(false)
+  const canBuyWardog = unit.id === "mercenaries_ostermark_captain" && !isBanned(bans,"items","wardogs")
   const canBuyInitialArrows = template.id === 'outlaws_of_stirwood_forest' && !isBanned(bans, 'items', 'hunting_arrows')
   const withArrows = canBuyInitialArrows && initialArrows
   const [spellIds, setSpellIds] = useState<string[]>([])
@@ -86,36 +87,23 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule,
   const overrideBlocks = override !== null && !overrideReady(override)
   const trimmed = name.trim()
   // Mutations and Blessings are bought with the recruit: the first at the listed price, later ones double.
-  const gifts = useMemo(() => recruitPurchaseOptions(roster.warbandTemplateId, unit.id), [roster.warbandTemplateId, unit.id])
   const [chosenGifts, setChosenGifts] = useState<string[]>([])
-  const giftItems = gifts.filter((g) => chosenGifts.includes(g.id))
-  const giftTotal = recruitPurchasesTotal(giftItems)
-  const cost = hireCost + giftTotal.total + (withArrows ? INITIAL_OUTLAW_ARROWS_COST : 0)
-  const mustHaveGift = gifts.length > 0 && unit.specialRules.some((r) => /must start the game with one or more/i.test(r.text))
+  const giftTotal = recruitPurchasesTotal(recruitGiftItems(chosenGifts))
+  const cost = hireCost + giftTotal.total + (wardog && canBuyWardog ? 25 : 0) + (withArrows ? INITIAL_OUTLAW_ARROWS_COST : 0)
+  const giftProblem = recruitGiftProblem(template.id, unit.id, chosenGifts)
 
   async function confirm() {
     const id = crypto.randomUUID()
     const note = overrideReady(override) ? overrideNote('Hire cost', `${listed} gc`, `${override.amount} gc`, override.reason) : null
     const result = await commit(
       () => {
-        const hired = recruitHero(roster, template, unit.id, trimmed, id, { ...(overrideReady(override) ? { costOverride: override.amount } : {}), magicChoiceId, spellIds, initialHuntingArrows: withArrows, bans })
-        let warband = hired.value
-        const events = [...hired.events]
-        for (const line of giftTotal.lines) {
-          const bought = buyItem(warband, line.item, line.price, { kind: 'hero', id }, 1)
-          warband = bought.value
-          events.push(...bought.events)
-        }
-        return { value: warband, events }
+        const hired = recruitHero(roster, template, unit.id, trimmed, id, { ...(overrideReady(override) ? { costOverride: override.amount } : {}), magicChoiceId, spellIds, initialHuntingArrows: withArrows, bans, recruitGiftIds: chosenGifts, startingWardog: wardog && canBuyWardog })
+        return hired
       },
       (w) => w,
       reasonWith('recruitment', [note, withArrows ? `Hunting Arrows bought at initial recruitment for ${INITIAL_OUTLAW_ARROWS_COST} gc; no rarity roll required.` : null].filter(Boolean).join(' · ') || null),
     )
     if (result) onDone(outcomeFrom(`${trimmed} joins the warband`, result.events, { suggestTrading: true }))
-  }
-
-  function toggleGift(item: Item) {
-    setChosenGifts((ids) => (ids.includes(item.id) ? ids.filter((x) => x !== item.id) : [...ids, item.id]))
   }
 
   return (
@@ -125,7 +113,7 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule,
       title={`Hire a ${singular(unit.name)}`}
       description={`${listing.countText} on the roster · limit ${unit.rosterLimit}`}
       footer={
-        <Button block pending={pending} disabled={trimmed.length === 0 || overrideBlocks || needsMagic || (mustHaveGift && giftItems.length === 0)} onClick={() => void confirm()}>
+        <Button block pending={pending} disabled={trimmed.length === 0 || overrideBlocks || needsMagic || !!giftProblem} onClick={() => void confirm()}>
           Hire for {cost} gc
         </Button>
       }
@@ -143,33 +131,10 @@ function HeroSheet({ detail, template, listing, onClose, onDone, firstSpellRule,
           <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={initialArrows} onChange={e => setInitialArrows(e.target.checked)} />
           <span>Hunting Arrows · {INITIAL_OUTLAW_ARROWS_COST} gc<span className="mt-1 block text-xs text-ink-dim">Buy with this new Hero without a rarity roll. Later purchases require the normal roll. A bow is still needed to use them.</span></span>
         </label> : null}
+        {canBuyWardog ? <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={wardog} onChange={e => setWardog(e.target.checked)} />Starting Wardog · 25 gc</label> : null}
         <StartingMagicCard unitId={unit.id} template={template} choiceId={magicChoiceId} spells={spellIds} rule={firstSpellRule} onChoice={id => { setMagicChoiceId(id); setSpellIds([]) }} onSpells={setSpellIds}
           apprenticeSpells={unit.id === 'restless_dead_variant_necromancer' ? roster.heroes.find(h => h.unitTemplateId === 'restless_dead_variant_liche' && h.status === 'active')?.spellIds : undefined} />
-        {gifts.length > 0 ? (
-          <fieldset className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">
-            <legend className="px-1 text-xs uppercase tracking-wider text-ink-dim">Bought with the recruit</legend>
-            <p className="text-xs leading-relaxed text-ink-dim">
-              These can only be bought now. The first costs its listed price; second and later ones on the same model cost double.
-              {mustHaveGift ? ' This warrior must start with at least one.' : ''}
-            </p>
-            {gifts.map((g) => {
-              const on = chosenGifts.includes(g.id)
-              const line = giftTotal.lines.find((l) => l.item.id === g.id)
-              return (
-                <label key={g.id} className="flex min-h-11 items-start gap-3 py-1 text-sm text-ink">
-                  <input type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-brass" checked={on} onChange={() => toggleGift(g)} />
-                  <span className="flex min-w-0 flex-col">
-                    <span>
-                      {g.name.replace(/^(Mutation|Blessing of Nurgle): /, '')} <span className="text-ink-dim">· {line ? `${line.price} gc` : `${g.price.base ?? 0} gc`}</span>
-                    </span>
-                    <span className="text-xs leading-relaxed text-ink-dim">{g.specialRules[0]?.text ?? g.description}</span>
-                  </span>
-                </label>
-              )
-            })}
-            {giftItems.length > 0 ? <p className="text-xs text-ink">Total for these: {giftTotal.total} gc</p> : null}
-          </fieldset>
-        ) : null}
+        <RecruitGifts warbandId={template.id} unitId={unit.id} ids={chosenGifts} onChange={setChosenGifts} bans={bans} />
         <StatLine stats={unit.stats} />
         {unit.specialRules.length > 0 ? (
           <dl className="flex flex-col gap-2 text-xs leading-relaxed">

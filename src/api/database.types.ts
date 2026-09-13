@@ -2486,6 +2486,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_construct_repair: {
+        Args: {
+          p_action: string
+          p_expected_state: Json
+          p_group_id: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
       resolve_pending_advance: {
         Args: { p_advance_id: string; p_changes: Json; p_resolution: Json }
         Returns: number

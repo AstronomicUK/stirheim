@@ -1,3 +1,4 @@
+import { recruitGiftItems, recruitPurchasesTotal } from '../../../rules/resolve/recruitPurchases'
 // Pure helpers behind the warband list, template picker and builder screens. No React, no store:
 // everything here is unit-tested in helpers.test.ts.
 
@@ -153,13 +154,15 @@ function equipmentTotal(items: DraftItem[], models: number, houseRules?: Campaig
 
 export function heroCost(hero: DraftHero, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): SubjectCost {
   const hire = findUnitTemplate(template, hero.unitTemplateId)?.cost ?? 0
-  const equipment = equipmentTotal(hero.equipment, 1, houseRules)
+  const baseEquipment = equipmentTotal(hero.equipment, 1, houseRules)
+  const equipment = baseEquipment === null ? null : baseEquipment + recruitPurchasesTotal(recruitGiftItems(hero.recruitGiftIds)).total
   return { hire, equipment, total: equipment === null ? null : hire + equipment }
 }
 
 export function groupCost(group: DraftGroup, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): SubjectCost {
   const hire = (findUnitTemplate(template, group.unitTemplateId)?.cost ?? 0) * group.size
-  const equipment = equipmentTotal(group.equipment, group.size, houseRules)
+  const baseEquipment = equipmentTotal(group.equipment, group.size, houseRules)
+  const equipment = baseEquipment === null ? null : baseEquipment + recruitPurchasesTotal(recruitGiftItems(group.recruitGiftIds)).total * group.size
   return { hire, equipment, total: equipment === null ? null : hire + equipment }
 }
 

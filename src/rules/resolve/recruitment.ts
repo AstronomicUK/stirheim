@@ -1,3 +1,6 @@
+import { compositionProblems, NIGHT_MOB, SCARECROW, WAR_BEASTS } from './rosterComposition';
+import { startingEquipment } from './startingEquipment';
+import { giftStats, giftEquipment, recruitGiftItems, recruitGiftProblem, recruitPurchasesTotal } from './recruitPurchases';
 import { isBanned } from "./houseRules";
 import { dreamerRecruitmentBlock } from './dreamerCertification'
 import { leaderReplacementPurchaseBlock } from './leaderReplacement';
@@ -140,13 +143,20 @@ export function recruitmentBlock(
     if (cap !== null && unitCount(warband, replaced) >= cap) return `No ${replaced.name} slot is free for this priest.`;
   }
   const limit = parseRosterLimit(unit.rosterLimit);
+  if (template.id === 'lustrian_reavers' && unit.role === 'hero' && warband.heroes.some(hero => hero.unitTemplateId === unit.id)) return 'Rare Heroes: this role has already been recruited. Promote a Prospect to replace the lost Hero.';
+  if (unit.role === 'hero') {
+    const added = {...warband,heroes:[...warband.heroes,{id:'candidate',name:unit.name,unitTemplateId:unit.id,status:'active' as const,stats:unit.stats,xp:0,levelUps:0,skillIds:[],spellIds:[],skillTableIds:[],injuries:[],equipment:[],flags:{}}]};
+    const shared = compositionProblems(added).find(p => p.code === 'roster.sharedSlots');
+    if(shared)return shared.message;
+  }
+  if (WAR_BEASTS.includes(unit.id) && !warband.heroes.some(h=>h.unitTemplateId==='lustrian_reavers_beastmaster'&&['active','captured'].includes(h.status))) return 'War Beasts require a Beastmaster.';
   const current = unitCount(warband, unit);
   if (limit.max !== null && current + count > limit.max) {
     return `The warband already has ${current} ${unit.name}; the limit is ${unit.rosterLimit}`;
   }
   const maxModels = template.composition?.maxModels ?? null;
   const models = warbandCapacityCount(warband);
-  const addedModels = unitRules(unit.id).relation?.outsideMaxModels ? 0 : count;
+  const addedModels = unit.id === NIGHT_MOB ? (current ? 0 : 1) : unitRules(unit.id).relation?.outsideMaxModels ? 0 : count;
   if (maxModels !== null && models + addedModels > maxModels) {
     return `The warband has ${models} ${models === 1 ? "warrior" : "warriors"}; ${template.name} may have at most ${maxModels}`;
   }
@@ -190,6 +200,8 @@ export function canRecruit(
 export const INITIAL_OUTLAW_ARROWS_COST = 30;
 
 export interface RecruitHeroOptions {
+  startingWardog?: boolean;
+  recruitGiftIds?: string[];
   initialHuntingArrows?: boolean;
   bans?: CampaignBans;
   rng?: () => number;
@@ -217,7 +229,12 @@ export function recruitHero(
   if (opts.initialHuntingArrows && (template.id !== "outlaws_of_stirwood_forest" || isBanned(opts.bans, "items", "hunting_arrows"))) throw new RulesError("recruitment.huntingArrows", "The initial Hunting Arrows exception is unavailable for this recruit or campaign.");
   const hireCost = opts.costOverride ?? ((unit.cost ?? 0) + (startingMagicFor(unit.id, template, opts.magicChoiceId)?.extraCost ?? 0));
   const arrowsCost = opts.initialHuntingArrows ? INITIAL_OUTLAW_ARROWS_COST : 0;
-  const cost = hireCost + arrowsCost;
+  const giftProblem = recruitGiftProblem(template.id, unit.id, opts.recruitGiftIds ?? []);
+  if (giftProblem) throw new RulesError('recruitment.gifts', giftProblem);
+  if ((opts.recruitGiftIds ?? []).some(id => isBanned(opts.bans, 'items', id))) throw new RulesError('recruitment.bannedGift', 'A selected mutation or Blessing is banned in this campaign.');
+  const gifts = recruitPurchasesTotal(recruitGiftItems(opts.recruitGiftIds));
+  if (opts.startingWardog && (unit.id !== 'mercenaries_ostermark_captain' || isBanned(opts.bans, 'items', 'wardogs'))) throw new RulesError('recruitment.wardog','The starting Wardog option is not available to this recruit.');
+  const cost = hireCost + arrowsCost + gifts.total + (opts.startingWardog ? 25 : 0);
   const replacementBlock = leaderReplacementPurchaseBlock(warband, cost, unit.id);
   if (replacementBlock) throw new RulesError("recruitment.replaceLeader", replacementBlock);
   assertGold(warband, cost, `A ${unit.name}`);
@@ -227,7 +244,7 @@ export function recruitHero(
     id,
     name,
     unitTemplateId: unit.id,
-    stats: unitStartingStats(unit),
+    stats: giftStats(unitStartingStats(unit), opts.recruitGiftIds),
     xp: unit.startingExperience,
     levelUps: startingLevelUps(unit, "hero"),
     skillTableIds: [...unit.skillTableIds, ...(opts.magicChoiceId === 'arkhar' ? ['strength'] : [])],
@@ -235,10 +252,12 @@ export function recruitHero(
     spellIds: opts.spellIds?.filter(Boolean) ?? [],
     injuries: [],
     flags: { ...(unit.id === 'cursed_cavalcade_twisted_scholar' && opts.magicChoiceId === 'chronicler' ? { chronicler: true } : {}), ...(startingMagicFor(unit.id, template, opts.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(unit.id, template, opts.magicChoiceId)!.loreId! } : {}), ...(unit.id === 'marauders_seer' ? { chaosMark: opts.magicChoiceId } : {}) },
-    equipment: freeDagger ? [{ itemId: freeDagger.itemId, ...(freeDagger.itemId ? {} : { customName: freeDagger.name }), quantity: 1 }] : [],
+    equipment: startingEquipment(template, unit, !!opts.spellIds?.length),
     status: "active",
   };
 
+  if (opts.startingWardog) hero.equipment.push({itemId:"wardogs",quantity:1});
+  hero.equipment.push(...giftEquipment(opts.recruitGiftIds));
   if (opts.initialHuntingArrows) hero.equipment.push({ itemId: "hunting_arrows", quantity: 1 });
   const magic = startingMagicFor(unit.id, template, opts.magicChoiceId);
   if (unit.alternateHero === 'wolf_priest_of_ulric') hero.equipment.push({ itemId: 'wolfcloak', quantity: 1 });
@@ -260,15 +279,19 @@ export function recruitHero(
       {
         kind: "hero.recruited",
         subjectId: id,
-        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${magic?.extraCost ? `; ${magic.label}` : ''}${freeDagger ? " and the free dagger" : ""}${arrowsCost ? `; includes Hunting Arrows for ${arrowsCost} gc at initial recruitment, with no rarity roll required` : ""}; treasury now ${warband.gold - cost} gc`,
+        message: `Hired ${name} (${unit.name}) for ${cost} gc with ${unit.startingExperience} starting experience${gifts.lines.length ? `; ${gifts.lines.map(l => `${l.item.name} (${l.price} gc)`).join(", ")}` : ""}${magic?.extraCost ? `; ${magic.label}` : ''}${freeDagger ? " and the free dagger" : ""}${arrowsCost ? `; includes Hunting Arrows for ${arrowsCost} gc at initial recruitment, with no rarity roll required` : ""}; treasury now ${warband.gold - cost} gc`,
         data: { unitTemplateId: unit.id, cost, ...(arrowsCost ? { hireCost, initialHuntingArrowsCost: arrowsCost } : {}), startingExperience: unit.startingExperience },
       },
+      ...compositionProblems(recruited).map(p => ({kind:"warning" as const, subjectId:p.subjectId, message:p.message})),
       ...departures.map(d => ({kind: "hiredSword.left" as const,subjectId:d.id,message:`${d.name} leaves. ${d.reason}`})),
     ],
   };
 }
 
 export interface RecruitHenchmenOptions {
+  bans?: CampaignBans;
+  constructController?: "restless_dead_liche" | "restless_dead_necromancer";
+  recruitGiftIds?: string[];
   /** A source-defined captive transformation, never a treasury purchase. */
   captiveReward?: "throne";
   /** Add the recruits to this existing group (same unit type) instead of forming a new one. */
@@ -318,6 +341,9 @@ export function recruitHenchmen(
     throw new RulesError("recruitment.duplicateId", `A henchman group with id "${id}" already exists`);
   }
 
+  if (unit.id === NIGHT_MOB && ((!existing && size !== 5) || (existing && existing.size + size > 5))) throw new RulesError('recruitment.mob', 'A new mob needs five Snotlings; replacements cost 10 gc each, up to five members.');
+  if (unit.id === SCARECROW && (size !== 1 || existing || !opts.constructController || !warband.heroes.some(h=>h.unitTemplateId===opts.constructController && ["active","captured"].includes(h.status)) || warband.henchmenGroups.some(g => g.size > 0 && g.campaignState?.constructController === opts.constructController))) throw new RulesError('recruitment.controller', 'Recruit each Scarecrow separately with its own Liche or Necromancer controller.');
+  if (WAR_BEASTS.includes(unit.id) && (!existing || existing.size + size > (existing.campaignState?.warBeastSlots ?? existing.size))) throw new RulesError('recruitment.warBeasts', 'War Beasts are bought at creation. Later recruits replace casualties in a previously established beast group.');
   const rewardUnit = opts.captiveReward === 'throne' ? 'cursed_cavalcade_captured_thrall' : undefined;
   if (opts.captiveReward && (unit.id !== rewardUnit || size !== 1 || opts.intoGroupId || opts.costOverride !== 0)) {
     throw new RulesError('recruitment.captiveReward', 'A captive transformation creates one new warrior of the specified reward type, without a purchase.');
@@ -350,18 +376,27 @@ export function recruitHenchmen(
   const poolRemaining = pool === null ? null : pool - poolUsed - veteranXp;
 
   const hireCost = opts.costOverride ?? (unit.cost ?? 0) * size;
-  const totalCost = hireCost + veteranCost;
+  const giftProblem = recruitGiftProblem(template.id, unit.id, opts.recruitGiftIds ?? []);
+  if (giftProblem) throw new RulesError('recruitment.gifts', giftProblem);
+  if (unit.id === 'rat_ogres' && template.id === 'skaven_of_clan_moulder' && (size !== 1 || existing)) throw new RulesError('recruitment.individual', 'Rat Ogres are recruited individually and never join a group.');
+  if ((opts.recruitGiftIds ?? []).some(id => isBanned(opts.bans, 'items', id))) throw new RulesError('recruitment.bannedGift', 'A selected mutation or Blessing is banned in this campaign.');
+  const gifts = recruitPurchasesTotal(recruitGiftItems(opts.recruitGiftIds));
+  const totalCost = hireCost + veteranCost + gifts.total * size;
   const replacementBlock = leaderReplacementPurchaseBlock(warband, totalCost, unit.id);
   if (replacementBlock) throw new RulesError("recruitment.replaceLeader", replacementBlock);
   assertGold(warband, totalCost, `${size} ${unit.name}${veteranCost ? " with veteran experience" : ""}`);
 
-  const events: ResolutionEvent[] = [];
+  const events: ResolutionEvent[] = gifts.lines.map(l => ({kind: "note", subjectId: id, message: `${groupName}: ${l.item.name} for ${l.price * size} gc`}));
   let henchmenGroups: RosterHenchmanGroup[];
   if (existing) {
-    // Each recruit brings the list's free dagger when the group carries daggers (the group must be armed alike).
-    const groupDagger = freeDaggerLine(template, unit);
-    const daggerStack = groupDagger ? existing.equipment.find((i) => (groupDagger.itemId ? i.itemId === groupDagger.itemId : i.itemId === null && i.customName === groupDagger.name)) : undefined;
-    const equipment = daggerStack ? existing.equipment.map((i) => (i === daggerStack ? { ...i, quantity: i.quantity + size } : i)) : existing.equipment;
+    const equipment = existing.equipment.map(item => ({...item}));
+    const entitlement = startingEquipment(template, unit);
+    for (const item of entitlement) {
+      const stack = equipment.find(entry => entry.itemId === item.itemId);
+      if (stack) stack.quantity += item.quantity * size;
+      else if (item.itemId !== "dagger") equipment.push({...item, quantity: item.quantity * size});
+    }
+    const daggerStack = entitlement.some(item => item.itemId === 'dagger');
     henchmenGroups = warband.henchmenGroups.map((g) => (g.id === existing.id ? { ...g, size: g.size + size, equipment } : g));
     events.push({
       kind: "henchmen.recruited",
@@ -383,18 +418,19 @@ export function recruitHenchmen(
       message: `New members of ${existing.name} must be armed and equipped the same way as the rest of the group`,
     });
   } else {
-    const groupDagger = freeDaggerLine(template, unit);
     const group: RosterHenchmanGroup = {
       id,
       name: groupName,
       unitTemplateId: unit.id,
       size,
-      stats: unitStartingStats(unit),
+      stats: giftStats(unitStartingStats(unit), opts.recruitGiftIds),
       xp: unit.startingExperience,
       levelUps: startingLevelUps(unit, "henchman"),
       statIncreases: {},
-      equipment: groupDagger ? [{ itemId: groupDagger.itemId, ...(groupDagger.itemId ? {} : { customName: groupDagger.name }), quantity: size }] : [],
+      campaignState: opts.constructController ? {constructController: opts.constructController} : undefined,
+      equipment: startingEquipment(template, unit).map(item => ({...item, quantity: item.quantity * size})),
     };
+    group.equipment.push(...giftEquipment(opts.recruitGiftIds, size));
     henchmenGroups = [...warband.henchmenGroups, group];
     events.push({
       kind: "henchmen.recruited",
@@ -403,6 +439,7 @@ export function recruitHenchmen(
       data: { unitTemplateId: unit.id, size, hireCost, groupId: id },
     });
   }
+  events.push(...compositionProblems({...warband, henchmenGroups}).map(p => ({kind:"warning" as const, subjectId:p.subjectId, message:p.message})));
   events.push({
     kind: "gold.spent",
     message: `Treasury ${warband.gold} gc -> ${warband.gold - totalCost} gc`,
@@ -445,6 +482,7 @@ export function dismissWarrior(warband: RosterWarband, subjectId: string): Resol
 
   const group = warband.henchmenGroups.find((g) => g.id === subjectId);
   if (group) {
+    if (group.unitTemplateId === "cursed_cavalcade_captured_thrall") throw new RulesError("recruitment.thrall", "Captured Thralls cannot be dismissed.");
     const remaining = group.size - 1;
     const henchmenGroups =
       remaining < 1

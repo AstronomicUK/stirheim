@@ -1,3 +1,4 @@
+import { splitSpecialEquipmentGroups } from './specialEquipmentGroups';
 import { leaderReplacementPurchaseBlock } from './leaderReplacement';
 // Trading resolvers — prices, rare-item searches, buying, selling and moving equipment, and the
 // once-per-phase bookkeeping of the post battle sequence (rulebook Trading section; data in
@@ -238,7 +239,7 @@ export function buyItem(
     message: `Bought ${item.name} x${quantity} for ${cost} gc${each} into ${describeLocation(warband, destination)}`,
     data: { itemId: item.id, quantity, unitPrice: price, cost, destination },
   };
-  return { value: next, events: [event] };
+  return { value: splitSpecialEquipmentGroups(next), events: [event] };
 }
 
 /**
@@ -298,7 +299,7 @@ export function moveItem(
     message: `Moved ${itemName(itemId)} x${quantity} from ${fromName} to ${toName}`,
     data: { itemId, quantity, from, to },
   };
-  return { value: next, events: [event] };
+  return { value: splitSpecialEquipmentGroups(next), events: [event] };
 }
 
 // ---- Once-per-phase bookkeeping ----

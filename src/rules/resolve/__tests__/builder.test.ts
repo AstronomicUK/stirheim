@@ -390,6 +390,7 @@ describe("draftToCreatePayload", () => {
 
     expect(payload.heroes).toHaveLength(5);
     expect(payload.heroes[0]).toEqual({
+      flags: {}, spells: [], skills: [],
       name: "Kurt",
       unit_type_rules_id: CAPTAIN,
       stats: { M: 4, WS: 4, BS: 4, S: 3, T: 3, W: 1, I: 4, A: 1, Ld: 8 },
@@ -408,6 +409,7 @@ describe("draftToCreatePayload", () => {
     expect(payload.henchman_groups).toHaveLength(2);
     expect(payload.henchman_groups[1]).toEqual({
       name: "The Eyes",
+      campaign_state: {},
       unit_type_rules_id: MARKSMEN,
       size: 2,
       // Reikland Marksmen have +1 BS (warband rule, applied at hire).

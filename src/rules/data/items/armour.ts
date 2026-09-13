@@ -9,6 +9,13 @@ import type { Item } from "../../types/items";
 
 export const ARMOUR_ITEMS: Item[] = [
   {
+    id: 'ancient_armour', name: 'Ancient Armour', category: 'armour', price: {base: null, text: 'Included with the Dame of the Mare'},
+    availability: {kind: 'special', text: 'Dame of the Mare only'}, scenarioRewardOnly: true,
+    description: 'An unmodifiable 5+ save against non-magical attacks. Does not prevent spellcasting. May never be removed, traded or stolen.',
+    specialRules: [{name: 'Ancient Armour', text: 'An unmodifiable 5+ save; does not work against magical attacks or prevent spellcasting. Never removed, traded or stolen.'}],
+    source: {publication: 'Order of the Mare', file: 'warbands/grade-2a-part2.md:166-166'},
+  },
+  {
     id: "imperial_tactician_plate_armour",
     name: "Imperial Tactician’s plate armour",
     category: "armour",

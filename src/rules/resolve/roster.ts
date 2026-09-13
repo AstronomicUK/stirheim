@@ -1,3 +1,4 @@
+import { compositionProblems, NIGHT_MOB } from './rosterComposition';
 // Roster composition — parsing UnitTemplate.rosterLimit strings and validating a RosterWarband
 // against its WarbandTemplate ("Choice of Warriors").
 //
@@ -66,7 +67,7 @@ function cleanNote(rest: string): string | undefined {
 
 /** Active heroes plus every henchman. Hired swords are not counted. */
 export function warbandModelCount(warband: RosterWarband): number {
-  return warbandHeroCount(warband) + warband.henchmenGroups.reduce((sum, g) => sum + g.size*(g.unitTemplateId==='black_orcs_troll'&&g.campaignState?.cheapTrollFeed?2:1), 0) + animalCount(warband);
+  return warbandHeroCount(warband) + warband.henchmenGroups.reduce((sum, g) => sum + g.size*(g.unitTemplateId==='black_orcs_troll'&&g.campaignState?.cheapTrollFeed?2:1), 0) + animalCount(warband) - Math.max(0, warband.henchmenGroups.filter(g => g.unitTemplateId === NIGHT_MOB).reduce((n,g)=>n+g.size,0) - 1);
 }
 
 /** Models counted against the list's maximum; source-exempt units retain their own unit limits. */
@@ -125,7 +126,7 @@ export function validateRoster(
   template: WarbandTemplate,
   opts: ValidateRosterOptions = {},
 ): RosterValidation {
-  const problems: RosterProblem[] = [];
+  const problems: RosterProblem[] = compositionProblems(warband, opts.atCreation);
   const units = [...template.heroTemplates, ...template.henchmanTemplates];
   const unitById = new Map(units.map((u) => [u.id, u]));
 

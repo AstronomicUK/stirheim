@@ -65,7 +65,11 @@ export function maxRecruitable(roster: RosterWarband, template: WarbandTemplate,
   const limit = parseRosterLimit(unit.rosterLimit)
   if (limit.max !== null) bounds.push(limit.max - unitCount(roster, unit))
   const maxModels = template.composition?.maxModels ?? null
-  if (maxModels !== null && !unitRules(unit.id).relation?.outsideMaxModels) bounds.push(maxModels - warbandCapacityCount(roster))
+  if (maxModels !== null && !unitRules(unit.id).relation?.outsideMaxModels) {
+    const room = maxModels - warbandCapacityCount(roster)
+    if (unit.id !== 'night_goblins_snotling_mob') bounds.push(room)
+    else if (unitCount(roster, unit) === 0 && room < 1) bounds.push(0)
+  }
   if (unit.role === 'hero') {
     const capacity = heroCapacity(template)
     if (capacity !== null) bounds.push(capacity - warbandHeroCount(roster))

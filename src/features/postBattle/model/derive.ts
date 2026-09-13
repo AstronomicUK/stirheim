@@ -272,7 +272,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       const skip = draft.injurySkips[hero.id]
       const capture = capturesFor(hero.id)[0]?.event
       if(capture && skip===undefined){
-        const res=resolveHeroInjuryFlow(hero,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId)
+        const res=resolveHeroInjuryFlow(hero,{rolls:[{d66:61,subRoll:null}],countRoll:null},matchId,undefined,undefined,false)
         const effect=`${captureRuleName(capture.payload.capture_reason)}: captured by ${capture.payload.attacker_name}; no Serious Injury roll. Resolve the captive with the other warband after filing this report.`
         if(res.line)res.line={...res.line,rolls:[],injuryName:`Captured — ${captureRuleName(capture.payload.capture_reason)}`,effect}
         res.steps=[]
@@ -280,13 +280,13 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
       }
       if (plant(hero.id) && skip === undefined) {
         const die=draft.scenarioInjuryDice?.[hero.id]
-        const res=resolveHeroInjuryFlow(hero,{rolls:isDie(die,6)?[{d66:die===1?11:41,subRoll:null}]:[],countRoll:null},matchId)
+        const res=resolveHeroInjuryFlow(hero,{rolls:isDie(die,6)?[{d66:die===1?11:41,subRoll:null}]:[],countRoll:null},matchId,undefined,undefined,false)
         if(res.line&&isDie(die,6))res.line={...res.line,rolls:[die],injuryName:die===1?'Eaten by a carnivorous plant':'Escaped the plant',effect:die===1?'Eaten: removed from the campaign with carried equipment.':'Survives the plant injury roll.'}
         return {hero,resolution:res}
       }
       if (burning && skip === undefined) {
         const die = draft.scenarioInjuryDice?.[hero.id]
-        const res = resolveHeroInjuryFlow(hero, { rolls: isDie(die, 6) ? [{ d66: die === 6 ? 41 : 11, subRoll: null }] : [], countRoll: null }, matchId)
+        const res = resolveHeroInjuryFlow(hero, { rolls: isDie(die, 6) ? [{ d66: die === 6 ? 41 : 11, subRoll: null }] : [], countRoll: null }, matchId,undefined,undefined,false)
         if (res.line && isDie(die, 6)) res.line = { ...res.line, rolls: [die], injuryName: die === 6 ? 'Praise Be Sigmar!' : 'Death in the flames', effect: die === 6 ? 'Survived Mordheim’s Burning unharmed; +1 Experience.' : 'Mordheim’s Burning: dies on 1–5.' }
         if (die === 6) res.hero = { ...res.hero, xp: res.hero.xp + 1 }
         return { hero, resolution: res }
@@ -347,9 +347,17 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
         const rolls=(draft.groupInjuries[group.id]??[]).slice(0,dice)
         const injurySlots=Array.from({length:outOfAction},(_,i)=>i).filter(i=>!captured.some(c=>c.modelIndex===i))
         let current=group
-        for(let i=0;i<dice;i++)if(isDie(rolls[i],6))current=plant(`${group.id}:${injurySlots[i]??i}`)?{...current,size:Math.max(0,current.size-(rolls[i]===1?1:0))}:resolveGroupInjuries(current,1,[rolls[i]]).group
-        const dead=group.size-current.size,complete=rolls.length===dice&&rolls.every(r=>isDie(r,6))
-        return {group,outOfAction,dice,resolution:{group:current,dead,complete,line:complete?{subjectType:'group' as const,subjectId:group.id,subjectName:group.name,rolls:rolls as number[],dead}:null}}
+        let complete=rolls.length===dice&&rolls.every(r=>isDie(r,6))
+        for(let i=0;i<dice;i++)if(isDie(rolls[i],6)) {
+          if(plant(`${group.id}:${injurySlots[i]??i}`))current={...current,size:Math.max(0,current.size-(rolls[i]===1?1:0))}
+          else {
+            const resolved=resolveGroupInjuries(current,1,[rolls[i]],[draft.constructRepairDice?.[group.id]?.[i]??null])
+            current=resolved.group;complete=complete&&resolved.complete
+          }
+        }
+        const dead=group.size-current.size
+        const repairs=current.campaignState?.constructRepairs??[]
+        return {group,outOfAction,dice,resolution:{group:current,dead,complete,line:complete?{subjectType:'group' as const,subjectId:group.id,subjectName:group.name,rolls:rolls as number[],dead,...(repairs.length?{repairCosts:repairs.map(r=>r.cost),effect:`Retained awaiting repairs: ${repairs.map(r=>`${r.cost} gc`).join(', ')}. Cannot fight until repaired or abandoned.`}:{})}:null}}
       }
       if (burning) {
         const rolls = (draft.groupInjuries[group.id] ?? []).slice(0, dice).filter((r): r is number => isDie(r, 6))
@@ -357,7 +365,7 @@ export function deriveInjuries(draft: ReportDraft, participants: Participants, m
         const complete = rolls.length === dice
         return { group, outOfAction, dice, resolution: { group: { ...group, size: Math.max(0, group.size - dead), xp: group.xp + (rolls.includes(6) ? 1 : 0) }, dead, complete, line: complete ? { subjectType: 'group' as const, subjectId: group.id, subjectName: group.name, rolls, dead } : null } }
       }
-      return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? []) }
+      return { group, outOfAction, dice, resolution: resolveGroupInjuries(group, dice, draft.groupInjuries[group.id] ?? [], draft.constructRepairDice?.[group.id] ?? []) }
     }).map(row => {
       const captures = capturesFor(row.group.id).filter(c=>c.event.payload.capture_reason==='slaaneshi_lock'||c.modelIndex<row.outOfAction)
       if (!captures.length) return row
@@ -854,7 +862,8 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     const line = xpBySubject.get(group.id)
     const patch: ReportApplied['groups'][number]['patch'] = {}
     if (res && res.group.size !== group.size) patch.size = res.group.size + absentGroupModels(ctx.roster.henchmenGroups.find(g=>g.id===group.id)??group)
-    if (effects.groupStupidity.includes(group.id)) patch.campaign_state = { ...group.campaignState, permanentStupidity: true }
+    if(res && JSON.stringify(res.group.campaignState)!==JSON.stringify(group.campaignState))patch.campaign_state=res.group.campaignState
+    if (effects.groupStupidity.includes(group.id)) patch.campaign_state = { ...(patch.campaign_state??group.campaignState), permanentStupidity: true }
     if (line) {
       patch.xp = line.xpAfter
       for (const t of thresholdsCrossed('henchman', line.xpBefore, line.xpAfter, unitRules(group.unitTemplateId).advanceRate ?? 'normal')) pending.push({ subject_type: 'group', subject_id: group.id, threshold_xp: t })

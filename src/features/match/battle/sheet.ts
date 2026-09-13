@@ -79,8 +79,8 @@ export function splitWarriors(roster: RosterWarband, sheet?: BattleLiveState): S
 }
 
 /** Groups with at least one model; a wiped-out group is kept on the roster for history only. */
-export function fightingGroups(roster: RosterWarband): RosterHenchmanGroup[] {
-  return roster.henchmenGroups.filter((g) => g.size > 0 && !g.campaignState?.fanaticSittingOut).map(g=>{const absent=absentGroupModels(g);return absent?{...g,rosterSize:g.size,size:g.size-absent}:g}).filter(g=>g.size>0)
+export function fightingGroups(roster: RosterWarband, sheet?: BattleLiveState): RosterHenchmanGroup[] {
+  return roster.henchmenGroups.filter((g) => g.size > 0 && !g.campaignState?.fanaticSittingOut && (g.unitTemplateId !== "restless_dead_scarecrows" || splitWarriors(roster, sheet).fighting.some(entry => entry.role === "hero" && entry.warrior.unitTemplateId === g.campaignState?.constructController))).map(g=>{const absent=absentGroupModels(g);return absent?{...g,rosterSize:g.size,size:g.size-absent}:g}).filter(g=>g.size>0)
 }
 
 /** Animals (Wardogs, Gnoblar Fighters) brought by fighting heroes; each is a model on the table. */
@@ -92,13 +92,13 @@ export function animalsFighting(roster: RosterWarband): AnimalFighter[] {
 /** Models this warband put on the table: fighting heroes and hired swords plus every henchman, and the animals that count for rout tests. */
 export function startingModels(roster: RosterWarband, sheet?: BattleLiveState): number {
   const warriors = splitWarriors(roster, sheet).fighting.length
-  return warriors + fightingGroups(roster).reduce((n, g) => n + g.size, 0) + animalsFighting(roster).filter((a) => a.kind.countsForRout).length
+  return warriors + fightingGroups(roster, sheet).reduce((n, g) => n + g.size, 0) + animalsFighting(roster).filter((a) => a.kind.countsForRout).length
 }
 
 /** Collective Rout units may be split across roster rows; pool by unit type. */
 function routCollectives(roster: RosterWarband, state?: BattleLiveState): Map<string, { size: number; out: number }> {
   const pools = new Map<string, { size: number; out: number }>()
-  for (const group of fightingGroups(roster)) {
+  for (const group of fightingGroups(roster, state)) {
     if (!unitRules(group.unitTemplateId).routCollective) continue
     const pool = pools.get(group.unitTemplateId) ?? { size: 0, out: 0 }
     pool.size += group.size
@@ -110,14 +110,14 @@ function routCollectives(roster: RosterWarband, state?: BattleLiveState): Map<st
 
 export function routStartingModels(roster: RosterWarband, state?: BattleLiveState): number {
   let models = startingModels(roster, state)
-  for (const group of fightingGroups(roster)) models -= group.size * (1 - (unitRules(group.unitTemplateId).routModelWeight ?? 1))
+  for (const group of fightingGroups(roster, state)) models -= group.size * (1 - (unitRules(group.unitTemplateId).routModelWeight ?? 1))
   for (const pool of routCollectives(roster).values()) models -= pool.size - 1
   return models
 }
 
 /** Round a quarter up to a reachable casualty count, including half-model units. */
 export function rosterRoutThreshold(roster: RosterWarband, state?: BattleLiveState): number {
-  const step = fightingGroups(roster).some(g => unitRules(g.unitTemplateId).routCasualtyWeight === 0.5) ? 0.5 : 1
+  const step = fightingGroups(roster, state).some(g => unitRules(g.unitTemplateId).routCasualtyWeight === 0.5) ? 0.5 : 1
   return Math.ceil(routStartingModels(roster, state) / 4 / step) * step
 }
 

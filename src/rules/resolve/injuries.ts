@@ -1,3 +1,4 @@
+import { itemRestriction } from '../data/itemRules';
 // Serious-injury resolvers (post-battle sequence step 1: "Injuries").
 //
 // Pure functions: dice results are inputs, inputs are never mutated, and every state change is
@@ -258,9 +259,9 @@ function applyEffects(
         break;
       }
       case "loseEquipment": {
-        const lostItems = state.hero.equipment;
+        const lostItems = state.hero.equipment.filter(item => !itemRestriction(item.itemId ?? "").fused);
         const lost = describeItems(lostItems);
-        state.hero = { ...state.hero, equipment: [] };
+        state.hero = { ...state.hero, equipment: state.hero.equipment.filter(item => itemRestriction(item.itemId ?? "").fused) };
         state.effectTexts.push(`All equipment lost (${lost})`);
         state.events.push({ kind: "equipmentLost", subjectId: id, message: `${name} loses all weapons, armour and equipment: ${lost}.`, data: { lost: lostItems } });
         break;
@@ -363,8 +364,14 @@ export function henchmanInjuryException(group: Pick<RosterHenchmanGroup, "unitTe
  * Henchman out of action: D6, 1-2 the warrior is removed from the group (or as the unit's own rule says). Returns null when the
  * group is now empty (the caller removes it from the roster).
  */
-export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number): Resolution<RosterHenchmanGroup | null> {
+export function applyHenchmanInjury(group: RosterHenchmanGroup, d6: number, repairDie?: number): Resolution<RosterHenchmanGroup | null> {
   assertD6(d6);
+  if(group.unitTemplateId==='masters_of_horror_flesh_construct' && d6<=2) {
+    if(repairDie===undefined)throw new RulesError('injury.repairRollRequired','Roll D6 for the Flesh Construct repair cost');
+    assertD6(repairDie);
+    const cost=repairDie*5;
+    return {value:{...group,campaignState:{...group.campaignState,constructRepairs:[...(group.campaignState?.constructRepairs??[]),{cost,injuryRoll:d6,repairRoll:repairDie}]}},events:[{kind:'construct.damaged',subjectId:group.id,message:`${group.name}: damage retained on the roster; repairs cost ${cost} gc (D6 ${repairDie} × 5). Cannot fight until repaired or abandoned.`}]};
+  }
   const exception = henchmanInjuryException(group);
   const deadOn = exception?.deadOn ?? HENCHMAN_INJURY.deadOn;
   if (!deadOn.includes(d6)) {

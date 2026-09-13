@@ -1,3 +1,4 @@
+import { advancementGiftOptions } from '../../rules/resolve/recruitPurchases'
 import { ShadowlordRewardFields } from './ShadowlordRewardFields'
 import { RACIAL_MAXIMUMS } from '../../rules/data/campaign/experience'
 // The step content of one advance (roll, choose, review) and its pickers, shared by the bottom
@@ -203,6 +204,10 @@ function HeroChoice({ draft, plan, hero, update, chooseSpell }: StepProps<HeroPl
       chooseSpell={chooseSpell}
       reward={plan.allowReward ? { plan: plan.reward, hero } : null}
     />
+    {hero && draft.mode === 'skill' && advancementGiftOptions(draft.skillId, hero).length ? <SelectField label="Mutation or Blessing bought with this skill" value={draft.giftId ?? ''} onChange={e => update(d => ({...d, giftId: e.target.value}))}>
+      <option value="">Choose the purchase…</option>
+      {advancementGiftOptions(draft.skillId, hero).map(({item, price}) => <option key={item.id} value={item.id}>{item.name} · {price} gc</option>)}
+    </SelectField> : null}
   </>)
 
   if (plan.roll?.kind === 'statSubRoll' && plan.subStat !== null) {

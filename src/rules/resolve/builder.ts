@@ -1,3 +1,6 @@
+import { WAR_BEASTS, NIGHT_MOB } from './rosterComposition';
+import { startingEquipment } from './startingEquipment';
+import { giftStats, giftEquipment, recruitGiftItems, recruitGiftProblem, recruitPurchasesTotal } from './recruitPurchases';
 import type { DreamerCertification, WarriorFlags } from '../types/roster'
 // Warband builder — the pure model behind the "create a warband" screen. A WarbandDraft is the
 // player's work in progress: a template, a name, heroes, henchman groups and the starting equipment
@@ -41,6 +44,7 @@ import { leaderTemplate, validateRoster, type RosterProblem } from "./roster";
 // ---- Draft model ----
 
 export interface DraftItem {
+  includedQuantity?: number;
   itemId: string | null;
   /** The equipment-list name when the item has no catalogue entry. */
   customName?: string;
@@ -52,6 +56,7 @@ export interface DraftItem {
 }
 
 export interface DraftHero {
+  recruitGiftIds?: string[];
   magicChoiceId?: string;
   id: string;
   name: string;
@@ -62,6 +67,8 @@ export interface DraftHero {
 }
 
 export interface DraftGroup {
+  constructController?: "restless_dead_liche" | "restless_dead_necromancer";
+  recruitGiftIds?: string[];
   id: string;
   name: string;
   unitTemplateId: string;
@@ -98,6 +105,12 @@ export const DEFAULT_STARTING_GOLD = 500;
 
 /** Default id for the leader hero created by newWarbandDraft. */
 export const DEFAULT_LEADER_ID = "leader";
+
+function initialDraftEquipment(template: WarbandTemplate, unit: UnitTemplate): DraftItem[] {
+  const kit = startingEquipment(template, unit);
+  if (kit.every(item => item.itemId === 'dagger')) return [];
+  return kit.map(item => ({itemId:item.itemId, quantity:item.quantity, includedQuantity:item.quantity, unitCost:0, costText:'Included'}));
+}
 
 // ---- Units ----
 
@@ -158,7 +171,7 @@ export function addDraftHero(
   const unit = requireUnit(template, unitTemplateId);
   if (unit.role !== "hero") throw new RulesError("builder.notAHero", `${unit.name} are henchmen; use addDraftGroup`);
   assertNewId(draft, id);
-  const hero: DraftHero = { id, name: name ?? unit.name, unitTemplateId: unit.id, equipment: [], spellIds: [] };
+  const hero: DraftHero = { id, name: name ?? unit.name, unitTemplateId: unit.id, equipment: initialDraftEquipment(template, unit), spellIds: [] };
   return { ...draft, heroes: [...draft.heroes, hero] };
 }
 
@@ -190,8 +203,9 @@ export function addDraftGroup(
   const unit = requireUnit(template, unitTemplateId);
   if (unit.role !== "henchman") throw new RulesError("builder.notAHenchman", `${unit.name} is a hero; use addDraftHero`);
   assertNewId(draft, id);
+  if (unit.id === NIGHT_MOB) size = 5;
   assertSize(size);
-  const group: DraftGroup = { id, name: name ?? unit.name, unitTemplateId: unit.id, size, equipment: [] };
+  const group: DraftGroup = { id, name: name ?? unit.name, unitTemplateId: unit.id, size, equipment: initialDraftEquipment(template, unit) };
   return { ...draft, groups: [...draft.groups, group] };
 }
 
@@ -243,6 +257,7 @@ export function equipmentOptionsFor(template: WarbandTemplate, unitTemplateId: s
   // Published initial Hero equipment exception; later Trading Post rarity stays unchanged.
   const extras = unit.role === "hero" && ["outlaws_of_stirwood_forest", "outlaws_of_stirwood_forest_redux"].includes(template.id)
     ? section([{ name: "Hunting Arrows", cost: "30 gc" }], "misc") : [];
+  if (template.id === "mercenaries_ostermark" && unit.id.endsWith("_captain")) extras.push(...section([{name: "Wardogs", cost: "25 gc"}], "misc"));
   const melee = section(list.meleeWeapons, "melee");
   return [
     ...melee.flatMap((option) => (option.item?.superseded ? materialVariantOptions(option, melee) : [option])),
@@ -337,7 +352,7 @@ export function addDraftEquipment(
   const next =
     idx === -1
       ? [...current, incoming]
-      : current.map((stack, n) => (n === idx ? { ...stack, quantity: stack.quantity + quantity } : stack));
+      : current.map((stack, n) => (n === idx ? { ...stack, quantity: stack.quantity + quantity, ...(stack.includedQuantity ? {unitCost: incoming.unitCost, costText: incoming.costText} : {}) } : stack));
   return writeEquipment(draft, subject, next);
 }
 
@@ -356,7 +371,7 @@ export function removeDraftEquipment(
     throw new RulesError("builder.notEquipped", `${subjectLabel(draft, subject)} has no ${option.name} to remove`);
   }
   const next = current
-    .map((stack, n) => (n === idx ? { ...stack, quantity: stack.quantity - quantity } : stack))
+    .map((stack, n) => (n === idx ? { ...stack, quantity: Math.max(stack.includedQuantity ?? 0, stack.quantity - quantity) } : stack))
     .filter((stack) => stack.quantity > 0);
   return writeEquipment(draft, subject, next);
 }
@@ -419,6 +434,13 @@ export interface DraftCosts {
  * unitCost replaces the list amount but keeps the first-free / brace structure of the list cost.
  */
 export function draftItemCost(item: DraftItem, houseRules?: CampaignHouseRules | null): number | null {
+  if (item.includedQuantity) {
+    const extras = Math.max(0, item.quantity - item.includedQuantity);
+    if (!extras) return 0;
+    const price = item.unitCost ?? findItem(item.itemId ?? '')?.price.base;
+    if (price == null) return null;
+    return draftItemCost({...item, includedQuantity: undefined, quantity: extras, costText: `${price} gc`}, houseRules);
+  }
   const parsed = parseEquipmentCost(item.costText);
   let cost: number | null;
   if (item.unitCost === null) cost = equipmentLineCost(parsed, item.quantity, false);
@@ -455,6 +477,9 @@ export function draftCosts(draft: WarbandDraft, template: WarbandTemplate, house
     hires += cost;
     lines.push({ label: `${hero.name} (${unit?.name ?? hero.unitTemplateId})`, amount: cost });
     addEquipment(hero.name, hero.equipment, 1);
+    const gifts = recruitPurchasesTotal(recruitGiftItems(hero.recruitGiftIds));
+    equipment += gifts.total;
+    for (const line of gifts.lines) lines.push({label: `${hero.name}: ${line.item.name}`, amount: line.price});
   }
   for (const group of draft.groups) {
     const unit = findUnitTemplate(template, group.unitTemplateId);
@@ -462,6 +487,9 @@ export function draftCosts(draft: WarbandDraft, template: WarbandTemplate, house
     hires += cost;
     lines.push({ label: `${group.name} (${group.size} x ${unit?.name ?? group.unitTemplateId})`, amount: cost });
     addEquipment(group.name, group.equipment, group.size);
+    const gifts = recruitPurchasesTotal(recruitGiftItems(group.recruitGiftIds));
+    equipment += gifts.total * group.size;
+    for (const line of gifts.lines) lines.push({label: `${group.name}: ${line.item.name} × ${group.size}`, amount: line.price * group.size});
   }
 
   const total = hires + equipment;
@@ -517,15 +545,15 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       id: hero.id,
       name: hero.name,
       unitTemplateId: hero.unitTemplateId,
-      stats: unitStartingStats(unit),
+      stats: giftStats(unitStartingStats(unit), hero.recruitGiftIds),
       xp: unit?.startingExperience ?? 0,
       levelUps: startingLevelUps(unit, "hero"),
       skillTableIds: [...(unit?.skillTableIds ?? []), ...(hero.magicChoiceId === 'arkhar' ? ['strength' as const] : [])],
-      skillIds: [],
+      skillIds: [...(unitRules(hero.unitTemplateId).startingSkillIds ?? [])],
       spellIds: hero.spellIds.filter(Boolean),
       injuries: [],
       flags: { ...(hero.unitTemplateId === 'dreamwalkers_priest_of_morr' && draft.dreamerCertification ? {dreamerCertification:draft.dreamerCertification}:{}), ...(hero.unitTemplateId === 'cursed_cavalcade_twisted_scholar' && hero.magicChoiceId === 'chronicler' ? { chronicler: true } : {}), ...(startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)?.loreId ? { magicLoreId: startingMagicFor(hero.unitTemplateId, template, hero.magicChoiceId)!.loreId! } : {}), ...(hero.unitTemplateId === 'marauders_seer' ? { chaosMark: hero.magicChoiceId } : {}) },
-      equipment: [...hero.equipment.map((item) => toRosterItem(item, 1)), ...(unit?.alternateHero === 'wolf_priest_of_ulric' ? [{ itemId: 'wolfcloak', quantity: 1 }] : [])],
+      equipment: [...giftEquipment(hero.recruitGiftIds), ...hero.equipment.map((item) => toRosterItem(item, 1)), ...(unit?.alternateHero === 'wolf_priest_of_ulric' ? [{ itemId: 'wolfcloak', quantity: 1 }] : [])],
       isLarge: unitIsLarge(unit),
       status: "active",
     };
@@ -538,11 +566,12 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
       name: group.name,
       unitTemplateId: group.unitTemplateId,
       size: group.size,
-      stats: unitStartingStats(unit),
+      campaignState: {...(group.constructController ? {constructController: group.constructController} : {}), ...(WAR_BEASTS.includes(group.unitTemplateId) ? {warBeastSlots:group.size} : {})},
+      stats: giftStats(unitStartingStats(unit), group.recruitGiftIds),
       xp: unit?.startingExperience ?? 0,
       levelUps: startingLevelUps(unit, "henchman"),
       statIncreases: {},
-      equipment: group.equipment.map((item) => toRosterItem(item, group.size)),
+      equipment: [...giftEquipment(group.recruitGiftIds, group.size), ...group.equipment.map((item) => toRosterItem(item, group.size))],
       isLarge: unitIsLarge(unit),
     };
   });
@@ -569,6 +598,11 @@ export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, ba
   const roster = draftToRosterWarband(draft, template, {}, houseRules);
   const problems: RosterProblem[] = [...validateRoster(roster, template, { atCreation: true, bans }).problems];
   const costs = draftCosts(draft, template, houseRules);
+  for (const subject of [...draft.heroes, ...draft.groups]) {
+    const message = recruitGiftProblem(template.id, subject.unitTemplateId, subject.recruitGiftIds ?? []);
+    if (message) problems.push({code: 'builder.recruitGifts', message: `${subject.name}: ${message}`});
+    if ((subject.recruitGiftIds ?? []).some(id => isBanned(bans, 'items', id))) problems.push({code: 'builder.bannedGift', message: `${subject.name}: a selected mutation or Blessing is banned in this campaign.`});
+  }
   if(template.id==='dreamwalkers_cult_of_morr') {
     if(!draft.dreamerCertification)problems.push({code:'dreamer.certification',message:'The Priest of Morr must roll the initial Dreamer certification.'});
     if(draft.heroes.some(h=>h.unitTemplateId==='dreamwalkers_dreamer')&&(draft.dreamerCertification?.die ?? 0)<4)problems.push({code:'dreamer.uncertified',message:'A Dreamer may only join after certification succeeds on 4+.'});
@@ -647,6 +681,8 @@ export interface CreateWarbandPayload {
   notes: string;
   heroes: {
     flags?: WarriorFlags;
+    skills?: string[];
+    spells?: string[];
     name: string;
     unit_type_rules_id: string;
     stats: Stats;
@@ -659,6 +695,7 @@ export interface CreateWarbandPayload {
     equipment: PayloadItem[];
   }[];
   henchman_groups: {
+    campaign_state?: import("../types/roster").HenchmanCampaignState;
     name: string;
     unit_type_rules_id: string;
     size: number;
@@ -682,6 +719,7 @@ function toPayloadItem(item: DraftItem, multiplier: number): PayloadItem {
 
 /** The draft as the create_warband SQL payload (snake_case). Validate with validateDraft first. */
 export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTemplate, houseRules?: CampaignHouseRules | null): CreateWarbandPayload {
+  const roster = draftToRosterWarband(draft, template, {}, houseRules);
   const costs = draftCosts(draft, template, houseRules);
   return {
     name: draft.name,
@@ -691,16 +729,18 @@ export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTempl
     heroes: draft.heroes.map((hero, sort_order) => {
       const unit = findUnitTemplate(template, hero.unitTemplateId);
       return {
-        flags: hero.unitTemplateId === 'dreamwalkers_priest_of_morr' && draft.dreamerCertification ? {dreamerCertification:draft.dreamerCertification} : undefined,
+        flags: roster.heroes[sort_order].flags,
+        spells: hero.spellIds,
+        skills: unitRules(hero.unitTemplateId).startingSkillIds ?? [],
         name: hero.name,
         unit_type_rules_id: hero.unitTemplateId,
-        stats: unitStartingStats(unit),
+        stats: giftStats(unitStartingStats(unit), hero.recruitGiftIds),
         xp: unit?.startingExperience ?? 0,
         level_ups: startingLevelUps(unit, "hero"),
-        skill_tables: [...(unit?.skillTableIds ?? [])],
+        skill_tables: [...roster.heroes[sort_order].skillTableIds],
         is_large: unitIsLarge(unit),
         sort_order,
-        equipment: hero.equipment.map((item) => toPayloadItem(item, 1)),
+        equipment: [...hero.equipment.map((item) => toPayloadItem(item, 1)), ...giftEquipment(hero.recruitGiftIds).map(item => ({item_rules_id: item.itemId, custom_name: null, quantity: item.quantity}))],
       };
     }),
     henchman_groups: draft.groups.map((group, sort_order) => {
@@ -709,12 +749,13 @@ export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTempl
         name: group.name,
         unit_type_rules_id: group.unitTemplateId,
         size: group.size,
-        stats: unitStartingStats(unit),
+        campaign_state: {...(group.constructController ? {constructController:group.constructController} : {}), ...(WAR_BEASTS.includes(group.unitTemplateId) ? {warBeastSlots:group.size} : {})},
+        stats: giftStats(unitStartingStats(unit), group.recruitGiftIds),
         xp: unit?.startingExperience ?? 0,
         level_ups: startingLevelUps(unit, "henchman"),
         is_large: unitIsLarge(unit),
         sort_order,
-        equipment: group.equipment.map((item) => toPayloadItem(item, group.size)),
+        equipment: [...group.equipment.map((item) => toPayloadItem(item, group.size)), ...giftEquipment(group.recruitGiftIds, group.size).map(item => ({item_rules_id: item.itemId, custom_name: null, quantity: item.quantity}))],
       };
     }),
     stash: [],

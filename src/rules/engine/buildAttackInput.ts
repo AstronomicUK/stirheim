@@ -395,7 +395,8 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   const autoOutOfActionStunned = weapon.type === "melee" && Boolean(context.targetStunned);
   // Amulet of the Moon and the Shield of Sigmar: a special save against missiles, the better of it and any Ward.
   const missileWard = weapon.type === "ranged" && !weapon.special.includes("fireRecoveryHit") ? defender.missileWardSaveThreshold ?? null : null;
-  const wardCandidates = [defender.wardSaveThreshold, missileWard].filter((t): t is number => t !== null && t !== undefined);
+  const ancientArmour = defender.activeTraitIds.includes("ancient_armour") && !weapon.special.includes("magical") ? 5 : null;
+  const wardCandidates = [defender.wardSaveThreshold, missileWard, ancientArmour].filter((t): t is number => t !== null && t !== undefined);
   const wardThreshold = wardCandidates.length ? Math.min(...wardCandidates) : undefined;
 
   // Swivel Guns fire one shot. Multi-barrel Experimental weapons need shared jam/destruction state separately.

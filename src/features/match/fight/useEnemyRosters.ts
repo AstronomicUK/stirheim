@@ -1,6 +1,7 @@
+import { withWarmonger } from '../battle/warmonger'
 import type { ItemRow } from '../../../domain'
 import { useQueries } from '@tanstack/react-query'
-import { fetchMatchRoster, matchKeys, useAddictionSupplies, type MatchParticipantView } from '../../../api/matches'
+import { fetchMatchRoster, matchKeys, useBattleSessions, useAddictionSupplies, type MatchParticipantView } from '../../../api/matches'
 import { withBattleSupplies } from '../battle/battleSupply'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import type { WarbandTemplate } from '../../../rules/types'
@@ -15,6 +16,7 @@ export interface EnemyWarband {
 
 /** Every other warband's full roster, from the same cache the Enemy tab fills. */
 export function useEnemyRosters(matchId: string, participants: MatchParticipantView[]): { isPending: boolean; error: string | null; warbands: EnemyWarband[] } {
+  const sessions = useBattleSessions(matchId)
   const supplies = useAddictionSupplies(matchId)
   return useQueries({
     queries: participants.map((p) => ({
@@ -24,7 +26,7 @@ export function useEnemyRosters(matchId: string, participants: MatchParticipantV
     combine: (results) => ({
       isPending: supplies.isPending || results.some((r) => r.isPending),
       error: supplies.error?.message ?? results.find((r) => r.isError)?.error?.message ?? null,
-      warbands: results.flatMap((r, i) => (r.data ? [{ participant: participants[i], items: r.data.items, roster: withBattleSupplies(r.data.roster, supplies.data ?? []), template: findWarbandTemplate(r.data.roster.warbandTemplateId) }] : [])),
+      warbands: results.flatMap((r, i) => (r.data ? [{ participant: participants[i], items: r.data.items, roster: withWarmonger(withBattleSupplies(r.data.roster, supplies.data ?? []), sessions.data?.find(s=>s.warband_id===r.data!.roster.id)?.live_state), template: findWarbandTemplate(r.data.roster.warbandTemplateId) }] : [])),
     }),
   })
 }

@@ -1,5 +1,12 @@
 # Feedback Tracker
 
+## Local batch checkpoint — 2026-09-13: roster, injuries and starting equipment
+
+**Not deployed.** #126, #127, #129, #120 and #131 are implemented and verified locally for the scope recorded in [the batch brief](ROSTER-INJURY-RECRUITMENT-BATCH-2026-09-13.md). This checkpoint supersedes their older open status for that scope. Other starting skill choices (#59) and recruitment upgrades (#130) remain separate. Keep this batch with the prior #102/#103/#157 fixes for a later combined release; do not push yet.
+
+Validation: 2,468 ordinary tests, 334 local database tests, mobile/desktop browser checks, production build and isolated replay of 127 migration files passed. Follow-up tests cover mixed injuries, battle-only resources and Ancient Armour. Migrations 131–133 are required at the eventual release. See the brief for detailed evidence and boundaries.
+
+
 ## Income and exploration batch — 13 September 2026
 
 Locally implemented; awaiting one batch deployment. #102 Foragers now shifts to the smaller income band; #103 Master Chef saves its required 5+ roll with explained corrections and safe sale settlement; #157 Pathfinder requires an eligible surviving Hero with the learned skill. Source, verification and migration 131 are recorded in [the batch record](INCOME-EXPLORATION-BATCH-2026-09-13.md). These are not yet live fixes.

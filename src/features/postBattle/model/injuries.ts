@@ -28,6 +28,7 @@ export type HeroInjuryPending =
   /** A map district offers a D6 to turn this result into a Full Recovery. */
   | { kind: 'districtTest'; prompt: string; rollIndex: number; districtName: string; needed: number }
   | { kind: 'count'; prompt: string }
+  | { kind: 'eternal'; prompt:string; rollIndex:number; killed:boolean }
   | { kind: 'done' }
 
 export interface HeroInjuryStep {
@@ -95,7 +96,7 @@ function lineFor(hero: RosterHero, steps: HeroInjuryStep[], outcome: InjuryOutco
 const FULL_RECOVERY_D66 = 41
 
 /** Replay a hero's injury rolls from the roster state at the end of the battle. */
-export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null, captureRerollReason?: string): HeroInjuryResolution {
+export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, matchId?: string, perks?: MapPerks | null, captureRerollReason?: string, allowEternal = true): HeroInjuryResolution {
   const ctx = matchId ? { matchId } : undefined
   const steps: HeroInjuryStep[] = []
   let current = hero
@@ -139,6 +140,22 @@ export function resolveHeroInjuryFlow(hero: RosterHero, flow: HeroInjuryFlow, ma
     if (injury.code === 'captured' && captureReason) {
       steps.push({d66:roll.d66,subRoll:null,code:injury.code,name:injury.name,effect:captureReason,rerolled:true,captureRerollReason:captureReason})
       continue
+    }
+    const eternal=allowEternal && ['restless_dead_liche','restless_dead_variant_liche'].includes(current.unitTemplateId)
+    if(eternal && (injury.code==='dead' || current.stats.W>1)) {
+      const killed=injury.code==='dead'
+      if((killed && !isDie(roll.eternalDie,3)) || (!killed && !roll.eternalChoice)) {
+        steps.push({d66:roll.d66,subRoll:null,code:injury.code,name:injury.name,effect:null,rerolled:false})
+        pending={kind:'eternal',rollIndex:i,killed,prompt:killed?`${hero.name}: Eternal replaces Killed with a permanent D3 Wounds loss. At zero Wounds the Liche dies.`:`${hero.name}: accept ${injury.name}, or permanently sacrifice 1 Wound to ignore it (${current.stats.W} → ${current.stats.W-1}).`}
+        break
+      }
+      if(killed || roll.eternalChoice==='sacrifice') {
+        const cost=killed?roll.eternalDie!:1,before=current.stats.W,after=Math.max(0,before-cost)
+        current={...current,stats:{...current.stats,W:after},status:after===0?'dead':current.status}
+        steps.push({d66:roll.d66,subRoll:killed?roll.eternalDie!:null,code:after===0?'dead':'eternal',name:after===0?'Killed — Eternal exhausted':`${injury.name} avoided with Eternal`,effect:`Eternal: ${killed?`D3 ${cost}; `:''}permanently lost ${cost} Wound${cost===1?'':'s'} (${before} → ${after}). ${after===0?'No Wounds remain; the Liche is killed.':'The injury is ignored.'}`,rerolled:false})
+        if(multi){remaining-=1;if(remaining<=0||after===0)pending={kind:'done'}}else pending={kind:'done'}
+        continue
+      }
     }
     const res = applyHeroInjury(current, roll.d66, roll.subRoll ?? undefined, ctx)
     if (res.value.needsSubRoll) {
@@ -214,15 +231,16 @@ export interface GroupInjuryResolution {
 }
 
 /** One D6 per model out of action, applied in order; dice not yet entered leave the flow incomplete. */
-export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: number, rolls: readonly (number | null)[]): GroupInjuryResolution {
+export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: number, rolls: readonly (number | null)[], repairDice: readonly (number | null)[] = []): GroupInjuryResolution {
   let current: RosterHenchmanGroup = group
   let dead = 0
   const entered: number[] = []
   for (let i = 0; i < outOfAction; i++) {
     const d6 = rolls[i]
     if (!isDie(d6, 6)) break
+    if(group.unitTemplateId==='masters_of_horror_flesh_construct' && d6<=2 && !isDie(repairDice[i],6))break
     entered.push(d6)
-    const res = applyHenchmanInjury(current, d6)
+    const res = applyHenchmanInjury(current, d6, repairDice[i] ?? undefined)
     if (res.value === null) {
       dead += 1
       current = { ...current, size: 0 }
@@ -236,7 +254,7 @@ export function resolveGroupInjuries(group: RosterHenchmanGroup, outOfAction: nu
     group: current,
     dead,
     complete,
-    line: complete && outOfAction > 0 ? { subjectType: 'group', subjectId: group.id, subjectName: group.name, rolls: entered, dead } : null,
+    line: complete && outOfAction > 0 ? { subjectType: 'group', subjectId: group.id, subjectName: group.name, rolls: entered, dead, ...(current.campaignState?.constructRepairs?.length ? {repairCosts:current.campaignState.constructRepairs.map(r=>r.cost),effect:`Retained on the roster awaiting repairs: ${current.campaignState.constructRepairs.map(r=>`${r.cost} gc (D6 ${r.repairRoll} × 5)`).join(', ')}. Cannot fight until repaired or abandoned.`} : {}) } : null,
   }
 }
 

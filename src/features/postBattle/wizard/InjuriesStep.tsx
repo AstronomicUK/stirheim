@@ -3,7 +3,7 @@ import { ExtraTough } from './ExtraTough'
 import {LycanthropeAftermath} from './LycanthropeAftermath'
 import {MedicineChest} from './MedicineChest'
 import type {ReactNode} from 'react'
-import { setPlantCasualty, setHeroEnmityTarget } from '../model/state'
+import { setEternalInjury, setPlantCasualty, setHeroEnmityTarget } from '../model/state'
 import { describeBitterEnmity, resolveBitterEnmityTarget } from '../../../rules/resolve/bitterEnmity'
 import { useState } from 'react'
 import { lookupHeroInjury } from '../../../rules/data/campaign/injuries'
@@ -76,6 +76,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               {resolution.line ? <p className="text-sm">{resolution.line.effect}</p> : null}
             </Card> : <HeroInjuryCard
               key={hero.id}
+              onEternal={(index,choice,die)=>update(d=>setEternalInjury(d,hero.id,index,choice,die))}
               restartReasonRequired
               name={hero.name}
               type={warriorTypeLabel(ctx, hero)}
@@ -160,6 +161,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                       {outOfAction} of {group.size} out of action ·{' '}
                       {(() => {
                         if (burning) return 'dead on 1–5; 6 survives and earns +1 group XP'
+                        if(group.unitTemplateId==='masters_of_horror_flesh_construct')return '1–2: damaged, D6 × 5 gc to repair; 3–6: recovers'
                         const ex = henchmanInjuryException(group)
                         if (!ex) return `dead on ${HENCHMAN_INJURY.deadOn.join('-')}`
                         if (ex.deadOn.length === 0) return `no injury roll (${ex.note})`
@@ -168,7 +170,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                     </p>
                   </div>
                   {resolution.complete ? (
-                    <Tag tone={resolution.dead > 0 ? 'danger' : 'brass'}>{captures.length?`${captures.length} captured; ${resolution.dead} dead`:resolution.dead === 0 ? 'All recover' : `${resolution.dead} dead`}</Tag>
+                    <Tag tone={resolution.dead > 0 ? 'danger' : 'brass'}>{captures.length?`${captures.length} captured; ${resolution.dead} dead`:resolution.line?.repairCosts?.length ? 'Repairs needed' : resolution.dead === 0 ? 'All recover' : `${resolution.dead} dead`}</Tag>
                   ) : null}
                 </div>
                 {captures.map(c=><p key={c.eventId} className="text-sm">{c.reason==='slaaneshi_lock'?`Model ${c.heldModelIndex}: held at battle end`:`Casualty ${c.modelIndex}: captured by ${captureRuleName(c.reason)}`}; no injury roll.</p>)}
@@ -212,6 +214,8 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
                     </Button>
                   ) : null}
                 </div>
+                {!burning && group.unitTemplateId==='masters_of_horror_flesh_construct' && rolls.slice(0,dice).map((roll,index)=>roll!==null && roll<=2 ? <DieField key={`repair-${index}`} label={`Repair cost, model ${index+1} · D6 × 5 gc`} sides={6} value={draft.constructRepairDice?.[group.id]?.[index]??null} rollable onChange={value=>update(d=>{const values=[...(d.constructRepairDice?.[group.id]??[])];values[index]=value;return {...d,constructRepairDice:{...d.constructRepairDice,[group.id]:values}}})}/> : null)}
+                {resolution.line?.effect && <p className="text-sm">{resolution.line.effect} Pay from the warband screen after filing this report, or leave the model awaiting repairs.</p>}
                 {resolution.complete ? (
                   <p className="text-xs text-ink-dim">
                     {group.size} → {resolution.group.size} {resolution.group.size === 1 ? 'model' : 'models'}
@@ -334,6 +338,7 @@ function SkipRow({ skip, onSkip }: { skip: string | undefined; onSkip: (reason: 
 }
 
 interface HeroInjuryCardProps {
+  onEternal?: (index:number,choice:'accept'|'sacrifice',die?:number)=>void
   restartReasonRequired?: boolean
   medicine?: ReactNode
   /** Bitter Enmity target line and, when the record cannot say, the who-caused-it choice (#96). */
@@ -350,7 +355,7 @@ interface HeroInjuryCardProps {
   onReset: (reason: string) => void
 }
 
-export function HeroInjuryCard({ restartReasonRequired = false, medicine, enmity, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
+export function HeroInjuryCard({ onEternal, restartReasonRequired = false, medicine, enmity, name, type, resolution, skip, onSkip, onD66, onSubRoll, onDistrictRoll, onCount, onReset }: HeroInjuryCardProps) {
   const [showText, setShowText] = useState(false)
   const [restarting, setRestarting] = useState(false)
   const [restartReason, setRestartReason] = useState('')
@@ -400,6 +405,10 @@ export function HeroInjuryCard({ restartReasonRequired = false, medicine, enmity
           <DieField label={pending.die} sides={pending.die === 'D3' ? 3 : 6} value={null} onChange={(v) => onSubRoll(pending.rollIndex, v)} rollable />
         </div>
       ) : null}
+      {pending.kind==='eternal' && <div className="flex flex-col gap-3">
+        <p className="text-sm">{pending.prompt}</p>
+        {pending.killed?<DieField label="Eternal Wounds lost (D3)" sides={3} value={null} rollable onChange={die=>{if(die!==null)onEternal?.(pending.rollIndex,'sacrifice',die)}}/>:<div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={()=>onEternal?.(pending.rollIndex,'accept')}>Accept injury result</Button><Button onClick={()=>onEternal?.(pending.rollIndex,'sacrifice')}>Sacrifice 1 Wound</Button></div>}
+      </div>}
       {pending.kind === 'count' ? (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-ink-dim">{pending.prompt}.</p>

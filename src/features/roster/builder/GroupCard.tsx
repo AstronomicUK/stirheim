@@ -1,3 +1,6 @@
+import { ConstructController } from '../../recruitment/ConstructController'
+import { SINGLE_GROUP_UNITS, SCARECROW, NIGHT_MOB } from '../../../rules/resolve/rosterComposition'
+import { RecruitGifts } from '../../recruitment/RecruitGifts'
 import { useMemo, useState } from 'react'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
 import type { CampaignBans } from '../../../rules/types/roster'
@@ -33,7 +36,7 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
   const options = useMemo(() => equipmentOptionsFor(template, group.unitTemplateId, bans), [template, group.unitTemplateId, bans])
   const houseRules = useBuilderRules()
   const cost = groupCost(group, template, houseRules)
-  const ceiling = unit ? groupSizeCeiling(draft, group, unit) : null
+  const ceiling = SINGLE_GROUP_UNITS.includes(group.unitTemplateId) ? 1 : unit ? groupSizeCeiling(draft, group, unit) : null
   const subject = { kind: 'group' as const, id: group.id }
   const perModelHire = unit?.cost ?? 0
 
@@ -61,7 +64,7 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
         <span className="text-sm text-ink-dim">
           Models{ceiling !== null ? <span className="ml-1 text-xs">(up to {ceiling})</span> : null}
         </span>
-        <Stepper label="models" value={group.size} min={1} max={ceiling} onChange={(size) => update((d) => setDraftGroupSize(d, group.id, size))} />
+        <Stepper label="models" value={group.size} min={group.unitTemplateId === NIGHT_MOB ? 5 : 1} max={ceiling} onChange={(size) => update((d) => setDraftGroupSize(d, group.id, size))} />
       </div>
 
       {unit ? <StatLine stats={unit.stats} /> : null}
@@ -74,6 +77,9 @@ export function GroupCard({ group, draft, template, bans }: GroupCardProps) {
       <Button variant="secondary" block onClick={() => setShopping(true)}>
         Add equipment
       </Button>
+
+      {group.unitTemplateId === SCARECROW ? <ConstructController value={group.constructController} onChange={value => update(d => ({...d, groups: d.groups.map(g => g.id === group.id ? {...g, constructController:value} : g)}))} /> : null}
+      <RecruitGifts warbandId={template.id} unitId={group.unitTemplateId} ids={group.recruitGiftIds ?? []} bans={bans} onChange={ids => update(d => ({...d, groups: d.groups.map(entry => entry.id === group.id ? {...entry, recruitGiftIds: ids} : entry)}))} />
 
       <EquipmentSheet
         open={shopping}

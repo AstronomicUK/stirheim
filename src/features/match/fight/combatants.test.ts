@@ -482,7 +482,8 @@ it('applies the carried Swivel Gun Movement and Initiative penalty once for the 
   expect(template).toBeDefined()
   const unit = [...template.heroTemplates, ...template.henchmanTemplates].find(u => u.id === unitTemplateId)!
   const roster = warband({warbandTemplateId: template.id, heroes: unit.role === 'hero' ? [hero('natural', {unitTemplateId,stats:unit.stats,equipment:[]})] : [], henchmenGroups:unit.role==='henchman' ? [group('natural',{unitTemplateId,stats:unit.stats,equipment:[],size:1})] : []})
-  const c = combatantsOf(roster,template,'QA',undefined)[0], kit=loadoutFor(c), primary=defaultPrimary(kit.melee)
+  if(unitTemplateId === 'restless_dead_scarecrows') { roster.heroes.push(hero('controller',{unitTemplateId:'restless_dead_liche'})); roster.henchmenGroups[0].campaignState={constructController:'restless_dead_liche'}; }
+  const c = combatantsOf(roster,template,'QA',undefined).find(c=>c.id==='natural')!, kit=loadoutFor(c), primary=defaultPrimary(kit.melee)
   expect(primary.id).toBe('natural_weapons')
   expect(primary.strengthBonus ?? 0).toBe(0)
   expect(primary.saveModifier ?? 0).toBe(0)

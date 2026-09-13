@@ -1,3 +1,4 @@
+import { ConstructController } from '../../recruitment/ConstructController'
 import { Button, NumberField, Stepper, TextArea, TextField } from '../../../ui'
 import { unitTypeName } from '../shared/names'
 import { Card, Tag } from './bits'
@@ -42,6 +43,7 @@ export function GroupEditor({ group, warbandTemplateId, errors, onChange, onRemo
         </label>
       </div>
 
+      {group.unit_type_rules_id === "restless_dead_scarecrows" ? <ConstructController value={group.campaign_state?.constructController} onChange={value => onChange({campaign_state:{...group.campaign_state,constructController:value}})} /> : null}
       <StatsGrid stats={group.stats} onChange={(stats) => onChange({ stats })} errorFor={(k) => err(`stats.${k}`)} />
 
       <div className="grid grid-cols-2 gap-3">

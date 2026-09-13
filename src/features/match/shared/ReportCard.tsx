@@ -235,18 +235,20 @@ function HeroInjury({ line }: { line: HeroInjuryLine }) {
 }
 
 function GroupInjury({ line }: { line: HenchmanInjuryLine }) {
-  const survived = Math.max(0, line.rolls.length - line.dead)
+  const survived = Math.max(0, line.rolls.length - line.dead - (line.repairCosts?.length??0))
   return (
     <div className="flex items-start justify-between gap-3">
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-sm text-ink">{line.subjectName}</span>
         <span className="text-xs text-ink-dim">
-          {line.rolls.length > 0 ? `Rolled ${line.rolls.join(', ')}` : 'No rolls'} · 1–2 dies
+          {line.rolls.length > 0 ? `Rolled ${line.rolls.join(', ')}` : 'No rolls'}{line.repairCosts?.length?' · repairable damage':' · 1–2 dies'}
         </span>
+        {line.effect && <span className="text-xs text-ink-dim">{line.effect}</span>}
       </span>
       <span className="flex shrink-0 items-center gap-2">
         {line.dead > 0 ? <Tag tone="warn">{line.dead} dead</Tag> : null}
         {line.captured?.length ? <Tag tone="warn">{line.captured.length} captured</Tag> : null}
+        {line.repairCosts?.length ? <Tag tone="warn">Repairs needed</Tag> : null}
         {survived > 0 ? <Tag>{survived} recovered</Tag> : null}
       </span>
     </div>

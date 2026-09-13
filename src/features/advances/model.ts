@@ -1,3 +1,4 @@
+import { advancementGiftOptions, giftStats, giftEquipment } from '../../rules/resolve/recruitPurchases'
 import {trainGrunt, promoteUntrained, SORCEROUS_LORES, type HarnessedAdvance} from '../../rules/resolve/sorcerousPromotion'
 import {promoteChapelSquire, SQUIRE_TABLES, type SquirePromotion} from '../../rules/resolve/chapelPromotion'
 import { dismissWarrior } from '../../rules/resolve/recruitment'
@@ -275,6 +276,7 @@ export interface AdvanceDraft extends AdvanceRollAudit {
   /** Rewards of the Shadowlord: the 2D6 and every follow-up choice. */
   reward: RewardChoices
   skillId: string | null
+  giftId?: string
   spellId: string | null
   stat: StatKey | null
   /** Every offered characteristic is at its maximum and the player takes a skill instead. */
@@ -342,7 +344,7 @@ export function setStat(draft: AdvanceDraft, stat: StatKey | null): AdvanceDraft
 }
 
 export function setSkill(draft: AdvanceDraft, skillId: string | null): AdvanceDraft {
-  return { ...draft, skillId, spellId: null, mode: 'skill' }
+  return { ...draft, skillId, giftId: undefined, spellId: null, mode: 'skill' }
 }
 
 export function setSpell(draft: AdvanceDraft, spellId: string | null): AdvanceDraft {
@@ -767,17 +769,24 @@ export function planHero(draft: AdvanceDraft, subject: Extract<AdvanceSubject, {
       if (!draft.skillId) return { ...out, need: 'skill' }
       const table = plan.skillTables.find((t) => t.skills.some((s) => s.id === draft.skillId))
       const skill = table?.skills.find((s) => s.id === draft.skillId)
+      const giftOptions = advancementGiftOptions(draft.skillId, hero)
+      const gift = giftOptions.find(option => option.item.id === draft.giftId)
+      if (giftOptions.length && !gift) return { ...out, need: 'skill' }
+      if (gift && isBanned(ctx.bans, 'items', gift.item.id)) return { ...out, need: 'skill', error: 'This mutation or Blessing is banned in the campaign.' }
+      if (gift && gift.price > ctx.roster.gold) return { ...out, need: 'skill', error: `The mandatory purchase costs ${gift.price} gc; the treasury has ${ctx.roster.gold} gc.` }
       const r = learnSkill(hero, draft.skillId, undefined, { warbandTemplateId })
+      if (gift) {
+        r.value = {...r.value, stats: giftStats(r.value.stats, [gift.item.id]), equipment: [...r.value.equipment, ...giftEquipment([gift.item.id])]}
+        r.events.push({kind: 'gold.spent', subjectId: hero.id, message: `${hero.name} buys ${gift.item.name} for ${gift.price} gc with this skill; profile changes applied.`})
+      }
+      const completed = finish(r.value, r.events, {
+        outcome: 'skill', skillId: draft.skillId, skillName: `${skill?.name ?? draft.skillId}${gift ? `; ${gift.item.name} (${gift.price} gc)` : ''}`,
+        ...(skill?.blocked ? { restrictionNote: skill.blocked } : {}), ...(table ? { tableName: table.tableName } : {}), ...(subRoll !== undefined ? { subRoll } : {}),
+      })
+      if (gift) completed.next = {...completed.next, gold: completed.next.gold - gift.price}
       return {
         ...out,
-        result: finish(r.value, r.events, {
-          outcome: 'skill',
-          skillId: draft.skillId,
-          skillName: skill?.name ?? draft.skillId,
-          ...(skill?.blocked ? { restrictionNote: skill.blocked } : {}),
-          ...(table ? { tableName: table.tableName } : {}),
-          ...(subRoll !== undefined ? { subRoll } : {}),
-        }),
+        result: completed,
       }
     } catch (e) {
       return { ...out, error: errorMessage(e) }

@@ -6,6 +6,7 @@ export function describeInjuryAttempt(flow: Pick<HeroInjuryFlow, 'rolls' | 'coun
     `D66 ${roll.d66}${roll.source==='app'?' (app roll)':roll.source==='tabletop'?' (entered from tabletop dice)':''}`,
     ...(roll.medicine ? [`Medicine Chest reroll: ${roll.medicine.d66}${roll.medicine.originalSubRoll!==null?`; original follow-up ${roll.medicine.originalSubRoll}`:''}${roll.medicine.originalDistrictRoll!==null?`; original district die ${roll.medicine.originalDistrictRoll}`:''}`] : []),
     ...(roll.captureRerollReason ? [`Captured rerolled: ${roll.captureRerollReason}`] : []),
+    ...(roll.eternalChoice?[`Eternal: ${roll.eternalChoice==='accept'?'accepted the injury':roll.eternalDie?`Killed result: D3 ${roll.eternalDie} Wounds lost`:'sacrificed 1 Wound to ignore the injury'}`]:[]),
     ...(roll.subRoll!==null ? [`follow-up ${roll.subRoll}`] : []),
     ...(roll.districtRoll!=null ? [`district die ${roll.districtRoll}`] : []),
     ...(i===0 && flow.countRoll!==null ? [`Multiple Injuries count die ${flow.countRoll}`] : []),

@@ -19,6 +19,7 @@ function MUTATION(court = false): ItemRestriction {
 }
 
 export const ITEM_RESTRICTIONS: Record<string, ItemRestriction> = {
+  ancient_armour: {onlyUnits: ["dame_of_the_mare"], fused: true, unsellable: true, note: "Ancient Armour may never be removed, traded or stolen."},
   // ---- Miscellaneous equipment henchmen may use ----
   daemon_weapon: { fused: true, unsellable: true, note: "A Reward of the Shadowlord: bound to its bearer, never sold." },
   rain_coat: { heroesOnly: false, note: "An exception to the Heroes-only rule: henchmen may carry Rain Coats." },

@@ -1,3 +1,5 @@
+import { withWarmonger } from './battle/warmonger'
+import { WarmongerControl } from './battle/WarmongerControl'
 import {EngineRescuePanel} from './battle/EngineRescuePanel'
 import {SlaaneshiHoldsPanel} from './battle/SlaaneshiHoldsPanel'
 import {useSlaaneshiHolds} from '../../api/slaaneshiHolds'
@@ -250,7 +252,7 @@ function Battle({ match, sessions, events, userId, preferredWarband, onSelectWar
       events={events}
       onLogEvent={(payload) => logEvent.mutateAsync({ matchId: match.id, actorWarbandId: mine.warband_id, payload }).then(() => undefined)}
       items={myRoster.data.items}
-      roster={withBattleSupplies(myRoster.data.roster, supplies.data ?? [])}
+      roster={withWarmonger(withBattleSupplies(myRoster.data.roster, supplies.data ?? []), handle.sheet)}
       scenario={scenario}
       handle={handle}
       readOnly={!editable}
@@ -354,6 +356,7 @@ function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scen
       {!readOnly && !turns.isPending && !turns.isError ? <FirepotSmokeTests roster={roster} template={template} sheet={shown} events={events} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <BolasRecovery sheet={shown} events={events} warbandId={roster.id} turns={turns.data} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <StupidityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
+      {!readOnly ? <WarmongerControl roster={roster} sheet={shown} edit={handle.edit} combatStarted={events.some(e=>!e.reverted_at)||shown.turn>1||shown.casts.length>0||shown.rollAttempts.some(a=>a.kind==='attack'&&!a.label.includes('Warmonger'))} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}
       {!readOnly && roster.warbandTemplateId === 'dreamwalkers_cult_of_morr' ? <GuidingDreamTargets matchId={match.id} others={others} roster={roster} sheet={shown} edit={handle.edit} /> : null}
       {boostLines.length > 0 && !readOnly ? (

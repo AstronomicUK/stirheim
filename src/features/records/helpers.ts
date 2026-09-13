@@ -34,8 +34,9 @@ export function countInjuries(injuries: ReportView['injuries']): InjuryCounts {
   const counts: InjuryCounts = { dead: 0, injured: 0, recovered: 0, captured: 0, retired: 0 }
   for (const line of injuries) {
     if (line.subjectType === 'group') {
+      counts.injured += line.repairCosts?.length??0
       counts.dead += line.dead
-      counts.recovered += Math.max(0, line.rolls.length - line.dead)
+      counts.recovered += Math.max(0, line.rolls.length - line.dead - (line.repairCosts?.length??0))
     } else {
       counts[line.outcome] += 1
     }

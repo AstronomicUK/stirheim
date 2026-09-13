@@ -127,7 +127,7 @@ function itemIds(hero: RosterHero): Set<string> {
 export function armourBlockingCasting(hero: RosterHero): string[] {
   const out: string[] = [];
   for (const entry of hero.equipment) {
-    if (!entry.itemId || ARMOUR_ALLOWED_WHILE_CASTING.has(entry.itemId)) continue;
+    if (!entry.itemId || entry.itemId === "ancient_armour" || ARMOUR_ALLOWED_WHILE_CASTING.has(entry.itemId)) continue;
     const item = findItem(entry.itemId);
     if (item?.category === "armour") out.push(item.name);
   }

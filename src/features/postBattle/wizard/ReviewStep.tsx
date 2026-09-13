@@ -82,7 +82,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-ink">{line.subjectName}</span>
                     {line.subjectType === 'group' ? (
-                      <Tag tone={line.dead > 0 ? 'danger' : 'brass'}>{line.captured?.length?`${line.captured.length} captured; ${line.dead} dead`:line.dead === 0 ? 'All recover' : `${line.dead} dead`}</Tag>
+                      <Tag tone={line.dead > 0 ? 'danger' : 'brass'}>{line.captured?.length?`${line.captured.length} captured; ${line.dead} dead`:line.repairCosts?.length ? 'Repairs needed' : line.dead === 0 ? 'All recover' : `${line.dead} dead`}</Tag>
                     ) : (
                       <Tag tone={line.outcome === 'recovered' ? 'brass' : line.outcome === 'injured' ? 'warn' : 'danger'}>{line.injuryName}</Tag>
                     )}
@@ -90,7 +90,7 @@ export function ReportSummary({ report, warbandName, removedItems, advanceLines 
                   {line.subjectType !== 'group' ? line.rollHistory?.map((event,i)=><p key={i} className="text-xs text-ink-dim">{event}</p>) : null}
                   <p className="text-xs text-ink-dim">
                     {line.rolls.length?`Rolled ${line.rolls.join(', ')}`:'No injury roll'}
-                    {line.subjectType !== 'group' && line.effect ? ` · ${line.effect}` : ''}
+                    {line.effect ? ` · ${line.effect}` : ''}
                   </p>
                 </li>
               ))}

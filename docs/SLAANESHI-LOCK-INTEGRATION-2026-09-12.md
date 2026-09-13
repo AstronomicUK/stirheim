@@ -1,6 +1,6 @@
 # Slaaneshi Man-Catcher — remaining #229 extension
 
-The source at reference/rules/warbands/grade-1c.md:915–917 gives an ongoing hold, not an immediate OOA capture. `src/rules/resolve/slaaneshiLock.ts` is a tested lifecycle foundation only. It is not connected to combat, recovery or reports yet. Do not mark the rule complete.
+The source at reference/rules/warbands/grade-1c.md:915–917 gives an ongoing hold, not an immediate OOA capture. The lifecycle is now connected locally to combat, recovery and reports through migrations 116–118. The remaining review below must finish before marking the whole extension complete.
 
 ## Required complete integration
 
@@ -16,8 +16,14 @@ This is independent of the Engine of Chaos/ordinary Man-catcher extension delega
 
 ## 13 September work in progress
 
-The shared attack input now supports an explicit `slaaneshiLock` flag. The probability engine turns an unsaved wound into Knocked Down at any remaining Wounds, without injury/OOA outcomes; the live roller waits for every save and then stops so the particular held model can be recorded before further combat. Six focused tests pass, plus the existing 79 roller tests. An initial insertion in the armour-save branch was caught by tests and moved to the final unsaved-wound boundary. The weapon builder now enables this flag locally. Migrations 116/117 connect persisted holds, per-model recovery, explicit release, battle-end confirmation and the report capture bridge. The actual mobile roller-to-henchman-capture flow passes, including exact equipment and no OOA/kill XP. This remains unfinished integration: companion animals, further correction cases and full regression still need completion.
+The shared attack input now supports an explicit `slaaneshiLock` flag. The probability engine turns an unsaved wound into Knocked Down at any remaining Wounds, without injury/OOA outcomes; the live roller waits for every save and then stops so the particular held model can be recorded before further combat. Six focused tests pass, plus the existing 79 roller tests. An initial insertion in the armour-save branch was caught by tests and moved to the final unsaved-wound boundary. The weapon builder now enables this flag locally. Migrations 116/117 connect persisted holds, per-model recovery, explicit release, battle-end confirmation and the report capture bridge. The actual mobile roller-to-henchman-capture flow passes, including exact equipment and no OOA/kill XP. The 116/117 checkpoint passed 2,414 ordinary tests, 311 API tests, TypeScript/build, and isolated migration replay. Companion animals were then added in 118 and are being checked separately.
 
 ### 13 September: connected local flow
 
-The actual mobile attack selects a particular henchman (model 2), records an unsaved wound as a hold, confirms the hold at battle end, and shows the report without injury dice or an out-of-action tally. Submission creates exactly one captive with that model’s allocated equipment. The disposable browser fixture passes and cleans up. Weapon switching now requires explicit release before another attack. A separate tabletop hold form is under verification; it can avoid adding wounds already entered on the sheet. No production deployment.
+The actual mobile attack selects a particular henchman (model 2), records an unsaved wound as a hold, confirms the hold at battle end, and shows the report without injury dice or an out-of-action tally. Submission creates exactly one captive with that model’s allocated equipment. The disposable browser fixture passes and cleans up. Weapon switching now requires explicit release before another attack. The separate tabletop hold form also passed mobile verification; it can avoid adding wounds already entered on the sheet. No production deployment.
+
+### Equipment companions — local 118
+
+Stable animal IDs now identify an individual wardog or Gnoblar Fighter. The source handler, actual quantity, opposing participant, active status and source hold are checked on the server. The held companion does not need an OOA tally; its exact equipment row and notes become a consent-based companion case. Both actual roller and tabletop mobile flows pass for the second wardog in a pair. Eight hold API cases and five focused companion/report tests pass; existing capture regression is running. All 112 migration files replay successfully in an isolated database.
+
+Remaining review: continuing attacks while a catcher already holds a model must not run into a duplicate-hold failure after dice are rolled; record or clarify the table sequence rather than silently invent a release. Equipment companions are no longer an integration gap.

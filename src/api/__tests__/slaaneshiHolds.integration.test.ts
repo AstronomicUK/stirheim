@@ -89,6 +89,20 @@ describe.skipIf(!enabled)('Slaaneshi per-model holds',()=>{
   expect((await victim.rpc('slaaneshi_hold_action',{p_hold_id:held.id,p_action:'magicEscape'})).error?.message).toMatch(/dependent report/)
  })
 
+ it('captures the exact held equipment companion without an OOA',async()=>{
+  const hero=check(await admin.from('heroes').insert({warband_id:vw,name:'Dog handler',unit_type_rules_id:'mercenaries_reikland_captain',status:'active',stats,xp:20}).select('id').single())
+  const item=check(await admin.from('items').insert({warband_id:vw,holder_type:'hero',holder_id:hero.id,item_rules_id:'wardogs',quantity:2,notes:'Trained pair'}).select('id').single())
+  const animalId=`animal:${hero.id}:wardogs:2`
+  const event=check(await attack({target_id:animalId,target_kind:'hero',target_name:'Wardog',slaaneshi_lock:{weaponId:'slaaneshi_man_catcher',modelIndex:0}}))
+  const [held]=await holds();expect(held.target_id).toBe(animalId)
+  check(await victim.rpc('slaaneshi_hold_action',{p_hold_id:held.id,p_action:'confirmEnd'}))
+  check(await captor.rpc('end_match',{p_match_id:match}))
+  check(await captor.rpc('submit_battle_report',{p_match_id:match,p_warband_id:cw,p_report:{result:'won',applied:{}}}))
+  check(await victim.rpc('submit_battle_report',{p_match_id:match,p_warband_id:vw,p_report:{result:'lost',ooa:[],applied:{item_patches:[{id:item.id,quantity:1}],captured_companions:[{sourceItemId:item.id,holderId:hero.id,itemId:'wardogs',animalId,eventId:event.id,captorWarbandId:cw,reason:'slaaneshi_lock'}]}}}))
+  const cases=check(await victim.from('captive_cases').select('*').eq('match_id',match))
+  expect(cases).toHaveLength(1);expect(cases[0]).toMatchObject({subject_kind:'companion',model_snapshot:{reason:'slaaneshi_lock',animal_id:animalId,item:{notes:'Trained pair'}}})
+  expect(check(await admin.from('items').select('quantity').eq('id',item.id).single()).quantity).toBe(1)
+ })
  it('assigns a held Hero to the actual Whipmaster without inventing an OOA',async()=>{
   const hero=check(await admin.from('heroes').insert({warband_id:vw,name:'Held Captain',unit_type_rules_id:'mercenaries_reikland_captain',status:'active',stats,xp:20}).select('id').single())
   check(await attack({target_id:hero.id,target_kind:'hero',target_name:'Held Captain',slaaneshi_lock:{weaponId:'slaaneshi_man_catcher',modelIndex:0}}))

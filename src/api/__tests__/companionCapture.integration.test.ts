@@ -65,7 +65,7 @@ describe.skipIf(!enabled)('Captured equipment companions (Subjugator of Mankind,
  const dogQty=async(holderId:string|null)=>{const q=admin.from('items').select('quantity,notes').eq('warband_id',vw).eq('item_rules_id','wardogs');const r=check(await (holderId?q.eq('holder_id',holderId):q.eq('holder_type','stash')));return r}
 
  it('rejects unverifiable companion captures and opens one case per captured animal with the item and handler recorded',async()=>{
-  expect((await file([cap(1,events[1])])).error?.message).toMatch(/no unreverted Subjugator capture event/)
+  expect((await file([cap(1,events[1])])).error?.message).toMatch(/no matching unreverted capture event/)
   expect((await file([cap(1,events[0]),cap(1,events[0])],0)).error?.message).toMatch(/used twice/)
   expect((await file([cap(1,events[0]),cap(2,events[1])],1)).error?.message).toMatch(/removed only 1 Wardog/)
   expect((await file([cap(1,events[0],{animalId:`animal:${other}:wardogs:1`})])).error?.message).toMatch(/does not name this holder/)

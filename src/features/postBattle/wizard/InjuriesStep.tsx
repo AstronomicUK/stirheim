@@ -248,7 +248,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-ink">{animal.name}</p>
-                  <p className="text-xs text-ink-dim">{animal.holderName}&apos;s · {capture ? 'Captured by Subjugator of Mankind; no injury roll' : burning ? '1–5 dead, 6 survives' : '1–2 dead (the item is lost), 3–6 survives'}</p>
+                  <p className="text-xs text-ink-dim">{animal.holderName}&apos;s · {capture ? (capture.event.payload.capture_reason==='slaaneshi_lock'?'Held by the Slaaneshi Man-Catcher at battle end; no injury roll':'Captured by Subjugator of Mankind; no injury roll') : burning ? '1–5 dead, 6 survives' : '1–2 dead (the item is lost), 3–6 survives'}</p>
                 </div>
                 {capture?<Tag tone="brass">Captured</Tag>:dead !== null ? <Tag tone={dead ? 'danger' : 'brass'}>{dead ? 'Dead' : 'Survives'}</Tag> : null}
               </div>

@@ -26,3 +26,11 @@ it('unconfirmed and released holds do not become captives',()=>{
   expect(deriveInjuries(emptyDraft(),participantsOf(roster,undefined),id,roster,null,null,[source(hero.id,'hero')],undefined,[held]).heroes).toEqual([])
  }
 })
+
+it('captures a held wardog without an injury die or OOA tally',()=>{
+ const handler=makeHero({equipment:[{itemId:'wardogs',quantity:2}]}),band=makeWarband({id,heroes:[handler],henchmenGroups:[]})
+ const animal=`animal:${handler.id}:wardogs:2`
+ const result=deriveInjuries(emptyDraft(),participantsOf(band,undefined),id,band,null,null,[source(animal,'hero')],undefined,[hold(animal,'hero')])
+ expect(result.animals).toHaveLength(1)
+ expect(result.animals[0]).toMatchObject({animal:{id:animal},roll:null,dead:false,capture:{event:{payload:{capture_reason:'slaaneshi_lock'}}}})
+})

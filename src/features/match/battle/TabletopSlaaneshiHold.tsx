@@ -14,7 +14,7 @@ export function TabletopSlaaneshiHold({matchId,roster,enemies,turn,readOnly}:{ma
  const [open,setOpen]=useState(false),[wielderId,setWielderId]=useState(''),[targetId,setTargetId]=useState(''),[member,setMember]=useState(0),[wounds,setWounds]=useState(1),[alreadyRecorded,setAlreadyRecorded]=useState(false)
  const catchers=roster.heroes.filter(h=>h.status==='active'&&h.unitTemplateId==='court_of_pleasures_whipmaster'&&h.equipment.some(e=>e.quantity>0&&e.itemId?.endsWith('slaaneshi_man_catcher')))
  const wielder=catchers.find(h=>h.id===wielderId)??catchers[0]
- const targets=enemies.flatMap(e=>combatantsOf(e.roster,e.template,e.roster.name,undefined)).filter(c=>!c.out&&c.kind!=='animal'&&!c.traitIds.includes('large_target')&&!c.traitIds.includes('steed'))
+ const targets=enemies.flatMap(e=>combatantsOf(e.roster,e.template,e.roster.name,undefined)).filter(c=>!c.out&&!c.traitIds.includes('large_target')&&!c.traitIds.includes('steed'))
  const target=targets.find(c=>c.id===targetId)??targets[0]
  const occupied=holds.data?.some(h=>!h.released_at&&(h.wielder_id===wielder?.id||(h.target_id===target?.id&&h.target_model_index===member)))
  if(!catchers.length)return null

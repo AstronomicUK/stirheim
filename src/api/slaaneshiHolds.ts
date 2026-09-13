@@ -4,7 +4,7 @@ import {z} from 'zod'
 import {supabase} from './supabase'
 import type {LockReleaseReason} from '../rules/resolve/slaaneshiLock'
 const client=supabase as unknown as SupabaseClient
-export const slaaneshiHoldSchema=z.object({id:z.string().uuid(),match_id:z.string().uuid(),source_event_id:z.string().uuid(),wielder_warband_id:z.string().uuid(),wielder_id:z.string().uuid(),target_warband_id:z.string().uuid(),target_id:z.string().uuid(),target_kind:z.enum(['hero','group']),target_model_index:z.number().int().nonnegative(),target_name:z.string(),created_at:z.string(),released_at:z.string().nullable(),release_reason:z.string().nullable(),confirmed_end_at:z.string().nullable()})
+export const slaaneshiHoldSchema=z.object({id:z.string().uuid(),match_id:z.string().uuid(),source_event_id:z.string().uuid(),wielder_warband_id:z.string().uuid(),wielder_id:z.string().uuid(),target_warband_id:z.string().uuid(),target_id:z.string(),target_kind:z.enum(['hero','group']),target_model_index:z.number().int().nonnegative(),target_name:z.string(),created_at:z.string(),released_at:z.string().nullable(),release_reason:z.string().nullable(),confirmed_end_at:z.string().nullable()})
 export type SlaaneshiHold=z.infer<typeof slaaneshiHoldSchema>
 export const slaaneshiHoldKey=(matchId:string)=>['slaaneshi-holds',matchId] as const
 export async function fetchSlaaneshiHolds(matchId:string):Promise<SlaaneshiHold[]>{

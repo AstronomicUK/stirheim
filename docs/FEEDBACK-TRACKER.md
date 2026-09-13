@@ -1,5 +1,9 @@
 # Feedback Tracker
 
+## Deployed — combined release 2026.09.13.2
+
+The four 13 September batches below are now live. Fourteen items moved to Implemented on the public tracker; #132 remains partially complete and #176 was reverified. Production migrations 131–136 are applied. See [release verification](COMBINED-RELEASE-2026-09-13.md). Earlier “local only” notes are historical.
+
 ## Trading supplies and veterans — 13 September 2026
 
 Implemented and verified locally, awaiting combined deployment: **#145 Victuals**, **#133 Hochland Bandit variable-price resale**, and **#134 Sons of Hashut Uncommon veteran costs**. This supersedes their older open findings. The unsupported historic Pirate attribution in #133 is corrected; no Pirate bonus was added. See [the batch record](TRADING-SUPPLIES-VETERANS-BATCH-2026-09-13.md).

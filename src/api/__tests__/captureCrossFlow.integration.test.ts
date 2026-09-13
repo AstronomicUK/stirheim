@@ -1,8 +1,10 @@
-import { beforeAll, afterAll, describe, expect, it } from 'vitest'
+import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { buildExchangeProposal } from '../captiveExchange'
 import { buildCompanionCaptiveProposal } from '../companionCaptives'
 import { buildKidnappedProposal } from '../pirates'
+// These tests use their own authenticated clients; pure proposal helpers need no app client.
+vi.mock('../supabase', () => ({ supabase: { rpc: () => { throw new Error('Use the authenticated integration-test client') } } }))
 import type { CaptiveCase } from '../captives'
 import { resolveCaptive } from '../../rules/resolve/captives'
 import { diffRoster } from '../../domain/rosterDiff'

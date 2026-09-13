@@ -36,7 +36,7 @@ export interface EngineJourneyRow {
   missed_match_id: string | null
   returned_at: string | null
   returned_by: string | null
-  reward: { d3?: number[]; appD3?: number[] | null; d6?: number | null; appD6?: number | null; xpTotal?: number; gold?: number; allocations?: { heroId: string; xp: number }[]; leaderId?: string | null }
+  reward: { d3?: number[]; appD3?: number[] | null; d6?: number | null; appD6?: number | null; xpTotal?: number; gold?: number; allocations?: { heroId: string; xp: number; name?: string }[]; leaderId?: string | null }
   advance_ids: string[]
   history: { event: string; at: string; by?: string | null; reason?: string; captives?: number; escort?: string; escort_flag_set?: boolean; missed_match_id?: string }[]
 }

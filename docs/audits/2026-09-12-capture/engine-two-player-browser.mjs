@@ -59,6 +59,19 @@ try {
  await expect(captor.getByRole('dialog')).toHaveCount(0);
  await expect(captor.getByRole('heading',{name:'The Iron Maw',exact:true})).toBeVisible();
  expect(must(await admin.from('engine_of_chaos_units').select('id,name').eq('inventory_item_id',stock).single())).toEqual({id:engine,name:'The Iron Maw'});
+ const boundaryMatch=must(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2].id,state:'scheduled',scenario_rules_id:'skirmish'}).select('id').single()).id;
+ must(await admin.from('match_participants').insert(bands.map(warband_id=>({match_id:boundaryMatch,warband_id,accepted_at:new Date().toISOString()}))));
+ must(await users[0].api.rpc('start_match',{p_match_id:boundaryMatch}));
+ const heldPrisoner=must(await admin.from('engine_prisoners').select('id').eq('engine_id',engine).eq('state','held').single()).id;
+ const currentEngine=must(await admin.from('engine_of_chaos_units').select('updated_at').eq('id',engine).single());
+ const midBattleDispatch=await users[0].api.rpc('dispatch_engine',{p_engine_id:engine,p_escort_hero_id:escort,p_prisoner_ids:[heldPrisoner],p_expected_updated_at:currentEngine.updated_at});
+ expect(midBattleDispatch.error?.message).toMatch(/fighting a battle/);
+ await captor.reload();
+ await expect(captor.getByText('This warband is fighting a battle. Arrange or complete its Engine journey between battles.',{exact:true})).toBeVisible();
+ await expect(captor.getByRole('button',{name:'Prepare a journey',exact:true})).toHaveCount(0);
+ expect(must(await admin.from('engine_journeys').select('id').eq('warband_id',bands[0]))).toHaveLength(0);
+ must(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',boundaryMatch));
+ await captor.reload();
  await captor.getByRole('button',{name:'Prepare a journey',exact:true}).click();
  await captor.getByRole('checkbox',{name:/Grukk the Captive/}).check();
  await captor.getByLabel('Hero escort',{exact:true}).selectOption(escort);
@@ -67,6 +80,11 @@ try {
  await expect(captor.getByRole('dialog')).toHaveCount(0);
  await expect(captor.getByRole('button',{name:'Journey awaiting agreements · View',exact:true})).toBeVisible();
  expect(must(await admin.from('heroes').select('status').eq('id',hero).single()).status).toBe('captured');
+ const pendingBattle=must(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2].id,state:'scheduled',scenario_rules_id:'skirmish'}).select('id').single()).id;
+ must(await admin.from('match_participants').insert(bands.map(warband_id=>({match_id:pendingBattle,warband_id,accepted_at:new Date().toISOString()}))));
+ const pendingStart=await users[0].api.rpc('start_match',{p_match_id:pendingBattle});
+ expect(pendingStart.error?.message).toMatch(/journey awaiting agreements/);
+ expect(must(await admin.from('matches').select('state').eq('id',pendingBattle).single()).state).toBe('scheduled');
  await victim.reload();
  await expect(victim.getByText(/Grukk the Captive.*is sacrificed to Hashut and removed/)).toBeVisible();
  await victim.getByRole('button',{name:'Accept and apply to both rosters',exact:true}).click();
@@ -79,6 +97,13 @@ try {
  must(await admin.from('match_participants').insert(bands.map(warband_id=>({match_id:nextMatch,warband_id,accepted_at:new Date().toISOString()}))));
  for(let i=0;i<2;i++)must(await users[i].api.rpc('submit_battle_report',{p_match_id:nextMatch,p_warband_id:bands[i],p_report:{result:i?'lost':'won',applied:{}}}));
  must(await admin.from('matches').update({state:'completed',completed_at:new Date().toISOString()}).eq('id',nextMatch));
+ // Even a ready return cannot change the escort/Engine during a different live battle.
+ must(await users[0].api.rpc('start_match',{p_match_id:pendingBattle}));
+ const activeJourney=must(await admin.from('engine_journeys').select('id').eq('warband_id',bands[0]).eq('state','away').single()).id;
+ const midBattleReturn=await users[0].api.rpc('return_engine',{p_journey_id:activeJourney,p_reward:{d3:[],appD3:null,d6:null,appD6:null,allocations:[{heroId:escort,xp:1}],leaderId:escort},p_advances:[{warband_id:bands[0],subject_type:'hero',subject_id:escort,threshold_xp:24}]});
+ expect(midBattleReturn.error?.message).toMatch(/fighting a battle/);
+ expect(must(await admin.from('heroes').select('xp').eq('id',escort).single()).xp).toBe(23);
+ must(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',pendingBattle));
  await captor.reload();
  await captor.getByRole('button',{name:'Record return',exact:true}).click();
  await expect(captor.getByText('Zhatan the Escort, the warband leader, gains +1 Experience.',{exact:true})).toBeVisible();
@@ -132,20 +157,23 @@ try {
  await captor.getByRole('button',{name:'Record return and reward',exact:true}).click();
  await expect(captor.getByRole('dialog')).toHaveCount(0);
  const rewarded=must(await admin.from('engine_journeys').select('reward').eq('warband_id',bands[0]).eq('captive_count',6).single()).reward;
- expect(rewarded).toMatchObject({d3:editedD3,appD3:originalD3,d6:editedD6,appD6:originalD6,xpTotal:xpReward,gold:editedD6*5});
+ expect(rewarded).toMatchObject({d3:editedD3,appD3:originalD3,d6:editedD6,appD6:originalD6,xpTotal:xpReward,gold:editedD6*5,allocations:[{heroId:escort,xp:xpReward,name:'Zhatan the Escort'}]});
  expect(must(await admin.from('heroes').select('xp').eq('id',escort).single()).xp).toBe(24+xpReward);
  expect(must(await admin.from('warbands').select('gold').eq('id',bands[0]).single()).gold).toBe(100+editedD6*5);
+ must(await users[0].api.from('heroes').update({name:'Zhatan Renamed After Return'}).eq('id',escort));
+ await captor.reload();
  await captor.getByText('Past engine journeys (2)',{exact:true}).click();
  for(const button of await captor.getByRole('button',{name:/Zhatan the Escort · Returned/}).all()){
   await button.click();
   if(await captor.getByText(/Experience dice:/).count()){
+   await expect(captor.getByText(`Zhatan the Escort gained +${xpReward} Experience.`,{exact:true})).toBeVisible();
    await expect(captor.getByText(`Experience dice: app rolled ${originalD3.join(' + ')}; player changed the results to ${editedD3.join(' + ')}.`,{exact:true})).toBeVisible();
    await expect(captor.getByText(`Gold die: app rolled ${originalD6}; player changed it to ${editedD6}.`,{exact:true})).toBeVisible();
   }
   await captor.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
  }
  expect(await victim.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
- console.log('PASS: desktop captor proposes; separate mobile victim accepts exact annotated Hired Sword kit; no early transfer, Large capacity, no legacy duplicate, persisted identity and engine rename; agreed journey, escort absence, no early return, completed battle unlocks return, +1 XP queues the 24 XP advance, readable history; six-captive mobile reward retains app and edited dice with validated allocations.');
+ console.log('PASS: desktop captor proposes; separate mobile victim accepts exact annotated Hired Sword kit; no early transfer, Large capacity, no legacy duplicate, persisted identity and engine rename; agreed journey, escort absence, no early return, completed battle unlocks return, +1 XP queues the 24 XP advance, readable history; mid-battle dispatch/return and pending-journey start rejected atomically; six-captive mobile reward retains app and edited dice with validated allocations.');
 } finally {
  await browser?.close();
  if(bands.length)must(await admin.from('engine_journeys').delete().in('warband_id',bands));

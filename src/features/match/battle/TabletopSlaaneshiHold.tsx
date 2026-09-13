@@ -16,7 +16,7 @@ export function TabletopSlaaneshiHold({matchId,roster,enemies,turn,readOnly}:{ma
  const wielder=catchers.find(h=>h.id===wielderId)??catchers[0]
  const targets=enemies.flatMap(e=>combatantsOf(e.roster,e.template,e.roster.name,undefined)).filter(c=>!c.out&&!c.traitIds.includes('large_target')&&!c.traitIds.includes('steed'))
  const target=targets.find(c=>c.id===targetId)??targets[0]
- const occupied=holds.data?.some(h=>!h.released_at&&(h.wielder_id===wielder?.id||(h.target_id===target?.id&&h.target_model_index===member)))
+ const occupied=holds.data?.some(h=>!h.released_at&&((h.wielder_id===wielder?.id&&(h.target_id!==target?.id||h.target_model_index!==member))||(h.wielder_id!==wielder?.id&&h.target_id===target?.id&&h.target_model_index===member)))
  if(!catchers.length)return null
  return <div className="rounded-md border border-brass/40 bg-brass/5 p-3">
   <Button variant="secondary" disabled={readOnly} onClick={()=>setOpen(true)}>Record a tabletop Man-Catcher hold</Button>

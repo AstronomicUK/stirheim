@@ -1353,6 +1353,60 @@ export type Database = {
           },
         ]
       }
+      master_chef_checks: {
+        Row: {
+          correction_reason: string
+          id: string
+          match_id: string | null
+          original_roll: number
+          request_id: string
+          revision: number
+          roll: number
+          sold: boolean
+          source: string
+          warband_id: string
+        }
+        Insert: {
+          correction_reason?: string
+          id?: string
+          match_id?: string | null
+          original_roll: number
+          request_id: string
+          revision?: number
+          roll: number
+          sold?: boolean
+          source: string
+          warband_id: string
+        }
+        Update: {
+          correction_reason?: string
+          id?: string
+          match_id?: string | null
+          original_roll?: number
+          request_id?: string
+          revision?: number
+          roll?: number
+          sold?: boolean
+          source?: string
+          warband_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_chef_checks_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "master_chef_checks_warband_id_fkey"
+            columns: ["warband_id"]
+            isOneToOne: false
+            referencedRelation: "warbands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_participants: {
         Row: {
           accepted_at: string | null
@@ -2344,6 +2398,47 @@ export type Database = {
           p_spell_name: string
         }
         Returns: Json
+      }
+      record_master_chef: {
+        Args: {
+          p_expected_revision?: number
+          p_match_id: string
+          p_reason?: string
+          p_request_id: string
+          p_roll: number
+          p_source: string
+          p_warband_id: string
+        }
+        Returns: {
+          correction_reason: string
+          id: string
+          match_id: string | null
+          original_roll: number
+          request_id: string
+          revision: number
+          roll: number
+          sold: boolean
+          source: string
+          warband_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "master_chef_checks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_wyrdstone_sale: {
+        Args: {
+          p_changes: Json
+          p_chef_revision?: number
+          p_expected_gold: number
+          p_expected_shards: number
+          p_match_id: string
+          p_reason: string
+          p_warband_id: string
+        }
+        Returns: number
       }
       record_trade: {
         Args: {

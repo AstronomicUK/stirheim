@@ -289,3 +289,19 @@ it('describes leader waiting flags without leaking match identifiers', () => {
   expect(text).toContain('Waiting game completed — may recruit')
   expect(text).not.toContain('private-')
 })
+
+
+describe('income rule history', () => {
+  it('shows the roll correction in English and hides persistence bookkeeping', () => {
+    const reason='Master Chef: corrected D6 4 to 6 (original 4). Misread die. 5+ succeeded.';
+    const row=entry({table_name:'master_chef_checks',reason,before:{roll:4,revision:1},after:{roll:6,original_roll:4,revision:2,request_id:'opaque',sold:false}});
+    expect(describeActivity(row)).toContain(reason);
+    expect(activityFieldChanges(row)).toEqual([{label:'Master Chef',before:'',after:'',sentence:reason}]);
+  });
+  it('makes the sale and its Cook outcome visible in the headline', () => {
+    const reason='Sold 4 wyrdstone for 65 gc; Master Chef rolled 6: 5+ succeeded.';
+    const row=entry({table_name:'warbands',reason,before:{gold:100},after:{gold:165}});
+    expect(describeActivity(row)).toContain(reason);
+    expect(activityFieldChanges(row)[0].sentence).toBe(reason);
+  });
+});

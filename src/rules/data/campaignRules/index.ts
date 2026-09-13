@@ -106,6 +106,8 @@ export interface UnitCampaignRules {
 export interface ExplorationRules {
   extraShards?: number;
   extraDice?: number;
+  /** An eligible surviving Hero must have this learned skill. */
+  extraDiceSkill?: string;
   /** The extra die applies even when no hero survived (Snotlings' Scavengers). */
   extraDiceWithoutHeroes?: boolean;
   /** Gold crowns per enemy put out of action (Grave Goods). */
@@ -120,6 +122,7 @@ export interface IncomeRules {
   bandShift?: number;
   /** Only when this unit is present (Halfling Cook). */
   bandShiftWith?: string;
+  bandShiftRollTarget?: number;
   /** Multiply the counted size (Snotlings: 0.5, rounded up). */
   sizeFactor?: number;
   note: string;
@@ -494,15 +497,15 @@ export const WARBAND_RULES: Record<string, WarbandCampaignRules> = {
   amazons_mordheim: { hiredSwords: { allow: "none", note: "Amazons hire only Amazon hired swords, none of which are in the data." } },
   dark_elves: { equipmentBans: ["blackPowder"], notes: ["Dark Elves never use black powder weapons."] },
   gunnery_school_of_nuln: { equipmentBans: ["onlyBlackPowderMissiles"], notes: ["Gunnery School warriors use no ranged weapon but black powder."] },
-  hochland_bandits: { income: { bandShift: 1, note: "Foragers: sell wyrdstone as a warband one size band larger." } },
-  horned_hunters: { exploration: { extraDice: 1, note: "Pathfinder: +1 exploration die (once per warband)." } },
+  hochland_bandits: { income: { bandShift: -1, note: "Foragers: sell wyrdstone as one size band smaller (minimum 1–3)." } },
+  horned_hunters: { exploration: { extraDice: 1, extraDiceSkill: "horned_hunters_skills_pathfinder", note: "Pathfinder: +1 exploration die (once per warband)." } },
   shadow_warriors: { equipmentBans: ["poison"], hiredSwords: { denyKeywords: ["assassin", "chaos", "dark elf", "fury", "hillman", "possessed"], note: "Shadow Warriors hire nothing chaotic and no assassins." } },
   tomb_guardians: { exploration: { extraDice: 1, note: "Home Ground: +1 exploration die." } },
   tileans_miragleans: { hiredSwords: { denyKeywords: ["skaven", "skryre"], note: "Miragleans hire no Skaven." } },
   tileans_remasens: { hiredSwords: { denyKeywords: ["dark elf"], note: "Remasens hire no Dark Elves." } },
   the_cursed_cavalcade: { hiredSwords: { allow: ["crow_master_the"], note: "The Cavalcade hires nobody but the Crow Master." } },
   maneaters: { exploration: { rollTwoKeepOneWith: "maneaters_mountain_guide", note: "Ranger: a Mountain Guide who fought and was not taken out of action rolls two exploration dice and chooses one result. This is not a reroll." }, rareRollBonus: -1, hiredSwords: { allow: ["ogre_bodyguard", "halfling_scout", "halfling_thief"], note: "Maneaters hire only Ogres and Halflings until a Dog of War opens more." } },
-  halflings: { income: { bandShift: -1, bandShiftWith: "halflings_cook", note: "Master Chef: with a Cook (on a 5+) the warband sells as one size band smaller." } },
+  halflings: { income: { bandShift: -1, bandShiftWith: "halflings_cook", bandShiftRollTarget: 5, note: "Master Chef: with a Cook (on a 5+) the warband sells as one size band smaller." } },
   snotlings: {
     ratingFactor: 0.5,
     income: { sizeFactor: 0.5, note: "Snotlings count as half their number (rounded up) for income." },

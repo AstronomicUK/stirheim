@@ -137,16 +137,16 @@ describe("exploration", () => {
 });
 
 describe("income and rating", () => {
-  it("an Ogre eats for two, Snotlings count as half, Hochlanders sell as a bigger band", () => {
+  it("an Ogre eats for two, Snotlings count as half, Hochlanders sell as a smaller band", () => {
     const ost = warband("ostlander_mercenaries", [hero("e", "ostlander_elder")], [group("o", "ostlander_ogre", 1), group("k", "ostlander_kin", 2)]);
     expect(incomeSize(ost)).toMatchObject({ size: 5, headCount: 4 });
     const snots = warband("snotlings", [hero("b", "bullied_goblin")], [group("m", "snotling_mobs", 9)]);
     expect(incomeSize(snots).size).toBe(5);
     expect(warbandRating(snots).notes.join(" ")).toContain("0.5x");
     const hochland = warband("hochland_bandits", [hero("p", "hochland_bandits_bandit_prince")], [group("t", "hochland_bandits_thug", 2)]);
-    expect(incomeSize(hochland).bandShift).toBe(1);
-    // 3 warriors sell 1 shard for 45 gc; a band larger it is 40.
-    expect(wyrdstoneQuote(hochland, 1)).toBe(40);
+    expect(incomeSize(hochland).bandShift).toBe(-1);
+    // The smaller-band benefit is clamped at the first column.
+    expect(wyrdstoneQuote(hochland, 1)).toBe(45);
     expect(wyrdstoneQuote(hochland, 1, { sizeOverride: 3 })).toBe(45);
   });
   it("Snotling mobs count as one model each", () => {

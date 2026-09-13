@@ -11,6 +11,7 @@ import { diffRoster } from '../../domain/rosterDiff'
 import type { CampaignHouseRules, RosterWarband } from '../../rules/types/roster'
 
 export interface TradeOptions {
+  sale?: { gold: number; shards: number; chefRevision?: number };
   rareItemSearch?: boolean
   haggle?: HaggleTrade;
   wyrdstoneSold?: boolean
@@ -71,6 +72,7 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
         reason: opts.reason,
         rareItemSearch: opts.rareItemSearch,
         haggle: opts.haggle,
+        sale: opts.sale,
       })
       return true
     } catch (e) {

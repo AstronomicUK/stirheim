@@ -75,6 +75,7 @@ export async function fetchTradePhaseState(warbandId: string, matchId: string): 
 export interface HaggleTrade {heroId:string; dice:[number,number]; requestId:string; itemName:string; priceBefore:number}
 
 export interface RecordTradeInput {
+  sale?: { gold: number; shards: number; chefRevision?: number };
   rareItemSearch?: boolean
   haggle?: HaggleTrade;
   /** The current phase (latest report's match), or null when the warband has not fought yet. */
@@ -91,6 +92,11 @@ export interface RecordTradeInput {
 
 /** Returns the number of roster changes applied. */
 export async function recordTrade(warbandId: string, input: RecordTradeInput): Promise<number> {
+  if(input.sale) {
+    const {data,error}=await supabase.rpc("record_wyrdstone_sale",{p_warband_id:warbandId,p_match_id:input.matchId!,p_changes:input.changes as unknown as Json,p_reason:input.reason??"Sold wyrdstone",p_expected_gold:input.sale.gold,p_expected_shards:input.sale.shards,p_chef_revision:input.sale.chefRevision});
+    if(error)throw new Error(error.message);
+    return data;
+  }
   if(input.rareItemSearch) {
     const {data,error}=await supabase.rpc('record_rare_item_trade',{p_warband_id:warbandId,p_match_id:input.matchId!,p_changes:input.changes as unknown as Json,p_wyrdstone_sold:input.wyrdstoneSold,p_heroes_searched:input.heroesSearched,p_reason:input.reason??'',p_haggle:input.haggle as unknown as Json??undefined})
     if(error)throw new Error(error.message)
@@ -153,4 +159,16 @@ export function useTradeWagonSearchRestriction(warbandId:string|undefined) {
     if(error)throw new Error(error.message)
     return data
   }})
+}
+
+export function useMasterChef(warbandId: string, matchId: string | null, enabled: boolean) {
+  return useQuery({queryKey: ['trading','master-chef',warbandId,matchId],enabled,queryFn: async () => {
+    let query=supabase.from('master_chef_checks').select('*').eq('warband_id',warbandId);
+    query=matchId ? query.eq('match_id',matchId) : query.is('match_id',null);
+    const {data,error}=await query.maybeSingle();if(error)throw new Error(error.message);return data;
+  }});
+}
+export async function saveMasterChef(warbandId: string, matchId: string | null, roll: number, manual: boolean, requestId: string, revision?: number, reason='') {
+  const {data,error}=await supabase.rpc('record_master_chef',{p_warband_id:warbandId,p_match_id:matchId!,p_roll:roll,p_source:manual?'tabletop':'app',p_request_id:requestId,p_expected_revision:revision,p_reason:reason});
+  if(error)throw new Error(error.message);return data;
 }

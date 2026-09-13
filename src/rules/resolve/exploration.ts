@@ -59,7 +59,8 @@ export function explorationDiceAllowed(warband: RosterWarband, opts: Exploration
   const survivors = alive.filter((h) => !unitRules(h.unitTemplateId).noExplorationDie);
   const lazy = alive.length - survivors.length;
   const extra = Math.max(0, Math.floor(opts.extraDice ?? 0));
-  const ruleDice = rules?.extraDice && (survivors.length > 0 || rules.extraDiceWithoutHeroes) ? rules.extraDice : 0;
+  const hasRequiredSkill = !rules?.extraDiceSkill || survivors.some(h => h.skillIds.includes(rules.extraDiceSkill!));
+  const ruleDice = hasRequiredSkill && rules?.extraDice && (survivors.length > 0 || rules.extraDiceWithoutHeroes) ? rules.extraDice : 0;
   const raw = survivors.length + (opts.won ? 1 : 0) + extra + ruleDice;
   const keep = Math.min(raw, EXPLORATION_MAX_DICE);
   const parts = [`${survivors.length} surviving ${survivors.length === 1 ? "hero" : "heroes"}`];

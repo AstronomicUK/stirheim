@@ -1,5 +1,10 @@
 # Feedback Tracker
 
+## Income and exploration batch — 13 September 2026
+
+Locally implemented; awaiting one batch deployment. #102 Foragers now shifts to the smaller income band; #103 Master Chef saves its required 5+ roll with explained corrections and safe sale settlement; #157 Pathfinder requires an eligible surviving Hero with the learned skill. Source, verification and migration 131 are recorded in [the batch record](INCOME-EXPLORATION-BATCH-2026-09-13.md). These are not yet live fixes.
+
+
 Every bug and improvement Tom sends, logged as its own entry in his own words. Nothing here is
 paraphrased or trimmed when it's added — the point of this file is that no detail from a report
 gets lost between "Tom said it" and "it's fixed," however small the item looks at a glance.

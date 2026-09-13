@@ -169,6 +169,8 @@ function joinNatural(parts: string[]): string {
 export function describeActivity(entry: CampaignActivity): string {
   const before = asRow(entry.before)
   const after = asRow(entry.after)
+  if(entry.table_name==='master_chef_checks') return `${actorName(entry)} · ${entry.reason ?? 'Recorded Master Chef'}`
+  if(entry.table_name==='warbands' && entry.reason?.startsWith('Sold ')) return `${actorName(entry)} · ${entry.reason}`
   switch (entry.table_name) {
     case 'warbands':
       return describeWarband(entry, before, after)
@@ -386,6 +388,8 @@ function campaignSettingChanges(before: Json | undefined, after: Json | undefine
  * delete as "was X"; an update shows both sides. Bookkeeping columns (ids, timestamps) are left out.
  */
 export function activityFieldChanges(entry: CampaignActivity): FieldChange[] {
+  if(entry.table_name==='master_chef_checks') return [{label:'Master Chef',before:'',after:'',sentence:entry.reason??'Recorded Master Chef.'}]
+  if(entry.table_name==='warbands' && entry.reason?.startsWith('Sold ')) return [{label:'Wyrdstone sale',before:'',after:'',sentence:entry.reason}]
   if(entry.table_name==='match_reports')return reportActivityChanges(entry)
   if(entry.table_name==='pending_advances')return advanceActivityChanges(entry)
   const before = asRow(entry.before)

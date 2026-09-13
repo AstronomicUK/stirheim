@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { warbandKeys, type WarbandDetail } from './warbands'
 import type { CaptiveCase } from './captives'
+import { forcedCaptureSnapshot, snapshotKit, type ForcedCaptureSnapshot } from './forcedCaptives'
 import type { RosterItem, RosterWarband } from '../rules/types/roster'
 import { findItem } from '../rules/data/items'
 import { WARBAND_TEMPLATES, findUnitTemplate } from '../rules/data/warbandTemplates'
@@ -100,14 +101,34 @@ export interface EnginePlacementInput {
   engineId: string
 }
 
+/** Whether a forced-captured henchman's group is Large by its snapshot flag or native profile. */
+function snapshotGroupIsLarge(snap: ForcedCaptureSnapshot): boolean {
+  if (snap.group.is_large) return true
+  const unit = WARBAND_TEMPLATES.map(w => findUnitTemplate(w, snap.group.unit_type_rules_id)).find(Boolean)
+  return unitIsLarge(unit)
+}
+
 /**
- * Pure builder: the two rosters exactly as the server validates them. The captive keeps his row and
- * his 'captured' status; his equipment leaves him and lands in the captor's stash as new rows.
+ * Pure builder: the two rosters exactly as the server validates them. A Hero keeps his row and his
+ * 'captured' status; his equipment leaves him and lands in the captor's stash as new rows. A
+ * forced-captured henchman (Man-catcher, migration 104) is already off the roster with his kit, so
+ * only the captor's stash changes: it gains exactly the snapshot kit.
  */
 export function buildEnginePlacementProposal(input: EnginePlacementInput): { choice: Record<string, unknown>; nextOwner: RosterWarband; nextCaptor: RosterWarband; message: string; large: boolean; kit: RosterItem[] } {
   const { item, owner, captor, engineId } = input
-  if (item.subject_kind !== 'hero') throw new Error('Only a captured Hero or hired sword can be locked in an Engine of Chaos for now.')
   if (!engineId) throw new Error('Choose the Engine that holds the prisoner.')
+  if (item.subject_kind === 'henchman') {
+    const snap = forcedCaptureSnapshot(item)
+    if (!snap) throw new Error('A lost henchman can only be resolved through Kidnapped!.')
+    const kit = snapshotKit(snap), large = snapshotGroupIsLarge(snap)
+    const kitText = kit.length ? kit.map(i => `${i.quantity > 1 ? `${i.quantity} × ` : ''}${itemName(i)}${i.notes ? ` (${i.notes})` : ''}`).join(', ') : 'no equipment'
+    return {
+      choice: { kind: 'engine_placement', engineId },
+      nextOwner: owner.roster, nextCaptor: { ...captor.roster, stash: [...captor.roster.stash, ...kit] }, large, kit,
+      message: `${item.hero_name} locked in the Engine of Chaos of ${captor.warband.name} (${large ? 'two places, Large' : 'one place'}); ${kitText} confiscated to the stash. He stays captured.`,
+    }
+  }
+  if (item.subject_kind !== 'hero') throw new Error('Only a captured Hero, hired sword or henchman can be locked in an Engine of Chaos.')
   const hero = owner.roster.heroes.find(h => h.id === item.hero_id)
   if (!hero) throw new Error('This warrior is no longer on the roster.')
   if (hero.status !== 'captured') throw new Error('This warrior is no longer recorded as captured.')

@@ -35,7 +35,7 @@ export function CaptiveCard({detail,campaignId,userId}:{detail:WarbandDetail;cam
  </Section>
 }
 
-export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId}:{item:CaptiveCase;detail:WarbandDetail;campaign?:CampaignDetail;canAct:boolean;gm:boolean;userId?:string}) {
+export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId,embedded=false}:{item:CaptiveCase;detail:WarbandDetail;campaign?:CampaignDetail;canAct:boolean;gm:boolean;userId?:string;embedded?:boolean}) {
  const victimSide=item.victim_warband_id===detail.warband.id
  const otherId=victimSide?item.captor_warband_id??undefined:item.victim_warband_id
  const other=useWarband(otherId)
@@ -57,15 +57,15 @@ export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId}:{item:Ca
  const side:'pirates'|'victim'|null=captor&&captor.warband.owner_id===userId?'pirates':owner&&owner.warband.owner_id===userId?'victim':null
  const error=assign.error??propose.error??respond.error??reverse.error
  return <Card className="flex flex-col gap-3 p-4">
-  <div className="flex flex-wrap items-baseline justify-between gap-2">
+  {!embedded?<div className="flex flex-wrap items-baseline justify-between gap-2">
    <h3 className="font-semibold">{item.hero_name}</h3>
    <span className="text-sm text-ink-dim">{item.state==='unassigned'?'Captor not yet named':item.state==='resolved'?'Outcome recorded':forced?victimSide?`Held by ${otherName}`:`Held by your warband, from ${otherName}`:henchman?victimSide?`Lost henchman; ${otherName} may press-gang him`:`Lost enemy henchman from ${otherName}`:victimSide?`Held by ${otherName}`:`Held by your warband, from ${otherName}`}</span>
-  </div>
+  </div>:null}
   {item.state==='unassigned'?(victimSide&&canAct?<>
    <SelectField label="Warband holding the captive" value={captorId} onChange={e=>setCaptorId(e.target.value)}><option value="">Choose the captor agreed at the table</option>{campaign?.members.filter(m=>m.warband_id!==detail.warband.id).map(m=><option key={m.warband_id} value={m.warband_id}>{m.warband.name}</option>)}</SelectField>
    <Button variant="secondary" disabled={!captorId} pending={assign.isPending} onClick={()=>assign.mutate({caseId:item.id,captorWarbandId:captorId})}>Record captor</Button>
   </>:<p className="text-sm text-ink-dim">Waiting for the player of {item.victim?.name??'the other warband'} to name the warband holding {item.hero_name}.</p>):null}
-  {item.state==='open'?<>
+  {item.state==='open'||(item.state==='held'&&pending.length>0)?<>
    {pending.map(p=>{const ours=p.proposed_by_warband_id===detail.warband.id;return <Notice key={p.id} tone="info" title={ours?'Your proposal, awaiting the other player':`Proposed by ${ours?'you':p.proposed_by_warband_id===item.captor_warband_id?item.captor?.name:item.victim?.name}`}>
     <p>{p.message}</p>
     {p.proposer_note&&p.proposer_note!==p.message?<details className="mt-2 text-xs text-ink-dim"><summary className="cursor-pointer">Additional proposal notes</summary><p className="mt-2 whitespace-pre-wrap break-words">{p.proposer_note}</p></details>:null}
@@ -84,7 +84,7 @@ export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId}:{item:Ca
    {canAct&&owner&&captor&&engineRoute&&!checkingEngines&&!pending.length&&!companion?<EnginePlacementPanel item={item} owner={owner} captor={captor} requiresAgreement={!gm&&!bothMine}/>:null}
    {checkingEngines?<p className="text-sm text-ink-dim">{engines.error?`Could not check Engine availability: ${engines.error.message}`:'Checking Engine availability…'}</p>:null}
    {canAct&&owner&&captor&&forced&&!engineRoute&&!checkingEngines&&!pending.length?<ForcedCaptivePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}/>:null}
-   {canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!henchman&&!companion&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
+   {item.state==='open'&&canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!henchman&&!companion&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
      submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}
      onSubmit={(preview,choice)=>propose.mutate({caseId:item.id,choice,owner,captor,nextOwner:preview.owner,nextCaptor:preview.captor,message:preview.message})}/>:null}
    {canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!pending.length&&!(henchman&&item.source==='pirates_kidnapped')?<CaptiveExchangePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed exchange':`Propose exchange to ${otherName}`}/>:null}
@@ -92,8 +92,8 @@ export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId}:{item:Ca
    {!canAct?<p className="text-sm text-ink-dim">Only the two players (or the campaign GM) can propose or accept an outcome.</p>:null}
   </>:null}
   {item.state==='resolved'||item.state==='held'?<>
-   <Notice tone="info" title={item.state==='held'?'Imprisoned in an Engine of Chaos':'Recorded outcome'}>{item.resolution_message}</Notice>
-   {gm||bothMine?<div className="flex flex-wrap items-end gap-2">
+   {!embedded?<Notice tone="info" title={item.state==='held'?'Imprisoned in an Engine of Chaos':'Recorded outcome'}>{item.resolution_message}</Notice>:null}
+   {item.resolution_kind==='dispatch'?<p className="text-sm text-ink-dim">This sacrifice is part of an Engine journey. The campaign GM can review that journey from the captor’s warband page.</p>:gm||bothMine?<div className="flex flex-wrap items-end gap-2">
     <p className="w-full text-sm text-ink-dim">If another captive outcome changed either roster afterwards, reverse the newer outcome first.</p>
     <TextField label="Reason to reverse" value={reason} onChange={e=>setReason(e.target.value)} placeholder="What was recorded wrongly"/>
     <Button variant="danger" disabled={reason.trim().length<5} pending={reverse.isPending} onClick={()=>reverse.mutate({caseId:item.id,reason})}>Reverse and restore both rosters</Button>

@@ -195,3 +195,11 @@ This does not finish the Engine feature: custody 102 and its client API are Clau
 ## Engine exploration integration — 13 September
 
 317 post-battle model tests pass after routing Straggler/Prisoners to Engine captives when an engine is present. The recorded count keeps the original app D3 and later edit; gold, human recruitment and Straggler insight are not also awarded. Migration 106 keeps that count fixed at placement and preserves the dice in custody history. Seven custody DB checks pass. Actual mobile acceptance covers both named imprisonment/reversal and placing two of three exploration captives, viewing the original/edited D3, and reversing one placement with the remaining count updated. No production deployment.
+
+## Engine journeys and return — 13 September
+
+Migrations 105/107 and the connected roster sheets now support selected captives, an eligible Hero escort, individual victim consent, cancellation before named consent, and departure with the agreed subset. A journey misses a battle that actually started after departure; return applies its reward once and queues every earned advance. Claude's clean serial database run passed 295 tests across 54 files.
+
+Actual separate-player browser acceptance passed desktop proposal and mobile victim consent, preserving a Large Hired Sword's exact equipment and the named Engine's identity. The journey blocks an early return; after the missed battle, 23→24 XP queued the correct advance and lifted the escort absence. A second mobile journey sent six anonymous captives from two distinct report-backed discoveries, rolled and edited 2D3 plus D6, rejected a negative allocation, applied exact XP/gold, and displayed both original and edited dice in returned history. All disposable fixtures were removed. TypeScript and changed-file lint passed.
+
+Still outstanding: Engine rescue during battles; the specialist capture integrations listed in the batch; the deferred double-barrel house-rule discussion. This is local acceptance, not deployment or a claim that #229 is complete.

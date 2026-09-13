@@ -10,7 +10,7 @@ export interface EngineInventoryRow {
   stock_index: number
   name: string
   state: 'present' | 'away' | 'retired'
-  history: { count?: number; event: string; at: string; by?: string | null; from?: string; to?: string; name?: string; reason?: string; places?: number }[]
+  history: { escort?: string; captives?: number; xp?: number; gold?: number; count?: number; event: string; at: string; by?: string | null; from?: string; to?: string; name?: string; reason?: string; places?: number }[]
   created_at: string
   updated_at: string
 }

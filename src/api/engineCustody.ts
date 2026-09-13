@@ -21,6 +21,7 @@ import { unitIsLarge } from '../rules/resolve/builder'
  */
 export type EnginePrisonerState = 'held' | 'reversed' | 'freed' | 'dispatched'
 export interface EnginePrisonerRow {
+  journey_id?: string | null
   id: string
   engine_id: string
   holder_warband_id: string

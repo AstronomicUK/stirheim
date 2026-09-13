@@ -11,6 +11,9 @@ function historyText(entry: EngineInventoryRow['history'][number]) {
     case 'prisoners_placed_from_exploration': return `${entry.count ?? 'Some'} exploration ${entry.count === 1 ? 'captive' : 'captives'} imprisoned.`
     case 'prisoner_placed': return `${entry.name ?? 'A prisoner'} imprisoned${entry.places ? `, using ${entry.places} ${entry.places === 1 ? 'place' : 'places'}` : ''}.`
     case 'placement_reversed': return `Prisoner placement reversed.${entry.reason ? ` ${entry.reason}` : ''}`
+    case 'departed': return `Departed for the Dark Lands with ${entry.escort ?? 'a Hero escort'} and ${entry.captives ?? 'the chosen'} captives.`
+    case 'returned': return `Returned with ${entry.escort ?? 'the escort'}. Reward: ${entry.xp ?? 0} Experience${entry.gold ? ` and ${entry.gold} gc` : ''}.`
+    case 'journey_reversed': return `Journey reversed; the engine and captives were restored.${entry.reason ? ` ${entry.reason}` : ''}`
     default: return null
   }
 }

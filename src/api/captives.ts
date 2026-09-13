@@ -97,7 +97,7 @@ export function useCaptiveCases(warbandId: string | undefined) {
 }
 
 function invalidateAll(cache: ReturnType<typeof useQueryClient>) {
-  return Promise.all([cache.invalidateQueries({ queryKey: ['engines'] }), cache.invalidateQueries({ queryKey: ['enginePrisoners'] }), cache.invalidateQueries({ queryKey: warbandKeys.all }), cache.invalidateQueries({ queryKey: ['advances'] }), cache.invalidateQueries({ queryKey: ['captives'] }), cache.invalidateQueries({ queryKey: feedbackKeys.all }), cache.invalidateQueries({ queryKey: reportKeys.all })])
+  return Promise.all([cache.invalidateQueries({ queryKey: ['engineJourneys'] }), cache.invalidateQueries({ queryKey: ['engines'] }), cache.invalidateQueries({ queryKey: ['enginePrisoners'] }), cache.invalidateQueries({ queryKey: warbandKeys.all }), cache.invalidateQueries({ queryKey: ['advances'] }), cache.invalidateQueries({ queryKey: ['captives'] }), cache.invalidateQueries({ queryKey: feedbackKeys.all }), cache.invalidateQueries({ queryKey: reportKeys.all })])
 }
 
 /** The victim's player (or GM) names the enemy warband holding the captive when the report did not settle it. */

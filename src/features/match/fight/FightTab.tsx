@@ -17,7 +17,7 @@ import { PoisonControls } from '../battle/PoisonControls'
 import { recordedPoisonEffects } from '../battle/poisonUses'
 import { blessedWaterWeapon } from '../../../rules/engine/blessedWater'
 import { blessedWaterRemaining, declareBlessedWater, correctBlessedWater } from '../battle/blessedWaterUses'
-import { reloadTurnsFor } from './reloadRules'
+import { reloadTurnsFor, doubleBarrelReloadSkill } from './reloadRules'
 import { BlackpowderLosses } from './BlackpowderLosses'
 import { physicalWeaponChoices, withBrokenWeapons } from './weaponLoss'
 import type { ItemRow, BrokenWeapon } from '../../../domain'
@@ -587,11 +587,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             {doubleCopies.length>1?<Button variant="secondary" disabled={readOnly||!!rollSetup||selected} onClick={()=>setPhysicalSelection(current=>({...current,[`${attacker.id}:double`]:copy.key}))}>{selected?'Selected weapon':'Select this weapon'}</Button>:null}
           </ChamberDisplay>
         })}
-        <p className="text-xs text-ink-dim">One hit roll; each fired barrel has its own wound roll. Reload at the end of Shooting only if this model did not fire any weapon this phase.</p>
+        <p className="text-xs text-ink-dim">One hit roll; each fired barrel has its own wound roll. {houseRules.doubleBarrelSkillReload==='extra_chamber'&&primary&&doubleBarrelReloadSkill(primary.id,attacker.skillIds)?'Hunter / Pistolier: automatic reloads allow two barrels, then one, then two on successive own turns. You may shoot each turn.':'Reload at the end of Shooting only if this model did not fire any weapon this phase.'}</p>
         <Button variant="secondary" disabled={readOnly||!!rollSetup||doubleUneven} onClick={()=>{
           const guns=doubleModelCopies.map(copy=>({warriorId:attacker.id,modelIndex:doubleSlot,weaponKey:physicalGunKey(copy.snapshot,copy.key),name:copy.snapshot.name}))
+          const extraKeys=houseRules.doubleBarrelSkillReload==='full_reload'?doubleModelCopies.filter(copy=>doubleBarrelReloadSkill(copy.snapshot.weaponId,attacker.skillIds)).map(copy=>physicalGunKey(copy.snapshot,copy.key)):[]
           const id=crypto.randomUUID(),at=new Date().toISOString(),ownTurn=Number(ownTurnKey.split(':').at(-1))
-          try { reloadDoubleBarrels(sheet,guns,ownTurn,id,at); edit?.(state=>reloadDoubleBarrels(state,guns,ownTurn,id,at)); setDoubleError(null) }
+          try { reloadDoubleBarrels(sheet,guns,ownTurn,id,at,extraKeys); edit?.(state=>reloadDoubleBarrels(state,guns,ownTurn,id,at,extraKeys)); setDoubleError(null) }
           catch(error){setDoubleError(error instanceof Error?error.message:'Could not reload.')}
         }}>End Shooting: did not fire — reload</Button>
         {doubleBlocked?<p className="text-sm text-ink-dim">{doubleBlocked}</p>:null}
@@ -895,14 +896,14 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                   const selected = combatPistols.find(p => p.selected?.snapshot.itemId === plan?.heldWeapon?.itemId && p.selected?.snapshot.copyIndex === plan?.heldWeapon?.copyIndex)
                   if (!selected?.selected || !plan || (index === next.index && next.pending?.kind === 'firePermission') || next.outcomes[index] === 'cannotFire' || next.outcomes[index] === 'weaponBroken') continue
                   const id = `${attemptId}:pistol:${selected.selected.key}`
-                  edit(state => recordCombatPistolUse(state, { id, modelKey: combatModelKey, warriorId: attacker.id, name: attacker.name, weapon: selected.selected!.snapshot, mode: combatPistolMode, modelIndex: pistolSlot, barrels:plan.barrels, phaseKey, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor({id:selected.weapon.physicalWeaponId!,special:['prepareShotReloadEveryOtherTurnUnlessBrace']},attacker.skillIds,selected.options?.pistolCount) ?? 1 }))
+                  edit(state => recordCombatPistolUse(state, { id, modelKey: combatModelKey, warriorId: attacker.id, name: attacker.name, weapon: selected.selected!.snapshot, mode: combatPistolMode, modelIndex: pistolSlot, barrels:plan.barrels, alternatingChamberReload:houseRules.doubleBarrelSkillReload==='extra_chamber'&&!!doubleBarrelReloadSkill(selected.selected!.snapshot.weaponId,attacker.skillIds), phaseKey, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor({id:selected.weapon.physicalWeaponId!,special:['prepareShotReloadEveryOtherTurnUnlessBrace']},attacker.skillIds,selected.options?.pistolCount) ?? 1 }))
                 }
               }
               if (next.critUsed && areaId) edit(s => ({ ...s, areaCriticals: { ...s.areaCriticals, [areaId]: true } }))
               const blastShotId = grapeSpread?.shotId ?? mortarShot?.id
               if (next.critUsed && blastShotId) edit(s => ({ ...s, blackpowderShots: s.blackpowderShots.map(shot => shot.id === blastShotId ? { ...shot, criticalUsed: true } : shot) }))
                 const startsDouble = isDoubleBarrel && doubleHeld && primary && doubleGun && firingAttemptStarted(previous,next)
-                if (startsDouble) edit(s=>recordBlackpowderShot(s,{id:attemptId,warriorId:attacker.id,weaponKey:doubleGun.weaponKey,weaponName:primary.name,heldWeapon:doubleHeld.snapshot,ownTurn:Number(ownTurnKey.split(':').at(-1)),modelIndex:doubleSlot,barrels:next.plans[0].input.barrels??1,reloadTurns:1,experimental:false,at:new Date().toISOString()},attacker.name))
+                if (startsDouble) edit(s=>recordBlackpowderShot(s,{id:attemptId,warriorId:attacker.id,weaponKey:doubleGun.weaponKey,weaponName:primary.name,heldWeapon:doubleHeld.snapshot,ownTurn:Number(ownTurnKey.split(':').at(-1)),modelIndex:doubleSlot,alternatingChamberReload:houseRules.doubleBarrelSkillReload==='extra_chamber'&&!!doubleBarrelReloadSkill(primary.id,attacker.skillIds),barrels:next.plans[0].input.barrels??1,reloadTurns:1,experimental:false,at:new Date().toISOString()},attacker.name))
               if (pistol?.selected && !areaTarget && primary) {
                 const startsPistol = firingAttemptStarted(previous,next)
                 if (startsPistol) edit(s => recordBlackpowderShot(s, { id: attemptId, warriorId: attacker.id, weaponKey: physicalGunKey(pistol.selected!.snapshot, pistol.selected!.key), weaponName: primary.name, heldWeapon: pistol.selected!.snapshot, modelIndex: pistolSlot, ownTurn: Number(ownTurnKey.split(':').at(-1)), reloadTurns: reloadTurnsFor(primary, attacker.skillIds, pistol.pistolCount) ?? 0, experimental: false, at: new Date().toISOString() }, attacker.name))

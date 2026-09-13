@@ -3,6 +3,10 @@ import {createClient} from '/Users/tombrookes/Documents/Claude Scripts/stirheim/
 import {execFileSync} from 'node:child_process';
 const raw=execFileSync('npx',['supabase','status','-o','env'],{cwd:'/Users/tombrookes/Documents/Claude Scripts/stirheim',env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
 const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
+if(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(env.API_URL))throw Error('Local only');
+const reloadRule=process.env.CHAMBER_RELOAD_RULE??'none';
+if(!['none','full_reload'].includes(reloadRule))throw Error('Unsupported check mode');
+const full=reloadRule==='full_reload';
 const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),player=createClient(env.API_URL,env.ANON_KEY);
 const auth=await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'});if(auth.error)throw auth.error;
 const uid=auth.data.user.id,ids=[];let campaign,b;
@@ -10,7 +14,7 @@ const must=r=>{if(r.error)throw Error(r.error.message);return r.data};
 let match;
 try {
  for(const name of ['Scenario Rewards QA','Scenario Opponent QA']) ids.push(must(await player.rpc('create_warband',{payload:{name,type_rules_id:'mercenaries_reikland',gold:100,heroes:[],henchman_groups:[],stash:[]}})));
- campaign=must(await admin.from('campaigns').insert({name:'Disposable Scenario Rewards QA',gm_id:uid}).select('id').single()).id;
+ campaign=must(await admin.from('campaigns').insert({name:'Disposable Scenario Rewards QA',gm_id:uid,settings:{houseRules:{doubleBarrelSkillReload:reloadRule}}}).select('id').single()).id;
  must(await admin.from('campaign_members').insert(ids.map(warband_id=>({campaign_id:campaign,warband_id,user_id:uid}))));
  match=must(await admin.from('matches').insert({campaign_id:campaign,created_by:uid,state:'in_progress',combat_mode:'players',scenario_rules_id:'hidden_treasure'}).select('id').single()).id;
  must(await admin.from('match_participants').insert(ids.map(warband_id=>({match_id:match,warband_id,accepted_at:new Date().toISOString()}))));
@@ -39,13 +43,13 @@ try {
  await p.getByRole('button',{name:'Manage ammunition',exact:true}).first().click();
  await p.getByRole('checkbox',{name:/did not shoot any weapon/}).check();
  await p.getByRole('button',{name:'Reload spent barrels',exact:true}).click();
- await expect(p.locator('.chamber-count').first()).toContainText('1 / 2 loaded');
+ await expect(p.locator('.chamber-count').first()).toContainText(full?'2 / 2 loaded':'1 / 2 loaded');
  await expect.poll(async()=>must(await admin.from('battle_sessions').select('live_state').eq('match_id',match).eq('warband_id',ids[0]).single()).live_state.chamberReloads?.length).toBe(1);
  await p.reload();
  await p.getByRole('button',{name:/View Rosters/}).click();
- await expect(p.locator('.roster-chamber .chamber-ball')).toHaveCount(3);
+ await expect(p.locator('.roster-chamber .chamber-ball')).toHaveCount(full?4:3);
  expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  expect(errors).toEqual([]);
- console.log('PASS: players-calculated mobile battle can record tabletop barrels and reload, preserving mini roster and plain-English completed log across refresh.');
+ console.log(reloadRule,'PASS: players-calculated mobile battle can record tabletop barrels and reload, preserving mini roster and plain-English completed log across refresh.');
 
-} finally {await b?.close();if(match)await admin.from('matches').delete().eq('id',match);if(campaign)await admin.from('campaigns').delete().eq('id',campaign);if(ids.length)await admin.from('warbands').delete().in('id',ids);await player.auth.signOut();}
+} finally {await b?.close();if(match)must(await admin.from('matches').delete().eq('id',match));if(campaign)must(await admin.from('campaigns').delete().eq('id',campaign));if(ids.length)must(await admin.from('warbands').delete().in('id',ids));await player.auth.signOut();}

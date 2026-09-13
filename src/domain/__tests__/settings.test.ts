@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { campaignHouseRulesSchema, campaignSettingsSchema, defaultCampaignSettings } from "../settings";
 
 describe("campaign settings", () => {
+  it('preserves each reload policy and leaves older campaigns unchanged', () => {
+    expect(campaignSettingsSchema.parse({}).houseRules.doubleBarrelSkillReload).toBe('none');
+    for (const policy of ['none', 'extra_chamber', 'full_reload'] as const) {
+      const saved = campaignSettingsSchema.parse({ houseRules: { doubleBarrelSkillReload: policy } });
+      expect(campaignSettingsSchema.parse(JSON.parse(JSON.stringify(saved))).houseRules.doubleBarrelSkillReload).toBe(policy);
+    }
+    expect(campaignSettingsSchema.safeParse({ houseRules: { doubleBarrelSkillReload: 'invented' } }).success).toBe(false);
+  });
   it("keeps Healing Herbs reusable for old campaigns and preserves an explicit single-use choice", () => {
     expect(campaignSettingsSchema.parse({ houseRules: { halfPriceArmour: false } }).houseRules.healingHerbsSingleUse).toBe(false);
     const saved = campaignSettingsSchema.parse({ houseRules: { healingHerbsSingleUse: true } });
@@ -21,7 +29,7 @@ describe("campaign settings", () => {
       rabbitsFootBattleOnly: true,
       rewardsOfTheShadowlord: false,
       firstSpellRule: "random",
-        healingHerbsSingleUse: false, dismissHeroForTalent: false,
+        doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false,
         opposedParryWS: false,
         bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
@@ -75,7 +83,7 @@ describe("campaign settings", () => {
       rabbitsFootBattleOnly: true,
       rewardsOfTheShadowlord: false,
       firstSpellRule: "random",
-        healingHerbsSingleUse: false, dismissHeroForTalent: false,
+        doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false,
         opposedParryWS: false,
         bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
       },
@@ -97,7 +105,7 @@ describe("campaign settings", () => {
     rabbitsFootBattleOnly: true,
     rewardsOfTheShadowlord: false,
     firstSpellRule: "random",
-      healingHerbsSingleUse: false, dismissHeroForTalent: false,
+      doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false,
         opposedParryWS: false,
       bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
     });

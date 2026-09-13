@@ -5,6 +5,40 @@ import {doubleBarrelState,reloadDoubleBarrels,correctChamberReload} from '../cha
 const gun={warriorId:'hero',modelIndex:0,weaponKey:'gun1',name:'First pistol'}
 const second={...gun,weaponKey:'gun2',name:'Second pistol'}
 const fire=(key:string,turn:number,barrels:1|2)=>({id:`${key}:${turn}`,warriorId:'hero',weaponKey:key,weaponName:'Double-barrelled pistol',ownTurn:turn,barrels,modelIndex:0,reloadTurns:1,at:`2026-09-12T12:${String(turn).padStart(2,'0')}:00Z`,experimental:false})
+it('allows the approved 2/1/2/1 cycle without a non-firing phase, including after refresh',()=>{
+ let state=emptyBattleLiveState()
+ for(const [index,barrels] of ([2,1,2,1,2] as const).entries()){
+  const turn=index+1
+  expect(doubleBarrelState(state,gun,turn)).toMatchObject({loaded:barrels,block:null})
+  if(barrels===1)expect(()=>recordBlackpowderShot(state,{...fire('gun1',turn,2),alternatingChamberReload:true},'Hero')).toThrow(/not enough loaded/)
+  state=recordBlackpowderShot(state,{...fire('gun1',turn,barrels),alternatingChamberReload:true},'Hero')
+  expect(doubleBarrelState(state,gun,turn).block).toMatch(/already fired/)
+  state=parseBattleLiveState(JSON.parse(JSON.stringify(state)))
+ }
+ expect(state.chamberReloads).toHaveLength(0)
+ expect(doubleBarrelState(state,gun,8)).toMatchObject({loaded:2,block:null})
+})
+it('keeps ordinary reload blocks and misfire limits separate from the house-rule cycle',()=>{
+ const normal=recordBlackpowderShot(emptyBattleLiveState(),fire('gun1',1,2),'Hero')
+ expect(doubleBarrelState(normal,gun,2).loaded).toBe(0)
+ const skilled=recordBlackpowderShot(emptyBattleLiveState(),{...fire('gun1',1,2),alternatingChamberReload:true},'Hero')
+ for(const misfireDie of [1,2,3]){
+  const jammed={...skilled,blackpowderShots:skilled.blackpowderShots.map(s=>({...s,misfireDie}))}
+  expect(doubleBarrelState(jammed,gun,2).block).not.toBeNull()
+ }
+ expect(doubleBarrelState(skilled,{...gun,modelIndex:1},2).loaded).toBe(2)
+})
+it('tracks selected bonus chambers, caps at capacity and preserves correction history',()=>{
+ const s={...emptyBattleLiveState(),blackpowderShots:[fire('gun1',1,2),fire('gun2',1,2)]}
+ const next=reloadDoubleBarrels(s,[gun,second],2,'reload','2026-09-12T12:02:30Z',['gun1'])
+ expect(doubleBarrelState(next,gun,3).loaded).toBe(2)
+ expect(doubleBarrelState(next,second,3).loaded).toBe(1)
+ expect(next.chamberReloads.map(r=>r.amount)).toEqual([2,1])
+ expect(doubleBarrelState(correctChamberReload(next,next.chamberReloads[0].id,'Wrong weapon selected'),gun,3).loaded).toBe(0)
+ const partial={...s,blackpowderShots:[fire('gun1',1,1)]}
+ expect(reloadDoubleBarrels(partial,[gun],2,'reload','2026-09-12T12:02:30Z',['gun1']).chamberReloads[0].amount).toBe(1)
+ expect(()=>reloadDoubleBarrels(s,[gun],2,'reload','2026-09-12T12:02:30Z',['gun2'])).toThrow(/selected physical/)
+})
 it('keeps the other loaded barrel and requires declared reloads for spent ones',()=>{
  const s={...emptyBattleLiveState(),blackpowderShots:[fire('gun1',1,1)]}
  expect(doubleBarrelState(s,gun,1)).toMatchObject({loaded:1,firedThisTurn:true})

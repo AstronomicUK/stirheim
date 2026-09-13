@@ -13,7 +13,7 @@ describe('settings form mapping', () => {
     const settings = {
       startingGold: 600,
       maxRosters: 8,
-      houseRules: { healingHerbsSingleUse: false, dismissHeroForTalent: false, strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: 'chooseFreely' as const, opposedParryWS: false, bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] } },
+      houseRules: { doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false, strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: 'chooseFreely' as const, opposedParryWS: false, bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] } },
       dicePolicy: 'app_rolls' as const,
       combatMode: 'players' as const,
       lockCombatMode: true,
@@ -71,4 +71,12 @@ it('preserves the enabled scenario list through unrelated settings edits and not
  if(result.ok)expect(formFromSettings(result.settings).enabledScenarioIds).toEqual(['the_pool','skirmish'])
  expect(settingsFormEqual(selected,{...selected,enabledScenarioIds:['skirmish','the_pool']})).toBe(true)
  expect(settingsFormEqual(selected,{...selected,enabledScenarioIds:[]})).toBe(false)
+})
+
+it('notices reload policy changes and preserves the selection when saving', () => {
+ const base=defaultSettingsForm(),changed={...base,houseRules:{...base.houseRules,doubleBarrelSkillReload:'full_reload' as const}}
+ expect(settingsFormEqual(base,changed)).toBe(false)
+ const saved=settingsFromForm(changed)
+ expect(saved.ok).toBe(true)
+ if(saved.ok)expect(formFromSettings(saved.settings).houseRules.doubleBarrelSkillReload).toBe('full_reload')
 })

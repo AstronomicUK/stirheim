@@ -1,9 +1,18 @@
 import { expect, it } from 'vitest'
-import { reloadTurnsFor } from './reloadRules'
+import { reloadTurnsFor, doubleBarrelReloadSkill } from './reloadRules'
 import { emptyBattleLiveState, parseBattleLiveState } from '../../../domain/battle'
 import { blackpowderBlock, correctBlackpowderShot, recordBlackpowderShot } from '../../../domain/blackpowderShot'
 const pistol = { id: 'pistol', special: ['prepareShotReloadEveryOtherTurnUnlessBrace'] }
 const handgun = { id: 'handgun', special: ['prepareShotReloadEveryOtherTurn'] }
+it('only matches the appropriate skill to each supported double-barrel profile', () => {
+ expect(doubleBarrelReloadSkill('double_barrelled_handgun', ['hunter'])).toBe('hunter')
+ expect(doubleBarrelReloadSkill('ostlander_double_barrelled_hunting_rifle', ['hunter'])).toBe('hunter')
+ expect(doubleBarrelReloadSkill('double_barrelled_duelling_pistol', ['pistolier'])).toBe('pistolier')
+ expect(doubleBarrelReloadSkill('ostlander_double_barrelled_pistol', ['pistolier'])).toBe('pistolier')
+ expect(doubleBarrelReloadSkill('double_barrelled_handgun', ['pistolier'])).toBeNull()
+ expect(doubleBarrelReloadSkill('double_barrelled_pistol', ['hunter'])).toBeNull()
+ expect(doubleBarrelReloadSkill('handgun', ['hunter'])).toBeNull()
+})
 it('keeps normal reload per physical pistol, allowing two copies to alternate', () => {
  expect(reloadTurnsFor(pistol, [], 1)).toBe(1)
  expect(reloadTurnsFor(pistol, [], 2)).toBe(1)

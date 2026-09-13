@@ -16,7 +16,7 @@ import { SPELL_LORES } from '../../rules/data/campaign/magic'
 import { reportActivityChanges } from './reportActivity'
 import { advanceActivityChanges } from './advanceActivity'
 import { defaultCampaignSettings } from '../../domain/settings'
-import { HOUSE_RULE_SWITCHES, DICE_POLICY_OPTIONS, COMBAT_MODE_OPTIONS, FIRST_SPELL_RULE_OPTIONS } from './settingsForm'
+import { HOUSE_RULE_SWITCHES, DICE_POLICY_OPTIONS, COMBAT_MODE_OPTIONS, FIRST_SPELL_RULE_OPTIONS, DOUBLE_BARREL_RELOAD_OPTIONS } from './settingsForm'
 import { banName, type BanKind } from './bans'
 import { CORE_RULEBOOK_SCENARIO_IDS, SCENARIOS } from '../../rules/data/campaign/scenarios'
 
@@ -361,6 +361,7 @@ function campaignSettingChanges(before: Json | undefined, after: Json | undefine
           const explicit:Record<string,string>={halfPriceShields:'half-price shields',halfPriceHelmets:'half-price helmets'}
           const label=explicit[rule]??HOUSE_RULE_SWITCHES.find(s=>s.key===rule)?.label??fieldLabel(rule)
           if(rule==='firstSpellRule'){add(label,a[rule],b[rule],`Changed the first spell rule from ${FIRST_SPELL_RULE_OPTIONS.find(o=>o.value===a[rule])?.label??displayValue(a[rule])} to ${FIRST_SPELL_RULE_OPTIONS.find(o=>o.value===b[rule])?.label??displayValue(b[rule])}.`);continue}
+          if(rule==='doubleBarrelSkillReload'){add('Double-barrel reload house rule',a[rule],b[rule],`Changed Hunter / Pistolier double-barrel reloads from ${DOUBLE_BARREL_RELOAD_OPTIONS.find(o=>o.value===a[rule])?.label??displayValue(a[rule])} to ${DOUBLE_BARREL_RELOAD_OPTIONS.find(o=>o.value===b[rule])?.label??displayValue(b[rule])}.`);continue}
           add(label,a[rule],b[rule],typeof b[rule]==='boolean'?`${b[rule]?'Enabled':'Disabled'} ${label}.`:undefined)
         }
       }

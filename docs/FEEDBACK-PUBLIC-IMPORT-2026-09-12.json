@@ -3195,7 +3195,7 @@
     "id": 229,
     "kind": "improvement",
     "title": "Cross-player resurrection and capture opportunities need complete notification and resolution flows",
-    "notes": "Cross-player Awakening, agreed capture outcomes, Pirate recruitment and several specialist capture/rescue rules are implemented and being checked for the next release. Players receive relevant notifications; permanent roster changes use an agreed outcome and retain correction history. Some specialist outcomes still need rules decisions, so this broader request remains in progress. Nothing from this batch is released yet.",
+    "notes": "Core Awakening and agreed capture outcomes, Pirate recruitment and several specialist capture/rescue flows are implemented and locally verified for the next release. Players receive relevant notifications; permanent roster changes use an agreed outcome and retain correction history. Unfinished specialist rules, including Sacrificial Ritual and Ogre/Pit Fighter outcomes, are a follow-up. This broader request remains in progress. Not released yet.",
     "priority": "medium",
     "status": "working_on",
     "reported_by": "AstronomicUK",
@@ -3223,14 +3223,14 @@
     "id": 231,
     "kind": "improvement",
     "title": "Polished per-weapon chamber and reload UI with Hunter/Pistolier double-barrel house rules",
-    "notes": "The per-weapon chamber tracker, sequential shots, supported printed double-barrel rules and a compact display in View Rosters are implemented and being checked for the next release. The Hunter/Pistolier double-barrel house-rule choices still need discussion. Nothing from this batch is released yet.",
+    "notes": "The per-weapon chamber tracker, sequential shots, compact View Rosters display and campaign reload settings are implemented and verified locally for the next release. The intermediate Hunter/Pistolier house rule allows alternating two-barrel and one-barrel shots on successive own turns without skipping shooting. Ordinary reload restrictions remain when the rule is off. App-calculated and players-calculated mobile flows retain their counters across refresh. Not released yet.",
     "priority": "medium",
     "status": "working_on",
     "reported_by": "AstronomicUK",
     "release_version": null,
     "include": true,
     "reviewed": true,
-    "evidence": "FEEDBACK-TRACKER.md #231 — status line: 🔲 Reported — initial review only — later mentions checked 2026-09-12 19:40: 0. Superseded by current FEEDBACK-BATCH-2026-09-12.md milestones and local implementation commits; batch remains unreleased.",
+    "evidence": "Local release candidate: MAIN-RELEASE-SCOPE-2026-09-13.md; actual alternating-browser and alternating-tabletop-browser journeys, full reload journeys, chamber/casting eligibility regressions. Unreleased; transition only after successful production deployment.",
     "historical_status": "Working on locally; not deployed"
   }
 ]

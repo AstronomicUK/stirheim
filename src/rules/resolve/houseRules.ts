@@ -2,7 +2,7 @@
 // descriptions for the campaign settings screen. Defaults are Tom's group's (docs/PLANNING.md).
 
 import type { CampaignBans, CampaignHouseRules, FirstSpellRule } from "../types/roster";
-import { defaultCampaignHouseRules, emptyCampaignBans } from "../types/roster";
+import { defaultCampaignHouseRules, emptyCampaignBans, DOUBLE_BARREL_SKILL_RELOADS, type DoubleBarrelSkillReload } from "../types/roster";
 
 const FIRST_SPELL_RULES: readonly FirstSpellRule[] = ["random", "chooseFreely", "rollTwicePickOne"];
 
@@ -13,11 +13,12 @@ export function applyHouseRuleDefaults(partial?: Partial<CampaignHouseRules> | n
   const rules = defaultCampaignHouseRules();
   if (!partial) return rules;
   for (const key of Object.keys(rules) as (keyof CampaignHouseRules)[]) {
-    if (key === "bans" || key === "firstSpellRule") continue;
+    if (key === "bans" || key === "firstSpellRule" || key === "doubleBarrelSkillReload") continue;
     const v = partial[key];
     if (typeof v === "boolean") rules[key] = v;
   }
   if (FIRST_SPELL_RULES.includes(partial.firstSpellRule as FirstSpellRule)) rules.firstSpellRule = partial.firstSpellRule as FirstSpellRule;
+  if (DOUBLE_BARREL_SKILL_RELOADS.includes(partial.doubleBarrelSkillReload as DoubleBarrelSkillReload)) rules.doubleBarrelSkillReload = partial.doubleBarrelSkillReload as DoubleBarrelSkillReload;
   const bans = partial.bans;
   if (bans && typeof bans === "object") {
     for (const key of Object.keys(rules.bans) as (keyof CampaignBans)[]) {
@@ -86,5 +87,10 @@ export function describeHouseRules(rules: CampaignHouseRules): string[] {
     rules.dismissHeroForTalent
       ? "At the Hero limit, a player may dismiss an existing Hero to accept Lad’s Got Talent (house rule)."
       : "At the Hero limit, Lad’s Got Talent must be re-rolled.",
+    rules.doubleBarrelSkillReload === 'full_reload'
+      ? 'Hunter / Pistolier fully reload eligible double-barrelled weapons at the end of a non-firing Shooting phase (house rule).'
+      : rules.doubleBarrelSkillReload === 'extra_chamber'
+        ? 'Hunter / Pistolier allow alternating two-barrel and one-barrel shots on successive own turns without a non-firing reload phase (house rule).'
+        : 'Hunter / Pistolier do not change double-barrelled weapon reloads.',
   ];
 }

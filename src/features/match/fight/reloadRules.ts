@@ -1,4 +1,10 @@
 /** Full own turns a fired physical weapon must spend reloading. Does not grant extra shots. */
+export function doubleBarrelReloadSkill(weaponId: string, skills: readonly string[]): 'hunter' | 'pistolier' | null {
+  if (['double_barrelled_pistol', 'double_barrelled_duelling_pistol', 'ostlander_double_barrelled_pistol'].includes(weaponId) && skills.includes('pistolier')) return 'pistolier'
+  if (['double_barrelled_handgun', 'ostlander_double_barrelled_hunting_rifle'].includes(weaponId) && skills.includes('hunter')) return 'hunter'
+  return null
+}
+
 export function reloadTurnsFor(weapon: { id: string; special: readonly string[] }, skills: readonly string[], pistolCount = 1): number | null {
   const pistol = weapon.special.includes('prepareShotReloadEveryOtherTurnUnlessBrace')
   const slow = weapon.special.includes('prepareShotReloadEveryOtherTurn')

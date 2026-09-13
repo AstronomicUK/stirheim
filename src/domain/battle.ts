@@ -146,6 +146,8 @@ export const battleLiveStateSchema = z.object({
     criticalUsed: z.boolean().optional(),
     /** Declared loaded barrels for double-barrel weapons; omitted on older/core single-shot records. */
     barrels: z.union([z.literal(1),z.literal(2)]).optional(),
+    /** Approved Hunter/Pistolier 2/1 barrel cycle, captured when this shot was fired. */
+    alternatingChamberReload: z.boolean().optional(),
     modelIndex: z.number().int().min(0).optional(),
     reloadTurns: z.number().int().min(0), at: z.string(), misfireDie: z.number().int().min(1).max(6).optional(),
     misfirePending: z.boolean().optional(), misfireOriginal: z.number().int().min(1).max(6).optional(), experimental: z.boolean().default(false), correction: z.string().optional(),

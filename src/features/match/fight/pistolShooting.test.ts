@@ -44,3 +44,13 @@ it('counts ordinary and double-barrel pistols against the same per-model shot al
  expect(pistolShootingOptions(sheet,warrior,stock,[],'pistol',undefined,1).remaining).toBe(0)
  expect(pistolShootingOptions(sheet,{...warrior,skillIds:['pistolier']},stock,[],'pistol',undefined,1).remaining).toBe(1)
 })
+it('does not let the old whole-pistol reload timer block an automatically reloaded barrel',()=>{
+ const stock={...row,item_rules_id:'double_barrelled_pistol',quantity:1}
+ const skilled={...warrior,skillIds:['pistolier']}
+ const chosen=pistolShootingOptions(emptyBattleLiveState(),skilled,[stock],[],'double_barrelled_pistol',undefined,1).selected!
+ const shot={id:'cycle',warriorId:id,weaponKey:physicalGunKey(chosen.snapshot,chosen.key),weaponName:'Double pistol',heldWeapon:chosen.snapshot,ownTurn:1,reloadTurns:1,barrels:2 as const,modelIndex:0,experimental:false,at:new Date().toISOString()}
+ const normal=recordBlackpowderShot(emptyBattleLiveState(),shot,'Captain')
+ const cycle=recordBlackpowderShot(emptyBattleLiveState(),{...shot,alternatingChamberReload:true},'Captain')
+ expect(pistolShootingOptions(normal,skilled,[stock],[],'double_barrelled_pistol',undefined,2).blocked).toMatch(/empty/)
+ expect(pistolShootingOptions(cycle,skilled,[stock],[],'double_barrelled_pistol',undefined,2).blocked).toBeNull()
+})

@@ -1,6 +1,6 @@
 # Questions held for Tom — current overnight batch
 
-Tom is now awake and has asked Codex to continue until the agreed batch is complete and ready to deploy. The overnight coordination heartbeat is paused. Three questions have been sent: the extra-chamber allocation, recording agreed specialist aftermath rulings, and Hired Sword eligibility for Awakening. Answers remain pending; do not infer approval. These questions do not block independent work. Do not present specialist rules as core-rulebook blockers.
+Tom is now awake and has asked Codex to continue until the agreed batch is complete and ready to deploy. The overnight coordination heartbeat is paused. The reload question is answered by Tom’s screenshot and explicit acceptance of the 2/1/2/1 firing cycle. Remaining specialist questions are deferred to the follow-up and do not block the main release. These questions do not block independent work. Do not present specialist rules as core-rulebook blockers.
 
 ## Already answered — do not ask again
 
@@ -12,7 +12,7 @@ Tom is now awake and has asked Codex to continue until the agreed batch is compl
 
 ## First question: double-barrel reload house rule
 
-Tom requested choices of no effect, one extra chamber reloaded, or full reload. Clarify whether the extra chamber is per warrior or per physical gun, and how a brace with different gun types is handled. Do not infer the answer from ordinary Pistolier firing permissions or Hunter’s normal reload rule. Existing Nuln and Ostlander printed firing differences remain separate.
+**Answered:** Tom supplied the Reddit explanation and accepted alternating two-barrel/one-barrel firing on successive own turns for the intermediate rule. This supersedes Codex’s earlier non-firing-phase / one-extra-per-warrior proposal. Apply automatic start reloads and the stated single-barrel-turn end reload; do not require a skipped Shooting phase for this cycle. Preserve ordinary firing limits, misfire blocks, physical weapon identity and core reload rules when disabled. Existing Nuln/Ostlander hit differences remain separate.
 
 ## Specialist questions to raise only when those extensions are ready
 

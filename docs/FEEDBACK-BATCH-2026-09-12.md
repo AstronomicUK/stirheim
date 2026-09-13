@@ -1,5 +1,9 @@
 # Feedback, resurrection and reloading — approved 12 September 2026
 
+**Current scope decision:** Tom approved the main-release/follow-up split on 13 September. `MAIN-RELEASE-SCOPE-2026-09-13.md` is authoritative for what remains in this release. Unfinished specialist capture extensions no longer block it; finish the tracker, core flows and reload house rules. Claude is stopped. Older broad scope and overnight instructions below are history.
+
+**Main release ready locally:** Tom clarified the intermediate reload policy with the screenshot’s 2/1/2/1 firing cycle. It is implemented without a required non-firing phase, including the shared firing guard, pistol selection, ranged/melee records, tabletop mode and mini roster. Both four-turn mobile journeys and the three-policy settings save/reopen check pass. Final verification: 2,435 application tests, 323 backend tests, TypeScript/build and all 124 migrations through 130 pass. Reviewed public import dry-run passes (221 included / 10 excluded). Production actions have not been performed; #229 specialist follow-up remains open.
+
 Tom approved #230 first, then #229, then #231. Keep a single release batch. Core Priority 1–5 is already deployed; do not repeat that work. Codex owns design, frontend and integration; Claude assists with bounded backend implementation and source audit. Questions to Tom go through Codex.
 
 ## Current handoff status — overnight 12–13 September

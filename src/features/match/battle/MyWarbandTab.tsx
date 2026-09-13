@@ -19,7 +19,7 @@ import { conditionsFor } from './sheet'
 import { useState } from 'react'
 import { warbandTurnKey, eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
-import type { RosterHenchmanGroup, RosterWarband } from '../../../rules/types/roster'
+import type { RosterHenchmanGroup, RosterWarband, DoubleBarrelSkillReload } from '../../../rules/types/roster'
 import { Button, Stepper, Notice } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { WarriorBody, WarriorHead } from './cards'
@@ -33,6 +33,7 @@ import type { TakenOutBy } from '../../../domain'
 
 export interface MyWarbandTabProps {
   tabletopAmmunition?: boolean
+  reloadRule?: DoubleBarrelSkillReload
   items?: readonly ItemRow[]
   healingHerbsSingleUse?: boolean
   roster: RosterWarband
@@ -56,7 +57,7 @@ interface Asking {
   index: number
 }
 
-export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: editSheet, readOnly: externallyReadOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false, tabletopAmmunition = false }: MyWarbandTabProps) {
+export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: editSheet, readOnly: externallyReadOnly, events = [], matchId, others = [], items = [], healingHerbsSingleUse = false, tabletopAmmunition = false, reloadRule = 'none' }: MyWarbandTabProps) {
   const casualty=useManualCasualty()
   const [busy,setBusy]=useState(false),[casualtyError,setCasualtyError]=useState('')
   const readOnly=externallyReadOnly||busy||casualty.isPending
@@ -79,7 +80,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
   const ammunition = (id:string) => {
     if(!tabletopAmmunition)return null
     const warrior=combatantsOf(roster,template,roster.name,sheet).find(w=>w.id===id)
-    return warrior?<TabletopChambers warrior={warrior} items={items} events={events} sheet={sheet} ownTurn={Number(warbandTurnKey(roster.id,sheet.turn,turns.data).split(':').at(-1))} readOnly={readOnly} edit={edit}/>:null
+    return warrior?<TabletopChambers reloadRule={reloadRule} warrior={warrior} items={items} events={events} sheet={sheet} ownTurn={Number(warbandTurnKey(roster.id,sheet.turn,turns.data).split(':').at(-1))} readOnly={readOnly} edit={edit}/>:null
   }
   const conditions = conditionsFor(events, roster.id, sheet.turn, turns.data?.recoveries, holds.data)
   const warriors = splitWarriors(roster, sheet)

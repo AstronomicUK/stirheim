@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import type { CampaignBans, CampaignHouseRules, FirstSpellRule } from "../rules/types/roster";
-import { defaultCampaignHouseRules, emptyCampaignBans } from "../rules/types/roster";
+import { defaultCampaignHouseRules, emptyCampaignBans, DOUBLE_BARREL_SKILL_RELOADS } from "../rules/types/roster";
 
 export const FIRST_SPELL_RULES = ["random", "chooseFreely", "rollTwicePickOne"] as const satisfies readonly FirstSpellRule[];
 export const firstSpellRuleSchema = z.enum(FIRST_SPELL_RULES);
@@ -28,6 +28,7 @@ export const campaignBansSchema = z.object({
 }) satisfies z.ZodType<CampaignBans, unknown>;
 
 export const campaignHouseRulesSchema = z.object({
+  doubleBarrelSkillReload: z.enum(DOUBLE_BARREL_SKILL_RELOADS).default('none'),
   healingHerbsSingleUse: z.boolean().default(false),
   dismissHeroForTalent: z.boolean().default(false),
   strengthArmourPiercing: z.boolean().default(false),

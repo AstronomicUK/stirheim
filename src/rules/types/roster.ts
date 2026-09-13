@@ -267,8 +267,12 @@ export function emptyCampaignBans(): CampaignBans {
 
 /** How a spellcaster's first spell is chosen at creation (03: RAW is a random roll on the lore table; two house rules seen at the table let the player pick instead). */
 export type FirstSpellRule = "random" | "chooseFreely" | "rollTwicePickOne";
+export const DOUBLE_BARREL_SKILL_RELOADS = ['none', 'extra_chamber', 'full_reload'] as const;
+export type DoubleBarrelSkillReload = typeof DOUBLE_BARREL_SKILL_RELOADS[number];
 
 export interface CampaignHouseRules {
+  /** Optional Hunter/Pistolier benefit when reloading double-barrelled weapons. */
+  doubleBarrelSkillReload: DoubleBarrelSkillReload;
   /** Optional: each actual Healing Herbs use consumes one dose. RAW herbs are reusable. */
   healingHerbsSingleUse: boolean;
   /** Optional: dismiss an existing Hero to accept Lad’s Got Talent at the Hero cap. */
@@ -297,6 +301,7 @@ export interface CampaignHouseRules {
 
 export function defaultCampaignHouseRules(): CampaignHouseRules {
   return {
+    doubleBarrelSkillReload: 'none',
     healingHerbsSingleUse: false,
     dismissHeroForTalent: false,
     strengthArmourPiercing: false,

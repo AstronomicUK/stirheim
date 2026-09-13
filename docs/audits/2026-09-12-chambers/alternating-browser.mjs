@@ -4,9 +4,8 @@ import {execFileSync} from 'node:child_process';
 const raw=execFileSync('npx',['supabase','status','-o','env'],{cwd:'/Users/tombrookes/Documents/Claude Scripts/stirheim',env:{...process.env,DOCKER_HOST:'unix:///Users/tombrookes/.docker/run/docker.sock'},encoding:'utf8',stdio:['ignore','pipe','pipe']});
 const env=Object.fromEntries([...raw.matchAll(/^(\w+)="(.*)"$/gm)].map(m=>[m[1],m[2]]));
 if(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(env.API_URL))throw Error('Local only');
-const reloadRule=process.env.CHAMBER_RELOAD_RULE??'none';
-if(!['none','full_reload'].includes(reloadRule))throw Error('Unsupported check mode');
-const full=reloadRule==='full_reload';
+const reloadRule='extra_chamber';
+
 const admin=createClient(env.API_URL,env.SERVICE_ROLE_KEY),player=createClient(env.API_URL,env.ANON_KEY);
 const auth=await player.auth.signInWithPassword({email:'player@stirheim.test',password:'stirheim-dev'});if(auth.error)throw auth.error;
 const uid=auth.data.user.id,ids=[];let campaign,b;
@@ -48,19 +47,28 @@ try {
  await expect(p.locator('.roster-chamber .chamber-ball')).toHaveCount(2);
  await expect(p.locator('.roster-chamber-state').first()).toContainText('already fired');
  await p.screenshot({path:'/tmp/stirheim-double-chambers-mobile.png',fullPage:true});
- const current=must(await admin.from('battle_sessions').select('live_state').eq('match_id',match).eq('warband_id',ids[0]).single());
- must(await admin.from('battle_sessions').update({live_state:{...current.live_state,turn:2}}).eq('match_id',match).eq('warband_id',ids[0]));
- await p.reload();
- await p.getByRole('button',{name:'Ranged Attack',exact:false}).first().click();
- await p.getByRole('button',{name:'End Shooting: did not fire — reload',exact:true}).click();
- await expect.poll(async()=>must(await admin.from('battle_sessions').select('live_state').eq('match_id',match).eq('warband_id',ids[0]).single()).live_state.chamberReloads?.length).toBe(1);
- await expect(p.locator('.chamber-count').first()).toContainText(full?'2 / 2 loaded':'1 / 2 loaded');
- await p.reload();
- await p.getByRole('button',{name:/View Rosters/}).click();
- await expect(p.locator('.roster-chamber .chamber-ball')).toHaveCount(full?4:3);
- await expect(p.locator('.roster-chamber-state').first()).toContainText('Reloaded this Shooting phase');
- expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ for(const [turn,barrels] of [[2,1],[3,2],[4,1]]) {
+  const current=must(await admin.from('battle_sessions').select('live_state').eq('match_id',match).eq('warband_id',ids[0]).single());
+  must(await admin.from('battle_sessions').update({live_state:{...current.live_state,turn}}).eq('match_id',match).eq('warband_id',ids[0]));
+  await p.reload();
+  await p.getByRole('button',{name:/View Rosters/}).click();
+  await expect(p.locator('.roster-chamber .chamber-ball')).toHaveCount(barrels+2);
+  await p.getByRole('button',{name:'Ranged Attack',exact:false}).first().click();
+  await p.getByRole('button',{name:'Roll it through',exact:true}).click();
+  await expect(p.locator('.chamber-count').first()).toContainText(`${barrels} / 2 loaded`);
+  await p.getByRole('radio',{name:barrels===2?'Both barrels':'1 barrel',exact:true}).last().click();
+  await p.getByRole('button',{name:'Begin attacks',exact:true}).click();
+  await p.getByText('Enter tabletop dice instead',{exact:true}).click();
+  await p.getByRole('button',{name:/to hit: 1$/i}).click();
+  await expect.poll(async()=>must(await admin.from('battle_sessions').select('live_state').eq('match_id',match).eq('warband_id',ids[0]).single()).live_state.blackpowderShots.length).toBe(turn);
+  await p.getByRole('button',{name:'Close',exact:true}).last().click();
+ }
+ const final=must(await admin.from('battle_sessions').select('live_state').eq('match_id',match).eq('warband_id',ids[0]).single()).live_state;
+ expect(final.blackpowderShots.map(s=>s.barrels)).toEqual([2,1,2,1]);
+ expect(final.blackpowderShots.every(s=>s.alternatingChamberReload===true)).toBe(true);
+ expect(final.chamberReloads).toHaveLength(0);
  expect(errors).toEqual([]);
- console.log(reloadRule, 'PASS: select both barrels inside roller, miss consumes two chambers on selected gun only, reload persists, next phase reload respects selected house rule, mini roster reflects all states, no overflow/page errors.');
+ expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ console.log('PASS: actual mobile app-calculated 2/1/2/1 sequence, persisted rule snapshot, mini roster, no non-firing reload action, no overflow/errors.');
 
 } finally {await b?.close();if(match)must(await admin.from('matches').delete().eq('id',match));if(campaign)must(await admin.from('campaigns').delete().eq('id',campaign));if(ids.length)must(await admin.from('warbands').delete().in('id',ids));await player.auth.signOut();}

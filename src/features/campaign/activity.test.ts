@@ -27,6 +27,11 @@ function entry(partial: Partial<CampaignActivity>): CampaignActivity {
 }
 
 describe('describeActivity', () => {
+  it('describes a reload house-rule change without exposing its stored enum value', () => {
+    const row=entry({table_name:'campaigns',before:{settings:{houseRules:{}}},after:{settings:{houseRules:{doubleBarrelSkillReload:'full_reload'}}}})
+    const text=JSON.stringify(activityFieldChanges(row))
+    expect(text).toContain('Changed Hunter / Pistolier double-barrel reloads from No effect on double-barrelled weapons to Fully reload eligible weapons.')
+  })
   it('describes a warband being created', () => {
     const line = describeActivity(
       entry({ actor_id: TOM, actor_display_name: 'Tom', action: 'insert', reason: 'create_warband', warband_name: null, after: { id: 'x', name: 'Reikland Watch', gold: 500 } }),

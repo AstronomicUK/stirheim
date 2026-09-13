@@ -26,13 +26,13 @@ export function pistolCombatBlock(state: BattleLiveState, modelKey: string, warr
   return mode === 'crossbow' ? null : blackpowderBlock(state, warriorId, physicalGunKey(weapon, ''), ownTurn)
 }
 
-export function recordCombatPistolUse(state: BattleLiveState, args: { id: string; modelKey: string; modelIndex?: number; barrels?: 1 | 2; warriorId: string; name: string; weapon: BrokenWeapon; mode: 'single' | 'brace' | 'crossbow'; phaseKey: string; ownTurn: number; reloadTurns: number }): BattleLiveState {
+export function recordCombatPistolUse(state: BattleLiveState, args: { id: string; modelKey: string; modelIndex?: number; barrels?: 1 | 2; alternatingChamberReload?: boolean; warriorId: string; name: string; weapon: BrokenWeapon; mode: 'single' | 'brace' | 'crossbow'; phaseKey: string; ownTurn: number; reloadTurns: number }): BattleLiveState {
   if (state.pistolCombatUses.some(use => use.id === args.id)) return state
   const block = pistolCombatBlock(state, args.modelKey, args.warriorId, args.weapon, args.mode, args.phaseKey, args.ownTurn, args.modelIndex ?? 0)
   if (block) throw new Error(block)
   const weaponKey = physicalGunKey(args.weapon, '')
   const next = { ...state, pistolCombatUses: [...state.pistolCombatUses, { id: args.id, combatId: state.pistolCombats[args.modelKey].id, modelKey: args.modelKey, warriorId: args.warriorId, weaponKey, sourceWeaponId: args.weapon.weaponId, mode: args.mode, phaseKey: args.phaseKey }] }
-  return args.mode === 'crossbow' ? withRollAttempt(next, { id: args.id, at: new Date().toISOString(), turn: state.turn, kind: 'attack', status: 'incomplete', label: `${args.name}: crossbow pistol opening shot`, rolls: ['Resolve this BS shot before melee blows, with the extra −2 to hit penalty.'] }) : recordBlackpowderShot(next, { id: args.id, warriorId: args.warriorId, weaponKey, weaponName: `${args.weapon.name} in close combat`, heldWeapon: args.weapon, barrels: args.barrels, modelIndex: args.modelIndex ?? 0, ownTurn: args.ownTurn, reloadTurns: args.reloadTurns, experimental: false, at: new Date().toISOString() }, args.name)
+  return args.mode === 'crossbow' ? withRollAttempt(next, { id: args.id, at: new Date().toISOString(), turn: state.turn, kind: 'attack', status: 'incomplete', label: `${args.name}: crossbow pistol opening shot`, rolls: ['Resolve this BS shot before melee blows, with the extra −2 to hit penalty.'] }) : recordBlackpowderShot(next, { id: args.id, warriorId: args.warriorId, weaponKey, weaponName: `${args.weapon.name} in close combat`, heldWeapon: args.weapon, barrels: args.barrels, alternatingChamberReload: args.alternatingChamberReload, modelIndex: args.modelIndex ?? 0, ownTurn: args.ownTurn, reloadTurns: args.reloadTurns, experimental: false, at: new Date().toISOString() }, args.name)
 }
 
 export function correctCombatPistol(state: BattleLiveState, id: string, reason: string): BattleLiveState {

@@ -2,11 +2,12 @@
 // dice policy and the rules Markdown with a preview toggle.
 
 import { useState } from 'react'
-import { Markdown, NumberField, SegmentedControl, TextArea } from '../../ui'
+import { Markdown, NumberField, SegmentedControl, SelectField, TextArea } from '../../ui'
+import type { DoubleBarrelSkillReload } from '../../rules/types/roster'
 import { Section, ToggleRow } from './bits'
 import { CampaignTypeChooser } from './CampaignTypeChooser'
 import { BansEditor } from './BansEditor'
-import { COMBAT_MODE_OPTIONS, DICE_POLICY_OPTIONS, FIRST_SPELL_RULE_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
+import { COMBAT_MODE_OPTIONS, DICE_POLICY_OPTIONS, FIRST_SPELL_RULE_OPTIONS, DOUBLE_BARREL_RELOAD_OPTIONS, HOUSE_RULE_SWITCHES, type SettingsForm, type SettingsFormErrors } from './settingsForm'
 
 export interface SettingsFieldsProps {
   form: SettingsForm
@@ -79,6 +80,12 @@ export function SettingsFields({ form, onChange, errors, rules, onRulesChange, d
           {firstSpell ? <p className="text-sm leading-relaxed text-ink-dim">{firstSpell.description}</p> : null}
         </div>
         <BansEditor bans={form.houseRules.bans} disabled={disabled} onChange={(bans) => onChange({ ...form, houseRules: { ...form.houseRules, bans } })} />
+        <div className="flex flex-col gap-2">
+          <SelectField label="Hunter / Pistolier: double-barrel reloads" value={form.houseRules.doubleBarrelSkillReload} disabled={disabled} onChange={event => onChange({ ...form, houseRules: { ...form.houseRules, doubleBarrelSkillReload: event.target.value as DoubleBarrelSkillReload } })}>
+            {DOUBLE_BARREL_RELOAD_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </SelectField>
+          <p className="text-sm text-ink-dim">Hunter applies to rifles and handguns; Pistolier applies to pistols. {form.houseRules.doubleBarrelSkillReload==='extra_chamber'?'The extra-chamber rule allows two barrels, then one barrel, then two again on successive own turns. No non-firing reload phase is needed.':'Normal reload timing applies: finish a Shooting phase without firing. Full reload fills both chambers in eligible weapons.'}</p>
+        </div>
       </Section>
 
       <Section title="Dice">

@@ -2,6 +2,8 @@
 
 Not deployed or published. This document prepares one coherent release; it does not authorise a push or mark the whole capture/reloading scope complete.
 
+Tom approved the narrower main release on 13 September; see `MAIN-RELEASE-SCOPE-2026-09-13.md`. Unfinished specialist rules move to the follow-up. The intermediate reload rule now follows Tom’s approved alternating two-barrel/one-barrel cycle.
+
 ## Proposed public changelog
 
 ### Report problems and follow improvements
@@ -16,21 +18,21 @@ Pirate recruitment and supported specialist capture rules now connect to their b
 
 ### See which chambers are ready
 
-The battle sheet shows the state of each supported physical firearm, with a compact version in View Rosters. Shots resolve sequentially, and recorded ammunition use can be corrected. Supported printed weapon and skill differences are kept separate. Additional Hunter/Pistolier double-barrel house-rule choices are still being discussed.
+The battle sheet shows the state of each supported physical firearm, with a compact version in View Rosters. Shots resolve sequentially, and recorded ammunition use can be corrected. Supported printed weapon and skill differences are kept separate. Campaigns can choose no extra skill effect, the approved alternating two-barrel/one-barrel firing cycle, or a full reload during a non-firing Shooting phase. The alternating rule does not require skipping a turn’s shooting.
 
 ## Release handling
 
 - Verify the final source checkpoint and outstanding changes before building. Do not sweep unrelated historical tracker/audit modifications into a release commit.
-- Apply the verified migrations after the currently deployed 087, in filename order. Local checks currently cover through 128; verify the final list at release time.
+- Apply the verified migrations after the currently deployed 087, in filename order. Local checks currently cover through 130; verify the final list at release time.
 - Run the historical feedback import dry run. The reviewed manifest accounts for all 231 previous IDs; excluded internal entries remain excluded. Import only after the backend is ready, using the existing guarded import script.
 - Set the existing AstronomicUK account as maintainer through the prepared exact-username setup; do not create or guess a new account.
 - Deploy the complete frontend once, then verify sign-in, public boards, mobile battle/roster views and private notifications on the actual release.
-- Publish the changelog only after deployment succeeds. Mark #230 implemented against that release. Keep #229 and #231 working on while the listed specialist rules and deferred house rules remain open. Do not send subscribers a notification claiming those umbrella entries are fully fixed.
+- Publish the changelog only after deployment succeeds. Mark #230 and #231 implemented against that release. Keep #229 working on for the unfinished specialist follow-up. Do not send subscribers a notification claiming those umbrella entries are fully fixed.
 
 ## Current evidence
 
-The earlier complete ordinary run passed 2,422 tests across 204 files. The complete API run through 128 passes all 323 checks across 56 files. All 122 migration files install in order in an isolated database. Leadership, rescue authority and physical-member follow-up regressions pass. The earlier production build passed; rerun at the final release checkpoint after the remaining work. Mobile capture/conversion, shared Engine rescue, agreed return, reversal and retired-history checks pass. Large-bundle warnings remain; invalid repeated list-marker CSS has been corrected.
+Final local candidate: **2,435 application tests across 205 files and 323 backend tests across 56 files pass**. All **124 migration files through 130** install in order in an isolated database. TypeScript and the production build pass. Both mobile battle modes complete the approved 2/1/2/1 firing cycle with persistent miniature counters and no non-firing reload action. Full reload, ordinary reload limits, skill eligibility, misfires and correction checks pass. Existing large-bundle warnings remain.
 
 ## Decisions held for Tom
 
-See MORNING-RULINGS-2026-09-13.md. In particular: double-barrel Hunter/Pistolier house rules, ambiguous Engine rescue aftermath, full Engine capacity outcomes, Cavalcade Thrall overflow, Ogre meal-income duration, multi-fighter Pit reward allocation and Hired Sword eligibility for Awakening. These are not silently decided by this release draft.
+See MORNING-RULINGS-2026-09-13.md. The double-barrel intermediate rule is answered and implemented. Deferred follow-up questions include ambiguous Engine rescue aftermath, full Engine capacity outcomes, Cavalcade Thrall overflow, Ogre meal-income duration, multi-fighter Pit reward allocation and Hired Sword eligibility for Awakening. These are not silently decided by this release draft.

@@ -4,7 +4,7 @@ import { applyHouseRuleDefaults, defaultCampaignHouseRules, describeHouseRules }
 describe("applyHouseRuleDefaults", () => {
   it("returns the group defaults for nothing", () => {
     const noBans = { items: [], spells: [], hiredSwords: [], characters: [], skills: [] };
-    const expected = { healingHerbsSingleUse: false, dismissHeroForTalent: false, strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: "random", opposedParryWS: false, bans: noBans };
+    const expected = { doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false, strengthArmourPiercing: false, optionalCriticalTables: true, halfPriceArmour: true, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: "random", opposedParryWS: false, bans: noBans };
     expect(applyHouseRuleDefaults()).toEqual(expected);
     expect(applyHouseRuleDefaults(null)).toEqual(expected);
     expect(applyHouseRuleDefaults({})).toEqual(expected);
@@ -14,7 +14,7 @@ describe("applyHouseRuleDefaults", () => {
   it("overrides only the switches given, ignoring undefined", () => {
     const partial = { halfPriceArmour: false, strengthArmourPiercing: undefined };
     expect(applyHouseRuleDefaults(partial)).toEqual({
-      healingHerbsSingleUse: false, dismissHeroForTalent: false,
+      doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false,
       strengthArmourPiercing: false,
       optionalCriticalTables: true,
       halfPriceArmour: false,
@@ -27,7 +27,7 @@ describe("applyHouseRuleDefaults", () => {
       bans: { items: [], spells: [], hiredSwords: [], characters: [], skills: [] },
     });
     expect(applyHouseRuleDefaults({ strengthArmourPiercing: true, optionalCriticalTables: false })).toEqual({
-      healingHerbsSingleUse: false, dismissHeroForTalent: false,
+      doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false,
       strengthArmourPiercing: true,
       optionalCriticalTables: false,
       halfPriceArmour: true,
@@ -51,7 +51,8 @@ describe("applyHouseRuleDefaults", () => {
 describe("describeHouseRules", () => {
   it("gives one line per switch reflecting the setting", () => {
     const on = describeHouseRules(defaultCampaignHouseRules());
-    expect(on).toHaveLength(9);
+    expect(on).toHaveLength(10);
+    expect(on[9]).toMatch(/do not change double-barrelled/);
     expect(on[8]).toMatch(/must be re-rolled/);
     expect(describeHouseRules({ ...defaultCampaignHouseRules(), dismissHeroForTalent: true })[8]).toMatch(/may dismiss an existing Hero/);
     expect(on[6]).toMatch(/Nothing is banned/);
@@ -63,7 +64,7 @@ describe("describeHouseRules", () => {
     expect(on[2]).toMatch(/shields, bucklers and helmets/);
     expect(on[7]).toMatch(/beating the attacker's to-hit roll/);
 
-    const off = describeHouseRules({ healingHerbsSingleUse: false, dismissHeroForTalent: false, strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: "chooseFreely", opposedParryWS: true, bans: { items: ["nurgles_rot"], spells: [], hiredSwords: [], characters: [], skills: ["sprint"] } });
+    const off = describeHouseRules({ doubleBarrelSkillReload: 'none' as const, healingHerbsSingleUse: false, dismissHeroForTalent: false, strengthArmourPiercing: true, optionalCriticalTables: false, halfPriceArmour: false, halfPriceShields: false, halfPriceHelmets: false, rabbitsFootBattleOnly: true, rewardsOfTheShadowlord: false, firstSpellRule: "chooseFreely", opposedParryWS: true, bans: { items: ["nurgles_rot"], spells: [], hiredSwords: [], characters: [], skills: ["sprint"] } });
     expect(off[5]).toMatch(/may be chosen freely/);
     expect(off[6]).toMatch(/2 entries \(1 item, 1 skill\)/);
     expect(off[7]).toMatch(/opposed Weapon Skill roll/);

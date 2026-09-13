@@ -29,6 +29,7 @@ export function blackpowderBlock(sheet: BattleLiveState, warriorId: string, weap
 export function recordBlackpowderShot(sheet: BattleLiveState, shot: BlackpowderShot, name: string): BattleLiveState {
   if (sheet.blackpowderShots.some(s => s.id === shot.id)) return sheet
   if (!Number.isInteger(shot.ownTurn) || shot.ownTurn < 0 || !Number.isInteger(shot.reloadTurns) || shot.reloadTurns < 0) throw new Error('Valid own-turn and reload values are required.')
+  if (shot.alternatingChamberReload && shot.barrels === undefined) throw new Error('The alternating reload house rule only applies to double-barrelled weapons.')
   const weaponKey=physicalGunKey(shot.heldWeapon,shot.weaponKey)
   const legacyWeaponKey=shot.legacyWeaponKey??(weaponKey!==shot.weaponKey?shot.weaponKey:undefined)
   const chambers = shot.barrels === undefined ? null : doubleBarrelState(sheet, {warriorId:shot.warriorId,modelIndex:shot.modelIndex??0,weaponKey,name:shot.weaponName}, shot.ownTurn)
@@ -38,7 +39,7 @@ export function recordBlackpowderShot(sheet: BattleLiveState, shot: BlackpowderS
   if (blocked) throw new Error(blocked)
   return withRollAttempt({ ...sheet, blackpowderShots: [...sheet.blackpowderShots, { ...shot, weaponKey, legacyWeaponKey, misfireDie: undefined, misfirePending: false, misfireOriginal: undefined, correction: undefined }] }, {
     id: shot.id, at: shot.at, turn: sheet.turn, kind: 'attack', status: 'incomplete', label: `${name}: ${shot.weaponName} firing attempt`,
-    rolls: [shot.barrels === undefined ? 'Firing attempt recorded. Resolve the to-hit roll and any required misfire.' : `${shot.barrels} barrel${shot.barrels === 1 ? '' : 's'} fired. Resolve one to-hit roll and a separate wound roll for each barrel that hits.`],
+    rolls: [shot.barrels === undefined ? 'Firing attempt recorded. Resolve the to-hit roll and any required misfire.' : `${shot.barrels} barrel${shot.barrels === 1 ? '' : 's'} fired. Resolve one to-hit roll and a separate wound roll for each barrel that hits.`, ...(shot.alternatingChamberReload?['Hunter / Pistolier house rule: automatic reloads allow alternating two-barrel and one-barrel shots on successive own turns; no non-firing reload phase is required.']:[])],
   })
 }
 

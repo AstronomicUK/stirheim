@@ -3,7 +3,7 @@
 // that into a validated CampaignSettings or per-field messages.
 
 import { campaignSettingsSchema, type CampaignSettings, type CombatMode, type DicePolicy, defaultCampaignSettings } from '../../domain/settings'
-import type { CampaignHouseRules, FirstSpellRule } from '../../rules/types/roster'
+import type { CampaignHouseRules, FirstSpellRule, DoubleBarrelSkillReload } from '../../rules/types/roster'
 
 export interface SettingsForm {
   enabledScenarioIds?: string[]
@@ -81,6 +81,7 @@ export function settingsFormEqual(a: SettingsForm, b: SettingsForm): boolean {
     a.mapCampaign === b.mapCampaign &&
     HOUSE_RULE_SWITCHES.every((s) => a.houseRules[s.key] === b.houseRules[s.key]) &&
     a.houseRules.firstSpellRule === b.houseRules.firstSpellRule &&
+    a.houseRules.doubleBarrelSkillReload === b.houseRules.doubleBarrelSkillReload &&
     bansEqual(a.houseRules.bans, b.houseRules.bans)
   )
 }
@@ -98,7 +99,7 @@ export function validateCampaignName(name: string): string | undefined {
   return undefined
 }
 
-export type HouseRuleSwitchKey = Exclude<keyof CampaignHouseRules, 'bans' | 'firstSpellRule'>
+export type HouseRuleSwitchKey = Exclude<keyof CampaignHouseRules, 'bans' | 'firstSpellRule' | 'doubleBarrelSkillReload'>
 
 export interface HouseRuleSwitch {
   key: HouseRuleSwitchKey
@@ -191,6 +192,12 @@ export const FIRST_SPELL_RULE_OPTIONS: FirstSpellRuleOption[] = [
 export function firstSpellRuleLabel(rule: FirstSpellRule): string {
   return FIRST_SPELL_RULE_OPTIONS.find((o) => o.value === rule)?.label ?? rule
 }
+
+export const DOUBLE_BARREL_RELOAD_OPTIONS: { value: DoubleBarrelSkillReload; label: string }[] = [
+  { value: 'none', label: 'No effect on double-barrelled weapons' },
+  { value: 'extra_chamber', label: 'Extra chamber: fire every turn' },
+  { value: 'full_reload', label: 'Fully reload eligible weapons' },
+]
 
 export interface DicePolicyOption {
   value: DicePolicy

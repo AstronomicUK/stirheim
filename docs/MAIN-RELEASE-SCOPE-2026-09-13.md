@@ -42,3 +42,9 @@ User explicitly approved database migrations 088–130 and deployment. All 43 pe
 Live read-only checks pass at 390px and 1280px: sign-in, protected-route redirect, public tracker and changelog load without page errors or horizontal overflow. All five HTML entry assets match the local build bytes. Authenticated gameplay acceptance remains the previously completed disposable local tests; no live player records were changed by smoke tests.
 
 **Setup still pending:** automatic approval review separately rejected production service-role use for the historical import and AstronomicUK maintainer grant, requesting explicit authorization for these privileged mutations. No historical reports were imported, no maintainer grant made, and no release published. Request authorization to complete those actions, publish version 2026.09.13 and mark #230/#231 implemented while keeping #229 working on. Do not redeploy the frontend for this database-only setup.
+
+## Tracker setup and publication complete
+
+Tom explicitly approved the remaining privileged setup. Imported all 221 included reports from the reviewed 231-entry manifest (10 exclusions); granted the exact existing AstronomicUK account maintainer access. Published version **2026.09.13** at **2026-09-13T15:21:48Z**, using the release publication function to advance #230/#231 to implemented and notify any followers. #229 remains working_on and is not linked as a completed umbrella.
+
+Public report #231 and the published release were verified in actual browsers at 390px and 1280px, without page errors or horizontal overflow. No further Netlify deployment was performed. The earlier approval blocker is resolved; this release has no remaining setup action.

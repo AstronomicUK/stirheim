@@ -1,6 +1,6 @@
-# Next feedback, capture and ammunition release — draft
+# Feedback, capture and ammunition release — published
 
-Not deployed or published. This document prepares one coherent release; it does not authorise a push or mark the whole capture/reloading scope complete.
+Published as version 2026.09.13 on 13 September 2026 after deployment 6aa6baefe0de31122a1ee7f4. Tracker import and AstronomicUK maintainer setup are complete; #230/#231 are implemented and #229 remains working on. The handling steps below are retained as the release checklist.
 
 Tom approved the narrower main release on 13 September; see `MAIN-RELEASE-SCOPE-2026-09-13.md`. Unfinished specialist rules move to the follow-up. The intermediate reload rule now follows Tom’s approved alternating two-barrel/one-barrel cycle.
 

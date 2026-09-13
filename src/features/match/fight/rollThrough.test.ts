@@ -772,3 +772,30 @@ describe('weapon responsible for a capture-triggering casualty',()=>{
   expect(state.outcomes).toHaveLength(1)
  })
 })
+
+describe('Cavalcade Capture! after the actual terminal Misericordia attack',()=>{
+ const catcher=()=>({...plan('Misericordia',{armourThreshold:IMPOSSIBLE,critTriggerFaces:[]}),weaponId:'misericordia',cavalcadeCapture:true})
+ it('rolls Capture! only after OOA, then stops without rolling the next attack',()=>{
+  const injury=rolls(startPhase([catcher(),plan('Dagger')],1,0),4,4,6)
+  expect(injury.worst).toBe('outOfAction');expect(injury.done).toBe(false)
+  expect(injury.pending?.kind).toBe('cavalcadeCapture')
+  const captured=applyRoll(injury,5)
+  expect(captured.done).toBe(true);expect(captured.outcomes).toEqual(['outOfAction'])
+  expect(captured.cavalcadeCapture).toEqual({roll:5,originalRoll:5,captured:true})
+  expect(captured.log.at(-1)?.text).toContain('app rolled 5')
+  expect(applyRoll(captured,6)).toBe(captured)
+ })
+ it('a failed tabletop capture retains the normal casualty and survival route',()=>{
+  const injury=rolls(startPhase([catcher()],1,0),4,4,6)
+  const failed=applyRoll(injury,4,true)
+  expect(failed.cavalcadeCapture).toEqual({roll:4,originalRoll:null,captured:false})
+  expect(failed.worst).toBe('outOfAction');expect(failed.log.at(-1)?.text).toContain('normal henchman survival')
+  expect(()=>applyRoll(injury,0)).toThrow(/D6/)
+ })
+ it('does not trigger for a wound, another weapon or an ineligible matchup',()=>{
+  expect(rolls(startPhase([catcher()],3,0),4,4).cavalcadeCapture).toBeUndefined()
+  const other=rolls(startPhase([{...catcher(),weaponId:'dagger'}],1,0),4,4,6)
+  expect(other.done).toBe(true);expect(other.pending).toBeNull()
+  expect(rolls(startPhase([{...catcher(),cavalcadeCapture:false}],1,0),4,4,6).done).toBe(true)
+ })
+})

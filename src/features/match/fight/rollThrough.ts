@@ -1,3 +1,4 @@
+import {isMisericordia} from '../../../rules/resolve/cavalcadeCapture'
 import type { BrokenWeapon } from '../../../domain/weaponLoss'
 import { blackpowderMisfire } from "../../../rules/resolve/blackpowderMisfire"
 // Walking real dice through one phase of attacks: to hit, parry, to wound, critical, saves,
@@ -11,7 +12,7 @@ import { resolveInjuryBand } from '../../../rules/engine/injury'
 import type { AttackInput } from '../../../rules/engine/resolveAttack'
 import { thresholdText } from './odds'
 
-export type RollKind = 'trapBlade' | 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
+export type RollKind = 'cavalcadeCapture' | 'trapBlade' | 'ignition' | 'fishHookFall' | 'chainKnockdown' | 'misfire' | 'pigeonLaunch' | 'firePermission' | 'hit' | 'hitReroll' | 'luckyCharm' | 'parry' | 'parryReroll' | 'dodge' | 'wound' | 'woundReroll' | 'woundSecond' | 'critTable' | 'multiWound' | 'save' | 'stepAside' | 'afterSave' | 'ward' | 'injuryIgnore' | 'injury' | 'stunSave'
 
 export interface PendingRoll {
   kind: RollKind
@@ -25,6 +26,8 @@ export interface PendingRoll {
 }
 
 export interface AttackPlan {
+  /** Caller has verified Cavalcade Hero, enemy human henchman and both capture limits. */
+  cavalcadeCapture?: boolean
   /** Nuln double barrel: a shared hit roll followed by independent wound sequences. */
   barrels?: 1 | 2
   heldWeapon?: BrokenWeapon
@@ -101,6 +104,7 @@ interface Current {
 }
 
 export interface RollState {
+  cavalcadeCapture?: { roll: number; originalRoll: number | null; captured: boolean }
   /** Actual weapon that caused the terminal OOA, before the attack index advances. */
   outOfActionWeaponId?: string
   brokenWeapons?: BrokenWeapon[]
@@ -232,7 +236,11 @@ function finishAttack(state: RollState, outcome: Outcome): RollState {
   let next: RollState = { ...state, outcomes, worst, pending: null }
   if (outcome === 'outOfAction') {
     next = log(next, `${OUTCOME_LABEL[outcome]}! The target is out of action; any remaining attacks are not needed.`, 'good')
-    return { ...next, done: true, index: state.plans.length, outOfActionWeaponId: state.plans[state.index].weaponId ?? state.plans[state.index].heldWeapon?.weaponId }
+    const weaponId = state.plans[state.index].weaponId ?? state.plans[state.index].heldWeapon?.weaponId
+    if (state.plans[state.index].cavalcadeCapture && isMisericordia(weaponId)) {
+      return { ...next, outOfActionWeaponId: weaponId, pending: { kind: 'cavalcadeCapture', who: 'attacker', label: 'Capture!', detail: 'The Misericordia took this human henchman out of action. D6: 5+ captures them for the Throne of Worms; otherwise resolve normal survival after the battle.' } }
+    }
+    return { ...next, done: true, index: state.plans.length, outOfActionWeaponId: weaponId }
   }
   const doubleBarrel = state.plans[state.index].barrels === 2
   const separateHits = state.plans[state.index].input.separateBarrelHits
@@ -287,6 +295,12 @@ export function applyRoll(initial: RollState, roll: number, manual?: boolean): R
   let state = initial
   const pending = state.pending
   if (!pending || state.done) return state
+  if (pending.kind === 'cavalcadeCapture') {
+    if (!Number.isInteger(roll) || roll < 1 || roll > 6) throw new Error('Capture! needs a D6 result from 1 to 6.')
+    const captured = roll >= 5
+    state = log(state, `Capture!: ${manual ? 'tabletop result' : 'app rolled'} ${roll}. ${captured ? 'Captured; resolve the Throne of Worms after the battle.' : 'Not captured; resolve normal henchman survival after the battle.'}`, captured ? 'good' : 'neutral')
+    return { ...state, cavalcadeCapture: { roll, originalRoll: manual ? null : roll, captured }, done: true, pending: null, index: state.plans.length }
+  }
   const plan = state.plans[state.index]
   const input = plan.input
   /** Matches RollResult's own wording (Dice.tsx), so the persisted log line agrees with what was shown on screen at the time. */

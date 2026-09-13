@@ -87,7 +87,7 @@ export function CaptiveCaseCard({item,detail,campaign,canAct,gm,userId,embedded=
    {item.state==='open'&&canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!henchman&&!companion&&!pending.some(p=>p.proposed_by_warband_id===detail.warband.id)?<OutcomeForm owner={owner} captor={captor} heroId={item.hero_id} pending={propose.isPending}
      submitLabel={gm||bothMine?'Record agreed outcome':`Propose to the player of ${otherName}`}
      onSubmit={(preview,choice)=>propose.mutate({caseId:item.id,choice,owner,captor,nextOwner:preview.owner,nextCaptor:preview.captor,message:preview.message})}/>:null}
-   {canAct&&owner&&captor&&!engineRoute&&!checkingEngines&&!pending.length&&!(henchman&&item.source==='pirates_kidnapped')?<CaptiveExchangePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed exchange':`Propose exchange to ${otherName}`}/>:null}
+   {canAct&&owner&&captor&&captor.roster.warbandTemplateId!=='the_cursed_cavalcade'&&!engineRoute&&!checkingEngines&&!pending.length&&!(henchman&&item.source==='pirates_kidnapped')?<CaptiveExchangePanel item={item} owner={owner} captor={captor} submitLabel={gm||bothMine?'Record agreed exchange':`Propose exchange to ${otherName}`}/>:null}
    {canAct&&!otherId?null:other.error?<Notice tone="error" title="Could not load the other warband">{other.error.message}</Notice>:null}
    {!canAct?<p className="text-sm text-ink-dim">Only the two players (or the campaign GM) can propose or accept an outcome.</p>:null}
   </>:null}

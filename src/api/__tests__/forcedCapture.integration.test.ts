@@ -1,3 +1,4 @@
+import {buildHenchmanThrone} from '../cavalcadeCaptives'
 import { beforeAll, afterAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { buildForcedCaptiveProposal, canReturnToGroup } from '../forcedCaptives'
@@ -274,6 +275,44 @@ describe.skipIf(!enabled)('Forced henchman captures (Subjugator of Mankind, #229
   check(await admin.from('matches').update({state:'awaiting_reports'}).eq('id',match))
   check(await file([cap(1,eventId,{reason:'man_catcher'})],{size:2,swordQty:2,shieldQty:2,swordsLost:1,shieldsLost:1,rolls:[]}))
   expect((await cases())[0].model_snapshot.reason).toBe('man_catcher')
+ })
+
+ it.each([1,4,6])('resolves henchman Throne result %s through exact two-player consent (capture trigger tested separately)',async(d6)=>{
+  // The established forced-capture fixture supplies per-model kit and report identity.
+  // This exercises only the new outcome contract, not the pending Misericordia trigger.
+  check(await admin.from('warbands').update({type_rules_id:'the_cursed_cavalcade',name:'Cavalcade'}).eq('id',cw))
+  check(await admin.from('heroes').update({unit_type_rules_id:'cursed_cavalcade_aristocrat',name:'Aristocrat',xp:23,skills:[]}).eq('id',moulder))
+  check(await file([cap(1,events[0]),cap(2,events[1])]));check(await fileCaptor())
+  const [item]=await cases()
+  const detail=async(id:string)=>{const w=check(await admin.from('warbands').select('*').eq('id',id).single()),hs=check(await admin.from('heroes').select('*').eq('warband_id',id)),gs=check(await admin.from('henchman_groups').select('*').eq('warband_id',id)),is=check(await admin.from('items').select('*').eq('warband_id',id));return {warband:w,heroes:hs,groups:gs,items:is,roster:toRosterWarband(w,hs,gs,is)}}
+  const owner=await detail(vw),enemy=await detail(cw)
+  const choice={kind:'throne' as const,d6,originalD6:2,groupId:crypto.randomUUID(),leaderId:d6===6?moulder:''}
+  const result=buildHenchmanThrone({item,owner,captor:enemy,choice})
+  const changes=diffRoster(enemy,result.nextCaptor),advances=eventAdvances(enemy.roster,result.nextCaptor)
+  const offer=async(over:Record<string,unknown>={})=>captor.rpc('propose_captive_outcome',{p_case_id:item.id,p_choice:choice,p_message:result.message,p_expected:await expected(),p_owner_changes:diffRoster(owner,result.nextOwner),p_captor_changes:changes,p_advances:advances,...over})
+  expect((await offer({p_choice:{kind:'sell',d6:1}})).error?.message).toMatch(/Throne of Worms replaces/)
+  expect((await offer({p_choice:{...choice,originalD6:2.5}})).error?.message).toMatch(/original D6/)
+  expect((await offer({p_owner_changes:[{table:'henchman_groups',op:'update',id:group,data:{size:0}}]})).error?.message).toMatch(/already left/)
+  expect((await offer({p_captor_changes:changes.filter(c=>c.table!=='items')})).error?.message).toMatch(/exactly the captive/)
+  if(d6===6)expect((await offer({p_advances:[]})).error?.message).toMatch(/advancement earned/)
+  const proposal=check(await offer())
+  expect((await detail(cw)).roster.henchmenGroups).toHaveLength(0)
+  check(await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}))
+  const saved=await detail(cw)
+  expect(saved.roster.gold).toBe(100)
+  expect(saved.roster.stash).toEqual(expect.arrayContaining([{itemId:'sword',quantity:1},{itemId:'shield',quantity:1,notes:'Painted red'}]))
+  expect(saved.roster.henchmenGroups).toHaveLength(d6===4?1:0)
+  if(d6===4)expect(saved.roster.henchmenGroups[0]).toMatchObject({unitTemplateId:'cursed_cavalcade_captured_thrall',size:1,xp:0})
+  expect(saved.roster.heroes[0].xp).toBe(d6===6?24:23)
+  expect(check(await admin.from('pending_advances').select('threshold_xp').eq('subject_id',moulder))).toEqual(d6===6?[{threshold_xp:24}]:[])
+  expect((await groupRow()).size).toBe(1)
+  expect((await cases())[0].resolution_message).toContain(`app rolled 2; player changed this to ${d6}`)
+  expect((await victim.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'})).error).not.toBeNull()
+  check(await gm.rpc('reverse_captive_resolution',{p_case_id:item.id,p_reason:'Disposable Throne correction'}))
+  expect((await detail(cw)).roster.henchmenGroups).toHaveLength(0)
+  expect((await detail(cw)).roster.stash).toEqual([])
+  expect((await detail(cw)).roster.heroes[0].xp).toBe(23)
+  expect((await groupRow()).size).toBe(1)
  })
 
 })

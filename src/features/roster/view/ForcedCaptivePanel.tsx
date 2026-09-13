@@ -1,3 +1,4 @@
+import {HenchmanThronePanel} from './HenchmanThronePanel'
 import {useState} from 'react'
 import type {WarbandDetail} from '../../../api/warbands'
 import {useProposeCaptiveOutcome,type CaptiveCase} from '../../../api/captives'
@@ -7,6 +8,7 @@ import {ForcedCaptiveForm} from './ForcedCaptiveForm'
 export function ForcedCaptivePanel({item,owner,captor,submitLabel}:{item:CaptiveCase;owner:WarbandDetail;captor:WarbandDetail;submitLabel:string}){
  const propose=useProposeCaptiveOutcome()
  const [error,setError]=useState('')
+ if(captor.roster.warbandTemplateId==='the_cursed_cavalcade')return <HenchmanThronePanel item={item} owner={owner} captor={captor} submitLabel={submitLabel}/>
  return <ForcedCaptiveForm key={item.id} name={item.hero_name} ownerGold={owner.warband.gold} pending={propose.isPending} submitLabel={submitLabel} error={error||propose.error?.message} onSubmit={choice=>{
   setError('')
   try{

@@ -142,6 +142,12 @@ export function buildHashutReturn(input: HashutReturnInput): HashutReturnPayload
   const outcome = resolveHashutReward(plan, input.d3, plan.d6GoldCount ? input.d6 ?? undefined : undefined)
   const total = input.allocations.reduce((sum, a) => sum + a.xp, 0)
   if (!input.allocations.length || input.allocations.some(a => !Number.isInteger(a.xp) || a.xp < 1)) throw new Error('Say which Heroes receive the experience.')
+  // The same checks the server makes on recipients, so the preview never disagrees with it.
+  if (new Set(input.allocations.map(a => a.heroId)).size !== input.allocations.length) throw new Error('A Hero is listed twice in the allocation.')
+  for (const a of input.allocations) {
+    const h = roster.heroes.find(x => x.id === a.heroId)
+    if (!h || h.status !== 'active') throw new Error('Experience goes to this warband’s own active Heroes.')
+  }
   if (total !== outcome.xp) throw new Error(`The allocation must share exactly ${outcome.xp} experience (it shares ${total}).`)
   if (plan.xpRecipient === 'leader' && (input.allocations.length !== 1 || !input.leaderId || input.allocations[0].heroId !== input.leaderId)) throw new Error('With three captives or fewer the +1 Experience goes to the warband leader alone.')
   const next: RosterWarband = { ...roster, heroes: roster.heroes.map(h => { const a = input.allocations.find(x => x.heroId === h.id); return a ? { ...h, xp: h.xp + a.xp } : h }) }

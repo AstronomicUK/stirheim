@@ -153,11 +153,17 @@ describe.skipIf(!enabled)('Hashut\'s Reward journeys (#229 / #95, migration 105)
   expect((await ret({d3:[2],allocations:[{heroId:sorcerer,xp:1}]})).error?.message).toMatch(/share exactly 2 experience \(it shares 1\)/)
   expect((await ret({d3:[2],allocations:[{heroId:hired,xp:2}]})).error?.message).toMatch(/own active Heroes/)
   expect((await ret({d3:[2],allocations:[{heroId:sorcerer,xp:1},{heroId:gaoler,xp:1}]},[{subject_id:gaoler,threshold_xp:11}])).error?.message).toMatch(/threshold this reward does not cross/)
+  // The Sorcerer goes 19 → 20 and crosses a box: the advance cannot be omitted, claimed twice, or invented.
+  expect((await ret({d3:[2],allocations:[{heroId:sorcerer,xp:1},{heroId:gaoler,xp:1}]},[])).error?.message).toMatch(/crosses 1 advance box; every one must be claimed \(0 listed\)/)
+  expect((await ret({d3:[2],allocations:[{heroId:sorcerer,xp:1},{heroId:gaoler,xp:1}]},[{subject_id:sorcerer,threshold_xp:20},{subject_id:sorcerer,threshold_xp:20}])).error?.message).toMatch(/claimed twice/)
   const roster=(await detail(cw)).roster
   const payload=buildHashutReturn({journey:await journey(started.journeyId),roster,d3:[2],appD3:[1],allocations:[{heroId:sorcerer,xp:1},{heroId:gaoler,xp:1}]})
   expect(payload).toMatchObject({xpTotal:2,gold:0,advances:[{subject_id:sorcerer,threshold_xp:20}]})
+  expect((await hero(gaoler)).flags).toEqual({missNextGames:1})
   check(await dwarf.rpc('return_engine',{p_journey_id:started.journeyId,p_reward:payload.reward,p_advances:payload.advances}))
   expect((await hero(sorcerer)).xp).toBe(20);expect((await hero(gaoler)).xp).toBe(9)
+  // The escort rejoins: the sits-out flag departure set is lifted (the fixture report never decremented it).
+  expect((await hero(gaoler)).flags).toEqual({})
   expect(check(await admin.from('pending_advances').select('subject_id,threshold_xp').eq('warband_id',cw))).toEqual([{subject_id:sorcerer,threshold_xp:20}])
   expect((await engineRow()).state).toBe('present')
   const done=await journey(started.journeyId)
@@ -216,8 +222,10 @@ describe.skipIf(!enabled)('Hashut\'s Reward journeys (#229 / #95, migration 105)
   expect((await ret({d3:[],allocations:[{heroId:gaoler,xp:1}],leaderId:gaoler})).error?.message).toMatch(/current leader alone/)
   expect((await ret({d3:[],allocations:[{heroId:sorcerer,xp:1}]})).error?.message).toMatch(/current leader alone/)
   expect((await ret({d3:[1],allocations:[{heroId:sorcerer,xp:1}],leaderId:sorcerer})).error?.message).toMatch(/Record 0 D3 results/)
-  check(await ret({d3:[],allocations:[{heroId:sorcerer,xp:1}],leaderId:sorcerer}))
+  expect((await ret({d3:[],allocations:[{heroId:sorcerer,xp:1}],leaderId:sorcerer})).error?.message).toMatch(/every one must be claimed/)
+  check(await dwarf.rpc('return_engine',{p_journey_id:fifth.journeyId,p_reward:{d3:[],allocations:[{heroId:sorcerer,xp:1}],leaderId:sorcerer},p_advances:[{subject_id:sorcerer,threshold_xp:20}]}))
   expect((await hero(sorcerer)).xp).toBe(20)
+  expect((await hero(gaoler)).flags).toEqual({})
   expect((await journey(fifth.journeyId))).toMatchObject({state:'returned',reward:{xpTotal:1,gold:0,leaderId:sorcerer}})
  })
 
@@ -227,9 +235,31 @@ describe.skipIf(!enabled)('Hashut\'s Reward journeys (#229 / #95, migration 105)
   expect(trip.departed).toBe(true)
   expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw})).error?.message).toMatch(/sent to the Dark Lands; the report stays as filed/)
   await fightBattle(new Date().toISOString())
-  check(await dwarf.rpc('return_engine',{p_journey_id:trip.journeyId,p_reward:{d3:[],allocations:[{heroId:sorcerer,xp:1}],leaderId:sorcerer},p_advances:[]}))
+  check(await dwarf.rpc('return_engine',{p_journey_id:trip.journeyId,p_reward:{d3:[],allocations:[{heroId:sorcerer,xp:1}],leaderId:sorcerer},p_advances:[{subject_id:sorcerer,threshold_xp:20}]}))
   expect((await gm.rpc('withdraw_battle_report',{p_match_id:match,p_warband_id:cw})).error?.message).toMatch(/sent to the Dark Lands; the report stays as filed/)
   // Reversing the source placement is impossible too: the captive is no longer held.
   expect((await dwarf.rpc('reverse_anonymous_placement',{p_prisoner_id:anon,p_reason:'Undo the find'})).error?.message).toMatch(/no longer held \(dispatched\)/)
+ })
+
+ it('does not deadlock when a dispatch and an ordinary captive answer for the same captor run at once',async()=>{
+  const pA=await place(heroA)
+  // B's placement is proposed but unanswered; the captor answers it while dispatching A in parallel.
+  const c=(await cases()).find((c:any)=>c.hero_id===heroB)
+  const [owner,captor]=[await detail(vw),await detail(cw)]
+  const built=buildEnginePlacementProposal({item:c as CaptiveCase,owner,captor,engineId:engine})
+  const proposal=check(await reik.rpc('propose_captive_outcome',{p_case_id:c.id,p_choice:built.choice,p_message:'Lock him up',p_owner_changes:diffRoster(owner,built.nextOwner),p_captor_changes:diffRoster(captor,built.nextCaptor),p_advances:[],p_expected:await expected()}))
+  const updatedAt=(await engineRow()).updated_at
+  const results=await Promise.all([
+   dwarf.rpc('respond_captive_proposal',{p_proposal_id:proposal,p_action:'accept'}),
+   dwarf.rpc('dispatch_engine',{p_engine_id:engine,p_escort_hero_id:gaoler,p_prisoner_ids:[pA],p_expected_updated_at:updatedAt}),
+   reik.rpc('respond_captive_proposal',{p_proposal_id:crypto.randomUUID(),p_action:'reject',p_reason:'noise'}),
+  ])
+  for(const r of results.slice(0,2))expect(r.error?.message??'').not.toMatch(/deadlock/i)
+  expect(results[0].error).toBeNull()
+  // The dispatch either won the race outright or saw the Engine record change under it (a clean retry).
+  if(results[1].error)expect(results[1].error.code).toBe('40001')
+  else expect((await journey((results[1].data as any).journeyId)).state).toBe('pending')
+  expect((await prisoners()).find((p:any)=>p.case_id===c.id)).toMatchObject({state:'held'})
+  expect((await cases()).find((c:any)=>c.hero_id===heroB).state).toBe('held')
  })
 })

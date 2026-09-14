@@ -76,3 +76,13 @@ Local browser QA: a Fire Magus sees only six Fire spells; checking exception wit
 ## Checkpoint 10 — Hardtack recovery (#139/#140, partial)
 
 Tainted Hardtack now adds one missed game to injury recovery rather than taking only the longer absence. The report regression combines two-game Deep Wound with tainted Hardtack to give three games, checks repeat derivation remains three and leaves the input roster unchanged. Outcome wording states the additional absence. Per-model group Hardtack and turn-limited Toughness activation remain outstanding. No deployment.
+
+## Checkpoint 11 — Magical Aptitude allowance and shared injury (#181)
+
+The first resolved spell now saves its pending Toughness/injury follow-up, which can be resumed after closing or refreshing. A recorded pass allows one second attempt; that attempt cannot offer another test for a third. Hand-to-hand disables the aptitude benefit. Failed/declined/legacy-unverified tests do not silently grant another cast. Extra casts remain possible through an explained exception saved with the attempt. Each attempt updates one record rather than duplicating it at every follow-up. Outstanding failed-test injuries remain resolvable after a turn change.
+
+Rolled knock-down/stun has an explicit Apply injury to both sheets action, feeding the existing shared combat condition/recovery machinery without wounds, OOA or XP. Existing event corrections remain available. Client in-flight protection and visible-event matching prevent normal repeated application; no new server uniqueness constraint or multi-device concurrency guarantee is claimed.
+
+Local browser QA: 4+4 cast, refresh pending test, resume 2 pass, second 4+4 cast, no third offer; next turn first cast available; Toughness 6 fails, refresh pending injury, injury 6 becomes Stunned; apply action shows Stunned on roster. Mobile 390px exception control fits and enables an explained override. Disposable fixture removed. Full ordinary suite 2,586 passed (350 database tests skipped), build/typecheck and lint passed with existing audit warnings. No deployment.
+
+Wretch reconnaissance (#114): first Talent must reroll; second needs an individual Hero injury. Current group state does not carry individual permanent injury/flags, so this requires a deliberate individual-member implementation, not an injury applied to the entire group. Remains outstanding.

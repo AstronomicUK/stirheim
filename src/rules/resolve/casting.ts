@@ -380,6 +380,7 @@ export interface CastState {
   outcome: CastOutcome | null;
   /** Magical Aptitude: the second attempt is offered once the first is resolved. */
   secondSpellOffered: boolean;
+  aptitude?: "pending" | "passed" | "injuryPending" | "knockedDown" | "stunned" | "declined";
   done: boolean;
   /** Dispel sources actually available to whoever is opposing this cast; empty means nobody can. */
   enemyDispel: DispelSource[];
@@ -395,6 +396,8 @@ function modifierText(state: CastState): string {
 }
 
 export interface StartCastOptions {
+  /** A second attempt cannot earn a third; melee prevents using Magical Aptitude. */
+  allowAptitude?: boolean;
   /** Sacrificial Ritual only: additional captives already sacrificed before rolling.
    * The custody workflow must confirm consumption; this is not a casting-roll bonus. */
   ritualExtraSacrifices?: number;
@@ -446,7 +449,7 @@ export function startCast(profile: CasterProfile, spell: Spell, options: StartCa
     pending: null,
     log: [],
     outcome: null,
-    secondSpellOffered: false,
+    secondSpellOffered: options.allowAptitude === false,
     done: false,
     enemyDispel: (options.enemyDispel ?? []).filter(source => {
       const affected = source.ownerId !== undefined && (source.ownerId === options.targetId || (options.affectedIds ?? []).includes(source.ownerId));
@@ -564,15 +567,18 @@ export function applyCastRoll(state: CastState, values: number[], manual?: boole
         tone: passed ? "good" : "bad",
       });
       if (passed) {
+        next.aptitude = "passed";
         next.pending = null;
         next.done = true;
         return next;
       }
+      next.aptitude = "injuryPending";
       next.pending = CAST_STEP({ kind: "aptitudeInjury", dice: 1, label: "Injury roll", detail: "No saves. An Out of action result counts as Stunned instead." });
       return next;
     }
     case "aptitudeInjury": {
       const roll = values[0];
+      next.aptitude = roll <= 2 ? "knockedDown" : "stunned";
       const band = roll <= 2 ? "Knocked down" : roll <= 4 ? "Stunned" : "Stunned (Out of action counts as Stunned)";
       next.log.push({ text: `Injury roll ${roll}${rollTag}: ${band}.`, tone: "bad" });
       next.pending = null;
@@ -592,6 +598,7 @@ export function declineCastStep(state: CastState): CastState {
     return afterCast(next);
   }
   if (step.kind === "toughness") {
+    next.aptitude = "declined";
     next.log.push({ text: "No second spell attempted.", tone: "neutral" });
     next.pending = null;
     next.done = true;
@@ -685,6 +692,7 @@ function afterCast(state: CastState): CastState {
   const next = { ...state };
   if (next.profile.secondSpell && !next.secondSpellOffered) {
     next.secondSpellOffered = true;
+    next.aptitude = "pending";
     next.pending = CAST_STEP({
       kind: "toughness",
       dice: 1,

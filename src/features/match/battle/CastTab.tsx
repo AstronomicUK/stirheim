@@ -1,4 +1,5 @@
-import { warriorIsBurning, type BattleEventRow } from '../../../domain'
+import { castLimitReason } from './castLimits'
+import { warriorIsBurning, type AttackEventPayload, type BattleEventRow } from '../../../domain'
 import { combatantsOf } from '../fight/combatants'
 // Casting, at the table. Pick the wizard, pick the spell, switch on whatever he is spending, and
 // walk the dice: 2D6 against the Difficulty, a re-roll if he has one to spend, then the enemy's
@@ -30,7 +31,7 @@ import { SpellDamage } from './SpellDamage'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband, RosterHero } from '../../../rules/types/roster'
 import type { Spell } from '../../../rules/types/magic'
-import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet } from '../../../ui'
+import { Button, DicePicker, HoverCard, Icon, Notice, RollResult, SelectField, Sheet, TextField } from '../../../ui'
 import { Card, Section, Tag } from '../../roster/view/bits'
 import { FightBox } from './cards'
 import {isHeroOut} from './sheet'
@@ -41,6 +42,7 @@ import { findItem } from '../../../rules/data/items'
 
 export interface CastTabProps {
   matchId: string
+  onLogEvent?: (payload: AttackEventPayload) => Promise<void>
   roster: RosterWarband
   template: WarbandTemplate | undefined
   others: MatchParticipantView[]
@@ -51,7 +53,7 @@ export interface CastTabProps {
   edit?: (fn: (state: BattleLiveState) => BattleLiveState) => void
 }
 
-export function CastTab({ matchId, roster, template, others, sessions=[], events=[], sheet, readOnly, edit }: CastTabProps) {
+export function CastTab({ onLogEvent, matchId, roster, template, others, sessions=[], events=[], sheet, readOnly, edit }: CastTabProps) {
   const turns=useBattleTurns(matchId)
   const dispels=useBattleDispels(matchId)
   const queryClient=useQueryClient()
@@ -72,6 +74,12 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   const caster = casters.find((c) => c.heroId === casterId) ?? casters[0]
   const [state, setState] = useState<CastState | null>(null)
   const [castingPulse, setCastingPulse] = useState(0)
+  const [savingInjury,setSavingInjury] = useState(false)
+  const injurySavingRef = useRef(false)
+  const [injuryError,setInjuryError] = useState('')
+  const [inMelee, setInMelee] = useState(false)
+  const [castOverride, setCastOverride] = useState('')
+  const overrideRef = useRef('')
   const [spent, setSpent] = useState<Record<string, number>>({})
   // The spell about to be cast decides who can be targeted (#32/#76): its `target` kind picks the
   // friendly list, the enemy list, both under headings, the caster himself, or no model at all.
@@ -90,7 +98,7 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   const recorded = useRef<string | null>(null)
   const stateRef = useRef<CastState | null>(null)
   const castTurn=useRef(turns.data)
-  const attempt = useRef({ id: crypto.randomUUID(), at: new Date().toISOString(), turn: sheet.turn })
+  const attempt = useRef<{id:string;at:string;turn:number}>({ id: crypto.randomUUID(), at: new Date().toISOString(), turn: sheet.turn })
 
   if (casters.length === 0) {
     return (
@@ -104,6 +112,9 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   if (!caster) return null
 
   const already = castsThisTurn(sheet, caster.heroId, sheet.turn)
+  const limitReason = castLimitReason(already, caster.secondSpell, inMelee)
+  const pendingAptitude = sheet.casts.find(c=>c.heroId===caster.heroId && c.attemptId && c.aptitude==='injuryPending') ?? already.find(c => c.attemptId && c.aptitude === 'pending')
+  const unappliedInjury = sheet.casts.find(c=>c.heroId===caster.heroId && c.attemptId && (c.aptitude==='knockedDown'||c.aptitude==='stunned') && !events.some(e=>e.payload.aptitudeAttemptId===c.attemptId))
   const spentIds = rerollsSpent(sheet, caster.heroId, sheet.turn)
   const usedUp = [...new Set([...spentIds.game.filter((id) => caster.rerolls.find((r) => r.id === id)?.limit === 'perGame'), ...spentIds.turn])]
 
@@ -123,29 +134,32 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   const targetTone: 'brass' | 'accent' = kind === 'enemy' || (kind === 'either' && pickedSide === 'enemy' && target) ? 'accent' : 'brass'
   const note = chosen?.spell.targetNote
   const canCast =
-    !!chosen && !!chosenProfile && !burningBlocked && !stupidityBlocked && chosenProfile.blocks.length === 0 &&
+    !!chosen && !!chosenProfile && (!limitReason || !!castOverride.trim()) && !pendingAptitude && !unappliedInjury && !burningBlocked && !stupidityBlocked && chosenProfile.blocks.length === 0 &&
     !(needsSharedTurns && chosenProfile.lore.id !== 'prayers_of_sigmar') &&
     !enemies.isPending && !turns.isPending && !dispels.isPending && !enemies.error && !turns.isError && !dispels.isError &&
     (!needsTarget || target !== null)
 
   function begin(spell: Spell) {
-    if (burningBlocked || stupidityBlocked) return
+    if (!canCast || readOnly) return
+    overrideRef.current = limitReason ? castOverride.trim() : ''
     castTurn.current=turns.data
     attempt.current = { id: crypto.randomUUID(), at: new Date().toISOString(), turn: sheet.turn }
     const started = startCast(caster!, spell, {
+      allowAptitude: already.length === 0 && !inMelee,
       modifiers: Object.entries(spent).map(([id, amount]) => ({ id, amount })),
       alreadyUsed: usedUp,
       enemyDispel,
       targetId: target?.id,
       affectedIds: spell.affects === 'enemies' ? affectedIds : undefined,
     })
+    if (overrideRef.current) started.log.push({text:`Casting exception: ${overrideRef.current}`,tone:'neutral'})
     setCastingPulse(0)
     recorded.current = null
     stateRef.current = started
     setState(started)
     recordDice(started)
     // A spell that needs no roll is finished the moment it starts.
-    if (started.done) record(started)
+    if (started.outcome) record(started)
   }
 
   // Celebrate only the final outcome, once the covering sheet has gone. A keyed decoration
@@ -162,28 +176,71 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   }
 
   function record(finished: CastState) {
-    const token = `${finished.profile.heroId}:${finished.spell.id}:${finished.log.length}`
+    const token = `${attempt.current.id}:${finished.log.length}:${finished.aptitude ?? "none"}`
     if (readOnly || !edit || recorded.current === token) return
     recorded.current = token
-    const turn = attempt.current.turn
+    const {turn, id:attemptId} = attempt.current
     edit((s) =>
       withCast(s, {
+        attemptId,
+        aptitude: finished.aptitude,
+        overrideReason: overrideRef.current || undefined,
         heroId: finished.profile.heroId,
         heroName: finished.profile.name,
         spellId: finished.spell.id,
         spellName: finished.spell.name,
         turn,
         outcome: finished.outcome ?? 'failed',
-        total: finished.dice ? finished.dice[0] + finished.dice[1] + finished.bonus : null,
+        total: finished.dice ? finished.dice[0] + finished.dice[1] + finished.bonus : s.casts.find(c=>c.attemptId===attemptId)?.total ?? null,
         difficulty: finished.difficulty,
-        used: finished.used.filter((id) => !usedUp.includes(id)),
+        used: [...new Set([...(s.casts.find(c=>c.attemptId===attemptId)?.used ?? []), ...finished.used.filter((id) => !usedUp.includes(id))])],
         targetName: targetId
           ? (allTargets.find((t) => t.id === targetId)?.name ?? null)
           : finished.spell.affects === 'enemies' && affectedIds.length > 0
             ? affectedIds.map((id) => allTargets.find((t) => t.id === id)?.name).filter(Boolean).join(', ')
-            : null,
+            : s.casts.find(c=>c.attemptId===attemptId)?.targetName ?? null,
       }),
     )
+  }
+
+  async function applyAptitudeInjury() {
+    if (!unappliedInjury || !onLogEvent || readOnly || injurySavingRef.current) return
+    injurySavingRef.current = true; setSavingInjury(true); setInjuryError('')
+    try {
+      await onLogEvent({aptitudeAttemptId:unappliedInjury.attemptId,
+        attacker_warband_id:roster.id,attacker_id:caster!.heroId,attacker_kind:'hero',attacker_name:caster!.name,
+        target_warband_id:roster.id,target_id:caster!.heroId,target_kind:'hero',target_name:caster!.name,target_size:1,
+        wounds_lost:0,out_of_action:false,kill:false,nurgles_rot:false,turn:unappliedInjury.turn,
+        outcome:unappliedInjury.aptitude==='knockedDown'?'Knocked down':'Stunned',
+        rolls:sheet.rollAttempts.find(r=>r.id===unappliedInjury.attemptId)?.rolls ?? ['Magical Aptitude injury'],
+      })
+    } catch(error) {setInjuryError(error instanceof Error?error.message:'Unable to save the injury.')}
+    finally {injurySavingRef.current=false;setSavingInjury(false)}
+  }
+
+  function resumeAptitude() {
+    if (!pendingAptitude?.attemptId || readOnly) return
+    const original = caster!.spells.find(s=>s.spell.id===pendingAptitude.spellId)
+    if (!original) return
+    const savedRoll = sheet.rollAttempts.find(r=>r.id===pendingAptitude.attemptId)
+    attempt.current = {id:pendingAptitude.attemptId,at:savedRoll?.at ?? new Date().toISOString(),turn:pendingAptitude.turn}
+    overrideRef.current = pendingAptitude.overrideReason ?? ''
+    const restored = startCast(caster!,original.spell,{allowAptitude:false})
+    restored.difficulty = pendingAptitude.difficulty
+    restored.outcome = pendingAptitude.outcome
+    restored.aptitude = pendingAptitude.aptitude
+    restored.used = pendingAptitude.used
+    restored.done = false
+    restored.log = (savedRoll?.rolls ?? []).map(text=>({text,tone:'neutral' as const}))
+    restored.pending = pendingAptitude.aptitude === 'pending'
+      ? {kind:'toughness',dice:1,label:'Magical Aptitude: a second spell?',detail:'Take a Toughness test. Only use this outside hand-to-hand combat.',optional:true}
+      : {kind:'aptitudeInjury',dice:1,label:'Injury roll',detail:'No saves. Out of action counts as Stunned.',optional:false}
+    setSelectedSpellId(original.spell.id)
+    setTargetId(null)
+    setAffectedIds([])
+    recorded.current = null
+    stateRef.current = restored
+    setState(restored)
   }
 
   function recordDice(next: CastState) {
@@ -195,11 +252,10 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
   }
 
   function accept(next:CastState) {
-    const current=stateRef.current
     stateRef.current=next
     setState(next)
     recordDice(next)
-    if(next.done && !current?.done) record(next)
+    if(next.outcome) record(next)
   }
   async function saveDispel() {
     if(savingRef.current || !pendingDispel.current) return
@@ -249,6 +305,8 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
                   onClick={() => {
                     setCastingPulse(0)
                     setCasterId(c.heroId)
+                    setInMelee(false)
+                    setCastOverride('')
                     stateRef.current = null
                     setState(null)
                     setSpent({})
@@ -270,10 +328,14 @@ export function CastTab({ matchId, roster, template, others, sessions=[], events
           {already.length > 0 ? (
             <Notice tone="warn" title="Already cast this turn">
               {already.map((c) => `${c.spellName}${c.targetName ? ` on ${c.targetName}` : ''} — ${CAST_OUTCOME_LABEL[c.outcome].toLowerCase()}`).join('. ')}.
-              {caster.secondSpell ? ' Magical Aptitude allows a second attempt after a Toughness test.' : ' A wizard may cast one spell per turn.'}
+              {limitReason ? ` ${limitReason}` : ' Magical Aptitude test passed: one further spell may be attempted.'}
             </Notice>
           ) : null}
 
+          {unappliedInjury ? <Notice tone="warn" title={`Magical Aptitude: ${unappliedInjury.aptitude === 'knockedDown' ? 'Knocked down' : 'Stunned'}`}><p>Apply the rolled injury to both battle sheets before continuing.</p><Button disabled={readOnly || savingInjury || !onLogEvent} onClick={()=>void applyAptitudeInjury()}>{savingInjury?'Saving injury…':'Apply injury to both sheets'}</Button>{injuryError ? <p>{injuryError}</p> : null}</Notice> : null}
+          {caster.secondSpell ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={inMelee} onChange={e=>setInMelee(e.target.checked)} />In hand-to-hand combat</label> : null}
+          {pendingAptitude ? <Button variant="secondary" disabled={readOnly || inMelee && pendingAptitude.aptitude === 'pending'} onClick={resumeAptitude}>Resume Magical Aptitude {pendingAptitude.aptitude === 'pending' ? 'test' : 'injury roll'}</Button> : null}
+          {limitReason && !pendingAptitude ? <details className="text-sm"><summary>Agreed casting exception</summary><TextField label="Reason for extra casting attempt" value={castOverride} onChange={e=>setCastOverride(e.target.value)} hint="Saved with the casting attempt for the group to review." /></details> : null}
           <p className="text-xs text-ink-dim">Spell or prayer to cast</p>
           <div role="radiogroup" aria-label="Spell or prayer to cast" className="flex flex-col gap-1.5">
             {caster.spells.map(({ spell, difficulty }) => {

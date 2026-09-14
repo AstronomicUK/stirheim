@@ -10,6 +10,7 @@ import { withRollAttempt, type TakenOutBy, type BattleLiveState, type BattleWarr
 import { uuidSchema, timestampSchema } from "./rows";
 
 export const attackEventPayloadSchema = z.object({
+  aptitudeAttemptId: z.string().optional(),
   slaaneshi_lock:z.object({weaponId:z.string(),modelIndex:z.number().int().nonnegative()}).optional(),
   target_model_index:z.number().int().nonnegative().optional(),
   cavalcade_capture: z.object({roll:z.number().int().min(1).max(6),originalRoll:z.number().int().min(1).max(6).nullable(),captured:z.boolean()}).optional(),

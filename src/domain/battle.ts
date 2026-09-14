@@ -41,6 +41,9 @@ export type TakenOutBy = z.infer<typeof takenOutBySchema>;
 
 /** One attempt to cast a spell or recite a prayer, kept so the sheet remembers what has been spent. */
 export const castRecordSchema = z.object({
+  attemptId: z.string().optional(),
+  aptitude: z.enum(["pending", "passed", "injuryPending", "knockedDown", "stunned", "declined"]).optional(),
+  overrideReason: z.string().optional(),
   heroId: z.string(),
   heroName: z.string(),
   spellId: z.string(),
@@ -270,7 +273,7 @@ export function withTally(state: BattleLiveState, tally: BattleWarriorTally): Ba
 
 /** Add one cast to the sheet. */
 export function withCast(state: BattleLiveState, cast: CastRecord): BattleLiveState {
-  return { ...state, casts: [...state.casts, cast], editedAt: new Date().toISOString() };
+  return { ...state, casts: cast.attemptId ? [...state.casts.filter(c => c.attemptId !== cast.attemptId), cast] : [...state.casts, cast], editedAt: new Date().toISOString() };
 }
 
 /** Casts this hero has already made in the given turn: the one-spell-per-turn rule. */

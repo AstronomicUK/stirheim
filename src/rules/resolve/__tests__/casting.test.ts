@@ -260,12 +260,15 @@ describe("rolling a cast", () => {
     // No enemyDispel supplied, so nothing to decline first — straight to the Toughness offer.
     const cast = applyCastRoll(startCast(p, p.lore.spells[0]), [6, 6]);
     expect(cast.pending?.kind).toBe("toughness");
-    expect(applyCastRoll(cast, [2]).done).toBe(true);
+    expect(applyCastRoll(cast, [2])).toMatchObject({done:true,aptitude:"passed"});
+    expect(declineCastStep(cast).aptitude).toBe("declined");
+    expect(applyCastRoll(startCast(p,p.lore.spells[0],{allowAptitude:false}),[6,6])).toMatchObject({done:true,pending:null});
     const wracked = applyCastRoll(cast, [5]);
     expect(wracked.pending).toMatchObject({ kind: "aptitudeInjury", dice: 1 });
     for (const face of [1, 2, 3, 4, 5, 6]) {
       const injury = applyCastRoll(wracked, [face]);
       expect(injury.done).toBe(true);
+      expect(injury.aptitude).toBe(face <= 2 ? "knockedDown" : "stunned");
       expect(injury.log.at(-1)?.text).toContain(face <= 2 ? "Knocked down" : "Stunned");
       expect(injury.log.at(-1)?.text).not.toContain("NaN");
     }

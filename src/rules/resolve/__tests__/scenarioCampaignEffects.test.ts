@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scenarioCampaignEffects, scenarioPurchasePrice, type ScenarioEffectReport } from '../scenarioCampaignEffects'
+import { scenarioCampaignEffects, scenarioPurchasePrice, facioRecruitmentLeadership, type ScenarioEffectReport } from '../scenarioCampaignEffects'
 const report = (n: number, effects?: ScenarioEffectReport['effects']): ScenarioEffectReport => ({ id: String(n), matchId: `m${n}`, campaignId: 'c', submittedAt: `2026-09-${String(n).padStart(2, '0')}T12:00:00Z`, effects })
 describe('scenario consequences reconstructed from reports', () => {
   it('keeps the escort ban while the rare-search penalty expires after the stated games', () => {
@@ -45,4 +45,19 @@ it('keeps Raids resources between battles, excludes the current award and consum
  expect(scenarioCampaignEffects([gain,use],[],'m1').raidCaptives).toBeUndefined()
  expect(scenarioCampaignEffects([gain],[]).raidCaptives).toBe(3)
  expect(scenarioCampaignEffects([],[]).raidCaptives).toBeUndefined()
+})
+
+
+it('binds Facio to the next battle and preserves that identity for delayed recruitment',()=>{
+  const found={...report(1,{facio:true}),battleAt:'2026-09-01T10:00:00Z',submittedAt:'2026-09-09T10:00:00Z'}
+  const starts=[{id:'m3',startedAt:'2026-09-03T10:00:00Z'},{id:'m2',startedAt:'2026-09-02T10:00:00Z'}]
+  const state=scenarioCampaignEffects([found,report(2),report(3)],starts)
+  expect(state.facioRecruitmentMatchIds).toEqual(['m2'])
+  expect(facioRecruitmentLeadership(8,state,'m2')).toBe(9)
+  expect(facioRecruitmentLeadership(10,state,'m2')).toBe(10)
+  expect(facioRecruitmentLeadership(8,state,'m3')).toBe(8)
+  expect(scenarioCampaignEffects([found],starts,'m2').facioRecruitmentMatchIds).toEqual(['m2'])
+  expect(scenarioCampaignEffects([found],starts,'m1').facioRecruitmentMatchIds).toBeUndefined()
+  expect(scenarioCampaignEffects([],starts).facioRecruitmentMatchIds).toBeUndefined()
+  expect(scenarioCampaignEffects([found],[]).facioRecruitmentMatchIds).toBeUndefined()
 })

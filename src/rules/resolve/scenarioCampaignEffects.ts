@@ -1,7 +1,7 @@
 /** Rebuilt from applied reports, so withdrawn reports leave no phantom consequences. */
-export interface ScenarioCampaignEffect { raidCaptives?: { gained: number; spent: number }; caravanTreachery?: number; caravanTrade?: { percent: -20 | 20; rounding: 'up' | 'down' } }
+export interface ScenarioCampaignEffect { facio?: true; raidCaptives?: { gained: number; spent: number }; caravanTreachery?: number; caravanTrade?: { percent: -20 | 20; rounding: 'up' | 'down' } }
 export interface ScenarioEffectReport { id: string; matchId: string; campaignId: string; submittedAt: string; battleAt?: string; effects?: ScenarioCampaignEffect }
-export interface ScenarioCampaignState { raidCaptives?: number; caravanBannedCampaigns: string[]; rarePenalty: number; rareGamesRemaining: number; trade?: { percent: -20 | 20; rounding: 'up' | 'down' }; notes: string[] }
+export interface ScenarioCampaignState { facioRecruitmentMatchIds?: string[]; raidCaptives?: number; caravanBannedCampaigns: string[]; rarePenalty: number; rareGamesRemaining: number; trade?: { percent: -20 | 20; rounding: 'up' | 'down' }; notes: string[] }
 export function scenarioCampaignEffects(reports: ScenarioEffectReport[], starts: { id: string; startedAt: string }[], excludeMatchId?: string): ScenarioCampaignState {
   const time = (r: ScenarioEffectReport) => r.battleAt ?? r.submittedAt
   const ordered = [...reports].sort((a, b) => time(a).localeCompare(time(b)) || a.id.localeCompare(b.id))
@@ -11,6 +11,13 @@ export function scenarioCampaignEffects(reports: ScenarioEffectReport[], starts:
   const out: ScenarioCampaignState = { caravanBannedCampaigns: [], rarePenalty: 0, rareGamesRemaining: 0, notes: [] }
   for (let i = 0; i < history.length; i++) {
     const r = history[i], e = r.effects
+    if(e?.facio) {
+      // Tie the clothing to the first subsequent battle, not to the report's
+      // submission time or the date a delayed captive case is finally resolved.
+      const next = starts.filter(s=>s.id!==r.matchId&&s.startedAt>time(r))
+        .sort((a,b)=>a.startedAt.localeCompare(b.startedAt)||a.id.localeCompare(b.id))[0]
+      if(next)out.facioRecruitmentMatchIds=[...new Set([...(out.facioRecruitmentMatchIds??[]),next.id])]
+    }
     if(e?.raidCaptives)out.raidCaptives=(out.raidCaptives??0)+e.raidCaptives.gained-e.raidCaptives.spent
     if (e?.caravanTreachery) {
       if (!out.caravanBannedCampaigns.includes(r.campaignId)) out.caravanBannedCampaigns.push(r.campaignId)
@@ -30,4 +37,9 @@ export function scenarioCampaignEffects(reports: ScenarioEffectReport[], starts:
 export function scenarioPurchasePrice(total: number, effect?: ScenarioCampaignState['trade']): number {
   if (!effect) return total
   return (effect.rounding === 'up' ? Math.ceil : Math.floor)(total * (100 + effect.percent) / 100)
+}
+
+/** Facio affects recruitment tests only; it does not change the warrior's profile. */
+export function facioRecruitmentLeadership(base: number, state: ScenarioCampaignState | undefined, matchId: string | undefined): number {
+  return Math.min(10, base + (matchId && state?.facioRecruitmentMatchIds?.includes(matchId) ? 1 : 0))
 }

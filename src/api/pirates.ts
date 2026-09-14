@@ -1,3 +1,4 @@
+import { facioRecruitmentLeadership } from '../rules/resolve/scenarioCampaignEffects'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
 import { warbandKeys, type WarbandDetail } from './warbands'
@@ -59,10 +60,11 @@ export function useResetKidnapContest() {
 }
 
 /** The Captain's Leadership (or the Ship's Mate's when the Captain is gone), as the server reads it. */
-export function pirateCaptainLeadership(captor: RosterWarband): number | null {
+export function pirateCaptainLeadership(captor: RosterWarband, matchId?: string): number | null {
   const of = (unit: string) => captor.heroes.filter(h => h.status === 'active' && h.unitTemplateId === unit).map(h => h.stats.Ld)
   const captain = of('pirates_captain'), mate = of('pirates_ships_mate')
-  return captain.length ? Math.max(...captain) : mate.length ? Math.max(...mate) : null
+  const base = captain.length ? Math.max(...captain) : mate.length ? Math.max(...mate) : null
+  return base===null?null:facioRecruitmentLeadership(base,captor.scenarioEffects,matchId)
 }
 
 /** What the reports on file say about the battle, from the Pirates' point of view. */
@@ -116,7 +118,7 @@ export function buildKidnappedProposal(input: KidnapProposalInput): { choice: Re
   if (!subject) throw new Error('The captured warrior is no longer on the roster.')
   const contest = (item.contest ?? {}) as KidnapContest
   if (!contest.pirates || !contest.victim) throw new Error('Both players must record their Leadership dice first.')
-  const captainLeadership = pirateCaptainLeadership(captor.roster)
+  const captainLeadership = pirateCaptainLeadership(captor.roster,item.match_id)
   if (captainLeadership === null) throw new Error('The Pirates have no active Captain or Ship’s Mate.')
   const existing = input.joinGroupId ? captor.roster.henchmenGroups.find(g => g.id === input.joinGroupId) : undefined
   const recovery = (item.recovery ?? null) as { d6?: number; original?: number | null } | null

@@ -32,7 +32,7 @@ function PirateKidnappedForm({ item, owner, captor, side, gm, otherName }: Pirat
   const filed = reports.data ?? []
   const piratesFiled = filed.some(r => r.warband_id === captor.warband.id)
   const winner = kidnapWinner(filed, captor.warband.id, item.victim_warband_id)
-  const captainLd = pirateCaptainLeadership(captor.roster)
+  const captainLd = pirateCaptainLeadership(captor.roster,item.match_id)
   const subject = kidnapSubject(item, owner)
   const needsRecovery = item.subject_kind === 'henchman' && !rec
   const needsKit=Boolean((item.model_snapshot as {kit_unresolved?:boolean}|null)?.kit_unresolved)

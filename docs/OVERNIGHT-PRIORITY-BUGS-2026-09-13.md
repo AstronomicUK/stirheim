@@ -98,3 +98,9 @@ Exploration now offers regular city exploration or one exact owned Treasure Map,
 Long Drong grants a barrel of Bugman’s Ale. Black-Wyrd grants 2+D3 shards and a Mordheim Map (no invented gold). The trapped chest requires a surviving Hero and Initiative D6: pass awards that Hero a Lucky Charm, failure adds a recovery game under ordinary concurrent recovery, and either receives the gold. App/table dice and later changes are recorded explicitly. Facio’s Common purchase entitlement, deferred notebook payment and next-game recruitment bonus remain outstanding; #142 is not closed.
 
 Mobile local QA: select stash map, destination 2 and gold 3+4, refresh, switch back; destination 6/D3 3 review shows +5 shards and Mordheim Map; destination 5 with app Initiative 3 changed by player to 6, gold 4+4+4. Filed the disposable report and read the local database: gold100→220, map quantity2→1, missNextGames1. No ordinary exploration income. Width390 fits. Fixture removed. Full ordinary suite2,589 passed (350 database tests skipped), build/typecheck and lint pass with existing warnings. No deployment.
+
+## Checkpoint 14 — Facio recruitment timing (#142, still partial)
+
+New Facio map results save a structured campaign consequence. The first subsequent battle receives +1 Captain Leadership (maximum 10) for Stragglers, Prisoners and Kidnapped! contests. Base characteristics are unchanged. The original battle identity remains attached to delayed captive cases, and withdrawing the original report removes eligibility. Historical map results without structured Facio data are not inferred from prose.
+
+Validated: 88 focused ordinary tests, 11 local database Kidnapped! tests, and TypeScript. Migration 138 applied to the local database only. Facio’s Common purchase and deferred notebook money are the next work; #142 remains open. No deployment.

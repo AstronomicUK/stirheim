@@ -50,6 +50,24 @@ describe.skipIf(!enabled)('Pirates Kidnapped! (#229 follow-on)',()=>{
   await admin.from('app_notifications').delete().in('user_id',users)
  })
  afterAll(async()=>{for(const id of users)await admin.auth.admin.deleteUser(id)})
+ it('applies Facio to the next game, including delayed cases, and rejects a withdrawn entitlement',async()=>{
+  const prior=check(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2],state:'awaiting_reports',started_at:'2026-09-01T10:00:00Z'}).select('id').single()).id
+  check(await admin.from('match_participants').insert({match_id:prior,warband_id:pw,accepted_at:'2026-09-01T09:00:00Z'}))
+  const reward=check(await admin.from('match_reports').insert({match_id:prior,warband_id:pw,submitted_by:users[1],result:'won',status:'applied',applied:{scenario_effects:{facio:true}}}).select('id').single()).id
+  check(await admin.from('matches').update({started_at:'2026-09-02T10:00:00Z'}).eq('id',match))
+  check(await fileVictim());check(await filePirates())
+  const c=(await cases())[0]
+  check(await pirate.rpc('record_kidnap_dice',{p_case_id:c.id,p_dice:[4,4]}))
+  check(await victim.rpc('record_kidnap_dice',{p_case_id:c.id,p_dice:[2,2]}))
+  // Starting another game must not erase the bonus on this older captive case.
+  const later=check(await admin.from('matches').insert({campaign_id:campaign,created_by:users[2],state:'awaiting_reports',started_at:'2026-09-03T10:00:00Z'}).select('id').single()).id
+  check(await admin.from('match_participants').insert({match_id:later,warband_id:pw,accepted_at:'2026-09-03T09:00:00Z'}))
+  expect((await propose(pirate,c.id,choice('crew',[4,4],[2,2]),heroLeaves(),newCrew())).error?.message).toContain('Leadership on file is 9')
+  const boosted={...choice('crew',[4,4],[2,2]),captainLeadership:9}
+  check(await propose(pirate,c.id,boosted,heroLeaves(),newCrew()))
+  check(await admin.from('match_reports').update({status:'pending'}).eq('id',reward))
+  expect((await propose(pirate,c.id,boosted,heroLeaves(),newCrew())).error?.message).toContain('Leadership on file is 8')
+ })
  it('keeps human captives eligible without treating Undead, Daemons, animals or wagons as humans',async()=>{
   const rows=check(await pirate.from('kidnap_eligible_units').select('unit_type_rules_id')) as {unit_type_rules_id:string}[]
   const ids=new Set(rows.map(row=>row.unit_type_rules_id))

@@ -46,7 +46,7 @@ revoke all on function public.withdraw_battle_report_before_powered(uuid,uuid) f
 create function public.withdraw_battle_report(p_match_id uuid,p_warband_id uuid) returns public.match_state language plpgsql security definer set search_path='' as $$
 declare report uuid; reward record; result public.match_state;
 begin
- if not public.can_edit_warband(p_warband_id) then raise exception 'You cannot withdraw this report' using errcode='42501'; end if;
+ if not public.is_campaign_gm(public.match_campaign(p_match_id)) then raise exception 'only the GM can withdraw a report' using errcode='42501'; end if;
  select id into report from public.match_reports where match_id=p_match_id and warband_id=p_warband_id for update;
  perform 1 from public.warbands where id=p_warband_id or id in(select recipient_id from public.abomination_shard_rewards where report_id=report) order by id for update;
  for reward in select recipient_id,count(*) amount from public.abomination_shard_rewards where report_id=report group by recipient_id loop

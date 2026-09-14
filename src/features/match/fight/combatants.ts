@@ -137,6 +137,7 @@ function warriorTraits(warrior: RosterHero | RosterHiredSword, rules: readonly N
   const ids = [...base, ...traitsFromRules(rules), ...traitsFromSkills(warrior.skillIds)]
   if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'veskit_high_executioner_of_clan_eshin' && !warrior.flags.hireCompanion) ids.push('veskit_no_pain','veskit_metallic_body')
   if ('hiredSwordId' in warrior && warrior.hiredSwordId === 'maximilian_the_mad' && !warrior.flags.hireCompanion) ids.push('frenzy')
+  if (['crow','onogal'].includes(warrior.flags.chaosMark??'')) ids.push('immune_to_poison')
   if (warrior.flags.frenzy) ids.push('frenzy')
   if (warrior.flags.hates) ids.push('hatred')
   if (warrior.flags.nurglesRot) ids.push('nurgles_rot')

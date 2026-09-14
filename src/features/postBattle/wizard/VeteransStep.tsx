@@ -1,3 +1,4 @@
+import {EyeOfGodsAftermath} from './EyeOfGodsAftermath'
 import { ScenarioRewards } from './ScenarioRewards'
 import { scenarioRewardRule } from '../../../rules/data/campaign/scenarioRewardRules'
 import { TowerRewards } from './TowerRewards'
@@ -25,6 +26,7 @@ export function VeteransStep({ draft, derived, update, ctx }: StepProps) {
   const veteranDice = ctx.map?.perks.veteranDice ?? []
   return (
     <StepBody title="Veterans & notes">
+      <EyeOfGodsAftermath mode="fate" draft={draft} ctx={ctx} derived={derived} update={update}/>
       {!nonCampaign && <><Intro>
         Rulebook: "Between each battle, roll 2D6: this represents the experience of the warriors currently available for hire." New henchmen may start with that much experience between them.
       </Intro>

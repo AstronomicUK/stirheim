@@ -109,6 +109,10 @@ export interface WarriorFlags {
   /** Leads in their original unit type until a replacement leader is recruited. */
   temporaryLeader?: boolean;
   chaosMark?: string;
+  eyeOfGodsMarked?: boolean;
+  eyeOfGodsNovice?: boolean;
+  condemnedAttributesFixed?: boolean;
+  transformedIntoSpawn?: boolean;
   conquerorSurvivorUsed?: boolean;
   retainedScoutId?: string;
   agreedRacialMaxima?: Stats;

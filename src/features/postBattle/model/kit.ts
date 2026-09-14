@@ -127,6 +127,7 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
   // The list's own post-battle rolls (Eye of the Gods): owed by the leader when he fought.
   const leader = ctx.leaderId ? heroes.get(ctx.leaderId) : undefined
   for (const rule of warbandRules(ctx.roster.warbandTemplateId).postBattle ?? []) {
+    if (rule.key === 'eye_of_the_gods') continue // Dedicated Mark/Spawn lifecycle resolver.
     if (rule.leaderFought && !leader) continue
     const parts: string[] = []
     let modifier = 0

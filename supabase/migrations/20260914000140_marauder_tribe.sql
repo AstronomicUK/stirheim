@@ -19,9 +19,13 @@ begin
   end if;
   execute revised;
   select pg_get_functiondef('public.update_roster(uuid,text,jsonb)'::regprocedure) into definition;
+  -- Scope the patch to the warband UPDATE. Heroes and groups also have a notes column.
+  if (length(definition)-length(replace(definition,'update public.warbands set',''))) / length('update public.warbands set') <> 1 then
+    raise exception 'update_roster warband UPDATE is not unique';
+  end if;
   revised := replace(definition,
-    'notes = coalesce(v_data ->> ''notes'', notes),',
-    'marauder_tribe = coalesce(v_data ->> ''marauder_tribe'', marauder_tribe),' || chr(10) || '        notes = coalesce(v_data ->> ''notes'', notes),');
+    'update public.warbands set',
+    'update public.warbands set' || chr(10) || '        marauder_tribe = coalesce(v_data ->> ''marauder_tribe'', marauder_tribe),');
   if revised = definition then raise exception 'update_roster tribe patch did not match'; end if;
   execute revised;
 end

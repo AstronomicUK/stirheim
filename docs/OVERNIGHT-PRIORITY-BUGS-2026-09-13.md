@@ -8,14 +8,26 @@ Order: #15, #181, #191, #69, #152, #59, #70, #139, #161, #160, #76, #29, #114, #
 
 For each item, reconcile old findings with the current code and source before editing. Core behavior already delivered must remain intact. Preserve player overrides, document ruling-dependent clauses and continue independent work. No Claude delegation while usage remains reserved. Full Khemri stays deferred.
 
-| Item | Progress |
+## Final candidate status — 14 September
+
+**Ten complete locally; stop implementation here.** Await Tom’s approval to deploy version 2026.09.14.1.
+
+| Completed item | Scope |
 |---|---|
-| #15 | Existing scope verified locally: Well/Pit selected hero, books, held gems, Freetrader symbol, leader sacrifice XP. Old permanent-jewel/Haggle wording was incorrect. Book database regressions pass. |
-| #181 | Fixed one-D6 injury roll and bands; preserves app/manual provenance. |
-| #191 | Fixed Penthesilea’s 70-point rating, without adding XP. |
-| #69/#152 | Sling/Slingshot double-shot conditions fixed. Censer/Disease Dagger ruling-dependent wounds remain deferred; Powder Keg ignition and blast follow-up implemented locally (checkpoint 4). Many historical weapon bullets already implemented. |
-| #59/#70 | Powerful Build future Strength access, Big Bully/Renowned Virtue immediate single bonus pick, and Brave removal of Animosity implemented locally. Larger supplementary skill/psychology scope still open. |
-| #139–#143 | Remaining items pending in approved order. |
+| #15 | Original named exploration outcomes verified; inaccurate historic requirements reconciled. |
+| #181 | Magical Aptitude uses the correct single injury die and bands. |
+| #191 | Penthesilea uses her printed 70 rating. |
+| #70 | Original psychology coverage, including explicit Black Orc Animosity procedure choices. |
+| #161 | Leadership item benefits, rerolls, timing, range confirmation and Standard capture. |
+| #76 | Spell target selectors, intent and range hints across the catalogue. |
+| #29 | Spell editing respects recorded/native lore access. |
+| #142 | Pirate Treasure Map destinations, Facio purchases and rewards. |
+| #136 | Eye of the Gods Mark/Spawn lifecycle and Condemned Fate at 90 XP. |
+| #138 | Abomination shard reward, reanimation debt, payment and correction. |
+
+The other ten remain open/partial: **#69, #152, #59, #139, #160, #114, #146, #141, #144, #143**. Completed component fixes in these tickets may ship with the batch, but do not close their umbrella issues. Censer/Disease Dagger ruling questions remain unanswered and do not block this release. Full Khemri remains deferred.
+
+The numbered checkpoints below are historical implementation notes; the final status above supersedes their counts.
 
 ## Checkpoint 1
 
@@ -213,3 +225,15 @@ Verification: 2,670 ordinary tests passed (362 database-gated skipped) and produ
 Source correction for #70: Forest Goblin Boss Pole grants nearby Goblin Animosity immunity; Squig Prodder extends Squig Minder range instead. The hint now uses Boss Pole.
 
 **Completed count: 9 of 20** (#15, #181, #191, #70, #76, #29, #142, #138, #161). Remaining partially implemented tickets are not counted. No deployment.
+
+## Checkpoint 28 — Eye of the Gods and final release validation
+
+#136 now distinguishes a Seer’s starting Mark from an Eye-awarded Mark; honors the actual leader’s participation, Norse and Tattooed Body thresholds, win/loss modifiers, patron compatibility and optional reward refusal. Legacy saved Eye dice are retained. New app dice cannot be rerolled by reopening; edited faces remain explicit in the report. Crow adds Toughness, Arkhar adds Frenzy/anti-spell protection, and Eagle grants a random Tchar spell with the novice casting penalty where appropriate. Mark identity is visible on the roster.
+
+A doomed leader becomes the actual Spawn unit with no inherited XP, skills, injuries or kit. An existing surviving Spawn prevents a second one. Condemned Fate is a separate late report decision after advances; legacy placeholder stats never prove that variable attributes were fixed. Explicit confirmation of fixed attributes persists and unlocks the normal Hero equipment list. A still-variable Condemned at 90 XP becomes a Spawn or leaves. Its last earned advance remains reachable before this decision, and any discarded advance is explained. General Condemned variable-stat advancement and per-turn Spawn/Mark combat clauses remain under the broader specialist skill/combat work; this closes the lifecycle scope of #136.
+
+Actual local database tests: Mark saved once with +1 Toughness, duplicate submission rejected, withdrawal restores original flags/stats; Spawn and lost kit commit together, duplicate submission rejected, withdrawal removes the Spawn and restores the old Hero and exact kit. Mobile 390px: Eye app 1+5 changed to 6+6, prepared transformation survives refresh, switching to a win offers the Mark, Condemned Fate is after advances, report filed with Crow and a Condemned Spawn, saved roster displays both correctly. Disposable fixture removed; no horizontal overflow.
+
+The full database regression sweep caught two pending migration regressions before release: migration 140’s broad notes replacement touched Hero/group UPDATE statements; it is now scoped uniquely to the warband UPDATE. Migration 141’s withdrawal wrapper now preserves the existing campaign-GM permission instead of requiring roster-edit access. The complete suite passes after both repairs.
+
+Final checks: **2,683 application tests passed; all 364 database tests passed; TypeScript/production build passed; all 135 migration files replayed successfully in a separate empty database, then removed.** Lint passes with nine warnings (eight historical audit/design warnings and an existing BuyTab memo dependency warning). No new lint errors. Public release and tracker update are prepared separately; do not stage the mixed historical tracker file wholesale. Nothing pushed or deployed.

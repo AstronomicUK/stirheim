@@ -31,7 +31,7 @@ export function equipmentListWarning(roster: RosterWarband, item: Item, holder: 
   const skills = hero?.skillIds ?? []
   if (item.category === 'melee' && skills.includes('weapons_training')) return null
   if (['missile', 'blackpowder'].includes(item.category) && skills.includes('weapons_expert')) return null
-  const listIds = new Set([unit.equipmentListId])
+  const listIds = new Set([hero?.unitTemplateId==='marauders_condemned'&&hero.flags.condemnedAttributesFixed?'marauders_hero':unit.equipmentListId])
   if (hero?.skillIds.includes('black_orcs_skills_proven_warrior') && template.id === 'black_orcs') listIds.add('black_orcs_black_orc_list')
   if (hero && currentLeader(roster.heroes, template)?.id === hero.id) {
     const leader = leaderTemplate(template)

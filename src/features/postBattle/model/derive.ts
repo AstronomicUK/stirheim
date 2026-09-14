@@ -1,3 +1,4 @@
+import {applyEyeOfGods} from './eyeOfGods'
 import { applyAbominationAftermath } from './abomination'
 import { applyPirateMapRewards } from './pirateMapRewards'
 import { pirateMapChoice, mapRollNotes } from './pirateMapChoice'
@@ -769,7 +770,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
         : Math.max(flags.missNextGames ?? 0, 1)
       if (change.flag === 'addicted') flags.addictedTo = [...new Set([...(flags.addictedTo ?? []), change.itemId])]
       // Eye of the Gods after a loss: the leader is gone (a Chaos Spawn); after a win he stays and takes a Mark by hand.
-      if (change.flag === 'leaderSpawn' && draft.result === 'lost') patch.status = 'retired'
+      // Eye of the Gods is handled by the dedicated lifecycle resolver.
       patch.flags = flags
     }
     if (existing) existing.patch = patch
@@ -1251,16 +1252,23 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const shrine=applyShrineBlessing(draft.exploration,exploration.location?.id,postCaptureContext.roster,postCaptureContext.items,applied)
   exploration.problems.push(...shrine.problems)
   if(exploration.record)exploration.record.notes.push(...shrine.notes)
+  const eyeOfGods=applyEyeOfGods(draft,ctx,applied,"leader")
   const departingIds=new Set([...applied.heroes.filter(h=>['left', 'retired', 'dead'].includes(h.patch.status ?? '')).map(h=>h.id),...applied.groups.filter(g=>g.patch.size===0).map(g=>g.id)])
   applied.pending_advances=applied.pending_advances.filter(a=>!departingIds.has(a.subject_id))
   for(const line of xp.lines)if(departingIds.has(line.subjectId))line.advancesEarned=0
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
+  const condemnedFate=applyEyeOfGods(draft,ctx,applied,"fate")
+  const fateDeparted=new Set(applied.heroes.filter(h=>h.patch.flags?.transformedIntoSpawn).map(h=>h.id))
+  const fateAdvanceNotes=advances.items.filter(i=>i.complete&&fateDeparted.has(i.request.subject_id)).map(i=>`${i.summary} The advance is then lost with the transformation.`)
+  advances.items=advances.items.filter(i=>!i.complete||!fateDeparted.has(i.request.subject_id))
+  for(const line of xp.lines)if(fateDeparted.has(line.subjectId)){line.advancesEarned=0;line.reasons.push('All experience is then lost when this warrior becomes a Spawn or leaves under Fate.')}
   applyTradeWagonToReport(wagonCapture,applied,ctx.rawGroups??[])
   const pirateRewards = nonCampaign ? {problems:[],notes:[]} : applyPirateMapRewards(draft,ctx,kit,applied)
   const abominations = nonCampaign ? {problems:[],notes:[]} : applyAbominationAftermath(draft,ctx,applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
-  problems.injuries.push(...abominations.problems)
+  problems.injuries.push(...abominations.problems,...eyeOfGods.problems)
+  problems.veterans.push(...condemnedFate.problems)
   problems.exploration.push(...pirateRewards.problems)
   problems.outcome.push(...wagonCapture.problems)
   problems.injuries.push(...handlers.problems,...brokenEquipment.problems,...equipmentLosses.problems,...medicine.problems,...lycanthrope.problems,...lycanthropeEquipmentProblems)
@@ -1299,7 +1307,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [...injuries.animals.filter(a=>a.capture).map(a=>`${a.animal.name} (${a.animal.holderName}): captured by ${a.capture!.event.payload.attacker_name} using ${a.capture!.event.payload.capture_reason==='slaaneshi_lock'?'the Slaaneshi Man-Catcher':'Subjugator of Mankind'}; no injury die rolled. Return or ransom is resolved with the captor.`),...(ctx.poisonApplications ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of ${use.itemRulesId === 'black_lotus' ? 'Black Lotus' : 'Dark Venom'} coated ${use.weapon.name}, copy ${use.weapon.copyIndex + 1}, for this battle.`),...(ctx.blessedWaterUses ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of Blessed Water spent on a throw in turn ${use.turn}, whether it hit or missed.`),...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...pirateRewards.notes,...abominations.notes,...(mapChoice.row ? ['Used one Treasure Map instead of regular city exploration.',...mapRollNotes(draft)] : []),...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...handlers.notes, ...Object.entries(draft.groupInjuryRerolls??{}).map(([key,r])=>`${r.label}: ${ctx.roster.henchmenGroups.find(g=>key.startsWith(`${g.id}:`))?.name??'Henchman'}, casualty ${Number(key.slice(key.lastIndexOf(':')+1))+1}, original D6 ${r.original} → replacement ${r.result}. Second result stands.`), ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...injuries.animals.filter(a=>a.capture).map(a=>`${a.animal.name} (${a.animal.holderName}): captured by ${a.capture!.event.payload.attacker_name} using ${a.capture!.event.payload.capture_reason==='slaaneshi_lock'?'the Slaaneshi Man-Catcher':'Subjugator of Mankind'}; no injury die rolled. Return or ransom is resolved with the captor.`),...(ctx.poisonApplications ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of ${use.itemRulesId === 'black_lotus' ? 'Black Lotus' : 'Dark Venom'} coated ${use.weapon.name}, copy ${use.weapon.copyIndex + 1}, for this battle.`),...(ctx.blessedWaterUses ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of Blessed Water spent on a throw in turn ${use.turn}, whether it hit or missed.`),...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...pirateRewards.notes,...abominations.notes,...eyeOfGods.notes,...condemnedFate.notes,...fateAdvanceNotes,...(mapChoice.row ? ['Used one Treasure Map instead of regular city exploration.',...mapRollNotes(draft)] : []),...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...handlers.notes, ...Object.entries(draft.groupInjuryRerolls??{}).map(([key,r])=>`${r.label}: ${ctx.roster.henchmenGroups.find(g=>key.startsWith(`${g.id}:`))?.name??'Henchman'}, casualty ${Number(key.slice(key.lastIndexOf(':')+1))+1}, original D6 ${r.original} → replacement ${r.result}. Second result stands.`), ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

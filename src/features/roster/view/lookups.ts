@@ -1,3 +1,4 @@
+import {CHAOS_MARKS,chaosMarkId} from '../../../rules/resolve/chaosMarks'
 // Pure display helpers for the roster screens: names for rules ids, experience progress, flag
 // tags. Nothing here touches React or the network, so it is unit-tested in node.
 
@@ -229,6 +230,9 @@ export function xpNotches(xp: number, role: CharacterRole, rate: AdvanceRate = '
 /** Short labels for a warrior's persistent conditions, in a stable order. */
 export function flagTags(flags: WarriorFlags): string[] {
   const tags: string[] = []
+  const chaosMark=CHAOS_MARKS.find(m=>m.id===chaosMarkId(flags.chaosMark))
+  if(chaosMark)tags.push(`Mark of ${chaosMark.name}${flags.eyeOfGodsMarked?' — Eye of the Gods':''}`)
+  if(flags.condemnedAttributesFixed)tags.push('All variable attributes fixed')
   if (flags.animosityRemoved) tags.push('Animosity removed')
   if (flags.leaderRoleId) tags.push("Leader")
   if (flags.temporaryLeader) tags.push("Temporary leader")

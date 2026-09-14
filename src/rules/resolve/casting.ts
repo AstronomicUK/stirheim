@@ -139,6 +139,8 @@ function casterKit(hero: RosterHero, kind: CasterKind): CasterKitFinding {
   const has = itemIds(hero);
   const skill = (id: string) => hero.skillIds.includes(id);
   const out: CasterKitFinding = { modifiers: [], rerolls: [], dispel: [], reminders: [] };
+  if(kind==='spell'&&hero.flags.eyeOfGodsNovice)out.modifiers.push({id:'eye_of_gods_novice',name:'Mark of Tchar',amount:-1,source:'Not a wizard before receiving the Mark',optional:false,oncePerBattle:false});
+  if(hero.flags.eyeOfGodsMarked&&hero.flags.chaosMark==='arkhar')out.dispel.push({id:'mark_arkhar',name:'Mark of Arkhar',targetOnly:true,detail:'A spell targeting this Hero fails on 4+.',against:{threshold:4}});
   const identity = 'hiredSwordId' in hero ? hero.hiredSwordId : hero.unitTemplateId;
   if (kind === 'prayer' && identity === 'bertha_bestraufrung_high_matriarch_of_the_sisterhood') out.modifiers.push({ id: 'sigmars_handmaiden', name: 'Sigmar’s Handmaiden', amount: 2, source: 'Bertha’s special rule', optional: false, oncePerBattle: false });
 

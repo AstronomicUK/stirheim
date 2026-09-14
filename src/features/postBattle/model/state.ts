@@ -208,6 +208,7 @@ export interface ReportDraft {
   pirateMapRollHistory?: {label:string;value:number;source:'app'|'tabletop'}[]
   exploration: ExplorationDraft
   /** Post-battle item prompt key -> dice faces (kit after the battle: drugs, maps, wishes). */
+  chaosAftermath?: {tribe?: import("../../../rules/types/roster").MarauderTribe; dice?: [number|null,number|null]; originalDice?: [number,number]; mark?: string; spellDie?: number|null; originalSpellDie?:number; spawnIds?:Record<string,string>; condemnedFixed?:Record<string,boolean>}
   kit: Record<string, (number | null)[]>
   /** Prompt key -> the outcome's own dice (gold expressions). */
   kitExtra: Record<string, (number | null)[]>

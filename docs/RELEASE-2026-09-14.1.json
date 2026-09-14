@@ -1,0 +1,31 @@
+{
+  "version": "2026.09.14.1",
+  "published": false,
+  "title": "Psychology, magic and post-battle rules",
+  "notes": "Leadership items now support persistent tests and rerolls with explicit range checks. Spell targeting and spell editing better follow each spell and caster. Magical Aptitude uses the correct injury die, and Penthesilea uses her printed rating. Pirate Treasure Map rewards and Facio trading are connected. Abominations award their shard to the enemy and require reanimation before fighting again. Eye of the Gods records earned Marks and creates Spawn replacements, with a separate Condemned Fate decision. This batch also includes individual weapon, skill and trading corrections; broader unfinished tracker entries remain open.",
+  "implemented_ids": [
+    15,
+    181,
+    191,
+    70,
+    161,
+    76,
+    29,
+    142,
+    136,
+    138
+  ],
+  "leave_open_ids": [
+    69,
+    152,
+    59,
+    139,
+    160,
+    114,
+    146,
+    141,
+    144,
+    143
+  ],
+  "instruction": "Publish and link these implemented issues only after deployment and live verification. Preserve existing public notes, attribution, subscriptions and other issue changes. #15 is a scope verification closure, not a claim that every exploration outcome was rewritten."
+}

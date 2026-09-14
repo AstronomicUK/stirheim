@@ -12,6 +12,7 @@ import { combatantsOf } from '../fight/combatants'
 import type { ReactNode } from 'react'
 import { RosterChambers } from './RosterChambers'
 import { RelicLeadershipControl } from './RelicLeadershipControl'
+import { ElvenWineControl } from './ElvenWineControl'
 import { BugmansAleControl } from './BugmansAleControl'
 import { useBattleTurns } from '../../../api/battleTurns'
 import { HealingHerbsControl } from './HealingHerbsControl'
@@ -124,6 +125,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
     <>
       {casualtyError?<Notice tone="error" title="Could not update the casualty">{casualtyError}</Notice>:null}
       {matchId?<TabletopSlaaneshiHold matchId={matchId} roster={roster} enemies={enemies.warbands} turn={sheet.turn} readOnly={readOnly||enemies.isPending}/>:null}
+      <ElvenWineControl roster={roster} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <BugmansAleControl roster={roster} template={template} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>
         {warriors.fighting.length === 0 ? <p className="text-sm text-ink-dim">Nobody is fit to fight.</p> : null}

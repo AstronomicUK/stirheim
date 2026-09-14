@@ -35,9 +35,9 @@ export function warbandConsumables(sheet: BattleLiveState): WarbandConsumable[] 
 }
 
 /** Every barrel this warband could drink: in the stash, or carried by an active member. */
-export function aleBarrels(items: readonly ItemRow[], roster: RosterWarband): ItemRow[] {
+export function aleBarrels(items: readonly ItemRow[], roster: RosterWarband, itemId = BUGMANS_ALE): ItemRow[] {
   const members = new Set([...roster.heroes, ...roster.hiredSwords].filter(w => w.status === 'active').map(w => w.id))
-  return items.filter(row => row.warband_id === roster.id && row.item_rules_id === BUGMANS_ALE && row.quantity > 0
+  return items.filter(row => row.warband_id === roster.id && row.item_rules_id === itemId && row.quantity > 0
     && (row.holder_type === 'stash' || (row.holder_type === 'hero' && row.holder_id !== null && members.has(row.holder_id))))
 }
 
@@ -46,8 +46,8 @@ export function holderKeyOf(row: ItemRow): string {
 }
 
 /** The uncorrected barrel drunk this battle, if any. */
-export function aleDrunk(sheet: BattleLiveState): WarbandConsumable | undefined {
-  return warbandConsumables(sheet).find(c => c.itemRulesId === BUGMANS_ALE && !c.correction)
+export function aleDrunk(sheet: BattleLiveState, itemId = BUGMANS_ALE): WarbandConsumable | undefined {
+  return warbandConsumables(sheet).find(c => c.itemRulesId === itemId && !c.correction)
 }
 
 /** "Elves may not drink Bugman's ale": a warband whose template race is elven cannot drink at all. */
@@ -88,13 +88,32 @@ export function drinkBugmansAle(sheet: BattleLiveState, roster: RosterWarband, t
 /** Explained correction (Tom's override rule): the immunity goes, the barrel is not deducted, the reason is logged. */
 export function correctBugmansAle(sheet: BattleLiveState, id: string, reason: string): BattleLiveState {
   const entry = warbandConsumables(sheet).find(c => c.id === id && !c.correction)
+  const wine = entry?.itemRulesId === 'elven_wine'
+  const name = wine ? 'Elven Wine' : 'Bugman’s Ale'
+  const supply = wine ? 'wine' : 'barrel'
   const why = reason.trim()
   if (!entry || !why) return sheet
   const stillUsed = warbandConsumables(sheet).some(c => c !== entry && !c.correction && c.itemRulesId === entry.itemRulesId && c.holderKey === entry.holderKey)
   const unmarked = stillUsed ? sheet : setItemUsed(sheet, entry.holderKey, entry.itemRulesId, false)
   return withRollAttempt({ ...unmarked, warbandConsumables: warbandConsumables(unmarked).map(c => c === entry || c.id === id ? { ...c, correction: why } : c) } as BattleLiveState, {
     id: `correct:${id}`, at: new Date().toISOString(), turn: sheet.turn, kind: 'attack', status: 'complete',
-    label: 'Bugman’s Ale corrected',
-    rolls: [`The warband did not drink the barrel after all: ${why}. Fear immunity withdrawn; no barrel will be deducted. Earlier records are preserved.`],
+    label: `${name} corrected`,
+    rolls: [`The warband did not drink the ${supply} after all: ${why}. Fear immunity withdrawn; no ${supply} will be deducted. Earlier records are preserved.`],
+  })
+}
+
+/** Town Cryer 10, equipment scrape 02:1617: the Shadow Warrior warband drinks together. */
+export function drinkElvenWine(sheet: BattleLiveState, roster: RosterWarband, items: readonly ItemRow[], options: { id: string; itemRowId: string; confirmedBeforeBattle: boolean }): BattleLiveState {
+  if (warbandConsumables(sheet).some(c => c.id === options.id)) return sheet
+  if (roster.warbandTemplateId !== 'shadow_warriors') throw new Error('Elven Wine is for Shadow Warrior warbands.')
+  if (!options.confirmedBeforeBattle) throw new Error('Confirm the wine was drunk before the battle began.')
+  if (aleDrunk(sheet, 'elven_wine')) throw new Error('The warband has already drunk Elven Wine this battle.')
+  const row = aleBarrels(items, roster, 'elven_wine').find(item => item.id === options.itemRowId)
+  if (!row) throw new Error('The selected Elven Wine is no longer available in the stash or an active warrior’s kit.')
+  const at = new Date().toISOString()
+  const entry: WarbandConsumable = { id: options.id, itemRulesId: 'elven_wine', itemRowId: row.id, holderKey: holderKeyOf(row), at }
+  return withRollAttempt({ ...sheet, warbandConsumables: [...sheet.warbandConsumables, entry] }, {
+    id: options.id, at, turn: sheet.turn, kind: 'attack', status: 'complete', label: `${roster.name}: drank Elven Wine`,
+    rolls: ['Player confirmed Elven Wine was drunk before the battle. The whole Shadow Warrior warband is immune to fear for this battle. One supply of wine will be deducted in the post-battle report.'],
   })
 }

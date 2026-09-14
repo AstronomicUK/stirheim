@@ -635,7 +635,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
       if (itemId === 'garlic') continue // Expires whether used or not, handled below.
       // A declared barrel of Bugman's Ale settles by its exact row below; the sheet's own tick for it
       // (or a legacy per-warrior tick) must not cost a second barrel.
-      if (itemId === 'bugmans_ale' && ctx.warbandConsumables?.some(use => use.itemRulesId === 'bugmans_ale' && !use.correction)) continue
+      if (['bugmans_ale', 'elven_wine'].includes(itemId) && ctx.warbandConsumables?.some(use => use.itemRulesId === itemId && !use.correction)) continue
       // Exact-once: a dose start_match already used up for this hero (and recorded in the ledger for
       // this very match) is the dose he took; ticking it must not cost a second copy (#139/#140).
       if (ctx.addictionSupplies?.some((s) => s.hero_id === holderId && s.item_rules_id === itemId)) continue

@@ -46,3 +46,17 @@ describe("Bugman's Ale immunity in the fight code (core: whole warband, Elves ex
     expect(cap.traitIds.filter(t => t === 'immune_to_fear')).toHaveLength(1)
   })
 })
+
+describe('Elven Wine warband scope', () => {
+  const shadows = findWarbandTemplate('shadow_warriors')!
+  const roster = warband({ warbandTemplateId: shadows.id, heroes: [hero('master', shadows.heroTemplates[0].id, [{itemId:'elven_wine',quantity:1}])], henchmenGroups:[group('kin',shadows.henchmanTemplates[0].id)] })
+  const wine = { ...drunk(), warbandConsumables: drunk().warbandConsumables.map(use => ({...use,itemRulesId:'elven_wine'})) }
+  it('makes the whole Shadow Warrior roster immune, not just the carrier', () => {
+    expect(immune(combatantsOf(roster,shadows,roster.name,wine))).toEqual({master:true,kin:true})
+    expect(immune(combatantsOf(roster,shadows,roster.name,emptyBattleLiveState()))).toEqual({master:false,kin:false})
+  })
+  it('withdraws the immunity with the declaration and rejects the wrong warband', () => {
+    expect(immune(combatantsOf(roster,shadows,roster.name,{...wine,warbandConsumables:wine.warbandConsumables.map(use=>({...use,correction:'Not drunk'}))}))).toEqual({master:false,kin:false})
+    expect(immune(combatantsOf({...roster,warbandTemplateId:'mercenaries_reikland'},shadows,roster.name,wine))).toEqual({master:false,kin:false})
+  })
+})

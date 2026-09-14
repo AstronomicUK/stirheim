@@ -63,3 +63,10 @@ describe("Bugman's Ale in the report (core, one barrel per battle)", () => {
     expect(withdrawn.problems.review).toEqual([])
   })
 })
+
+it('settles exactly the chosen Elven Wine supply without a second legacy carrier deduction', () => {
+  const items = [row('stash-wine','stash',null,'elven_wine',2),row('carried-wine','hero','cap','elven_wine',1)]
+  const declaration = {...declared('stash-wine','stash'),itemRulesId:'elven_wine'}
+  expect(patches(ctx({items,itemsUsed:{cap:['elven_wine']},warbandConsumables:[declaration]}))).toEqual([['stash-wine',1]])
+  expect(patches(ctx({items,warbandConsumables:[{...declaration,correction:'Not drunk'}]}))).toEqual([])
+})

@@ -314,6 +314,9 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       if (!elven && !warrior.traitIds.includes('immune_to_fear')) warrior.traitIds = [...warrior.traitIds, 'immune_to_fear']
     }
   }
+  if (roster.warbandTemplateId === 'shadow_warriors' && sheet?.warbandConsumables.some(use => use.itemRulesId === 'elven_wine' && !use.correction)) {
+    for (const warrior of out) if (!warrior.traitIds.includes('immune_to_fear')) warrior.traitIds = [...warrior.traitIds, 'immune_to_fear']
+  }
   return out.map(warrior => warrior.equipment.some(entry => entry.quantity > 0 && (entry.itemId === 'swivel_gun' || (!entry.itemId && resolveEquipmentName(entry.customName ?? '')?.id === 'swivel_gun')))
     ? { ...warrior, stats: { ...warrior.stats, M: Math.max(0, warrior.stats.M - 1), I: Math.max(0, warrior.stats.I - 1) } }
     : warrior)

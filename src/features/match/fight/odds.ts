@@ -181,6 +181,7 @@ export function toDefender(c: Combatant, kit: Loadout): DefenderProfile {
   const ballAndChain = kit.melee.reduce((n, w) => n + (w.defenderToBeHitModifier ?? 0), 0)
   const parryFixed = kit.melee.filter((w) => w.parry && w.parryThreshold !== undefined).map((w) => w.parryThreshold as number)
   return {
+    parrot: c.equipment.some(item => item.itemId === 'parrot' && item.quantity > 0),
     causesFearInAnimals: kit.melee.some(w => w.special.includes('causesFearInAnimals')),
     WS: c.stats.WS,
     T: c.stats.T,
@@ -627,7 +628,9 @@ export function relevantToggles(attacker: Combatant, phase: WeaponKind, primary:
     if (!attacker.entangled) toggles.push({ field: 'charging', label: 'Charging' })
     if(attacker.traitIds.includes('frenzy')) toggles.push({field:'frenzyEnded',label:'Frenzy has ended',hint:'Select if this warrior was knocked down or stunned earlier in this battle. Their Attacks are no longer doubled.'})
     if (primary.strengthBonusMountedChargeOnly || primary.special.includes('mountedChargeStrengthBonus')) toggles.push({ field: 'mounted', label: 'Mounted', hint: `${primary.name} gives its charge bonus only from the saddle.` })
-    const firstTurnMatters = (defender?.skillIds.includes('sisters_of_sigmar_skills_sign_of_sigmar') && attacker.traitIds.some(trait => trait === 'undead' || trait === 'possessed')) || (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks || [primary, ...(offHand ? [offHand] : []), ...(defenderKit?.melee ?? [])].some(w => w.initiativeFirstTurnBonus || w.special.includes('strikesFirstFirstTurn'))
+    const opposingParrot = defender?.equipment.some(item => item.itemId === 'parrot' && item.quantity > 0)
+    if (opposingParrot) toggles.push({ field: 'failedParrotTest', label: 'Failed Parrot Leadership test', hint: 'Test Leadership at the table for this warrior. A failure gives −1 to hit this Pirate in their first round of combat only; also select Charging or First turn of this combat.' })
+    const firstTurnMatters = opposingParrot || (defender?.skillIds.includes('sisters_of_sigmar_skills_sign_of_sigmar') && attacker.traitIds.some(trait => trait === 'undead' || trait === 'possessed')) || (primary.strengthBonusFirstTurnOnly && !primary.strengthBonusMountedChargeOnly) || primary.firstTurnBonusAttacks || primary.chargeBonusAttacks || offHand?.chargeBonusAttacks || offHand?.firstTurnBonusAttacks || [primary, ...(offHand ? [offHand] : []), ...(defenderKit?.melee ?? [])].some(w => w.initiativeFirstTurnBonus || w.special.includes('strikesFirstFirstTurn'))
     if (firstTurnMatters) toggles.push({ field: 'firstTurnOfCombat', label: 'First turn of this combat', hint: primary.strengthBonusFirstTurnOnly ? `${primary.name} only gets its Strength bonus in the first turn.` : 'First-round weapon bonuses and Strike First apply only in this round (charging or charged).' })
     if (skills.some((s) => s.conditionField === 'fightingMultiple')) toggles.push({ field: 'fightingMultiple', label: 'Fighting two or more enemies' })
     if (skills.some((s) => s.conditionField === 'insideBuildings') || attacker.traitIds.includes('pit_fighter')) toggles.push({ field: 'insideBuildings', label: 'Inside a building or ruin' })

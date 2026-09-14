@@ -1071,3 +1071,19 @@ describe('Tail Fighting choice', () => {
    expect(loadoutFor(warrior).tailWeapon).toBeDefined()
  })
 })
+
+
+describe('Parrot situation controls', () => {
+  it('requires a carried Parrot and offers first-round selection only in melee', () => {
+    const pirate = { ...captain, equipment: [...captain.equipment, { itemId: 'parrot', quantity: 1 }] };
+    const fight = setup(skaven, pirate, 'sword', null);
+    const fields = relevantToggles(skaven, 'melee', fight.primary, fight.defenderKit, null, pirate).map(toggle => toggle.field);
+    expect(fields).toContain('failedParrotTest');
+    expect(fields).toContain('firstTurnOfCombat');
+    expect(toDefender(pirate, fight.defenderKit).parrot).toBe(true);
+    expect(relevantToggles(skaven, 'ranged', fight.primary, fight.defenderKit, null, pirate).some(toggle => toggle.field === 'failedParrotTest')).toBe(false);
+    const empty = { ...pirate, equipment: [{ itemId: 'parrot', quantity: 0 }] };
+    expect(toDefender(empty, fight.defenderKit).parrot).toBe(false);
+    expect(relevantToggles(skaven, 'melee', fight.primary, fight.defenderKit, null, empty).some(toggle => toggle.field === 'failedParrotTest')).toBe(false);
+  });
+});

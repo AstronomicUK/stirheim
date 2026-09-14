@@ -226,3 +226,20 @@ it('allocates one Whipcrack bonus to the whip even in the off hand, never one pe
   expect(weaponAttackCounts(a, [W('sword'), W('steel_whip')], ctx()).map(w => w.count)).toEqual([4, 1]);
   expect(weaponAttackCounts({ ...a, traits: ['stupidity'] }, [W('sword'), W('steel_whip')], ctx({ charging: true, failedStupidity: true })).map(w => w.count)).toEqual([0, 0]);
 });
+
+
+describe('Parrot distraction', () => {
+  const attack = (context: Partial<CombatContext>, parrot = true, weapon = W('sword')) => buildAttackInput({ attacker: attacker(), defender: defender({ parrot }), weapon, context: ctx(context) });
+  it('penalises only a failed test in the first melee round, including a charge', () => {
+    const normal = 3;
+    expect(attack({}).hitThreshold).toBe(normal);
+    expect(attack({ failedParrotTest: true, firstTurnOfCombat: true }).hitThreshold).toBe(normal + 1);
+    expect(attack({ failedParrotTest: true, charging: true }).hitThreshold).toBe(normal + 1);
+    expect(attack({ failedParrotTest: true }).hitThreshold).toBe(normal);
+    expect(attack({ firstTurnOfCombat: true }).hitThreshold).toBe(normal);
+    expect(attack({ failedParrotTest: true, firstTurnOfCombat: true }, false).hitThreshold).toBe(normal);
+  });
+  it('never applies to shooting', () => {
+    expect(attack({ failedParrotTest: true, charging: true }, true, W('bow')).hitThreshold).toBe(attack({}, true, W('bow')).hitThreshold);
+  });
+});

@@ -258,6 +258,7 @@ export function buildAttackInput({ attacker, weapon, defender, context, customSk
   if (weapon.type === "melee") {
     // Kit on either side can shift the roll: a kick at -1 (Iron Shod Boots), a Ball and Chain's -1 to be hit.
     hitThreshold = meleeToHitThreshold(effectiveWS, defender.WS) - (weapon.toHitBonus ?? 0) - (defender.toBeHit?.melee ?? 0);
+    if (defender.parrot && context.failedParrotTest && (context.charging || context.firstTurnOfCombat)) hitThreshold += 1;
   } else {
     let modifierSum = 0;
     const penalties = missilePenaltyRules(weapon);

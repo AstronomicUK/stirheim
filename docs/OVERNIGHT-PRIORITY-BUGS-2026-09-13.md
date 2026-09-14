@@ -124,3 +124,14 @@ Validated: 58 focused casting/data tests before the shared note-display adjustme
 All 225 spells across 38 current lores now have reviewed target categories. Existing source text, names, difficulty values and lore introductions are unchanged. Helpers retain explicit limitations for range, line of sight, first/closest targets, species, mixed friend/foe areas, random victims and non-combat timing. Ambiguous Woodland Incantations and Stench wording is visibly left for a table ruling. Mortuary Scrolls receive target guidance only; no full Khemri system has been added. Custom/imported spells can still use the legacy fallback.
 
 This completes the catalogue selector/colour/hint scope of #76 locally, not the broader spell-effect automation in #58 or #29. New ordinary tests cover all catalogue lores, existing UI tests cover each category, and the original prose preservation check passes. Full ordinary suite 2,628 passed; 358 database tests skipped in that run. Build/typecheck and lint pass with existing warnings. No deployment.
+
+## Scope reconciliation after checkpoint 17
+
+Implemented locally within the stated tracker scope: **#15, #181, #191, #29, #76, #142**. This is six of the first twenty, with substantial component fixes in several of the remaining umbrellas. None is newly deployed. #15’s original named exploration cases are covered through Hero selection, item assignment/study, the Freetraders symbol and leader XP; the tracker’s old reopened prose predates those implementations. No blanket claim is made for unrelated exploration mechanics. Remaining first-twenty work: #69, #152, #59, #70, #139, #161, #160, #114, #146, #141, #136, #138, #144, #143.
+
+
+## Checkpoint 18 — Parrot combat calculation (#160, partial)
+
+A carried Parrot now exposes a relevant melee-only failed Leadership test control, alongside first-round selection. The engine applies −1 to hit only against that bearer in the first round (including a charge); later rounds, successful tests, absent/zero-quantity Parrots and shooting are unaffected. The Leadership roll is currently made at the table and confirmed by the player; this does not complete the broader equipment item or add a saved in-app Parrot test sequence. Source: equipment scrape, Parrot / Town Cryer 9.
+
+Validation: 122 focused combat tests passed. Local changes only; no deployment.

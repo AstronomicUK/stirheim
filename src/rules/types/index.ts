@@ -344,6 +344,8 @@ export interface CombatContext {
   serpentStaffPower?: boolean;
   /** Failed Fear after being charged: needs sixes to hit this round. */
   failedFearWhenCharged?: boolean;
+  /** Failed the opposing Parrot’s Leadership test in this combat’s first round. */
+  failedParrotTest?: boolean;
   /** Failed Stupidity test: no attacks until the next own turn. */
   failedStupidity?: boolean;
   /** Frenzy ended after this attacker was knocked down or stunned earlier in the battle. */
@@ -394,6 +396,8 @@ export function defaultCombatContext(): CombatContext {
 }
 
 export interface DefenderProfile {
+  /** Carries a living Parrot whose distraction applies in the first melee round. */
+  parrot?: boolean;
   /** Conditional Fear from a currently wielded Beastlash. Does not grant universal Fear immunity. */
   causesFearInAnimals?: boolean;
   WS: number;

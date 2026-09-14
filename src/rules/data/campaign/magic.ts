@@ -1636,6 +1636,8 @@ Nurgle Rituals are used by the Carnival of Chaos Carnival Master.`,
     spells: [
       {
         id: "daemonic_vigour",
+        target: "none",
+        targetNote: "All Plague Bearers and Nurglings within 8 inches; no single model is chosen.",
         name: "Daemonic Vigour",
         roll: { min: 1, max: 1 },
         difficulty: 8,
@@ -1645,6 +1647,8 @@ Any Plague Bearers or Nurglings within 8" of the Master increase their Daemonic 
       },
       {
         id: "buboes",
+        target: "enemy",
+        targetNote: "One enemy warrior within 8 inches.",
         name: "Buboes",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -1654,6 +1658,8 @@ This spell has a range of 8" and affects a single enemy warrior. The warrior mus
       },
       {
         id: "stench_of_nurgle",
+        target: "none",
+        targetNote: "Within 6 inches. The source says all living creatures, friend or foe, but then specifies enemy warriors for the Toughness tests. Agree which models test at the table; no single target is chosen.",
         name: "Stench of Nurgle",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -1663,6 +1669,9 @@ This spell has a range of 6" and affects all living creatures – friend or foe.
       },
       {
         id: "pestilence",
+        target: "none",
+        targetNote: "All enemy models within 12 inches of the caster. Confirm the affected models at the table.",
+        affects: "enemies",
         name: "Pestilence",
         roll: { min: 4, max: 4 },
         difficulty: 10,
@@ -1672,6 +1681,8 @@ All enemy models within 12" of the Master suffer a Strength 3 hit. No Armour sav
       },
       {
         id: "scabrous_hide",
+        target: "self",
+        targetNote: "The caster only; replaces the normal armour save until the next Shooting phase.",
         name: "Scabrous Hide",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1681,6 +1692,9 @@ The Master has an armour save of 2+ which replaces any normal Armour save. The S
       },
       {
         id: "nurgles_rot",
+        target: "none",
+        targetNote: "All enemy models in base contact with the caster. Confirm base contact at the table.",
+        affects: "enemies",
         name: "Nurgle's Rot",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -1703,6 +1717,8 @@ Onogal Rituals are used by the Marauders of Chaos seer with the Mark of Onogal t
     spells: [
       {
         id: "touch_of_onogal",
+        target: "enemy",
+        targetNote: "One opponent fighting the Seer in close combat.",
         name: "Touch of Onogal",
         roll: { min: 1, max: 1 },
         difficulty: 10,
@@ -1712,6 +1728,8 @@ This spell can be used against one of the Seer's close combat opponents. If he t
       },
       {
         id: "buboes",
+        target: "enemy",
+        targetNote: "One enemy warrior within 8 inches.",
         name: "Buboes",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -1721,6 +1739,8 @@ This spell has a range of 8" and affects a single enemy warrior. The warrior mus
       },
       {
         id: "stench_of_nurgle",
+        target: "none",
+        targetNote: "Within 6 inches. The source says all living creatures, friend or foe, but then specifies enemy warriors for the Toughness tests. Agree which models test at the table; no single target is chosen.",
         name: "Stench of Nurgle",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -1730,6 +1750,9 @@ This spell has a range of 6" and affects all living creatures – friend or foe.
       },
       {
         id: "pestilence",
+        target: "none",
+        targetNote: "All enemy models within 12 inches of the caster. Confirm the affected models at the table.",
+        affects: "enemies",
         name: "Pestilence",
         roll: { min: 4, max: 4 },
         difficulty: 10,
@@ -1739,6 +1762,8 @@ All enemy models within 12" of the Master suffer a Strength 3 hit. No Armour sav
       },
       {
         id: "scabrous_hide",
+        target: "self",
+        targetNote: "The caster only; replaces the normal armour save until the next Shooting phase.",
         name: "Scabrous Hide",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1748,6 +1773,9 @@ The Master has an armour save of 2+ which replaces any normal Armour save. The S
       },
       {
         id: "nurgles_rot",
+        target: "none",
+        targetNote: "All enemy models in base contact with the caster. Confirm base contact at the table.",
+        affects: "enemies",
         name: "Nurgle's Rot",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -1853,6 +1881,8 @@ Prayers of Taal work like Prayers of Sigmar although the Taal Priest never wears
     spells: [
       {
         id: "stags_leap",
+        target: "self",
+        targetNote: "The Priest moves up to 9 inches; resolve movement, charges and fleeing enemies at the table.",
         name: "Stag's Leap",
         roll: { min: 1, max: 1 },
         difficulty: 7,
@@ -1862,6 +1892,8 @@ The Priest of Taal may immediately move anywhere within 9" including into base c
       },
       {
         id: "blessed_ale",
+        target: "either",
+        targetNote: "Heal any one model within 2 inches, including the Priest. Also apply the separate fumes effect to living enemies within 2 inches at the table.",
         name: "Blessed Ale",
         roll: { min: 2, max: 2 },
         difficulty: 5,
@@ -1871,6 +1903,8 @@ Drinking a flask of Taal-blessed ale (the priest is assumed to carry as many fla
       },
       {
         id: "bears_paw",
+        target: "friendly",
+        targetNote: "The Priest or one friendly model within 6 inches.",
         name: "Bear's Paw",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1880,6 +1914,9 @@ The Priest invokes the blessing of Taal on himself or a single friendly model wi
       },
       {
         id: "earthshudder",
+        target: "none",
+        targetNote: "Choose a building within 4 inches at the table. Enemy models touching it suffer a hit; all models on it must resolve the collapse and falling.",
+        affects: "enemies",
         name: "Earthshudder",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -1889,6 +1926,8 @@ The spell is cast on a single building within 4". Any enemy models touching the 
       },
       {
         id: "tanglefoot",
+        target: "none",
+        targetNote: "All models within 12 inches, friend or foe, except Ostlander Jaeger and friendly Horned Hunter Zealots. Resolve the affected area at the table.",
         name: "Tanglefoot",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1898,6 +1937,8 @@ Plants, vines and even small trees burst forth from the earth, hindering all tho
       },
       {
         id: "summon_squirrels",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches of the Priest.",
         name: "Summon Squirrels",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -1922,6 +1963,8 @@ Wolf Priests may use a wolf cloak and still chant these prayers. They are prayer
     spells: [
       {
         id: "snow_squall",
+        target: "self",
+        targetNote: "The Wolf Priest; enemies in hand-to-hand combat with him suffer the penalty.",
         name: "Snow Squall",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -1931,6 +1974,8 @@ All enemy models in Hand-to-Hand combat with the priest are at -1 to hit due to 
       },
       {
         id: "hammerschlag",
+        target: "either",
+        targetNote: "Any one model within 6 inches of the Wolf Priest.",
         name: "Hammerschlag",
         roll: { min: 2, max: 2 },
         difficulty: 10,
@@ -1940,6 +1985,8 @@ That model suffers a S4 attack from an enormous ethereal hammer, including the c
       },
       {
         id: "bloodlust",
+        target: "self",
+        targetNote: "The Wolf Priest only.",
         name: "Bloodlust",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1949,6 +1996,8 @@ All attacks are at S + 2, and he scores a critical hit on a 5-6. The Wolf Priest
       },
       {
         id: "wolfs_hunger",
+        target: "friendly",
+        targetNote: "One member of the Priest’s warband.",
         name: "Wolf's Hunger",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -1956,6 +2005,8 @@ All attacks are at S + 2, and he scores a critical hit on a 5-6. The Wolf Priest
       },
       {
         id: "ulrics_howl",
+        target: "none",
+        targetNote: "The entire Priest’s warband; no single model is chosen.",
         name: "Ulric's Howl",
         roll: { min: 5, max: 5 },
         difficulty: 10,
@@ -1965,6 +2016,8 @@ For the duration of the battle, all members of the priest's warband are immune t
       },
       {
         id: "call_of_ulric",
+        target: "self",
+        targetNote: "The Wolf Priest transforms; resolve the wolf profile and return-to-human tests separately.",
         name: "Call of Ulric",
         roll: { min: 6, max: 6 },
         difficulty: 10,
@@ -2348,6 +2401,8 @@ Waaaagh! Magic is used by the Orc Mob Shaman, and the Night Goblins Shaman.`,
     spells: [
       {
         id: "ledz_go",
+        target: "none",
+        targetNote: "Any Orc or Goblin within 4 inches; confirm the affected models at the table.",
         name: "Led'z Go",
         roll: { min: 1, max: 1 },
         difficulty: 9,
@@ -2357,6 +2412,8 @@ Any Orc or Goblin within 4" of the Shaman will automatically strike first in han
       },
       {
         id: "oi_gerroff",
+        target: "enemy",
+        targetNote: "One enemy within 8 inches who is not in hand-to-hand combat. Resolve the push and collisions at the table.",
         name: "Oi! Gerroff!",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -2366,6 +2423,8 @@ Range 8". Moves any enemy model within range D6" directly away from the Shaman. 
       },
       {
         id: "zzap",
+        target: "enemy",
+        targetNote: "The closest enemy within 12 inches; confirm distances at the table.",
         name: "Zzap!",
         roll: { min: 3, max: 3 },
         difficulty: 9,
@@ -2375,6 +2434,8 @@ Range 12". Causes D3 S4 hits on the closest enemy target, with no armour saves a
       },
       {
         id: "fooled_ya",
+        target: "self",
+        targetNote: "The Shaman only; resolve the optional disengagement move at the table.",
         name: "Fooled Ya!",
         roll: { min: 4, max: 4 },
         difficulty: 6,
@@ -2384,6 +2445,8 @@ No enemy may charge the Shaman during their next turn. If the Shaman is engaged 
       },
       {
         id: "clubba",
+        target: "self",
+        targetNote: "The Shaman only.",
         name: "Clubba",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -2393,6 +2456,9 @@ The ectoplasmic club counts as a normal club with +2 Strength bonus and gives th
       },
       {
         id: "fire_of_gork",
+        target: "none",
+        targetNote: "Both bolts target the closest enemy within 12 inches, or split them between the two closest enemies. Select no more than two affected models and allocate the bolts at the table.",
+        affects: "enemies",
         name: "Fire of Gork",
         roll: { min: 6, max: 6 },
         difficulty: 8,

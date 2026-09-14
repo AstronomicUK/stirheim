@@ -139,3 +139,10 @@ it('an area spell that lands on enemies lets the player tick which enemy models 
     spell.affects = before.affects
   }
 })
+
+
+it.each(['self','none'])('shows targeting restrictions for %s spells without a model picker',kind=>{
+ const box=targetBox(kind,'Confirm the printed range and affected models at the table.')
+ expect(box.text).toContain('Confirm the printed range and affected models at the table.')
+ expect(box.hasSelect).toBe(false)
+})

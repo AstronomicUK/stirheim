@@ -394,6 +394,7 @@ export function CastTab({ onLogEvent, matchId, roster, template, others, session
         </button>
 
         <FightBox icon={targetTone === 'accent' ? 'enemy' : 'shield'} title="Target" tone={targetTone}>
+          {note ? <p className="text-xs leading-relaxed text-ink-dim">{note}</p> : null}
           {!chosen ? null : kind === 'none' ? (
             <>
               <p className="text-xs leading-relaxed text-ink-dim">No model to choose: this {chosenProfile?.kind === 'prayer' ? 'prayer' : 'spell'} works on an area, a line, or the game itself. Play its effect at the table.</p>
@@ -422,7 +423,7 @@ export function CastTab({ onLogEvent, matchId, roster, template, others, session
               {casterCombatant ? <ProfileLine c={casterCombatant} defending /> : null}
             </>
           ) : kind === undefined ? (
-            // Supplement lores carry no target kind yet: the older friendly-only picker, still optional.
+            // Unreviewed supplement spells carry no target kind yet: the older friendly-only picker, still optional.
             friendlyTargets.length > 0 ? (
               <SelectField label="Target (if this spell needs one)" hideLabel value={target?.id ?? ''} onChange={(e) => setTargetId(e.target.value || null)}>
                 <option value="">Off the sheet — no target on this warband</option>
@@ -465,7 +466,6 @@ export function CastTab({ onLogEvent, matchId, roster, template, others, session
                 ) : null}
               </SelectField>
               {kind !== 'friendly' && enemies.warbands.length === 0 ? <p className="text-xs text-ink-dim">{enemies.isPending ? 'Loading the enemy warband…' : 'No enemy warband on this sheet yet.'}</p> : null}
-              {note ? <p className="text-xs leading-relaxed text-ink-dim">{note}</p> : null}
               {target ? (
                 <ProfileLine c={target} defending />
               ) : (

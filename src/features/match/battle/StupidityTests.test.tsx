@@ -15,7 +15,7 @@ function nodes(value: any): Node[] { if (Array.isArray(value)) return value.flat
 const warrior = { id: 'hero', name: 'Warrior', stats: { Ld: 7 }, equipment: [{ itemId: 'sashimono', quantity: 1 }] } as Combatant
 const roster = { id: 'w', heroes: [], hiredSwords: [], henchmenGroups: [] } as unknown as RosterWarband
 let state: BattleLiveState
-function render(subject = warrior) { hooks.index = 0; return nodes(TestSheet({ roster, sheet: state, warrior: subject, correction: false, turn: 1, turnKey: 'w:1', edit: fn => { state = fn(state) }, close: vi.fn() })) }
+function render(subject = warrior, testRoster = roster) { hooks.index = 0; return nodes(TestSheet({ roster:testRoster, sheet: state, warrior: subject, correction: false, turn: 1, turnKey: 'w:1', edit: fn => { state = fn(state) }, close: vi.fn() })) }
 function button(label: string) { const found = render().find(n => n.props.children === label && n.props.onClick); expect(found).toBeDefined(); return found! }
 function field(label: string) { return render().find(n => n.props.label === label)! }
 beforeEach(() => { hooks.values = []; hooks.index = 0; state = emptyBattleLiveState(); vi.restoreAllMocks() })
@@ -57,4 +57,18 @@ it('retains the failed second roll and requires movement outside combat', () => 
   expect(state.stupidityResults[0].failed).toBe(true)
   expect(state.rollAttempts[0].rolls.join(' ')).toContain('second result stands')
   expect(state.rollAttempts[0].rolls.join(' ')).toContain('Stand inactive')
+})
+
+it('offers the Standard only for a failed test after range confirmation and preserves its source', () => {
+  const subject = {...warrior,equipment:[]} as Combatant
+  const shadow = {...roster,warbandTemplateId:'shadow_warriors',heroes:[{...subject,status:'active'},{id:'standard',name:'Bearer',status:'active',equipment:[{itemId:'standard_of_nagarythe',quantity:1}]}]} as unknown as RosterWarband
+  const draw=()=>render(subject,shadow)
+  const action=(label:string)=>draw().find(n=>n.props.children===label&&n.props.onClick)
+  const input=(label:string)=>draw().find(n=>n.props.label===label)!
+  input('First D6').props.onChange(6);input('Second D6').props.onChange(6)
+  expect(action('Use Standard of Nagarythe (within 12 inches of Bearer) reroll')).toBeUndefined()
+  draw().find(n=>n.props.type==='checkbox'&&n.props.checked===false)!.props.onChange({target:{checked:true}})
+  action('Use Standard of Nagarythe (within 12 inches of Bearer) reroll')!.props.onClick()
+  expect(state.rollAttempts[0].stupidity?.rerolledFrom?.reason).toContain('Standard of Nagarythe')
+  expect(action('Use Standard of Nagarythe (within 12 inches of Bearer) reroll')).toBeUndefined()
 })

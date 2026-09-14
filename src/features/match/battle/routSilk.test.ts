@@ -70,3 +70,13 @@ it('allows an explained correction of a mistaken pending test without deleting i
   expect(corrected.rollAttempts[0].rolls.join(' ')).toContain('App rolled 6 + 5')
   expect(canUseRoutSilk(dressed,REIKLAND,corrected)).toBe(true)
 })
+it('Standard of Nagarythe can reroll a failed Rout without silk, saving its source and refusing a third roll',()=>{
+ let s=resolveRoutDice(emptyBattleLiveState(),roll,false,'Standard of Nagarythe (within 12 inches of bearer)')
+ expect(s.routTests[0].stage).toBe('choice');expect(s.routed).toBe(false)
+ s=chooseSilkReroll(s,roll.id,true);s=battleLiveStateSchema.parse(JSON.parse(JSON.stringify(s)))
+ s=resolveSilkReroll(s,roll.id,[1,1],'app')
+ expect(s.routTests[0]).toMatchObject({passed:true,silk:false,rerollLabel:'Standard of Nagarythe (within 12 inches of bearer)'})
+ expect(s.notes).toContain('Standard of Nagarythe')
+ expect(s.notes).not.toContain('Silk')
+ expect(chooseSilkReroll(s,roll.id,true)).toBe(s)
+})

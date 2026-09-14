@@ -1,3 +1,4 @@
+import { leadershipItemBenefits, nagarytheCaptured } from './leadershipItems'
 import { canUseRoutSilk, resolveRoutDice, chooseSilkReroll, resolveSilkReroll, correctPendingRout } from './routSilk'
 import { canUseRoutRelic, passRoutWithRelic, recordLeadershipTest } from './relicRules'
 import {BriberyControl} from './BriberyControl'
@@ -39,6 +40,7 @@ function stamp(state: BattleLiveState, line: string): BattleLiveState {
 }
 
 export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
+  const [standardRange,setStandardRange]=useState(false)
   const [open, setOpen] = useState(false)
   const pendingSilk = sheet.routTests.find(test => test.stage !== 'done')
   const lastRout = sheet.routTests.filter(test => !test.correction).at(-1)
@@ -51,10 +53,14 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
   const chosen = options.find((o) => o.id === chosenId) ?? suggested
   const [d1, setD1] = useState<number | null>(null)
   const [d2, setD2] = useState<number | null>(null)
+  const standard=chosen?leadershipItemBenefits(roster,sheet,chosen.id,'rout').find(b=>b.itemId==='standard_of_nagarythe'):undefined
+  const standardReroll=standard&&standardRange?`${standard.label} (within 12 inches of ${standard.bearer})`:undefined
+  const capturedStandard=nagarytheCaptured(roster,sheet)
   const ready = d1 !== null && d2 !== null && chosen !== undefined
   const total = d1 !== null && d2 !== null ? d1 + d2 : null
 
   function reset() {
+    setStandardRange(false)
     setConfirmedFirstTest(false)
     setD1(null)
     setD2(null)
@@ -67,8 +73,8 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
     const input = { id: crypto.randomUUID(), warriorId:chosen.id, label:chosen.label, leadership:chosen.ld, dice:[a,b] as [number,number], source }
     const passed = a+b <= chosen.ld
     setD1(a); setD2(b)
-    edit(s => resolveRoutDice(s, input, canUseRoutSilk(roster, template, s)))
-    if (!passed && silk) { setOpen(false); setOutcome(null) }
+    edit(s => resolveRoutDice(s, input, canUseRoutSilk(roster, template, s),standardReroll))
+    if (!passed && (silk||standardReroll)) { setOpen(false); setOutcome(null) }
     else setOutcome(passed ? 'passed' : 'failed')
   }
 
@@ -86,7 +92,7 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
             {totals.routCasualties !== totals.ownOutOfAction || totals.routModels !== totals.startingModels ? <p className="text-sm text-ink-dim">Special unit rules give a starting Rout count of {totals.routModels}; those casualties count as {totals.routCasualties}.</p> : null}
           </div>
         </div>
-        {lastRout?.rerollDice && lastRout.passed ? <p className="text-sm font-semibold text-success">Last Rout check passed with Cathayan Silk Clothes: {lastRout.rerollDice.join(' + ')} against Leadership {lastRout.leadership}. The warband fights on; the silk reroll is now spent.</p> : null}
+        {lastRout?.rerollDice && lastRout.passed ? <p className="text-sm font-semibold text-success">Last Rout check passed with {lastRout.rerollLabel??'Cathayan Silk Clothes'}: {lastRout.rerollDice.join(' + ')} against Leadership {lastRout.leadership}. The warband fights on; {lastRout.rerollLabel?'this test is complete.':'the silk reroll is now spent.'}</p> : null}
         <BriberyControl matchId={matchId} roster={roster} sheet={sheet} paidExclusions={paidExclusions} ready={bribesReady} />
         <div className="flex flex-wrap gap-2">
           <Button
@@ -101,8 +107,8 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
           <Button variant="secondary" disabled={Boolean(pendingSilk)} onClick={() => edit((s) => stamp(s, 'Rout check passed at the table'))}>
             Passed at the table
           </Button>
-          <Button variant="danger" disabled={Boolean(pendingSilk)} onClick={() => edit((s) => setRouted(stamp(s, 'Warband routed at the table'), true, 'table'))}>
-            We rout
+          <Button variant="danger" disabled={Boolean(pendingSilk)} onClick={() => edit((s) => setRouted(stamp(s, capturedStandard?'Failed Rout test recorded at the table; captured Standard prevents voluntary rout.':'Warband routed at the table'), true, capturedStandard?'failed-test':'table'))}>
+            {capturedStandard?'Failed Rout test at the table':'We rout'}
           </Button>
         </div>
       </div>
@@ -115,7 +121,8 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
           edit(s => passRoutWithRelic(roster, s, chosen, confirmedFirstTest))
           setOutcome('passed')
           setOpen(false)
-          setConfirmedFirstTest(false)
+          setStandardRange(false)
+    setConfirmedFirstTest(false)
         }}>Pass automatically with the relic</Button>
         <Button variant="ghost" onClick={() => {
           if (!chosen) return
@@ -162,7 +169,7 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
         }
       >
         <div className="flex flex-col gap-4 py-2">
-          <SelectField label="Whose Leadership" value={chosen?.id ?? ''} onChange={(e) => setChosenId(e.target.value)} disabled={outcome !== null}>
+          <SelectField label="Whose Leadership" value={chosen?.id ?? ''} onChange={(e) => {setChosenId(e.target.value);setStandardRange(false)}} disabled={outcome !== null}>
             <option value="" disabled>Select a fighter</option>
             {options.map((o) => (
               <option key={o.id} value={o.id}>
@@ -178,6 +185,8 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
           {suggested && chosen && chosen.id !== suggested.id ? (
             <p className="text-xs text-ink-dim">The rules suggest {suggested.label}; using someone else is your call at the table.</p>
           ) : null}
+          {standard?<label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={standardRange} disabled={outcome!==null} onChange={e=>setStandardRange(e.target.checked)}/>The warrior taking this test is within 12 inches of {standard.bearer} carrying the Standard of Nagarythe.</label>:null}
+          {capturedStandard?<Notice title="Standard captured">The Shadow Warriors hate the enemy for the rest of the battle and cannot voluntarily Rout. Failed Rout tests still apply.</Notice>:null}
           {canUseRoutSilk(roster, template, sheet) ? <Notice title="Cathayan Silk Clothes">Your leader’s silk clothes allow the first failed Rout test to be rerolled. The app will offer this before marking a rout.</Notice> : null}
           {skillReminders.length > 0 ? (
             <Notice tone="info" title="Before you roll">
@@ -219,15 +228,15 @@ export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, rost
 function PendingSilkRout({test, edit}: {test: BattleLiveState['routTests'][number]; edit: RoutCheckProps['edit']}) {
   const [dice,setDice] = useState<[number|null,number|null]>([null,null])
   const [correction,setCorrection] = useState('')
-  return <Notice tone="warn" title="Rout check — Cathayan Silk Clothes">
+  return <Notice tone="warn" title={`Rout check — ${test.rerollLabel??'Cathayan Silk Clothes'}`}>
     <p>{test.label}: first roll {test.dice.join(' + ')} failed against Leadership {test.leadership}. The warband has not routed while this reroll is pending.</p>
     {test.stage === 'choice' ? <div className="mt-3 flex flex-wrap gap-2">
-      <Button onClick={() => edit(s => chooseSilkReroll(s,test.id,true))}>Use the silk reroll</Button>
+      <Button onClick={() => edit(s => chooseSilkReroll(s,test.id,true))}>Use {test.rerollLabel??'the silk'} reroll</Button>
       <Button variant="secondary" onClick={() => edit(s => chooseSilkReroll(s,test.id,false))}>Decline reroll and rout</Button>
     </div> : <div className="mt-3 flex flex-col gap-3">
       <p>Reroll both dice. This result stands, even if it is worse.</p>
-      <div className="grid grid-cols-2 gap-3"><DieField label="Silk reroll first D6" sides={6} value={dice[0]} onChange={v => setDice([v,dice[1]])}/><DieField label="Silk reroll second D6" sides={6} value={dice[1]} onChange={v => setDice([dice[0],v])}/></div>
-      <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => edit(s => resolveSilkReroll(s,test.id,[rollDie(6),rollDie(6)],'app'))}>Roll silk reroll</Button>
+      <div className="grid grid-cols-2 gap-3"><DieField label="Item reroll first D6" sides={6} value={dice[0]} onChange={v => setDice([v,dice[1]])}/><DieField label="Item reroll second D6" sides={6} value={dice[1]} onChange={v => setDice([dice[0],v])}/></div>
+      <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => edit(s => resolveSilkReroll(s,test.id,[rollDie(6),rollDie(6)],'app'))}>Roll item reroll</Button>
       <Button disabled={dice.some(d => d === null)} onClick={() => edit(s => resolveSilkReroll(s,test.id,dice as [number,number],'table'))}>Record tabletop reroll</Button></div>
     </div>}
     <details className="mt-3"><summary className="cursor-pointer text-sm">Correct a mistaken test</summary><TextField label="Why this pending Rout test is incorrect" value={correction} onChange={e=>setCorrection(e.target.value)}/><Button variant="ghost" disabled={!correction.trim()} onClick={()=>edit(s=>correctPendingRout(s,test.id,correction))}>Withdraw pending test</Button></details>

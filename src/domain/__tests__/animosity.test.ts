@@ -90,3 +90,17 @@ describe('Black Orc conflicting Animosity procedures',()=>{
   expect(animosityBlocksAction(sheet.animosityTests[0],'defend')).toBe(false)
  })
 })
+import {chooseAnimosityLeadershipReroll} from '../animosityBattle'
+it('Sashimono rerolls a Black Orc Leadership test once before any effect or action, preserving both rolls',()=>{
+ let s=beginAnimosity(emptyBattleLiveState(),{...input,conflictingRule:true,leadershipRerollAvailable:true})
+ s=chooseAnimosityRule(s,input.id,'leadership','Agreed unit rule.',6)
+ s=saveAnimosityLeadership(s,input.id,[2,2]);s=acceptAnimosityLeadership(s,input.id,[2,2])
+ expect(s.animosityTests[0].stage).toBe('leadershipChoice')
+ expect(animosityBlocksAction(s.animosityTests[0],'normal')).toBe(true)
+ s=chooseAnimosityLeadershipReroll(s,input.id,true)
+ s=battleLiveStateSchema.parse(JSON.parse(JSON.stringify(s)))
+ s=saveAnimosityLeadership(s,input.id,[6,6]);s=acceptAnimosityLeadership(s,input.id,[6,6])
+ expect(s.animosityTests[0]).toMatchObject({stage:'effect',firstLeadershipDice:[2,2],firstLeadershipOriginal:[2,2],triggerDice:[6,6]})
+ expect(chooseAnimosityLeadershipReroll(s,input.id,true)).toBe(s)
+ expect(s.leadershipTests).toHaveLength(1)
+})

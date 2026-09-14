@@ -1,3 +1,4 @@
+import { nagarytheCaptured } from '../battle/leadershipItems'
 import { warHornBonus } from '../../../domain/warHorn'
 import { withWarmonger, WARMONGER } from '../battle/warmonger'
 import { blessWeapon, shrineBlessed, SHRINE_BLESSING } from '../../../rules/resolve/shrineBlessing'
@@ -226,7 +227,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
         tailChoice: sheet?.tailChoices[warrior.id],
         isLeader: warrior.id === leaderId,
         skillTableIds: warrior.skillTableIds,
-        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [], true), ...boostTraits], entry.warrior.isLarge),
+        traitIds: warriorTraits(warrior, unit?.specialRules ?? [], [...raceFor, ...(nagarytheCaptured(roster,sheet)?['hatred']:[]), ...(unitRules(warrior.unitTemplateId).naturalWeapons ? ['natural_weapons'] : []), ...(unit?.traitIds ?? []), ...kindTraits(roster.warbandTemplateId, warrior.unitTemplateId, unit?.specialRules ?? [], true), ...boostTraits], entry.warrior.isLarge),
         out: sheet ? isHeroOut(sheet, warrior.id) : false,
         woundsLost: sheet ? woundsLost(sheet, warrior.id) : 0,
       })
@@ -281,7 +282,7 @@ export function combatantsOf(roster: RosterWarband, template: WarbandTemplate | 
       equipment: kit.items,
       unarmedProfile: unitRules(group.unitTemplateId).unarmedProfile,
       skillIds: unique([...(unitRules(group.unitTemplateId).startingSkillIds ?? []), ...(group.unitTemplateId === 'pirates_swabbie' ? group.campaignState?.inheritedSkillIds ?? [] : [])]),
-      traitIds: unique(traits),
+      traitIds: unique([...traits,...(nagarytheCaptured(roster,sheet)?['hatred']:[])]),
       out: sheet ? groupOut(sheet, group.id) >= group.size : false,
       woundsLost: sheet && group.size === 1 ? woundsLost(sheet, group.id) : 0,
       groupSize: group.size,

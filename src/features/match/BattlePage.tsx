@@ -1,3 +1,4 @@
+import { StandardStatus } from './battle/StandardStatus'
 import { combatPhaseKey } from '../../domain'
 import { withWarmonger } from './battle/warmonger'
 import { WarmongerControl } from './battle/WarmongerControl'
@@ -339,6 +340,7 @@ function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scen
   return (
     <>
       <CurseReminder names={[...roster.heroes,...roster.hiredSwords].filter(h=>h.flags.lycanthrope&&h.status==='active').map(h=>h.name).concat(roster.henchmenGroups.flatMap(g=>g.campaignState?.lycanthropes?.map(m=>`${m.name} (${g.name})`)??[]))}/>
+      <StandardStatus roster={roster} sheet={shown} edit={handle.edit} readOnly={readOnly}/>
       <TopStrip
         scenario={scenario}
         warbands={[{ name: roster.name, mine: true }, ...others.map((p) => ({ name: p.warband_name, mine: false }))]}

@@ -1,3 +1,4 @@
+import { leadershipItemBenefits } from './leadershipItems'
 import { canUseRelic, passStupidityWithRelic, recordLeadershipTest } from './relicRules'
 import { useState } from 'react'
 import type { BattleTurns } from '../../../api/battleTurns'
@@ -34,6 +35,7 @@ export function StupidityTests({ roster, template, sheet, turns, boosts, edit }:
 }
 
 export function TestSheet({ roster, sheet, warrior, correction, turn, turnKey, edit, close }: { roster: RosterWarband; sheet: BattleLiveState; warrior: Combatant; correction: boolean; turn: number; turnKey: string; edit: (fn: (state: BattleLiveState) => BattleLiveState) => void; close: () => void }) {
+  const [standardRange,setStandardRange]=useState(false)
   const [firstTest, setFirstTest] = useState(false)
   const [resumed] = useState(() => sheet.rollAttempts.findLast(attempt => attempt.status === 'incomplete' && attempt.stupidity?.warriorId === warrior.id && attempt.stupidity.turnKey === turnKey))
   const [attemptId] = useState(() => resumed?.id ?? crypto.randomUUID())
@@ -45,6 +47,8 @@ export function TestSheet({ roster, sheet, warrior, correction, turn, turnKey, e
   const failed = ready && (dice[0]! + dice[1]!) > leadership
   const changedLd = leadership !== warrior.stats.Ld
   const canSave = ready && validLeadership && (!correction || correctionReason.trim()) && (!changedLd || reason.trim()) && (!failed || combat === 'yes' || (combat === 'no' && movement !== null))
+  const standard=leadershipItemBenefits(roster,sheet,warrior.id,'stupidity').find(b=>b.itemId==='standard_of_nagarythe')
+  const standardReroll=standard&&standardRange&&failed?`${standard.label} (within 12 inches of ${standard.bearer})`:undefined
   const sashimono = warrior.equipment.some(item => item.itemId === 'sashimono' && item.quantity > 0)
   function update(patch: Partial<StupidityDraft>, leadershipRolled = false) {
     const next = { ...draft, ...patch, testStarted: draft.testStarted || leadershipRolled || Boolean(patch.dice?.some(die => die !== null)) }
@@ -79,7 +83,8 @@ export function TestSheet({ roster, sheet, warrior, correction, turn, turnKey, e
       <Button variant="secondary" disabled={Boolean(original) || !validLeadership || (changedLd && !reason.trim()) || (correction && !correctionReason.trim())} onClick={() => { const rolled = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; update({ dice: rolled, originalDice: rolled, movementDie: null }, true) }}>Roll 2D6</Button>
       {original ? <p className="text-sm text-ink-dim">App rolled {original.join(' + ')}. Any changes above will be recorded with the original roll.</p> : null}
       {ready && validLeadership ? <p className="font-semibold">{dice[0]! + dice[1]!} against Leadership {leadership}: {failed ? 'failed' : 'passed'}.</p> : null}
-      {rerolledFrom ? <Notice title="Sashimono reroll">First test: {rerolledFrom.dice.join(' + ')}. This is the second test and its result stands; any manual changes are recorded.</Notice> : sashimono && ready && validLeadership ? <Button variant="secondary" disabled={Boolean(changedLd && !reason.trim()) || Boolean(correction && !correctionReason.trim())} onClick={() => update({ rerolledFrom: { leadership, movementDie: movement, originalMovementDie: originalMovement, dice: dice as number[], originalDice: original, reason: 'Sashimono' }, dice: [null, null], originalDice: undefined, movementDie: null, originalMovementDie: undefined })}>Use Sashimono reroll</Button> : null}
+      {!rerolledFrom&&standard?<label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={standardRange} onChange={e=>setStandardRange(e.target.checked)}/>Within 12 inches of {standard.bearer} carrying the Standard of Nagarythe.</label>:null}
+      {rerolledFrom ? <Notice title={`${rerolledFrom.reason} reroll`}>First test: {rerolledFrom.dice.join(' + ')}. This is the second test and its result stands; any manual changes are recorded.</Notice> : (sashimono||standardReroll) && ready && validLeadership ? <Button variant="secondary" disabled={Boolean(changedLd && !reason.trim()) || Boolean(correction && !correctionReason.trim())} onClick={() => update({ rerolledFrom: { leadership, movementDie: movement, originalMovementDie: originalMovement, dice: dice as number[], originalDice: original, reason: standardReroll??'Sashimono' }, dice: [null, null], originalDice: undefined, movementDie: null, originalMovementDie: undefined })}>{`Use ${standardReroll??'Sashimono'} reroll`}</Button> : null}
       {failed ? <>
         <SelectField label="In hand-to-hand combat?" value={combat} onChange={e => update({ combat: e.target.value })}><option value="">Choose the situation</option><option value="yes">Yes</option><option value="no">No</option></SelectField>
         {combat === 'no' ? <>

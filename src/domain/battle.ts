@@ -1,3 +1,4 @@
+import { itemLeadershipTestSchema } from './itemLeadership'
 import { animosityTestSchema } from './animosity'
 import { powderKegAttemptSchema } from './powderKeg'
 // The live battle sheet one warband keeps during a match (battle_sessions.live_state). It is a
@@ -115,15 +116,17 @@ export const battleLiveStateSchema = z.object({
   /** "Leader used Leadership for rout test", scenario notes, etc. */
   notes: z.string().default(""),
   /** Leadership history for first-test item limits; relics are not consumed from inventory. */
+  itemLeadershipTests:z.array(itemLeadershipTestSchema).default([]),
   leadershipTests: z.array(z.object({
     id: z.string().optional(), correction: z.string().optional(), turnKey: z.string().optional(),
-    warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity", "animosity"]),
+    warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity", "animosity", "item"]),
     relic: z.boolean().default(false), at: z.string(),
   })).default([]),
   warHornUses: z.array(z.object({ id:z.string(), itemRowId:z.string(), itemId:z.string(), name:z.string(), copyIndex:z.number().int().min(0), phaseKey:z.string(), at:z.string(), correction:z.string().optional() })).default([]),
   routTests: z.array(z.object({
     id: z.string(), warriorId: z.string(), label: z.string(), leadership: z.number(), at: z.string(), turn: z.number(),
     dice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]), source: z.enum(['app', 'table']),
+    rerollLabel:z.string().optional(),
     silk: z.boolean(), stage: z.enum(['choice', 'reroll', 'done']), passed: z.boolean().optional(), correction: z.string().optional(),
     rerollDice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]).optional(), rerollSource: z.enum(['app', 'table']).optional(),
   })).default([]),

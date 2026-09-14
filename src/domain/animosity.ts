@@ -2,8 +2,9 @@ import { z } from 'zod'
 
 export const animosityTestSchema = z.object({
   id: z.string(), warriorId: z.string(), modelIndex: z.number().int().min(0), name: z.string(), turnKey: z.string(), at: z.string(),
-  stage: z.enum(['trigger', 'effect', 'done']), outcome: z.enum(['clear', 'fight', 'squabble', 'rush', 'exempt']).optional(),
+  stage: z.enum(['trigger', 'effect', 'leadershipChoice', 'done']), outcome: z.enum(['clear', 'fight', 'squabble', 'rush', 'exempt']).optional(),
   original: z.number().int().min(1).max(6).optional(), triggerDie: z.number().int().min(1).max(6).optional(), effectDie: z.number().int().min(1).max(6).optional(),
+  leadershipRerollAvailable:z.boolean().optional(),firstLeadershipDice:z.tuple([z.number().int().min(1).max(6),z.number().int().min(1).max(6)]).optional(),firstLeadershipOriginal:z.tuple([z.number().int().min(1).max(6),z.number().int().min(1).max(6)]).optional(),
   conflictingRule:z.boolean().optional(), triggerRule:z.enum(['d6','leadership']).optional(), ruleAgreement:z.string().optional(), leadership:z.number().int().min(1).max(10).optional(), triggerDice:z.tuple([z.number().int().min(1).max(6),z.number().int().min(1).max(6)]).optional(), originalDice:z.tuple([z.number().int().min(1).max(6),z.number().int().min(1).max(6)]).optional(),
   exemption: z.string().optional(), actionResolved: z.boolean().default(false), correction: z.string().optional(),
 })
@@ -23,7 +24,7 @@ export function hasNormalAnimosity(unitId: string | undefined, removed = false):
 }
 export function confirmAnimosityDie(test: AnimosityTest, die: number): AnimosityTest {
   if (!Number.isInteger(die) || die < 1 || die > 6) throw new Error('Animosity needs one D6.')
-  if (test.correction || test.stage === 'done') throw new Error('This Animosity test is already resolved.')
+  if (test.correction || !['trigger','effect'].includes(test.stage)) throw new Error('This Animosity test is already resolved.')
   if(test.stage==='trigger' && (test.triggerRule==='leadership'||(test.conflictingRule&&!test.triggerRule))) throw new Error('Choose and resolve the agreed Animosity test first.')
   if (test.stage === 'trigger') return { ...test, original: undefined, triggerDie: die, stage: die === 1 ? 'effect' : 'done', outcome: die === 1 ? undefined : 'clear' }
   return { ...test, original: undefined, effectDie: die, stage: 'done', outcome: die === 1 ? 'fight' : die === 6 ? 'rush' : 'squabble' }

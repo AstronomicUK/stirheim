@@ -1,3 +1,4 @@
+import { animosityTestSchema } from './animosity'
 import { powderKegAttemptSchema } from './powderKeg'
 // The live battle sheet one warband keeps during a match (battle_sessions.live_state). It is a
 // tally, not a report: the post-battle wizard (Phase 7) reads it to pre-fill the report, and
@@ -194,6 +195,7 @@ export const battleLiveStateSchema = z.object({
   bolasRecoveredEventIds: z.array(z.string()).default([]),
   bolasThrows: z.array(z.object({ warriorId: z.string(), at: z.string() })).default([]),
   /** Recorded Stupidity outcomes last through opponents’ turns until this warband’s next turn. */
+  animosityTests: z.array(animosityTestSchema).default([]),
   stupidityResults: z.array(z.object({ warriorId: z.string(), turnKey: z.string(), failed: z.boolean() })).default([]),
   /** ISO time of the last local edit; the server's updated_at is authoritative for ordering. */
   editedAt: z.string().optional(),

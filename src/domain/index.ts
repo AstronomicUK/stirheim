@@ -32,3 +32,6 @@ export * from './weaponLoss';
 
 export * from './powderKeg';
 export * from './powderKegBattle';
+
+export * from './animosity';
+export * from './animosityBattle';

@@ -1,3 +1,5 @@
+import { animosityApplies } from '../battle/animosityModels'
+import { currentAnimosity, animosityBlocksAction, resolveAnimosityAction, ANIMOSITY_OUTCOME_TEXT } from '../../../domain'
 import { PowderKegControls } from './PowderKegControls'
 import { powderKegTarget, canIgnitePowderKeg } from './powderKegTarget'
 import { beginPowderKeg, powderKegDestroyed, pendingPowderKegVictims } from '../../../domain'
@@ -175,7 +177,18 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   // having tapped Ranged specifically.
   const rangedDefault = startWith === 'ranged' ? mine.find((c) => !c.out && loadoutFor(c).ranged.length > 0) : undefined
   const selectedAttacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
-  const selectedDefender = areaTarget ? [...mine, ...targets].find(c => c.id === areaTarget.warriorId && c.warbandId === areaTarget.warbandId) : kegAttack ? powderKegTarget(kegName, roster.id) : targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
+  const turns = useBattleTurns(matchId)
+  const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
+  const [animosityMember, setAnimosityMember] = useState(0)
+  const animosityIndex = Math.min(animosityMember, Math.max(0, (selectedAttacker?.groupSize ?? 1) - 1))
+  const animosityKey = `${selectedAttacker?.id}:${animosityIndex}:${ownTurnKey}`
+  const [animosityChoice, setAnimosityChoice] = useState<{ key: string; mode: 'normal' | 'defend' | 'friendlyFight' } | null>(null)
+  const animosityMode = animosityChoice?.key === animosityKey ? animosityChoice.mode : 'normal'
+  const [friendlyTargetKey, setFriendlyTargetKey] = useState('')
+  const [friendlyConfirmed, setFriendlyConfirmed] = useState(false)
+  const friendlyAnimosity = animosityMode === 'friendlyFight' && !areaTarget && !kegAttack
+  const friendlyModelId = friendlyTargetKey.split(':')[0]
+  const selectedDefender = areaTarget ? [...mine, ...targets].find(c => c.id === areaTarget.warriorId && c.warbandId === areaTarget.warbandId) : kegAttack ? powderKegTarget(kegName, roster.id) : friendlyAnimosity ? mine.find(c => c.id === friendlyModelId) : targets.find((c) => c.id === defenderId) ?? targets.find((c) => !c.out) ?? targets[0]
   const attacker = selectedAttacker ? withGuidingDream(selectedAttacker, selectedDefender, sheet) : selectedAttacker
   const defender = selectedDefender ? withGuidingDream(selectedDefender, selectedAttacker, (selectedDefender.warbandId === roster.id ? sheet : sessions.find(s => s.warband_id === selectedDefender.warbandId)?.live_state)) : selectedDefender
   const checkCavalcade = Boolean(!kegAttack && startWith==='melee' && roster.warbandTemplateId==='the_cursed_cavalcade' && attacker?.kind==='hero' && defender?.kind==='henchman' && attacker.equipment.some(i=>i.quantity>0&&isMisericordia(i.itemId??undefined)))
@@ -309,13 +322,11 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
       ? woundsOverride.value
       : Math.min(defender.stats.W, Math.max(defender.woundsLost, targetMemory?.woundsLost ?? 0))
     : 0
-  const turns = useBattleTurns(matchId)
   const holds = useSlaaneshiHolds(matchId)
   const releaseHold = useSlaaneshiHoldAction(matchId)
   const wieldersHold = holds.data?.find(h => !h.released_at && h.wielder_id === attacker?.id)
   const switchingHeldWeapon = Boolean(!areaTarget && wieldersHold && primary && !primary.special.includes('lockKnocksDownAndCaptures'))
   const phaseKey = combatPhaseKey(sheet.turn, turns.data)
-  const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
   const situationKey = `${attacker?.id}:${defender?.warbandId}:${defender?.id}`
   const individualPsychology = Boolean(attacker && (attacker.kind !== 'henchman' || (attacker.groupSize ?? 1) <= 1))
   const groupSituationKey = `${phaseKey}:${situationKey}`
@@ -379,12 +390,13 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   active.serpentStaffPower = Boolean(staffUse)
   if (attacker?.entangled) active.charging = false
   if (attacker) active.failedStupidity = attacker.traitIds.includes('stupidity') && !attacker.traitIds.includes('deathwish') && (individualStupidity ? failedStupidityThisTurn(sheet, attacker.id, ownTurnKey) : groupStupidity?.id === attacker.id && groupStupidity.turnKey === ownTurnKey && groupStupidity.failed)
-  const targetMember=Math.min(kegVictim ? Number(kegVictim.key.split(':').at(-1)) : targetMemberChoice,Math.max(0,(defender?.groupSize??1)-1))
+  const targetMember=Math.min(friendlyAnimosity ? Number(friendlyTargetKey.split(':').at(-1)) : kegVictim ? Number(kegVictim.key.split(':').at(-1)) : targetMemberChoice,Math.max(0,(defender?.groupSize??1)-1))
   const holdTargetConflict=Boolean(!areaTarget && primary?.special.includes('lockKnocksDownAndCaptures') && wieldersHold && (wieldersHold.target_id!==defender?.id || wieldersHold.target_model_index!==targetMember))
   const defenderConditions=defender?conditionsFor(events,defender.warbandId,sheet.turn,turns.data?.recoveries,holds.data):undefined
   const defenderCondition = defender ? defenderConditions?.get(defender.kind==='henchman'?`${defender.id}:${targetMember}`:defender.id)??defenderConditions?.get(defender.id) : undefined
   if (defenderCondition === 'Knocked down') active.targetKnockedDown = true
   if (defenderCondition === 'Stunned') active.targetStunned = true
+  if (friendlyAnimosity && primary?.type === 'melee') active.charging = true
   const context = combatContextFor(houseRules, active)
 
   // Consumables the attacker has marked on the sheet (poisons, drugs, special ammunition) shape the odds and are used up by the report.
@@ -431,11 +443,17 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const interceptKey = `${attackKey}:${sheet.turn}:${Boolean(context.charging)}`
   const guardians = defender ? targets.filter(c => c.protectsMerchantId === defender.id && c.warbandId === defender.warbandId && !c.out) : []
   const interceptionChecked = interception?.key === interceptKey
+  const subjectToAnimosity = Boolean(attacker && animosityApplies(attacker, roster))
+  const animosityTest = attacker ? currentAnimosity(sheet, attacker.id, animosityIndex, ownTurnKey) : undefined
+  const friendlyModels = mine.filter(m => !m.out && m.kind !== 'hero' && !m.isAnimal).flatMap(m => Array.from({ length: m.groupSize ?? 1 }, (_, index) => ({ key: `${m.id}:${index}`, name: `${m.name}${(m.groupSize ?? 1) > 1 ? ` model ${index + 1}` : ''}`, warrior: m, index }))).filter(m => m.warrior.id !== attacker?.id || m.index !== animosityIndex)
+  const goblinChargingOrc = friendlyAnimosity && primary?.type === 'melee' && Boolean(attacker?.unitTemplateId?.includes('goblin') || attacker?.unitTemplateId?.startsWith('forest_goblins_')) && Boolean(defender?.unitTemplateId === 'orc_mob_orc_boyz' || roster.hiredSwords.some(h => h.id === defender?.id && h.hiredSwordId === 'black_orc_overseer'))
+  const firingModel = isDoubleBarrel ? doubleSlot : isPistolShot ? pistolSlot : isCoreReloadGun && reloadHeld && attacker?.kind === 'henchman' ? Math.floor(reloadHeld.snapshot.copyIndex / (reloadHeld.snapshot.expected.quantity / Math.max(1, attacker.groupSize ?? 1))) : animosityIndex
+  const animosityBlocked = !areaTarget && subjectToAnimosity && (turns.isPending || turns.isError || animosityBlocksAction(animosityTest, animosityMode) || (animosityMode === 'friendlyFight' && !friendlyAnimosity) || (animosityMode === 'defend' && (primary?.type !== 'melee' || kegAttack)) || (friendlyAnimosity && (!friendlyConfirmed || !friendlyModels.some(m => m.key === friendlyTargetKey) || goblinChargingOrc)) || firingModel !== animosityIndex)
   const kegItems = items.filter(i => i.warband_id === roster.id && i.item_rules_id === 'powder_keg' && i.quantity > sheet.warbandConsumables.filter(u => u.itemRowId === i.id && !u.correction).length)
   const kegInventory = kegItems.find(i => i.id === kegItemId)
   const knownKegs = [...sheet.powderKegAttempts, ...sessions.filter(s => s.warband_id !== roster.id).flatMap(s => s.live_state.powderKegAttempts)]
   const kegBlocked = kegDone || (kegAttack && ((primary?.type === 'melee' && !kegHit) || !kegName.trim() || (Boolean(kegItemId) && !kegInventory) || !primary || (!canIgnitePowderKeg(primary, usedIds) && !kegException.trim()) || knownKegs.some(a => a.kegKey === powderKegTarget(kegName, roster.id).id && !a.correction && (powderKegDestroyed(a) || a.stage !== 'stopped'))))
-  const needsInterception = !kegAttack && !areaTarget && guardians.length > 0 && !interceptionChecked
+  const needsInterception = !friendlyAnimosity && !kegAttack && !areaTarget && guardians.length > 0 && !interceptionChecked
   const interceptionNote = interceptionChecked ? interception.note : undefined
   const charmAvailable = Boolean(defender && defenderKit && defenderKit.firstHitDiscard !== null && !targetMemory?.charmUsed)
 
@@ -589,6 +607,15 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           </> : null}
         </div>
       </details>
+      {subjectToAnimosity && attacker && !areaTarget ? <Notice tone="warn" title="This model’s Animosity">
+        {(attacker.groupSize ?? 1) > 1 ? <SelectField label="Acting group model" value={animosityIndex} onChange={e => { setAnimosityMember(Number(e.target.value)); setFriendlyConfirmed(false) }}>{Array.from({length:attacker.groupSize??1},(_,i)=><option key={i} value={i}>Model {i+1}</option>)}</SelectField> : null}
+        <p>{animosityTest?.outcome ? ANIMOSITY_OUTCOME_TEXT[animosityTest.outcome] : 'Record this model’s start-of-turn test or exemption above before it acts.'}</p>
+        {<SelectField label="Action after Animosity" value={animosityMode} onChange={e => { setAnimosityChoice({key:animosityKey,mode:e.target.value as 'normal'|'defend'|'friendlyFight'}); setFriendlyConfirmed(false) }}>
+          <option value="normal">Normal action</option><option value="defend">Defending in melee</option>{animosityTest?.outcome === 'fight' && !animosityTest.actionResolved ? <option value="friendlyFight">Required attack on a friend</option> : null}
+        </SelectField>}
+        {firingModel !== animosityIndex ? <p>Select the weapon copy belonging to model {animosityIndex+1}; its firing counter and Animosity test must refer to the same model.</p> : null}
+        {animosityBlocked && animosityTest?.stage === 'done' ? <p>This model cannot make the selected action. It may still defend in hand-to-hand combat.</p> : null}
+      </Notice> : null}
       <PowderKegControls sheet={sheet} events={events} models={[...mine,...targets]} edit={edit} readOnly={readOnly} onResolve={(attempt,target) => {
         setAttackerId(attempt.warriorId); setKegMode(false); setSelfShotId(null); setFireHitId(null); setVolatileKey(null); setLineSelection(null); setPigeonSelection(null); setGrapeSelection(null); setMortarSelection(null); setKegSelection({attemptId:attempt.id,targetKey:target.key}); setRollSetup(null); setRolling(true)
       }} />
@@ -809,7 +836,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
           ) : null}
           {enemies.error ? <Notice tone="error">{enemies.error}</Notice> : null}
           {!enemies.isPending && targets.length === 0 ? <p className="text-xs text-ink-dim">No enemy models to pick from.</p> : null}
-          {!kegAttack && targets.length > 0 ? (<>
+          {friendlyAnimosity ? <>
+            <SelectField label="Friendly Animosity target" value={friendlyTargetKey} onChange={e => { setFriendlyTargetKey(e.target.value); setFriendlyConfirmed(false) }}><option value="">Choose the nearest eligible friend</option>{friendlyModels.map(m=><option key={m.key} value={m.key}>{m.name}</option>)}</SelectField>
+            <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={friendlyConfirmed} onChange={e=>setFriendlyConfirmed(e.target.checked)} />This is the nearest eligible friendly Orc/Goblin henchman or hired sword, following the charge/shoot priority.</label>
+            {goblinChargingOrc ? <p>A Goblin cannot charge an Orc henchman because of Animosity. Use the permitted shot or record that no legal action is available.</p> : null}
+          </> : null}
+          {!friendlyAnimosity && !kegAttack && targets.length > 0 ? (<>
             <SelectField label="Enemy model" disabled={Boolean(areaTarget)} hideLabel value={defender?.id ?? ''} onChange={(e) => {setDefenderId(e.target.value);setTargetMemberChoice(0)}}>
               {areaTarget && defender?.warbandId === roster.id ? <option value={defender.id}>{areaTarget.name}</option> : null}
               {enemies.warbands.map((w) => (
@@ -867,7 +899,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
         {/* Floats in the gap between the two, so the pair keeps the full width of the screen. */}
         <button
           type="button"
-          disabled={kegBlocked || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
+          disabled={animosityBlocked || kegBlocked || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || !odds || !attacker || !defender || odds.attacks < 1 || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))}
           onClick={() => { setRollSetup(null); setInterception(null); setInterceptionReason(''); setRolling(true) }}
           aria-label="Roll it through"
           data-rolling={rolling || undefined}
@@ -928,12 +960,12 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               <Button variant="secondary" disabled={readOnly || releaseHold.isPending} onClick={() => releaseHold.mutate({id:wieldersHold.id,action:'weaponSwitched'})}>Release hold and use this weapon</Button>
               {releaseHold.error ? <p role="alert">{releaseHold.error.message}</p> : null}
             </div> : null}
-            <Button block disabled={kegBlocked || holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (kegBlocked || holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
+            <Button block disabled={animosityBlocked || kegBlocked || holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || tailConflict || Boolean(pistol?.blocked) || unresolvedPoison || waterUnavailable || Boolean(reloadBlocked) || duplicateWeapon || burningBlocked || (Boolean(swivelBlocked) && !selfDamage && !grapeTarget) || grapeDone || psychologyLoading || needsInterception || readOnly || (!areaTarget && Boolean(active.failedStupidity)) || (!areaTarget && Boolean(staffUse?.used)) || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))} onClick={() => { if (animosityBlocked || kegBlocked || holdTargetConflict || switchingHeldWeapon || cavalcadeLoading || doubleBlocked || combatPistolBlocked || tailConflict || pistol?.blocked || unresolvedPoison || waterUnavailable || reloadBlocked || duplicateWeapon || burningBlocked || (!areaTarget && bolasUsed) || ((isLineWeapon && !lineReady) || (isPigeon && !pigeonReady) || (isMortar && !mortarReady))) return; setRollSetup(odds); if (!areaTarget && individualBolas) edit?.(s => recordBolasThrow(s, attacker.id, attacker.name, sheet.turn)); if (!areaTarget && staffUse) edit?.(s => consumeSerpentStaff(s, attacker.id, phaseKey)) }}>Begin attacks</Button>
           </div> : <RollSection
             cavalcadeCapture={Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade}
             key={attackKey}
             odds={rollSetup}
-            restartBlocked={Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || waterUnavailable || Boolean(pistol?.blocked) || Boolean(reloadBlocked)}
+            restartBlocked={animosityBlocked || kegBlocked || Boolean(doubleBlocked) || Boolean(combatPistolBlocked) || waterUnavailable || Boolean(pistol?.blocked) || Boolean(reloadBlocked)}
             beforeStart={isBlessedWater ? id => {
               if (!edit || !waterRow) return false
               try {
@@ -979,7 +1011,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
             } : undefined}
             heldWeapons={isDoubleBarrel ? [doubleHeld?.snapshot] : pistol ? [pistol.selected?.snapshot] : physicalBindings.map(binding => binding.chosen?.snapshot)}
             swordBreaker={swordBreaker}
-            forceLog={kegAttack || Boolean(primary?.special.includes('lockKnocksDownAndCaptures')) || Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
+            forceLog={friendlyAnimosity || kegAttack || Boolean(primary?.special.includes('lockKnocksDownAndCaptures')) || Boolean(cavalcadeFacts.data?.eligible)&&checkCavalcade || Boolean(isDoubleBarrel) || combatPistols.length > 0 || isPistolShot || isBlessedWater || Boolean(areaTarget)}
             turn={sheet.turn}
             onAttempt={attempt => edit?.(s => withRollAttempt(s, {...attempt, rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...attempt.rolls]}))}
             attacker={attacker}
@@ -1002,6 +1034,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 : undefined
             }
             onLog={async(state, attemptId) => {
+              if (animosityBlocked) throw new Error('This model cannot make another attack under its current Animosity result. Record a correction if the earlier result was wrong.')
               if (kegAttack) {
                 if (state.powderKegWounded) edit?.(s => beginPowderKeg(s, { id: attemptId, kegKey: defender.id, kegName: defender.name, warriorId: attacker.id, warbandId: roster.id, warriorName: attacker.name, weaponName: primary!.name, at: new Date().toISOString(), turn: sheet.turn, inventory: kegInventory ? { itemRowId: kegInventory.id, holderKey: kegInventory.holder_id ?? 'stash' } : undefined, ignitionNote: kegException.trim() ? `Igniter exception: ${kegException.trim()}` : 'The hit and wound dice are recorded in the attack attempt.', critical: Boolean(state.powderKegCritical), explosionDie: state.powderKegExplosionDie, underground: kegUnderground }))
                 return
@@ -1011,7 +1044,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
               const availableEngines=needsEngineCheck?await engines.refetch():null
               if(availableEngines?.error)throw new Error(`Could not check Engine availability: ${availableEngines.error.message}`)
               const manCatcher=canManCatcherCapture({outOfAction:state.worst==='outOfAction',usedManCatcher:isManCatcherItem(state.outOfActionWeaponId??null),engineAvailable:Boolean(availableEngines?.data?.some(engine=>engine.state==='present')),targetLarge:defender.traitIds.includes('large_target'),targetAnimal:Boolean(defender.isAnimal||defender.kind==='animal')})
-              return onLogEvent({
+              await onLogEvent({
                 slaaneshi_lock:state.slaaneshiLock?{weaponId:state.slaaneshiLockWeaponId??primary?.id??'',modelIndex:targetMember}:undefined,
                 target_model_index:defender.kind==='henchman'?targetMember:undefined,
                 cavalcade_capture: state.cavalcadeCapture,
@@ -1056,6 +1089,7 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
                 nurgles_rot: state.rotPassed,
                 rolls: [...(staffUse ? ['Serpent Staff power: one WS4 / S4 attack; all normal attacks and parries forfeited this combat phase.'] : []), ...(interceptionNote ? [interceptionNote] : []), ...state.log.map((line) => line.text)],
               })
+              if (friendlyAnimosity && animosityTest) edit?.(s => resolveAnimosityAction(s, animosityTest.id, `Required friendly ${primary?.type === 'melee' ? 'combat' : 'shot'} against ${defender.name} recorded in the shared battle log.`))
             }}
             onFinished={state => { if (!kegAttack && (!areaTarget || defender.kind !== 'henchman')) rememberFight(state) }}
           />}

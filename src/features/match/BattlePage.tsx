@@ -8,6 +8,7 @@ import { FireRecovery } from './battle/FireRecovery'
 import { FirepotSmokeTests } from './battle/FirepotSmokeTests'
 import { GuidingDreamTargets } from './battle/GuidingDreamTargets'
 import { BolasRecovery } from './battle/BolasRecovery'
+import { AnimosityTests } from './battle/AnimosityTests'
 import { StupidityTests } from './battle/StupidityTests'
 import {useBattleBribes} from '../../api/battleBribes'
 import {CurseReminder} from '../roster/view/CurseReminder'
@@ -355,6 +356,7 @@ function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scen
       {!readOnly && !turns.isPending && !turns.isError ? <FireRecovery roster={roster} template={template} sheet={shown} events={events} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <FirepotSmokeTests roster={roster} template={template} sheet={shown} events={events} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <BolasRecovery sheet={shown} events={events} warbandId={roster.id} turns={turns.data} edit={handle.edit} /> : null}
+      {!readOnly && !turns.isPending && !turns.isError ? <AnimosityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly && !turns.isPending && !turns.isError ? <StupidityTests roster={roster} template={template} sheet={shown} turns={turns.data} boosts={myBoosts} edit={handle.edit} /> : null}
       {!readOnly ? <WarmongerControl roster={roster} sheet={shown} edit={handle.edit} combatStarted={events.some(e=>!e.reverted_at)||shown.turn>1||shown.casts.length>0||shown.rollAttempts.some(a=>a.kind==='attack'&&!a.label.includes('Warmonger'))} /> : null}
       {!readOnly ? <PreBattle roster={roster} template={template} sheet={shown} edit={handle.edit} /> : null}

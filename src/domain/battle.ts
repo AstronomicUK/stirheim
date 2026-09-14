@@ -96,6 +96,12 @@ export const battleLiveStateSchema = z.object({
     warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity"]),
     relic: z.boolean().default(false), at: z.string(),
   })).default([]),
+  routTests: z.array(z.object({
+    id: z.string(), warriorId: z.string(), label: z.string(), leadership: z.number(), at: z.string(), turn: z.number(),
+    dice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]), source: z.enum(['app', 'table']),
+    silk: z.boolean(), stage: z.enum(['choice', 'reroll', 'done']), passed: z.boolean().optional(), correction: z.string().optional(),
+    rerollDice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]).optional(), rerollSource: z.enum(['app', 'table']).optional(),
+  })).default([]),
   /** Pre-battle prompts answered on the sheet: "tarot:<heroId>" -> "passed" | "failed" | "disaster", list rules by key. */
   guidingDreamTargets: z.record(z.string(), z.object({ id: z.string(), warbandId: z.string(), name: z.string() })).default({}),
   preBattle: z.record(z.string(), z.string()).default({}),

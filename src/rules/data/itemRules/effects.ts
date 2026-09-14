@@ -50,8 +50,8 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
 
   // ---- Leadership (rout check) ----
   holy_unholy_relic: { leadership: { autoPassFirstTest: true, note: "Holy Relic: the first Leadership test of the game is passed automatically (the first Rout test, if the leader carries it and has tested for nothing else)." } },
-  war_horn: { leadership: { bonus: 1, note: "War Horn: +1 Leadership for one turn, once per battle; may be sounded just before a Rout test." }, consumable: "use" },
-  war_horn_of_nagarythe: { leadership: { bonus: 1, note: "War Horn of Nagarythe: as a War Horn." }, consumable: "use" },
+  war_horn: { leadership: { bonus: 1, note: "War Horn: +1 Leadership for one turn, once per battle; may be sounded just before a Rout test. The horn is reusable equipment." } },
+  war_horn_of_nagarythe: { leadership: { bonus: 1, note: "War Horn of Nagarythe: as a War Horn; reusable equipment." } },
   vodka: { leadership: { bonus: 1, note: "Vodka: +1 Leadership for every warrior this game (maximum 10); each warrior tests Toughness before the game or is at -1 Initiative." }, consumable: "battle" },
   banner: { leadership: { allAloneReroll: true, note: "Banner: friends within 12\" re-roll failed All Alone tests." } },
   clan_pestilens_banner: { leadership: { allAloneReroll: true, note: "Clan Pestilens Banner: friends within 12\" re-roll failed All Alone tests." } },

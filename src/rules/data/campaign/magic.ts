@@ -75,6 +75,8 @@ export const SPELL_LORES: SpellLore[] = [
   "spells": [
     {
       "id": "dark_mage_banishment",
+        target: "none",
+        targetNote: "All Undead within 4 inches, regardless of side; each takes an unmodified Leadership test.",
       "name": "Banishment",
       "roll": {
         "min": 1,
@@ -85,6 +87,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "dark_mage_soul_render",
+        target: "enemy",
+        targetNote: "One enemy within 18 inches.",
       "name": "Soul Render",
       "roll": {
         "min": 2,
@@ -95,6 +99,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "dark_mage_shade_mount",
+        target: "either",
+        targetNote: "The Mage or a Hero within 8 inches; resolve the flight of up to 12 inches at the table.",
       "name": "Shade Mount",
       "roll": {
         "min": 3,
@@ -105,6 +111,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "dark_mage_jozun_s_decay",
+        target: "enemy",
+        targetNote: "One opponent within 12 inches; a model cannot be targeted by this spell more than once per game.",
       "name": "Jozun’s Decay",
       "roll": {
         "min": 4,
@@ -115,6 +123,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "dark_mage_cowel_of_pain",
+        target: "self",
+        targetNote: "The Mage only; treats Stunned results as Knocked Down until his next magic phase.",
       "name": "Cowel of Pain",
       "roll": {
         "min": 5,
@@ -125,6 +135,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "dark_mage_doom_dark",
+        target: "none",
+        targetNote: "Any model within 2 inches, including those in close combat; resolve All Alone tests and free strikes at the table.",
       "name": "Doom & Dark",
       "roll": {
         "min": 6,
@@ -151,6 +163,8 @@ export const SPELL_LORES: SpellLore[] = [
   "spells": [
     {
       "id": "crow_master_decay_of_ages",
+        target: "either",
+        targetNote: "One warrior within 6 inches of Simius; only one may be affected at a time.",
       "name": "Decay of Ages",
       "roll": {
         "min": 1,
@@ -177,6 +191,8 @@ export const SPELL_LORES: SpellLore[] = [
   "spells": [
     {
       "id": "snotling_waaagh_magic_mork_s_blessing",
+        target: "friendly",
+        targetNote: "One friendly greenskin Hero anywhere on the board, including the Shaman; no line of sight needed.",
       "name": "Mork's Blessing",
       "roll": {
         "min": 1,
@@ -187,6 +203,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "snotling_waaagh_magic_we_can_fly",
+        target: "none",
+        targetNote: "The Shaman and the closest D6 friendly models within 6 inches move towards the closest enemy; determine distances at the table.",
       "name": "'We Can Fly!'",
       "roll": {
         "min": 2,
@@ -197,6 +215,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "snotling_waaagh_magic_foot_of_gork",
+        target: "none",
+        targetNote: "Randomly determine an enemy on the board, then affect every model within 3 inches, friend or foe. Do not directly choose the central victim.",
       "name": "Foot of Gork!",
       "roll": {
         "min": 3,
@@ -207,6 +227,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "snotling_waaagh_magic_pebbles_of_doom",
+        target: "friendly",
+        targetNote: "A friendly Hero within 6 inches; track the D6 pebbles and expiry at the table.",
       "name": "Pebbles of Doom",
       "roll": {
         "min": 4,
@@ -217,6 +239,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "snotling_waaagh_magic_pointy_stick_of_death",
+        target: "self",
+        targetNote: "The Shaman only; make the maintenance test in each Recovery phase.",
       "name": "Pointy Stick of Death",
       "roll": {
         "min": 5,
@@ -227,6 +251,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "snotling_waaagh_magic_blessing_of_the_shrimp",
+        target: "friendly",
+        targetNote: "One friendly Hero within 6 inches; only one model may have this blessing at a time.",
       "name": "Blessing of the Shrimp",
       "roll": {
         "min": 6,
@@ -253,6 +279,8 @@ export const SPELL_LORES: SpellLore[] = [
   "spells": [
     {
       "id": "woodland_incantations_song_of_thorns",
+        target: "enemy",
+        targetNote: "One foe within 8 inches.",
       "name": "Song of Thorns",
       "roll": {
         "min": 1,
@@ -263,6 +291,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "woodland_incantations_murmuring_of_the_wind",
+        target: "self",
+        targetNote: "The caster moves up to 12 inches; contact with an enemy counts as a charge.",
       "name": "Murmuring of the Wind",
       "roll": {
         "min": 2,
@@ -273,6 +303,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "woodland_incantations_the_rain_song",
+        target: "none",
+        targetNote: "Everything within 6 inches except Wood Elves, regardless of side.",
       "name": "The Rain Song",
       "roll": {
         "min": 3,
@@ -283,6 +315,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "woodland_incantations_lyrics_of_feral_infatuation",
+        target: "none",
+        targetNote: "Affects animals or monsters. The source does not specify a range or how many targets; agree the affected models at the table.",
       "name": "Lyrics of Feral Infatuation",
       "roll": {
         "min": 4,
@@ -293,6 +327,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "woodland_incantations_song_of_the_sun",
+        target: "either",
+        targetNote: "One model within 18 inches. The source does not identify which characteristic its additional test uses; agree that test at the table.",
       "name": "Song of the Sun",
       "roll": {
         "min": 5,
@@ -303,6 +339,8 @@ export const SPELL_LORES: SpellLore[] = [
     },
     {
       "id": "woodland_incantations_eagle_s_cry",
+        target: "none",
+        targetNote: "All Wood Elves within 6 inches; no single model is chosen.",
       "name": "Eagle's Cry",
       "roll": {
         "min": 6,
@@ -329,6 +367,8 @@ Amazon Rituals are used by the Amazons (Lustria) Serpent Priestess, and the Amaz
     spells: [
       {
         id: "singing_wind",
+        target: "either",
+        targetNote: "Any one model within 10 inches.",
         name: "Singing Wind",
         roll: { min: 1, max: 1 },
         difficulty: 8,
@@ -338,6 +378,8 @@ The goddess appears in the form of singing motes and dancing lights that will en
       },
       {
         id: "serpents_strength",
+        target: "none",
+        targetNote: "Friendly models within 8 inches, including the Priestess. The Priestess cannot begin this ritual in close combat.",
         name: "Serpent's Strength",
         roll: { min: 2, max: 2 },
         difficulty: 9,
@@ -347,6 +389,8 @@ All friendly models close to the Priestess will be charged with a frantic energy
       },
       {
         id: "wendalas_maelstrom",
+        target: "none",
+        targetNote: "The storm extends 18 inches from the Priestess; resolve the enemy shooting penalty at the table.",
         name: "Wendala's Maelstrom",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -356,6 +400,8 @@ The storm extends out from the Priestess 18". All attempts to shoot missile weap
       },
       {
         id: "shield_of_thorns",
+        target: "self",
+        targetNote: "The Priestess only; cannot be cast while she is in hand-to-hand combat.",
         name: "Shield of Thorns",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -365,6 +411,8 @@ The ritual produces a cocoon of thorns all about the Priestess, making her immun
       },
       {
         id: "the_living_jungle",
+        target: "either",
+        targetNote: "One model within 12 inches; the source does not restrict the target to enemies.",
         name: "The Living Jungle",
         roll: { min: 5, max: 5 },
         difficulty: 6,
@@ -374,6 +422,8 @@ Pick one model within 12". The model is suddenly swarmed by a savage mix of snak
       },
       {
         id: "sirens_dreams",
+        target: "none",
+        targetNote: "Enemies within 12 inches; Lizardmen and Undead are immune. Apply the opposing warband’s Leadership penalty at the table.",
         name: "Siren's Dreams",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -396,6 +446,8 @@ Arabian Elemental Magic is used by Arabian Mystics, and Khar-mel The Djinn.`,
     spells: [
       {
         id: "riding_the_wind",
+        target: "self",
+        targetNote: "The caster only, at the beginning of the Movement phase. Replaces normal movement and cannot enter base contact with an enemy.",
         name: "Riding the Wind",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -405,6 +457,8 @@ This spell is cast at the beginning of the caster's Movement phase. The caster m
       },
       {
         id: "skin_of_stone",
+        target: "friendly",
+        targetNote: "One friendly warrior within 6 inches; only one may be affected at a time.",
         name: "Skin of Stone",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -414,6 +468,8 @@ This spell may be cast on any friendly warrior within 6". The target gains +2 to
       },
       {
         id: "burning_hand",
+        target: "self",
+        targetNote: "The caster only, at the beginning of the Combat phase. Replaces normal attacks with the printed single attack.",
         name: "Burning Hand",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -423,6 +479,8 @@ This spell is cast at the beginning of the Combat phase. The caster may sacrific
       },
       {
         id: "quicksand",
+        target: "either",
+        targetNote: "One warrior within 6 inches marks the centre; all warriors within 3 inches of that target are affected.",
         name: "Quicksand",
         roll: { min: 4, max: 4 },
         difficulty: 6,
@@ -432,6 +490,8 @@ This spell is cast at any warrior within 6". The water floods the area for 3" ar
       },
       {
         id: "storm_of_magic",
+        target: "either",
+        targetNote: "Any one warrior within 12 inches.",
         name: "Storm of Magic",
         roll: { min: 5, max: 5 },
         difficulty: 9,
@@ -441,6 +501,8 @@ The caster may target any warrior within 12". If the spell is successfully cast,
       },
       {
         id: "blessing_of_the_elements",
+        target: "none",
+        targetNote: "Post-battle dice benefit; cannot be cast if the caster was taken out of action.",
         name: "Blessing of the Elements",
         roll: { min: 6, max: 6 },
         difficulty: 6,
@@ -463,6 +525,8 @@ Chaos Dwarfs Magic is used by the The Sons of Hashut Apprentice Sorcerer.`,
     spells: [
       {
         id: "spectre_of_hashut",
+        target: "enemy",
+        targetNote: "The closest enemy model within 10 inches.",
         name: "Spectre of Hashut",
         roll: { min: 1, max: 1 },
         difficulty: 9,
@@ -472,6 +536,8 @@ Designate the enemy miniature closest to the wizard's miniature within 10". That
       },
       {
         id: "stone_statue",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches and line of sight.",
         name: "Stone Statue",
         roll: { min: 2, max: 2 },
         difficulty: 9,
@@ -481,6 +547,8 @@ Choose an enemy miniature that is within 12" of you and is in your line of sight
       },
       {
         id: "fireball",
+        target: "enemy",
+        targetNote: "One enemy within 16 inches and line of sight.",
         name: "Fireball",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -490,6 +558,8 @@ This spell has a range of 16" and requires line of sight. The target receives an
       },
       {
         id: "vanish",
+        target: "self",
+        targetNote: "The caster moves up to 6 inches and may enter or leave combat; resolve the move at the table.",
         name: "Vanish",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -499,6 +569,8 @@ The wizard may immediately make a move of up to 6" in any direction and may ente
       },
       {
         id: "eruption",
+        target: "none",
+        targetNote: "All models within 4 inches, friend or foe. Resolve the hits and the caster’s subsequent Toughness penalty at the table.",
         name: "Eruption",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -508,6 +580,8 @@ All miniatures within a distance of up to 4" (friend or foe) suffer an automatic
       },
       {
         id: "eye_of_hashut",
+        target: "friendly",
+        targetNote: "One friendly model within 12 inches; Hobgoblins subtract 1 from the effect die. Can succeed only once per battle.",
         name: "Eye of Hashut",
         roll: { min: 6, max: 6 },
         difficulty: 6,
@@ -621,6 +695,8 @@ Charms and Hexes are used by Witches.`,
     spells: [
       {
         id: "scry",
+        target: "friendly",
+        targetNote: "One friendly Hero or henchman; apply the D3 dice adjustments during this turn.",
         name: "Scry",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -630,6 +706,8 @@ For the duration of the turn one hero or henchman may re-roll D3 dice rolls and 
       },
       {
         id: "curse",
+        target: "enemy",
+        targetNote: "One enemy model within 12 inches.",
         name: "Curse",
         roll: { min: 2, max: 2 },
         difficulty: 6,
@@ -639,6 +717,8 @@ One enemy model within 12" of the Witch must re-roll all successful dice rolls f
       },
       {
         id: "dust_of_the_blind",
+        target: "enemy",
+        targetNote: "One enemy model within 16 inches.",
         name: "Dust of the Blind",
         roll: { min: 3, max: 3 },
         difficulty: 9,
@@ -648,6 +728,8 @@ One enemy model within 16" of the Witch is struck instantly blind. They may not 
       },
       {
         id: "age_of_stone",
+        target: "enemy",
+        targetNote: "One enemy model within 12 inches.",
         name: "Age of Stone",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -657,6 +739,8 @@ One enemy model within 12" of the Witch will be severely debilitated and all of 
       },
       {
         id: "warriors_bane",
+        target: "enemy",
+        targetNote: "One enemy model within 18 inches.",
         name: "Warrior's Bane",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -666,6 +750,8 @@ One enemy model within 18" of the Witch will be unable to use any of their weapo
       },
       {
         id: "cure",
+        target: "none",
+        targetNote: "All friendly models within 6 inches; no single model is chosen.",
         name: "Cure",
         roll: { min: 6, max: 6 },
         difficulty: 6,
@@ -688,6 +774,8 @@ Dark Elf Magic is used by Dark Elf Sorceresses.`,
     spells: [
       {
         id: "doombolt",
+        target: "enemy",
+        targetNote: "One enemy within 18 inches and line of sight. Resolve subsequent leaps to the closest models within 6 inches at the table; each model can be hit only once.",
         name: "Doombolt",
         roll: { min: 1, max: 1 },
         difficulty: 9,
@@ -697,6 +785,8 @@ The bolt of doom may be targeted at any enemy model in line of sight. The Doombo
       },
       {
         id: "word_of_pain",
+        target: "enemy",
+        targetNote: "One enemy model within 12 inches.",
         name: "Word of Pain",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -706,6 +796,8 @@ The spell may be cast at an enemy model within 12". The victim must re-roll all 
       },
       {
         id: "soul_stealer",
+        target: "enemy",
+        targetNote: "One opponent in base contact; a successful casting still requires a separate roll to hit.",
         name: "Soul Stealer",
         roll: { min: 3, max: 3 },
         difficulty: 9,
@@ -715,6 +807,8 @@ Once successfully cast, the Sorceress has to make a to hit roll against a model 
       },
       {
         id: "flamesword",
+        target: "friendly",
+        targetNote: "Choose a warband member within 6 inches, then identify their affected hand-to-hand weapon at the table.",
         name: "Flamesword",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -724,6 +818,8 @@ The Sorceress may choose the hand-to-hand combat weapon of a member of her warba
       },
       {
         id: "deathspasm",
+        target: "enemy",
+        targetNote: "The closest enemy model within 6 inches. The Sorceress is knocked down after successfully casting.",
         name: "Deathspasm",
         roll: { min: 5, max: 5 },
         difficulty: 10,
@@ -733,6 +829,8 @@ The Deathspasm has a range of 6" and must be cast on the closest enemy model. Th
       },
       {
         id: "witch_flight",
+        target: "self",
+        targetNote: "The Sorceress moves up to 12 inches; resolve movement and charges at the table.",
         name: "Witch Flight",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -753,6 +851,8 @@ The Sorceress may immediately move anywhere within 12", and may count as chargin
     spells: [
       {
         id: "wind_of_gork",
+        target: "either",
+        targetNote: "The first model in the spell’s path within 12 inches, regardless of side. Confirm the path at the table.",
         name: "Wind of Gork",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -762,6 +862,8 @@ A blast of foul flatulence signals Gork's wrath. Range: 12". The first model in 
       },
       {
         id: "gaze_of_mork",
+        target: "either",
+        targetNote: "The first model in the spell’s path within 12 inches, regardless of side.",
         name: "Gaze of Mork",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -771,6 +873,8 @@ Range 12". D3 S3 hits strike the first model in their path.`,
       },
       {
         id: "eadbanger",
+        target: "either",
+        targetNote: "The first model in the bolts’ path within 6 inches. Resolve the Shaman’s separate backlash die after the bolts.",
         name: "'Eadbanger",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -780,6 +884,8 @@ Range 6". Fire bolts equal to the number of the Shaman's Attacks. Resolve with S
       },
       {
         id: "leap_of_waaagh",
+        target: "either",
+        targetNote: "The Shaman or any other Goblin within 3 inches; select an eligible Goblin and resolve the move at the table.",
         name: "Leap of Waaagh!",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -789,6 +895,8 @@ The Shaman or any other Goblin within 3" may be moved up to 12". If this move br
       },
       {
         id: "idol_of_gork",
+        target: "self",
+        targetNote: "The Shaman only; the enhancement ends when he takes a wound.",
         name: "Idol of Gork",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -798,6 +906,8 @@ The Shaman gains +1 WS, +1 S, and +1 A. This enhancement lasts until the Shaman 
       },
       {
         id: "ere_we_go",
+        target: "none",
+        targetNote: "All friendly models within 6 inches; no single model is chosen.",
         name: "'Ere we go",
         roll: { min: 6, max: 6 },
         difficulty: 8,
@@ -820,6 +930,8 @@ Funerary Rites are used by the Priest Of Morr.`,
     spells: [
       {
         id: "morrs_protection",
+        target: "self",
+        targetNote: "The Priest of Morr only; protects against the specified direct magical attacks.",
         name: "Morr's Protection",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -829,6 +941,8 @@ Any Magical attacks made by a Necromancer, a Magister or Daemons, which would be
       },
       {
         id: "death_holds_no_fear",
+        target: "self",
+        targetNote: "The Priest of Morr only; automatic Fearless benefit for this game.",
         name: "Death Holds No Fear",
         roll: { min: 2, max: 2 },
         difficulty: null,
@@ -838,6 +952,8 @@ The priest of Morr is now Fearless for the remainder of the game.`,
       },
       {
         id: "sanctity_of_the_fallen",
+        target: "either",
+        targetNote: "One model taken out of action within 6 inches, friend or foe. This prevents subsequent raising by a Necromancer.",
         name: "Sanctity of the Fallen",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -847,6 +963,8 @@ The priest of Morr may attempt to perform the Rite of Sanctity on a model (frien
       },
       {
         id: "hand_of_morr",
+        target: "enemy",
+        targetNote: "An eligible Undead opponent, Ghoul or Possessed in base contact. Apply the appropriate out-of-action or fleeing result from the printed rite.",
         name: "Hand of Morr",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -856,6 +974,8 @@ The priest of Morr must be in base-to-base contact with an Undead model. Before 
       },
       {
         id: "do_you_know_who_i_am",
+        target: "either",
+        targetNote: "Within 6 inches: the closest Undead first, then the closest human servant of the Undead, and only then any model. Confirm this targeting order at the table.",
         name: "Do You Know Who I Am?",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -865,6 +985,8 @@ This rite has a range of 6" and must be directed at the closest Undead model fir
       },
       {
         id: "i_am_death",
+        target: "self",
+        targetNote: "The Priest of Morr only.",
         name: "I Am Death!",
         roll: { min: 6, max: 6 },
         difficulty: 8,
@@ -885,6 +1007,8 @@ This spell gives the priest of Morr a 6+ armour save and increases their WS by e
     spells: [
       {
         id: "wind_of_gork",
+        target: "either",
+        targetNote: "The first model in the spell’s path within 12 inches, regardless of side.",
         name: "Wind of Gork",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -894,6 +1018,8 @@ Range: 12". The first model in its path must roll under its Toughness or take a 
       },
       {
         id: "gaze_of_mork",
+        target: "either",
+        targetNote: "The first model in the spell’s path within 12 inches, regardless of side.",
         name: "Gaze of Mork",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -903,6 +1029,8 @@ Range: 12". D3 Strength 3 hits strike the first model in their path.`,
       },
       {
         id: "eadbanger",
+        target: "either",
+        targetNote: "The first model in the bolts’ path within 6 inches. Use the Shaman’s base Attacks and resolve the separate backlash die.",
         name: "'Eadbanger",
         roll: { min: 3, max: 3 },
         difficulty: 8,
@@ -912,6 +1040,8 @@ Range: 6". Fire bolts equal to the number of the Shaman's Base Attacks. Resolve 
       },
       {
         id: "leap_of_waaagh",
+        target: "either",
+        targetNote: "The Shaman or any other Goblin within 3 inches; confirm the eligible species and flight path at the table.",
         name: "Leap of Waaagh!",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -921,6 +1051,8 @@ The Shaman or any other Goblin within 3" may be moved up to 12", ignoring terrai
       },
       {
         id: "idol_of_gork",
+        target: "self",
+        targetNote: "The Shaman only; ends when he takes a wound.",
         name: "Idol of Gork",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -930,6 +1062,8 @@ The Shaman gains +1 WS, +1 S, and +1 A. This enhancement lasts until the Shaman 
       },
       {
         id: "ere_we_go",
+        target: "none",
+        targetNote: "All friendly models within 6 inches; no single model is chosen.",
         name: "'Ere we go!",
         roll: { min: 6, max: 6 },
         difficulty: 8,
@@ -952,6 +1086,8 @@ Prayers are not regarded as spells, so any special protection against spells doe
     spells: [
       {
         id: "ladys_favors",
+        target: "none",
+        targetNote: "Automatic battle benefit for all of your Heroes; no single model is chosen.",
         name: "Lady's Favors",
         roll: { min: 1, max: 1 },
         difficulty: null,
@@ -959,6 +1095,8 @@ Prayers are not regarded as spells, so any special protection against spells doe
       },
       {
         id: "blessed_protection",
+        target: "none",
+        targetNote: "The Damsel and any Bretonnians within 6 inches; check whether it dissipates each Shooting phase.",
         name: "Blessed Protection",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -966,6 +1104,8 @@ Prayers are not regarded as spells, so any special protection against spells doe
       },
       {
         id: "swiftstride",
+        target: "friendly",
+        targetNote: "One friendly Hero or henchman within 12 inches, including the Damsel, who charged or failed a charge this turn.",
         name: "Swiftstride",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -973,6 +1113,8 @@ Prayers are not regarded as spells, so any special protection against spells doe
       },
       {
         id: "ladys_scorn",
+        target: "self",
+        targetNote: "The Damsel only; enemies must pass the printed Leadership test to shoot at her.",
         name: "Lady's Scorn",
         roll: { min: 4, max: 4 },
         difficulty: 5,
@@ -980,6 +1122,8 @@ Prayers are not regarded as spells, so any special protection against spells doe
       },
       {
         id: "elixir_of_life",
+        target: "either",
+        targetNote: "Heal any one model within 4 inches, including the Damsel. Also stand up nearby friendly stunned or knocked-down models.",
         name: "Elixir of Life",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -987,6 +1131,8 @@ Prayers are not regarded as spells, so any special protection against spells doe
       },
       {
         id: "guiding_vision",
+        target: "friendly",
+        targetNote: "One friendly Hero or henchman within 8 inches.",
         name: "Guiding Vision",
         roll: { min: 6, max: 6 },
         difficulty: 6,
@@ -1081,6 +1227,8 @@ Lizardmen Spells work like the Prayers of Sigmar and may be used even if the Ski
     spells: [
       {
         id: "chotecs_wrath",
+        target: "enemy",
+        targetNote: "The closest enemy within 10 inches; confirm distances and whether the target wears the specified armour.",
         name: "Chotec's Wrath",
         roll: { min: 1, max: 1 },
         difficulty: 8,
@@ -1088,6 +1236,8 @@ Lizardmen Spells work like the Prayers of Sigmar and may be used even if the Ski
       },
       {
         id: "sotecs_blessing",
+        target: "either",
+        targetNote: "The Priest or one model within 6 inches. Only one model may have this blessing at a time.",
         name: "Sotec's Blessing",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -1101,6 +1251,8 @@ Lizardmen Spells work like the Prayers of Sigmar and may be used even if the Ski
       },
       {
         id: "huanchis_stealth",
+        target: "none",
+        targetNote: "All Skinks within 6 inches, including the Priest; only those in cover may Hide.",
         name: "Huanchi's Stealth",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1108,6 +1260,8 @@ Lizardmen Spells work like the Prayers of Sigmar and may be used even if the Ski
       },
       {
         id: "the_old_ones_protection",
+        target: "none",
+        targetNote: "The Priest and all Lizardmen within 4 inches; no single model is chosen.",
         name: "The Old Ones' Protection",
         roll: { min: 4, max: 4 },
         difficulty: 6,
@@ -1115,6 +1269,8 @@ Lizardmen Spells work like the Prayers of Sigmar and may be used even if the Ski
       },
       {
         id: "tincis_rage",
+        target: "either",
+        targetNote: "The Priest or one Lizardman within 6 inches. Only one model may be affected; confirm the species and ongoing Leadership tests at the table.",
         name: "Tinci's Rage",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1122,6 +1278,8 @@ Lizardmen Spells work like the Prayers of Sigmar and may be used even if the Ski
       },
       {
         id: "itzls_speed",
+        target: "either",
+        targetNote: "The Priest or one Lizardman within 6 inches who has not already fired a missile weapon. The extra move cannot charge.",
         name: "Itzl's Speed",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -1142,6 +1300,8 @@ Lore of Darkness is used by the Dark Emissary.`,
     spells: [
       {
         id: "bolt_of_dark_light",
+        target: "either",
+        targetNote: "The first model in the bolt’s path within 12 inches, regardless of side.",
         name: "Bolt of Dark Light",
         roll: { min: 1, max: 1 },
         difficulty: 7,
@@ -1151,6 +1311,8 @@ The bolt has a range of 12" and causes a single Strength 5 hit against the first
       },
       {
         id: "betrayal_in_death",
+        target: "none",
+        targetNote: "All enemy models subsequently slain in shooting or close combat before the caster’s next turn; resolve their temporary attacks at the table.",
         name: "Betrayal in Death",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -1160,6 +1322,8 @@ This spell will affect all enemy models slain in the shooting phase or close com
       },
       {
         id: "nightmare",
+        target: "enemy",
+        targetNote: "One enemy model within 18 inches.",
         name: "Nightmare",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1169,6 +1333,8 @@ This spell may be cast upon an enemy model within 18" of the caster. The model m
       },
       {
         id: "curse_of_the_dark_master",
+        target: "either",
+        targetNote: "One model within 24 inches; the printed effect does not restrict the target to enemies.",
         name: "Curse of the Dark Master",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -1178,6 +1344,8 @@ This spell can be cast upon a single model within 24" of the caster. All that mo
       },
       {
         id: "fog_of_death",
+        target: "none",
+        targetNote: "Every model except the Dark Emissary: enemies are affected on 4+, friends on 6+. Resolve both sides and the visibility roll at the table.",
         name: "Fog of Death",
         roll: { min: 5, max: 5 },
         difficulty: 10,
@@ -1187,6 +1355,8 @@ This spell affects every model on the board except the Dark Emissary. Enemy mode
       },
       {
         id: "coils_of_the_serpent",
+        target: "enemy",
+        targetNote: "One enemy model within 6 inches; no saves of any kind apply.",
         name: "Coils of the Serpent",
         roll: { min: 6, max: 6 },
         difficulty: 10,
@@ -1209,6 +1379,8 @@ Lore of Light is used by the Truthsayer.`,
     spells: [
       {
         id: "wings_of_fate",
+        target: "enemy",
+        targetNote: "One enemy model within 18 inches.",
         name: "Wings of Fate",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -1218,6 +1390,8 @@ The flock has a range of 18" and may attack any model within this range of the T
       },
       {
         id: "light_of_battle",
+        target: "friendly",
+        targetNote: "One friendly model within 12 inches.",
         name: "Light of Battle",
         roll: { min: 2, max: 2 },
         difficulty: 6,
@@ -1227,6 +1401,8 @@ This spell may be cast upon a friendly model within 12" of the caster. That mode
       },
       {
         id: "gift_of_life",
+        target: "friendly",
+        targetNote: "One friendly model slain in the previous enemy turn; restore it where it fell with one Wound.",
         name: "Gift of Life",
         roll: { min: 3, max: 3 },
         difficulty: 9,
@@ -1236,6 +1412,8 @@ This spell may be cast upon a friendly model slain in the previous enemy turn. T
       },
       {
         id: "blessing_of_valour",
+        target: "friendly",
+        targetNote: "One friendly model within 24 inches.",
         name: "Blessing of Valour",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -1245,6 +1423,8 @@ This spell may be cast upon a single friendly model within 24". The model is inf
       },
       {
         id: "boon_of_courage",
+        target: "none",
+        targetNote: "All friendly models within 12 inches; no single model is chosen.",
         name: "Boon of Courage",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -1254,6 +1434,8 @@ This spell affects all friendly models within 12". The models are completely imm
       },
       {
         id: "voice_of_command",
+        target: "either",
+        targetNote: "One model within 24 inches; the source does not restrict the target to enemies.",
         name: "Voice of Command",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -1351,6 +1533,8 @@ Mortuary Cult Scrolls are used by the Tomb Guardians Liche Priest.`,
     spells: [
       {
         id: "menkares_scroll_of_urgency",
+        target: "friendly",
+        targetNote: "One Skeleton Soldier within 6 inches; confirm the model type and extra movement at the table.",
         name: "Menkare's Scroll of Urgency",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -1360,6 +1544,8 @@ A single Skeleton Soldier within 6" may immediately move again up to its maximum
       },
       {
         id: "horrebes_curse_of_the_mummy",
+        target: "enemy",
+        targetNote: "One enemy in base contact with a Mummy and within 18 inches of the Liche Priest.",
         name: "Horrebe's Curse of the Mummy",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -1369,6 +1555,8 @@ The target must be in base-to-base contact with a Mummy and within 18" of the Li
       },
       {
         id: "tawosrets_scroll_of_tomb_dust",
+        target: "either",
+        targetNote: "One living warrior within 12 inches.",
         name: "Tawosret's Scroll of Tomb Dust",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1378,6 +1566,8 @@ The warrior is automatically knocked down as he chokes on the sand. This spell o
       },
       {
         id: "neferres_scroll_of_quaking_horror",
+        target: "either",
+        targetNote: "One warrior within 12 inches; Undead and models immune to psychology are unaffected.",
         name: "Neferre's Scroll of Quaking Horror",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -1387,6 +1577,8 @@ The model must pass a Leadership test or flee 2D6" directly away from the Liche 
       },
       {
         id: "merneptahs_scroll_of_the_scarab_song",
+        target: "enemy",
+        targetNote: "One enemy within 8 inches; resolve its separation from combat and temporary protection from other attacks at the table.",
         name: "Merneptah's Scroll of the Scarab Song",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -1396,6 +1588,8 @@ A single model within 8" of the Liche Priest suffers 2D6 Strength 1 hits. In add
       },
       {
         id: "djedres_summonation_of_the_vengeful_dead",
+        target: "friendly",
+        targetNote: "One Skeleton Soldier taken out of action during the last turn; return it within 6 inches, outside enemy base contact.",
         name: "Djedre's Summonation of the Vengeful Dead",
         roll: { min: 6, max: 6 },
         difficulty: 5,
@@ -1417,6 +1611,8 @@ While they are similar, this spell list has differences to the original Necroman
     spells: [
       {
         id: "spell_of_awakening",
+        target: "none",
+        targetNote: "An automatic post-battle opportunity for a slain enemy Hero; resolve it through the post-battle recruitment flow.",
         name: "Spell of Awakening",
         roll: { min: 1, max: 1 },
         difficulty: null,
@@ -1428,6 +1624,8 @@ The dead Hero retains his characteristics and all his weapons and armour but may
       },
       {
         id: "lifestealer",
+        target: "either",
+        targetNote: "One model within 6 inches; cannot affect Possessed or Undead models.",
         name: "Lifestealer",
         roll: { min: 2, max: 2 },
         difficulty: 10,
@@ -1437,6 +1635,8 @@ Choose a single model within 6". The target suffers a wound, (no saves allowed) 
       },
       {
         id: "reanimation",
+        target: "friendly",
+        targetNote: "A Zombie taken out of action in the last hand-to-hand phase, or a surviving Grave Guard or Wight who has lost a Wound. Other out-of-action models cannot be revived by this spell.",
         name: "Reanimation",
         roll: { min: 3, max: 3 },
         difficulty: 5,
@@ -1446,6 +1646,8 @@ One Zombie that went out of action during the last hand to hand combat phase imm
       },
       {
         id: "spell_of_doom",
+        target: "enemy",
+        targetNote: "One enemy model within 12 inches.",
         name: "Spell of Doom",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -1455,6 +1657,8 @@ Chose one enemy model within 12". The model must immediately roll equal to or le
       },
       {
         id: "call_of_vanhel",
+        target: "friendly",
+        targetNote: "One Zombie, Skeleton, Wight or Grave Guard within 6 inches. Confirm the eligible model type and extra movement at the table.",
         name: "Call of Vanhel",
         roll: { min: 5, max: 5 },
         difficulty: 6,
@@ -1464,6 +1668,8 @@ A single Zombie, Skeleton, Wight or Grave Guard within 6" of the caster may imme
       },
       {
         id: "deathly_visage_necromancers_only",
+        target: "self",
+        targetNote: "The Necromancer only; grants Fear and immunity to Fear for this battle.",
         name: "Deathly Visage (Necromancers only)",
         roll: { min: 6, max: 6 },
         difficulty: 6,
@@ -1473,6 +1679,8 @@ The Necromancer causes fear in his enemies for the duration of the battle and is
       },
       {
         id: "living_horror_liche_only",
+        target: "either",
+        targetNote: "One model within 8 inches of the Liche; excludes Possessed, Undead and models immune to Fear.",
         name: "Living Horror (Liche only)",
         roll: { min: 6, max: 6 },
         difficulty: 8,
@@ -1569,6 +1777,8 @@ The dead Hero retains his characteristics and all his weapons and armour but may
     spells: [
       {
         id: "howl_of_the_north",
+        target: "self",
+        targetNote: "The Shaman only; test whether the winds dissipate in his Recovery phase.",
         name: "Howl of the North",
         roll: { min: 1, max: 1 },
         difficulty: 9,
@@ -1578,6 +1788,8 @@ The Shaman is immune to all missile fire. Roll a dice during the Shaman's recove
       },
       {
         id: "angvars_fury",
+        target: "none",
+        targetNote: "All warriors within 8 inches gain the printed bonus against the opposing warband. Confirm the affected models at the table.",
         name: "Angvar's Fury",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -1587,6 +1799,8 @@ All warriors within 8" of the Shaman gain a +1 to hit in hand-to-hand combat aga
       },
       {
         id: "elveks_cold_spear",
+        target: "either",
+        targetNote: "The first model in the icicle’s path within 18 inches, regardless of side.",
         name: "Elvek's Cold Spear",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -1596,6 +1810,8 @@ The icicle has a range of 18" and causes one S4 hit. It strikes the first model 
       },
       {
         id: "gift_of_the_fates",
+        target: "self",
+        targetNote: "The Shaman receives one die adjustment before his next Recovery phase; no other model is chosen.",
         name: "Gift of the Fates",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -1605,6 +1821,8 @@ The Shaman may adjust one die roll by +1/–1 between a successful casting of th
       },
       {
         id: "kiss_of_frost",
+        target: "either",
+        targetNote: "One model within 12 inches; the source does not restrict the target to enemies.",
         name: "Kiss of Frost",
         roll: { min: 5, max: 5 },
         difficulty: 6,
@@ -1614,6 +1832,8 @@ A single model within 12" of the Shaman must pass an Initiative test or be knock
       },
       {
         id: "bears_might",
+        target: "self",
+        targetNote: "The Shaman only. May be successfully cast once per game; resolve the ongoing Leadership tests at the table.",
         name: "Bear's Might",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -2051,6 +2271,8 @@ Rituals of Hashut are used by the Black Dwarfs Sorcerer.`,
     spells: [
       {
         id: "sacrificial_ritual",
+        target: "none",
+        targetNote: "The Sorcerer must touch an Engine of Chaos. Use its captive-sacrifice flow; a normal warrior target is not chosen.",
         name: "Sacrificial Ritual",
         roll: { min: 0, max: 0 },
         difficulty: 10,
@@ -2060,6 +2282,8 @@ The Chaos Dwarf Sorcerer must be in contact with an Engine of Chaos in order to 
       },
       {
         id: "spirit_of_hashut",
+        target: "none",
+        targetNote: "Draw an 18-inch line from the Sorcerer; every model crossed by it is affected, regardless of side.",
         name: "Spirit of Hashut",
         roll: { min: 1, max: 1 },
         difficulty: 9,
@@ -2069,6 +2293,8 @@ The player draws a line 18" from the Sorcerer. All models crossed by the line, s
       },
       {
         id: "bellow_of_doom",
+        target: "none",
+        targetNote: "All models in base contact with the Sorcerer must test Leadership; confirm contact at the table.",
         name: "Bellow of Doom",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -2078,6 +2304,8 @@ All models engaged in base contact with the sorcerer must make an immediate Ld t
       },
       {
         id: "fumes_of_azgorh",
+        target: "none",
+        targetNote: "An 8-inch path; test each model in that path, regardless of side, to see whether it is hit.",
         name: "Fumes of Azgorh",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -2087,6 +2315,8 @@ The spell has a range of 8'', hitting all models in its path on a D6 score of 4+
       },
       {
         id: "flickering_hide",
+        target: "either",
+        targetNote: "The Sorcerer or any one model within 6 inches.",
         name: "Flickering Hide",
         roll: { min: 4, max: 4 },
         difficulty: 10,
@@ -2096,6 +2326,8 @@ The Sorcerer may cast this spell upon himself or any one model within 6". The fl
       },
       {
         id: "lava_flow",
+        target: "self",
+        targetNote: "The Sorcerer moves up to 12 inches and must reappear on or below ground; may charge.",
         name: "Lava Flow",
         roll: { min: 5, max: 5 },
         difficulty: 7,
@@ -2105,6 +2337,8 @@ The Sorcerer may move 12" in any direction, even into combat, counting as a char
       },
       {
         id: "earthquake",
+        target: "none",
+        targetNote: "All models within 3 inches, friend or foe; each tests Initiative.",
         name: "Earthquake",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -2129,6 +2363,8 @@ Shadow Warrior Magic is used by the Shadow Warriors Shadow Weaver.
     spells: [
       {
         id: "pool_of_shadow",
+        target: "none",
+        targetNote: "The Shadow Weaver and all allies within 6 inches. Confirm the affected area and Hiding conditions at the table.",
         name: "Pool of Shadow",
         roll: { min: 1, max: 1 },
         difficulty: 7,
@@ -2138,6 +2374,8 @@ This spell allows the mage and all allies within 6" to Hide, exactly as if there
       },
       {
         id: "the_living_shadows",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches of the Shadow Weaver and within 2 inches of a wall.",
         name: "The Living Shadows",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -2147,6 +2385,8 @@ The Shadow Weaver may cast this spell at any enemy model within 12" of him and w
       },
       {
         id: "wings_of_night",
+        target: "self",
+        targetNote: "The Shadow Weaver must start and finish within 2 inches of a wall; resolve the move of up to 12 inches at the table.",
         name: "Wings of Night",
         roll: { min: 3, max: 3 },
         difficulty: 6,
@@ -2156,6 +2396,8 @@ This spell may only be cast if the Shadow Weaver is within 2" of a wall. He is i
       },
       {
         id: "cloak_of_darkness",
+        target: "self",
+        targetNote: "The Shadow Weaver only; the concealment ends when he attacks an enemy.",
         name: "Cloak of Darkness",
         roll: { min: 4, max: 4 },
         difficulty: 7,
@@ -2165,6 +2407,8 @@ The Shadow Weaver is effectively concealed from enemy sight. As long as he does 
       },
       {
         id: "shadowbind",
+        target: "enemy",
+        targetNote: "One enemy within 24 inches of the Shadow Weaver and within 2 inches of a wall.",
         name: "Shadowbind",
         roll: { min: 5, max: 5 },
         difficulty: 9,
@@ -2174,6 +2418,8 @@ The Shadow Weaver may cast this spell at any enemy model within 24" of him and 2
       },
       {
         id: "shield_of_shadow",
+        target: "friendly",
+        targetNote: "The Shadow Weaver or one member of his warband within 12 inches.",
         name: "Shield of Shadow",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -2196,6 +2442,8 @@ Shornaal Rituals are used by the Marauders of Chaos seer with the Mark of Shorna
     spells: [
       {
         id: "delicious_suffering",
+        target: "none",
+        targetNote: "All models within 3 inches except the Seer, friend or foe; each tests Leadership.",
         name: "Delicious Suffering",
         roll: { min: 1, max: 1 },
         difficulty: 8,
@@ -2205,6 +2453,8 @@ All models (friend and foe, except for the Seer) within 3" must pass a Ld test o
       },
       {
         id: "dance_of_the_serpent",
+        target: "self",
+        targetNote: "The Seer only; opponents immune to psychology ignore the close-combat penalty.",
         name: "Dance of the Serpent",
         roll: { min: 2, max: 2 },
         difficulty: 8,
@@ -2216,6 +2466,8 @@ The Dance lasts until the beginning of the Seer's next shooting phase.`,
       },
       {
         id: "endless_torment",
+        target: "enemy",
+        targetNote: "One enemy model within 8 inches.",
         name: "Endless Torment",
         roll: { min: 3, max: 3 },
         difficulty: 9,
@@ -2225,6 +2477,8 @@ Choose one enemy model within 8". From now on the model must roll for injury –
       },
       {
         id: "mystify",
+        target: "enemy",
+        targetNote: "One enemy model within 8 inches.",
         name: "Mystify",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -2234,6 +2488,8 @@ Target enemy model within 8" will have their Initiative value reduced to 1 and w
       },
       {
         id: "a_thousand_voices",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches who is not immune to psychology; only one may be enchanted at a time.",
         name: "A Thousand Voices",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -2245,6 +2501,8 @@ The model must pass a Ld test at the beginning of it's turn to end the spell. Th
       },
       {
         id: "shornaals_temptation",
+        target: "enemy",
+        targetNote: "One enemy within 8 inches who is not immune to psychology; only one may be enchanted at a time.",
         name: "Shornaal's Temptation",
         roll: { min: 6, max: 6 },
         difficulty: 7,
@@ -2265,6 +2523,8 @@ Choose one enemy model within 8" that is not immune to psychology. The model mus
     spells: [
       {
         id: "divination_of_shirath",
+        target: "self",
+        targetNote: "The Mage only; the second result of each reroll stands.",
         name: "Divination of Shirath",
         roll: { min: 1, max: 1 },
         difficulty: 6,
@@ -2274,6 +2534,8 @@ The Mage may re-roll all his failed dice rolls, though the second result stands.
       },
       {
         id: "shimmering_shield",
+        target: "self",
+        targetNote: "The Mage only.",
         name: "Shimmering Shield",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -2283,6 +2545,8 @@ This spell acts as a shield to protect the Mage. It gives him an additional unmo
       },
       {
         id: "statue_of_light",
+        target: "enemy",
+        targetNote: "One enemy model the Mage can see; confirm line of sight at the table.",
         name: "Statue of Light",
         roll: { min: 3, max: 3 },
         difficulty: 7,
@@ -2292,6 +2556,8 @@ The Mage chooses a single enemy model he can see. That model may not move as lon
       },
       {
         id: "fleeting_shadows",
+        target: "self",
+        targetNote: "The Mage only; cannot be cast again while already in play.",
         name: "Fleeting Shadows",
         roll: { min: 4, max: 4 },
         difficulty: 8,
@@ -2301,6 +2567,8 @@ The first time the Mage is hit in close combat or shooting, the spell protects h
       },
       {
         id: "hunters_fury",
+        target: "enemy",
+        targetNote: "One enemy within 36 inches; the arrows still need separate shooting rolls using the Mage’s Ballistic Skill.",
         name: "Hunter's Fury",
         roll: { min: 5, max: 5 },
         difficulty: 9,
@@ -2310,6 +2578,8 @@ The spell summons D3+1 arrows which the Mage can use to shoot against one enemy 
       },
       {
         id: "silent_guardian",
+        target: "self",
+        targetNote: "The guardian defends the Mage; resolve its attacks against each enemy attacking him at the table.",
         name: "Silent Guardian",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -2332,6 +2602,8 @@ Tchar Rituals are used by the Marauders of Chaos seer with the Mark of Tchar the
     spells: [
       {
         id: "tchars_blessing",
+        target: "none",
+        targetNote: "Once before the game; prevents the Seer casting during that battle. Resolve the post-battle experience separately.",
         name: "Tchar's Blessing",
         roll: { min: 1, max: 1 },
         difficulty: null,
@@ -2341,6 +2613,8 @@ This spell must be used before the game and may only be used once. The Seer may 
       },
       {
         id: "dispel_magic",
+        target: "none",
+        targetNote: "Ends all currently active spell effects; no single model is chosen.",
         name: "Dispel Magic",
         roll: { min: 2, max: 2 },
         difficulty: 7,
@@ -2350,6 +2624,8 @@ The Seer ends all effects of currently active spells.`,
       },
       {
         id: "foresight",
+        target: "none",
+        targetNote: "Once before the game: choose a warband, then randomly determine an eligible Hero. Spellcasters and prayer users are immune; do not directly choose the victim.",
         name: "Foresight",
         roll: { min: 3, max: 3 },
         difficulty: 10,
@@ -2359,6 +2635,8 @@ This spell must be used before the game and may only be used once. Choose a warb
       },
       {
         id: "wrath_of_the_great_eagle",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches. Compare Experience; if the target has more, the Seer is hit instead.",
         name: "Wrath of the Great Eagle",
         roll: { min: 4, max: 4 },
         difficulty: 9,
@@ -2368,6 +2646,8 @@ Choose one enemy model within 12". The model is hit with a Strength equal to the
       },
       {
         id: "tchars_reward",
+        target: "self",
+        targetNote: "The Seer only; choose different characteristics for each increase.",
         name: "Tchar's Reward",
         roll: { min: 5, max: 5 },
         difficulty: 8,
@@ -2379,6 +2659,8 @@ The power of Tchar's Reward lasts until the end of the Seer's next shooting phas
       },
       {
         id: "slave_to_chaos",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches; resolve its injury and any temporary Horror conversion separately.",
         name: "Slave to Chaos",
         roll: { min: 6, max: 6 },
         difficulty: 9,
@@ -2479,12 +2761,24 @@ Range 12". Each of the two bolts causes D3 S3 hits; the bolts can either be fire
     usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
     die: "D6",
     spells: [
-      { id: "geyser", name: "Geyser", roll: { min: 1, max: 1 }, difficulty: 9, text: `Calling upon the earth, the caster beckons a steaming geyser to erupt. The spell has a range of 10 inches and cannot target elevated targets. The unit suffers a S4 hit and is blown 2 inches in a random direction. Should the model collide with something, both will suffer an additional S2 hit.` },
-      { id: "portent_of_amul", name: "Portent of Amul", roll: { min: 2, max: 2 }, difficulty: 6, text: `Divining auspicious signs, the wizard guides the minds of his fellow warriors, allowing them to predict the actions of their foes. This spell affects all of the wizard's friendly units. During this and their opponents' Close Combat phase, any 1's that are cast may be re-rolled. Re-rolled scores of 1 must stand, as you may never re-roll a re-roll.` },
-      { id: "premonition", name: "Premonition", roll: { min: 3, max: 3 }, difficulty: 8, text: `The wizard closes his eyes and seeks to foresee the outcome of the battle. As long as the wizard stands, the warband will gain +1 to its Leadership and the ability to re-roll any failed Rout Tests. The wizard has foretold of their victory, and they are not easily swayed from his Premonition.` },
-      { id: "frostbolts", name: "Frostbolts", roll: { min: 4, max: 4 }, difficulty: 8, text: `Holding a small icicle aloft, the wizard channels the power of the Winds of Magic into it. Borne upon the arcane winds, the frozen bolts arc through the skies at the wizard's foe. Frostbolts is a magic missile with a range of 16 inches. If successfully cast, a squall of frozen missiles hit the target and causes D3 S3 hits.` },
-      { id: "blindness_of_the_depths", name: "Blindness of the Depths", roll: { min: 5, max: 5 }, difficulty: 7, text: `The caster binds the enemy in the shadows and silence of the deep, rendering him oblivious to the world around him. This spell has a range of 12 inches. The target may make an immediate Initiative test. If passed, the spell has no effect. If the test is failed, the model is Blind and may not fight or shoot any missile weapons, nor cast any spells. Furthermore, the model may not be charged or targeted for ranged fire or spells, as it is completely engulfed in shadow. The model may make an Initiative test during each of its own Recovery Phases. Once passed, the spell fades.` },
-      { id: "lifespring", name: "Lifespring", roll: { min: 6, max: 6 }, difficulty: 8, text: `Bearing the gift of life, the wizard wisely taps into the Lifespring and offers its blessing to his friends. Any one friendly model within 4 inches of the wizard instantly regains a wound, and recovers from being Knocked Down or Stunned and may act as normal this turn.` },
+      { id: "geyser",
+        target: "either",
+        targetNote: "One model within 10 inches; elevated targets are not eligible. Resolve the random push and any collision at the table.", name: "Geyser", roll: { min: 1, max: 1 }, difficulty: 9, text: `Calling upon the earth, the caster beckons a steaming geyser to erupt. The spell has a range of 10 inches and cannot target elevated targets. The unit suffers a S4 hit and is blown 2 inches in a random direction. Should the model collide with something, both will suffer an additional S2 hit.` },
+      { id: "portent_of_amul",
+        target: "none",
+        targetNote: "All friendly units; no single model is chosen.", name: "Portent of Amul", roll: { min: 2, max: 2 }, difficulty: 6, text: `Divining auspicious signs, the wizard guides the minds of his fellow warriors, allowing them to predict the actions of their foes. This spell affects all of the wizard's friendly units. During this and their opponents' Close Combat phase, any 1's that are cast may be re-rolled. Re-rolled scores of 1 must stand, as you may never re-roll a re-roll.` },
+      { id: "premonition",
+        target: "none",
+        targetNote: "The caster’s warband benefits while the wizard stands; no single model is chosen.", name: "Premonition", roll: { min: 3, max: 3 }, difficulty: 8, text: `The wizard closes his eyes and seeks to foresee the outcome of the battle. As long as the wizard stands, the warband will gain +1 to its Leadership and the ability to re-roll any failed Rout Tests. The wizard has foretold of their victory, and they are not easily swayed from his Premonition.` },
+      { id: "frostbolts",
+        target: "enemy",
+        targetNote: "One enemy within 16 inches.", name: "Frostbolts", roll: { min: 4, max: 4 }, difficulty: 8, text: `Holding a small icicle aloft, the wizard channels the power of the Winds of Magic into it. Borne upon the arcane winds, the frozen bolts arc through the skies at the wizard's foe. Frostbolts is a magic missile with a range of 16 inches. If successfully cast, a squall of frozen missiles hit the target and causes D3 S3 hits.` },
+      { id: "blindness_of_the_depths",
+        target: "enemy",
+        targetNote: "One enemy within 12 inches; resolve the Initiative test and ongoing restrictions at the table.", name: "Blindness of the Depths", roll: { min: 5, max: 5 }, difficulty: 7, text: `The caster binds the enemy in the shadows and silence of the deep, rendering him oblivious to the world around him. This spell has a range of 12 inches. The target may make an immediate Initiative test. If passed, the spell has no effect. If the test is failed, the model is Blind and may not fight or shoot any missile weapons, nor cast any spells. Furthermore, the model may not be charged or targeted for ranged fire or spells, as it is completely engulfed in shadow. The model may make an Initiative test during each of its own Recovery Phases. Once passed, the spell fades.` },
+      { id: "lifespring",
+        target: "friendly",
+        targetNote: "One friendly model within 4 inches, including the caster.", name: "Lifespring", roll: { min: 6, max: 6 }, difficulty: 8, text: `Bearing the gift of life, the wizard wisely taps into the Lifespring and offers its blessing to his friends. Any one friendly model within 4 inches of the wizard instantly regains a wound, and recovers from being Knocked Down or Stunned and may act as normal this turn.` },
     ],
     source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
   },
@@ -2496,12 +2790,24 @@ Range 12". Each of the two bolts causes D3 S3 hits; the bolts can either be fire
     usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
     die: "D6",
     spells: [
-      { id: "jorun_s_blast_of_brimstone", name: "Jorun's Blast of Brimstone", roll: { min: 1, max: 1 }, difficulty: 9, text: `The Mage casts a small ball of mixed stuffs, mostly ash, sulfur and coal, at his enemies. The results are, to say the least, explosive. Range of the spell equals the caster's Strength plus 1D6 inches. The caster then throws the small sulfurous rock at any model he has Line of Sight to within that range, and it explodes upon impact. The rock does a S3 hit to that model, and any others within 1.5 inches from it.` },
-      { id: "tazoul_s_burning_skull", name: "Tazoul's Burning Skull", roll: { min: 2, max: 2 }, difficulty: 9, text: `Throwing one's own head o'er the battlefield is never recommended, especially when it's aflame. The Wizard known as Tazoul never heeded such warnings. The flaming skull has a range of 8 inches and causes one S5 hit. On a roll of 5+ it will hit the nearest enemy model with a S3 hit. On a further roll of 4+ it will hit the next nearest enemy model with a S2 hit. The spell may not target the same model during one casting.` },
-      { id: "hades_heat", name: "Hades Heat", roll: { min: 3, max: 3 }, difficulty: 6, text: `The wizard calls upon the sun to intensify its rays o'er a small area. Place a small Blast Template (3 inches) anywhere within 8 inches of the caster. Models that are under or partially under the template suffer -1WS and -1S due to the exhaustion the intense heat causes until the caster's next turn.` },
-      { id: "shield_of_flame", name: "Shield of Flame", roll: { min: 4, max: 4 }, difficulty: 8, text: `The wizard weaves a shield of pure flame, aiding him in his defense. The Shield of Flame hovers between the wizard and his foes. He is free to use his weapons normally as the Shield of Flame moves in conjunction with the Wizard's attacks. The shield grants the Wizard an Armour Save of 4+ in Close Combat and 5+ to ranged attacks. These do not stack and are unmodifiable.` },
-      { id: "u_zhul_s_inferno", name: "U'zhul's Inferno", roll: { min: 5, max: 5 }, difficulty: 9, text: `A pillar of flame erupts from the caster's hand, engulfing all in its path. The pillar of flame has a range of 12 inches and is 1 inch wide. It hits all models in its path with a S2 hit. The target of the spell suffers the brunt of the attack, receiving a S4 hit. All hits have a -1 AS modifier.` },
-      { id: "flesh_of_the_forge", name: "Flesh of the Forge", roll: { min: 6, max: 6 }, difficulty: 6, text: `Surrendering himself to the winds of magic, the alchemist imbues his flesh with the heat of the forge. The Wizard's skin becomes hot, smoldering with the heat of a thousand coals. All hits against the wizard in Close Combat are at -1 to hit. Roll a D6 during the Wizard's Recovery phase. On a roll of 1–2, his flesh reverts to its natural form.` },
+      { id: "jorun_s_blast_of_brimstone",
+        target: "either",
+        targetNote: "One model in line of sight within the caster’s Strength + D6 inches. All other models within 1.5 inches of it also suffer the blast.", name: "Jorun's Blast of Brimstone", roll: { min: 1, max: 1 }, difficulty: 9, text: `The Mage casts a small ball of mixed stuffs, mostly ash, sulfur and coal, at his enemies. The results are, to say the least, explosive. Range of the spell equals the caster's Strength plus 1D6 inches. The caster then throws the small sulfurous rock at any model he has Line of Sight to within that range, and it explodes upon impact. The rock does a S3 hit to that model, and any others within 1.5 inches from it.` },
+      { id: "tazoul_s_burning_skull",
+        target: "enemy",
+        targetNote: "An enemy within 8 inches; resolve jumps to the nearest further enemies separately. Each model may be hit only once.", name: "Tazoul's Burning Skull", roll: { min: 2, max: 2 }, difficulty: 9, text: `Throwing one's own head o'er the battlefield is never recommended, especially when it's aflame. The Wizard known as Tazoul never heeded such warnings. The flaming skull has a range of 8 inches and causes one S5 hit. On a roll of 5+ it will hit the nearest enemy model with a S3 hit. On a further roll of 4+ it will hit the next nearest enemy model with a S2 hit. The spell may not target the same model during one casting.` },
+      { id: "hades_heat",
+        target: "none",
+        targetNote: "Place a 3-inch blast template within 8 inches; every model even partially covered is affected.", name: "Hades Heat", roll: { min: 3, max: 3 }, difficulty: 6, text: `The wizard calls upon the sun to intensify its rays o'er a small area. Place a small Blast Template (3 inches) anywhere within 8 inches of the caster. Models that are under or partially under the template suffer -1WS and -1S due to the exhaustion the intense heat causes until the caster's next turn.` },
+      { id: "shield_of_flame",
+        target: "self",
+        targetNote: "The wizard only.", name: "Shield of Flame", roll: { min: 4, max: 4 }, difficulty: 8, text: `The wizard weaves a shield of pure flame, aiding him in his defense. The Shield of Flame hovers between the wizard and his foes. He is free to use his weapons normally as the Shield of Flame moves in conjunction with the Wizard's attacks. The shield grants the Wizard an Armour Save of 4+ in Close Combat and 5+ to ranged attacks. These do not stack and are unmodifiable.` },
+      { id: "u_zhul_s_inferno",
+        target: "either",
+        targetNote: "Choose the primary target within the 12-inch, 1-inch-wide path. It takes the S4 hit; all other models in the path take S2 hits.", name: "U'zhul's Inferno", roll: { min: 5, max: 5 }, difficulty: 9, text: `A pillar of flame erupts from the caster's hand, engulfing all in its path. The pillar of flame has a range of 12 inches and is 1 inch wide. It hits all models in its path with a S2 hit. The target of the spell suffers the brunt of the attack, receiving a S4 hit. All hits have a -1 AS modifier.` },
+      { id: "flesh_of_the_forge",
+        target: "self",
+        targetNote: "The wizard only; check whether it dissipates during his Recovery phase.", name: "Flesh of the Forge", roll: { min: 6, max: 6 }, difficulty: 6, text: `Surrendering himself to the winds of magic, the alchemist imbues his flesh with the heat of the forge. The Wizard's skin becomes hot, smoldering with the heat of a thousand coals. All hits against the wizard in Close Combat are at -1 to hit. Roll a D6 during the Wizard's Recovery phase. On a roll of 1–2, his flesh reverts to its natural form.` },
     ],
     source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
   },
@@ -2513,12 +2819,24 @@ Range 12". Each of the two bolts causes D3 S3 hits; the bolts can either be fire
     usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
     die: "D6",
     spells: [
-      { id: "flesh_of_clay", name: "Flesh of Clay", roll: { min: 1, max: 1 }, difficulty: 8, text: `Attuning himself to the earth, the wizard's flesh becomes as dense as clay. The wizard doubles his Toughness, but halves his Movement and Initiative. The spell remains in effect until the caster is Knocked Down, Stunned or taken Out of Action.` },
-      { id: "healing_might", name: "Healing Might", roll: { min: 2, max: 2 }, difficulty: 9, text: `Allowing the healing power of the earth to rise up within him, the wizard aids even those with the most grievous wounds around him. All models within 4 inches of the wizard rise from the ground, shrugging off the effects of being Knocked Down or Stunned. Furthermore, any units within 2 inches of the wizard have all of their wounds restored.` },
-      { id: "curse_of_thorns", name: "Curse of Thorns", roll: { min: 3, max: 3 }, difficulty: 6, text: `The caster curses his foes, calling upon their life-force to transform into a jagged and thorny essence. The target of the spell must be within 18 inches. The model must pass a Toughness test or be wracked with unimaginable pain. The model will remain immobile and will only defend himself if attacked. A Toughness test must be passed before the spell will fade.` },
-      { id: "jozun_s_decay", name: "Jozun's Decay", roll: { min: 4, max: 4 }, difficulty: 9, text: `Ashes and dust. The caster calls upon the earth to reclaim what is rightfully hers. This spell has a range of 12 inches. Upon a successful casting, the target must pass a Leadership Test or suffer a one point reduction to its Toughness attribute. Each Recovery phase the model must attempt to pass a Leadership test, reducing its Toughness a further point for each failure. Should a model be reduced to 0 Toughness, it is removed from the game irrespective of how many wounds it has left. Should a Leadership test be passed, the model must play the remainder of the game at its modified Toughness score. A model may not be targeted by this spell more than once per game.` },
-      { id: "the_hunter_s_spear", name: "The Hunter's Spear", roll: { min: 5, max: 5 }, difficulty: 8, text: `Beseeching Venor the Hunter, the caster conjures a pure manifestation of amber-hued magic in the shape of a mighty hunting spear. The wizard's weapon takes on an amber-hue and transmutes into a hunting spear. It grants the caster an additional two points to his Strength, and grants him an additional attack. The caster must make a Leadership test during his Recovery phases. The spear fades away if the test is failed.` },
-      { id: "shifting_sands", name: "Shifting Sands", roll: { min: 6, max: 6 }, difficulty: 8, text: `Calling upon the very fibers of the earth, the mage forces the ground to swallow his foes. This spell may be cast on any enemy model within sight of the wizard. The model in question must make a successful Initiative test or be treated as Knocked Down until its next Recovery phase, where it has another chance to pass an Initiative test. Any friendly models within 1 inch of the trapped model reduce the difficulty of the Initiative test by 1, to a minimum of 1.` },
+      { id: "flesh_of_clay",
+        target: "self",
+        targetNote: "The wizard only; ends when knocked down, stunned or taken out of action.", name: "Flesh of Clay", roll: { min: 1, max: 1 }, difficulty: 8, text: `Attuning himself to the earth, the wizard's flesh becomes as dense as clay. The wizard doubles his Toughness, but halves his Movement and Initiative. The spell remains in effect until the caster is Knocked Down, Stunned or taken Out of Action.` },
+      { id: "healing_might",
+        target: "none",
+        targetNote: "All models within 4 inches stand up; all within 2 inches regain their Wounds. The source does not restrict this to friends.", name: "Healing Might", roll: { min: 2, max: 2 }, difficulty: 9, text: `Allowing the healing power of the earth to rise up within him, the wizard aids even those with the most grievous wounds around him. All models within 4 inches of the wizard rise from the ground, shrugging off the effects of being Knocked Down or Stunned. Furthermore, any units within 2 inches of the wizard have all of their wounds restored.` },
+      { id: "curse_of_thorns",
+        target: "enemy",
+        targetNote: "One foe within 18 inches; resolve its Toughness tests at the table.", name: "Curse of Thorns", roll: { min: 3, max: 3 }, difficulty: 6, text: `The caster curses his foes, calling upon their life-force to transform into a jagged and thorny essence. The target of the spell must be within 18 inches. The model must pass a Toughness test or be wracked with unimaginable pain. The model will remain immobile and will only defend himself if attacked. A Toughness test must be passed before the spell will fade.` },
+      { id: "jozun_s_decay",
+        target: "either",
+        targetNote: "One model within 12 inches; a model may be targeted only once per game. Resolve the ongoing Leadership tests at the table.", name: "Jozun's Decay", roll: { min: 4, max: 4 }, difficulty: 9, text: `Ashes and dust. The caster calls upon the earth to reclaim what is rightfully hers. This spell has a range of 12 inches. Upon a successful casting, the target must pass a Leadership Test or suffer a one point reduction to its Toughness attribute. Each Recovery phase the model must attempt to pass a Leadership test, reducing its Toughness a further point for each failure. Should a model be reduced to 0 Toughness, it is removed from the game irrespective of how many wounds it has left. Should a Leadership test be passed, the model must play the remainder of the game at its modified Toughness score. A model may not be targeted by this spell more than once per game.` },
+      { id: "the_hunter_s_spear",
+        target: "self",
+        targetNote: "The caster’s weapon becomes the spear; resolve maintenance tests in his Recovery phases.", name: "The Hunter's Spear", roll: { min: 5, max: 5 }, difficulty: 8, text: `Beseeching Venor the Hunter, the caster conjures a pure manifestation of amber-hued magic in the shape of a mighty hunting spear. The wizard's weapon takes on an amber-hue and transmutes into a hunting spear. It grants the caster an additional two points to his Strength, and grants him an additional attack. The caster must make a Leadership test during his Recovery phases. The spear fades away if the test is failed.` },
+      { id: "shifting_sands",
+        target: "enemy",
+        targetNote: "One enemy in sight of the wizard; confirm line of sight and nearby helpers at the table.", name: "Shifting Sands", roll: { min: 6, max: 6 }, difficulty: 8, text: `Calling upon the very fibers of the earth, the mage forces the ground to swallow his foes. This spell may be cast on any enemy model within sight of the wizard. The model in question must make a successful Initiative test or be treated as Knocked Down until its next Recovery phase, where it has another chance to pass an Initiative test. Any friendly models within 1 inch of the trapped model reduce the difficulty of the Initiative test by 1, to a minimum of 1.` },
     ],
     source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
   },
@@ -2530,12 +2848,24 @@ Range 12". Each of the two bolts causes D3 S3 hits; the bolts can either be fire
     usedBy: ["Sorcerous Society Magus", "Sorcerous Society Mages"],
     die: "D6",
     spells: [
-      { id: "winter_s_gale", name: "Winter's Gale", roll: { min: 1, max: 1 }, difficulty: 10, text: `Calling to the northern winds, the wizard brings forth freezing air and biting snow. Place the large blast template (5 inches) over a location within 12 inches of the caster. Any model covered or partially covered will suffer a S4 hit. Undead and Possessed models do not suffer as mortals do from the cold, and thus only suffer a S2 hit instead.` },
-      { id: "crow_s_feast", name: "Crow's Feast", roll: { min: 2, max: 2 }, difficulty: 9, text: `With dark intentions, the caster brings the attentions of Corvos the Crow upon his enemies. Crow's Feast is a magic missile spell, with a range of 24 inches. If successfully cast, the spell causes D6 S3 hits.` },
-      { id: "dust_dervish", name: "Dust Dervish", roll: { min: 3, max: 3 }, difficulty: 9, text: `Calling upon minor elementals, the caster bids them to seek out and attack his foes. The spell summons D3 Dust Dervishes, who attack a model each who are within 12 inches of the caster. No other targeting restrictions apply, so even a model that is hidden may be sought out by the air elementals. Each Dust Dervish delivers a rapid succession of attacks, delivering D6 S1 hits to its target prior to vanishing back from whence it came.` },
-      { id: "howler_wind", name: "Howler Wind", roll: { min: 4, max: 4 }, difficulty: 8, text: `The fury of the skies unbound is a force that few can hold at bay. This spell is cast upon the wizard himself. Both he and any models within 8 inches of him gain the protection of the Howler Wind. Anyone targeting these models with mundane ranged weapons suffer a -2 penalty to their Ballistic Skill, however shooting past these models does not affect the missile in any way.` },
-      { id: "celestial_shield", name: "Celestial Shield", roll: { min: 5, max: 5 }, difficulty: 8, text: `The wizard manipulates the magic of the cosmos to create a scintillating blue shield capable of turning aside even the most powerful of projectile or spell. This spell can be cast upon any friendly model within 6 inches of the caster, or the caster himself. The Celestial Shield provides a 4+ save versus all ranged attacks, and a 5+ save versus all hostile spells. Should the recipient of the Shield be the primary target of an area-effect spell and the save be made, no models shall suffer any of the spell's effects.` },
-      { id: "shade_mount", name: "Shade Mount", roll: { min: 6, max: 6 }, difficulty: 8, text: `Darkness forms about the caster, carrying him aloft upon wings of shadow. This spell may be cast upon the wizard himself, or a hero within 8 inches of him. Upon a successful casting, the model may immediately fly up to 12 inches. Should this movement bring the model into Base to Base contact with an enemy model, consider it a charge.` },
+      { id: "winter_s_gale",
+        target: "none",
+        targetNote: "Place a 5-inch blast template within 12 inches; all models even partially covered are affected. Undead and Possessed take the lower Strength hit.", name: "Winter's Gale", roll: { min: 1, max: 1 }, difficulty: 10, text: `Calling to the northern winds, the wizard brings forth freezing air and biting snow. Place the large blast template (5 inches) over a location within 12 inches of the caster. Any model covered or partially covered will suffer a S4 hit. Undead and Possessed models do not suffer as mortals do from the cold, and thus only suffer a S2 hit instead.` },
+      { id: "crow_s_feast",
+        target: "enemy",
+        targetNote: "One enemy within 24 inches.", name: "Crow's Feast", roll: { min: 2, max: 2 }, difficulty: 9, text: `With dark intentions, the caster brings the attentions of Corvos the Crow upon his enemies. Crow's Feast is a magic missile spell, with a range of 24 inches. If successfully cast, the spell causes D6 S3 hits.` },
+      { id: "dust_dervish",
+        target: "none",
+        targetNote: "Roll D3 Dervishes, then allocate a model within 12 inches to each. Hidden models may be targeted; resolve the separate attacks at the table.", name: "Dust Dervish", roll: { min: 3, max: 3 }, difficulty: 9, text: `Calling upon minor elementals, the caster bids them to seek out and attack his foes. The spell summons D3 Dust Dervishes, who attack a model each who are within 12 inches of the caster. No other targeting restrictions apply, so even a model that is hidden may be sought out by the air elementals. Each Dust Dervish delivers a rapid succession of attacks, delivering D6 S1 hits to its target prior to vanishing back from whence it came.` },
+      { id: "howler_wind",
+        target: "self",
+        targetNote: "Cast on the wizard; he and all models within 8 inches receive its protection.", name: "Howler Wind", roll: { min: 4, max: 4 }, difficulty: 8, text: `The fury of the skies unbound is a force that few can hold at bay. This spell is cast upon the wizard himself. Both he and any models within 8 inches of him gain the protection of the Howler Wind. Anyone targeting these models with mundane ranged weapons suffer a -2 penalty to their Ballistic Skill, however shooting past these models does not affect the missile in any way.` },
+      { id: "celestial_shield",
+        target: "friendly",
+        targetNote: "The caster or one friendly model within 6 inches.", name: "Celestial Shield", roll: { min: 5, max: 5 }, difficulty: 8, text: `The wizard manipulates the magic of the cosmos to create a scintillating blue shield capable of turning aside even the most powerful of projectile or spell. This spell can be cast upon any friendly model within 6 inches of the caster, or the caster himself. The Celestial Shield provides a 4+ save versus all ranged attacks, and a 5+ save versus all hostile spells. Should the recipient of the Shield be the primary target of an area-effect spell and the save be made, no models shall suffer any of the spell's effects.` },
+      { id: "shade_mount",
+        target: "either",
+        targetNote: "The caster or a Hero within 8 inches; resolve the flight of up to 12 inches at the table.", name: "Shade Mount", roll: { min: 6, max: 6 }, difficulty: 8, text: `Darkness forms about the caster, carrying him aloft upon wings of shadow. This spell may be cast upon the wizard himself, or a hero within 8 inches of him. Upon a successful casting, the model may immediately fly up to 12 inches. Should this movement bring the model into Base to Base contact with an enemy model, consider it a charge.` },
     ],
     source: { publication: "Sorcerous Society (2a)", file: "warbands/grade-2a-part2.md:1535-1618" },
   },

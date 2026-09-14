@@ -1,6 +1,8 @@
 # Overnight priority bugs — 13 September 2026
 
-Tom authorised working through the following order, grouping related fixes when useful. If all twenty are resolved before his next message, assess and begin the next twenty outstanding items. Keep changes local for a combined release; the prior deployment permission was for the completed release.
+Latest instruction (14 September): stop implementation at ten fully completed items from the first twenty, then prepare and validate the combined release. Do not deploy yet. Partial checkpoints do not count as completed tickets.
+
+Tom originally authorised working through the following order, grouping related fixes when useful. If all twenty are resolved before his next message, assess and begin the next twenty outstanding items. Keep changes local for a combined release; the prior deployment permission was for the completed release.
 
 Order: #15, #181, #191, #69, #152, #59, #70, #139, #161, #160, #76, #29, #114, #146, #142, #141, #136, #138, #144, #143.
 
@@ -180,3 +182,22 @@ Source reconciliation also found Nuln’s five old price overrides contradicted 
 Focused tests cover a normal brace at 46+3+4=53 gc / Rare 10, a Nuln 35 gc brace adding exactly two pistols for one search, the rarity boundary and all twelve Nuln prices. Rhinox capture/injury and structured Marauder tribe modifiers still remain.
 
 Checkpoint 23 validation: 2,648 ordinary tests passed; 358 database tests skipped. Build/typecheck and lint passed with the existing audit warnings only.
+
+
+## Checkpoint 24 — Marauder tribe foundation (#136/#144/#59, partial)
+
+Tribe is now an optional, validated warband field, not a leader flag. New Marauder warbands require a choice; existing warbands can record it, with a reason to correct it later. Hung's 12-model cap is applied in builder, roster validation and recruitment. Kurgan's Warhound exception applies to recruitment checks and the displayed cap. Norse +1/Kurgan −1 rare searches (Great Axe/Barbed Whip exceptions) and Hung's fixed 40 gc Warhorse quote are connected. No default tribe is invented. Three actual database tests cover creation, preservation, correction, another player's denial and atomic invalid-value rejection. Four rules tests cover recruitment boundaries, listings and pricing. Migration 140 is local only. The remaining advertised tribe rules must be connected or explicitly labelled before release; this is not a ticket completion.
+
+## Checkpoint 25 — Abomination Powered (#138)
+
+Post-battle asks which opposing warrior took each Abomination down. The applied report awards one shard to that warband, retains the Abomination and its equipment, and records a reanimation debt. Existing per-model absence handling keeps unpaid models out of subsequent battles while leaving other group members available. The roster offers payment of one shard per model, with a guarded refund/undo. Rewards and payments are transactional. Repeat payment requests do not charge twice. A spent opponent reward or subsequent reanimation blocks report withdrawal until restored; successful withdrawal reverses the opponent reward and original debt. The report and payment audit reasons are plain English. Migration 141 applied only locally.
+
+Three report-generation tests passed; actual local report integration covers own-side invalid recipient rejection, forbidden direct access to the internal apply helper, repeat report rejection, spent-reward withdrawal rollback, payment retry, payment-before-withdrawal dependency, refund and complete withdrawal. Existing Flesh Construct report integration also passed through the new wrapper. Full ordinary suite: 2,655 passed, 362 database tests skipped (separate actual integration results above). Typecheck passes. Browser acceptance and final combined release validation remain before declaring the batch ready.
+
+Checkpoint 25 mobile acceptance: reanimation paid 1 shard (1 → 0), ready-state survived refresh, undo restored the shard and reanimation debt (0 → 1). The initial history-rendering defect was corrected and regression-tested; final history contains plain sentences, not the receipt object. 390px content width equals viewport width. Hung tribe saved, persisted across reload, and a subsequent correction required a reason. Both disposable fixtures deleted; viewport reset and tab closed. #138 is implemented locally, bringing completed first-twenty issues to seven.
+
+## Checkpoint 26 — Black Orc Animosity procedure (#70)
+
+Boyz and Shootaz now join the per-model test workflow. Their source conflict is explicit: players choose the warband-wide D6 procedure or the printed unit Leadership procedure and record their agreement. No default ruling is imposed. Leadership, original app dice, changed dice, result and agreement persist in battle state. An unresolved choice cannot roll; failed tests use the existing Animosity result/action restrictions. Engaged/range exemptions remain table declarations available before rolling. Promoted Heroes, Nuttaz and Trolls are excluded. Tests cover both procedures, persistence, player dice changes and action restrictions. Full source reconciliation and browser acceptance remain before closing #70.
+
+Checkpoint 26 acceptance: desktop model 1 chose the unit Leadership rule, rolled 4+1 in-app, refreshed with roll locked, changed to 6+6 and resolved effect 3 (squabble). Mobile model 2 independently chose the D6 rule and passed on 2. Saved database state retains both agreements, app originals and edits; only the Leadership procedure writes a first-Leadership-test entry. No horizontal overflow at 390px. Fixture and tab removed, viewport reset. Actual rule eligibility tests exclude Nuttaz/Trolls/promoted Heroes; friendly targets retain hired swords and eligible Orc/Goblin henchmen, excluding Troll groups. #70 closed in its original psychology scope; Oi Behave! special-skill work remains #59, banners #161. Eight of the first twenty are now implemented locally: #15, #181, #191, #70, #76, #29, #142, #138.

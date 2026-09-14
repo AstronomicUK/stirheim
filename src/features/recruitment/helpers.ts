@@ -1,3 +1,4 @@
+import { isMarauderTribe, tribeModelLimit } from '../../rules/resolve/marauderTribe'
 import { unitRules } from '../../rules/data/campaignRules'
 // Pure helpers for the recruitment screen: unit listings with counts and limits, hired-sword
 // eligibility, upkeep wording, default names and error messages. No React, no Supabase.
@@ -37,6 +38,7 @@ export function listUnits(roster: RosterWarband, template: WarbandTemplate, role
   const units = role === 'hero' ? template.heroTemplates : template.henchmanTemplates
   return units.map((unit) => {
     const limit = parseRosterLimit(unit.rosterLimit)
+    if (unit.id === "marauders_warhounds_of_chaos" && isMarauderTribe(roster, "kurgan")) limit.max = null
     const count = unitCount(roster, unit)
     return {
       unit,
@@ -63,8 +65,8 @@ export function countText(count: number, max: number | null): string {
 export function maxRecruitable(roster: RosterWarband, template: WarbandTemplate, unit: UnitTemplate): number | null {
   const bounds: number[] = []
   const limit = parseRosterLimit(unit.rosterLimit)
-  if (limit.max !== null) bounds.push(limit.max - unitCount(roster, unit))
-  const maxModels = template.composition?.maxModels ?? null
+  if (limit.max !== null && !(unit.id === "marauders_warhounds_of_chaos" && isMarauderTribe(roster, "kurgan"))) bounds.push(limit.max - unitCount(roster, unit))
+  const maxModels = tribeModelLimit(roster, template.composition?.maxModels ?? null)
   if (maxModels !== null && !unitRules(unit.id).relation?.outsideMaxModels) {
     const room = maxModels - warbandCapacityCount(roster)
     if (unit.id !== 'night_goblins_snotling_mob') bounds.push(room)

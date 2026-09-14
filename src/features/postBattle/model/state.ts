@@ -152,6 +152,7 @@ export interface ReportDraft {
   /** Uneven garlic allocation when only some group members fought; keyed to current stock/size. */
   garlicCarried?: Record<string, number | null>
   retainedScoutId?: string
+  abominationRecipients?: Record<string, {warbandId: string; modelName: string}>
   pettyThiefRoll?: number | null
   pettyThiefSelection?: number | null
   scenarioMission?: string

@@ -117,7 +117,7 @@ export const battleLiveStateSchema = z.object({
   /** Leadership history for first-test item limits; relics are not consumed from inventory. */
   leadershipTests: z.array(z.object({
     id: z.string().optional(), correction: z.string().optional(), turnKey: z.string().optional(),
-    warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity"]),
+    warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity", "animosity"]),
     relic: z.boolean().default(false), at: z.string(),
   })).default([]),
   warHornUses: z.array(z.object({ id:z.string(), itemRowId:z.string(), itemId:z.string(), name:z.string(), copyIndex:z.number().int().min(0), phaseKey:z.string(), at:z.string(), correction:z.string().optional() })).default([]),

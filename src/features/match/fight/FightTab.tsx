@@ -1,4 +1,4 @@
-import { animosityApplies } from '../battle/animosityModels'
+import { animosityApplies, animosityFriend } from '../battle/animosityModels'
 import { currentAnimosity, animosityBlocksAction, resolveAnimosityAction, ANIMOSITY_OUTCOME_TEXT } from '../../../domain'
 import { PowderKegControls } from './PowderKegControls'
 import { powderKegTarget, canIgnitePowderKeg } from './powderKegTarget'
@@ -446,8 +446,8 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const interceptionChecked = interception?.key === interceptKey
   const subjectToAnimosity = Boolean(attacker && animosityApplies(attacker, roster))
   const animosityTest = attacker ? currentAnimosity(sheet, attacker.id, animosityIndex, ownTurnKey) : undefined
-  const friendlyModels = mine.filter(m => !m.out && m.kind !== 'hero' && !m.isAnimal).flatMap(m => Array.from({ length: m.groupSize ?? 1 }, (_, index) => ({ key: `${m.id}:${index}`, name: `${m.name}${(m.groupSize ?? 1) > 1 ? ` model ${index + 1}` : ''}`, warrior: m, index }))).filter(m => m.warrior.id !== attacker?.id || m.index !== animosityIndex)
-  const goblinChargingOrc = friendlyAnimosity && primary?.type === 'melee' && Boolean(attacker?.unitTemplateId?.includes('goblin') || attacker?.unitTemplateId?.startsWith('forest_goblins_')) && Boolean(defender?.unitTemplateId === 'orc_mob_orc_boyz' || roster.hiredSwords.some(h => h.id === defender?.id && h.hiredSwordId === 'black_orc_overseer'))
+  const friendlyModels = mine.filter(m => animosityFriend(m, roster)).flatMap(m => Array.from({ length: m.groupSize ?? 1 }, (_, index) => ({ key: `${m.id}:${index}`, name: `${m.name}${(m.groupSize ?? 1) > 1 ? ` model ${index + 1}` : ''}`, warrior: m, index }))).filter(m => m.warrior.id !== attacker?.id || m.index !== animosityIndex)
+  const goblinChargingOrc = friendlyAnimosity && primary?.type === 'melee' && Boolean(attacker?.unitTemplateId?.includes('goblin') || attacker?.unitTemplateId?.startsWith('forest_goblins_')) && Boolean(defender && animosityFriend(defender,roster)==='orc')
   const firingModel = isDoubleBarrel ? doubleSlot : isPistolShot ? pistolSlot : isCoreReloadGun && reloadHeld && attacker?.kind === 'henchman' ? Math.floor(reloadHeld.snapshot.copyIndex / (reloadHeld.snapshot.expected.quantity / Math.max(1, attacker.groupSize ?? 1))) : animosityIndex
   const animosityBlocked = !areaTarget && subjectToAnimosity && (turns.isPending || turns.isError || animosityBlocksAction(animosityTest, animosityMode) || (animosityMode === 'friendlyFight' && !friendlyAnimosity) || (animosityMode === 'defend' && (primary?.type !== 'melee' || kegAttack)) || (friendlyAnimosity && (!friendlyConfirmed || !friendlyModels.some(m => m.key === friendlyTargetKey) || goblinChargingOrc)) || firingModel !== animosityIndex)
   const kegItems = items.filter(i => i.warband_id === roster.id && i.item_rules_id === 'powder_keg' && i.quantity > sheet.warbandConsumables.filter(u => u.itemRowId === i.id && !u.correction).length)

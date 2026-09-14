@@ -1,3 +1,4 @@
+import { isMarauderTribe, tribeModelLimit } from './marauderTribe'
 import { compositionProblems, NIGHT_MOB } from './rosterComposition';
 // Roster composition — parsing UnitTemplate.rosterLimit strings and validating a RosterWarband
 // against its WarbandTemplate ("Choice of Warriors").
@@ -171,7 +172,7 @@ export function validateRoster(
     if (unit.id === leader?.id) continue;
     const limit = parseRosterLimit(unit.rosterLimit);
     const count = unitCount(warband, unit);
-    if (limit.max !== null && count > limit.max) {
+    if (limit.max !== null && count > limit.max && !(unit.id === "marauders_warhounds_of_chaos" && isMarauderTribe(warband, "kurgan"))) {
       problems.push({
         code: "roster.unitLimit",
         message: `${count} ${pluralName(unit)} but the limit is ${unit.rosterLimit}`,
@@ -187,7 +188,7 @@ export function validateRoster(
 
   // Warband size (units the list keeps outside the maximum are not counted).
   const models = warbandCapacityCount(warband);
-  const maxModels = template.composition?.maxModels ?? null;
+  const maxModels = tribeModelLimit(warband, template.composition?.maxModels ?? null);
   if (maxModels !== null && models > maxModels) {
     problems.push({
       code: "roster.tooManyModels",

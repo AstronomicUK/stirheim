@@ -162,6 +162,7 @@ export function toRosterWarband(
     id: warband.id,
     name: warband.name,
     warbandTemplateId: warband.type_rules_id,
+    ...(warband.marauder_tribe ? { marauderTribe: warband.marauder_tribe } : {}),
     gold: warband.gold,
     wyrdstone: warband.wyrdstone,
     veteranPool: warband.veteran_pool,

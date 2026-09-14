@@ -1,3 +1,4 @@
+import { tribeModelLimit } from '../../rules/resolve/marauderTribe'
 import { BlackOrcBloodCard } from './BlackOrcBlood'
 import { DreamerCertificationCard } from './DreamerCertification'
 import { PersonaeRecruitment } from './PersonaeRecruitment'
@@ -73,7 +74,7 @@ function RecruitView({ detail }: { detail: WarbandDetail }) {
   const isOwner = user?.id === warband.owner_id
   const canEdit = isOwner && !warband.archived
   const capacity = template ? heroCapacity(template) : null
-  const maxModels = template?.composition?.maxModels ?? null
+  const maxModels = tribeModelLimit(roster, template?.composition?.maxModels ?? null)
   const countedModels = warbandCapacityCount(roster)
   const extraModels = warbandModelCount(roster) - countedModels
 

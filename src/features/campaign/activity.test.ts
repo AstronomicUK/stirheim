@@ -305,3 +305,9 @@ describe('income rule history', () => {
     expect(activityFieldChanges(row)[0].sentence).toBe(reason);
   });
 });
+
+ it('renders reanimation history as text and hides receipt bookkeeping',()=>{
+  const change=entry({table_name:'henchman_groups',reason:'Reanimated Abomination with 1 wyrdstone shard; one Abomination can fight again.',before:{campaign_state:{reanimationOwed:1}},after:{campaign_state:{reanimationReceipt:{requestId:'internal'}}}})
+  expect(describeActivity(change)).toBe(`Ana · ${change.reason}`)
+  expect(activityFieldChanges(change)).toEqual([{label:'Abomination reanimation',before:'',after:'',sentence:change.reason}])
+ })

@@ -1,3 +1,4 @@
+import { AbominationAftermath } from './AbominationAftermath'
 import {GroupInjuryProtection} from './GroupInjuryProtection'
 import {MedicalAid} from './MedicalAid'
 import {captureRuleName} from '../../../rules/resolve/forcedCapture'
@@ -57,6 +58,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
       <Intro>
         {burning ? 'Mordheim’s Burning replaces the injury chart: roll D6 for each warrior out of action. 1–5 dies; 6 recovers unharmed and earns +1 Experience.' : 'Roll for every warrior taken out of action. Heroes and Dramatis Personae roll D66; ordinary hired swords and henchmen roll D6. If a rule waives the roll, record the reason.'}
       </Intro>
+      <AbominationAftermath draft={draft} ctx={ctx} update={update}/>
       <LycanthropeAftermath draft={draft} derived={derived} ctx={ctx} update={update}/>
       {hunters&&!nothing?<Section title="Carnivorous plant casualties"><Card className="flex flex-col gap-2 px-4 py-3">
         <p className="text-sm">Mark each model taken out by a plant. It rolls D6 instead of its ordinary injury roll: 1 is eaten and removed; 2–6 survives.</p>

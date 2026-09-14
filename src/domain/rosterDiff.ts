@@ -94,6 +94,7 @@ function changedColumns<P extends Record<string, unknown>>(row: Record<string, u
 
 function warbandChanges(row: WarbandRow, next: RosterWarband): RosterChange[] {
   const data: Record<string, unknown> = {};
+  if (next.marauderTribe !== undefined && next.marauderTribe !== row.marauder_tribe) data.marauder_tribe = next.marauderTribe;
   if (next.gold !== row.gold) data.gold = next.gold;
   if (next.wyrdstone !== row.wyrdstone) data.wyrdstone = next.wyrdstone;
   if (next.veteranPool !== row.veteran_pool) data.veteran_pool = next.veteranPool;

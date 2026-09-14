@@ -78,6 +78,7 @@ export interface DraftGroup {
 }
 
 export interface WarbandDraft {
+  marauderTribe?: RosterWarband["marauderTribe"];
   dreamerCertification?: DreamerCertification;
   name: string;
   warbandTemplateId: string;
@@ -580,6 +581,7 @@ export function draftToRosterWarband(draft: WarbandDraft, template: WarbandTempl
     id: ids.warbandId ?? "draft",
     name: draft.name,
     warbandTemplateId: draft.warbandTemplateId,
+    ...(draft.marauderTribe ? { marauderTribe: draft.marauderTribe } : {}),
     gold: costs.remaining,
     wyrdstone: 0,
     veteranPool: null,
@@ -598,6 +600,7 @@ export function validateDraft(draft: WarbandDraft, template: WarbandTemplate, ba
   const roster = draftToRosterWarband(draft, template, {}, houseRules);
   const problems: RosterProblem[] = [...validateRoster(roster, template, { atCreation: true, bans }).problems];
   const costs = draftCosts(draft, template, houseRules);
+  if (template.id === "marauders_of_chaos" && !draft.marauderTribe) problems.push({ code: "marauders.tribe", message: "Choose the Marauder warband’s tribe." });
   for (const subject of [...draft.heroes, ...draft.groups]) {
     const message = recruitGiftProblem(template.id, subject.unitTemplateId, subject.recruitGiftIds ?? []);
     if (message) problems.push({code: 'builder.recruitGifts', message: `${subject.name}: ${message}`});
@@ -675,6 +678,7 @@ export interface PayloadItem {
 }
 
 export interface CreateWarbandPayload {
+  marauder_tribe?: RosterWarband["marauderTribe"];
   name: string;
   type_rules_id: string;
   gold: number;
@@ -724,6 +728,7 @@ export function draftToCreatePayload(draft: WarbandDraft, template: WarbandTempl
   return {
     name: draft.name,
     type_rules_id: draft.warbandTemplateId,
+    ...(draft.marauderTribe ? { marauder_tribe: draft.marauderTribe } : {}),
     gold: costs.remaining,
     notes: draft.notes,
     heroes: draft.heroes.map((hero, sort_order) => {

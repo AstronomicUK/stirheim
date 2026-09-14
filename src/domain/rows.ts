@@ -72,6 +72,7 @@ export type ProfileRow = z.infer<typeof profileRowSchema>;
 // ---------------------------------------------------------------------------------------------
 
 export const warbandRowSchema = z.object({
+  marauder_tribe: z.enum(["norse", "kurgan", "hung"]).nullable().optional(),
   id: uuidSchema,
   owner_id: uuidSchema,
   name: z.string().min(1).max(60),

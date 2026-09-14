@@ -179,6 +179,8 @@ export interface HenchmanCampaignState {
   warBeastSlots?: number;
   trainedSquig?: boolean;
   constructRepairReceipt?: {afterProfile:Record<string,unknown>;requestId:string;action:string;paid:number;beforeSize:number;afterSize:number;beforeState:Record<string,unknown>;afterState:Record<string,unknown>};
+  reanimationReceipt?: {requestId:string;beforeState:Record<string,unknown>;afterState:Record<string,unknown>;size:number;at:string};
+  reanimationOwed?: number;
   constructRepairs?: {cost:number;injuryRoll:number;repairRoll:number}[];
   /** Captured Pirate Swabbies retain their former skills, but may never cast spells. */
   inheritedSkillIds?: string[];
@@ -231,7 +233,10 @@ export interface RosterHiredSword {
   status: "active" | "dead" | "left" | "captured" | "retired";
 }
 
+export type MarauderTribe = "norse" | "kurgan" | "hung";
+
 export interface RosterWarband {
+  marauderTribe?: MarauderTribe;
   scenarioEffects?: import("../resolve/scenarioCampaignEffects").ScenarioCampaignState;
   explorationDiscoveries?: import('../resolve/explorationDiscoveries').ExplorationDiscoveries;
   id: string;

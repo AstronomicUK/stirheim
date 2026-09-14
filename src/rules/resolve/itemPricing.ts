@@ -1,3 +1,4 @@
+import { isMarauderTribe, tribeRareBonus } from './marauderTribe'
 // Prices and rarities that depend on the buyer (audit A2). The catalogue entry is rewritten for
 // the shop: a Skink hero sees Black Lotus at 10 gc and Common, a Gunnery School officer sees a
 // cheaper handgun, and the notes say why. Data in data/itemRules/pricing.ts.
@@ -44,6 +45,12 @@ export function effectivePricing(item: Item, warband: RosterWarband, buyer: Buye
   if (warband.warbandTemplateId === "gunnery_school_of_nuln" && item.category === "blackpowder") {
     out.rareRollBonus += 2;
     out.notes.push("Impeccable Care: +2 to rare-item searches for blackpowder weapons.");
+  }
+  const tribalBonus = tribeRareBonus(warband, item.id);
+  if (tribalBonus) { out.rareRollBonus += tribalBonus; out.notes.push(tribalBonus > 0 ? "Norse Reavers: +1 to rare-item searches." : "Kurgan Difficult Customers: −1, except Great Axes and Barbed Whips."); }
+  if (isMarauderTribe(warband, 'hung') && item.id === 'warhorse') {
+    out.item = { ...item, price: { base: 40, text: '40 gc' } };
+    out.notes.push('Hung Affinity with Horses: Warhorses always cost 40 gc.');
   }
   if (!pricing) return out;
 

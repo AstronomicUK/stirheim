@@ -1,3 +1,4 @@
+import { isMarauderTribe, tribeModelLimit } from './marauderTribe'
 import { compositionProblems, NIGHT_MOB, SCARECROW, WAR_BEASTS } from './rosterComposition';
 import { startingEquipment } from './startingEquipment';
 import { giftStats, giftEquipment, recruitGiftItems, recruitGiftProblem, recruitPurchasesTotal } from './recruitPurchases';
@@ -151,6 +152,7 @@ export function recruitmentBlock(
     if (cap !== null && unitCount(warband, replaced) >= cap) return `No ${replaced.name} slot is free for this priest.`;
   }
   const limit = parseRosterLimit(unit.rosterLimit);
+  if (unit.id === "marauders_warhounds_of_chaos" && isMarauderTribe(warband, "kurgan")) limit.max = null;
   if (template.id === 'lustrian_reavers' && unit.role === 'hero' && warband.heroes.some(hero => hero.unitTemplateId === unit.id)) return 'Rare Heroes: this role has already been recruited. Promote a Prospect to replace the lost Hero.';
   if (unit.role === 'hero') {
     const added = {...warband,heroes:[...warband.heroes,{id:'candidate',name:unit.name,unitTemplateId:unit.id,status:'active' as const,stats:unit.stats,xp:0,levelUps:0,skillIds:[],spellIds:[],skillTableIds:[],injuries:[],equipment:[],flags:{}}]};
@@ -162,7 +164,7 @@ export function recruitmentBlock(
   if (limit.max !== null && current + count > limit.max) {
     return `The warband already has ${current} ${unit.name}; the limit is ${unit.rosterLimit}`;
   }
-  const maxModels = template.composition?.maxModels ?? null;
+  const maxModels = tribeModelLimit(warband, template.composition?.maxModels ?? null);
   const models = warbandCapacityCount(warband);
   const addedModels = unit.id === NIGHT_MOB ? (current ? 0 : 1) : unitRules(unit.id).relation?.outsideMaxModels ? 0 : count;
   if (maxModels !== null && models + addedModels > maxModels) {

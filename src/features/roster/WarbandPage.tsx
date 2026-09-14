@@ -1,3 +1,5 @@
+import { AbominationReanimation } from './view/AbominationReanimation'
+import { MarauderTribeCard } from './view/MarauderTribe'
 import {CasualtyLootCard} from '../aftermath/CasualtyLootCard'
 import {RestlessRituals} from './view/RestlessRituals'
 import { SuccessorCommandCard } from './view/SuccessorCommandCard'
@@ -238,6 +240,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       {(detail.roster.scenarioEffects?.raidCaptives??0)>0?<Card className="flex flex-col gap-2 px-4 py-3"><p className="font-medium">Raids resources</p><p className="text-sm">{detail.roster.scenarioEffects!.raidCaptives} captured resources available. Each can be spent once for an extra exploration die after a future battle.</p></Card>:null}
       <GrimoireCard detail={detail} template={template} canEdit={canEdit} onError={setActionError} />
       <HiredRosterRepairCard detail={detail} canEdit={canEdit} />
+      <MarauderTribeCard detail={detail} canEdit={canEdit} />
       <HiredUpkeepCard detail={detail} canEdit={canEdit} />
       <PirateUpkeepCard warbandId={detail.warband.id} gold={detail.roster.gold} enabled={canEdit && detail.roster.warbandTemplateId === 'pirates'} />
       <HenchmanUpkeepCard detail={detail} canEdit={canEdit} />
@@ -250,6 +253,7 @@ function WarbandView({ detail }: { detail: WarbandDetail }) {
       </Card> : null}
 
       <RestlessRituals detail={detail} allowed={canEdit}/>
+      <AbominationReanimation detail={detail} canEdit={canEdit} />
       <ConstructRepairs detail={detail} userId={user?.id} />
       <EngineRosterSection detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />
       <CaptiveCard detail={detail} campaignId={campaign.data?.campaignId} userId={user?.id} />

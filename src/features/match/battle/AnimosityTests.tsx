@@ -1,9 +1,10 @@
+import { chooseAnimosityRule, saveAnimosityLeadership, acceptAnimosityLeadership } from '../../../domain/animosityBattle'
 import { useState } from 'react'
 import type { BattleTurns } from '../../../api/battleTurns'
 import { beginAnimosity, currentAnimosity, saveAnimosityRoll, acceptAnimosityRoll, exemptAnimosity, correctAnimosity, resolveAnimosityAction, ANIMOSITY_OUTCOME_TEXT, warbandTurnKey, type BattleLiveState, type AnimosityTest } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband } from '../../../rules/types/roster'
-import { Button, DieField, Notice, Sheet, TextField } from '../../../ui'
+import { Button, DieField, Notice, Sheet, TextField, SelectField, NumberField } from '../../../ui'
 import { combatantsOf, type BattleBoosts } from '../fight/combatants'
 import { animosityApplies } from './animosityModels'
 
@@ -14,7 +15,7 @@ export function AnimosityTests({ roster, template, sheet, turns, boosts, edit }:
   const warriors = combatantsOf(roster, template, roster.name, sheet, boosts).filter(w => !w.out && animosityApplies(w, roster))
   if (!warriors.length || turns?.finished || (turns && turns.turn_order[turns.active_index] !== roster.id)) return null
   const turnKey = warbandTurnKey(roster.id, sheet.turn, turns)
-  const models = warriors.flatMap(w => Array.from({ length: w.groupSize ?? 1 }, (_, index) => ({ key: `${w.id}:${index}`, warriorId: w.id, modelIndex: index, name: `${w.name}${(w.groupSize ?? 1) > 1 ? ` model ${index + 1}` : ''}`, pole: w.equipment.some(i => i.itemId === 'boss_pole' && i.quantity > 0) })))
+  const models = warriors.flatMap(w => Array.from({ length: w.groupSize ?? 1 }, (_, index) => ({ key: `${w.id}:${index}`, warriorId: w.id, modelIndex: index, conflictingRule: ['black_orcs_orc_boy','black_orcs_orc_shoota'].includes(w.unitTemplateId??''), leadership:w.stats.Ld, name: `${w.name}${(w.groupSize ?? 1) > 1 ? ` model ${index + 1}` : ''}`, pole: w.equipment.some(i => i.itemId === 'boss_pole' && i.quantity > 0) })))
   const selected = models.find(m => m.key === picked)
   const test = selected ? currentAnimosity(sheet, selected.warriorId, selected.modelIndex, turnKey) : undefined
   const pending = models.filter(m => currentAnimosity(sheet, m.warriorId, m.modelIndex, turnKey)?.stage !== 'done').length
@@ -29,25 +30,45 @@ export function AnimosityTests({ roster, template, sheet, turns, boosts, edit }:
         }}>{model.name} — {result?.outcome ?? 'test due'}</Button>
       })}</div>
     </details>
-    {selected && test ? <Sheet open onClose={() => setPicked(null)} title={`${selected.name}: Animosity`}><AnimosityResult key={`${test.id}:${test.stage}`} test={test} pole={selected.pole} edit={edit} /></Sheet> : null}
+    {selected && test ? <Sheet open onClose={() => setPicked(null)} title={`${selected.name}: Animosity`}><AnimosityResult key={`${test.id}:${test.stage}`} test={test} pole={selected.pole} leadership={selected.leadership} edit={edit} /></Sheet> : null}
   </Notice>
 }
-function AnimosityResult({ test, pole, edit }: { test: AnimosityTest; pole: boolean; edit: (fn: (state: BattleLiveState) => BattleLiveState) => void }) {
+function AnimosityResult({ test, pole, leadership, edit }: { test: AnimosityTest; pole: boolean; leadership:number; edit: (fn: (state: BattleLiveState) => BattleLiveState) => void }) {
   const [value, setValue] = useState<number | null>(null)
   const [reason, setReason] = useState('')
+  const [agreement,setAgreement]=useState('')
+  const [rule,setRule]=useState<'d6'|'leadership'|''>('')
+  const [ld,setLd]=useState(leadership)
+  const [dice,setDice]=useState<[number|null,number|null]>([null,null])
+  const selectedDice=dice.map((n,i)=>n??test.originalDice?.[i]??null) as [number|null,number|null]
+  const awaitingRule=test.stage==='trigger'&&test.conflictingRule&&!test.triggerRule
+  const leadershipTest=test.stage==='trigger'&&test.triggerRule==='leadership'
   const die = value ?? test.original ?? null
   return <div className="flex flex-col gap-3">
-    {test.stage !== 'done' ? <>
+      {test.stage === 'trigger' && test.original === undefined && !test.originalDice ? <>
+        <Button variant="secondary" onClick={() => edit(s => exemptAnimosity(s, test.id, 'Already engaged in hand-to-hand combat at the start of this turn'))}>Already in combat — no test</Button>
+        {pole ? <Button variant="secondary" onClick={() => edit(s => exemptAnimosity(s, test.id, 'Carrying a Boss Pole'))}>Boss Pole bearer — no test</Button> : null}
+        <TextField label="Table exemption (for example, within 6 inches of a Boss Pole or Squig Prodder)" value={reason} onChange={e => setReason(e.target.value)} />
+        <Button variant="secondary" disabled={!reason.trim()} onClick={() => edit(s => exemptAnimosity(s, test.id, reason))}>Record exemption</Button>
+      </> : null}
+    {awaitingRule ? <>
+      <p>The Black Orc warband rule uses a D6 trigger; the Boyz/Shootaz entry says a Leadership test. Record the players’ agreed procedure.</p>
+      <SelectField label="Agreed Animosity procedure" value={rule} onChange={e=>setRule(e.target.value as typeof rule)}><option value="">Choose the agreed rule</option><option value="d6">D6 — Animosity on a 1</option><option value="leadership">Leadership — Animosity if the test fails</option></SelectField>
+      {rule==='leadership'?<NumberField label="Leadership used (including any eligible leader)" value={ld} onChange={value=>setLd(value??0)}/>:null}
+      <TextField label="Agreement to record" value={agreement} onChange={e=>setAgreement(e.target.value)}/>
+      <Button disabled={!rule||!agreement.trim()||!Number.isInteger(ld)||ld<1||ld>10} onClick={()=>edit(s=>chooseAnimosityRule(s,test.id,rule as 'd6'|'leadership',agreement,ld))}>Record agreed procedure</Button>
+    </> : leadershipTest ? <>
+      <p>Agreed Leadership {test.leadership} test. A failed test triggers the Animosity result die.</p>
+      {([0,1] as const).map(i=><DieField key={i} label={`Leadership die ${i+1}`} sides={6} value={selectedDice[i]} onChange={n=>setDice(d=>i===0?[n,d[1]]:[d[0],n])}/>)}
+      <Button variant="secondary" disabled={!!test.originalDice} onClick={()=>edit(s=>saveAnimosityLeadership(s,test.id,[1+Math.floor(Math.random()*6),1+Math.floor(Math.random()*6)]))}>Roll Leadership test</Button>
+      <Button disabled={selectedDice.some(n=>n===null)} onClick={()=>edit(s=>acceptAnimosityLeadership(s,test.id,selectedDice as [number,number]))}>Confirm Leadership test</Button>
+      {test.originalDice?<p className="text-xs text-ink-dim">App rolled {test.originalDice.join(' + ')}; changes are recorded.</p>:null}
+    </> : test.stage !== 'done' ? <>
       <p>{test.stage === 'trigger' ? 'Roll one D6. A 1 triggers Animosity; 2–6 acts normally.' : 'Roll one D6: 1 fights a friend, 2–5 squabbles, 6 rushes towards the enemy.'}</p>
       <DieField label={test.stage === 'trigger' ? 'Animosity test D6' : 'Animosity result D6'} sides={6} value={die} onChange={setValue} />
       <div className="flex gap-2"><Button variant="secondary" disabled={test.original !== undefined} onClick={() => edit(s => saveAnimosityRoll(s, test.id, 1 + Math.floor(Math.random() * 6), test.stage))}>Roll D6</Button><Button disabled={die === null} onClick={() => edit(s => acceptAnimosityRoll(s, test.id, die!, test.stage))}>Confirm</Button></div>
       {test.original !== undefined ? <p className="text-xs text-ink-dim">App rolled {test.original}; any change is recorded.</p> : null}
-      {test.stage === 'trigger' && test.original === undefined ? <>
-        <Button variant="secondary" onClick={() => edit(s => exemptAnimosity(s, test.id, 'Already engaged in hand-to-hand combat at the start of this turn'))}>Already in combat — no test</Button>
-        {pole ? <Button variant="secondary" onClick={() => edit(s => exemptAnimosity(s, test.id, 'Carrying a Boss Pole'))}>Boss Pole bearer — no test</Button> : null}
-        <TextField label="Other exemption (for example, within 6 inches of a Boss Pole)" value={reason} onChange={e => setReason(e.target.value)} />
-        <Button variant="secondary" disabled={!reason.trim()} onClick={() => edit(s => exemptAnimosity(s, test.id, reason))}>Record exemption</Button>
-      </> : null}
+
     </> : <>
       <p>{test.outcome ? ANIMOSITY_OUTCOME_TEXT[test.outcome] : ''}</p>
       {test.exemption ? <p>{test.exemption}</p> : null}

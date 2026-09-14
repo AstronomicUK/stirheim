@@ -2230,6 +2230,7 @@ export type Database = {
           gold: number
           id: string
           name: string
+          marauder_tribe: string | null
           notes: string
           owner_id: string
           type_rules_id: string
@@ -2243,6 +2244,7 @@ export type Database = {
           gold?: number
           id?: string
           name: string
+          marauder_tribe?: string | null
           notes?: string
           owner_id?: string
           type_rules_id: string
@@ -2256,6 +2258,7 @@ export type Database = {
           gold?: number
           id?: string
           name?: string
+          marauder_tribe?: string | null
           notes?: string
           owner_id?: string
           type_rules_id?: string
@@ -2717,6 +2720,7 @@ export type Database = {
         }
         Returns: string
       }
+      reanimate_abomination: { Args: {p_group_id:string;p_request_id:string;p_undo:boolean;p_expected_state:Json}; Returns: undefined }
       resolve_construct_repair: {
         Args: {
           p_action: string

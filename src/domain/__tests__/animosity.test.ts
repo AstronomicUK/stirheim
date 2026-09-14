@@ -59,3 +59,34 @@ it('permits defence before the first own-turn test and resumes normal actions af
   sheet = resolveAnimosityAction(sheet, input.id, 'Required movement completed')
   expect(animosityBlocksAction(sheet.animosityTests[0], 'normal')).toBe(false)
 })
+
+import {chooseAnimosityRule,saveAnimosityLeadership,acceptAnimosityLeadership} from '../animosityBattle'
+describe('Black Orc conflicting Animosity procedures',()=>{
+ const black=()=>beginAnimosity(emptyBattleLiveState(),{...input,conflictingRule:true})
+ it('requires an explicit agreement before rolling the D6 interpretation',()=>{
+  expect(()=>saveAnimosityRoll(black(),input.id,1,'trigger')).toThrow('agreed')
+  let sheet=chooseAnimosityRule(black(),input.id,'d6','Players use the warband-wide Annual rule.',6)
+  sheet=acceptAnimosityRoll(sheet,input.id,1,'trigger')
+  expect(sheet.animosityTests[0].stage).toBe('effect')
+  expect(sheet.rollAttempts[0].rolls.join(' ')).toContain('Annual rule')
+ })
+ it('preserves app dice, the Leadership value and a changed die across a refresh',()=>{
+  let sheet=chooseAnimosityRule(black(),input.id,'leadership','Players use the unit entry.',6)
+  sheet=saveAnimosityLeadership(sheet,input.id,[3,4])
+  sheet=battleLiveStateSchema.parse(JSON.parse(JSON.stringify(sheet)))
+  expect(saveAnimosityLeadership(sheet,input.id,[1,1])).toBe(sheet)
+  expect(sheet.leadershipTests).toHaveLength(1)
+  expect(sheet.leadershipTests[0].kind).toBe('animosity')
+  sheet=acceptAnimosityLeadership(sheet,input.id,[3,3])
+  expect(sheet.leadershipTests).toHaveLength(1)
+  expect(sheet.animosityTests[0]).toMatchObject({stage:'done',outcome:'clear',leadership:6,originalDice:[3,4],triggerDice:[3,3]})
+  expect(sheet.rollAttempts[0].rolls.join(' ')).toContain('player changed to 3 + 3')
+ })
+ it('uses the same effects and action restrictions after a failed Leadership test',()=>{
+  let sheet=chooseAnimosityRule(black(),input.id,'leadership','Agreed printed unit rule.',6)
+  sheet=acceptAnimosityLeadership(sheet,input.id,[4,3])
+  sheet=acceptAnimosityRoll(sheet,input.id,3,'effect')
+  expect(animosityBlocksAction(sheet.animosityTests[0],'normal')).toBe(true)
+  expect(animosityBlocksAction(sheet.animosityTests[0],'defend')).toBe(false)
+ })
+})

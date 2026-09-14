@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { WarriorStatus } from '../../../domain'
 import { Button, Icon, NumberField, SelectField, Sheet, TextArea, TextField, type IconName } from '../../../ui'
-import { loreForHero } from '../../advances/model'
+import { editorSpellLores } from './spellEligibility'
+import { findLore } from '../../../rules/data/campaign/magic'
 import { findWarbandTemplate } from '../../../rules/data/warbandTemplates'
 import { unitTypeName } from '../shared/names'
 import { Card, Tag } from './bits'
@@ -69,17 +70,14 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
   }, [skillOptions, hero.skill_tables, hero.skills, warbandTemplateId])
   const shownGroup = groups.some((g) => g.name === skillGroup) ? skillGroup : (groups[0]?.name ?? null)
   const template = useMemo(() => findWarbandTemplate(warbandTemplateId), [warbandTemplateId])
-  // Scoped to the hero's own lore, same as the skills field already scopes to his own tables — a
-  // hero with no lore we can pin down (an unusual import, say) still gets the full catalogue
-  // rather than being left with nothing to add.
-  const lore = useMemo(
-    () => loreForHero({ spellIds: hero.spells, unitTemplateId: hero.unit_type_rules_id ?? '' }, template),
-    [hero.spells, hero.unit_type_rules_id, template],
-  )
+  const [spellException, setSpellException] = useState(false)
+  const [spellReason, setSpellReason] = useState('')
+  const eligibleLores = useMemo(() => editorSpellLores(hero, template), [hero, template])
   const spellOptions = useMemo(() => {
     const all = allSpellOptions().sort((a, b) => a.lore.localeCompare(b.lore) || a.name.localeCompare(b.name))
-    return lore ? all.filter((s) => s.lore === lore.name) : all
-  }, [lore])
+    const names = new Set(eligibleLores.map(id => findLore(id)?.name))
+    return (spellException && spellReason.trim() ? all : all.filter(spell => names.has(spell.lore))).filter(spell => !hero.spells.includes(spell.id))
+  }, [eligibleLores, spellException, spellReason, hero.spells])
   const lores = useMemo(() => [...new Set(spellOptions.map((s) => s.lore))], [spellOptions])
 
   function toggleTable(id: string) {
@@ -175,10 +173,14 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
         <SelectField
           label="Spells"
           value=""
-          hint={hero.spells.length === 0 ? 'Only wizards and priests need these.' : undefined}
+          hint={eligibleLores.length ? 'Shows the recorded or native lore and any recorded book access.' : 'No spell lore is recorded for this warrior. Use an explained exception for a campaign ruling or imported caster.'}
           onChange={(e) => {
             const id = e.target.value
-            if (id && !hero.spells.includes(id)) onChange({ spells: [...hero.spells, id] })
+            if (!id || !spellOptions.some(spell => spell.id === id) || hero.spells.includes(id)) return
+            const option = spellOptions.find(spell => spell.id === id)!
+            const ordinary = eligibleLores.some(loreId => findLore(loreId)?.spells.some(spell => spell.id === id))
+            if (!ordinary && !spellReason.trim()) return
+            onChange({ spells: [...hero.spells, id], ...(!ordinary ? {notes: [hero.notes.trimEnd(), `Spell exception — ${option.name}: ${spellReason.trim()}`].filter(Boolean).join('\n')} : {}) })
           }}
         >
           <option value="">Add a spell or prayer…</option>
@@ -194,6 +196,12 @@ export function HeroEditor({ hero, warbandTemplateId, errors, onChange, onRemove
             </optgroup>
           ))}
         </SelectField>
+        <details>
+          <summary className="cursor-pointer text-sm text-ink-dim">Campaign ruling or imported spell</summary>
+          <label className="mt-2 flex items-start gap-2 text-sm"><input type="checkbox" checked={spellException} onChange={e => setSpellException(e.target.checked)} />Show other lores as an explained exception</label>
+          {spellException ? <TextField label={`${hero.name}: reason for spell exception`} value={spellReason} onChange={e => setSpellReason(e.target.value)} placeholder="The agreed rule or source that permits this spell" /> : null}
+          {spellException ? <p className="text-xs text-ink-dim">The reason is saved in this warrior’s notes with each off-lore spell added.</p> : null}
+        </details>
         {hero.spells.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {hero.spells.map((id) => (

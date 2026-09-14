@@ -78,15 +78,23 @@ const HIRED_SWORD_STARTING_SPELLS: Record<string, { loreId: string; count: numbe
   truthsayer: { loreId: "lore_of_light", count: 3 },
 };
 
-/** Roll starting spells with the source-permitted duplicate reroll; learning improvements use advances. */
-function rollHiredSwordSpells(hiredSwordId: string, rng: () => number): string[] {
-  const full: Record<string, string[]> = {
+const FULL_HIRED_SWORD_LORES: Record<string, string[]> = {
     bertha_bestraufrung_high_matriarch_of_the_sisterhood: ['prayers_of_sigmar'],
     nicodemus_the_cursed_pilgrim: ['lesser_magic'],
     abdul_alhazred_the_mad_sorcerer: ['arabian_elemental_magic', 'necromancy'],
     crow_master_the: ['necromancy', 'crow_master_magic'],
   };
-  if (full[hiredSwordId]) return [...new Set(full[hiredSwordId].flatMap(id => findLore(id)!.spells.map(s => s.id)))];
+
+/** Published spell access, including the Dark Mage's explicit second advancement lore. */
+export function hiredSwordSpellLoreIds(hiredSwordId: string): string[] {
+  if (hiredSwordId === 'dark_mage') return ['dark_mage_magic', 'lesser_magic'];
+  return FULL_HIRED_SWORD_LORES[hiredSwordId] ?? (HIRED_SWORD_STARTING_SPELLS[hiredSwordId] ? [HIRED_SWORD_STARTING_SPELLS[hiredSwordId].loreId] : []);
+}
+
+/** Roll starting spells with the source-permitted duplicate reroll; learning improvements use advances. */
+function rollHiredSwordSpells(hiredSwordId: string, rng: () => number): string[] {
+
+  if (FULL_HIRED_SWORD_LORES[hiredSwordId]) return [...new Set(FULL_HIRED_SWORD_LORES[hiredSwordId].flatMap(id => findLore(id)!.spells.map(s => s.id)))];
   const spec = HIRED_SWORD_STARTING_SPELLS[hiredSwordId];
   const lore = spec ? findLore(spec.loreId) : undefined;
   if (!spec || !lore) return [];

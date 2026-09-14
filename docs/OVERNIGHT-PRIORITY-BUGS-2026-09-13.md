@@ -72,3 +72,7 @@ Mobile QA: activate before test, Captain Ld7→8, Stupidity 4+4 passes, Rout cho
 Ordinary spell additions now respect recorded lore choices, native caster allocations, hired-sword multi-lore access and recorded magic books. Unknown casters no longer receive the entire catalogue. Existing spells remain intact; an explicit off-lore exception requires a reason saved alongside the spell in the warrior’s notes. This is editor eligibility, not closure of all magic/advancement issues.
 
 Local browser QA: a Fire Magus sees only six Fire spells; checking exception without a reason does not expand the list; adding an explained Lesser Magic spell saves both spell and note. Reopening preserves both, with ordinary choices still restricted to Fire. Disposable fixture removed. Six focused tests and ordinary suite 2,583 passed (350 database tests skipped); build/typecheck and lint passed with existing warnings. No deployment.
+
+## Checkpoint 10 — Hardtack recovery (#139/#140, partial)
+
+Tainted Hardtack now adds one missed game to injury recovery rather than taking only the longer absence. The report regression combines two-game Deep Wound with tainted Hardtack to give three games, checks repeat derivation remains three and leaves the input roster unchanged. Outcome wording states the additional absence. Per-model group Hardtack and turn-limited Toughness activation remain outstanding. No deployment.

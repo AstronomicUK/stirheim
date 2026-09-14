@@ -756,7 +756,9 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     if (change.flag) {
       const flags = { ...(patch.flags ?? hero.flags) }
       if (change.flag === 'stupidity') flags.stupidity = true
-      if (change.flag === 'missNextGame') flags.missNextGames = Math.max(flags.missNextGames ?? 0, 1)
+      if (change.flag === 'missNextGame') flags.missNextGames = change.itemId === 'hardtack_biscuits'
+        ? (flags.missNextGames ?? 0) + 1 // Hardtack explicitly adds to other recovery absences.
+        : Math.max(flags.missNextGames ?? 0, 1)
       if (change.flag === 'addicted') flags.addictedTo = [...new Set([...(flags.addictedTo ?? []), change.itemId])]
       // Eye of the Gods after a loss: the leader is gone (a Chaos Spawn); after a win he stays and takes a Mark by hand.
       if (change.flag === 'leaderSpawn' && draft.result === 'lost') patch.status = 'retired'

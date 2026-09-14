@@ -95,7 +95,7 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
   hardtack_biscuits: {
     consumable: "use",
     preBattle: { label: "Eating Hardtack this turn", appliesTo: "self", toughnessBonus: 1, note: "+1 Toughness for this turn and the enemy's; on a 1 afterwards the pirate misses the next game." },
-    postBattle: [{ key: "tainted", label: "Hardtack: were the biscuits tainted?", trigger: "used", dice: "D6", text: "Roll a D6 after the turn the biscuits were eaten.", outcomes: [{ min: 1, max: 1, text: "Tainted and filled with maggots: the pirate misses the next game as he recovers.", effect: { flag: "missNextGame" } }, { min: 2, max: 6, text: "Wholesome enough." }] }],
+    postBattle: [{ key: "tainted", label: "Hardtack: were the biscuits tainted?", trigger: "used", dice: "D6", text: "Roll a D6 after the turn the biscuits were eaten.", outcomes: [{ min: 1, max: 1, text: "Tainted and filled with maggots: the pirate misses one extra game, added to any games missed for other effects.", effect: { flag: "missNextGame" } }, { min: 2, max: 6, text: "Wholesome enough." }] }],
   },
   cathayan_silk_clothes: {
     note: "Cathayan Silk Clothes: the leader's warband may re-roll its first failed Rout test.",

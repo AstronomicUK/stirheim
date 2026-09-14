@@ -1111,3 +1111,20 @@ it('records an Undead leader’s death battle separately from its replacement wa
  const next=deriveRawReport(laterDraft,{...context,roster:death.advances.rosterAfter,matchId:'m2'})
  expect(next.advances.rosterAfter.heroes.find(h=>h.id==='v')?.flags.leaderReplacementReadyAfter).toBe('m2')
 })
+
+
+it('adds tainted Hardtack absence to a new injury recovery without repeatedly charging a rebuilt report', () => {
+  const roster = makeRoster()
+  roster.heroes = roster.heroes.map(h => h.id === 'champion' ? { ...h, equipment: [{itemId:'hardtack_biscuits',quantity:1}] } : h)
+  const context = ctx({roster, items: [...itemRows, {...itemRows[0],id:'hardtack-stock',holder_id:'champion',item_rules_id:'hardtack_biscuits'}],itemsUsed:{champion:['hardtack_biscuits']}})
+  let draft = setHeroOut(setResult(emptyDraft(),'lost'),'champion',true)
+  draft = addHeroInjuryRoll(draft,'champion',35) // Deep Wound: D3 games.
+  draft = setHeroInjurySubRoll(draft,'champion',0,2)
+  draft = {...draft,kit:{'hardtack_biscuits:champion:tainted':[1]}}
+  for (let n=0;n<2;n++) {
+    const result = derive(draft,context)
+    expect(result.report).not.toBeNull()
+    expect(result.report?.applied.heroes.find(h=>h.id==='champion')?.patch.flags?.missNextGames).toBe(3)
+  }
+  expect(roster.heroes.find(h=>h.id==='champion')?.flags.missNextGames).toBeUndefined()
+})

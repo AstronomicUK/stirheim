@@ -50,7 +50,10 @@ export function effectivePricing(item: Item, warband: RosterWarband, buyer: Buye
   const rule = pricing.rules?.find((r) => ruleMatches(r, warband, buyer));
   if (rule) {
     let next: Item = { ...item };
-    if (rule.price !== undefined) next = { ...next, price: { ...item.price, base: rule.price, text: item.price.dice ? `${rule.price} + ${item.price.dice} gc` : `${rule.price} gc` } };
+    if (rule.price !== undefined) {
+      const dice = rule.priceDice === undefined ? item.price.dice : rule.priceDice ?? undefined;
+      next = { ...next, price: { base: rule.price, ...(dice ? { dice } : {}), text: `${rule.price}${dice ? ` + ${dice}` : ''} gc${rule.bracePrice !== undefined ? ` (${rule.bracePrice} gc for a brace)` : ''}` } };
+    }
     if (rule.rarity === "common") next = { ...next, availability: { kind: "common", restriction: item.availability.restriction, text: `Common${item.availability.restriction ? ` (${item.availability.restriction})` : ""}` } };
     else if (typeof rule.rarity === "number") next = { ...next, availability: { kind: "rare", rarity: rule.rarity, restriction: item.availability.restriction, text: `Rare ${rule.rarity}${item.availability.restriction ? ` (${item.availability.restriction})` : ""}` } };
     if (rule.rareRollBonus) out.rareRollBonus += rule.rareRollBonus;

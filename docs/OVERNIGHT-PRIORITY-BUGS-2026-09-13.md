@@ -169,3 +169,14 @@ New reports retain each participating Hero’s actual enemy takedown count separ
 Verification: 77 focused UI/report-generation tests passed. Five actual local-database report tests passed, including persisted battle facts through the real submit/withdraw path. No database migration needed: optional facts live within the existing applied-report JSON. No production changes.
 
 Checkpoint 22 complete validation: 2,644 ordinary tests passed; 358 database-only tests skipped in that run. The separate five-test local report database suite passed. Build/typecheck and lint passed with the existing audit warnings only.
+
+
+## Checkpoint 23 — Brace prices, brace rarity and Nuln fixed discounts (#144, partial)
+
+Found a concrete parser defect: “46 + 2D6 gc for a brace” could be read as a fixed 6 gc brace. The parser now retains the whole quote; variable quotes cannot masquerade as fixed amounts. Buying a brace changes its price dice and Rare threshold together, quotes the cost for two pistols, and deducts it once. Explained price overrides apply to that displayed brace total and reset when quantity changes. Existing flat brace parsing remains covered.
+
+Source reconciliation also found Nuln’s five old price overrides contradicted its printed equipment lists and seven gun discounts were absent. All twelve blackpowder weapon prices now follow the fixed starting-list prices that Impeccable Care explicitly retains after recruitment, including their brace discounts; no catalogue price dice are added to Nuln’s fixed quotes. Non-Nuln variable-price quotes remain variable. Sources: grade-1b-part1.md equipment lists 2064–2113; equipment scrape 1020/1056 for the two higher brace rarities.
+
+Focused tests cover a normal brace at 46+3+4=53 gc / Rare 10, a Nuln 35 gc brace adding exactly two pistols for one search, the rarity boundary and all twelve Nuln prices. Rhinox capture/injury and structured Marauder tribe modifiers still remain.
+
+Checkpoint 23 validation: 2,648 ordinary tests passed; 358 database tests skipped. Build/typecheck and lint passed with the existing audit warnings only.

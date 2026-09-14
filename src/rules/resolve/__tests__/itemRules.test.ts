@@ -190,3 +190,18 @@ it('Bedouin Desert Trader grants +1 once, and dead or absent traders grant none'
   expect(warbandRareRollBonus(warband('arabian_tomb_raiders', [{ ...bedouin, status: 'dead' }])).bonus).toBe(0);
   expect(warbandRareRollBonus(warband('arabian_tomb_raiders', [])).bonus).toBe(0);
 });
+
+
+it('Nuln always uses its printed fixed gun prices, including discounted braces', () => {
+ const nuln = warband('gunnery_school_of_nuln', []);
+ const prices: Record<string, number> = { pistol: 10, double_barrelled_pistol: 20, duelling_pistol: 20, double_barrelled_duelling_pistol: 35, handgun: 25, double_barrelled_handgun: 45, repeater_pistol: 25, blunderbuss: 20, hunting_rifle: 100, repeater_handgun: 50, hand_held_mortar: 70, hersten_wenkler_pigeon_bombs: 25 };
+ for (const [id, price] of Object.entries(prices)) {
+   const priced = effectivePricing(I(id), nuln).item;
+   expect(priced.price.base, id).toBe(price);
+   expect(priced.price.dice, id).toBeUndefined();
+ }
+ expect(effectivePricing(I('double_barrelled_pistol'), nuln).item.price.text).toContain('35 gc for a brace');
+ expect(effectivePricing(I('duelling_pistol'), nuln).item.price.text).toContain('35 gc for a brace');
+ expect(effectivePricing(I('double_barrelled_duelling_pistol'), nuln).item.price.text).toContain('65 gc for a brace');
+ expect(effectivePricing(I('double_barrelled_pistol'), warband('mercenaries_reikland', [])).item.price.dice).toBe('1D6');
+});

@@ -14,7 +14,7 @@ import { overrideNote, overrideReady, reasonWith, type Override } from '../../do
 import { buyItem, displayedGemRareBonus, itemPrice, rareSearch, streetwiseRareBonus } from '../../rules/resolve/trading'
 import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/itemRestrictions'
 import { effectivePricing, warbandRareRollBonus } from '../../rules/resolve/itemPricing'
-import { braceAmountOf } from '../../rules/resolve/equipmentCost'
+import { bracePriceOf } from '../../rules/resolve/equipmentCost'
 import { halfPriceItemSource } from '../../rules/resolve/mapAdvantages'
 import { itemEffect, itemPricing } from '../../rules/data/itemRules'
 import { isBanned } from '../../rules/resolve/houseRules'
@@ -102,11 +102,9 @@ export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const searchers = useMemo(() => phase.rareItemSearchBlocked ? [] : eligibleSearchers(roster, phase.heroesSearched, phase.heroesOutOfAction), [roster, phase.heroesSearched, phase.heroesOutOfAction, phase.rareItemSearchBlocked])
   const downCount = phase.heroesOutOfAction.filter((id) => roster.heroes.some((h) => h.id === id && h.status === 'active')).length
   const destinations = useMemo(() => locationOptions(roster), [roster])
-  // Dice in the price never change with the buyer, so the listed entry is enough to size the fields.
-  const priceSpec = useMemo(() => (listed.price.dice ? parseDice(listed.price.dice) : null), [listed.price.dice])
   const rareSpec = useMemo(() => parseDice(RARE_ROLL), [])
 
-  const [faces, setFaces] = useState<(number | null)[]>(() => (priceSpec ? Array.from({ length: priceSpec.count }, () => null) : []))
+  const [priceFaces, setPriceFaces] = useState<Record<string, (number | null)[]>>({})
   const [hagglerId,setHagglerId]=useState('')
   const [haggleDice,setHaggleDice]=useState<(number|null)[]>([null,null])
   const [haggleRequestId]=useState(()=>crypto.randomUUID())
@@ -117,7 +115,8 @@ export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const [killOverrides, setKillOverrides] = useState<Record<string, { count: number | null; reason: string }>>({})
   const [searchFaces, setSearchFaces] = useState<(number | null)[]>([null, null])
   const [destinationKey, setDestinationKey] = useState('stash')
-  const [quantity, setQuantity] = useState(1)
+  const [quantity, updateQuantity] = useState(1)
+  function setQuantity(value: number) { updateQuantity(value); setPriceOverride(null) }
   const [searchRecorded, setSearchRecorded] = useState(false)
   const [huntDie, setHuntDie] = useState<number | null>(null)
   const [huntRecorded, setHuntRecorded] = useState(false)
@@ -145,7 +144,19 @@ export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     () => effectivePricing(listed, roster, { unitTemplateId: holder.unitTemplateId, role: holder.kind === 'henchmanGroup' ? 'henchman' : holder.kind === 'hero' ? 'hero' : undefined, hero: buyerHero }),
     [listed, roster, holder.unitTemplateId, holder.kind, buyerHero],
   )
-  const item = pricing.item
+  const braceQuote = bracePriceOf(pricing.item.price.text)
+  const isBrace = quantity === 2 && braceQuote !== null
+  const braceRarity = isBrace ? /Rare\s+(\d+)\s+for\s+(?:a\s+)?brace/i.exec(pricing.item.availability.text) : null
+  const item: Item = isBrace ? {
+    ...pricing.item,
+    price: { ...braceQuote!, text: `${braceQuote!.base}${braceQuote!.dice ? ` + ${braceQuote!.dice}` : ''} gc for the brace` },
+    availability: braceRarity && pricing.item.availability.kind === 'rare' ? { ...pricing.item.availability, rarity: Number(braceRarity[1]) } : pricing.item.availability,
+  } : pricing.item
+  const priceSpec = useMemo(() => item.price.dice ? parseDice(item.price.dice) : null, [item.price.dice])
+  const faces = priceSpec ? priceFaces[priceSpec.text] ?? Array.from({ length: priceSpec.count }, () => null) : []
+  const setFaces = (update: (current: (number | null)[]) => (number | null)[]) => {
+    if (priceSpec) setPriceFaces(previous => ({ ...previous, [priceSpec.text]: update(previous[priceSpec.text] ?? Array.from({ length: priceSpec.count }, () => null)) }))
+  }
   const warnings = useMemo(() => itemRestrictionWarnings(roster, item, holder, { quantity, bans: houseRules.bans }), [roster, item, holder, quantity, houseRules.bans])
   const needsReason = warnings.length > 0 && restrictionReason.trim().length === 0
   const upgrade = itemEffect(item.id)?.upgrade
@@ -188,17 +199,15 @@ export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const computed = listedTotal !== null && mapHalf ? Math.floor(listedTotal / 2) : listedTotal
   const unitPrice = priceOverride !== null ? (overrideReady(priceOverride) ? priceOverride.amount : null) : (computed ?? manualPrice)
   const priceReady = unitPrice !== null && Number.isInteger(unitPrice) && unitPrice >= 0
-  // Two pistols bought together are a brace at the bracketed price (the item's own line, house rules aside).
-  const braceAmount = braceAmountOf(item.price.text)
-  const isBrace = braceAmount !== null && quantity === 2 && priceOverride === null && computed !== null
-  const beforeScenarioPrice = priceReady ? (isBrace ? braceAmount : unitPrice * quantity) : null
+  // The quote already represents both pistols when a brace is selected.
+  const beforeScenarioPrice = priceReady ? (isBrace ? unitPrice : unitPrice * quantity) : null
   const beforeHaggle = beforeScenarioPrice === null ? null : priceOverride !== null ? beforeScenarioPrice : scenarioPurchasePrice(beforeScenarioPrice, roster.scenarioEffects?.trade)
   const haggler=hagglers.find(h=>h.id===hagglerId)
   const haggleReady=!hagglerId || Boolean(tracked&&haggler&&quantity===1&&beforeHaggle!==null&&beforeHaggle>=1&&haggleDice.every(d=>d!==null&&Number.isInteger(d)&&d>=1&&d<=6))
   const total=hagglerId ? haggleReady ? hagglePrice(beforeHaggle!,haggleDice as number[]) : null : beforeHaggle
   const affordable = total !== null && total <= roster.gold
   // "You can only buy one rare item for each successful roll" — a brace of pistols is one purchase priced for two, so it keeps its own cap of 2.
-  const rareMaxQty = isRare ? (braceAmount !== null ? 2 : 1) : null
+  const rareMaxQty = isRare ? (braceQuote !== null ? 2 : 1) : null
   const withinRareCap = rareMaxQty === null || quantity <= rareMaxQty
 
   const replacementBlock = leaderReplacementPurchaseBlock(roster, total ?? 1)
@@ -460,7 +469,7 @@ export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
         {available && !searchRecorded ? (
           <>
             <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-              <h3 className="text-xs uppercase tracking-wider text-ink-dim">Price</h3>
+              <h3 className="text-xs uppercase tracking-wider text-ink-dim">{isBrace ? "Price for the brace (two pistols)" : "Price per item"}</h3>
               {priceSpec ? (
                 <div className="flex flex-wrap items-end gap-3">
                   {faces.map((face, i) => (
@@ -476,7 +485,7 @@ export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
                 </div>
               ) : null}
               {item.price.base === null ? (
-                <NumberField label="Agreed price (gc each)" value={manualPrice} allowEmpty hint={item.price.text} onChange={setManualPrice} />
+                <NumberField label={isBrace ? "Agreed brace price (gc)" : "Agreed price (gc each)"} value={manualPrice} allowEmpty hint={item.price.text} onChange={setManualPrice} />
               ) : quote ? (
                 <p className="text-sm tabular-nums text-ink">{quote.text}</p>
               ) : (

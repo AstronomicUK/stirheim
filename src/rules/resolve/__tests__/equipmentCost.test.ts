@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WARBAND_TEMPLATES } from "../../data/warbandTemplates";
-import { equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "../equipmentCost";
+import { braceAmountOf, bracePriceOf, equipmentLineCost, parseEquipmentCost, type EquipmentCost } from "../equipmentCost";
 
 type Expected = Partial<Omit<EquipmentCost, "text">> & { kind: EquipmentCost["kind"] };
 
@@ -166,4 +166,14 @@ describe("equipmentLineCost", () => {
     expect(equipmentLineCost(parseEquipmentCost("2 x price"), 2, false)).toBeNull();
     expect(equipmentLineCost(parseEquipmentCost("ask"), 1, false)).toBeNull();
   });
+});
+
+
+it('never treats the sides of a price die as a fixed brace price', () => {
+  expect(braceAmountOf('25 + 1D6 gc (46 + 2D6 gc for a brace)')).toBeNull();
+  expect(bracePriceOf('25 + 1D6 gc (46 + 2D6 gc for a brace)')).toEqual({ base: 46, dice: '2D6' });
+  expect(bracePriceOf('45 + 2D6 gc (80 + 4D6 gc for a brace)')).toEqual({ base: 80, dice: '4D6' });
+  expect(bracePriceOf('15 gc (30 for a brace)')).toEqual({ base: 30 });
+  expect(bracePriceOf('15 gc / 30 brace')).toEqual({ base: 30 });
+  expect(bracePriceOf('25 + 2D6 gc')).toBeNull();
 });

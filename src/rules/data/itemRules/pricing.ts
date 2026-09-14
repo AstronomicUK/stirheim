@@ -2,7 +2,10 @@
 // price and rarity per item; these rules replace them for the named warbands or buyers. Rules are
 // tried in order and the first match wins.
 
-import type { ItemPricing } from "./types";
+import type { ItemPricing, PriceRule } from "./types";
+
+// Impeccable Care retains these printed starting-list gun prices after recruitment.
+const nulnPrice = (price: number, bracePrice?: number): PriceRule => ({ when: { warbands: ["gunnerySchool"] }, price, priceDice: null, ...(bracePrice !== undefined ? { bracePrice } : {}), note: "Impeccable Care: the Gunnery School always uses its printed equipment-list gun prices." });
 
 export const ITEM_PRICING: Record<string, ItemPricing> = {
   blowpipe: {
@@ -38,21 +41,18 @@ export const ITEM_PRICING: Record<string, ItemPricing> = {
   light_armour: {
     rules: [{ when: { warbands: ["lizardmen"] }, price: 50, note: "Lizardmen pay 50 gc for light armour (scaled hides are hard to fit)." }],
   },
-  handgun: {
-    rules: [{ when: { warbands: ["gunnerySchool"] }, price: 30, note: "The Gunnery School buys its black powder weapons at a discount." }],
-  },
-  pistol: {
-    rules: [{ when: { warbands: ["gunnerySchool"] }, price: 12, note: "The Gunnery School buys its black powder weapons at a discount." }],
-  },
-  duelling_pistol: {
-    rules: [{ when: { warbands: ["gunnerySchool"] }, price: 25, note: "The Gunnery School buys its black powder weapons at a discount." }],
-  },
-  hunting_rifle: {
-    rules: [{ when: { warbands: ["gunnerySchool"] }, price: 160, note: "The Gunnery School buys its black powder weapons at a discount." }],
-  },
-  blunderbuss: {
-    rules: [{ when: { warbands: ["gunnerySchool"] }, price: 25, note: "The Gunnery School buys its black powder weapons at a discount." }],
-  },
+  handgun: { rules: [nulnPrice(25)] },
+  pistol: { rules: [nulnPrice(10, 20)] },
+  duelling_pistol: { rules: [nulnPrice(20, 35)] },
+  hunting_rifle: { rules: [nulnPrice(100)] },
+  blunderbuss: { rules: [nulnPrice(20)] },
+  double_barrelled_pistol: { rules: [nulnPrice(20, 35)] },
+  double_barrelled_duelling_pistol: { rules: [nulnPrice(35, 65)] },
+  double_barrelled_handgun: { rules: [nulnPrice(45)] },
+  repeater_pistol: { rules: [nulnPrice(25)] },
+  repeater_handgun: { rules: [nulnPrice(50)] },
+  hand_held_mortar: { rules: [nulnPrice(70)] },
+  hersten_wenkler_pigeon_bombs: { rules: [nulnPrice(25)] },
   chaos_armour: { dynamic: "chaosArmour" },
   mechanical_suit: { dynamic: "chaosArmour" },
   rhinox: { dynamic: "rhinox" },

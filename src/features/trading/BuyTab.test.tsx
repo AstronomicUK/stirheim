@@ -43,3 +43,33 @@ it('keeps legacy reports unknown until the player supplies a count, and does not
  expect(JSON.stringify(searchHeader().props.children)).toContain('+2 for this search')
  expect(render('light_armour').some(node => String(node.props.label).includes('enemies taken out'))).toBe(false)
 })
+
+
+it('prices a variable double-barrelled brace with all its dice and higher rarity', () => {
+ const itemId = 'double_barrelled_pistol';
+ const get = (label: string) => render(itemId).find(node => node.props.label === label)!;
+ get('quantity').props.onChange(2);
+ get('Die 1').props.onChange(6); get('Die 2').props.onChange(6);
+ expect(render(itemId).filter(node => /^2D6 die/.test(node.props.label))).toHaveLength(2);
+ get('2D6 die 1').props.onChange(3); get('2D6 die 2').props.onChange(4);
+ expect(render(itemId).some(node => node.props.children === 'Buy for 53 gc')).toBe(true);
+ expect(render(itemId).find(node => node.type === 'h3' && JSON.stringify(node.props.children).includes('roll 2D6'))?.props.children).toContain(10);
+});
+it('Nuln buys two pistols for its printed brace cost and searches at brace rarity', async () => {
+ trade.roster.warbandTemplateId = 'gunnery_school_of_nuln';
+ const itemId = 'double_barrelled_pistol';
+ const get = (label: string) => render(itemId).find(node => node.props.label === label)!;
+ get('Die 1').props.onChange(3); get('Die 2').props.onChange(4);
+ expect(render(itemId).some(node => node.props.children === 'Buy for 20 gc')).toBe(true);
+ get('quantity').props.onChange(2);
+ expect(render(itemId).some(node => node.props.children === 'Record the failed search')).toBe(true);
+ get('Die 2').props.onChange(5);
+ const buy = render(itemId).find(node => node.props.children === 'Buy for 35 gc')!;
+ expect(buy.props.disabled).toBe(false);
+ await buy.props.onClick();
+ const next = vi.mocked(trade.run).mock.calls[0][0]();
+ expect(next.gold).toBe(465);
+ expect(vi.mocked(trade.run).mock.calls[0][1]?.heroesSearched).toEqual(['a']);
+ expect(next.stash).toContainEqual(expect.objectContaining({ itemId, quantity: 2 }));
+ expect(render(itemId).filter(node => /D6 die/.test(node.props.label))).toHaveLength(0);
+});

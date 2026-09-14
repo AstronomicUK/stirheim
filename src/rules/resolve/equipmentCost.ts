@@ -37,12 +37,18 @@ const INCLUDED_RE = /^included$/i;
 const FIRST_FREE_RE = /^1st\s*free\s*\/\s*(\d+)\s*(gc|wt)?\b/i;
 const MULTIPLIER_RE = /^(\d+)\s*(?:x|times)\s*(?:the\s+)?(?:cost|price)\b/i;
 const FIXED_RE = /^\+?(\d+)\s*(gc|wt)?\b(.*)$/is;
-const BRACE_RE = /(\d+)\s*(?:gc|wt)?\s*(?:for\s+)?(?:a\s+)?brace\b/i;
+const BRACE_RE = /(?:^|[\s(/])(\d+)(?:\s*\+\s*(\d*D\d+(?:\s*[x×*]\s*\d+)?))?\s*(?:gc|wt)?\s*(?:for\s+)?(?:a\s+)?brace\b/i;
 
 /** The bracketed brace price of a pistol's own price line ("15 gc (30 for a brace)" -> 30), or null. */
 export function braceAmountOf(priceText: string): number | null {
   const m = BRACE_RE.exec(priceText);
-  return m ? Number(m[1]) : null;
+  return m && !m[2] ? Number(m[1]) : null;
+}
+
+/** A complete brace quote: a dice suffix is never mistaken for a fixed price. */
+export function bracePriceOf(priceText: string): { base: number; dice?: string } | null {
+  const match = BRACE_RE.exec(priceText);
+  return match ? { base: Number(match[1]), ...(match[2] ? { dice: match[2] } : {}) } : null;
 }
 
 /** Parse one equipment-list cost string. Never throws; unrecognised text comes back as kind "unknown". */
@@ -66,7 +72,7 @@ export function parseEquipmentCost(cost: string): EquipmentCost {
   if (fixed) {
     const result: EquipmentCost = { kind: "fixed", amount: Number(fixed[1]), currency: currencyOf(fixed[2]), text };
     const brace = BRACE_RE.exec(fixed[3]);
-    if (brace) result.braceAmount = Number(brace[1]);
+    if (brace && !brace[2]) result.braceAmount = Number(brace[1]);
     return result;
   }
 

@@ -66,6 +66,9 @@ export interface PriceRule {
   when: PriceCondition;
   /** Replaces the listed base price (gc). */
   price?: number;
+  /** null makes an explicit fixed price instead of retaining catalogue price dice. */
+  priceDice?: string | null;
+  bracePrice?: number;
   /** Replaces the rarity; "common" removes the roll. */
   rarity?: number | "common";
   /** Bonus to the 2D6 rare roll for this item. */

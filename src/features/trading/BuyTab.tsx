@@ -122,7 +122,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const [huntRecorded, setHuntRecorded] = useState(false)
   const [restrictionReason, setRestrictionReason] = useState('')
   const [upgradeBase, setUpgradeBase] = useState('')
-  const isMap = listed.id === 'mordheim_map'
+  const isMap = ['mordheim_map', 'nehekharan_map'].includes(listed.id)
   const [mapDie, setMapDie] = useState<number | null>(null)
   const mapResult = isMap && mapDie !== null ? mordheimMapResult(mapDie) : null
 

@@ -144,3 +144,12 @@ Sashimono bearers can reroll their Stupidity test once, including a passed initi
 Focused component/domain tests cover reopening both stages, edited second dice, a failed second result and absent equipment. Other non-rout test types and banner proximity remain outstanding. Local only.
 
 Checkpoint 19 validation: 2,634 ordinary tests passed; 358 database tests skipped by that run. Production build/typecheck and lint passed (existing audit warnings only).
+
+
+## Checkpoint 20 — Nehekharan Map shared rules (#143, partial)
+
+The Nehekharan Map now requires the same purchase-grade D6 as the Mordheim Map and supplies its Vague/Accurate/Master exploration aids. Its aid keys remain separate from Mordheim Maps held by the same warrior/stash, and used non-Master maps receive spent marking on the correct item type. Zero-quantity maps offer no benefit. This is the source’s explicit use-the-rulebook-map clause, not a Khemri campaign implementation. Fake/Catacomb scenario selection and Cathay remain open.
+
+Validation: 92 focused exploration/report tests passed, including all grades, owner out-of-action and spent marking without touching a different map type.
+
+Also corrected the shared Master Map condition: it requires an active Hero bearer who avoided going out of action; a Master Map in the stash grants no reroll. Two source-condition tests added.

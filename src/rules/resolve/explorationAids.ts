@@ -93,12 +93,14 @@ export function explorationAids(warband: RosterWarband, opts: AidOptions): Explo
     if (!item.itemId) continue;
     const holder = holderOf(warband, item);
     const standing = holder.id === null || !down.has(holder.id);
-    if (item.itemId === "mordheim_map") {
+    if (["mordheim_map", "nehekharan_map"].includes(item.itemId) && item.quantity > 0) {
+      const mapName = item.itemId === "nehekharan_map" ? "Nehekharan Map" : "Mordheim Map";
+      const mapKey = `${item.itemId === "nehekharan_map" ? "nehekharan-map" : "map"}:${holder.id ?? "stash"}`;
       const grade = mapGrade(item);
-      if (grade === "vague") out.push({ key: `map:${holder.id ?? "stash"}`, label: "Mordheim Map (Vague)", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "Re-roll any one die; accept the second roll. The map is spent afterwards." });
-      else if (grade === "accurate") out.push({ key: `map:${holder.id ?? "stash"}`, label: "Mordheim Map (Accurate)", kind: "reroll", uses: 3, holderId: holder.id, holderName: holder.name, note: "Re-roll up to three dice; accept the second rolls. The map is spent afterwards." });
-      else if (grade === "master" && standing) out.push({ key: `map:${holder.id ?? "stash"}`, label: "Mordheim Map (Master)", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "Re-roll one die every exploration while the owner was not taken out of action." });
-      else if (grade === null) out.push({ key: `map:${holder.id ?? "stash"}`, label: "Mordheim Map (ungraded)", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "No purchase D6 recorded on this map; treated as Vague (one re-roll). Note the real grade on the item." });
+      if (grade === "vague") out.push({ key: mapKey, label: `${mapName} (Vague)`, kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "Re-roll any one die; accept the second roll. The map is spent afterwards." });
+      else if (grade === "accurate") out.push({ key: mapKey, label: `${mapName} (Accurate)`, kind: "reroll", uses: 3, holderId: holder.id, holderName: holder.name, note: "Re-roll up to three dice; accept the second rolls. The map is spent afterwards." });
+      else if (grade === "master" && holder.hero && standing) out.push({ key: mapKey, label: `${mapName} (Master)`, kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "Re-roll one die every exploration while the owner was not taken out of action." });
+      else if (grade === null) out.push({ key: mapKey, label: `${mapName} (ungraded)`, kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: "No purchase D6 recorded on this map; treated as Vague (one re-roll). Note the real grade on the item." });
     } else if (item.itemId === "wyrdstone_pendulum" && holder.hero && standing) {
       out.push({ key: `pendulum:${holder.id}`, label: "Wyrdstone Pendulum", kind: "reroll", uses: 1, holderId: holder.id, holderName: holder.name, note: `${holder.name} makes a Leadership test; if passed, re-roll any one die (not again).`, requiresTest: { stat: "Ld", value: holder.hero.stats.Ld } });
     } else if (item.itemId === "warpstone_amulet" && holder.hero && standing) {

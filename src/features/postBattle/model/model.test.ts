@@ -34,7 +34,7 @@ import {
   advanceKey,
   type ReportDraft,
 } from './state'
-import { rosterAfterReport } from './derive'
+import { rosterAfterReport, itemPatchesFor } from './derive'
 import { emptyDraft as emptyAdvanceDraft, setDice } from '../../advances/model'
 
 /** Unrelated report tests complete their earned rolls explicitly; advancement-gate tests use the raw derivation below. */
@@ -1166,3 +1166,13 @@ it('uses one exact Pirate Treasure Map instead of ordinary exploration, and rest
   expect(failed.applied.awarded_items??[]).toEqual([])
   expect(failed.applied.warband.gold_delta).toBe(120)
 })
+
+
+it('spends the selected Nehekharan Map without spending a Mordheim Map held alongside it', () => {
+  const items = ['mordheim_map', 'nehekharan_map'].map((item_rules_id, i) => ({ id: `map-${i}`, item_rules_id, holder_type: 'stash', holder_id: null, quantity: 1, notes: 'Map D6 5: Accurate' } as ItemRow));
+  const draft = emptyDraft();
+  draft.exploration.aids = [{ aidKey: 'nehekharan-map:stash', label: 'Nehekharan Map (Accurate)', dieIndex: 0, from: 1, to: 4 }];
+  expect(itemPatchesFor(ctx({ items }), draft)).toEqual([{ id: 'map-1', notes: 'Map D6 5: Accurate · spent' }]);
+  items[1].notes = 'Map D6 6: Master map';
+  expect(itemPatchesFor(ctx({ items }), draft)).toEqual([]);
+});

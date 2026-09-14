@@ -675,12 +675,15 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
     const row = rows.find(item => item.id === id && item.item_rules_id === 'blessed_water')
     if (row && row.quantity >= count) patches.push({ id, quantity: row.quantity - count })
   }
-  const mapsUsed = new Set(draft.exploration.aids.filter((u) => u.aidKey.startsWith('map:')).map((u) => u.aidKey.slice('map:'.length)))
+  const mapsUsed = new Set(draft.exploration.aids.filter((u) => /^(map|nehekharan-map):/.test(u.aidKey)).map((u) => u.aidKey))
   for (const row of garlicExpiry(ctx, draft)) if (row.valid && row.count! > 0) patches.push({ id: row.id, quantity: row.quantity - row.count! })
-  for (const holder of mapsUsed) {
-    const row = rows.find((r) => r.item_rules_id === 'mordheim_map' && (holder === 'stash' ? r.holder_type === 'stash' : r.holder_id === holder))
+  for (const key of mapsUsed) {
+    const [source, ...holderParts] = key.split(':')
+    const holder = holderParts.join(':')
+    const mapId = source === 'nehekharan-map' ? 'nehekharan_map' : 'mordheim_map'
+    const row = rows.find((r) => r.item_rules_id === mapId && (holder === 'stash' ? r.holder_type === 'stash' : r.holder_id === holder))
     if (!row || patches.some((p) => p.id === row.id)) continue
-    const grade = mapGrade({ itemId: 'mordheim_map', quantity: row.quantity, notes: row.notes })
+    const grade = mapGrade({ itemId: mapId, quantity: row.quantity, notes: row.notes })
     if (grade === 'master') continue
     patches.push({ id: row.id, notes: `${row.notes.trim()}${row.notes.trim() ? ' · ' : ''}spent` })
   }

@@ -143,3 +143,25 @@ it('honours Resource Hunter learned by a Dwarf Pathfinder', () => {
   roster.hiredSwords = [makeHiredSword({hiredSwordId:'dwarf_pathfinder',skillIds:['dwarf_rangers_dwarf_skills_resource_hunter']})];
   expect(explorationAids(roster, base)).toEqual([expect.objectContaining({label:'Resource Hunter',kind:'modify',uses:1})]);
 });
+
+
+it('Nehekharan Maps follow the same grades with separate bookkeeping from Mordheim Maps', () => {
+  for (const [face, uses] of [[2, 1], [3, 1], [5, 3], [6, 1]]) {
+    const roster = warband([hero('a', [{ itemId: 'nehekharan_map', quantity: 1, notes: mordheimMapResult(face).note }])]);
+    expect(explorationAids(roster, base)[0]).toMatchObject({ key: 'nehekharan-map:a', uses });
+    expect(explorationAids(roster, base)[0].label).toContain('Nehekharan Map');
+  }
+  for (const face of [1, 4]) expect(explorationAids(warband([hero('a', [{ itemId: 'nehekharan_map', quantity: 1, notes: mordheimMapResult(face).note }])]), base)).toEqual([]);
+  const both = warband([hero('a', ['nehekharan_map', 'mordheim_map'].map(itemId => ({ itemId, quantity: 1, notes: mordheimMapResult(6).note })))]);
+  expect(explorationAids(both, base).map(aid => aid.key)).toEqual(['nehekharan-map:a', 'map:a']);
+  expect(explorationAids(both, { ...base, heroesOutOfAction: ['a'] })).toEqual([]);
+  expect(explorationAids(warband([hero('a', [{ itemId: 'nehekharan_map', quantity: 0, notes: mordheimMapResult(5).note }])]), base)).toEqual([]);
+});
+
+
+it.each(['mordheim_map', 'nehekharan_map'])('a Master %s needs an active Hero bearer, not storage in the stash', itemId => {
+  const map = { itemId, quantity: 1, notes: mordheimMapResult(6).note };
+  expect(explorationAids(warband([], 'mercenaries_reikland', [map]), base)).toEqual([]);
+  expect(explorationAids(warband([{ ...hero('a', [map]), status: 'dead' }]), base)).toEqual([]);
+  expect(explorationAids(warband([hero('a', [map])]), base)).toHaveLength(1);
+});

@@ -157,14 +157,16 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   const selfDamage = Boolean(selfShot || fireHit || volatileHit || kegVictim)
   const areaTarget = kegVictim ?? (volatileHit ? { key: volatileHit.key, warriorId: volatileHit.warriorId, warbandId: roster.id, name: volatileHit.name } : fireHit ? { key: `fire:${fireHit.id}`, warriorId: fireHit.warriorId, warbandId: roster.id, name: 'the burning warrior' } : selfShot ? { key: `self:${selfShot.id}`, warriorId: selfShot.warriorId, warbandId: roster.id, name: 'the firer' } : mortarTarget ?? grapeTarget ?? pigeonTarget ?? lineTarget)
 
-  const mine = useMemo(() => withBrokenWeapons(withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id]), events, roster.id, sheet.bolasRecoveredEventIds), items, events), [roster, template, sheet, boosts, events, items])
+  const turns = useBattleTurns(matchId)
+  const currentPhase = combatPhaseKey(sheet.turn, turns.data)
+  const mine = useMemo(() => withBrokenWeapons(withBolasEntanglement(combatantsOf(roster, template, roster.name, sheet, boosts?.[roster.id], currentPhase), events, roster.id, sheet.bolasRecoveredEventIds), items, events), [roster, template, sheet, boosts, events, items, currentPhase])
   const targets = useMemo(
     () =>
       enemies.warbands.flatMap((w) => {
         const session = sessions.find((s) => s.warband_id === w.participant.warband_id)
-        return withBrokenWeapons(withBolasEntanglement(combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id]), events, w.participant.warband_id, session?.live_state.bolasRecoveredEventIds), w.items, events)
+        return withBrokenWeapons(withBolasEntanglement(combatantsOf(w.roster, w.template, w.participant.warband_name, session?.live_state, boosts?.[w.participant.warband_id], currentPhase), events, w.participant.warband_id, session?.live_state.bolasRecoveredEventIds), w.items, events)
       }),
-    [enemies.warbands, sessions, boosts, events],
+    [enemies.warbands, sessions, boosts, events, currentPhase],
   )
 
   const [attackerId, setAttackerId] = useState<string | null>(null)
@@ -177,7 +179,6 @@ export function FightTab({ items = [], matchId, roster, template, others, sessio
   // having tapped Ranged specifically.
   const rangedDefault = startWith === 'ranged' ? mine.find((c) => !c.out && loadoutFor(c).ranged.length > 0) : undefined
   const selectedAttacker = mine.find((c) => c.id === attackerId) ?? rangedDefault ?? mine.find((c) => !c.out) ?? mine[0]
-  const turns = useBattleTurns(matchId)
   const ownTurnKey = warbandTurnKey(roster.id, sheet.turn, turns.data)
   const [animosityMember, setAnimosityMember] = useState(0)
   const animosityIndex = Math.min(animosityMember, Math.max(0, (selectedAttacker?.groupSize ?? 1) - 1))

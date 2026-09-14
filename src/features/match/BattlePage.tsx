@@ -1,3 +1,4 @@
+import { combatPhaseKey } from '../../domain'
 import { withWarmonger } from './battle/warmonger'
 import { WarmongerControl } from './battle/WarmongerControl'
 import {EngineRescuePanel} from './battle/EngineRescuePanel'
@@ -367,7 +368,7 @@ function PlayerBattle({ items, match, sessions, events, onLogEvent, roster, scen
         </Notice>
       ) : null}
       {bribes.isError ? <Notice tone="info" title="Bribery payments could not be loaded">Check paid Bribery exclusions at the table before taking a Rout test.</Notice> : null}
-      {rout === 'test' && bribes.isSuccess && !readOnly ? <RoutCheck matchId={match.id} paidExclusions={paidExclusions} bribesReady={bribes.isSuccess} conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries, holds.data)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
+      {rout === 'test' && bribes.isSuccess && !readOnly ? <RoutCheck phaseKey={combatPhaseKey(shown.turn, turns.data)} matchId={match.id} paidExclusions={paidExclusions} bribesReady={bribes.isSuccess} conditions={conditionsFor(events, roster.id, shown.turn, turns.data?.recoveries, holds.data)} roster={roster} template={template} sheet={shown} totals={totals} edit={handle.edit} onBattleOver={onBattleOver} leaderLd={{ bonus: myBoosts.leaderLd, sources: myBoosts.leaderLdSources }} /> : null}
       {advancesDue > 0 && !readOnly ? (
         <Notice tone="warn" title={`${advancesDue} ${advancesDue === 1 ? 'advance' : 'advances'} still owed`}>
           Skills and characteristic gains should be chosen before a warrior fights again.{' '}

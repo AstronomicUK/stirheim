@@ -1,3 +1,4 @@
+import { WarHornControl } from './WarHornControl'
 import { NetterControl } from './NetterControl'
 import {TabletopSlaaneshiHold} from './TabletopSlaaneshiHold'
 import {useSlaaneshiHolds} from '../../../api/slaaneshiHolds'
@@ -19,7 +20,7 @@ import { HealingHerbsControl } from './HealingHerbsControl'
 import type { ItemRow } from '../../../domain'
 import { conditionsFor } from './sheet'
 import { useState } from 'react'
-import { warbandTurnKey, eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
+import { warbandTurnKey, combatPhaseKey, eventContribution, type BattleEventRow, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterHenchmanGroup, RosterWarband, DoubleBarrelSkillReload } from '../../../rules/types/roster'
 import { Button, Stepper, Notice } from '../../../ui'
@@ -125,6 +126,7 @@ export function MyWarbandTab({ roster, template, sheet, rawSheet = sheet, edit: 
     <>
       {casualtyError?<Notice tone="error" title="Could not update the casualty">{casualtyError}</Notice>:null}
       {matchId?<TabletopSlaaneshiHold matchId={matchId} roster={roster} enemies={enemies.warbands} turn={sheet.turn} readOnly={readOnly||enemies.isPending}/>:null}
+      <WarHornControl roster={roster} items={items} sheet={sheet} phaseKey={combatPhaseKey(sheet.turn, turns.data)} readOnly={readOnly || turns.isPending || turns.isError} edit={edit} />
       <ElvenWineControl roster={roster} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <BugmansAleControl roster={roster} template={template} items={items} sheet={sheet} readOnly={readOnly} edit={edit} />
       <Section title="Heroes & hired swords" aside={`${warriors.fighting.length} fighting`}>

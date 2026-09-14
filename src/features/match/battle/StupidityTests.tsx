@@ -1,7 +1,7 @@
 import { canUseRelic, passStupidityWithRelic, recordLeadershipTest } from './relicRules'
 import { useState } from 'react'
 import type { BattleTurns } from '../../../api/battleTurns'
-import { recordStupidityTest, withRollAttempt, warbandTurnKey, type BattleLiveState } from '../../../domain'
+import { recordStupidityTest, withRollAttempt, warbandTurnKey, combatPhaseKey, type BattleLiveState } from '../../../domain'
 import type { WarbandTemplate } from '../../../rules/types'
 import type { RosterWarband } from '../../../rules/types/roster'
 import { Button, DieField, Notice, NumberField, SelectField, Sheet, TextField } from '../../../ui'
@@ -12,7 +12,7 @@ export function StupidityTests({ roster, template, sheet, turns, boosts, edit }:
   boosts: BattleBoosts; edit: (fn: (state: BattleLiveState) => BattleLiveState) => void;
 }) {
   const [picked, setPicked] = useState<Combatant | null>(null)
-  const warriors = combatantsOf(roster, template, roster.name, sheet, boosts).filter(w => !w.out && w.traitIds.includes('stupidity') && !w.traitIds.includes('deathwish'))
+  const warriors = combatantsOf(roster, template, roster.name, sheet, boosts, combatPhaseKey(sheet.turn, turns)).filter(w => !w.out && w.traitIds.includes('stupidity') && !w.traitIds.includes('deathwish'))
   if (!warriors.length || turns?.finished || (turns && turns.turn_order[turns.active_index] !== roster.id)) return null
   const key = warbandTurnKey(roster.id, sheet.turn, turns)
   const individual = warriors.filter(w => w.kind !== 'henchman' || (w.groupSize ?? 1) <= 1)

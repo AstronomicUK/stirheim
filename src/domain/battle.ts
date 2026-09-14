@@ -96,6 +96,7 @@ export const battleLiveStateSchema = z.object({
     warriorId: z.string(), kind: z.enum(["rout", "table", "stupidity"]),
     relic: z.boolean().default(false), at: z.string(),
   })).default([]),
+  warHornUses: z.array(z.object({ id:z.string(), itemRowId:z.string(), itemId:z.string(), name:z.string(), copyIndex:z.number().int().min(0), phaseKey:z.string(), at:z.string(), correction:z.string().optional() })).default([]),
   routTests: z.array(z.object({
     id: z.string(), warriorId: z.string(), label: z.string(), leadership: z.number(), at: z.string(), turn: z.number(),
     dice: z.tuple([z.number().int().min(1).max(6), z.number().int().min(1).max(6)]), source: z.enum(['app', 'table']),

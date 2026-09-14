@@ -1,3 +1,4 @@
+import { warHornBonus } from '../../../domain/warHorn'
 // Pure helpers for the rout check: whose Leadership may be used and which the rules point at.
 
 import type { BattleLiveState } from '../../../domain/battle'
@@ -41,7 +42,7 @@ export interface LdOption {
 }
 
 /** Who may give their Leadership: the leader if standing, otherwise the highest eligible remaining fighter. */
-export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }, conditions: ReadonlyMap<string, string> = new Map()): LdOption[] {
+export function leadershipOptions(roster: RosterWarband, template: WarbandTemplate | undefined, sheet: BattleLiveState, leaderLd: { bonus: number; sources: string[] } = { bonus: 0, sources: [] }, conditions: ReadonlyMap<string, string> = new Map(), phaseKey?: string): LdOption[] {
   const leaderHero = template ? currentLeader(roster.heroes, template) : undefined
   const fighting = splitWarriors(roster, sheet).fighting
   const options = fighting.map(({ warrior }): LdOption => {
@@ -67,6 +68,8 @@ export function leadershipOptions(roster: RosterWarband, template: WarbandTempla
       mayLead: !unitRules(group.unitTemplateId).neverLeads,
     })
   }
+  const horn = warHornBonus(sheet, phaseKey)
+  if (horn) for (const option of options) { option.ld = Math.min(10, option.ld + horn); option.label += ` · Leadership item +${horn} (effective Ld ${option.ld})` }
   // Leader first, then available warriors by Leadership. Unavailable entries remain
   // selectable for approved player overrides and conditions not recorded in the app.
   return options.sort((a, b) => Number(b.leader) - Number(a.leader) || Number(b.standing) - Number(a.standing) || b.ld - a.ld)

@@ -18,6 +18,7 @@ import { setNotes, setRouted } from './sheet'
 
 export interface RoutCheckProps {
   matchId: string
+  phaseKey?: string
   paidExclusions: number
   bribesReady: boolean
   roster: RosterWarband
@@ -37,13 +38,13 @@ function stamp(state: BattleLiveState, line: string): BattleLiveState {
   return setNotes(state, notes)
 }
 
-export function RoutCheck({ matchId, paidExclusions, bribesReady, roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
+export function RoutCheck({ phaseKey, matchId, paidExclusions, bribesReady, roster, template, sheet, totals, edit, onBattleOver, leaderLd, conditions }: RoutCheckProps) {
   const [open, setOpen] = useState(false)
   const pendingSilk = sheet.routTests.find(test => test.stage !== 'done')
   const lastRout = sheet.routTests.filter(test => !test.correction).at(-1)
   const [confirmedFirstTest, setConfirmedFirstTest] = useState(false)
   const [outcome, setOutcome] = useState<'passed' | 'failed' | null>(null)
-  const options = leadershipOptions(roster, template, sheet, leaderLd, conditions)
+  const options = leadershipOptions(roster, template, sheet, leaderLd, conditions, phaseKey)
   const suggested = suggestedLeadership(options)
   const skillReminders = routSkillReminders(roster, sheet)
   const [chosenId, setChosenId] = useState<string | null>(null)

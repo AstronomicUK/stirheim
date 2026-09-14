@@ -40,6 +40,11 @@ function ruleMatches(rule: PriceRule, warband: RosterWarband, buyer: Buyer): boo
 export function effectivePricing(item: Item, warband: RosterWarband, buyer: Buyer = {}, opts: { atCreation?: boolean } = {}): EffectivePricing {
   const pricing = itemPricing(item.id);
   const out: EffectivePricing = { item, notes: [], rareRollBonus: 0, paidOnFailure: Boolean(pricing?.paidOnFailure), strengthHunt: null };
+  // Impeccable Care applies to every blackpowder weapon, including those without a discounted price entry.
+  if (warband.warbandTemplateId === "gunnery_school_of_nuln" && item.category === "blackpowder") {
+    out.rareRollBonus += 2;
+    out.notes.push("Impeccable Care: +2 to rare-item searches for blackpowder weapons.");
+  }
   if (!pricing) return out;
 
   const rule = pricing.rules?.find((r) => ruleMatches(r, warband, buyer));
@@ -86,7 +91,11 @@ export function effectivePricing(item: Item, warband: RosterWarband, buyer: Buye
 export function warbandRareRollBonus(warband: RosterWarband): { bonus: number; notes: string[] } {
   let bonus = 0;
   const notes: string[] = [];
-  const everything = [...warband.stash, ...warband.heroes.filter((h) => h.status === "active").flatMap((h) => h.equipment), ...warband.henchmenGroups.flatMap((g) => g.equipment)];
+  if (warband.heroes.some(hero => hero.unitTemplateId === "arabian_tomb_raiders_bedouin" && hero.status === "active")) {
+    bonus += 1;
+    notes.push("Desert Trader: +1 to rare-item searches, regardless of the number of Bedouins.");
+  }
+  const everything = [...warband.stash, ...warband.heroes.filter((h) => h.status === "active").flatMap((h) => h.equipment), ...warband.henchmenGroups.filter(g => g.size > 0).flatMap((g) => g.equipment)].filter(item => item.quantity > 0);
   for (const entry of everything) {
     if (!entry.itemId) continue;
     const coach = itemPricing(entry.itemId)?.warbandRareRollBonus;
@@ -97,7 +106,7 @@ export function warbandRareRollBonus(warband: RosterWarband): { bonus: number; n
     }
   }
   if (everything.some((e) => e.itemId === "trade_wagon") || warband.henchmenGroups.some((g) => g.unitTemplateId === "merchant_trade_wagon" && g.size > 0)) {
-    const rareInStash = new Set(warband.stash.filter((e) => e.itemId && findItem(e.itemId)?.availability.kind === "rare").map((e) => e.itemId)).size;
+    const rareInStash = new Set(warband.stash.filter((e) => e.quantity > 0 && e.itemId && findItem(e.itemId)?.availability.kind === "rare").map((e) => e.itemId)).size;
     const reputation = Math.floor(rareInStash / 5);
     if (reputation > 0) {
       bonus += reputation;

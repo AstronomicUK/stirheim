@@ -170,3 +170,23 @@ describe("conditional pricing", () => {
     expect(warbandRareRollBonus(warband("merchant_caravans", [], [item("trade_wagon"), ...stock.slice(0, 4)])).bonus).toBe(0);
   });
 });
+
+
+it('Nuln gains +2 to finding all blackpowder weapons, including guns without a price override', () => {
+  const nuln = warband('gunnery_school_of_nuln', []);
+  for (const id of ['handgun', 'hunting_rifle', 'double_barrelled_pistol', 'hersten_wenkler_pigeon_bombs']) {
+    expect(effectivePricing(I(id), nuln).rareRollBonus).toBe(2);
+    expect(effectivePricing(I(id), nuln).notes.join(' ')).toContain('Impeccable Care');
+    expect(effectivePricing(I(id), warband('mercenaries_reikland', [])).rareRollBonus).toBe(0);
+  }
+  for (const id of ['bow', 'sword', 'superior_blackpowder']) expect(effectivePricing(I(id), nuln).rareRollBonus).toBe(0);
+});
+
+
+it('Bedouin Desert Trader grants +1 once, and dead or absent traders grant none', () => {
+  const bedouin = hero('b', 'arabian_tomb_raiders_bedouin');
+  expect(warbandRareRollBonus(warband('arabian_tomb_raiders', [bedouin])).bonus).toBe(1);
+  expect(warbandRareRollBonus(warband('arabian_tomb_raiders', [bedouin, { ...bedouin, id: 'b2' }])).bonus).toBe(1);
+  expect(warbandRareRollBonus(warband('arabian_tomb_raiders', [{ ...bedouin, status: 'dead' }])).bonus).toBe(0);
+  expect(warbandRareRollBonus(warband('arabian_tomb_raiders', [])).bonus).toBe(0);
+});

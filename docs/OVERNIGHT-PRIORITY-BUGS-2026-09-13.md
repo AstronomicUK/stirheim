@@ -153,3 +153,10 @@ The Nehekharan Map now requires the same purchase-grade D6 as the Mordheim Map a
 Validation: 92 focused exploration/report tests passed, including all grades, owner out-of-action and spent marking without touching a different map type.
 
 Also corrected the shared Master Map condition: it requires an active Hero bearer who avoided going out of action; a Master Map in the stash grants no reroll. Two source-condition tests added.
+
+
+## Checkpoint 21 — Nuln and Bedouin rare-search bonuses (#144, partial)
+
+Impeccable Care now adds +2 for every blackpowder weapon search by a Gunnery School warband, including weapons with no discounted-price rule. It does not apply to ammunition/blackpowder supplies or other equipment. Bedouin Desert Trader adds +1 once when an active Bedouin is present, never +2 for two. Both feed the existing rare-search total and explanations. Removed zero-stock equipment/empty groups from equipment-based search bonuses.
+
+Sources: grade-1b-part1.md Impeccable Care (2005) and Desert Trader (674). Sixteen pricing/restriction tests passed. Chaos Armour per-kill bonus, Rhinox and structured Marauder tribe modifiers remain outstanding.

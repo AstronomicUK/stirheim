@@ -135,3 +135,12 @@ Implemented locally within the stated tracker scope: **#15, #181, #191, #29, #76
 A carried Parrot now exposes a relevant melee-only failed Leadership test control, alongside first-round selection. The engine applies −1 to hit only against that bearer in the first round (including a charge); later rounds, successful tests, absent/zero-quantity Parrots and shooting are unaffected. The Leadership roll is currently made at the table and confirmed by the player; this does not complete the broader equipment item or add a saved in-app Parrot test sequence. Source: equipment scrape, Parrot / Town Cryer 9.
 
 Validation: 122 focused combat tests passed. Local changes only; no deployment.
+
+
+## Checkpoint 19 — Sashimono Stupidity reroll and saved test progress (#161, partial)
+
+Sashimono bearers can reroll their Stupidity test once, including a passed initial test as permitted by the printed “all non-rout” wording. Both original app rolls and any manual edits are logged; the second result stands. Pending first/second tests and movement dice now persist in the battle state and resume on reopening, replacing the previous unsaved local form. Manual dice also consume Holy Relic first-test eligibility, and choosing an automatic relic pass retires an unrolled draft.
+
+Focused component/domain tests cover reopening both stages, edited second dice, a failed second result and absent equipment. Other non-rout test types and banner proximity remain outstanding. Local only.
+
+Checkpoint 19 validation: 2,634 ordinary tests passed; 358 database tests skipped by that run. Production build/typecheck and lint passed (existing audit warnings only).

@@ -60,7 +60,28 @@ export const castRecordSchema = z.object({
 });
 export type CastRecord = z.infer<typeof castRecordSchema>;
 
+const stupidityRerollSchema = z.object({
+  leadership: z.number().int().min(0).max(20),
+  movementDie: z.number().nullable().optional(),
+  originalMovementDie: z.number().optional(),
+  dice: z.array(z.number().int().min(1).max(6)).length(2),
+  originalDice: z.array(z.number().int().min(1).max(6)).length(2).optional(),
+  reason: z.string().min(1),
+});
+export const stupidityDraftSchema = z.object({
+  testStarted: z.boolean().optional(),
+  warriorId: z.string(), turnKey: z.string(),
+  dice: z.array(z.number().int().min(1).max(6).nullable()).length(2),
+  originalDice: z.array(z.number().int().min(1).max(6)).length(2).optional(),
+  leadership: z.number().nullable(), leadershipReason: z.string(),
+  correctionReason: z.string(), combat: z.string(),
+  movementDie: z.number().nullable(), originalMovementDie: z.number().optional(),
+  rerolledFrom: stupidityRerollSchema.optional(),
+});
+export type StupidityDraft = z.infer<typeof stupidityDraftSchema>;
+
 export const rollAttemptSchema = z.object({
+  stupidity: stupidityDraftSchema.optional(),
   id: z.string(),
   at: z.string(),
   turn: z.number(),
@@ -335,6 +356,8 @@ export function recordStupidityResult(state: BattleLiveState, warriorId: string,
 }
 
 export interface StupidityTestRoll {
+  /** The complete first roll, retained when an item grants one reroll. */
+  rerolledFrom?: z.infer<typeof stupidityRerollSchema>;
   dice: number[];
   /** Original app-generated dice, retained if the player edits either face. */
   originalDice?: number[];
@@ -356,6 +379,7 @@ export function recordStupidityTest(state: BattleLiveState, warriorId: string, t
   if (roll.leadership !== roll.baseLeadership && !roll.leadershipReason?.trim()) throw new Error('Explain the Leadership used, for example a nearby leader.');
   if (state.stupidityResults.some(result => result.warriorId === warriorId && result.turnKey === turnKey) && !roll.correctionReason?.trim()) throw new Error('Explain why this turn’s recorded test is being replaced.');
   if (roll.originalMovementDie !== undefined && !d6(roll.originalMovementDie)) throw new Error('The original movement roll must be a D6 result.');
+  if (roll.rerolledFrom && !stupidityRerollSchema.safeParse(roll.rerolledFrom).success) throw new Error('Record the original test and the reason for its reroll.');
   const total = roll.dice[0] + roll.dice[1];
   const failed = total > roll.leadership;
   if (failed && !roll.inCombat && !d6(roll.movementDie ?? 0)) throw new Error('Roll a D6 for the failed test’s movement.');
@@ -373,7 +397,7 @@ export function recordStupidityTest(state: BattleLiveState, warriorId: string, t
     stupidityResults: [...results, { warriorId, turnKey, failed }] }, {
     id: roll.attemptId ?? crypto.randomUUID(), at: new Date().toISOString(), turn, kind: 'attack', status: 'complete',
     label: `${name}: Stupidity test ${failed ? 'failed' : 'passed'}`,
-    rolls: [diceText, resultText, ...(roll.originalMovementDie !== undefined && (!failed || roll.inCombat) ? [`App movement roll ${roll.originalMovementDie} was not used for the final situation.`] : []), ...(roll.correctionReason?.trim() ? [`Recorded test replaced: ${roll.correctionReason.trim()}.`] : []), ...(roll.leadership !== roll.baseLeadership ? [`Leadership ${roll.leadership} instead of ${roll.baseLeadership}: ${roll.leadershipReason!.trim()}.`] : []), movementText],
+    rolls: [...(roll.rerolledFrom ? [`First test: ${roll.rerolledFrom.originalDice ? `app rolled ${roll.rerolledFrom.originalDice.join(' + ')}${roll.rerolledFrom.dice.some((die, i) => die !== roll.rerolledFrom!.originalDice![i]) ? `; player changed it to ${roll.rerolledFrom.dice.join(' + ')}` : ''}` : `player entered ${roll.rerolledFrom.dice.join(' + ')}`}; Leadership ${roll.rerolledFrom.leadership}.${roll.rerolledFrom.originalMovementDie !== undefined || roll.rerolledFrom.movementDie != null ? ` Earlier movement roll ${roll.rerolledFrom.movementDie ?? roll.rerolledFrom.originalMovementDie}${roll.rerolledFrom.originalMovementDie !== undefined ? ` (app originally rolled ${roll.rerolledFrom.originalMovementDie})` : " (player entered)"} was discarded with this test.` : ""} Rerolled using ${roll.rerolledFrom.reason}; the second result stands.`] : []), diceText, resultText, ...(roll.originalMovementDie !== undefined && (!failed || roll.inCombat) ? [`App movement roll ${roll.originalMovementDie} was not used for the final situation.`] : []), ...(roll.correctionReason?.trim() ? [`Recorded test replaced: ${roll.correctionReason.trim()}.`] : []), ...(roll.leadership !== roll.baseLeadership ? [`Leadership ${roll.leadership} instead of ${roll.baseLeadership}: ${roll.leadershipReason!.trim()}.`] : []), movementText],
   });
 }
 

@@ -1,3 +1,5 @@
+import { applyPirateMapRewards } from './pirateMapRewards'
+import { pirateMapChoice, mapRollNotes } from './pirateMapChoice'
 import { handlerAftermath } from './handlerAftermath'
 import type {SlaaneshiHold} from '../../../api/slaaneshiHolds'
 import {cavalcadeCaptureLimit} from '../../../rules/resolve/cavalcadeCapture'
@@ -568,7 +570,9 @@ function stepProblems(draft: ReportDraft, injuries: InjuriesDerived, exploration
   if (scenario.conflict && draft.scenarioUseBody === undefined) problems.experience.push('Choose the agreed interpretation of this scenario’s conflicting award values.')
   if (ctx.scenarioId === 'stake_out' && (!['income-only', 'also-explore'].includes(draft.scenarioRewards?.stakeOut?.mode ?? '') || !draft.scenarioRewards?.stakeOut?.reason?.trim())) problems.outcome.push('Record the agreed Stake-Out exploration interpretation and table ruling.')
   if (draft.result === null) problems.outcome.push('Record whether the warband won, lost or drew.')
-  if (kit.pending > 0) problems.injuries.push(`${kit.pending} ${kit.pending === 1 ? 'roll' : 'rolls'} for kit after the battle still to make.`)
+  const kitPending = kit.prompts.filter(p=>p.itemId!=='treasure_map'&&!p.complete).length
+  if (kitPending > 0) problems.injuries.push(`${kitPending} ${kitPending === 1 ? 'roll' : 'rolls'} for kit after the battle still to make.`)
+  if (kit.prompts.some(p=>p.itemId==='treasure_map'&&!p.complete)) problems.exploration.push('Finish the Treasure Map destination and reward dice.')
   if (!injuries.complete) {
     const n = injuries.summary.pending
     problems.injuries.push(`${n} ${n === 1 ? 'warrior still needs' : 'warriors still need'} their injury dice.`)
@@ -626,7 +630,7 @@ export function itemPatchesFor(ctx: ReportContext, draft: ReportDraft): ReportAp
   const rows = ctx.items
   for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed ?? {})) {
     for (const itemId of new Set(itemIds)) {
-      if (!isConsumable(itemId)) continue
+      if (!isConsumable(itemId) || itemId === 'treasure_map') continue
       if (itemId === 'black_lotus' || itemId === 'dark_venom') continue // Exact counts, including legacy uses, below.
       // Herbs have explicit use records; a legacy checkbox must not consume reusable herbs.
       if (itemId === 'healing_herbs') continue
@@ -785,7 +789,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     kitRemovals.push({ id: rowId, quantity: Math.max(0, row.quantity - dead) })
   }
   for (const removal of effects.removeItems) {
-    const row = ctx.items.find((r) => r.item_rules_id === removal.itemId && (removal.holderId === null ? r.holder_type === 'stash' : r.holder_id === removal.holderId))
+    const row = removal.itemId === 'treasure_map' ? pirateMapChoice(draft,ctx).row : ctx.items.find((r) => r.item_rules_id === removal.itemId && (removal.holderId === null ? r.holder_type === 'stash' : r.holder_id === removal.holderId))
     if (row && !kitRemovals.some((p) => p.id === row.id)) kitRemovals.push({ id: row.id, quantity: Math.max(0, row.quantity - 1) })
   }
 
@@ -1095,7 +1099,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   const lycanthrope=lycanthropeReport(draft,postCaptureContext,nonCampaign?{...participants,heroes:[],hiredSwords:[],groups:[]}:participants,initialInjuries)
   const injuries=lycanthrope.injuries
   const casualtyDraft=woodsCasualtyDraft(draft,ctx.scenarioId)
-  const kit = deriveKit(draft, { roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? (g.size-absentGroupModels(g))) + absentGroupModels(g) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(casualtyDraft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
+  const mapChoice = pirateMapChoice(draft,ctx)
+  const kit = deriveKit(draft, { explicitTreasureMap:true, treasureMap:mapChoice.row ? {holderId:mapChoice.row.holder_type==='stash'?null:mapChoice.row.holder_id,holderName:ctx.roster.heroes.find(h=>h.id===mapChoice.row?.holder_id)?.name ?? 'Warband stash'} : undefined, roster: ctx.roster, matchId: ctx.matchId, survivingGroupIds: new Set(ctx.roster.henchmenGroups.filter(g => (injuries.groups.find(r => r.group.id === g.id)?.resolution.group.size ?? (g.size-absentGroupModels(g))) + absentGroupModels(g) > 0).map(g => g.id)), itemsUsed: nonCampaign ? {} : ctx.itemsUsed ?? {}, heroesOut: nonCampaign ? new Set() : heroOoaIds(casualtyDraft), leaderId: participants.leaderId, result: draft.result, leaderKills: participants.leaderId ? draft.enemiesOut[participants.leaderId] ?? 0 : 0 })
   if (nonCampaign) { kit.prompts = []; kit.pending = 0 }
   const out = heroOoaIds(casualtyDraft)
   const survivingHeroes = participants.heroes.filter((h) => !out.has(h.id) && (injuries.heroes.find(r=>r.hero.id===h.id)?.resolution.hero.status??h.status)==='active')
@@ -1108,7 +1113,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
     engineAvailable: ctx.engineAvailable,
     engineAvailabilityError: ctx.engineAvailabilityError,
     scenarioId: ctx.scenarioId,
-    disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : ctx.scenarioId === 'stake_out' && draft.scenarioRewards?.stakeOut?.mode === 'income-only' ? 'Stake-Out: the table agreed to use the printed fixed income instead of exploration.' : undefined,
+    disabledReason: nonCampaign ? 'Sword of the Herald: no exploration in the agreed non-campaign mode.' : mapChoice.row ? 'Following the Treasure Map instead of exploring the city.' : ctx.scenarioId === 'stake_out' && draft.scenarioRewards?.stakeOut?.mode === 'income-only' ? 'Stake-Out: the table agreed to use the printed fixed income instead of exploration.' : undefined,
     won: draft.result === 'won',
     eligibleHeroes: slayer?.eligibleHeroes ?? survivingHeroes,
     leaderId: participants.leaderId,
@@ -1247,7 +1252,9 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   if (!nonCampaign && mixedPirateCrew(rosterAfterReport(ctx.roster, applied))) applied.pirate_mixed_upkeep_due = true
   const advances = deriveAdvances(draft, ctx, applied)
   applyTradeWagonToReport(wagonCapture,applied,ctx.rawGroups??[])
+  const pirateRewards = nonCampaign ? {problems:[],notes:[]} : applyPirateMapRewards(draft,ctx,kit,applied)
   const problems = stepProblems(draft, injuries, exploration, kit, ctx)
+  problems.exploration.push(...pirateRewards.problems)
   problems.outcome.push(...wagonCapture.problems)
   problems.injuries.push(...handlers.problems,...brokenEquipment.problems,...equipmentLosses.problems,...medicine.problems,...lycanthrope.problems,...lycanthropeEquipmentProblems)
   if(ctx.scenarioId==='brigands_in_the_pasturelands'&&!['attacker','defender'].includes(draft.scenarioRewards?.brigands?.role??''))problems.outcome.push('Choose your Brigands role for experience.')
@@ -1255,7 +1262,8 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
   problems.experience.push(...(kidnapped?.problems ?? []))
   problems.outcome.push(...(harpy?.problems ?? []))
   problems.veterans.push(...summoned.problems, ...conscripts.problems, ...(rock?.problems??[]))
-  problems.exploration.push(...recruits.problems, ...theft.problems)
+  problems.exploration.push(...recruits.problems, ...theft.problems, ...mapChoice.problems)
+  if (mapChoice.row && raidRequested > 0) problems.exploration.push('Treasure Map replaces exploration: remove the Raids dice expenditure before continuing.')
   const maglahLoss=injuries.hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
   let retainedScoutNote=''
   if(maglahLoss){
@@ -1284,7 +1292,7 @@ export function deriveReport(draft: ReportDraft, ctx: ReportContext): DerivedRep
       injuries: injuryLines,
       exploration: exploration.record,
       veteran_pool_roll: veteranPoolOf(draft),
-      notes: [...injuries.animals.filter(a=>a.capture).map(a=>`${a.animal.name} (${a.animal.holderName}): captured by ${a.capture!.event.payload.attacker_name} using ${a.capture!.event.payload.capture_reason==='slaaneshi_lock'?'the Slaaneshi Man-Catcher':'Subjugator of Mankind'}; no injury die rolled. Return or ransom is resolved with the captor.`),...(ctx.poisonApplications ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of ${use.itemRulesId === 'black_lotus' ? 'Black Lotus' : 'Dark Venom'} coated ${use.weapon.name}, copy ${use.weapon.copyIndex + 1}, for this battle.`),...(ctx.blessedWaterUses ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of Blessed Water spent on a throw in turn ${use.turn}, whether it hit or missed.`),...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...handlers.notes, ...Object.entries(draft.groupInjuryRerolls??{}).map(([key,r])=>`${r.label}: ${ctx.roster.henchmenGroups.find(g=>key.startsWith(`${g.id}:`))?.name??'Henchman'}, casualty ${Number(key.slice(key.lastIndexOf(':')+1))+1}, original D6 ${r.original} → replacement ${r.result}. Second result stands.`), ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
+      notes: [...injuries.animals.filter(a=>a.capture).map(a=>`${a.animal.name} (${a.animal.holderName}): captured by ${a.capture!.event.payload.attacker_name} using ${a.capture!.event.payload.capture_reason==='slaaneshi_lock'?'the Slaaneshi Man-Catcher':'Subjugator of Mankind'}; no injury die rolled. Return or ransom is resolved with the captor.`),...(ctx.poisonApplications ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of ${use.itemRulesId === 'black_lotus' ? 'Black Lotus' : 'Dark Venom'} coated ${use.weapon.name}, copy ${use.weapon.copyIndex + 1}, for this battle.`),...(ctx.blessedWaterUses ?? []).filter(use=>!use.correction).map(use=>`${use.warriorName}: one vial of Blessed Water spent on a throw in turn ${use.turn}, whether it hit or missed.`),...garlicExpiry(ctx,draft).filter(row=>row.valid&&row.count!>0).map(row=>`${row.name}: ${row.count} ${row.count===1?'clove':'cloves'} of garlic expired after this battle, whether used or not.`),...wagonCapture.notes,...pirateRewards.notes,...(mapChoice.row ? ['Used one Treasure Map instead of regular city exploration.',...mapRollNotes(draft)] : []),...advances.items.filter(i=>i.complete && i.draft.rollHistory?.length).map(i=>`Advancement recorded in this report — ${i.summary}`),...lycanthrope.notes,battleNotes(draft, kit, scenarioRewardContext(ctx,injuries)),raidSpent>0?`Raids: spent ${raidSpent} previously captured resources for ${raidSpent} extra exploration dice.`:"", ...handlers.notes, ...Object.entries(draft.groupInjuryRerolls??{}).map(([key,r])=>`${r.label}: ${ctx.roster.henchmenGroups.find(g=>key.startsWith(`${g.id}:`))?.name??'Henchman'}, casualty ${Number(key.slice(key.lastIndexOf(':')+1))+1}, original D6 ${r.original} → replacement ${r.result}. Second result stands.`), ...equipmentLosses.notes, ...brokenEquipment.notes, ...(ctx.scenarioId==='the_hunters_become_the_hunted'?participants.groups.flatMap(g=>Array.from({length:draft.groupsOut[g.id]??0},(_,i)=>draft.plantCasualties?.[`${g.id}:${i}`]?`${g.name}, model ${i+1}: plant casualty D6 ${draft.groupInjuries[g.id]?.[i]??'not rolled'}; eaten on 1.`:'').filter(Boolean)):[]), applied.pirate_mixed_upkeep_due ? "Pirate mixed Elf/Dwarf crew: an additional 20 gc upkeep is due once for the warband if both races are retained, separate from their individual fees." : "", ...theft.notes, ...summoned.notes, ...conscripts.notes, ...(kidnapped?.notes ?? []), retainedScoutNote, ...hireDepartures.map(d=>`${d.name} leaves. ${d.reason}`)].filter(Boolean).join('\n'),
       adjustments: reportAdjustments(draft, participants, injuries, exploration),
       applied,
     }

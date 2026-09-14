@@ -90,3 +90,11 @@ Wretch reconnaissance (#114): first Talent must reroll; second needs an individu
 ## Checkpoint 12 — explicit riding grants (#59, partial)
 
 Battle Monks’ Emissary receives Ride Horse; Chapel Questing Knight and Merchant Knights Vanguard receive Ride Warhorse. New recruits receive the skill and legacy battle profiles derive it from unit identity; advancement cannot buy the already-granted skill again. No other mount type is granted by implication. Generic unnamed Ride clauses and tribe-dependent grants remain open. 192 focused recruitment/advancement/combat tests passed; included in subsequent full suite/build checks. No deployment.
+
+## Checkpoint 13 — Pirate Treasure Map choice and rewards (#142, partial)
+
+Exploration now offers regular city exploration or one exact owned Treasure Map, including stash maps. A map replaces ordinary exploration, uses only the selected stock row, and retains its destination/reward dice across refresh. Switching back ignores its rewards; unavailable selected stock blocks filing. Legacy battle ticks default to an eligible map but can be corrected. Map rolls live on Exploration, not back in the injury step.
+
+Long Drong grants a barrel of Bugman’s Ale. Black-Wyrd grants 2+D3 shards and a Mordheim Map (no invented gold). The trapped chest requires a surviving Hero and Initiative D6: pass awards that Hero a Lucky Charm, failure adds a recovery game under ordinary concurrent recovery, and either receives the gold. App/table dice and later changes are recorded explicitly. Facio’s Common purchase entitlement, deferred notebook payment and next-game recruitment bonus remain outstanding; #142 is not closed.
+
+Mobile local QA: select stash map, destination 2 and gold 3+4, refresh, switch back; destination 6/D3 3 review shows +5 shards and Mordheim Map; destination 5 with app Initiative 3 changed by player to 6, gold 4+4+4. Filed the disposable report and read the local database: gold100→220, map quantity2→1, missNextGames1. No ordinary exploration income. Width390 fits. Fixture removed. Full ordinary suite2,589 passed (350 database tests skipped), build/typecheck and lint pass with existing warnings. No deployment.

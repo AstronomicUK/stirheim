@@ -49,7 +49,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
   const plant=(id:string)=>hunters&&!!draft.plantCasualties?.[id]
   const { heroes, hiredSwords, groups, animals, summary } = derived.injuries
   const nothing = heroes.length === 0 && hiredSwords.length === 0 && groups.length === 0 && animals.length === 0
-  const kit = derived.kit.prompts
+  const kit = derived.kit.prompts.filter(p=>p.itemId!=='treasure_map')
   const maglah=hiredSwords.find(s=>s.sword.hiredSwordId==='maglah_khan_s_horde'&&['dead','left','retired'].includes(s.resolution.sword.status))
   const scouts=ctx.roster.hiredSwords.filter(s=>s.hiredSwordId==='hobgoblin_scout'&&(hiredSwords.find(r=>r.sword.id===s.id)?.resolution.sword.status??s.status)==='active')
   return (
@@ -268,7 +268,7 @@ export function InjuriesStep({ draft, derived, ctx, update }: StepProps) {
         </Section>
       ) : null}
       {kit.length > 0 ? (
-        <Section title="Kit after the battle" aside={derived.kit.pending > 0 ? `${derived.kit.pending} to roll` : 'All rolled'}>
+        <Section title="Kit after the battle" aside={kit.some(p=>!p.complete) ? `${kit.filter(p=>!p.complete).length} to roll` : 'All rolled'}>
           {kit.map((p) => {
             const dice = p.prompt.dice === '2D6' ? 2 : 1
             const gold = p.outcome?.effect?.gold

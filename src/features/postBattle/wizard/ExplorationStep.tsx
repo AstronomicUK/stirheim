@@ -1,3 +1,5 @@
+import { PirateMapCard } from './PirateMapCard'
+import { pirateMapChoice } from '../model/pirateMapChoice'
 import { PettyThief } from './PettyThief'
 import { LocationRecruits } from './LocationRecruits'
 import { LocationExperience } from './LocationExperience'
@@ -35,6 +37,8 @@ import { StepBody } from './WizardShell'
 type TestChoice = 'passed' | 'failed' | 'pending'
 
 export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
+  const map = pirateMapChoice(draft,ctx)
+  const mapControls = <PirateMapCard draft={draft} derived={derived} ctx={ctx} update={update} />
   const ex = derived.exploration
   const [newItem, setNewItem] = useState('')
   const awards = ctx.scenarioId === 'the_sword_of_the_herald' && draft.scenarioNonCampaign ? [] : battleTreasureAwards(derived.participants.heroes, heroOoaIds(draft), draft.enemiesOut)
@@ -57,15 +61,16 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
   if (ex.allowed === null || ex.allowed.count === 0) {
     return (
       <StepBody title="Exploration">
+        {mapControls}
         {awardSummary}
         {slayerControls}
         {raidControls}
         <PettyThief draft={draft} derived={derived} ctx={ctx} update={update} />
-        <Notice tone="info" title="No exploration">
+        {!map.row ? <><Notice tone="info" title="No exploration">
           {ex.skippedReason}
         </Notice>
         {ctx.scenarioId === 'the_wizard_s_tower' && ex.eligibleHeroes.length > 0 ? <Button variant="secondary" onClick={() => update(d => setExplorationDiceOverride(d, { count: 1, reason: '' }))}>Record an agreed exploration adjustment</Button> : null}
-        <p className="text-xs text-ink-dim">Rulebook: "Roll a D6 for each Hero in your warband who survives without going out of action." Hired swords and henchmen do not search.</p>
+        <p className="text-xs text-ink-dim">Rulebook: "Roll a D6 for each Hero in your warband who survives without going out of action." Hired swords and henchmen do not search.</p></> : null}
       </StepBody>
     )
   }
@@ -82,6 +87,7 @@ export function ExplorationStep({ draft, derived, update, ctx }: StepProps) {
 
   return (
     <StepBody title="Exploration">
+        {mapControls}
         {awardSummary}
         {slayerControls}
         {raidControls}

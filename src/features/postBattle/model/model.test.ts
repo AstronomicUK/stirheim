@@ -1128,3 +1128,39 @@ it('adds tainted Hardtack absence to a new injury recovery without repeatedly ch
   }
   expect(roster.heroes.find(h=>h.id==='champion')?.flags.missNextGames).toBeUndefined()
 })
+
+
+it('uses one exact Pirate Treasure Map instead of ordinary exploration, and restores exploration when declined',()=>{
+  const roster={...makeRoster(),warbandTemplateId:'pirates',heroes:[hero('captain',{unitTemplateId:'pirates_captain',xp:20})],henchmenGroups:[],hiredSwords:[]}
+  const maps=[{...itemRows[0],id:'map-one',holder_type:'stash' as const,holder_id:null,item_rules_id:'treasure_map',quantity:2},{...itemRows[0],id:'map-two',holder_type:'stash' as const,holder_id:null,item_rules_id:'treasure_map',quantity:1}]
+  const context=ctx({roster,template:findWarbandTemplate('pirates'),items:maps})
+  const draft={...setResult(emptyDraft(),'lost'),pirateMapChoice:'map-two',kit:{'treasure_map:stash:where':[2]},kitExtra:{'treasure_map:stash:where':[3,4]}}
+  const mapped=deriveReport(draft,context)
+  expect(mapped.report).not.toBeNull()
+  expect(mapped.exploration.allowed).toBeNull()
+  expect(mapped.report?.applied.warband.gold_delta).toBe(70)
+  expect(mapped.report?.applied.warband.wyrdstone_delta).toBe(1)
+  expect(mapped.report?.applied.item_patches).toEqual([{id:'map-two',quantity:0}])
+  expect(mapped.report?.notes).toContain('instead of regular city exploration')
+  const regular=deriveReport({...draft,pirateMapChoice:'regular'},context)
+  expect(regular.exploration.allowed?.count).toBe(1)
+  expect(regular.kit.prompts.some(p=>p.itemId==='treasure_map')).toBe(false)
+  const missing=deriveReport(draft,{...context,items:maps.slice(0,1)})
+  expect(missing.problems.exploration.join(' ')).toContain('no longer available')
+  expect(missing.report).toBeNull()
+  const reward=(face:number,details:ReportDraft['pirateMapDetails']={})=>deriveReport({...draft,pirateMapDetails:details,kit:{'treasure_map:stash:where':[face]},kitExtra:{'treasure_map:stash:where':[3,4,5]}},context)
+  expect(reward(3).report?.applied.stash_items).toContainEqual({item_rules_id:'bugmans_ale',custom_name:null,quantity:1})
+  expect(reward(6).problems.exploration.join(' ')).toContain('roll the D3')
+  const burial=reward(6,{shards:3}).report!
+  expect(burial.applied.warband.wyrdstone_delta).toBe(5)
+  expect(burial.applied.warband.gold_delta).toBe(0)
+  expect(burial.applied.stash_items).toContainEqual({item_rules_id:'mordheim_map',custom_name:null,quantity:1})
+  expect(reward(5).problems.exploration.join(' ')).toContain('surviving Hero')
+  const passed=reward(5,{heroId:'captain',test:2}).report!
+  expect(passed.applied.awarded_items).toContainEqual(expect.objectContaining({holder_id:'captain',item_rules_id:'lucky_charm',quantity:1}))
+  expect(passed.applied.warband.gold_delta).toBe(120)
+  const failed=reward(5,{heroId:'captain',test:6}).report!
+  expect(failed.applied.heroes.find(h=>h.id==='captain')?.patch.flags?.missNextGames).toBe(1)
+  expect(failed.applied.awarded_items??[]).toEqual([])
+  expect(failed.applied.warband.gold_delta).toBe(120)
+})

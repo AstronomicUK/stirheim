@@ -201,6 +201,10 @@ export interface ReportDraft {
   advances: Record<string, AdvanceDraft>
   /** advanceKey -> how the player wants to handle it (default 'now'). */
   advanceModes: Record<string, AdvanceMode>
+  /** Exact Treasure Map stock row, or regular city exploration. */
+  pirateMapChoice?: string
+  pirateMapDetails?: {heroId?:string;test?:number|null;shards?:number|null}
+  pirateMapRollHistory?: {label:string;value:number;source:'app'|'tabletop'}[]
   exploration: ExplorationDraft
   /** Post-battle item prompt key -> dice faces (kit after the battle: drugs, maps, wishes). */
   kit: Record<string, (number | null)[]>

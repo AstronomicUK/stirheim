@@ -46,6 +46,8 @@ export interface KitDerived {
 }
 
 export interface KitContext {
+  treasureMap?: {holderId:string|null;holderName:string}
+  explicitTreasureMap?: boolean
   roster: RosterWarband
   matchId?: string
   survivingGroupIds?: ReadonlySet<string>
@@ -159,11 +161,14 @@ export function deriveKit(draft: ReportDraft, ctx: KitContext): KitDerived {
     }
   }
 
+  if (ctx.treasureMap) for (const prompt of itemEffect('treasure_map')?.postBattle ?? []) add('treasure_map',ctx.treasureMap.holderId,ctx.treasureMap.holderName,prompt)
+
   // Items marked as used this battle.
   for (const [holderId, itemIds] of Object.entries(ctx.itemsUsed)) {
     const hero = heroes.get(holderId)
     if (!hero) continue
     for (const itemId of new Set(itemIds)) {
+      if (itemId === 'treasure_map' && ctx.explicitTreasureMap) continue
       for (const prompt of itemEffect(itemId)?.postBattle ?? []) if (prompt.trigger === 'used') add(itemId, hero.id, hero.name, prompt)
     }
   }

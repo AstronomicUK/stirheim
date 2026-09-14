@@ -114,10 +114,10 @@ export const ITEM_EFFECTS: Record<string, ItemEffect> = {
         outcomes: [
           { min: 1, max: 1, text: "A fake! You trounce the swine who sold it and he pays D6x5 gc to make amends.", effect: { gold: { dice: 1, perPoint: 5 }, removeItem: true } },
           { min: 2, max: 2, text: "A minor stash: a chest with 1 shard of wyrdstone and jewels worth 2D6x10 gc.", effect: { shards: 1, gold: { dice: 2, perPoint: 10 }, removeItem: true } },
-          { min: 3, max: 3, text: "Long Drong Slayer's alestash: a barrel of Bugman's XXXX (add Bugman's Ale to the stash by hand) and the rest sold for 2D6x10 gc.", effect: { gold: { dice: 2, perPoint: 10 }, removeItem: true } },
+          { min: 3, max: 3, text: "Long Drong Slayer's alestash: a barrel of Bugman's XXXX (Bugman's Ale) and the rest sold for 2D6x10 gc.", effect: { gold: { dice: 2, perPoint: 10 }, removeItem: true } },
           { min: 4, max: 4, text: "Facio's stash: fine clothes and blackmail notebooks. Next visit, buy any one regular item as Common; the notebooks sell for 2D6x10 gc; +1 Leadership when testing whether captives join.", effect: { gold: { dice: 2, perPoint: 10 }, removeItem: true } },
-          { min: 5, max: 5, text: "A booby-trapped chest: a hero passes an Initiative test to claim a Lucky Charm as well, or misses the next game (add the charm or the missed game by hand). 3D6x10 gc either way.", effect: { gold: { dice: 3, perPoint: 10 }, removeItem: true } },
-          { min: 6, max: 6, text: "Black-Wyrd the Pirate King's burial spot (see the item text for the full haul; enter the wyrdstone and gold by hand).", effect: { removeItem: true } },
+          { min: 5, max: 5, text: "A booby-trapped chest: a Hero passes an Initiative test to claim a Lucky Charm as well, or misses the next game. 3D6x10 gc either way.", effect: { gold: { dice: 3, perPoint: 10 }, removeItem: true } },
+          { min: 6, max: 6, text: "Black-Wyrd the Pirate King's burial spot: 2+D3 wyrdstone shards and a Mordheim Map.", effect: { removeItem: true } },
         ],
       },
     ],

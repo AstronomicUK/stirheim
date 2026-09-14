@@ -56,7 +56,7 @@ describe('kit after the battle', () => {
     draft = setKitRoll(draft, 'cathayan_silk_clothes:cap:ruined', 0, 2) // ruined
     draft = setKitRoll(draft, 'treasure_map:champ:where', 0, 2) // stash: 1 shard + 2D6x10
     draft = setKitExtraRoll(setKitExtraRoll(draft, 'treasure_map:champ:where', 0, 3), 'treasure_map:champ:where', 1, 4)
-    const c = ctx({ itemsUsed: { cap: ['crimson_shade'], champ: ['mad_cap_mushrooms', 'treasure_map'] } })
+    const c = ctx({ roster:{...roster,warbandTemplateId:'pirates'}, itemsUsed: { cap: ['crimson_shade'], champ: ['mad_cap_mushrooms', 'treasure_map'] } })
     const d = deriveReport(draft, c)
     const effects = kitEffects(d.kit)
     expect(effects.goldDelta).toBe(70)

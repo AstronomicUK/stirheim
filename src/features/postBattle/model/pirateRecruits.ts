@@ -1,3 +1,4 @@
+import { facioRecruitmentLeadership } from '../../../rules/resolve/scenarioCampaignEffects'
 import type { ReportApplied } from '../../../domain'
 import { findUnitTemplate } from '../../../rules/data/warbandTemplates'
 import { findItem } from '../../../rules/data/items'
@@ -15,7 +16,8 @@ export function pirateRecruits(draft: ReportDraft, ctx: ReportContext, injuries:
   const roster = { ...ctx.roster, heroes: ctx.roster.heroes.map(h => injuries.heroes.find(r => r.hero.id === h.id)?.resolution.hero ?? h), henchmenGroups: ctx.roster.henchmenGroups.map(g => ({ ...(injuries.groups.find(r => r.group.id === g.id)?.resolution.group ?? g) })) }
   const living = roster.heroes.filter(h => h.status === 'active')
   const captain = living.find(h => h.id === findLeaderId(living, ctx.template))
-  const leadership = choice.leadership ?? captain?.stats.Ld
+  const defaultLeadership = captain ? facioRecruitmentLeadership(captain.stats.Ld,ctx.roster.scenarioEffects,ctx.matchId) : undefined
+  const leadership = choice.leadership ?? defaultLeadership
   const count = location === 'straggler' ? 1 : choice.count
   const out = {
     kind: 'pirate' as const, needsDie: location === 'prisoners', count: count ?? null,
@@ -25,9 +27,10 @@ export function pirateRecruits(draft: ReportDraft, ctx: ReportContext, injuries:
     awardedItems: [] as NonNullable<ReportApplied['awarded_items']>, notes: [] as string[], captain, leadership,
     results: [] as { index: number; passed?: boolean; text: string; cost?: number }[],
   }
+  if (ctx.roster.scenarioEffects?.facioRecruitmentMatchIds?.includes(ctx.matchId)) out.notes.push("Facio’s fine clothes: +1 Captain Leadership for recruitment in this game, to a maximum of 10.")
   if (!captain) out.problems.push('Appoint a living Pirate Captain before resolving recruitment.')
   if (!Number.isInteger(leadership) || leadership! < 1 || leadership! > 10) out.problems.push('The Captain’s Leadership must be from 1 to 10.')
-  if (choice.leadership != null && choice.leadership !== captain?.stats.Ld && !choice.leadershipReason?.trim()) out.problems.push('Explain the Captain’s adjusted Leadership.')
+  if (choice.leadership != null && choice.leadership !== defaultLeadership && !choice.leadershipReason?.trim()) out.problems.push('Explain the Captain’s adjusted Leadership.')
   if (!Number.isInteger(count) || count! < 1 || count! > 3) out.problems.push('Roll D3 for the number of prisoners.')
   if (out.problems.length || !ctx.template) return out
   for (let index = 0; index < count!; index++) {

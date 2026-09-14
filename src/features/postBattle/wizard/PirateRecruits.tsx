@@ -17,9 +17,10 @@ export function PirateRecruits({draft,derived,ctx,update}: Pick<StepProps,'draft
     </SelectField>
     {choice&&plan?<>
       <p className="text-sm">This replaces the ordinary reward. {location==='straggler'?'A passed test gains one Swabbie; a failure gains nobody.':'Test separately for each prisoner. A pass gains Crew; failure or unaffordable matching equipment gains a Swabbie.'} Roster limits still apply.</p>
-      <p className="text-sm">Captain: {plan.captain?.name??'No living Captain'} · Leadership {plan.captain?.stats.Ld??'—'}</p>
+      <p className="text-sm">Captain: {plan.captain?.name??'No living Captain'} · Leadership {plan.leadership??'—'}</p>
+      {ctx.roster.scenarioEffects?.facioRecruitmentMatchIds?.includes(ctx.matchId)?<p className="text-sm">Includes Facio’s +1 recruitment bonus for this game (maximum Leadership 10).</p>:null}
       <details><summary className="cursor-pointer text-sm">Adjust Leadership for a special rule</summary><div className="mt-2 flex flex-col gap-2">
-        <NumberField label="Leadership used" value={choice.leadership??plan.captain?.stats.Ld??null} onChange={leadership=>set(v=>({...v,leadership}))}/>
+        <NumberField label="Leadership used" value={plan.leadership??null} onChange={leadership=>set(v=>({...v,leadership}))}/>
         <TextField label="Reason for Leadership adjustment" value={choice.leadershipReason??''} onChange={e=>set(v=>({...v,leadershipReason:e.target.value}))}/>
       </div></details>
       {location==='prisoners'?<DieField label="Rescued prisoners D3" sides={3} rollable value={choice.count??null} onChange={count=>set(v=>({...v,count,people:Array.from({length:count??0},fresh)}))}/>:null}

@@ -53,3 +53,19 @@ describe('Pirate exploration recruitment',()=>{
     expect(setExplorationRolls(d,[1,2,3]).exploration.pirateRecruits).toBeUndefined()
   })
 })
+
+
+it('uses Facio for the correct game without treating the printed bonus as a manual override',()=>{
+  const ctx=context()
+  const base=ctx.roster.heroes[0].stats.Ld
+  ctx.roster.scenarioEffects={caravanBannedCampaigns:[],rarePenalty:0,rareGamesRemaining:0,notes:[],facioRecruitmentMatchIds:[ctx.matchId]}
+  const result=run({count:1,people:[person()]},[3,3,3],ctx).recruits
+  expect(result.kind==='pirate'&&result.leadership).toBe(Math.min(10,base+1))
+  expect(result.problems).toEqual([])
+  expect(result.notes.join()).toContain('Facio')
+  expect(ctx.roster.heroes[0].stats.Ld).toBe(base)
+  expect(run({count:1,leadership:Math.min(10,base+1),people:[person()]},[3,3,3],ctx).recruits.problems).toEqual([])
+  ctx.roster.scenarioEffects.facioRecruitmentMatchIds=['other-game']
+  const later=run({count:1,people:[person()]},[3,3,3],ctx).recruits
+  expect(later.kind==='pirate'&&later.leadership).toBe(base)
+})

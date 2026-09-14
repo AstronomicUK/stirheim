@@ -10,6 +10,10 @@ export function applyPirateMapRewards(draft:ReportDraft,ctx:ReportContext,kit:Ki
   const prompt=kit.prompts.find(p=>p.itemId==='treasure_map')
   if(!prompt?.complete)return {problems,notes}
   const face=prompt.rolls[0]
+  if(face===4) {
+    applied.scenario_effects={...applied.scenario_effects,facio:true}
+    notes.push("Facio’s fine clothes: +1 Captain Leadership for captive, Straggler and Prisoner recruitment in the next game only.")
+  }
   if(face===3) {
     applied.stash_items.push({item_rules_id:'bugmans_ale',custom_name:null,quantity:1})
     notes.push("Long Drong’s alestash: one barrel of Bugman’s Ale added to the stash.")

@@ -1149,6 +1149,7 @@ it('uses one exact Pirate Treasure Map instead of ordinary exploration, and rest
   expect(missing.problems.exploration.join(' ')).toContain('no longer available')
   expect(missing.report).toBeNull()
   const reward=(face:number,details:ReportDraft['pirateMapDetails']={})=>deriveReport({...draft,pirateMapDetails:details,kit:{'treasure_map:stash:where':[face]},kitExtra:{'treasure_map:stash:where':[3,4,5]}},context)
+  expect(reward(4).report?.applied.scenario_effects?.facio).toBe(true)
   expect(reward(3).report?.applied.stash_items).toContainEqual({item_rules_id:'bugmans_ale',custom_name:null,quantity:1})
   expect(reward(6).problems.exploration.join(' ')).toContain('roll the D3')
   const burial=reward(6,{shards:3}).report!

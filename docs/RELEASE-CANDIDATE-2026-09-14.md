@@ -1,6 +1,6 @@
 # Release candidate 2026.09.14.1
 
-Ready locally; **not pushed or deployed**. Tom requested stopping at ten completed items before deployment.
+**Deployed on 14 September 2026 with Tom’s explicit approval.** Implementation stopped at ten completed items.
 
 Application source: `c0381aa38790fea0a31d78d3c8b2fd84ff0477f4`.
 
@@ -23,3 +23,11 @@ Completed tracker scope: **#15, #181, #191, #70, #161, #76, #29, #142, #136, #13
 3. Preserve the credit-saving release process: verify automatic builds are paused, push the completed commits once, and publish one already-built production artifact. Rebuild only if source/configuration has changed since the manifest.
 4. Verify the deployed files and representative live flows before publishing the release and changing the ten public issues to Implemented. Use `RELEASE-2026-09-14.1.json` for the prepared release copy and IDs; preserve user reports, notes, subscriptions and attribution. Do not mark the other ten complete.
 5. Record the deployment ID, source revision, migration verification and live checks here. Public confirmation remains distinct from local implementation.
+
+## Deployment completed — 14 September 2026
+
+- Pushed release source `58879987e65971e74dc46605b3fdb4aec4ce1737` to main.
+- One prebuilt Netlify production deployment: `6aa7befc0524c12ca47fe12a`; https://stirheim.com. Automatic builds remain paused.
+- Applied migrations 137–141; subsequent linked dry run reports the remote database up to date.
+- All 119 live files match the tested SHA-256 manifest. Public tracker and changelog load successfully in a fresh browser tab; no authenticated production gameplay records were changed for testing.
+- Published release `d439dcb2-4f4d-4799-ae9a-83efd80ae745`, version 2026.09.14.1. Verified the public changelog displays its notes and all ten linked reports. Ten reports are Implemented; the other ten remain open.

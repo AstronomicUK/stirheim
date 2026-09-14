@@ -1,6 +1,6 @@
 # Overnight priority bugs — 13 September 2026
 
-Latest instruction (14 September): stop implementation at ten fully completed items from the first twenty, then prepare and validate the combined release. Do not deploy yet. Partial checkpoints do not count as completed tickets.
+Latest instruction (14 September): stop implementation at ten fully completed items from the first twenty, then prepare and validate the combined release. Deployment subsequently approved and completed on 14 September (2026.09.14.1). Partial checkpoints do not count as completed tickets.
 
 Tom originally authorised working through the following order, grouping related fixes when useful. If all twenty are resolved before his next message, assess and begin the next twenty outstanding items. Keep changes local for a combined release; the prior deployment permission was for the completed release.
 
@@ -10,7 +10,7 @@ For each item, reconcile old findings with the current code and source before ed
 
 ## Final candidate status — 14 September
 
-**Ten complete locally; stop implementation here.** Await Tom’s approval to deploy version 2026.09.14.1.
+**Ten completed and deployed as version 2026.09.14.1.** Stop implementation here. See RELEASE-CANDIDATE-2026-09-14.md for deployment evidence.
 
 | Completed item | Scope |
 |---|---|

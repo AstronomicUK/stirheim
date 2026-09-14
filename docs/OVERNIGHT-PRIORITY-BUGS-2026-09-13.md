@@ -160,3 +160,12 @@ Also corrected the shared Master Map condition: it requires an active Hero beare
 Impeccable Care now adds +2 for every blackpowder weapon search by a Gunnery School warband, including weapons with no discounted-price rule. It does not apply to ammunition/blackpowder supplies or other equipment. Bedouin Desert Trader adds +1 once when an active Bedouin is present, never +2 for two. Both feed the existing rare-search total and explanations. Removed zero-stock equipment/empty groups from equipment-based search bonuses.
 
 Sources: grade-1b-part1.md Impeccable Care (2005) and Desert Trader (674). Sixteen pricing/restriction tests passed. Chaos Armour per-kill bonus, Rhinox and structured Marauder tribe modifiers remain outstanding.
+
+
+## Checkpoint 22 — Chaos Armour per-takedown rarity (#144, partial)
+
+New reports retain each participating Hero’s actual enemy takedown count separately from XP. Trading reads that count from the latest report and applies +1 per takedown for Chaos Armour / Mechanical Suit searches, using the searching Hero rather than the equipment recipient. Old reports remain explicitly unknown and ask for a count, including zero. Changing a recorded count requires a reason, included in successful and failed purchase-search logs. Search totals now show dice plus modifiers numerically. A report-loading error stops trading rather than treating missing report facts as empty.
+
+Verification: 77 focused UI/report-generation tests passed. Five actual local-database report tests passed, including persisted battle facts through the real submit/withdraw path. No database migration needed: optional facts live within the existing applied-report JSON. No production changes.
+
+Checkpoint 22 complete validation: 2,644 ordinary tests passed; 358 database-only tests skipped in that run. The separate five-test local report database suite passed. Build/typecheck and lint passed with the existing audit warnings only.

@@ -16,7 +16,7 @@ import { itemRestrictionWarnings, type ItemHolder } from '../../rules/resolve/it
 import { effectivePricing, warbandRareRollBonus } from '../../rules/resolve/itemPricing'
 import { braceAmountOf } from '../../rules/resolve/equipmentCost'
 import { halfPriceItemSource } from '../../rules/resolve/mapAdvantages'
-import { itemEffect } from '../../rules/data/itemRules'
+import { itemEffect, itemPricing } from '../../rules/data/itemRules'
 import { isBanned } from '../../rules/resolve/houseRules'
 import { findWeapon } from '../../rules/data/weapons'
 import type { Item } from '../../rules/types/items'
@@ -91,7 +91,7 @@ interface BuySheetProps {
   onClose: () => void
 }
 
-function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
+export function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const { roster, houseRules, phase, canTrade, pending, run, error, clearError } = trade
   const facio=useFacio(roster.id)
   const [useReward,setUseReward]=useState(false)
@@ -114,6 +114,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const [manualPrice, setManualPrice] = useState<number | null>(null)
   const [priceOverride, setPriceOverride] = useState<Override | null>(null)
   const [searcherId, setSearcherId] = useState(searchers[0]?.id ?? '')
+  const [killOverrides, setKillOverrides] = useState<Record<string, { count: number | null; reason: string }>>({})
   const [searchFaces, setSearchFaces] = useState<(number | null)[]>([null, null])
   const [destinationKey, setDestinationKey] = useState('stash')
   const [quantity, setQuantity] = useState(1)
@@ -161,11 +162,19 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
   const mapRareBonus = trade.perks?.rareRollBonus ?? 0
   const searcherHero = roster.heroes.find(h => h.id === searcherId)
+  const killRule = isRare && tracked && itemPricing(item.id)?.dynamic === 'chaosArmour'
+  const recordedKills = phase.enemyOutCounts?.[searcherId]
+  const killOverride = killOverrides[searcherId]
+  const killCount = killOverride ? killOverride.count : recordedKills ?? null
+  const changedKills = recordedKills !== undefined && killOverride !== undefined && killCount !== recordedKills
+  const killReady = !killRule || Boolean(searcherHero && killCount !== null && Number.isInteger(killCount) && killCount >= 0 && (!changedKills || killOverride?.reason.trim()))
+  const killBonus = killRule && killReady ? killCount! : 0
+  const killNote = killRule && killReady ? `${item.name}: +${killBonus} rarity from ${searcherHero!.name} taking ${killCount} enemies out of action in the previous battle (${recordedKills === undefined ? 'player entered; older report has no saved count' : changedKills ? `report count ${recordedKills} corrected: ${killOverride!.reason.trim()}` : 'saved battle report'}).` : undefined
   const wornGemBonus = displayedGemRareBonus(searcherHero?.equipment ?? [])
   // Streetwise (#59): the searching hero's own +2 to the rarity roll.
   const streetwiseBonus = streetwiseRareBonus(searcherHero)
-  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus + streetwiseBonus + (roster.scenarioEffects?.rarePenalty ?? 0)
-  const search = isRare && searchTotal !== null ? rareSearch(item, searchTotal + rareBonus) : null
+  const rareBonus = (warbandRules(roster.warbandTemplateId).rareRollBonus ?? 0) + pricing.rareRollBonus + killBonus + warbandBonus.bonus + mapRareBonus + wornGemBonus + streetwiseBonus + (roster.scenarioEffects?.rarePenalty ?? 0)
+  const search = isRare && searchTotal !== null && killReady ? rareSearch(item, searchTotal + rareBonus) : null
   const needsSearcher = isRare && (tracked || !!phase.rareItemSearchBlocked)
   const searcherOk = !needsSearcher || (searcherId !== '' && searchers.some((h) => h.id === searcherId))
   const available = kind === 'common' || kind === 'special' || search?.available === true
@@ -193,7 +202,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const withinRareCap = rareMaxQty === null || quantity <= rareMaxQty
 
   const replacementBlock = leaderReplacementPurchaseBlock(roster, total ?? 1)
-  const canBuy = (!useReward||usingFacio&&quantity===1) && !replacementBlock && haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
+  const canBuy = killReady && (!useReward||usingFacio&&quantity===1) && !replacementBlock && haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -211,6 +220,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     if (unitPrice === null) return
     const notes = [mapResult?.note, upgrade && upgradeBase ? `base: ${upgradeBase}` : null].filter((n): n is string => Boolean(n)).join(' · ') || undefined
     const reasons = [
+      killNote,
       roster.scenarioEffects?.trade && priceOverride === null ? `${roster.scenarioEffects.notes.join(" ")} Purchase total: ${total} gc.` : null,
       overrideReady(priceOverride) && computed !== null ? overrideNote(`${item.name} price`, `${computed} gc`, `${priceOverride.amount} gc`, priceOverride.reason) : null,
       warnings.length > 0 ? `${item.name} bought despite: ${warnings.join(' ')} Reason: ${restrictionReason.trim()}` : null,
@@ -231,7 +241,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
     const ok = await run(() => (spend > 0 ? { ...roster, gold: Math.max(0, roster.gold - spend) } : roster), {
       heroesSearched: [searcherId],
       rareItemSearch: true,
-      reason: spend > 0 ? reasonWith('trading', `${item.name}: ${spend} gc spent on a failed search (paid on failure)`) : undefined,
+      reason: reasonWith('trading', [killNote, spend > 0 ? `${item.name}: ${spend} gc spent on a failed search (paid on failure)` : `${item.name}: failed rare-item search`].filter(Boolean).join(' · ')),
     })
     if (ok) setSearchRecorded(true)
   }
@@ -404,6 +414,11 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
             ) : (
               <p className="text-xs text-ink-dim">No post-battle sequence in progress, so this roll is not counted against a hero.</p>
             )}
+            {killRule ? <div className="flex flex-col gap-2">
+              <NumberField label={`${searcherHero?.name ?? 'Searching Hero'}: enemies taken out of action last battle`} value={killCount} allowEmpty disabled={searchRecorded} onChange={count => setKillOverrides(values => ({ ...values, [searcherId]: { count, reason: values[searcherId]?.reason ?? '' } }))} />
+              <p className="text-xs text-ink-dim">{recordedKills === undefined ? 'This older report has no saved takedown count. Enter the count, including zero; Experience points are not a substitute.' : `Battle report recorded ${recordedKills}. Each enemy taken out of action gives +1 to this search.`}</p>
+              {changedKills ? <TextField label="Reason for correcting the takedown count" value={killOverride?.reason ?? ''} onChange={event => setKillOverrides(values => ({ ...values, [searcherId]: { count: killCount, reason: event.target.value } }))} /> : null}
+            </div> : null}
             <div className="flex items-end gap-3">
               {searchFaces.map((face, i) => (
                 <DieField
@@ -416,9 +431,9 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
                   onChange={(v) => setSearchFaces((prev) => prev.map((p, n) => (n === i ? v : p)))}
                 />
               ))}
-              {searchTotal !== null ? (
+              {searchTotal !== null && killReady ? (
                 <span className="pb-2 text-base tabular-nums text-ink">
-                  = {searchTotal} <span className="text-ink-dim">vs {item.availability.rarity}</span>
+                  {rareBonus ? `${searchTotal} ${rareBonus > 0 ? "+" : "−"} ${Math.abs(rareBonus)} = ${searchTotal + rareBonus}` : `= ${searchTotal}`} <span className="text-ink-dim">vs {item.availability.rarity}</span>
                 </span>
               ) : null}
             </div>

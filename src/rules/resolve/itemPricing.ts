@@ -66,7 +66,7 @@ export function effectivePricing(item: Item, warband: RosterWarband, buyer: Buye
         out.item = { ...out.item, price: { ...out.item.price, base: price, text: `${price} gc` } };
         out.notes.push(`Chaos armour costs 1 gc less per experience point of the hero (${xp} xp): ${price} gc.`);
       }
-      out.notes.push("Rarity: +1 to the roll for each enemy the hero took out of action in the previous battle (add it to the dice by hand).");
+      out.notes.push("Rarity: +1 for each enemy the searching hero took out of action in the previous battle. The trading form uses the report count, with an explained correction available.");
       break;
     }
     case "rhinox":

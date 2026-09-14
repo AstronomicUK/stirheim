@@ -23,6 +23,7 @@ export interface TradeOptions {
 }
 
 export interface PhaseInfo {
+  enemyOutCounts?: Record<string, number>
   rareItemSearchBlocked?: boolean
   /** The latest report's match, or null when the warband has never filed one (no limits). */
   matchId: string | null

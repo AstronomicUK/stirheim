@@ -923,6 +923,7 @@ function buildApplied(draft: ReportDraft, ctx: ReportContext, participants: Part
     if (sword.status === 'left' && sword.flags.mustMissNextBattle) heroes.push({ id: sword.id, patch: { flags: { ...sword.flags, mustMissNextBattle: false } } })
   }
   return {
+    enemy_ooa_counts: Object.fromEntries(participants.heroes.map(hero => [hero.id, draft.enemiesOut[hero.id] ?? 0])),
     heroes,
     groups,
     warband: {

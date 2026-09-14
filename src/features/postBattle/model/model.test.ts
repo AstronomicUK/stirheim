@@ -1176,3 +1176,11 @@ it('spends the selected Nehekharan Map without spending a Mordheim Map held alon
   items[1].notes = 'Map D6 6: Master map';
   expect(itemPatchesFor(ctx({ items }), draft)).toEqual([]);
 });
+
+
+it('retains actual enemy takedown counts separately from XP for subsequent trading', () => {
+  const draft = { ...withDice(setEnemiesOut(setResult(emptyDraft(), 'lost'), 'captain', 3), ctx()), veteranPool: [3, 4] as [number, number] };
+  const report = buildReport(draft, ctx());
+  expect(report.applied.enemy_ooa_counts?.captain).toBe(3);
+  expect(report.applied.enemy_ooa_counts?.champion).toBe(0);
+});

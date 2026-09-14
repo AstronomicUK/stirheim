@@ -64,7 +64,7 @@ export function TradingPage() {
       </>
     )
   }
-  const loadError = restriction.error ?? warband.error ?? campaign.error ?? report.error ?? state.error
+  const loadError = restriction.error ?? warband.error ?? campaign.error ?? report.error ?? state.error ?? reports.error
   if (loadError || !warband.data) {
     return (
       <>
@@ -79,7 +79,7 @@ export function TradingPage() {
   return (
     <>
       {header}
-      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={{...phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id)),rareItemSearchBlocked:restriction.data||state.data?.bone_goliath_constructed}} />
+      <TradingView detail={warband.data} campaign={campaign.data ?? null} phase={{...phaseInfo(matchId, state.data, heroesOutInReport(reports.data, id)),enemyOutCounts:reports.data?.find(r=>r.warband_id===id)?.enemy_ooa_counts,rareItemSearchBlocked:restriction.data||state.data?.bone_goliath_constructed}} />
     </>
   )
 }

@@ -74,6 +74,7 @@ describe.skipIf(!enabled)('post-battle reports', () => {
     veteran_pool_roll: 7,
     notes: 'Good night for the clan.',
     applied: {
+      enemy_ooa_counts: { [SKRITCH]: 2 },
       heroes: [{ id: SKRITCH, patch: { xp: 24, level_ups: 8 } }],
       groups: [{ id: VERMINKIN, patch: { size: 3, xp: 1 } }],
       warband: { wyrdstone_delta: 3, gold_delta: 10, veteran_pool: 7 },
@@ -105,8 +106,9 @@ describe.skipIf(!enabled)('post-battle reports', () => {
     const again = await player.rpc('submit_battle_report', { p_match_id: matchId, p_warband_id: CLAWS_OF_ESHIN, p_report: report })
     expect(again.error?.message).toMatch(/already been filed/)
 
-    const stored = await gm.from('match_reports').select('result, won, veteran_pool_roll, xp_log, profiles!match_reports_submitted_by_profile_fkey(display_name)').eq('match_id', matchId).single()
+    const stored = await gm.from('match_reports').select('applied, result, won, veteran_pool_roll, xp_log, profiles!match_reports_submitted_by_profile_fkey(display_name)').eq('match_id', matchId).single()
     expect(stored.data?.result).toBe('won')
+    expect(stored.data?.applied.enemy_ooa_counts).toEqual({ [SKRITCH]: 2 })
     expect(stored.data?.veteran_pool_roll).toBe(7)
     expect((stored.data?.profiles as unknown as { display_name: string } | null)?.display_name).toBe('Ana')
   })

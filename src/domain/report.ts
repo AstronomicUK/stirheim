@@ -130,6 +130,8 @@ export const pendingAdvanceRequestSchema = z.object({
   threshold_xp: z.number().int().min(1),
 });
 export const reportAppliedSchema = z.object({
+  /** Battle facts retained for subsequent trading, independent of XP awards. */
+  enemy_ooa_counts: z.record(z.string(), z.number().int().min(0)).optional(),
   trade_wagon_capture: tradeWagonSnapshotSchema.optional(),
   weapon_loss_non_campaign: z.literal(true).optional(),
   broken_weapons: z.array(brokenWeaponSchema.extend({ event_id: z.string().uuid() })).optional(),

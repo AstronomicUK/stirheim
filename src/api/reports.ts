@@ -76,6 +76,7 @@ export async function withdrawBattleReport(matchId: string, warbandId: string): 
 }
 
 export interface ReportView {
+  enemy_ooa_counts?: Record<string, number>
   id: string
   match_id: string
   warband_id: string
@@ -117,6 +118,7 @@ export interface BattleRecord {
 const REPORT_SELECT = '*, warbands(name), profiles!match_reports_submitted_by_profile_fkey(display_name)'
 
 type ReportRow = {
+  applied?: unknown
   id: string; match_id: string; warband_id: string; submitted_by: string; submitted_at: string; won: boolean; result: string; routed: boolean
   xp_log: unknown; ooa: unknown; injuries: unknown; exploration: unknown; veteran_pool_roll: number | null; notes: string
   status?: string | null; review_note?: string | null; revision?: number | null; amended_at?: string | null; amendment_note?: string | null; adjustments?: unknown
@@ -126,6 +128,7 @@ type ReportRow = {
 function toReportView(r: ReportRow, aliases?: AliasMap): ReportView {
   const explorationParsed = battleReportSchema.shape.exploration.safeParse(r.exploration && Object.keys(r.exploration as object).length ? r.exploration : null)
   return {
+    enemy_ooa_counts: battleReportSchema.shape.applied.safeParse(r.applied).data?.enemy_ooa_counts,
     id: r.id,
     match_id: r.match_id,
     warband_id: r.warband_id,

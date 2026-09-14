@@ -2704,6 +2704,9 @@ export type Database = {
         }
         Returns: undefined
       }
+      facio_trade_state: { Args: { p_warband_id: string }; Returns: Json }
+      record_facio_purchase: { Args: { p_warband_id:string; p_report_id:string; p_request_id:string; p_changes:Json; p_cost:number; p_expected_gold:number; p_item_id:string; p_reason?:string; p_haggle?:Json }; Returns:number }
+      sell_facio_notebooks: { Args: { p_warband_id:string; p_report_id:string; p_dice:number[]; p_reason?:string }; Returns:number }
       resolve_restless_ritual: {
         Args: {
           p_die?: number

@@ -1,3 +1,4 @@
+import type {FacioPurchase} from '../../api/facio'
 import type { ReportView } from '../../api/reports'
 // One trading action = one record_trade call. A tab runs a resolver on the loaded roster, hands
 // the result here, and this diffs it against the loaded rows and posts the batch. There is no
@@ -11,6 +12,7 @@ import { diffRoster } from '../../domain/rosterDiff'
 import type { CampaignHouseRules, RosterWarband } from '../../rules/types/roster'
 
 export interface TradeOptions {
+  facio?: FacioPurchase
   sale?: { victuals?: number; expectedVictuals?: {id:string; quantity:number; holder_type:string; holder_id:string|null}[]; gold: number; shards: number; chefRevision?: number };
   rareItemSearch?: boolean
   haggle?: HaggleTrade;
@@ -66,6 +68,7 @@ export function useTrade(detail: WarbandDetail, houseRules: CampaignHouseRules, 
       const changes = diffRoster(detail, build())
       await mutation.mutateAsync({
         matchId: phase.matchId,
+        facio: opts.facio,
         changes,
         wyrdstoneSold: opts.wyrdstoneSold ?? false,
         heroesSearched: opts.heroesSearched ?? [],

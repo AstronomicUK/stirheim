@@ -1,3 +1,6 @@
+import {useFacio} from '../../api/facio'
+import {facioItemEligible} from '../../rules/resolve/facio'
+import {FacioNotebooks} from './FacioNotebooks'
 import { leaderReplacementPurchaseBlock } from '../../rules/resolve/leaderReplacement'
 import { hasHaggle, hasHaggleSkill, hagglePrice } from '../../rules/resolve/haggle'
 import { scenarioPurchasePrice } from '../../rules/resolve/scenarioCampaignEffects'
@@ -25,12 +28,16 @@ import type { TradeContext } from './useTrade'
 export function BuyTab({ trade }: { trade: TradeContext }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Item | null>(null)
+  const facio = useFacio(trade.roster.id)
   const bans = trade.houseRules.bans
   const groups = useMemo(() => groupCatalogue(SHOP_ITEMS.filter((i) => !isBanned(bans, 'items', i.id)), query), [query, bans])
   const searchesLeft = trade.phase.rareItemSearchBlocked ? 0 : eligibleSearchers(trade.roster, trade.phase.heroesSearched, trade.phase.heroesOutOfAction).length
 
   return (
     <div className="flex flex-col gap-4">
+      {facio.error?<Notice>{facio.error.message}</Notice>:null}
+      {facio.data?.available.length?<Notice>Facio’s notebooks: choose one regular Price Chart item to buy as Common. Pay from your existing gold, then sell the notebooks for 2D6×10 gc.</Notice>:null}
+      {facio.data?.notebooks.map(n=><FacioNotebooks key={n.reportId} warbandId={trade.roster.id} reward={n} canTrade={trade.canTrade}/>)}
       <TextField
         label="Search the catalogue"
         placeholder="Sword, Rare 8, armour…"
@@ -86,6 +93,11 @@ interface BuySheetProps {
 
 function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const { roster, houseRules, phase, canTrade, pending, run, error, clearError } = trade
+  const facio=useFacio(roster.id)
+  const [useReward,setUseReward]=useState(false)
+  const [facioRequestId]=useState(()=>crypto.randomUUID())
+  const reward=facio.data?.available.find(r=>r.matchId===phase.matchId)
+  const usingFacio=useReward&&!!reward&&facioItemEligible(listed.id)
   const tracked = phase.matchId !== null
   const searchers = useMemo(() => phase.rareItemSearchBlocked ? [] : eligibleSearchers(roster, phase.heroesSearched, phase.heroesOutOfAction), [roster, phase.heroesSearched, phase.heroesOutOfAction, phase.rareItemSearchBlocked])
   const downCount = phase.heroesOutOfAction.filter((id) => roster.heroes.some((h) => h.id === id && h.status === 'active')).length
@@ -143,7 +155,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const huntFailed = hunt !== null && !hunt.free && huntDie !== null && huntStrength !== null && huntDie > huntStrength
 
   // ---- Availability ----
-  const kind = item.availability.kind
+  const kind = usingFacio ? 'common' : item.availability.kind
   const isRare = kind === 'rare' && item.availability.rarity !== undefined
   const searchTotal = diceTotal(rareSpec, searchFaces)
   const warbandBonus = useMemo(() => warbandRareRollBonus(roster), [roster])
@@ -181,7 +193,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
   const withinRareCap = rareMaxQty === null || quantity <= rareMaxQty
 
   const replacementBlock = leaderReplacementPurchaseBlock(roster, total ?? 1)
-  const canBuy = !replacementBlock && haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
+  const canBuy = (!useReward||usingFacio&&quantity===1) && !replacementBlock && haggleReady && canTrade && available && searcherOk && priceReady && affordable && withinRareCap && (!isRare || !searchRecorded) && (!isMap || mapResult !== null) && !needsReason && huntPassed && !huntRecorded && (!upgrade || upgradeBase !== '')
 
   /** A henchman group is equipped alike, so default to one per model when it is picked. */
   function chooseDestination(key: string) {
@@ -204,6 +216,7 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
       warnings.length > 0 ? `${item.name} bought despite: ${warnings.join(' ')} Reason: ${restrictionReason.trim()}` : null,
     ].filter((r): r is string => Boolean(r))
     const ok = await run(() => buyItem(roster, item, unitPrice, parseLocationKey(destinationKey), quantity, notes, total ?? undefined).value, {
+      ...(usingFacio&&reward&&total!==null?{facio:{reportId:reward.reportId,requestId:facioRequestId,cost:total,expectedGold:roster.gold,itemId:item.id}}:{}),
       heroesSearched: needsSearcher && searcherId ? [searcherId] : [],
       rareItemSearch: needsSearcher && !!searcherId,
       ...(hagglerId&&haggler&&beforeHaggle!==null?{haggle:{heroId:hagglerId,dice:haggleDice as [number,number],requestId:haggleRequestId,itemName:item.name,priceBefore:beforeHaggle}}:{}),
@@ -319,6 +332,13 @@ function BuySheet({ item: listed, trade, onClose }: BuySheetProps) {
             </div>
           </section>
         ) : null}
+        {reward&&facioItemEligible(listed.id)?<section className="flex flex-col gap-2 rounded-md border border-border px-4 py-3">
+          <SelectField label="Facio’s one-item purchase" value={useReward?'facio':'normal'} onChange={e=>{setUseReward(e.target.value==='facio');setQuantity(1)}}>
+            <option value="normal">Buy normally</option><option value="facio">Use Facio — buy one as Common</option>
+          </SelectField>
+          {useReward?<p className="text-sm">Buy exactly one item using your existing gold. No rare-item search is used. After this purchase, return to the catalogue to sell the notebooks for 2D6×10 gc.</p>:null}
+          {useReward&&quantity!==1?<Notice>Choose a quantity of one to use Facio’s reward.</Notice>:null}
+        </section>:null}
         {tracked&&roster.heroes.some(hasHaggle) ? <section className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
           <SelectField label="Haggle for this purchase" value={hagglerId} onChange={e=>{setHagglerId(e.target.value);setHaggleDice([null,null])}}><option value="">Do not haggle</option>{hagglers.map(h=><option key={h.id} value={h.id}>{h.name}{hasHaggleSkill(h)?' — Haggle':' — Freetraders symbol'}</option>)}</SelectField>
           {roster.heroes.filter(h=>h.flags.haggleUse?.matchId===phase.matchId).map(h=><p key={h.id} className="text-xs text-ink-dim">{h.name} has used Haggle this sequence on {h.flags.haggleUse!.itemName}.</p>)}

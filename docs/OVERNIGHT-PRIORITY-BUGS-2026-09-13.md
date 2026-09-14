@@ -86,3 +86,7 @@ Rolled knock-down/stun has an explicit Apply injury to both sheets action, feedi
 Local browser QA: 4+4 cast, refresh pending test, resume 2 pass, second 4+4 cast, no third offer; next turn first cast available; Toughness 6 fails, refresh pending injury, injury 6 becomes Stunned; apply action shows Stunned on roster. Mobile 390px exception control fits and enables an explained override. Disposable fixture removed. Full ordinary suite 2,586 passed (350 database tests skipped), build/typecheck and lint passed with existing audit warnings. No deployment.
 
 Wretch reconnaissance (#114): first Talent must reroll; second needs an individual Hero injury. Current group state does not carry individual permanent injury/flags, so this requires a deliberate individual-member implementation, not an injury applied to the entire group. Remains outstanding.
+
+## Checkpoint 12 — explicit riding grants (#59, partial)
+
+Battle Monks’ Emissary receives Ride Horse; Chapel Questing Knight and Merchant Knights Vanguard receive Ride Warhorse. New recruits receive the skill and legacy battle profiles derive it from unit identity; advancement cannot buy the already-granted skill again. No other mount type is granted by implication. Generic unnamed Ride clauses and tribe-dependent grants remain open. 192 focused recruitment/advancement/combat tests passed; included in subsequent full suite/build checks. No deployment.

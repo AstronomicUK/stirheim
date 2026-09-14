@@ -601,3 +601,16 @@ it('restores inherent hero skills for old rosters without duplicating saved skil
     expect(brute.skillIds).toEqual(['strongman'])
   }
 })
+
+
+it('gives legacy riders their printed mount-specific skill, without granting the other mount type', () => {
+  for (const [unitTemplateId,skill,other] of [
+    ['battle_monks_emissary','cavalry_ride_horse','cavalry_ride_warhorse'],
+    ['bretonnian_questing_knight','cavalry_ride_warhorse','cavalry_ride_horse'],
+    ['merchant_knights_vanguard','cavalry_ride_warhorse','cavalry_ride_horse'],
+  ]) {
+    const rider=combatantsOf(warband({heroes:[hero('rider',{unitTemplateId,skillIds:[]})]}),undefined,'Test',undefined)[0]
+    expect(rider.skillIds).toContain(skill)
+    expect(rider.skillIds).not.toContain(other)
+  }
+})

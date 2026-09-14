@@ -424,6 +424,9 @@ describe("Powerful Build future skill access (#59)", () => {
 it('does not sell an inherent starting skill again to legacy heroes', () => {
   for (const [unitTemplateId, skill, table] of [
     ['pit_fighters_pit_king', 'pit_fighter', 'strength'],
+    ['merchant_knights_vanguard', 'cavalry_ride_warhorse', 'cavalry'],
+    ['bretonnian_questing_knight', 'cavalry_ride_warhorse', 'cavalry'],
+    ['battle_monks_emissary', 'cavalry_ride_horse', 'cavalry'],
     ['carnival_of_chaos_brutes', 'strongman', 'strength'],
     ['cursed_cavalcade_companions', 'expert_swordsman', 'combat'],
   ]) {
